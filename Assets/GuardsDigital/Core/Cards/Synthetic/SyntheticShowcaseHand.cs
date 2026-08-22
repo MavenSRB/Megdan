@@ -507,6 +507,15 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// Milestone 8.10. An After-the-attack text whose whole content is the question Thunder
         /// Boomerang asks before its repeat: did this Attack take a hero?
         /// </summary>
+        /// <summary>
+        /// Milestone 8.11. A Defense action's text - p.14's step 4, the defender's own moment - whose
+        /// whole content is the question Wasp's Block riders ask: was the attack being answered ranged?
+        /// </summary>
+        private static readonly SyntheticAttackTextProfile BlueConditionalDefenseTextProfile =
+            new SyntheticAttackTextProfile(
+                "blue-riposte", "Blue Riposte", 4, 3, 3, 2, CardTextTiming.None,
+                true, false, readsTheAttacksTarget: true);
+
         private static readonly SyntheticAttackTextProfile RedConditionalTextProfile =
             new SyntheticAttackTextProfile(
                 "red-reckoning", "Red Reckoning", 7, 4, 2, 2, CardTextTiming.AfterTheAttack,
@@ -536,6 +545,17 @@ namespace GuardsDigital.Core.Cards.Synthetic
             return Create(
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 attackTextProfiles: new[] { RedConditionalTextProfile });
+        }
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.11's Defense-text card: a secondary Defense whose
+        /// text asks whether the attack it is answering was ranged, at p.14's step 4.
+        /// </summary>
+        public static ConfiguredHand CreateBlueWithConditionalDefenseText(HeroId ownerId)
+        {
+            return Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                attackTextProfiles: new[] { BlueConditionalDefenseTextProfile });
         }
 
         /// <summary>
@@ -1871,6 +1891,40 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// gate requires. What is under test is the predicate, so its then-branch is the same
         /// unconditional note every other fixture text applies.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.11's card text: the same note, applied only where the Attack this text is
+        /// answering is p.13's Ranged subtype.
+        ///
+        /// It exists so the predicate over the enclosing Attack's printed subtype is proved on content
+        /// that is nobody's card, before Wasp's three Block cards name it - which is what milestone
+        /// 7.9's deferral gate requires. It sits on a <i>Defense</i> action's text, because p.14's step
+        /// 4 is the only moment that belongs to the defender and the only one a Block's rider uses.
+        /// </summary>
+        private static EffectDefinition RangedAttackCardTextEffect(string id) =>
+            new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{id}-text"),
+                "phase-8-11-rev-1",
+                new EffectNodeId("is-ranged"),
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        new EffectNodeId("is-ranged"), EffectNodeKind.Conditional,
+                        EffectFailurePolicy.Mandatory,
+                        SyntheticConsequenceCapabilities.AttackIsRangedV1,
+                        childNodeIds: new[] { new EffectNodeId("note") },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticConsequenceCapabilities.IsRangedOutput,
+                                EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        new EffectNodeId("note"), EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.NoteActorV1,
+                        outputs: new[] { new EffectOutputBinding("hero", EffectValueKind.Hero) })
+                });
+
         private static EffectDefinition ConditionalCardTextEffect(string id) =>
             new EffectDefinition(
                 new EffectDefinitionId($"placeholder-{id}-text"),
@@ -1882,7 +1936,13 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         new EffectNodeId("took-a-hero"), EffectNodeKind.Conditional,
                         EffectFailurePolicy.Mandatory,
                         SyntheticConsequenceCapabilities.AttackTookAHeroV1,
-                        childNodeIds: new[] { new EffectNodeId("note") }),
+                        childNodeIds: new[] { new EffectNodeId("note") },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticConsequenceCapabilities.TookAHeroOutput,
+                                EffectValueKind.Boolean)
+                        }),
                     new EffectNodeDefinition(
                         new EffectNodeId("note"), EffectNodeKind.Capability,
                         EffectFailurePolicy.Mandatory,
@@ -1930,7 +1990,11 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     false),
                 AttackRangeKind.None,
                 new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile),
-                profile.DefenseCarriesText ? CardTextEffect($"{profile.Id}-defense") : null,
+                profile.DefenseCarriesText
+                    ? profile.ReadsTheAttacksTarget
+                        ? RangedAttackCardTextEffect(profile.Id + "-defense")
+                        : CardTextEffect(profile.Id + "-defense")
+                    : null,
                 default,
                 PrintedDefenseResolution.None,
                 profile.DefenseCarriesText ? CardTextTiming.DefenseAction : CardTextTiming.None));

@@ -101,8 +101,11 @@ namespace GuardsDigital.Tests.EditMode
             // shares the implementation the other three printed-icon declarations use; the capability
             // that reaches rulebook p.13's Defeat list did, because nothing before it declared a
             // consequence. Both are proved on showcase content before the verified card names them,
-            // which is what milestone 7.9's deferral gate requires of a hero slice.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(28),
+            // which is what milestone 7.9's deferral gate requires of a hero slice. Milestone 8.11
+            // moves it by one more, and again only one of its two new declarations does: the
+            // printed-Range hero selection shares the same implementation, and the predicate over the
+            // enclosing Attack.s printed subtype is the new one.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(29),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

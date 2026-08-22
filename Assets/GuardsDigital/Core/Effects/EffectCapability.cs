@@ -5,6 +5,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -117,9 +118,9 @@ namespace GuardsDigital.Core.Effects
             MatchComponents components = null,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
             IReadOnlyList<IReadOnlyList<EffectValue>> answersAlreadyGiven = null,
-            HeroId enclosingAttackHeroTargetId = default)
+            EnclosingAttackFacts enclosingAttack = default)
         {
-            EnclosingAttackHeroTargetId = enclosingAttackHeroTargetId;
+            EnclosingAttack = enclosingAttack;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
                 enclosingActionKind == ActionKind.None)
             {
@@ -184,11 +185,11 @@ namespace GuardsDigital.Core.Effects
         public ActionKind EnclosingActionKind { get; }
 
         /// <summary>
-        /// The hero the enclosing Attack targeted, or the undefined hero when it took a minion or when
-        /// this effect is not card text inside an Attack at all. Milestone 8.10, for Thunder
-        /// Boomerang's "If you targeted a hero".
+        /// What this effect may ask about the Attack it is running inside - the attacker, the hero it
+        /// took, and p.13.s printed subtype - or the named absence outside one. Milestone 8.10 for
+        /// Thunder Boomerang.s "If you targeted a hero"; widened at 8.11 for Wasp.s three Block cards.
         /// </summary>
-        public HeroId EnclosingAttackHeroTargetId { get; }
+        public EnclosingAttackFacts EnclosingAttack { get; }
 
         /// <summary>
         /// p.18's activity this effect's operations count as - the enclosing action's, because card

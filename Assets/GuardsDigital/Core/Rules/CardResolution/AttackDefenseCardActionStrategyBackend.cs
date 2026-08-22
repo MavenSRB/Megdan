@@ -909,15 +909,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
             }
 
-            var defenseValue = DefenseValueQuery.Calculate(
-                defenseOffer,
-                materializedDefinitions,
-                pendingAttackResolution.TargetHeroId,
-                participants,
-                adjacentMoveAuthority,
-                modifications,
-                heroItems);
-            var resumedWithDefense = CreateOutcomeComparisonResolution(defenseOffer, defenseValue);
+            // Milestone 8.11. p.14 gives a Defense card two shapes and this is where they part. A
+            // numeric Defense calculates a total and enters the page's step 5 comparison; a Block
+            // prints no value at all, and its condition decides the attack outright - "If the Block
+            // condition is fulfilled, you successfully defend, regardless of the attack value. If not,
+            // you are defeated." Calculating a total for one would be inventing a number the card does
+            // not print, which is the sentinel-Defense mistake `PrintedDefenseResolution` exists to
+            // refuse.
+            var blockResult = EvaluateBlock(defenseOffer, materializedDefinitions);
+            var defenseValue = blockResult == DefenseBlockResult.None
+                ? DefenseValueQuery.Calculate(
+                    defenseOffer,
+                    materializedDefinitions,
+                    pendingAttackResolution.TargetHeroId,
+                    participants,
+                    adjacentMoveAuthority,
+                    modifications,
+                    heroItems)
+                : null;
+            var resumedWithDefense = CreateOutcomeComparisonResolution(
+                defenseOffer, defenseValue, blockResult);
 
             // Routed through the lifecycle authority rather than transitioning the card directly.
             // The guards above already pin this transition to Hand -> DiscardPile, which is exactly
@@ -1016,10 +1027,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var completedResolution = pendingAttackResolution;
+            // Milestone 8.11. p.14 step 6 reads what step 3 decided: a fulfilled Block defends
+            // regardless of the totals, an unfulfilled one defeats the defender, and everything else
+            // is the page.s numeric comparison exactly as before.
             var comparison = AttackOutcomeComparison.Create(
                 completedResolution.AttackTotal,
                 completedResolution.DefenseTotal,
-                DefenseBlockResult.None);
+                completedResolution.BlockResult);
             var outcome = comparison.Outcome;
             HeroDefeatResolution heroDefeat = null;
             var events = new List<ResolutionStep>
@@ -1435,9 +1449,49 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingDefenseChoice);
         }
 
+        /// <summary>
+        /// Milestone 8.11. Rulebook p.14's Block condition, evaluated at the page's step 3 where the
+        /// defender's card is revealed, or <see cref="DefenseBlockResult.None"/> when the card the
+        /// defender revealed is an ordinary numeric Defense.
+        ///
+        /// <para><b>The condition is the card's, and every Block in this build prints the same one.</b>
+        /// Wasp's three Green cards all read "Block a ranged attack", so what is asked is p.13's
+        /// printed subtype of the attack being answered - a typed fact the attack already carries,
+        /// rather than a sentence parsed at runtime. A Block card printing a different condition would
+        /// declare it; none does yet, and inventing the vocabulary for one before a face needs it is
+        /// what milestone 8.3 refused when it declared the resolution shape and left the evaluation
+        /// here.</para>
+        ///
+        /// <para>The answer is decided once, when the card is revealed, and carried to the comparison
+        /// rather than re-derived there: the attack's subtype cannot change in between, but a rule that
+        /// asked twice could still be made to disagree by a future modification, and p.14 asks it
+        /// once.</para>
+        /// </summary>
+        private DefenseBlockResult EvaluateBlock(
+            ActionOffer defenseOffer,
+            IReadOnlyList<CardDefinition> definitions)
+        {
+            var action = ActionOfferQuery.FindActionDefinition(defenseOffer, definitions);
+            if (action.DefenseResolution != PrintedDefenseResolution.Block)
+            {
+                return DefenseBlockResult.None;
+            }
+
+            var attack = definitions
+                .FirstOrDefault(definition =>
+                    definition.Reference.Equals(pendingAttackResolution.SourceDefinitionReference))
+                ?.ActionDefinitions
+                .FirstOrDefault(candidate =>
+                    candidate.Id.Equals(pendingAttackResolution.ActionDefinitionId));
+            return attack != null && attack.AttackRange == AttackRangeKind.Ranged
+                ? DefenseBlockResult.Blocked
+                : DefenseBlockResult.ConditionUnfulfilled;
+        }
+
         private PendingAttackResolution CreateOutcomeComparisonResolution(
             ActionOffer? defenseOffer,
-            ValueResult defenseValue)
+            ValueResult defenseValue,
+            DefenseBlockResult blockResult = DefenseBlockResult.None)
         {
             return new PendingAttackResolution(
                 pendingAttackResolution.ResolutionId,
@@ -1452,7 +1506,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution.AttackValue,
                 defenseOffer,
                 defenseValue,
-                pendingAttackResolution.ExcludedTarget);
+                pendingAttackResolution.ExcludedTarget,
+                blockResult);
         }
 
         private PendingAttackTargetChoice CreateAttackTargetChoice(
@@ -1638,25 +1693,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Declining stays available regardless, because p.14 already lets a defender decline - so a
         /// restriction narrows what may be played and never strands the attack.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.11 moved this rule to <see cref="DefenseOfferQuery"/>, which both test tiers can
+        /// name and which now also asks milestone 8.4.s honesty question of a Defense.
+        /// </summary>
         private static ActionOffer[] FindDefenseOffers(
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
             HeroId defenderId,
-            RuleModificationSet modifications)
-        {
-            if (GuardsDigital.Core.Rules.Modifications.ActionRestrictionQuery.IsRestrictedFrom(
-                    defenderId, ActionKind.Defense, modifications))
-            {
-                return Array.Empty<ActionOffer>();
-            }
-
-            return ActionOfferQuery.GetAvailableOffers(
-                    definitions, instances, defenderId, ActionOfferWindow.Reaction)
-                .Where(candidate =>
-                    ActionOfferQuery.FindActionDefinition(candidate, definitions).Kind ==
-                    ActionKind.Defense)
-                .ToArray();
-        }
+            RuleModificationSet modifications) =>
+            DefenseOfferQuery.Offers(definitions, instances, defenderId, modifications).ToArray();
 
         private static bool DefenseChoicesMatch(
             PendingAttackResolution resolution,
@@ -1718,16 +1764,32 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var instance = matchingInstances[0];
             var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
+            var isBlock = action.DefenseResolution == PrintedDefenseResolution.Block;
             if (!instance.OwnerId.Equals(resolution.TargetHeroId) ||
                 !instance.DefinitionReference.Equals(offer.SourceDefinitionReference) ||
                 instance.State.Location != CardLocation.DiscardPile ||
                 action.Kind != ActionKind.Defense ||
-                action.Origin != ActionDefinitionOrigin.Reaction ||
+                // Milestone 8.11. p.14 prints a Block as the card's own primary and performs it only in
+                // reaction, so the origin a Block carries is the one the face prints and the origin
+                // every other Defense carries is the reaction it is printed as. Both are Defense
+                // actions discarded from hand, which is what the rest of this check holds.
+                (isBlock
+                    ? action.Origin != ActionDefinitionOrigin.PrintedPrimary
+                    : action.Origin != ActionDefinitionOrigin.Reaction) ||
                 !offer.SourceCardStateTransition.Equals(action.SourceCardStateTransition) ||
                 offer.SourceCardStateTransition.RequiredLocation != CardLocation.Hand ||
                 offer.SourceCardStateTransition.DestinationLocation != CardLocation.DiscardPile)
             {
                 return false;
+            }
+
+            if (isBlock)
+            {
+                // A Block prints no Defense value, so there is no total to re-derive and the recorded
+                // resolution must carry none. What it must carry instead is the condition's answer,
+                // decided when the card was revealed at the page's step 3.
+                return resolution.DefenseValue == null &&
+                    resolution.BlockResult != DefenseBlockResult.None;
             }
 
             var expectedDefenseValue = DefenseValueQuery.Calculate(

@@ -5,10 +5,29 @@ using GuardsDigital.Core.Rules.Consequences;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
+    /// <summary>
+    /// What rulebook p.14's Block did to an attack, or that no Block was involved at all.
+    ///
+    /// <para>Milestone 5.8 reserved the first two members and milestone 8.11 evaluates them. The third
+    /// is 8.11's own, and it is a named outcome rather than a fall-through to <see cref="None"/> for
+    /// the reason milestone 6.6b gave the prevented removal one: a Block whose condition was not
+    /// fulfilled and a Defense that was never a Block are different states, and only the first of them
+    /// legitimately reaches the comparison with no Defense Total at all. Collapsing them would make a
+    /// missing total indistinguishable from a malformed one.</para>
+    /// </summary>
     public enum DefenseBlockResult
     {
+        /// <summary>p.14's ordinary numeric Defense, or no Defense action at all.</summary>
         None = 0,
-        Blocked = 1
+
+        /// <summary>
+        /// p.14: "If the Block condition is fulfilled, you successfully defend, regardless of the
+        /// attack value."
+        /// </summary>
+        Blocked = 1,
+
+        /// <summary>p.14, the same sentence's other half: "If not, you are defeated."</summary>
+        ConditionUnfulfilled = 2
     }
 
     public sealed class AttackOutcomeComparison
@@ -19,7 +38,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefenseBlockResult blockResult,
             AttackResolutionOutcome outcome)
         {
-            if (blockResult != DefenseBlockResult.None && blockResult != DefenseBlockResult.Blocked)
+            if (!Enum.IsDefined(typeof(DefenseBlockResult), blockResult))
                 throw new ArgumentOutOfRangeException(nameof(blockResult));
             var expected = blockResult == DefenseBlockResult.Blocked ||
                 (defenseTotal.HasValue && defenseTotal.Value >= attackTotal)

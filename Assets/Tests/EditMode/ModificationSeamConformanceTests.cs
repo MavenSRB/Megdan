@@ -341,9 +341,11 @@ namespace GuardsDigital.Tests.EditMode
                 typeof(GuardsDigital.Core.Cards.GeneralRuleActionOfferQuery), restrictionPredicate,
                 "The general-rule offers - Hold, Fast Travel, Clear - must consult it, or their " +
                 "restrictions are declarable and inert.");
+            // Milestone 8.11 moved the Defense response's offer rule out of the backend into
+            // DefenseOfferQuery, which is where it now asks both this restriction and milestone 8.4's
+            // composition question. The rule follows the consumer rather than the file it used to be in.
             AssertReaches(
-                core.GetType(
-                    "GuardsDigital.Core.Rules.CardResolution.AttackDefenseCardActionStrategyBackend"),
+                typeof(GuardsDigital.Core.Rules.CardResolution.DefenseOfferQuery),
                 restrictionPredicate,
                 "p.14's Defense response must consult it, or a hero barred from defending is still " +
                 "offered its Defense cards.");

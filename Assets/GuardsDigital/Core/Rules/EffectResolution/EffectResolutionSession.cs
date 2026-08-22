@@ -170,9 +170,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroId opposingHeroId = default,
             MatchComponents components = null,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
-            HeroId enclosingAttackHeroTargetId = default)
+            EnclosingAttackFacts enclosingAttack = default)
         {
-            EnclosingAttackHeroTargetId = enclosingAttackHeroTargetId;
+            EnclosingAttack = enclosingAttack;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
                 enclosingActionKind == ActionKind.None)
             {
@@ -207,18 +207,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public HeroId OpposingHeroId { get; }
 
         /// <summary>
-        /// The hero the enclosing Attack targeted, or the undefined hero when it targeted a minion or
-        /// when there is no enclosing Attack at all. Milestone 8.10.
-        ///
-        /// <para>Thunder Boomerang prints "If you targeted a hero may repeat once on a different
-        /// target", and that condition is about the action the text is printed inside rather than about
-        /// anything the text itself did - so it arrives the way
-        /// <see cref="EnclosingActionKind"/> does, as context, rather than as a fact some node
-        /// published. The undefined hero is the honest answer for both of the ways there is none: p.13
-        /// lets an Attack take a minion, and every effect that is not card text inside an Attack has no
-        /// target of its own to report.</para>
+        /// What card text applied inside rulebook p.14 may ask about the Attack it is running inside,
+        /// or the named absence outside one. Milestone 8.10 carried the hero the Attack took; 8.11
+        /// widened it, because Wasp.s Block cards are conditioned on the attack being ranged and two
+        /// of them exclude the attacker from a selection the defender makes.
         /// </summary>
-        public HeroId EnclosingAttackHeroTargetId { get; }
+        public EnclosingAttackFacts EnclosingAttack { get; }
 
         /// <summary>
         /// The kind of action this effect is running inside. Milestone 8.5, closing the 7.9a review's
@@ -1031,7 +1025,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.Components,
                 context.HeroItems,
                 AnswersAlreadyGiven(frame, node),
-                context.EnclosingAttackHeroTargetId);
+                context.EnclosingAttack);
         }
 
         /// <summary>

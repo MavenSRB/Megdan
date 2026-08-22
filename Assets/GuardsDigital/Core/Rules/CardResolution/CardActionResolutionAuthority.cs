@@ -1294,12 +1294,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.Kind,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                // Milestone 8.10. What the Attack this text is printed inside took, which Thunder
-                // Boomerang's "If you targeted a hero" asks about. Undefined where the Attack took a
-                // minion, and undefined at p.14's step 1 for a different reason - the page has not
-                // chosen a target yet - which is the same honest answer either way.
-                enclosingAttackHeroTargetId:
-                    step.CardTextRemainderResolution?.TargetHeroId ?? default);
+                // Milestone 8.10, widened at 8.11. What this text may ask about the Attack it is
+                // printed inside: who is attacking, what the Attack took, and p.13.s subtype. Every
+                // field is undefined at p.14.s step 1, because the page has not chosen a target yet.
+                enclosingAttack: EnclosingAttackOf(step.CardTextRemainderResolution, materializedDefinitions));
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"card-text-{card.Id.Value}-{action.Id.Value}-{step.CardTextTiming}"),
@@ -1373,6 +1371,33 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// freely by p.10, and only <c>DifferentTarget</c> - which is what Thunder Boomerang prints -
         /// takes the finished instance's target out of the set.</para>
         /// </summary>
+        /// <summary>
+        /// What card text applied inside rulebook p.14 may ask about the Attack it is running inside.
+        /// Milestone 8.10 for the hero the Attack took; milestone 8.11 for the attacker and p.13's
+        /// printed subtype, which Wasp's three Block cards are conditioned on.
+        ///
+        /// <para>The subtype is read from the trusted definition the resolution names rather than
+        /// stored on the resolution, for the reason every other printed reading is: the definition is
+        /// the content the match was configured with, and a copy on a continuation would be a second
+        /// place the same fact could be wrong.</para>
+        /// </summary>
+        private static GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts EnclosingAttackOf(
+            PendingAttackResolution attack,
+            IReadOnlyList<CardDefinition> definitions)
+        {
+            if (attack == null)
+            {
+                return GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts.None;
+            }
+
+            var action = definitions
+                .FirstOrDefault(definition => definition.Reference.Equals(attack.SourceDefinitionReference))
+                ?.ActionDefinitions
+                .FirstOrDefault(candidate => candidate.Id.Equals(attack.ActionDefinitionId));
+            return new GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts(
+                attack.ActorId, attack.TargetHeroId, action?.AttackRange ?? AttackRangeKind.None);
+        }
+
         private void RecordOwedAttackRepeat(
             EffectResolutionStepResult result,
             PendingAttackResolution attack)
@@ -1505,7 +1530,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ActionKind.Attack,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                enclosingAttackHeroTargetId: pendingCardText.Attack.TargetHeroId);
+                enclosingAttack: EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions));
             var step = EffectResolutionSession.Answer(pendingCardText.Frame, command, context);
             if (!step.Accepted)
             {

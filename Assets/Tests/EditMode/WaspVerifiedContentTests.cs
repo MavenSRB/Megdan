@@ -201,19 +201,21 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(action => $"{action.EffectRoot.Id.Value}@{action.EffectRoot.ContentRevision}"),
                 Is.EqualTo(new[]
                 {
-                    "wasp-magnetic-dagger-attack-text@wasp-8-10-rev-1",
-                    "wasp-static-barrier-skill@wasp-8-10-rev-1",
-                    "wasp-shock-attack-text@wasp-8-10-rev-1",
-                    "wasp-electrocute-attack-text@wasp-8-10-rev-1",
-                    "wasp-electroblast-attack-text@wasp-8-10-rev-1",
-                    "wasp-thunder-boomerang-attack-text@wasp-8-10-rev-1",
-                    "wasp-lift-up-skill@wasp-8-10-rev-1",
-                    "wasp-control-gravity-skill@wasp-8-10-rev-1",
-                    "wasp-kinetic-repulse-skill@wasp-8-10-rev-1",
-                    "wasp-center-of-mass-skill@wasp-8-10-rev-1",
-                    "wasp-kinetic-blast-skill@wasp-8-10-rev-1",
-                    "wasp-telekinesis-skill@wasp-8-10-rev-1",
-                    "wasp-mass-telekinesis-skill@wasp-8-10-rev-1"
+                    "wasp-magnetic-dagger-attack-text@wasp-8-11-rev-1",
+                    "wasp-static-barrier-skill@wasp-8-11-rev-1",
+                    "wasp-shock-attack-text@wasp-8-11-rev-1",
+                    "wasp-electrocute-attack-text@wasp-8-11-rev-1",
+                    "wasp-electroblast-attack-text@wasp-8-11-rev-1",
+                    "wasp-thunder-boomerang-attack-text@wasp-8-11-rev-1",
+                    "wasp-lift-up-skill@wasp-8-11-rev-1",
+                    "wasp-control-gravity-skill@wasp-8-11-rev-1",
+                    "wasp-kinetic-repulse-skill@wasp-8-11-rev-1",
+                    "wasp-center-of-mass-skill@wasp-8-11-rev-1",
+                    "wasp-kinetic-blast-skill@wasp-8-11-rev-1",
+                    "wasp-deflect-projectiles-defense-text@wasp-8-11-rev-1",
+                    "wasp-telekinesis-skill@wasp-8-11-rev-1",
+                    "wasp-reflect-projectiles-defense-text@wasp-8-11-rev-1",
+                    "wasp-mass-telekinesis-skill@wasp-8-11-rev-1"
                 }),
                 "The two basic cards, the five telekinetic Skills, the two kinetic ones and milestone " +
                 "8.10's two radius riders are composed; every other card's composition lands at its " +
@@ -251,10 +253,10 @@ namespace GuardsDigital.Tests.EditMode
                     "wasp-kinetic-repulse -> composed",
                     "wasp-center-of-mass -> composed",
                     "wasp-kinetic-blast -> composed",
-                    "wasp-stop-projectiles -> 8.11",
-                    "wasp-deflect-projectiles -> 8.11",
+                    "wasp-stop-projectiles -> composed",
+                    "wasp-deflect-projectiles -> composed",
                     "wasp-telekinesis -> composed",
-                    "wasp-reflect-projectiles -> 8.11",
+                    "wasp-reflect-projectiles -> composed",
                     "wasp-mass-telekinesis -> composed",
                     "wasp-high-voltage -> 8.13"
                 }),

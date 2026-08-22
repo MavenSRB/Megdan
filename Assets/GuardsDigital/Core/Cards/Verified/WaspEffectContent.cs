@@ -193,7 +193,17 @@ namespace GuardsDigital.Core.Cards.Verified
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
                         SyntheticConsequenceCapabilities.AttackTookAHeroV1,
-                        childNodeIds: new[] { repeat }),
+                        childNodeIds: new[] { repeat },
+                        outputs: new[]
+                        {
+                            // Declared for the reason the Block rider's is: a predicate that publishes
+                            // its answer must have the node admit it, or a restore refuses the recorded
+                            // outcome. Milestone 8.11 found this; no corpus payload held a paused
+                            // Thunder repeat, so 8.10 never exercised it.
+                            new EffectOutputBinding(
+                                SyntheticConsequenceCapabilities.TookAHeroOutput,
+                                EffectValueKind.Boolean)
+                        }),
                     new EffectNodeDefinition(
                         repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.May,
                         // p.10 gives an unassigned decision to the card's controller, and "may repeat"
@@ -201,6 +211,129 @@ namespace GuardsDigital.Core.Cards.Verified
                         chooser: EffectChooserRole.Actor,
                         maximumRepeats: 1,
                         repeatTargetBinding: RepeatTargetBinding.DifferentTarget)
+                });
+        }
+
+        /// <summary>
+        /// Wasp's card text for one printed Block, or <c>null</c> for one whose text is the Block
+        /// condition and nothing more. Milestone 8.11.
+        ///
+        /// <para>All three Green cards print "Block a ranged attack"; that clause is the Block
+        /// condition, which <see cref="PrintedDefenseResolution.Block"/> declares and the Attack
+        /// resolver evaluates, so it is not composed as an effect. What is composed is what two of them
+        /// print <em>after</em> it - "if you do, an enemy hero in range ... discards a card, if able" -
+        /// and Stop Projectiles, which prints nothing after it, carries no root.</para>
+        /// </summary>
+        public static EffectDefinition DefenseTextFor(CardDefinitionId cardId, string contentRevision)
+        {
+            if (cardId.Equals(WaspCardContent.DeflectProjectiles))
+            {
+                // "other than the attacker" - the one clause separating this card from Reflect.
+                return CreateBlockDiscardRider(cardId, contentRevision, excludesTheAttacker: true);
+            }
+
+            if (cardId.Equals(WaspCardContent.ReflectProjectiles))
+            {
+                return CreateBlockDiscardRider(cardId, contentRevision, excludesTheAttacker: false);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Which of rulebook p.14's moments a Block's composed text is applied at. The page numbers the
+        /// defender's own text step 4 - "Defender applies Defense action text, if any" - and that is the
+        /// only moment a Defense action has.
+        /// </summary>
+        public static CardTextTiming DefenseTextTimingFor(CardDefinitionId cardId) =>
+            cardId.Equals(WaspCardContent.DeflectProjectiles) ||
+            cardId.Equals(WaspCardContent.ReflectProjectiles)
+                ? CardTextTiming.DefenseAction
+                : CardTextTiming.None;
+
+        /// <summary>
+        /// "Block a ranged attack; if you do, an enemy hero in range[, other than the attacker,]
+        /// discards a card, if able." - Deflect Projectiles' sentence and Reflect Projectiles', which
+        /// differ in one clause. Milestone 8.11.
+        ///
+        /// <para><b>"if you do" is the Block condition, read again.</b> The rider fires exactly when
+        /// the Block succeeds, and a Block succeeds exactly when the attack being answered is ranged -
+        /// so the condition is asked of the enclosing Attack's printed subtype rather than of a fact
+        /// the resolver would have to publish into a frame it does not own. p.14 puts the defender's
+        /// text at step 4, before step 5's total and step 6's check, which is why this can be read at
+        /// all: the answer is already decided when the card is revealed.</para>
+        ///
+        /// <para><b>The selection is the defender's, anchored on the defender.</b> p.9's Range icon is
+        /// printed on the Block card, so the disk is measured from the hero performing the Block and
+        /// composed with that hero's items; p.10 gives the unassigned choice to the card's controller,
+        /// who here is the defender rather than the attacker. Deflect's "other than the attacker"
+        /// excludes one named hero, and Reflect excludes nobody - which is the whole of what separates
+        /// two otherwise identical cards.</para>
+        /// </summary>
+        private static EffectDefinition CreateBlockDiscardRider(
+            CardDefinitionId cardId, string contentRevision, bool excludesTheAttacker)
+        {
+            var root = new EffectNodeId("block-rider-root");
+            var rider = new EffectNodeId("block-rider-sequence");
+            var select = new EffectNodeId("block-rider-select");
+            var discard = new EffectNodeId("block-rider-discard");
+
+            return new EffectDefinition(
+                DefenseTextEffectId(cardId),
+                contentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticConsequenceCapabilities.AttackIsRangedV1,
+                        childNodeIds: new[] { rider },
+                        outputs: new[]
+                        {
+                            // A predicate that publishes its answer has to have the node declare it, or
+                            // a restore re-deriving the recorded outcome finds an output the node does
+                            // not admit and refuses the payload. The corpus fixture this milestone adds
+                            // is what found that.
+                            new EffectOutputBinding(
+                                SyntheticConsequenceCapabilities.IsRangedOutput,
+                                EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        rider, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { select, discard }),
+                    new EffectNodeDefinition(
+                        select, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.RangeHeroTargetV1,
+                        inputs: new[]
+                        {
+                            // The Defense action this text is printed on is what p.18 asks immunity
+                            // about, exactly as an Attack's rider asks about its Attack.
+                            EffectInputBinding.FromLiteral(
+                                "activity", EffectValue.Integer((int)RuleActivity.Defense)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.TargetRelationParameterName,
+                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.ExcludeTheAttackerParameterName,
+                                EffectValue.Boolean(excludesTheAttacker))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        }),
+                    new EffectNodeDefinition(
+                        discard, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticCardStateCapabilities.DiscardChosenCardV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticCardStateCapabilities.HeroParameter,
+                                select,
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        })
                 });
         }
 
@@ -692,5 +825,8 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         private static EffectDefinitionId AttackTextEffectId(CardDefinitionId cardId) =>
             new EffectDefinitionId($"{cardId.Value}-attack-text");
+
+        private static EffectDefinitionId DefenseTextEffectId(CardDefinitionId cardId) =>
+            new EffectDefinitionId($"{cardId.Value}-defense-text");
     }
 }

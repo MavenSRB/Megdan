@@ -129,6 +129,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new EffectCapabilityReference(RadiusHeroTarget, 1);
 
         /// <summary>
+        /// Milestone 8.11. The printed-Range twin of <see cref="RadiusHeroTarget"/>, for card text that
+        /// names a hero "in range": Wasp's Deflect Projectiles and Reflect Projectiles.
+        ///
+        /// <para>A second capability ID rather than a parameter, by the rule that made the object
+        /// selections two: p.9 gives the two icons two meanings and p.16 two items, so a definition
+        /// that could name either through one parameter would let a Range card read a Radius item. The
+        /// handler beneath is the same one all four printed-icon declarations share.</para>
+        ///
+        /// <para>It declares one thing the Radius twin does not - whether the attacker is excluded -
+        /// and the Radius twin declares one this does not, p.9's disk without its innermost ring.
+        /// Neither carries a parameter nothing sets: no verified card pairs "in range" with "not
+        /// adjacent", and none pairs "in radius" with "other than the attacker".</para>
+        /// </summary>
+        public static EffectCapabilityId RangeHeroTarget { get; } =
+            new EffectCapabilityId("synthetic-range-hero-target");
+
+        public static EffectCapabilityReference RangeHeroTargetV1 =>
+            new EffectCapabilityReference(RangeHeroTarget, 1);
+
+        /// <summary>
         /// The straight-line filter parameter's name, spelled once so a definition cannot mistype it.
         /// </summary>
         public const string ExcludeStraightLineParameterName = "excludeStraightLine";
@@ -138,6 +158,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// Milestone 8.10.
         /// </summary>
         public const string ExcludeAdjacentParameterName = "excludeAdjacent";
+
+        /// <summary>
+        /// The attacker-exclusion parameter's name, spelled once so a definition cannot mistype it.
+        /// Milestone 8.11, for Deflect Projectiles' "other than the attacker".
+        /// </summary>
+        public const string ExcludeTheAttackerParameterName = "excludeTheAttacker";
 
         /// <summary>
         /// The side-of-the-board parameter's name, carrying a <see cref="SourceTeamRelation"/>.
@@ -159,6 +185,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     RangeTargetV1, PrintedValueChannel.Range, declaresStraightLineFilter: true),
                 new PrintedIconTargetHandler(
                     RadiusHeroTargetV1, PrintedValueChannel.Radius,
+                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Hero),
+                new PrintedIconTargetHandler(
+                    RangeHeroTargetV1, PrintedValueChannel.Range,
                     declaresStraightLineFilter: false, PrintedIconSelectionSubject.Hero)
             };
 
@@ -314,8 +343,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     parameters.Add(new EffectCapabilityParameter(
                         TargetRelationParameterName, EffectValueKind.Integer));
-                    parameters.Add(new EffectCapabilityParameter(
-                        ExcludeAdjacentParameterName, EffectValueKind.Boolean));
+
+                    // Milestone 8.11. Each icon's hero selection declares the one narrowing a verified
+                    // card pairs with it and no other: p.9's disk without its innermost ring for the
+                    // Radius cards' "not adjacent to you", and the attacker's exclusion for the Range
+                    // cards' "other than the attacker". Declaring both on both would carry a parameter
+                    // nothing sets, which is the ambiguity the Range/Radius split exists to refuse.
+                    parameters.Add(channel == PrintedValueChannel.Radius
+                        ? new EffectCapabilityParameter(
+                            ExcludeAdjacentParameterName, EffectValueKind.Boolean)
+                        : new EffectCapabilityParameter(
+                            ExcludeTheAttackerParameterName, EffectValueKind.Boolean));
                 }
 
                 if (declaresStraightLineFilter)
@@ -432,13 +470,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HeroId>();
                 }
 
-                var excludeAdjacent = context.Input(ExcludeAdjacentParameterName).BooleanValue;
+                var excludeAdjacent = channel == PrintedValueChannel.Radius &&
+                    context.Input(ExcludeAdjacentParameterName).BooleanValue;
+
+                // Milestone 8.11. "other than the attacker", which only a Block's rider prints and only
+                // a Range selection therefore declares. The attacker is the enclosing Attack's own
+                // actor - a fact about the action this text is answering rather than about anything
+                // the text did - so it is read from the same context p.13's subtype is.
+                var excludedAttacker = channel == PrintedValueChannel.Range &&
+                    context.Input(ExcludeTheAttackerParameterName).BooleanValue
+                        ? context.EnclosingAttack.ActorId
+                        : default;
+
                 var heroes = new List<HeroId>(targets.Count);
                 foreach (var target in targets)
                 {
                     if (target.Kind != BoardObjectKind.Hero ||
                         !TargetQuery.StandsInRelationTo(
                             relation, target, context.ActorId, context.Participants, board))
+                    {
+                        continue;
+                    }
+
+                    if (excludedAttacker.IsDefined && target.HeroId.Equals(excludedAttacker))
                     {
                         continue;
                     }

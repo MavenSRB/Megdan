@@ -39,7 +39,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// every synthetic revision in this build already has, and the reason a slice's compatibility
         /// decision is a real decision rather than a formality.
         /// </summary>
-        public const string ContentRevision = "wasp-8-10-rev-1";
+        public const string ContentRevision = "wasp-8-11-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity. It is not a
@@ -351,7 +351,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Green, CardTier.I, PrintedValueChannel.None,
                     DeflectProjectiles, Telekinesis),
                 "Block a ranged attack.",
-                PrintedTextComposition.AwaitedAt("8.11")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 DeflectProjectiles, "Deflect Projectiles", 3, 0, 2,
@@ -361,7 +361,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     ReflectProjectiles, MassTelekinesis),
                 "Block a ranged attack; if you do, an enemy hero in range, other than the attacker, " +
                 "discards a card, if able.",
-                PrintedTextComposition.AwaitedAt("8.11")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 Telekinesis, "Telekinesis", 3, 3, 2,
@@ -379,7 +379,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Green, CardTier.III, PrintedValueChannel.Radius),
                 "Block a ranged attack; if you do, an enemy hero in range discards a card, if able.",
-                PrintedTextComposition.AwaitedAt("8.11")),
+                PrintedTextComposition.None),
 
             new WaspCardProfile(
                 MassTelekinesis, "Mass Telekinesis", 2, 4, 2,
@@ -535,12 +535,21 @@ namespace GuardsDigital.Core.Cards.Verified
                         profile.TextComposition);
 
                 case WaspPrimaryKind.Block:
-                    // p.14's Block card. It states no card-state transition and cannot be replaced:
-                    // p.12-13's replacements replace the primary action a hero performs on their own
-                    // turn, and p.14 performs a Block in reaction to an attack, so neither the
-                    // replacement nor the in-hand discard a secondary Defense declares is this action's.
-                    // Milestone 8.11 decides what a Block spends when it evaluates one; guessing here
-                    // would put a transition into content that no rule asked for.
+                    // p.14's Block card, and milestone 8.11 answered the two questions 8.3 left open
+                    // here rather than guessing them.
+                    //
+                    // **What it spends.** p.14: "you may reveal exactly one card from your hand and
+                    // discard it, to perform its Defense action", and again "It can only be performed
+                    // in response to an attack targeting you, by discarding exactly one card from your
+                    // hand." A Block is a Defense action, so it is discarded from hand exactly as the
+                    // numeric Defense on every other card is. Nothing about the page treats the two
+                    // differently in what they cost; they differ in how they resolve.
+                    //
+                    // **When it may be taken.** The same sentence: only in response to an attack. The
+                    // origin stays PrintedPrimary, because that is where the face prints it and
+                    // milestone 8.3's rule above requires it; what 8.11 changed is the offer window,
+                    // which now admits a printed primary that is a Defense into the reaction it is the
+                    // only legal moment for, and keeps it out of the turn-action offers.
                     return new ActionDefinition(
                         PrimaryBlock,
                         ActionKind.Defense,
@@ -548,10 +557,11 @@ namespace GuardsDigital.Core.Cards.Verified
                         PrintedIcon(profile),
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, false),
                         AttackRangeKind.None,
-                        default,
-                        null,
+                        new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile),
+                        WaspEffectContent.DefenseTextFor(profile.Id, ContentRevision),
                         profile.TextComposition,
-                        PrintedDefenseResolution.Block);
+                        PrintedDefenseResolution.Block,
+                        WaspEffectContent.DefenseTextTimingFor(profile.Id));
 
                 default:
                     throw new ArgumentOutOfRangeException(

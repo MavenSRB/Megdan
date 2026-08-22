@@ -129,9 +129,9 @@ Non-goals: no Defense text (8.11), no trigger windows (8.12).
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-810-complete-the-wasp-attack-cards-completion-evidence).
 
-### [!] 8.11 Complete the Wasp Defense cards
+### [x] 8.11 Complete the Wasp Defense cards
 
-Blocked by: milestone 8.8 (discard rider family). Milestone 8.5 supplied the Defense text seam.
+Blocked by: milestone 8.8 (discard rider family) - discharged. Milestone 8.5 supplied the Defense text seam.
 
 Observable outcome: Stop Projectiles, Deflect Projectiles, and Reflect Projectiles resolve their complete printed text as p.14 Block cards.
 
@@ -143,6 +143,58 @@ Acceptance checks:
 - The pending-defense continuation state the Block evaluation adds is an explicit schema decision with the full ceremony.
 
 Non-goals: no continuous sources, no Ultimate.
+
+- **The Block verdict is a fact the resolution carries, not a Defense number.** `DefenseBlockResult` lands on the seam milestone 5.8 reserved, gains `ConditionUnfulfilled` beside `Fulfilled` and `None`, and is written on the Attack resolution state - which is why this milestone moves the schema. A Block never produces a Defense amount at all: where a Defense card would be totalled, a Block short-circuits the comparison, so no sentinel value can be mistaken for a printed one and p.14's step 5 is skipped rather than fed. Unfulfilled defeats the defender through the same staged p.13 chain 8.10 registered, not through a second copy of the page.
+- **p.14's already-played rule holds twice over, and the case says so rather than claiming a mechanism.** A printed Block is available in the Reaction window and nowhere else, and it declares a Hand -> DiscardPile state transition, so a card in the turn area fails both tests independently. The knockout evidence in the handoff found this: removing the window alone left the transition covering the same assertion. The case now pins the outcome and names both rules, and the window's other half - that the Block *is* offered once an Attack is being answered - is what every Block case stands on.
+- **The Block keeps its printed origin; the window and the invocation context widened instead.** Milestone 8.3's rule is that a printed primary is recorded as one, so `PrintedPrimary` stays and `ActionOfferQuery` asks the definition rather than the origin. The two sites that had encoded "a Defense is a Reaction" as an origin check - the pending defense-response choice and the completed-defense match - were taught the printed Block instead of relaxed.
+- **The attacker exclusion is a parameter of the Range channel and of nothing else.** "another enemy hero" is printed only by Deflect, only on a Range selection, and the attacker it excludes is the enclosing Attack's actor - a fact about the action being answered rather than about anything the text did - so it is read from the same context p.13's subtype is, through `EnclosingAttackFacts`. Declaring it per channel keeps the Radius selections' declarations byte-identical, which the corpus measurement confirms.
+- **Milestone 8.4's honesty rule got its refusal case, and its subject is synthetic on purpose.** After this milestone no verified Defense owes a composition, so a case built on Wasp's own cards would assert over nothing; the discriminating pair is one synthetic card offered when its text is composed and withheld when it is not. p.14 makes refusing costless the same way p.12 does, so a withheld Defense costs the defender nothing.
+- **A new corpus fixture earned its place the moment it existed.** `paused-block-rider-v24` caught a Conditional root declaring an output its predicate never published - on this milestone's rider, and latently on 8.10's repeat root, where no other fixture looked. That is the case for adding a fixture per pausing section rather than per milestone.
+- **8.10's digest re-pin had no recorded cause, and this milestone recorded it.** The aggregate-invariance fixture requires every re-pin to state its byte-level delta in the re-pinning commit; 8.10 moved all nine pairs without one. The delta was measured after the fact in a throwaway worktree at 19a6def8 - schema 22 -> 23 plus four capability registrations, 126 bytes on every carried payload and 180 on the verified-hand one - and written into the fixture beside this milestone's own.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811-complete-the-wasp-defense-cards-completion-evidence).
+
+### [ ] 8.11a Official map underlay and transparent interaction overlay
+
+Blocked by: milestone 8.11, so the current rules-content milestone closes before this bounded presentation amendment begins.
+
+Observable outcome: The configured match presents the official `GuardsII_Small_Board` artwork as its
+private board underlay while retaining the reviewed 292-space map and every existing board interaction
+as a precisely registered transparent overlay.
+
+Acceptance checks:
+
+- A project-local deterministic preparation route reads the private Tabletopia manifest entry named
+  `GuardsII_Small_Board`, extracts its declared 1588-by-1588 sprite from the declared
+  `Image_17_Atlas` source, and writes only an ignored private Unity runtime asset; it does not alter,
+  move, add, or commit the source atlas, extracted corpus, or map-reference directory.
+- With the private runtime asset present, the complete official artwork is rendered flat on the board's
+  XZ plane beneath units, tokens, spawn markers, highlights, and board-facing cues. Base tile fills and
+  debug edges are transparent or visually suppressed without removing the tile views used by existing
+  selection and highlighting paths.
+- The authoritative 292 spaces in `official-single-lane` revision 1 register to their corresponding
+  artwork positions within one declared visual tolerance across the complete board. The check uses
+  reviewed map identity and coordinates; Tabletopia's 332 magnetic centres may assist calibration but
+  neither create spaces nor become runtime or rules authority.
+- Movement, Fast Travel, Attack targeting, effect choices, correction destinations, Hero Respawn,
+  Defense contributors, Minion Battle choices, Clear selections, and token/object cues retain their
+  existing projected legality and typed command paths. Their visible overlays remain readable against
+  the artwork and identify the same stable space or object before and after Undo, restart, snapshot
+  restore, replay, and a presentation rebuild.
+- Camera framing still contains the whole authoritative map in the board band left by the HUD at the
+  validated 2048-by-1152 Game View and the applicable short-viewport fallback. A targeted visual
+  inspection confirms that artwork, units, transparent overlays, and the standing HUD remain legible
+  without z-fighting, opaque debug tiles, clipped board edges, or the card tray concealing an actionable
+  cue.
+- With the private runtime asset absent, the tracked project loads and plays through the existing
+  generated-board fallback without a missing-reference exception, compile failure, or rules/state
+  difference. The private artwork is included only in specifically authorized internal builds and is
+  not added to the public source repository or otherwise distributed by this milestone.
+
+Non-goals: No change to the official map specification, space count, topology, zones, spawn points,
+rules, commands, snapshots, or replay; no adoption of Tabletopia magnetic centres as game spaces; no
+new camera controls, 3D scenery, unit art, animation, HUD redesign, public build, publication-rights
+determination, or distribution authorization.
 
 ### [ ] 8.12 Execute Active-effect and continuous trigger windows
 

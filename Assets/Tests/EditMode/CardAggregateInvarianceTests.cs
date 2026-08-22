@@ -495,17 +495,47 @@ namespace GuardsDigital.Tests.EditMode
         // completion checkpoint, so a scenario that Holds with a basic card gains a
         // Turn.BasicActionPerformed entry. All three equality groups hold exactly as before, which is
         // what says the new entry is produced by the command rather than remembered anywhere.
+        //
+        // Re-pinned a thirty-eighth time at milestone 8.10, for one schema cause and one registration
+        // cause. This paragraph is written retroactively at 8.11: 8.10 moved all nine pairs and did not
+        // record why, which is the one thing the note at the top of this block asks of a re-pinning
+        // commit, so the delta was measured after the fact rather than reconstructed from memory. The
+        // schema moves 22 -> 23 to carry the Block result an in-flight Attack now remembers, and the
+        // registration list gains four entries - `synthetic-attack-took-a-hero`, `synthetic-defeat-hero`,
+        // `synthetic-discard-chosen-card` and `synthetic-radius-hero-target`. Measured on the
+        // compatibility corpus in a throwaway worktree at pre-change revision 19a6def8: every carried
+        // payload grows by exactly 126 bytes, which is those four entries at a length prefix plus the id
+        // plus a four-byte revision each (33 + 26 + 34 + 33), and changes one byte in place, the
+        // capability count 0x22 -> 0x26. The verified-hand payload grows by 180 instead, the extra 54
+        // being Wasp's content revision `wasp-8-9-rev-1` -> `wasp-8-10-rev-1` at one byte longer in each
+        // of its 54 occurrences. All three equality groups held.
+        //
+        // Re-pinned a thirty-ninth time at milestone 8.11, for one schema cause and one registration
+        // cause again. The schema moves 23 -> 24 to carry the Defense-Block condition's verdict, and the
+        // registration list gains two entries - `synthetic-attack-is-ranged`, the predicate that asks
+        // whether the Attack being answered came from range, and `synthetic-range-hero-target`, the
+        // channel a Block rider targets through. Measured on the compatibility corpus in a throwaway
+        // worktree at pre-change revision 6ed3144f: every carried payload grows by exactly 63 bytes,
+        // which is those two entries at a length prefix plus the id plus a four-byte revision each
+        // (31 + 32), and changes one byte in place, the capability count 0x26 -> 0x28. One payload,
+        // `paused-card-text`, grows by 67 rather than 63, and the extra four bytes are this milestone's
+        // schema field itself: the Block verdict is written once per in-flight Attack resolution state,
+        // and that is the only carried fixture holding one. Wasp's own revision advance
+        // `wasp-8-10-rev-1` -> `wasp-8-11-rev-1` is the same width and moves nothing. These scenarios
+        // play showcase content, so neither new capability can run in them; both are exercised on the
+        // corpus, which carries a paused-Block fixture for exactly that reason. All three equality
+        // groups hold exactly as before.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "f1f43c06a991f88e4b9890b00c71ba9e8c120aeb34e0ffaccb5ee7f848d480ba", "ed149ede1e08e18bf8b8b0d381aa08d75b569fb40d33e732cad5e66719bad8f0"),
-            new ScenarioDigest("rejected", "f1f43c06a991f88e4b9890b00c71ba9e8c120aeb34e0ffaccb5ee7f848d480ba", "ed149ede1e08e18bf8b8b0d381aa08d75b569fb40d33e732cad5e66719bad8f0"),
-            new ScenarioDigest("stale", "f1f43c06a991f88e4b9890b00c71ba9e8c120aeb34e0ffaccb5ee7f848d480ba", "ed149ede1e08e18bf8b8b0d381aa08d75b569fb40d33e732cad5e66719bad8f0"),
-            new ScenarioDigest("restored", "f1f43c06a991f88e4b9890b00c71ba9e8c120aeb34e0ffaccb5ee7f848d480ba", "ed149ede1e08e18bf8b8b0d381aa08d75b569fb40d33e732cad5e66719bad8f0"),
-            new ScenarioDigest("replayed", "f1f43c06a991f88e4b9890b00c71ba9e8c120aeb34e0ffaccb5ee7f848d480ba", "ed149ede1e08e18bf8b8b0d381aa08d75b569fb40d33e732cad5e66719bad8f0"),
-            new ScenarioDigest("undo-truncated", "ec37d0dc1918a5073483d741a5d7d6cfa508ea9e5602d107e07b7c77cc04f252", "d69d1492e52be101a463c0f58cab9c5f3df54dc8a9dba22cbc07d8286bc2970a"),
-            new ScenarioDigest("defense-discarded", "fe4996a201fd2ac34d1505fe1f4c88932fa86fef7dc9d3107abee7b6bef4d960", "d7a42f19a10875212ec9102459de5599c1b17b703771e834fde8fc55bff69c35"),
-            new ScenarioDigest("defense-discarded-restored", "fe4996a201fd2ac34d1505fe1f4c88932fa86fef7dc9d3107abee7b6bef4d960", "d7a42f19a10875212ec9102459de5599c1b17b703771e834fde8fc55bff69c35"),
-            new ScenarioDigest("defense-discarded-replayed", "fe4996a201fd2ac34d1505fe1f4c88932fa86fef7dc9d3107abee7b6bef4d960", "d7a42f19a10875212ec9102459de5599c1b17b703771e834fde8fc55bff69c35")
+            new ScenarioDigest("accepted", "aaa6b8245415f8092a57b53704cbce261ac486c73f607da49c8296e03e6ff52a", "66ced67c742ca59495b98fa326d642740a2868fe459845684e7be696ec3834db"),
+            new ScenarioDigest("rejected", "aaa6b8245415f8092a57b53704cbce261ac486c73f607da49c8296e03e6ff52a", "66ced67c742ca59495b98fa326d642740a2868fe459845684e7be696ec3834db"),
+            new ScenarioDigest("stale", "aaa6b8245415f8092a57b53704cbce261ac486c73f607da49c8296e03e6ff52a", "66ced67c742ca59495b98fa326d642740a2868fe459845684e7be696ec3834db"),
+            new ScenarioDigest("restored", "aaa6b8245415f8092a57b53704cbce261ac486c73f607da49c8296e03e6ff52a", "66ced67c742ca59495b98fa326d642740a2868fe459845684e7be696ec3834db"),
+            new ScenarioDigest("replayed", "aaa6b8245415f8092a57b53704cbce261ac486c73f607da49c8296e03e6ff52a", "66ced67c742ca59495b98fa326d642740a2868fe459845684e7be696ec3834db"),
+            new ScenarioDigest("undo-truncated", "c28b357600dcf410831bcd850bc5b668e349908b8fefeea51bdf11c4cf44326e", "43e2f9d6515014f8a61bd06d8393236e523346d81c378bc042c21e2427fc14fa"),
+            new ScenarioDigest("defense-discarded", "98e374c1220772b2db405fce466db7062342affb10f0acf0aafb217c0daedaf9", "1df1e707bab285f3009337519716a85def9c9574bbdc5fda0d2fffeeccbac9a8"),
+            new ScenarioDigest("defense-discarded-restored", "98e374c1220772b2db405fce466db7062342affb10f0acf0aafb217c0daedaf9", "1df1e707bab285f3009337519716a85def9c9574bbdc5fda0d2fffeeccbac9a8"),
+            new ScenarioDigest("defense-discarded-replayed", "98e374c1220772b2db405fce466db7062342affb10f0acf0aafb217c0daedaf9", "1df1e707bab285f3009337519716a85def9c9574bbdc5fda0d2fffeeccbac9a8")
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

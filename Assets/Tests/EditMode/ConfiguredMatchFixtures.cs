@@ -581,9 +581,92 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
         }
 
+        /// <summary>
+        /// Milestone 8.11. Thunder Boomerang in the attacker's hand and one of Wasp's Block cards in
+        /// the defender's, with the two heroes inside Range 3 and off every file through the attacker.
+        ///
+        /// <para>It is the only board on which a Block's rider can be watched at all: the Block
+        /// condition is "a ranged attack", so the attack has to be the Ranged one, and the Boomerang's
+        /// own printed targeting refuses anyone standing on a file through it. Deflect and Reflect are
+        /// dealt by the same swap p.15's Level Up performs, because both are Tier II and III and p.6
+        /// leaves them in the deck.</para>
+        /// </summary>
+        public static MatchSession CreateBlockRiderSession(CardDefinitionId blockCardId)
+        {
+            var configuration = WithCardsSwappedIntoBothHands(
+                WaspCardContent.ThunderBoomerang, blockCardId, out var redHeroId);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var session = CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                WithBlueHeroOutOfLineFromTheRedHero(map, setup),
+                setup.Minions));
+
+            AssertTheHandStillHoldsFive(session, redHeroId);
+            return session;
+        }
+
         private static PlaceholderOneVsOneTestConfiguration WithCardSwappedIntoTheRedHand(
             CardDefinitionId cardId, out HeroId redHeroId) =>
             WithCardSwappedIntoTheRedHand(cardId, out redHeroId, emptyTheOpposingHand: false);
+
+        /// <summary>
+        /// The same setup-time Level Up swap performed once per seat: one named card into the acting
+        /// hero's hand and one into the opposing hero's, each in place of that hand's card of its own
+        /// colour, so both hands keep p.15's "exactly 5 cards, 1 of each color".
+        /// </summary>
+        private static PlaceholderOneVsOneTestConfiguration WithCardsSwappedIntoBothHands(
+            CardDefinitionId redCardId, CardDefinitionId blueCardId, out HeroId redHeroId)
+        {
+            var source = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                TeamSide.Red);
+            var state = source.CaptureRestoreState();
+            redHeroId = state.Participants.Heroes
+                .Single(hero => state.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
+            var redOwner = redHeroId;
+
+            CardInstance Swap(CardInstance instance, bool isRedSeat, CardDefinitionId wanted)
+            {
+                var onThisSeat = instance.OwnerId.Equals(redOwner) == isRedSeat;
+                if (!onThisSeat)
+                {
+                    return null;
+                }
+
+                if (instance.DefinitionReference.DefinitionId.Equals(wanted))
+                {
+                    return CardInstance.CreateInHand(
+                        instance.Id, instance.DefinitionReference, instance.OwnerId);
+                }
+
+                var wantedColour = state.Definitions.Single(d => d.Id.Equals(wanted)).Progression.Color;
+                var thisColour = state.Definitions
+                    .Single(d => d.Reference.Equals(instance.DefinitionReference)).Progression.Color;
+                return instance.State.Location == CardLocation.Hand && thisColour == wantedColour
+                    ? CardInstance.CreateInDeck(
+                        instance.Id, instance.DefinitionReference, instance.OwnerId)
+                    : null;
+            }
+
+            return PlaceholderOneVsOneTestConfiguration.Restore(
+                new PlaceholderConfigurationRestoreState(
+                    state.Participants,
+                    state.Definitions,
+                    state.Instances.Select(instance =>
+                        Swap(instance, true, redCardId) ??
+                        Swap(instance, false, blueCardId) ??
+                        instance),
+                    state.TieBreakerState,
+                    state.SetupSeed));
+        }
 
         private static PlaceholderOneVsOneTestConfiguration WithCardSwappedIntoTheRedHand(
             CardDefinitionId cardId, out HeroId redHeroId, bool emptyTheOpposingHand)

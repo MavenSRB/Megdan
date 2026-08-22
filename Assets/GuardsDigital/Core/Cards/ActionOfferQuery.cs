@@ -60,7 +60,7 @@ namespace GuardsDigital.Core.Cards
 
                 foreach (var actionDefinition in definition.ActionDefinitions)
                 {
-                    if (!IsAvailableInWindow(actionDefinition.Origin, window))
+                    if (!IsAvailableInWindow(actionDefinition, window))
                     {
                         continue;
                     }
@@ -76,7 +76,7 @@ namespace GuardsDigital.Core.Cards
                         instance.DefinitionReference,
                         actionDefinition.Id,
                         actorId,
-                        ToInvocationContext(actionDefinition.Origin),
+                        ToInvocationContext(actionDefinition),
                         true,
                         actionDefinition.AttackRange,
                         actionDefinition.SourceCardStateTransition));
@@ -143,7 +143,7 @@ namespace GuardsDigital.Core.Cards
 
             var offers = definition.ActionDefinitions
                 .Where(actionDefinition =>
-                    IsAvailableInWindow(actionDefinition.Origin, ActionOfferWindow.NormalPlay) &&
+                    IsAvailableInWindow(actionDefinition, ActionOfferWindow.NormalPlay) &&
                     (!actionDefinition.SourceCardStateTransition.IsDefined ||
                         card.State.Location == actionDefinition.SourceCardStateTransition.RequiredLocation))
                 .Select(actionDefinition => new ActionOffer(
@@ -151,7 +151,7 @@ namespace GuardsDigital.Core.Cards
                     card.DefinitionReference,
                     actionDefinition.Id,
                     actorId,
-                    ToInvocationContext(actionDefinition.Origin),
+                    ToInvocationContext(actionDefinition),
                     true,
                     actionDefinition.AttackRange,
                     actionDefinition.SourceCardStateTransition))
@@ -227,9 +227,22 @@ namespace GuardsDigital.Core.Cards
             return definitionsByReference;
         }
 
-        private static ActionInvocationContext ToInvocationContext(ActionDefinitionOrigin origin)
+        /// <summary>
+        /// How an offered action is being invoked.
+        ///
+        /// <para>Milestone 8.11 gave it the definition for the same reason
+        /// <see cref="IsAvailableInWindow"/> has it: p.14's Block is printed as the card's primary and
+        /// performed only in reaction, so where it is printed and how it is invoked are two different
+        /// answers. Every other action's invocation follows straight from its origin.</para>
+        /// </summary>
+        private static ActionInvocationContext ToInvocationContext(ActionDefinition action)
         {
-            switch (origin)
+            if (action.DefenseResolution == PrintedDefenseResolution.Block)
+            {
+                return ActionInvocationContext.Reaction;
+            }
+
+            switch (action.Origin)
             {
                 case ActionDefinitionOrigin.PrintedPrimary:
                     return ActionInvocationContext.PrintedPrimary;
@@ -244,23 +257,38 @@ namespace GuardsDigital.Core.Cards
                 case ActionDefinitionOrigin.TextGranted:
                     return ActionInvocationContext.TextGranted;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(origin), origin, "Unknown action definition origin.");
+                    throw new ArgumentOutOfRangeException(nameof(action), action.Origin, "Unknown action definition origin.");
             }
         }
 
-        private static bool IsAvailableInWindow(ActionDefinitionOrigin origin, ActionOfferWindow window)
+        /// <summary>
+        /// Which window an action may be offered in.
+        ///
+        /// <para>Milestone 8.11 gave it the whole definition rather than the origin alone, for one
+        /// card shape: p.14's Block is printed as the card's <em>primary</em> action - milestone 8.3's
+        /// rule requires that, because that is where the face prints it - and is nevertheless
+        /// performable only in reaction: "You cannot perform a Defense action on an already played
+        /// card! It can only be performed in response to an attack targeting you, by discarding
+        /// exactly one card from your hand." Origin says where on the face an action is printed; the
+        /// window says when it may be taken, and for a Block those two differ. Every other Defense
+        /// action this build has is printed as a secondary and already carries the Reaction origin.</para>
+        /// </summary>
+        private static bool IsAvailableInWindow(ActionDefinition action, ActionOfferWindow window)
         {
+            var origin = action.Origin;
+            var isPrintedBlock = action.DefenseResolution == PrintedDefenseResolution.Block;
             switch (window)
             {
                 case ActionOfferWindow.NormalPlay:
-                    return origin == ActionDefinitionOrigin.PrintedPrimary ||
-                        origin == ActionDefinitionOrigin.PrintedSecondary;
+                    return !isPrintedBlock &&
+                        (origin == ActionDefinitionOrigin.PrintedPrimary ||
+                        origin == ActionDefinitionOrigin.PrintedSecondary);
                 case ActionOfferWindow.GeneralRule:
                     return origin == ActionDefinitionOrigin.GeneralRuleSecondary;
                 case ActionOfferWindow.Replacement:
                     return origin == ActionDefinitionOrigin.Replacement;
                 case ActionOfferWindow.Reaction:
-                    return origin == ActionDefinitionOrigin.Reaction;
+                    return origin == ActionDefinitionOrigin.Reaction || isPrintedBlock;
                 case ActionOfferWindow.TextGranted:
                     return origin == ActionDefinitionOrigin.TextGranted;
                 default:

@@ -157,7 +157,18 @@ namespace GuardsDigital.Core.Snapshots
         // v22 build could produce and false of the first payload this milestone writes. The excluded
         // target has the same shape of answer - its absence reads as "this instance may take anyone",
         // which is right for every v22 Attack and wrong for a restored repeat.
-        public const int CurrentSchemaVersion = 23;
+        // Milestone 8.11 moves it to 24 for one field a v23 payload cannot describe: what rulebook
+        // p.14's Block did. The page decides it at step 3, where the defender reveals their card, and
+        // reads it at step 6, and every pause the page allows sits between those two - the defender's
+        // own card text among them, which Wasp's Deflect and Reflect stop on.
+        //
+        // v23 is rejected rather than migrated on the standing ground. The only reading available for
+        // the field's absence is "no Block was performed", which is true of every payload a v23 build
+        // could write - none of its Defense cards could Block - and false of the first payload this
+        // milestone writes. It is also the one field whose absence cannot be recovered from anything
+        // else on the wire: a Block reaches the comparison with no Defense Total, so a restored
+        // resolution missing it would be indistinguishable from a malformed one.
+        public const int CurrentSchemaVersion = 24;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

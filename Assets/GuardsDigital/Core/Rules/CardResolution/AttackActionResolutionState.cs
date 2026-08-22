@@ -83,11 +83,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ValueResult attackValue,
             ActionOffer? defenseOffer = null,
             ValueResult defenseValue = null,
-            AttackTarget excludedTarget = default)
+            AttackTarget excludedTarget = default,
+            DefenseBlockResult blockResult = DefenseBlockResult.None)
             : this(resolutionId, sourceCardInstanceId, sourceDefinitionReference, actionDefinitionId,
                 actorId, invocationContext, currentStepId, phase,
                 targetHeroId.IsDefined ? AttackTarget.Hero(targetHeroId) : default,
-                attackValue, defenseOffer, defenseValue, excludedTarget)
+                attackValue, defenseOffer, defenseValue, excludedTarget, blockResult)
         {
         }
 
@@ -104,9 +105,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ValueResult attackValue,
             ActionOffer? defenseOffer = null,
             ValueResult defenseValue = null,
-            AttackTarget excludedTarget = default)
+            AttackTarget excludedTarget = default,
+            DefenseBlockResult blockResult = DefenseBlockResult.None)
         {
             ExcludedTarget = excludedTarget;
+            BlockResult = blockResult;
+            if (!Enum.IsDefined(typeof(DefenseBlockResult), blockResult))
+            {
+                throw new ArgumentException(
+                    "A pending Attack resolution states what rulebook p.14's Block did, or that no " +
+                    "Block was involved.",
+                    nameof(blockResult));
+            }
             if (!resolutionId.IsDefined ||
                 !sourceCardInstanceId.IsDefined ||
                 !sourceDefinitionReference.IsDefined ||
@@ -140,8 +150,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
             else if (phase == AttackResolutionPhase.CompareOutcome)
             {
+                // Milestone 8.11. p.14's Block prints no Defense value and enters no comparison, so a
+                // defense offer with no total is exactly right for one and malformed for anything else
+                // - which is why the Block says so rather than being inferred from the absent value.
+                var blockAccountsForTheMissingTotal =
+                    blockResult != DefenseBlockResult.None && defenseOffer.HasValue && defenseValue == null;
                 if (target.Kind != AttackTargetKind.Hero || attackValue == null || attackValue.Channel != PrintedValueChannel.Attack ||
-                    defenseOffer.HasValue != (defenseValue != null) ||
+                    (!blockAccountsForTheMissingTotal && defenseOffer.HasValue != (defenseValue != null)) ||
                     (defenseValue != null && defenseValue.Channel != PrintedValueChannel.Defense) ||
                     (defenseOffer.HasValue &&
                         (!defenseOffer.Value.IsAvailable ||
@@ -202,6 +217,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// apply.</para>
         /// </summary>
         public AttackTarget ExcludedTarget { get; }
+
+        /// <summary>
+        /// Milestone 8.11. What rulebook p.14's Block did, or <see cref="DefenseBlockResult.None"/>
+        /// wherever no Block was performed - which is every attack in this build before Wasp's three
+        /// Green cards. It is decided when the defender's card is revealed, at the page's step 3, and
+        /// read at step 6, so it crosses the pause between them.
+        /// </summary>
+        public DefenseBlockResult BlockResult { get; }
         public ValueResult AttackValue { get; }
         public int AttackTotal => AttackValue?.Total ?? 0;
         public ActionOffer? DefenseOffer { get; }

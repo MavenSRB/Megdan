@@ -302,6 +302,7 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticShowcaseHand.CreateRedWithEscalatingSkill(owner, opponent),
                     SyntheticShowcaseHand.CreateBlueWithEscalatingSkill(owner, opponent),
                     SyntheticShowcaseHand.CreateRedWithConditionalAttackText(owner),
+                    SyntheticShowcaseHand.CreateBlueWithConditionalDefenseText(owner),
                     SyntheticShowcaseHand.CreateRedWithRadiusSkill(owner),
                     SyntheticShowcaseHand.CreateBlueWithRadiusSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithOrbitSkill(owner),

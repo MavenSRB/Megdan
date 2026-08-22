@@ -956,6 +956,13 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write(pending.ExcludedTarget.HeroId.Value);
             if (pending.ExcludedTarget.Kind == AttackTargetKind.Minion)
                 writer.Write(pending.ExcludedTarget.MinionId.Value);
+
+            // Milestone 8.11, schema v24. What rulebook p.14.s Block did, decided at the page.s step 3
+            // where the defender.s card is revealed and read at step 6. It crosses the wire because
+            // those two are separated by every pause the page allows in between - the defender.s own
+            // card text among them - and because a Block is the one Defense that reaches the
+            // comparison with no Defense Total to re-derive it from.
+            writer.Write((int)pending.BlockResult);
         }
 
         private static PendingAttackResolution ReadAttackResolution(BinaryReader reader)
@@ -1005,10 +1012,13 @@ namespace GuardsDigital.Core.Snapshots
                     throw Malformed($"Unhandled excluded attack target kind '{excludedKind}'.");
             }
 
+            var blockResult = SnapshotEnumReader.Read<DefenseBlockResult>(
+                reader, "pending attack Block result");
+
             return new PendingAttackResolution(
                 common.ResolutionId, common.CardId, common.DefinitionReference, common.ActionId,
                 common.ActorId, common.InvocationContext, common.StepId, phase, target,
-                attackValue, defenseOffer, defenseValue, excludedTarget);
+                attackValue, defenseOffer, defenseValue, excludedTarget, blockResult);
         }
 
         private static void WriteCoinLedger(BinaryWriter writer, HeroCoinLedgerRestoreStateHolder holder)
