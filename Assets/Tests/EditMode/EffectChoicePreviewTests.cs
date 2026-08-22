@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
@@ -157,6 +158,123 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingDisplacedMinionCorrection, Is.Not.Null);
             Assert.That(session.Projection.PendingEffectChoice, Is.Null);
             Assert.That(session.Projection.PendingEffectChoicePreview, Is.Empty);
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.11c: a candidate that names its object by identity rather than by coordinate
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Reflect Projectiles' rider names the attacker by `HeroId`. Until milestone 8.11c the
+        /// preview covered coordinate-valued candidates only, so such a candidate meant nothing on the
+        /// board and could only be answered from the prompt. It is previewed on the space occupancy
+        /// currently puts that hero on, which is what lets the board mark the piece and take the click.
+        /// </summary>
+        [Test]
+        public void AHeroNamedByIdentity_IsPreviewedWhereOccupancyPutsItAndPredictsNothing()
+        {
+            var session = ConfiguredMatchFixtures.CreateBlockRiderSession(
+                WaspCardContent.ReflectProjectiles);
+            ConfiguredDefenseCardTests.BlockTheRangedAttack(
+                session, WaspCardContent.ReflectProjectiles);
+
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice, Is.Not.Null, "The rider asks its question, or this asserts nothing.");
+            var heroCandidates = choice.Candidates
+                .Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    candidate.Value.Kind == EffectValueKind.Hero)
+                .ToArray();
+            Assert.That(heroCandidates, Is.Not.Empty,
+                "and it names a hero by identity, which is the shape this case is about.");
+
+            foreach (var candidate in heroCandidates)
+            {
+                var occupancy = session.Projection.Heroes
+                    .Single(value => value.HeroId.Equals(candidate.Value.HeroId));
+                var preview = session.Projection.PendingEffectChoicePreview
+                    .Single(value => value.CandidateValue.Equals(candidate.Value));
+
+                Assert.That(preview.Coordinate, Is.EqualTo(occupancy.Coordinate),
+                    "The space is read from authoritative occupancy, not carried by the candidate.");
+                Assert.That(preview.NamesObject, Is.True);
+                Assert.That(preview.Occupant.Kind, Is.EqualTo(BoardObjectKind.Hero));
+                Assert.That(preview.Occupant.HeroId, Is.EqualTo(candidate.Value.HeroId),
+                    "and the piece standing there is the hero the candidate names.");
+                Assert.That(preview.ResultingCoordinate, Is.Null,
+                    "A discard moves nobody, so there is no resulting space to predict - the " +
+                    "resulting reading belongs to displacement alone.");
+            }
+        }
+
+        /// <summary>
+        /// The totality claim, as a failure rather than as a comment. `TryGetObjectAt` answers with at
+        /// most one object per space, so two candidates on one space would be two answers to one
+        /// click. Collapsing them into a single mark would silently drop an offer the authority made,
+        /// so the query refuses instead.
+        /// </summary>
+        [Test]
+        public void TwoCandidatesResolvingToOneSpace_FailLoudlyRatherThanCollapsing()
+        {
+            var actor = new HeroId("preview-actor");
+            var other = new HeroId("preview-other");
+            var otherAt = new HexCoordinate(1, 0);
+            var map = BoardMapDefinition.CreateSynthetic(
+                new MapId("preview-invariant"),
+                1,
+                Enumerable.Range(-2, 9).Select(q => new HexCoordinate(q, 0)).ToArray());
+            var board = new GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority(
+                map,
+                new[] { new HeroOccupancy(actor, new HexCoordinate(0, 0)), new HeroOccupancy(other, otherAt) },
+                Array.Empty<ObstacleOccupancy>());
+
+            // The same piece named twice: once by the space it stands on, once by its own identity.
+            var doubled = new PendingEffectChoice(
+                new EffectResolutionId("preview-resolution"),
+                new EffectChoiceId("preview-choice"),
+                new EffectNodeId("preview-node"),
+                actor,
+                EffectChoiceKind.SelectTarget,
+                new[]
+                {
+                    EffectChoiceCandidate.Value_(EffectValue.Space(otherAt)),
+                    EffectChoiceCandidate.Value_(EffectValue.Hero(other))
+                },
+                1,
+                1);
+
+            // A definition with nothing that consumes the choice: the invariant is about the candidates
+            // alone, so there is deliberately no Push here to preview. It is built outside the assert
+            // so that a construction fault reads as one rather than as the throw under test.
+            var definition = new EffectDefinition(
+                new EffectDefinitionId("preview-definition"),
+                "preview-rev-1",
+                new EffectNodeId("preview-node"),
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        new EffectNodeId("preview-node"),
+                        EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory,
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities
+                            .ChooseTargetV3)
+                });
+            var components = new MatchComponents(
+                GuardsDigital.Core.Components.Synthetic.SyntheticComponentDefinitions.CreateCatalog(),
+                null,
+                new MarkerAttachmentRegister(),
+                board,
+                null,
+                null);
+
+            Assert.That(
+                () => EffectChoicePreviewQuery.Describe(
+                    definition,
+                    doubled,
+                    actor,
+                    components,
+                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty),
+                Throws.InvalidOperationException.With.Message.Contains(otherAt.ToString()),
+                "Two candidates on one space is a violated invariant, and it says which space.");
         }
 
         // -------------------------------------------------------------------------------------------

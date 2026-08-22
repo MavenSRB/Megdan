@@ -12,15 +12,24 @@ using GuardsDigital.Core.Units.Heroes;
 namespace GuardsDigital.Core.Rules.EffectResolution
 {
     /// <summary>
-    /// What one space-valued candidate of a pending effect choice currently means on the board: the
-    /// object standing there, and where the operation waiting on this choice would leave that object.
+    /// What one candidate of a pending effect choice currently means on the board: the space it puts
+    /// the chooser's finger on, the object standing there, and where the operation waiting on this
+    /// choice would leave that object.
     ///
-    /// Both are facts read from authoritative state, never a decision. A candidate that names no
+    /// All three are facts read from authoritative state, never a decision. A candidate that names no
     /// object is a destination the actor may take; a candidate that names one is a target.
+    ///
+    /// <para>Milestone 8.11c added <see cref="CandidateValue"/>, and it is what makes the space a
+    /// <em>reading</em> rather than a restatement. Until then a candidate had to carry its own
+    /// coordinate to be previewed at all, so a candidate naming a hero by identity was invisible here
+    /// and unanswerable on the board. Now the value is carried and the coordinate is resolved from
+    /// occupancy, so both shapes arrive at the same pair and every consumer addresses a candidate by
+    /// its value and the board by its space.</para>
     /// </summary>
     public readonly struct EffectChoiceCandidatePreview
     {
         public EffectChoiceCandidatePreview(
+            EffectValue candidateValue,
             HexCoordinate coordinate,
             BoardObjectReference occupant,
             HexCoordinate? resultingCoordinate)
@@ -32,12 +41,27 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     nameof(resultingCoordinate));
             }
 
+            if (!candidateValue.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A preview describes one candidate, so it names that candidate's value.",
+                    nameof(candidateValue));
+            }
+
+            CandidateValue = candidateValue;
             Coordinate = coordinate;
             Occupant = occupant;
             ResultingCoordinate = resultingCoordinate;
         }
 
-        /// <summary>The candidate itself: the space the chooser would be selecting.</summary>
+        /// <summary>
+        /// The candidate's own value, as the authority offered it - a coordinate, a hero, or a minion.
+        /// It is how a consumer matches a select invocation to this preview, because that is the one
+        /// thing the invocation and the preview always share.
+        /// </summary>
+        public EffectValue CandidateValue { get; }
+
+        /// <summary>The space this candidate puts the chooser on, whether it named one or not.</summary>
         public HexCoordinate Coordinate { get; }
 
         /// <summary>The object standing on that space, or the undefined reference when it is empty.</summary>
@@ -90,24 +114,43 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 return Array.Empty<EffectChoiceCandidatePreview>();
             }
 
-            var spaces = choice.Candidates
-                .Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value &&
-                    candidate.Value.Kind == EffectValueKind.Coordinate)
-                .Select(candidate => candidate.Value.Coordinate)
+            var board = components.Board;
+            var values = choice.Candidates
+                .Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value)
+                .Select(candidate => candidate.Value)
                 .ToArray();
-            if (spaces.Length == 0)
+            if (values.Length == 0)
             {
                 return Array.Empty<EffectChoiceCandidatePreview>();
             }
 
-            var board = components.Board;
             var pusherAt = default(HexCoordinate);
             var hasPush = TryFindConsumingPush(definition, choice.NodeId, out var push) &&
                 board.TryGetObjectCoordinate(BoardObjectReference.ForHero(actorId), out pusherAt);
 
-            var previews = new List<EffectChoiceCandidatePreview>(spaces.Length);
-            foreach (var space in spaces)
+            var previews = new List<EffectChoiceCandidatePreview>(values.Length);
+            var claimed = new Dictionary<HexCoordinate, EffectValue>();
+            foreach (var value in values)
             {
+                if (!TryResolveSpace(board, value, out var space))
+                {
+                    continue;
+                }
+
+                // Milestone 8.11c. `TryGetObjectAt` answers with at most one object per space, so two
+                // candidates resolving to one space means two candidates naming one piece - which no
+                // offered set can legitimately contain, because the chooser could then answer one
+                // question two ways and the board could not say which. It is a violated invariant
+                // rather than a shape to tolerate, so it stops here instead of quietly collapsing into
+                // a single mark or falling back to a control nobody would notice was missing.
+                if (claimed.TryGetValue(space, out var already))
+                {
+                    throw new InvalidOperationException(
+                        $"Effect choice candidates '{already.Kind}' and '{value.Kind}' both resolve to " +
+                        $"space {space}, but a space holds at most one board object.");
+                }
+
+                claimed.Add(space, value);
                 var occupant = board.TryGetObjectAt(space, out var standing)
                     ? standing
                     : default;
@@ -127,10 +170,45 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     }
                 }
 
-                previews.Add(new EffectChoiceCandidatePreview(space, occupant, resulting));
+                previews.Add(new EffectChoiceCandidatePreview(value, space, occupant, resulting));
             }
 
             return previews;
+        }
+
+        /// <summary>
+        /// The space a candidate's value puts the chooser on: the coordinate it carries, or - milestone
+        /// 8.11c - the space authoritative occupancy currently has that hero or minion standing on.
+        ///
+        /// <para>A candidate naming an object that is on no space answers false and is simply not
+        /// previewed, which leaves it with its prompt control. That is the honest outcome rather than a
+        /// fault: it is the only shape for which the board has nothing to offer. It is also one the
+        /// live content cannot produce - a printed-icon selection offers heroes measured from a disk
+        /// drawn on the board - and `PromptReachabilityConformanceTests` is what would notice if some
+        /// later card did, because it asks occupancy the same question independently.</para>
+        ///
+        /// <para>A card instance is not a board object and is never resolved here. p.10's discard
+        /// chooses among cards in a hand, which is a question about a hand rather than about a
+        /// space.</para>
+        /// </summary>
+        private static bool TryResolveSpace(
+            IBoardDisplacementAuthority board, EffectValue value, out HexCoordinate space)
+        {
+            switch (value.Kind)
+            {
+                case EffectValueKind.Coordinate:
+                    space = value.Coordinate;
+                    return true;
+                case EffectValueKind.Hero:
+                    return board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(value.HeroId), out space);
+                case EffectValueKind.Minion:
+                    return board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForMinion(value.MinionId), out space);
+                default:
+                    space = default;
+                    return false;
+            }
         }
 
         /// <summary>

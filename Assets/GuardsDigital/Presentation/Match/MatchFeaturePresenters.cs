@@ -713,15 +713,24 @@ namespace GuardsDigital.Presentation.Match
                 return Array.Empty<HexCoordinate>();
             }
 
-            var admitted = new HashSet<HexCoordinate>(projection.PendingEffectChoicePreview
-                .Where(preview => !emptyOnly || !preview.NamesObject)
-                .Select(preview => preview.Coordinate));
+            // Milestone 8.11c: matched by the candidate's own value rather than by a coordinate the
+            // candidate carries, because a candidate naming a hero by identity carries none. The
+            // preview is where the two meet - it holds the value the authority offered and the space
+            // occupancy currently puts it on.
+            var admitted = new Dictionary<EffectValue, HexCoordinate>();
+            foreach (var preview in projection.PendingEffectChoicePreview)
+            {
+                if (!emptyOnly || !preview.NamesObject)
+                {
+                    admitted[preview.CandidateValue] = preview.Coordinate;
+                }
+            }
+
             return choice.SelectInvocations
                 .Where(invocation =>
                     invocation.Candidate.Kind == EffectChoiceCandidateKind.Value &&
-                    invocation.Candidate.Value.Kind == EffectValueKind.Coordinate &&
-                    admitted.Contains(invocation.Candidate.Value.Coordinate))
-                .Select(invocation => invocation.Candidate.Value.Coordinate)
+                    admitted.ContainsKey(invocation.Candidate.Value))
+                .Select(invocation => admitted[invocation.Candidate.Value])
                 .ToArray();
         }
 
@@ -992,10 +1001,21 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
+            // Milestone 8.11c: the click names a space, the preview says which candidate value stands
+            // there, and the invocation is found by that value - so a candidate naming a hero by
+            // identity is reached by the same click as one naming the space it stands on.
+            var standing = session.Projection.PendingEffectChoicePreview
+                .Where(preview => preview.Coordinate.Equals(space))
+                .Select(preview => preview.CandidateValue)
+                .ToArray();
+            if (standing.Length != 1)
+            {
+                return false;
+            }
+
             var selection = effectChoice.SelectInvocations.SingleOrDefault(value =>
                 value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
-                value.Candidate.Value.Kind == EffectValueKind.Coordinate &&
-                value.Candidate.Value.Coordinate.Equals(space));
+                value.Candidate.Value.Equals(standing[0]));
             return selection != null && SubmitEffectChoiceSelection(selection);
         }
 
@@ -2767,8 +2787,12 @@ namespace GuardsDigital.Presentation.Match
                 ordinals[choice.Candidates[index]] = index + 1;
             }
 
+            // Milestone 8.11c: keyed by the candidate's value rather than by its coordinate, so a
+            // candidate naming a hero or a minion by identity finds its own preview. The query
+            // guarantees one preview per candidate value and refuses two on one space, so neither
+            // this nor the reverse lookup below can be ambiguous.
             var previews = projection.PendingEffectChoicePreview
-                .ToDictionary(preview => preview.Coordinate);
+                .ToDictionary(preview => preview.CandidateValue);
 
             // Milestone 6.2d: which token names this choice would repeat, decided once over the whole
             // offered set rather than per candidate. A name that occurs twice keeps its ordinal, so two
@@ -2791,8 +2815,14 @@ namespace GuardsDigital.Presentation.Match
                 // all - a Spawn draws from the supply - and such a candidate is a control like a mode,
                 // because there is no space for the board to light and nothing standing for a cue to
                 // mark. What it is not is anonymous.
+                //
+                // Milestone 8.11c: "not on the board" is now asked of the board rather than assumed
+                // from the value's kind. A minion named by identity is a supply candidate only when
+                // occupancy has it standing nowhere; one that is standing somewhere is marked and
+                // clicked like every other piece, and the preview is what knows which.
                 if (candidate.Kind == EffectChoiceCandidateKind.Value &&
-                    candidate.Value.Kind == EffectValueKind.Minion)
+                    candidate.Value.Kind == EffectValueKind.Minion &&
+                    !previews.ContainsKey(candidate.Value))
                 {
                     invocations.Add(new TypedInvocationViewModel(
                         FormatSupplyMinionLabel(projection, candidate.Value.MinionId, ordinals[candidate]),
@@ -2801,8 +2831,7 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 if (candidate.Kind != EffectChoiceCandidateKind.Value ||
-                    candidate.Value.Kind != EffectValueKind.Coordinate ||
-                    !previews.TryGetValue(candidate.Value.Coordinate, out var preview))
+                    !previews.TryGetValue(candidate.Value, out var preview))
                 {
                     invocations.Add(new TypedInvocationViewModel(
                         EffectChoiceLabels.CandidateLabel(candidate.OptionNodeId, ordinals[candidate]),

@@ -83,14 +83,21 @@ namespace GuardsDigital.Tests.EditMode
         /// onto the board: <b>every candidate the authority offers must be answerable somewhere</b> -
         /// by clicking a marked piece, by clicking a lit space, or by a control in the prompt.
         ///
-        /// <para>It is deliberately indifferent about which. A candidate that names a space is answered
-        /// on the board; one that names a hero by identity rather than by coordinate still carries a
-        /// control, because the board is addressed by space and that candidate does not name one. What
-        /// must never happen - and is what this pins - is a candidate on none of the three, which is a
-        /// question the authority asks and the player cannot answer.</para>
+        /// <para>Milestone 8.11a left this indifferent about which, because a candidate naming a hero
+        /// by identity rather than by coordinate still carried a control: the board is addressed by
+        /// space, and such a candidate names none. Milestone 8.11c closes exactly that, so the rule
+        /// tightens for the candidates it closed - a candidate that names a board object is answered
+        /// <b>on the board</b>, and its prompt control is gone. Everything else keeps the weaker rule,
+        /// because a mode, a Spawn drawn from the supply, and a confirm still have no board surface at
+        /// all.</para>
+        ///
+        /// <para>Which candidates name an object is read here from authoritative occupancy directly,
+        /// never from the preview the production path builds. That is deliberate: reading it from the
+        /// preview would make the case agree with whatever the preview happens to cover, which is the
+        /// very thing 8.11c changes.</para>
         /// </summary>
         [Test]
-        public void EveryLegalEffectChoiceCandidate_IsAnswerableOnTheBoardOrInThePrompt()
+        public void EveryLegalEffectChoiceCandidateNamingAnObject_IsAnsweredOnTheBoard()
         {
             var session = ConfiguredMatchFixtures.CreateBlockRiderSession(
                 WaspCardContent.ReflectProjectiles);
@@ -102,6 +109,13 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             Assert.That(choice, Is.Not.Null, "The rider asks a question, or this asserts nothing.");
             Assert.That(choice.SelectInvocations, Is.Not.Empty);
+            Assert.That(
+                choice.SelectInvocations.Any(value =>
+                    value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    value.Candidate.Value.Kind == EffectValueKind.Hero),
+                Is.True,
+                "Reflect Projectiles' rider names the attacker by HeroId, which is the shape milestone " +
+                "8.11c closes. Without one offered here this case asserts nothing about it.");
 
             board.Refresh();
             var model = view.Model;
@@ -113,22 +127,73 @@ namespace GuardsDigital.Tests.EditMode
                 model.EffectChoiceDestinations.Intersect(model.EffectChoiceTargetSpaces), Is.Empty,
                 "No space is both lit and marked - the board says the two in different vocabularies.");
 
-            var answeredByAControl = new HashSet<DirectorCommand>(
-                prompt.EffectChoices.Select(value => value.Command)
-                    .Concat(prompt.EffectChoiceTargets.Select(value => value.Command))
-                    .Concat(prompt.EffectChoiceDestinations.Select(value => value.Command)));
+            var promptControls = new HashSet<DirectorCommand>(
+                prompt.EffectChoices.Select(value => value.Command));
+            var answeredByAControl = new HashSet<DirectorCommand>(promptControls
+                .Concat(prompt.EffectChoiceTargets.Select(value => value.Command))
+                .Concat(prompt.EffectChoiceDestinations.Select(value => value.Command)));
 
             foreach (var invocation in choice.SelectInvocations)
             {
+                var candidate = invocation.Candidate;
                 var command = DirectorCommand.AnswerEffectChoice(invocation);
+                var occupied = OccupiedSpaceOf(session.Projection, candidate);
+                if (occupied.HasValue)
+                {
+                    Assert.That(onTheBoard, Contains.Item(occupied.Value),
+                        $"The candidate on option node '{candidate.OptionNodeId.Value}' names the piece " +
+                        $"standing on {occupied.Value}, so that piece is marked and a click on it " +
+                        "answers the choice.");
+                    Assert.That(promptControls, Has.No.Member(command),
+                        $"and the candidate on option node '{candidate.OptionNodeId.Value}' keeps no " +
+                        "prompt control, because two ways to say one thing is one of them redundant.");
+                    continue;
+                }
+
                 var namesASpace =
-                    invocation.Candidate.Kind == EffectChoiceCandidateKind.Value &&
-                    invocation.Candidate.Value.Kind == EffectValueKind.Coordinate &&
-                    onTheBoard.Contains(invocation.Candidate.Value.Coordinate);
+                    candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    candidate.Value.Kind == EffectValueKind.Coordinate &&
+                    onTheBoard.Contains(candidate.Value.Coordinate);
                 Assert.That(namesASpace || answeredByAControl.Contains(command), Is.True,
-                    $"The candidate on option node '{invocation.Candidate.OptionNodeId.Value}' can be " +
+                    $"The candidate on option node '{candidate.OptionNodeId.Value}' can be " +
                     "answered on the board or from the prompt. On neither, it is a question with no " +
                     "way to answer it.");
+            }
+        }
+
+        /// <summary>
+        /// The space a candidate's own value puts a board object on, or null when it names none.
+        ///
+        /// Read straight from projected occupancy, by value kind, so this case decides for itself what
+        /// counts as naming an object rather than inheriting the production path's answer.
+        /// </summary>
+        private static HexCoordinate? OccupiedSpaceOf(
+            MatchSessionProjection projection, EffectChoiceCandidate candidate)
+        {
+            if (candidate.Kind != EffectChoiceCandidateKind.Value)
+            {
+                return null;
+            }
+
+            switch (candidate.Value.Kind)
+            {
+                case EffectValueKind.Hero:
+                    var hero = projection.Heroes.FirstOrDefault(value =>
+                        value.HeroId.Equals(candidate.Value.HeroId));
+                    return hero.HeroId.IsDefined ? hero.Coordinate : (HexCoordinate?)null;
+                case EffectValueKind.Minion:
+                    var minion = projection.Minions.FirstOrDefault(value =>
+                        value.MinionId.Equals(candidate.Value.MinionId));
+                    return minion?.Coordinate;
+                case EffectValueKind.Coordinate:
+                    var space = candidate.Value.Coordinate;
+                    var occupied =
+                        projection.Heroes.Any(value => value.Coordinate.Equals(space)) ||
+                        projection.Minions.Any(value => value.Coordinate.Equals(space)) ||
+                        projection.PlacedTokens.Any(value => value.Coordinate.Equals(space));
+                    return occupied ? space : (HexCoordinate?)null;
+                default:
+                    return null;
             }
         }
 

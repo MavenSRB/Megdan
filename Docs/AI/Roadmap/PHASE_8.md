@@ -112,7 +112,7 @@ Non-goals: no change to hero or team authority, occupancy, movement, targeting, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811b-replace-wasp-pins-and-abbreviated-card-indicators-with-verified-card-table-visuals-completion-evidence).
 
-### [ ] 8.11c Answer identity-named effect-choice candidates on the board
+### [x] 8.11c Answer identity-named effect-choice candidates on the board
 
 Blocked by: milestone 8.11a, which put every space-named candidate on the board and left this one shape behind.
 
@@ -127,6 +127,8 @@ Acceptance checks:
 - Selection, targeting, correction, respawn, Minion Battle and Attack targeting keep their existing projected legality and typed command paths, and identify the same stable space or object before and after Undo, restart, snapshot restore, replay, and a presentation rebuild.
 
 Non-goals: no change to effect-choice authority, candidate sets, legality, or command shapes; no change to the board underlay, registration, camera framing, cue vocabulary, or highlight palette; no schema move, and no new pending state.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811c-answer-identity-named-effect-choice-candidates-on-the-board-completion-evidence).
 
 ### [ ] 8.11d Replace piece-target triangles with board-facing base rings
 

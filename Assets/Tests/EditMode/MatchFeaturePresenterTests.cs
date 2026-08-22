@@ -5,6 +5,7 @@ using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
@@ -639,6 +640,102 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(target.Command.Kind, Is.EqualTo(DirectorCommandKind.AnswerEffectChoice));
             Assert.That(target.Command.EffectChoice.ResolutionId, Is.EqualTo(choice.ResolutionId));
             Assert.That(target.Command.EffectChoice.ChoiceId, Is.EqualTo(choice.ChoiceId));
+        }
+
+        /// <summary>
+        /// Milestone 8.11c. A candidate that names its hero by identity rather than by coordinate is
+        /// a named target like every other piece on the board, and keeps no anonymous control in the
+        /// prompt.
+        ///
+        /// <para>Reflect Projectiles' rider is the live subject: "an enemy hero in range discards a
+        /// card" publishes the hero, because what consumes the choice is a discard and a space cannot
+        /// be asked for a card. Before this milestone such a candidate reached the prompt as
+        /// `CANDIDATE n`, since the presenter could only recognise a candidate that carried its own
+        /// coordinate.</para>
+        /// </summary>
+        [Test]
+        public void RoundPresenter_MakesAHeroNamedByIdentityANamedTargetRatherThanAnAnonymousControl()
+        {
+            var session = ConfiguredMatchFixtures.CreateBlockRiderSession(
+                WaspCardContent.ReflectProjectiles);
+            ConfiguredDefenseCardTests.BlockTheRangedAttack(
+                session, WaspCardContent.ReflectProjectiles);
+
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice, Is.Not.Null);
+            var heroCandidates = choice.SelectInvocations
+                .Where(value => value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    value.Candidate.Value.Kind == EffectValueKind.Hero)
+                .ToArray();
+            Assert.That(heroCandidates, Is.Not.Empty,
+                "The rider names its hero by identity, or this asserts nothing.");
+
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+
+            Assert.That(model.EffectChoices.Any(value =>
+                    value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select),
+                Is.False,
+                "No select is left in the prompt: each is answered on the piece it names.");
+            Assert.That(model.EffectChoiceTargets, Has.Count.EqualTo(heroCandidates.Length),
+                "One named target per hero the authority offers.");
+
+            foreach (var invocation in heroCandidates)
+            {
+                var occupancy = session.Projection.Heroes
+                    .Single(value => value.HeroId.Equals(invocation.Candidate.Value.HeroId));
+                var setup = session.Projection.Setup.Heroes
+                    .Single(value => value.HeroId.Equals(invocation.Candidate.Value.HeroId));
+                var target = model.EffectChoiceTargets.Single(value =>
+                    value.Space.Equals(occupancy.Coordinate));
+
+                Assert.That(target.Label, Is.EqualTo(
+                    EffectChoiceLabels.HeroTargetLabel(setup.TeamSide, setup.DisplayName)),
+                    "It is named after the hero it targets, exactly as a coordinate-named one is.");
+                Assert.That(target.ResultingSpace, Is.Null,
+                    "A discard relocates nobody, so the target carries no resulting space.");
+                Assert.That(target.Command,
+                    Is.EqualTo(DirectorCommand.AnswerEffectChoice(invocation)),
+                    "and it forwards the authority's own invocation for that candidate.");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.11c, the other half: clicking the hero answers the choice. The click carries a
+        /// `HeroId`, the board resolves it through the space that hero stands on, and the command the
+        /// authority accepts is the one it offered for the candidate naming that hero.
+        /// </summary>
+        [Test]
+        public void BoardPresenter_AnswersAHeroNamedEffectChoiceByClickingThatHero()
+        {
+            var session = ConfiguredMatchFixtures.CreateBlockRiderSession(
+                WaspCardContent.ReflectProjectiles);
+            ConfiguredDefenseCardTests.BlockTheRangedAttack(
+                session, WaspCardContent.ReflectProjectiles);
+
+            var chosen = session.Projection.PendingEffectChoice.SelectInvocations
+                .First(value => value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    value.Candidate.Value.Kind == EffectValueKind.Hero)
+                .Candidate.Value.HeroId;
+            var accepted = session.Projection.AcceptedCommands.Count;
+            var presenter = new BoardInteractionPresenter(session, new CapturingBoardView());
+
+            Assert.That(presenter.SubmitHero(chosen), Is.True,
+                "The click is claimed by the pending choice rather than falling through.");
+
+            // The click carries the select, and - as it has since milestone 6.5c - the confirm that
+            // completes a one-of-one choice immediately after it, so a single click finishes the
+            // question rather than leaving a confirm nobody was offered.
+            var submitted = session.Projection.AcceptedCommands.Skip(accepted).ToArray();
+            Assert.That(submitted, Is.Not.Empty);
+            Assert.That(
+                submitted.All(value => value.Kind == DirectorCommandKind.AnswerEffectChoice), Is.True);
+            var select = submitted.Single(value =>
+                value.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+            Assert.That(select.EffectChoice.Candidate.Kind,
+                Is.EqualTo(EffectChoiceCandidateKind.Value));
+            Assert.That(select.EffectChoice.Candidate.Value.HeroId, Is.EqualTo(chosen),
+                "and it answers with the candidate naming the hero that was clicked.");
         }
 
         /// <summary>
