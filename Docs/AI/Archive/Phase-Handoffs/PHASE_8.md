@@ -222,4 +222,4 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.19 | Every verified face/component for the five additional heroes maps to a typed capability/test contract, and the remaining hero, 3v3, online, and presentation work is dependency-ordered and re-estimated. | `PENDING` |
+| 8.19 | Every verified face/component for the five additional heroes maps to a typed capability/test contract, and the remaining hero, 3v3, online, and presentation work is dependency-ordered and re-estimated. | `17922fd2` |
