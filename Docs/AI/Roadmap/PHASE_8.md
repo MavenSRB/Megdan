@@ -271,7 +271,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816-complete-the-deterministic-wasp-mirror-integration-gate-completion-evidence).
 
-### [!] 8.16a Independently review Wasp-driven card-engine extensibility
+### [x] 8.16a Independently review Wasp-driven card-engine extensibility
 
 Blocked by: Milestone 8.16 must pass its source-linked Wasp integration gate.
 
@@ -288,6 +288,8 @@ Acceptance checks:
 Non-goals: No selection, inventory, or implementation of another hero; no Wasp rebalance; no generic framework merely to eliminate every custom handler.
 
 Hard gate: Additional pitch-hero inventory and implementation do not begin until milestone 8.16a and every gate-blocking corrective milestone are reviewed and approved. Production visual work remains blocked until the six-hero 3v3 gate at milestone 8.27, the render-pipeline migration gate at milestone 8.28 with its independent review at 8.28a, and the private online playtest gate at milestone 8.36 with its independent review at 8.36a are reviewed and approved, matching the sibling gate statements.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816a-independently-review-wasp-driven-card-engine-extensibility-completion-evidence).
 
 ### [!] 8.17 Select the five additional pitch heroes
 
