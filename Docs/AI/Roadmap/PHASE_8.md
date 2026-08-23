@@ -241,6 +241,20 @@ Acceptance checks:
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-815-complete-and-verify-every-wasp-card-behavior-completion-evidence).
 
+### [!] 8.15a Present card choices as faces and finish board-first selection
+
+Inserted 2026-08-23 as a user-approved roadmap amendment, from the user's direction on 8.15's result: the discard chooser must show whole card faces, and every choice whose subject stands on the map is made on the map.
+
+Observable outcome: a choice among cards is presented as the cards themselves, and no prompt control anywhere in the HUD names a board object or space.
+
+Acceptance checks:
+
+- A card-instance effect-choice candidate is drawn as its whole printed face through the shared tray builder - rulebook p.10's discard chooser included - forwarding exactly its projected invocation; the card's name stays in the control's hover and assistive reading.
+- The open Clear selection marks every offered token where it stands, Eligible or Selected with the Removal intent, derived from the selection itself rather than from pointer state; a click on an offered token's space toggles it through the same board intent chain every other board answer takes; and the prompt keeps only the controls that have no board surface - confirm and cancel.
+- The prompt-reachability conformance fixture covers the Clear selection: every offered candidate markable and toggleable on the board, and no candidate prompt control drawn (observed failing at the pre-fix surface).
+
+Non-goals: no rules change - the empty-subset Clear confirm stays legal per 8.8b and the greyed unavailable offer stays refused; no schema change.
+
 ### [!] 8.16 Complete the deterministic Wasp mirror integration gate
 
 Observable outcome: A Wasp mirror match can start, play repeated turns/rounds, and end through every victory path with primitive visuals and debug UI.
