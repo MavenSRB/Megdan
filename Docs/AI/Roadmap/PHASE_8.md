@@ -360,11 +360,13 @@ Observable outcome: the slot-D hero's complete set is source-verified under the 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818d-inventory-and-verify-pitch-hero-slot-d-completion-evidence).
 
-### [!] 8.18e Inventory and verify pitch hero slot E
+### [x] 8.18e Inventory and verify pitch hero slot E
 
 Slot-E hero, assigned by 8.17's approved roster: **Xargatha the Changed** (Red).
 
 Observable outcome: the slot-E hero's complete set is source-verified under the shared 8.18 contract above.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818e-inventory-and-verify-pitch-hero-slot-e-completion-evidence).
 
 ### [!] 8.19 Map the five heroes to capabilities and re-baseline the 3v3 pitch work
 
