@@ -344,11 +344,13 @@ Observable outcome: the slot-B hero's complete set is source-verified under the 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818b-inventory-and-verify-pitch-hero-slot-b-completion-evidence).
 
-### [!] 8.18c Inventory and verify pitch hero slot C
+### [x] 8.18c Inventory and verify pitch hero slot C
 
-Slot-C hero, assigned by 8.17's approved roster: **Sabina the Gunslinger** (Blue).
+Slot-C hero, assigned by 8.17's approved roster: **Sabina the Gunslinger** (Blue). The extraction's dashboard names her `SABINA THE COMMANDER` instead; the conflict is recorded as her shard's question S-01 and changes neither the roster slot nor the hero.
 
 Observable outcome: the slot-C hero's complete set is source-verified under the shared 8.18 contract above.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818c-inventory-and-verify-pitch-hero-slot-c-completion-evidence).
 
 ### [!] 8.18d Inventory and verify pitch hero slot D
 
