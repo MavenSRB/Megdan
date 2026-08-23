@@ -167,8 +167,12 @@ namespace GuardsDigital.Core.Snapshots
             TurnResolutionAuthority turn = null;
             if (reader.ReadBoolean())
             {
+                // Milestone 8.16 passes the phase's own answer down: a turn stopped by p.8's mid-turn
+                // ending has nothing left deciding who acts next, and only the phase read above says
+                // that is legitimate rather than a truncated payload.
                 turn = ReadTurn(reader, definitions, cards, participants, board, timing, markers,
-                    roundIndex, turnIndex, catalogs, lanePush, verifyingHeroItems, out cardActions);
+                    roundIndex, turnIndex, catalogs, lanePush, verifyingHeroItems,
+                    phase == RoundResolutionPhase.GameEnded, out cardActions);
             }
             else if (hasRoundCardActions)
             {

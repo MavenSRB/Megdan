@@ -257,7 +257,7 @@ Non-goals: no rules change - the empty-subset Clear confirm stays legal per 8.8b
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-815a-present-card-choices-as-faces-and-finish-board-first-selection-completion-evidence).
 
-### [!] 8.16 Complete the deterministic Wasp mirror integration gate
+### [x] 8.16 Complete the deterministic Wasp mirror integration gate
 
 Observable outcome: A Wasp mirror match can start, play repeated turns/rounds, and end through every victory path with primitive visuals and debug UI.
 
@@ -268,6 +268,8 @@ Acceptance checks:
 - Undo, restart, snapshots, event log, and Tie Breaker override work internally.
 - A broader source-linked Wasp integration suite passes.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816-complete-the-deterministic-wasp-mirror-integration-gate-completion-evidence).
 
 ### [!] 8.16a Independently review Wasp-driven card-engine extensibility
 

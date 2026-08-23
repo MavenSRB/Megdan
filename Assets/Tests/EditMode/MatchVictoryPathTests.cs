@@ -249,6 +249,66 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -----------------------------------------------------------------------------------------
+        // Milestone 8.16: p.8's endings reached in the middle of a turn
+        //
+        // Both cases above push the Lane at the end of a round, and until this milestone that was the
+        // only way either of p.8's sentences had ever been reached in a live match. p.8 also pushes
+        // "in the middle of a turn ... if you defeat, or remove, the last remaining enemy minion in
+        // the Battle Zone", and such a push is consumed inside the turn authority's own Initiative
+        // advance rather than at an end-of-round stage - so it never crossed `EndGame`, the phase
+        // never recorded the ending, and the next projection this match built threw
+        // `UnrecordedGameEnd`. The two cases below are the same board, one command apart from the
+        // ending, and they are what the milestone-8.16 gate found by playing the Wasp mirror.
+        // -----------------------------------------------------------------------------------------
+
+        [Test]
+        public void AMidTurnLanePushThatFlipsTheFinalWave_EndsTheMatchInsideTheTurnItHappenedIn()
+        {
+            var session = CreateSessionWithTheLastEnemyMinionBesideTheRedHero(waveCount: 1);
+
+            var ending = DefeatTheLastEnemyMinion(session);
+
+            Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.GameEnded),
+                "p.8: \"the game ends immediately\". The push that flipped the last Wave happened " +
+                "inside an Attack, and the match has to record that it ended there.");
+            Assert.That(session.Projection.Outcome.Cause,
+                Is.EqualTo(MatchVictoryCause.FinalWaveFlipped));
+            Assert.That(session.Projection.Outcome.WinningTeamId, Is.EqualTo(RedTeam),
+                "Red won the push: Blue had no minion left in the Battle Zone once this one fell.");
+            Assert.That(session.Projection.Outcome.LosingTeamId, Is.EqualTo(BlueTeam));
+            Assert.That(session.Projection.TeamLifeCounters.All(entry => entry.Value > 0), Is.True,
+                "This ending owes nothing to p.13, so the Life-counter question the turn boundary " +
+                "used to ask was the wrong one to be asking on its own.");
+
+            var ended = ending.Events.Single(value => value.Kind == RoundResolutionEventKind.GameEnded);
+            Assert.That(ended.MatchOutcome, Is.EqualTo(session.Projection.Outcome));
+            Assert.That(ended.EndOfRoundStage, Is.Null,
+                "A mid-turn push names no stage, which is what distinguishes this ending from the " +
+                "end-of-round push above rather than anything a fixture asserts about itself.");
+            Assert.That(session.Projection.RoundIndex, Is.EqualTo(1),
+                "and it ended in the first round, before any end-of-round stage had run at all.");
+            AssertNothingIsPending(session.Projection);
+            AssertEveryLaterCommandIsRefused(session);
+        }
+
+        [Test]
+        public void AMatchEndedByAMidTurnLanePush_RestoresToTheSameOutcome()
+        {
+            var session = CreateSessionWithTheLastEnemyMinionBesideTheRedHero(waveCount: 1);
+            DefeatTheLastEnemyMinion(session);
+            var payload = session.CaptureSnapshot();
+            var expected = session.Projection.AuthoritativeSnapshot;
+
+            var restored = CreateSessionWithTheLastEnemyMinionBesideTheRedHero(waveCount: 1);
+            var result = restored.RestoreSnapshot(payload);
+
+            Assert.That(result.Accepted, Is.True, result.Detail);
+            Assert.That(restored.Projection.AuthoritativeSnapshot, Is.EqualTo(expected));
+            Assert.That(restored.Projection.Outcome, Is.EqualTo(session.Projection.Outcome));
+            AssertEveryLaterCommandIsRefused(restored);
+        }
+
+        // -----------------------------------------------------------------------------------------
         // The three paths answer in one vocabulary
         // -----------------------------------------------------------------------------------------
 
@@ -689,6 +749,110 @@ namespace GuardsDigital.Tests.EditMode
                         .Where(minion => minion.TeamSide != TeamSide.Blue ||
                             minion.MinionId.Equals(survivor.MinionId))
                         .ToArray()));
+        }
+
+        /// <summary>
+        /// Milestone 8.16. The configured match with Blue holding exactly one minion - the melee one
+        /// standing in the starting Battle Zone - and the Red hero moved beside it.
+        ///
+        /// The hero is what moves, not the minion: p.8's mid-turn push asks for "the last remaining
+        /// enemy minion in the Battle Zone", so a fixture that stood the target outside the Zone to
+        /// reach it would be testing a different sentence. Red keeps its own minions, which is what
+        /// gives the resulting push a winner - p.8 awards it to "the team with one or more minions
+        /// still remaining in the Battle Zone".
+        /// </summary>
+        private static MatchSession CreateSessionWithTheLastEnemyMinionBesideTheRedHero(int waveCount)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var survivor = setup.Minions.First(minion =>
+                minion.TeamSide == TeamSide.Blue &&
+                minion.MinionType == StandardMinionType.Melee &&
+                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                    map, minion.Coordinate));
+            var minions = setup.Minions
+                .Where(minion => minion.TeamSide != TeamSide.Blue ||
+                    minion.MinionId.Equals(survivor.MinionId))
+                .ToArray();
+
+            var occupied = new HashSet<HexCoordinate>(
+                setup.Heroes.Select(hero => hero.Coordinate)
+                    .Concat(minions.Select(minion => minion.Coordinate)));
+            var beside = survivor.Coordinate.GetNeighbors()
+                .First(coordinate => !occupied.Contains(coordinate) &&
+                    map.Spaces.Any(space =>
+                        space.Kind == BoardMapSpaceKind.Playable &&
+                        space.Coordinate.Equals(coordinate)));
+            var besideSpaceId = map.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable &&
+                space.Coordinate.Equals(beside)).Id;
+
+            var heroes = setup.Heroes
+                .Select(hero => hero.TeamSide == TeamSide.Red
+                    ? new QuickGameHeroSetupState(
+                        hero.HeroId, hero.ContentId, hero.DisplayName, hero.TeamId, hero.TeamSide,
+                        hero.SpawnPoint, new ConfiguredSpaceReference(map.Id, besideSpaceId), beside)
+                    : hero)
+                .ToArray();
+
+            return CreateSession(
+                configuration,
+                map,
+                new QuickGameSetupState(
+                    setup.SelectedMap,
+                    waveCount,
+                    setup.TieBreakerState,
+                    setup.Teams,
+                    heroes,
+                    minions));
+        }
+
+        /// <summary>
+        /// Commits both cards, starts the Red hero's Attack and takes the one minion it can reach,
+        /// returning the result of the command that took it - which is the command p.8's mid-turn push
+        /// runs inside, and therefore the command that ends the match.
+        /// </summary>
+        private static MatchCommandResult DefeatTheLastEnemyMinion(MatchSession session)
+        {
+            var red = session.Projection.Cards.Single(card => card.Id.Value == "red-pursuit-card");
+            var blue = session.Projection.Cards.Single(card => card.Id.Value == "blue-hammer-card");
+            Accept(session, DirectorCommand.CommitCard(red.OwnerId, red.Id));
+            Accept(session, DirectorCommand.CommitCard(blue.OwnerId, blue.Id));
+            Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(red.Id),
+                "Red Pursuit's Initiative 7 acts before Blue Hammer's 6.");
+
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                offer.IsAvailable &&
+                session.Projection.Definitions
+                    .Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
+                    .ActionDefinitions
+                    .Single(action => action.Id.Equals(offer.ActionDefinitionId))
+                    .Kind == ActionKind.Attack);
+            Accept(session, DirectorCommand.StartAction(attack.ActionDefinitionId));
+
+            var target = session.Projection.PendingAttackTargetChoice;
+            Assert.That(target.LegalTargetMinionIds.Count, Is.EqualTo(1),
+                "Blue holds one minion and it stands beside the Red hero, so it is the Attack's only " +
+                "minion target.");
+            var minionId = target.LegalTargetMinionIds[0];
+            var result = Accept(session, DirectorCommand.ChooseAttackTarget(
+                target.ResolutionId, target.ChoiceId, minionId));
+
+            Assert.That(
+                session.Projection.Minions.Any(minion =>
+                    minion.MinionId.Equals(minionId) &&
+                    GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                        session.Projection.SelectedMap, minion.Coordinate)),
+                Is.False,
+                "The Attack has to actually take the minion out of the Battle Zone, or there is no " +
+                "push for the ending to be reached through.");
+            return result;
         }
 
         private static IReadOnlyList<QuickGameTeamSetupState> WithLifeCounters(

@@ -47,6 +47,7 @@ namespace GuardsDigital.Core.Snapshots
             MatchContentCatalogs catalogs,
             GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            bool matchHasEnded,
             out CardActionResolutionAuthority cardActions)
         {
             var started = reader.ReadBoolean();
@@ -92,7 +93,8 @@ namespace GuardsDigital.Core.Snapshots
                     new InitiativeResolutionRestoreState(pendingChoice, selectedActor),
                     roundIndex,
                     turnIndex),
-                lanePush);
+                lanePush,
+                matchHasEnded);
         }
 
         private static void WriteTiming(BinaryWriter writer, ActiveEffectLifecycleRestoreState state)

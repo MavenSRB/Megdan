@@ -342,6 +342,25 @@ namespace GuardsDigital.Core.Cards
         private GuardsDigital.Core.Rules.Victory.MatchOutcomeReading ReadOutcome() =>
             ReadOutcome(Phase == RoundResolutionPhase.GameEnded);
 
+        /// <summary>
+        /// Milestone 8.16. Whether the authoritative state already describes one of the rulebook's
+        /// three endings that <see cref="Phase"/> has not recorded yet.
+        ///
+        /// It asks the same reading <see cref="Outcome"/> asks, with the phase answered as "not
+        /// recorded", and looks for exactly the one fault that means "an ending happened here":
+        /// <c>UnrecordedGameEnd</c>. The other faults stay faults - two endings at once is an engine
+        /// defect whether or not a turn command produced it, and ending the game on one of them would
+        /// pick a winner by accident - so they are left for <see cref="Outcome"/> to throw on.
+        ///
+        /// This is deliberately a question about state rather than about which rule ran. A turn
+        /// command can end the match by p.13's counters or by either of p.8's push sentences, and the
+        /// list of rules that can do it grows with the content; the list of endings does not.
+        /// </summary>
+        private bool AnUnrecordedEndingExists() =>
+            GuardsDigital.Core.Rules.Victory.MatchOutcomeQuery
+                .Read(participants, lanePush?.LanePush, TeamLives, gameIsRecordedAsEnded: false)
+                .Fault == GuardsDigital.Core.Rules.Victory.MatchOutcomeFault.UnrecordedGameEnd;
+
         /// <summary>Milestone 6.2's marker attachments, held beside <see cref="Timing"/>.</summary>
         public MarkerAttachmentRegister Markers => markers;
 
@@ -1742,7 +1761,16 @@ namespace GuardsDigital.Core.Cards
             // rather than on which rule took the last one, and asking the state is what keeps that true
             // for the next rule that spends one. "The game ends" is taken literally - nothing later in
             // the turn runs, so the turn is not completed and the round does not advance.
-            if (TeamLives.HasEliminatedTeam)
+            //
+            // Milestone 8.16 widened the question from p.13's counters to every ending the state can
+            // already describe, because p.8's mid-turn Lane Push reaches this boundary too and was not
+            // being asked about. A push that empties the enemy Battle Zone in the middle of a turn is
+            // consumed inside `TurnResolutionAuthority.AdvanceInitiative`, which finishes it and
+            // returns; if that push flipped the final Wave or captured the Throne, the match had ended
+            // and only the Life counters were consulted here, so the phase never recorded it and the
+            // very next projection read faulted with `UnrecordedGameEnd`. Asking the state which
+            // ending it holds is the same discipline 7.4 wrote down, applied to all three sentences.
+            if (AnUnrecordedEndingExists())
             {
                 // Milestone 7.7: through the same seam p.8's two endings cross, so this one names its
                 // winner as well as the team the page names, and stops the turn it ended in the middle

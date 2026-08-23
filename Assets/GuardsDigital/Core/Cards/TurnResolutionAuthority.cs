@@ -655,7 +655,8 @@ namespace GuardsDigital.Core.Cards
             CardActionResolutionAuthority cardActions,
             ActiveEffectLifecycle timing,
             TurnResolutionRestoreState state,
-            GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush)
+            GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush,
+            bool matchHasEnded)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var authority = new TurnResolutionAuthority(
@@ -681,8 +682,17 @@ namespace GuardsDigital.Core.Cards
             // is deliberately not handed on until the push resolves. A snapshot taken there has to
             // restore a turn that is stopped too, so this is a state to admit rather than a payload to
             // refuse.
+            //
+            // Milestone 8.16 adds the fourth, and it is the one state where nothing needs to decide who
+            // acts next because nobody ever will: the match ended in the middle of this turn. p.13's
+            // ending leaves the acting hero selected, which is why the first three admitted every
+            // payload until now - but p.8's mid-turn push ends the match *after* the resolved card was
+            // acknowledged and the push consumed, so the turn it stops is started, unended, actorless,
+            // and holds no request. The phase the reader has already read is what says so; the round
+            // authority re-applies `StopResolutionForGameEnd` from the same fact a few lines later.
             if (!state.IsStarted ||
-                (!state.IsEnded && state.Initiative.PendingChoice == null &&
+                (!state.IsEnded && !matchHasEnded &&
+                    state.Initiative.PendingChoice == null &&
                     !state.Initiative.SelectedActor.IsDefined &&
                     cardActions?.PendingImmediateLanePush == null &&
                     cardActions?.IsPendingTriggeredEffect != true))

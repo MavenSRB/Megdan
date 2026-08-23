@@ -298,6 +298,73 @@ namespace GuardsDigital.Tests.EditMode
                 PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(TeamSide.Red));
 
         /// <summary>
+        /// Milestone 8.16. The same engaged verified mirror with the stated number of Life counters per
+        /// team - the verified twin of <see cref="CreateEngagedSession"/>, which milestone 7.9's gate
+        /// plays with the showcase hands.
+        ///
+        /// Both changes are setup content rather than rules: <see cref="QuickGameSetupState"/> carries a
+        /// starting position and a counter count, and what they buy is a mirror that reaches one of the
+        /// rulebook's endings inside a bounded command budget instead of playing past two hundred
+        /// rounds without one.
+        /// </summary>
+        public static MatchSession CreateEngagedVerifiedMirrorSession(int lifeCountersPerTeam)
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams
+                    .Select(team => new QuickGameTeamSetupState(
+                        team.TeamId, team.TeamSide, lifeCountersPerTeam, team.ThroneZoneId))
+                    .ToArray(),
+                WithBlueHeroBesideTheRedOne(map, setup),
+                setup.Minions));
+        }
+
+        /// <summary>
+        /// Milestone 8.16. The verified twin of <see cref="CreateUncontestedPushSession"/>: Blue holds
+        /// exactly one minion in the starting Battle Zone, so p.8's Minion Battle removes it and awards
+        /// Red the push at the end of every round until the Lane reaches the Blue Throne.
+        /// </summary>
+        public static MatchSession CreateUncontestedVerifiedPushSession()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var survivor = setup.Minions.First(minion =>
+                minion.TeamSide == TeamSide.Blue &&
+                minion.MinionType != StandardMinionType.Heavy &&
+                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                    map, minion.Coordinate));
+
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                setup.Heroes,
+                setup.Minions
+                    .Where(minion => minion.TeamSide != TeamSide.Blue ||
+                        minion.MinionId.Equals(survivor.MinionId))
+                    .ToArray()));
+        }
+
+        /// <summary>
         /// Milestone 8.6. The two heroes standing beside each other with the orbit Skill dealt, so a
         /// fixture can watch a subject move around the actor and a bounded repeat move it again.
         ///
@@ -919,10 +986,17 @@ namespace GuardsDigital.Tests.EditMode
         /// dealt rulebook p.5's starting five with the remaining thirteen in their decks, with p.5's
         /// coin flip replaced by an explicit side so a fixture can play it deterministically.
         /// </summary>
-        public static MatchSession CreateVerifiedMirrorSession()
+        public static MatchSession CreateVerifiedMirrorSession() =>
+            CreateVerifiedMirrorSession(TeamSide.Red);
+
+        /// <summary>
+        /// Milestone 8.16. The same verified mirror with `DEV-005`'s internal Tie Breaker override set
+        /// to the named side, so a fixture can ask what the override actually decides.
+        /// </summary>
+        public static MatchSession CreateVerifiedMirrorSession(TeamSide initialTieBreakerSide)
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
-                TeamSide.Red);
+                initialTieBreakerSide);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
