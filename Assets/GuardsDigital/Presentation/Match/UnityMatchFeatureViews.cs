@@ -162,6 +162,11 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.11a: and every space the Respawn offers, not only the one a control was
             // pointing at, now that the board is where the choice is made.
             targetCoordinates.UnionWith(model.HeroRespawnDestinations);
+            // Milestone 8.16c: a minion whose Spawn point is blocked is Placed into one of the
+            // equally-nearest empty spaces. Those answers are spaces, so every one is lit before the
+            // pointer moves and the HUD needs no destination control.
+            targetCoordinates.UnionWith(
+                model.SystemTransitionDestinations.Select(value => value.Destination));
 
             // The predicted landing space is drawn in its own color and is never selectable, so it is
             // resolved after the selectable set and can never be added to it.

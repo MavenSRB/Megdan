@@ -2573,7 +2573,7 @@ namespace GuardsDigital.Tests.EditMode
         /// digest. What this fixture is for is the description and the labels built from it, and both
         /// are the same objects a session would carry.
         /// </summary>
-        private static class LanePushPlacePause
+        internal static class LanePushPlacePause
         {
             private static readonly ZoneId BlueApproach = new ZoneId("blue-approach");
 

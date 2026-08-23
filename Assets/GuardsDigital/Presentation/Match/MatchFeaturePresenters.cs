@@ -15,6 +15,7 @@ using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -208,6 +209,29 @@ namespace GuardsDigital.Presentation.Match
             EffectChoiceLabels.TokenTargetLabel(displayName, ordinal);
     }
 
+    /// <summary>
+    /// One space-valued answer to a paused system transition. The destination and the continuation's
+    /// own invocation travel together, so a board click never reconstructs an option identity from a
+    /// coordinate.
+    /// </summary>
+    public sealed class SystemTransitionDestinationViewModel
+    {
+        public SystemTransitionDestinationViewModel(
+            HexCoordinate destination,
+            SystemTransitionChoiceCommand invocation)
+        {
+            Destination = destination;
+            Invocation = invocation.IsDefined
+                ? invocation
+                : throw new ArgumentException(
+                    "A system-transition board destination requires its projected invocation.",
+                    nameof(invocation));
+        }
+
+        public HexCoordinate Destination { get; }
+        public SystemTransitionChoiceCommand Invocation { get; }
+    }
+
     public sealed class BoardInteractionViewModel
     {
         public BoardInteractionViewModel(
@@ -227,7 +251,8 @@ namespace GuardsDigital.Presentation.Match
             HexCoordinate? effectChoiceTargetSpace = null,
             HexCoordinate? effectChoiceResultingSpace = null,
             HexCoordinate? heroRespawnHighlight = null,
-            IEnumerable<HexCoordinate> heroRespawnDestinations = null)
+            IEnumerable<HexCoordinate> heroRespawnDestinations = null,
+            IEnumerable<SystemTransitionDestinationViewModel> systemTransitionDestinations = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -273,6 +298,18 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<HexCoordinate>()).ToArray());
             HeroRespawnDestinations = Array.AsReadOnly((heroRespawnDestinations ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
+            SystemTransitionDestinations = Array.AsReadOnly((systemTransitionDestinations ??
+                Enumerable.Empty<SystemTransitionDestinationViewModel>()).ToArray());
+            if (SystemTransitionDestinations.Any(value => value == null) ||
+                SystemTransitionDestinations.Select(value => value.Destination).Distinct().Count() !=
+                    SystemTransitionDestinations.Count ||
+                SystemTransitionDestinations.Select(value => value.Invocation).Distinct().Count() !=
+                    SystemTransitionDestinations.Count)
+            {
+                throw new ArgumentException(
+                    "Each system-transition option maps one distinct destination to one distinct invocation.",
+                    nameof(systemTransitionDestinations));
+            }
             EffectChoiceTargetSpace = effectChoiceTargetSpace;
             EffectChoiceResultingSpace = effectChoiceResultingSpace;
             HeroRespawnHighlight = heroRespawnHighlight;
@@ -342,6 +379,12 @@ namespace GuardsDigital.Presentation.Match
         /// board. Declining to respawn has no space, so it stays a control in the prompt.
         /// </summary>
         public IReadOnlyList<HexCoordinate> HeroRespawnDestinations { get; }
+
+        /// <summary>
+        /// Milestone 8.16c: every equally-nearest empty space offered by p.8's blocked-Spawn-point
+        /// Lane-Push Place, paired with the exact continuation invocation that space answers.
+        /// </summary>
+        public IReadOnlyList<SystemTransitionDestinationViewModel> SystemTransitionDestinations { get; }
 
         /// <summary>The space of the effect-choice target the pointer or keyboard focus is on, if any.</summary>
         public HexCoordinate? EffectChoiceTargetSpace { get; }
@@ -496,7 +539,9 @@ namespace GuardsDigital.Presentation.Match
                     FindResultingSpace(projection, highlightedEffectChoiceSpace),
                     highlightedRespawnSpace,
                     projection.PendingHeroRespawnChoice?.Destinations
-                        .Select(destination => destination.Coordinate));
+                        .Select(destination => destination.Coordinate),
+                    CreateSystemTransitionDestinations(
+                        projection.PendingSystemTransitionDescription));
             }
 
             view.Render(lastViewModel);
@@ -881,6 +926,20 @@ namespace GuardsDigital.Presentation.Match
 
         public bool SubmitDestination(HexCoordinate destination)
         {
+            // Milestone 8.16c: the p.8 blocked-Spawn-point Place is a space-valued decision even
+            // though it lives in the shared system-transition continuation. Resolve the click from
+            // the current description and forward its exact invocation; never decode an option id
+            // from the coordinate, and never trust a model retained from an older projection.
+            var transitionDestinations = CreateSystemTransitionDestinations(
+                session.Projection.PendingSystemTransitionDescription);
+            if (transitionDestinations.Count > 0)
+            {
+                var option = transitionDestinations.SingleOrDefault(value =>
+                    value.Destination.Equals(destination));
+                return option != null && Execute(
+                    DirectorCommand.AnswerSystemTransitionStep(option.Invocation));
+            }
+
             // Milestone 6.4b: a correction destination is selectable straight off the board. The
             // families are mutually exclusive - a correction pauses mid-action, when no movement
             // choice or fast-travel activation can be live - so this is a route, not a priority.
@@ -938,6 +997,25 @@ namespace GuardsDigital.Presentation.Match
                 choice.ResolutionId,
                 choice.ChoiceId,
                 destination));
+        }
+
+        /// <summary>
+        /// Projects only the system-transition family whose answers are board spaces. Upgrade a Card
+        /// remains a card-faced HUD decision, and an absent or unknown description has no board surface.
+        /// </summary>
+        public static IReadOnlyList<SystemTransitionDestinationViewModel>
+            CreateSystemTransitionDestinations(SystemTransitionStepDescription description)
+        {
+            if (description == null || description.Kind != SystemTransitionPromptKind.LanePushRespawnPlace)
+            {
+                return Array.Empty<SystemTransitionDestinationViewModel>();
+            }
+
+            return Array.AsReadOnly(description.Options.Select(option =>
+                new SystemTransitionDestinationViewModel(
+                    option.Destination,
+                    description.PendingStep.Invocations.Single(invocation =>
+                        invocation.OptionId.Equals(option.OptionId)))).ToArray());
         }
 
         public bool SubmitHero(HeroId heroId)

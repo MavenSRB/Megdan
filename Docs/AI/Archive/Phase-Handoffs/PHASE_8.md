@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.16c Answer blocked Lane-Push respawn placement on the board completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.16c | A blocked Lane-Push Spawn point now exposes every equally-nearest empty Place destination as a standing selectable-space cue, paired one-to-one with the continuation's exact typed invocation and answered by the configured camera/board pointer path. The contextual HUD retains its team/minion explanation and blocked-Spawn status but draws no `PLACE AT` or coordinate button; Level Up stays card-faced and director/headless answers remain available. Unoffered and repeated coordinates execute nothing, acceptance places the respawning minion and clears the cues, and every rebuild derives the set from the current immutable projection. The named conformance check was captured failing pre-fix on three HUD destination buttons and passing post-fix. T2 final evidence: 125/125 affected Edit Mode, 35/35 affected Play Mode, 1/1 focused Play Mode, and 1/1 non-batch visual Play Mode, all green with zero skipped or inconclusive and the healthy 39-package baseline; the 2560x1440 Game View capture confirms four lit spaces and explanation-only HUD. Rules, command/event/wire shape, snapshots, replay, schema v24, and digests are unchanged. The four-perspective review found no remaining acceptance defect; the bounded maintainability cost is the deterministic journey's Core-only projected-command bridge, retained because the Play Mode assembly deliberately does not reference Application. | `pending` |
+
 ## Milestone 8.1 Inventory and verify Wasp's complete card set completion evidence
 
 | ID | Outcome | Commit |

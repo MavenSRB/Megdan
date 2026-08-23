@@ -266,6 +266,217 @@ namespace GuardsDigital.Presentation.Match
         public PendingDefenseResponseChoice PendingDefenseChoice => session.Projection.PendingDefenseChoice;
         public IReadOnlyList<ActionOffer> AvailableTurnActions => session.Projection.AvailableTurnActions;
         public IReadOnlyList<DirectorCommand> AcceptedCommands => session.Projection.AcceptedCommands;
+
+        /// <summary>
+        /// Returns every command the current authoritative projection offers, in its projected order.
+        /// This is the Core-only boundary used by deterministic player and Play Mode journeys: callers
+        /// can choose among real offers without taking a dependency on Application's projection type.
+        /// </summary>
+        public IReadOnlyList<DirectorCommand> EnumerateProjectedCommands()
+        {
+            var projection = session.Projection;
+            var candidates = new List<DirectorCommand>();
+            if (projection.Phase == RoundResolutionPhase.GameEnded)
+            {
+                return candidates;
+            }
+
+            var defense = projection.PendingDefenseChoice;
+            if (defense != null)
+            {
+                candidates.AddRange(defense.LegalDefenseOffers.Select(offer =>
+                    DirectorCommand.ChooseDefenseCard(
+                        defense.ResolutionId, defense.ChoiceId, offer.SourceCardInstanceId)));
+                if (defense.CanDecline)
+                {
+                    candidates.Add(DirectorCommand.DeclineDefense(
+                        defense.ResolutionId, defense.ChoiceId));
+                }
+
+                return candidates;
+            }
+
+            var attack = projection.PendingAttackTargetChoice;
+            if (attack != null)
+            {
+                candidates.AddRange(attack.LegalTargetHeroIds.Select(hero =>
+                    DirectorCommand.ChooseAttackTarget(attack.ResolutionId, attack.ChoiceId, hero)));
+                candidates.AddRange(attack.LegalTargetMinionIds.Select(minion =>
+                    DirectorCommand.ChooseAttackTarget(attack.ResolutionId, attack.ChoiceId, minion)));
+                return candidates;
+            }
+
+            var movement = projection.PendingMovementChoice;
+            if (movement != null)
+            {
+                candidates.AddRange(movement.LegalDestinations.Select(value =>
+                    DirectorCommand.ChooseMovementDestination(
+                        movement.ResolutionId, movement.ChoiceId, value.Destination)));
+                if (movement.CanStop)
+                {
+                    candidates.Add(DirectorCommand.StopMovement(
+                        movement.ResolutionId, movement.ChoiceId));
+                }
+
+                return candidates;
+            }
+
+            var effect = projection.PendingEffectChoice;
+            if (effect != null)
+            {
+                candidates.AddRange(effect.SelectInvocations.Select(
+                    DirectorCommand.AnswerEffectChoice));
+                if (effect.ConfirmInvocation != null)
+                {
+                    candidates.Add(DirectorCommand.AnswerEffectChoice(effect.ConfirmInvocation));
+                }
+
+                if (effect.DeclineInvocation != null)
+                {
+                    candidates.Add(DirectorCommand.AnswerEffectChoice(effect.DeclineInvocation));
+                }
+
+                if (effect.StopInvocation != null)
+                {
+                    candidates.Add(DirectorCommand.AnswerEffectChoice(effect.StopInvocation));
+                }
+
+                return candidates;
+            }
+
+            var correction = projection.PendingDisplacedMinionCorrection;
+            if (correction != null)
+            {
+                candidates.AddRange(correction.SelectInvocations.Select(invocation =>
+                    invocation.Kind == GuardsDigital.Core.Rules.Displacement
+                            .DisplacedMinionCorrectionCommandKind.SelectSubject
+                        ? DirectorCommand.ChooseCorrectionSubject(invocation)
+                        : DirectorCommand.ChooseCorrectionDestination(invocation)));
+                return candidates;
+            }
+
+            var respawn = projection.PendingHeroRespawnChoice;
+            if (respawn != null)
+            {
+                candidates.AddRange(respawn.RespawnInvocations.Select(DirectorCommand.RespawnHero));
+                candidates.Add(DirectorCommand.ResolveCardWithoutRespawn(respawn.DeclineInvocation));
+                return candidates;
+            }
+
+            var transition = projection.PendingSystemTransitionStep;
+            if (transition != null)
+            {
+                candidates.AddRange(transition.Invocations.Select(
+                    DirectorCommand.AnswerSystemTransitionStep));
+                return candidates;
+            }
+
+            var battle = projection.PendingMinionBattleChoice;
+            if (battle != null)
+            {
+                candidates.AddRange(battle.SelectInvocations.Select(
+                    DirectorCommand.SelectMinionBattleRemoval));
+                if (battle.CanConfirm)
+                {
+                    candidates.Add(DirectorCommand.ConfirmMinionBattleRemovals(
+                        battle.ConfirmInvocation));
+                }
+
+                return candidates;
+            }
+
+            if (projection.Phase == RoundResolutionPhase.EndOfRound)
+            {
+                candidates.Add(DirectorCommand.AdvanceEndOfRound());
+                return candidates;
+            }
+
+            var initiative = projection.PendingInitiativeChoice;
+            if (initiative != null)
+            {
+                candidates.AddRange(initiative.CandidateCardInstanceIds.Select(card =>
+                    DirectorCommand.ChooseTiedActor(initiative.OwningSide, card)));
+                return candidates;
+            }
+
+            if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
+            {
+                var pending = projection.Commitments.FirstOrDefault(value =>
+                    value.Status == TurnCardCommitmentStatus.AwaitingResponse);
+                if (!pending.HeroId.IsDefined)
+                {
+                    return candidates;
+                }
+
+                candidates.AddRange(projection.Cards
+                    .Where(card => card.OwnerId.Equals(pending.HeroId) &&
+                        card.State.Location == CardLocation.Hand)
+                    .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
+                    .Select(card => DirectorCommand.CommitCard(pending.HeroId, card.Id)));
+                if (pending.CanPass)
+                {
+                    candidates.Add(DirectorCommand.Pass(pending.HeroId));
+                }
+
+                return candidates;
+            }
+
+            if (!projection.IsTurnActive || !projection.SelectedActor.IsDefined)
+            {
+                return candidates;
+            }
+
+            candidates.AddRange(projection.AvailableTurnActions
+                .Where(offer => offer.IsAvailable)
+                .Select(offer => DirectorCommand.StartAction(offer.ActionDefinitionId)));
+            foreach (var option in projection.AvailableFastTravelOptions)
+            {
+                candidates.AddRange(option.LegalDestinations.Select(destination =>
+                    DirectorCommand.PerformFastTravel(
+                        option.ReplacedMovementActionDefinitionId, destination)));
+            }
+
+            foreach (var option in projection.AvailableClearOptions)
+            {
+                candidates.AddRange(option.SubsetInvocations);
+            }
+
+            var hold = GeneralRuleActionOfferQuery.GetAvailableHoldOffer(
+                projection.SelectedActor.CardInstanceId,
+                projection.SelectedActor.ActorId,
+                projection.Definitions,
+                projection.Cards,
+                RuleModificationSet.Empty);
+            if (hold.HasValue && hold.Value.IsAvailable)
+            {
+                candidates.Add(DirectorCommand.PerformHold(
+                    projection.SelectedActor.CardInstanceId));
+            }
+
+            return candidates;
+        }
+
+        /// <summary>
+        /// Submits one command obtained from <see cref="EnumerateProjectedCommands"/> and refreshes
+        /// every configured surface. The authority still performs the complete stale/legality check;
+        /// this is only the headless journey counterpart to the individual player controls below.
+        /// </summary>
+        public bool SubmitProjectedCommand(DirectorCommand command)
+        {
+            if (command == null)
+            {
+                return false;
+            }
+
+            var accepted = session.Execute(command).Accepted;
+            if (accepted)
+            {
+                RefreshAll();
+            }
+
+            return accepted;
+        }
+
         public IReadOnlyList<RuleEventLogEntry> DiagnosticEvents => session.Projection.DiagnosticEvents;
         public IReadOnlyList<RoundTurnSlot> TurnSlots => session.Projection.TurnSlots;
         public IReadOnlyList<CompletedRoundRecord> CompletedRounds => session.Projection.CompletedRounds;

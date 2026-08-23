@@ -1944,14 +1944,23 @@ namespace GuardsDigital.Presentation.Match
                 status.Add(HudElements.Text(prompt.StatusLabel, 11f, MatchHudTheme.MutedText));
             }
 
+            // Milestone 8.16c: p.8's blocked-Spawn-point Place is answered by clicking one of the
+            // standing highlighted spaces. The contextual region still explains who chooses and why,
+            // but drawing a PLACE AT control here would restore the duplicate input surface this
+            // milestone closes. Upgrade a Card continues below as card-faced controls.
+            if (prompt.Kind == GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind
+                    .LanePushRespawnPlace)
+            {
+                return;
+            }
+
             var section = Section(prompt.SectionLabel);
             var grid = HudElements.Column(6f);
             grid.style.flexGrow = 1f;
             section.Add(grid);
 
             // Milestone 8.8a: p.15's decision is a choice between cards, so it is drawn as cards. Every
-            // option of an upgrade carries the candidate's own face; a pause whose options carry none -
-            // p.8's Place names a space - keeps the labelled controls below.
+            // option of an upgrade carries the candidate's own face.
             if (prompt.Options.All(option => option.Card != null))
             {
                 // The gutter names the family beside the first row rather than halfway down two rows of

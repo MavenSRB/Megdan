@@ -1,4 +1,5 @@
 using System.Collections;
+using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -7,6 +8,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -399,12 +401,144 @@ namespace GuardsDigital.Tests.PlayMode
                 "The Red Wasp stands on the clicked spawn space.");
         }
 
+        /// <summary>
+        /// Milestone 8.16c's live regression. Seed 10 reaches the real blocked-Spawn-point Lane-Push
+        /// pause through projected commands. Setup is driven headlessly because none of those
+        /// decisions is this case's subject; the pending answer itself uses the configured
+        /// camera ray, HUD pointer exclusion, tile collider, board view, presenter, and exact command.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator BlockedLanePushRespawnPlace_LightsAndAnswersEverySpaceOnTheBoard()
+        {
+            yield return LoadEngagedScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var random = new SeededChoice(10);
+            var commandCount = 0;
+
+            while (runtime.SystemTransitionPrompt?.Kind !=
+                SystemTransitionPromptKind.LanePushRespawnPlace)
+            {
+                Assert.That(commandCount, Is.LessThan(950),
+                    $"Seed 10 did not reach the blocked Lane-Push respawn pause; stopped in " +
+                    $"round {runtime.RoundIndex}, turn {runtime.TurnIndex}, phase {runtime.Phase}.");
+                var offered = runtime.EnumerateProjectedCommands();
+                Assert.That(offered, Is.Not.Empty,
+                    $"The live match offered no command in round {runtime.RoundIndex}, " +
+                    $"turn {runtime.TurnIndex}, phase {runtime.Phase}.");
+                var chosen = offered[random.Next(offered.Count)];
+                Assert.That(runtime.SubmitProjectedCommand(chosen), Is.True,
+                    $"Projected command {commandCount + 1} ({chosen.Kind}) was refused.");
+                commandCount++;
+            }
+
+            yield return null;
+
+            var prompt = runtime.SystemTransitionPrompt;
+            var destinations = runtime.BoardView.Model.SystemTransitionDestinations;
+            Assert.That(destinations, Has.Count.EqualTo(prompt.Options.Count),
+                "Every equally-nearest empty space is projected before the pointer moves.");
+            Assert.That(destinations.Select(value => value.Invocation),
+                Is.EqualTo(prompt.Options.Select(option => option.Command.SystemTransitionChoice)),
+                "Each lit space keeps the exact continuation invocation it answers.");
+            Assert.That(destinations, Is.Not.Empty);
+
+            var tiles = Object.FindObjectsByType<HexTileView>();
+            foreach (var destination in destinations)
+            {
+                Assert.That(tiles.Single(tile => tile.Coordinate.Equals(destination.Destination))
+                    .IsHighlighted, Is.True,
+                    $"Offered space {destination.Destination} is not visibly lit.");
+            }
+
+            Assert.That(UiPlayer.Describe(root.Hud), Does.Not.Contain("PLACE AT"),
+                "The HUD explains the pause but must not duplicate its board-valued answers.");
+
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                var screenshotPath = Path.GetFullPath("tmp/8-16c-lane-push-board-choice.png");
+                if (File.Exists(screenshotPath))
+                {
+                    File.Delete(screenshotPath);
+                }
+
+                ScreenCapture.CaptureScreenshot(screenshotPath);
+                yield return new WaitForEndOfFrame();
+                yield return null;
+                Assert.That(File.Exists(screenshotPath), Is.True,
+                    "The targeted Lane-Push Game View evidence must be captured under tmp/.");
+            }
+
+            var unoffered = tiles.First(tile => tile.IsPlayable &&
+                destinations.All(value => !value.Destination.Equals(tile.Coordinate)));
+            Assert.That(runtime.BoardPresenter.SubmitDestination(unoffered.Coordinate), Is.False,
+                "A coordinate the continuation did not offer executes nothing.");
+
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var camera = pointerInput.EventCamera;
+            var chosenDestination = destinations.First(value =>
+            {
+                var tile = tiles.Single(candidate => candidate.Coordinate.Equals(value.Destination));
+                var screen = camera.WorldToScreenPoint(tile.transform.position);
+                return screen.z > 0f && screen.x >= 0f && screen.x <= Screen.width &&
+                    screen.y >= 0f && screen.y <= Screen.height &&
+                    !root.Hud.BlocksPointerAt(new Vector2(screen.x, screen.y));
+            });
+            var chosenTile = tiles.Single(tile =>
+                tile.Coordinate.Equals(chosenDestination.Destination));
+            var minionsBefore = runtime.BoardView.Model.Minions
+                .Select(minion => minion.MinionId).ToArray();
+
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, root.Hud, chosenTile.transform.position), Is.True,
+                "The highlighted destination must be answerable through the configured camera ray.");
+            yield return null;
+
+            Assert.That(runtime.AcceptedCommands.Last().Kind,
+                Is.EqualTo(DirectorCommandKind.AnswerSystemTransitionStep));
+            Assert.That(runtime.AcceptedCommands.Last().SystemTransitionChoice,
+                Is.EqualTo(chosenDestination.Invocation),
+                "The click forwarded the exact invocation paired with the chosen space.");
+            Assert.That(runtime.BoardView.Model.Minions.Any(minion =>
+                    !minionsBefore.Contains(minion.MinionId) &&
+                    minion.Coordinate.Equals(chosenDestination.Destination)),
+                Is.True,
+                "The respawning minion now stands in the clicked nearest empty space.");
+            Assert.That(runtime.BoardView.Model.SystemTransitionDestinations.Any(value =>
+                    value.Destination.Equals(chosenDestination.Destination)),
+                Is.False,
+                "The answered space is no longer offered by this or a following pause.");
+            Assert.That(chosenTile.IsHighlighted, Is.False,
+                "The accepted answer clears its selectable-space cue.");
+            Assert.That(runtime.BoardPresenter.SubmitDestination(chosenDestination.Destination),
+                Is.False,
+                "A repeated click on the answered space executes nothing.");
+        }
+
         // ---------------------------------------------------------------------------------------
         // Steps
         // ---------------------------------------------------------------------------------------
 
         private static HeroId HeroOf(ConfiguredMatchSceneRuntime runtime, TeamSide side) =>
             runtime.Setup.Heroes.Single(hero => hero.TeamSide == side).HeroId;
+
+        private sealed class SeededChoice
+        {
+            private uint state;
+
+            public SeededChoice(int seed)
+            {
+                state = seed == 0 ? 0x9E3779B9u : unchecked((uint)seed);
+            }
+
+            public int Next(int exclusiveUpperBound)
+            {
+                state ^= state << 13;
+                state ^= state >> 17;
+                state ^= state << 5;
+                return (int)(state % (uint)exclusiveUpperBound);
+            }
+        }
 
         /// <summary>
         /// Commits the round so the named hero acts first: their highest-Initiative in-hand card

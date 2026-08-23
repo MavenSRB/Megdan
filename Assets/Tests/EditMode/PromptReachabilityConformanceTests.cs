@@ -11,11 +11,13 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Tests.EditMode
 {
@@ -334,6 +336,71 @@ namespace GuardsDigital.Tests.EditMode
                 }),
                 "The prompt keeps exactly the controls that have no board surface. A control naming " +
                 "an offered token would be a second way to say what the board already says.");
+        }
+
+        /// <summary>
+        /// Milestone 8.16c closes the space-valued choice missed by both board-first audits: p.8's
+        /// blocked-Spawn-point Place is a paused system transition rather than an effect, correction,
+        /// Hero Respawn, or Clear choice, so its destination buttons survived every family-specific
+        /// conformance case. The prompt still explains the mandatory placement; the options themselves
+        /// belong only to the board.
+        /// </summary>
+        [Test]
+        public void APausedLanePushRespawnPlace_IsAnsweredOnlyOnTheBoard()
+        {
+            var description = MatchHudPresentationTests.LanePushPlacePause.Create()
+                .Transitions.DescribePendingStep();
+            Assert.That(description, Is.Not.Null);
+            Assert.That(description.Kind, Is.EqualTo(SystemTransitionPromptKind.LanePushRespawnPlace));
+
+            var destinations = BoardInteractionPresenter.CreateSystemTransitionDestinations(description);
+            Assert.That(destinations.Select(value => value.Destination),
+                Is.EqualTo(description.Options.Select(value => value.Destination)),
+                "Every offered destination is projected in the continuation's own order.");
+            Assert.That(destinations.Select(value => value.Invocation),
+                Is.EqualTo(description.Options.Select(option =>
+                    description.PendingStep.Invocations.Single(invocation =>
+                        invocation.OptionId.Equals(option.OptionId)))),
+                "Each space carries the exact typed invocation paired to that option; presentation " +
+                "does not reconstruct one from the coordinate or option id.");
+
+            var prompt = RoundActionPresenter.CreateSystemTransitionPrompt(
+                description,
+                Array.Empty<CardDefinition>(),
+                Array.Empty<QuickGameHeroSetupState>());
+            var view = new RoundActionUnityView();
+            view.Render(new RoundActionViewModel(
+                1,
+                1,
+                1,
+                RoundResolutionPhase.EndOfRound,
+                "ROUND 1 COMPLETE - END OF ROUND",
+                Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>(),
+                systemTransitionPrompt: prompt));
+
+            var buttons = Descendants(view.Root).OfType<Button>().ToArray();
+            Assert.That(buttons, Is.Empty,
+                "The Lane Push prompt explains the pause but a space-valued answer has no HUD " +
+                "control; every PLACE AT button is a duplicate input surface beside the board.");
+            Assert.That(Descendants(view.Root).OfType<Label>().Select(label => label.text),
+                Has.Some.Contains("PLACES THE RESPAWNING MINION"),
+                "Withdrawing destination controls must not withdraw who is deciding or why.");
+        }
+
+        private static IEnumerable<VisualElement> Descendants(VisualElement root)
+        {
+            foreach (var child in root.Children())
+            {
+                yield return child;
+                foreach (var nested in Descendants(child))
+                {
+                    yield return nested;
+                }
+            }
         }
 
         /// <summary>Every button label the rendered Clear section currently draws.</summary>
