@@ -352,11 +352,13 @@ Observable outcome: the slot-C hero's complete set is source-verified under the 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818c-inventory-and-verify-pitch-hero-slot-c-completion-evidence).
 
-### [!] 8.18d Inventory and verify pitch hero slot D
+### [x] 8.18d Inventory and verify pitch hero slot D
 
 Slot-D hero, assigned by 8.17's approved roster: **Tigerclaw the Cutpurse** (Red).
 
 Observable outcome: the slot-D hero's complete set is source-verified under the shared 8.18 contract above.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818d-inventory-and-verify-pitch-hero-slot-d-completion-evidence).
 
 ### [!] 8.18e Inventory and verify pitch hero slot E
 
