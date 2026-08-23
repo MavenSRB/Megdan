@@ -228,7 +228,7 @@ Non-goals: no rebalance, no second hero.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-814-integrate-wasp-progression-items-and-the-ultimate-unlock-completion-evidence).
 
-### [!] 8.15 Complete and verify every Wasp card behavior
+### [~] 8.15 Complete and verify every Wasp card behavior
 
 Observable outcome: Every Wasp definition and legal action at each pitch-relevant tier passes source-linked focused scenarios after its re-baselined dependencies are available.
 
