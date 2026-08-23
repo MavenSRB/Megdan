@@ -434,8 +434,66 @@ namespace GuardsDigital.Tests.EditMode
         /// projected list and marks that piece with the shared cue. A selected piece keeps its own
         /// treatment while the pointer moves on, which is the rule the minion prompt set.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.15a, at the user's direction: the open selection is the board's whole clear-cue
+        /// input. Every offered token is marked Eligible where it stands the moment the selection
+        /// opens, a chosen one Selected, and a board click on the offered token's space is what
+        /// toggles it - no pointer state and no prompt control anywhere in the loop.
+        /// </summary>
         [Test]
-        public void PointingAtAClearTokenControl_MarksThatExactPieceAndSelectionOutranksIt()
+        public void TheOpenSelection_MarksEveryOfferedTokenStandingAndABoardClickTogglesIt()
+        {
+            var session = StartAttackTurnBesideAHazard(out var token, out _);
+            var board = new CapturingBoardView();
+            var boardPresenter = new BoardInteractionPresenter(session, board);
+            var presenter = CreatePresenter(session, out var view);
+            presenter.ClearSelectionChanged += selection =>
+                boardPresenter.SetOpenClearSelection(selection);
+            presenter.Refresh();
+            boardPresenter.Refresh();
+
+            Assert.That(board.Model.PieceTargetCues, Is.Empty,
+                "No selection is open, so the board says nothing about the token.");
+
+            presenter.SelectClear(view.Model.ClearOffers.Single());
+            presenter.Refresh();
+            boardPresenter.Refresh();
+
+            var offered = board.Model.PieceTargetCues.Single();
+            Assert.That(offered.Target, Is.EqualTo(BoardObjectReference.ForToken(token.Id)));
+            Assert.That(offered.State, Is.EqualTo(BoardTargetCueState.Eligible),
+                "The offered piece says it may be clicked before any pointer finds it.");
+            Assert.That(offered.ConsequenceIntent,
+                Is.EqualTo(BoardTargetConsequenceIntent.Removal),
+                "Clear invokes removal, so its target uses the removal consequence palette.");
+
+            Assert.That(presenter.ToggleClearTokenAtSpace(token.Coordinate), Is.True,
+                "The click on the offered token's space is what chooses it.");
+            presenter.Refresh();
+            boardPresenter.Refresh();
+
+            Assert.That(board.Model.PieceTargetCues.Single().State,
+                Is.EqualTo(BoardTargetCueState.Selected));
+            Assert.That(view.Model.ClearSelection.Confirm.Command.TokenInstanceIds,
+                Is.EqualTo(new[] { token.Id }),
+                "and the confirm now carries exactly the clicked piece.");
+
+            Assert.That(presenter.ToggleClearTokenAtSpace(token.Coordinate), Is.True);
+            presenter.Refresh();
+            boardPresenter.Refresh();
+
+            Assert.That(board.Model.PieceTargetCues.Single().State,
+                Is.EqualTo(BoardTargetCueState.Eligible),
+                "A second click on the same space takes it back out of the subset.");
+
+            var elsewhere = token.Coordinate.GetNeighbors().First();
+            Assert.That(presenter.ToggleClearTokenAtSpace(elsewhere), Is.False,
+                "A space with no offered token toggles nothing, so the click stays free to mean " +
+                "whatever else the board offers for it.");
+        }
+
+        [Test]
+        public void ASelectionWhoseTokenTheProjectionNoLongerCarries_MarksNothing()
         {
             var session = StartAttackTurnBesideAHazard(out var token, out _);
             var board = new CapturingBoardView();
@@ -444,53 +502,20 @@ namespace GuardsDigital.Tests.EditMode
             presenter.Refresh();
             presenter.SelectClear(view.Model.ClearOffers.Single());
             presenter.Refresh();
+            var stale = view.Model.ClearSelection;
+
+            Assert.That(presenter.ToggleClearToken(stale.Candidates.Single()), Is.True);
+            presenter.Refresh();
+            Assert.That(presenter.ConfirmClear(), Is.True,
+                "The confirmed Clear removes the piece, which is what makes the captured selection " +
+                "stale.");
+
+            Assert.That(boardPresenter.SetOpenClearSelection(stale), Is.False,
+                "A selection naming a piece the projection no longer draws marks nothing.");
             boardPresenter.Refresh();
-
-            Assert.That(board.Model.PieceTargetCues, Is.Empty,
-                "Nothing is pointed at and nothing is chosen, so the board says nothing.");
-
-            Assert.That(boardPresenter.HighlightClearTokenCandidate(token.Id), Is.True);
-            boardPresenter.Refresh();
-
-            var pointed = board.Model.PieceTargetCues.Single();
-            Assert.That(pointed.Target, Is.EqualTo(BoardObjectReference.ForToken(token.Id)));
-            Assert.That(pointed.State, Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(pointed.ConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Removal),
-                "Clear invokes removal, so its target uses the removal consequence palette.");
-
-            Assert.That(boardPresenter.SetSelectedClearTokens(new[] { token.Id }), Is.True);
-            boardPresenter.Refresh();
-
-            Assert.That(board.Model.PieceTargetCues.Single().State,
-                Is.EqualTo(BoardTargetCueState.Selected),
-                "A chosen piece keeps saying so while the pointer is still on its control.");
-
-            Assert.That(boardPresenter.HighlightClearTokenCandidate(default), Is.True);
-            boardPresenter.Refresh();
-
-            var selected = board.Model.PieceTargetCues.Single();
-            Assert.That(selected.State, Is.EqualTo(BoardTargetCueState.Selected),
-                "Moving the pointer away leaves the selection's own cue standing.");
-            Assert.That(selected.ConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
-        }
-
-        [Test]
-        public void AnIdentityTheProjectionDoesNotCarry_MarksNothing()
-        {
-            var session = StartAttackTurnBesideAHazard(out _, out _);
-            var board = new CapturingBoardView();
-            var boardPresenter = new BoardInteractionPresenter(session, board);
-
-            Assert.That(
-                boardPresenter.HighlightClearTokenCandidate(new TokenInstanceId("gone")), Is.False);
-            Assert.That(
-                boardPresenter.SetSelectedClearTokens(new[] { new TokenInstanceId("gone") }), Is.False);
-            boardPresenter.Refresh();
-
-            Assert.That(board.Model.PieceTargetCues, Is.Empty,
-                "A stale control names a piece that is no longer drawn, and marks nothing.");
+            Assert.That(board.Model.PieceTargetCues, Is.Empty);
+            Assert.That(boardPresenter.SetOpenClearSelection(null), Is.False,
+                "and no selection at all is the same nothing.");
         }
 
         [Test]
@@ -564,7 +589,7 @@ namespace GuardsDigital.Tests.EditMode
             return session;
         }
 
-        private static MatchSession StartAttackTurnBesideAHazard(
+        public static MatchSession StartAttackTurnBesideAHazard(
             out PlacedToken token, out HeroId actorId)
         {
             var session = CreateComponentSession();

@@ -241,7 +241,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-815-complete-and-verify-every-wasp-card-behavior-completion-evidence).
 
-### [!] 8.15a Present card choices as faces and finish board-first selection
+### [x] 8.15a Present card choices as faces and finish board-first selection
 
 Inserted 2026-08-23 as a user-approved roadmap amendment, from the user's direction on 8.15's result: the discard chooser must show whole card faces, and every choice whose subject stands on the map is made on the map.
 
@@ -254,6 +254,8 @@ Acceptance checks:
 - The prompt-reachability conformance fixture covers the Clear selection: every offered candidate markable and toggleable on the board, and no candidate prompt control drawn (observed failing at the pre-fix surface).
 
 Non-goals: no rules change - the empty-subset Clear confirm stays legal per 8.8b and the greyed unavailable offer stays refused; no schema change.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-815a-present-card-choices-as-faces-and-finish-board-first-selection-completion-evidence).
 
 ### [!] 8.16 Complete the deterministic Wasp mirror integration gate
 

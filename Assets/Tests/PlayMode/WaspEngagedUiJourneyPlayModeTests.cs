@@ -99,7 +99,13 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(discardChoices.Select(value => value.Label),
                 Is.EquivalentTo(blueHandNames),
                 "Each control is named as the card it would give up, never an anonymous ordinal.");
-            UiPlayer.Click(UiPlayer.Button(hud, discardChoices[0].Label));
+            Assert.That(discardChoices.Select(value => value.Card), Has.All.Not.Null,
+                "and each is the whole printed face - milestone 8.15a, at the user's direction.");
+            var faceName = discardChoices[0].Card.DisplayName.ToUpperInvariant();
+            UiPlayer.EnsureVisible(
+                UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
+            yield return null;
+            UiPlayer.Click(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
             yield return null;
 
             Assert.That(runtime.PendingEffectChoice, Is.Null, "Both questions are answered.");

@@ -412,7 +412,7 @@ namespace GuardsDigital.Presentation.Match
         private MatchSessionProjection respawnHighlightProjection;
         private HexCoordinate? highlightedRespawnSpace;
         private MatchSessionProjection clearCueProjection;
-        private TokenInstanceId highlightedClearToken;
+        private IReadOnlyList<TokenInstanceId> offeredClearTokens = Array.Empty<TokenInstanceId>();
         private IReadOnlyList<TokenInstanceId> selectedClearTokens = Array.Empty<TokenInstanceId>();
 
         public BoardInteractionPresenter(IMatchSession session, IBoardInteractionView view)
@@ -456,14 +456,13 @@ namespace GuardsDigital.Presentation.Match
                 respawnHighlightProjection = null;
             }
 
-            // Milestone 6.3a: a token cue is anchored the same way, and the anchor carries the Clear
-            // selection with the pointed-at piece. A selection is local presenter state on the round
-            // presenter rather than authoritative state, so nothing else would drop it when the
-            // projection moves on, and a subset held across a command is a subset a player never
-            // chose for the position they are now in.
+            // Milestone 6.3a: a token cue is anchored the same way. A selection is local presenter
+            // state on the round presenter rather than authoritative state, so nothing else would drop
+            // it when the projection moves on, and a subset held across a command is a subset a player
+            // never chose for the position they are now in.
             if (!ReferenceEquals(projection, clearCueProjection))
             {
-                highlightedClearToken = default;
+                offeredClearTokens = Array.Empty<TokenInstanceId>();
                 selectedClearTokens = Array.Empty<TokenInstanceId>();
                 clearCueProjection = null;
             }
@@ -489,7 +488,7 @@ namespace GuardsDigital.Presentation.Match
                     CreatePieceTargetCues(
                         projection,
                         highlightedChoiceUnit,
-                        highlightedClearToken,
+                        offeredClearTokens,
                         selectedClearTokens),
                     highlightedCorrectionDestination,
                     SelectableEffectChoiceDestinations(projection),
@@ -585,51 +584,35 @@ namespace GuardsDigital.Presentation.Match
         /// removal ring says which token the words on that control mean. Passing an undefined
         /// identity clears the local cue.
         ///
-        /// The identity is resolved against the projected token list and nothing else. That is what
-        /// makes a stale control harmless - a token that has since been replaced, removed or moved is
-        /// simply not there to mark - and it is why no display name and no coordinate is consulted:
-        /// two Hazards read alike and a space says nothing about which piece stands on it.
+        /// Milestone 8.15a, at the user's direction: the cues are derived from the open selection
+        /// itself rather than from pointer state - every offered token is marked Eligible where it
+        /// stands and every chosen one Selected, so the board is the choosing surface and nothing
+        /// depends on where the pointer happens to rest. Each identity is resolved against the
+        /// projected token list and nothing else, which is what makes a stale selection harmless: a
+        /// token that has since been replaced, removed or moved is simply not there to mark.
         /// </summary>
-        public bool HighlightClearTokenCandidate(TokenInstanceId tokenId)
+        public bool SetOpenClearSelection(ClearSelectionViewModel selection)
         {
             var projection = session.Projection;
-            var resolved = tokenId.IsDefined &&
-                projection.PlacedTokens.Any(token => token.Id.Equals(tokenId))
-                    ? tokenId
-                    : default;
-            return SetClearTokenCues(projection, resolved, selectedClearTokens);
-        }
-
-        /// <summary>
-        /// Milestone 6.3a: the tokens the player has currently selected for a Clear, so each keeps
-        /// saying so while the pointer moves across the other controls. Resolved against the projected
-        /// list on the same terms as the pointed-at one.
-        /// </summary>
-        public bool SetSelectedClearTokens(IEnumerable<TokenInstanceId> tokenIds)
-        {
-            var projection = session.Projection;
-            var resolved = (tokenIds ?? Enumerable.Empty<TokenInstanceId>())
+            var offered = (selection?.Candidates ?? Array.Empty<ClearTokenCandidateViewModel>())
+                .Select(candidate => candidate.TokenId)
                 .Where(tokenId => tokenId.IsDefined &&
                     projection.PlacedTokens.Any(token => token.Id.Equals(tokenId)))
                 .Distinct()
                 .ToArray();
-            return SetClearTokenCues(projection, highlightedClearToken, resolved);
-        }
-
-        private bool SetClearTokenCues(
-            MatchSessionProjection projection,
-            TokenInstanceId highlighted,
-            IReadOnlyList<TokenInstanceId> selected)
-        {
-            var marksSomething = highlighted.IsDefined || selected.Count > 0;
-            if (highlighted.Equals(highlightedClearToken) &&
+            var selected = (selection?.SelectedTokenIds ?? Array.Empty<TokenInstanceId>())
+                .Where(tokenId => offered.Contains(tokenId))
+                .Distinct()
+                .ToArray();
+            var marksSomething = offered.Length > 0;
+            if (offered.SequenceEqual(offeredClearTokens) &&
                 selected.SequenceEqual(selectedClearTokens) &&
                 (!marksSomething || ReferenceEquals(projection, clearCueProjection)))
             {
                 return false;
             }
 
-            highlightedClearToken = highlighted;
+            offeredClearTokens = offered;
             selectedClearTokens = selected;
             clearCueProjection = marksSomething ? projection : null;
             lastProjection = null;
@@ -731,7 +714,7 @@ namespace GuardsDigital.Presentation.Match
         private static IReadOnlyList<PieceTargetCueViewModel> CreatePieceTargetCues(
             MatchSessionProjection projection,
             RuleObject highlightedChoiceUnit,
-            TokenInstanceId highlightedClearTokenId,
+            IReadOnlyList<TokenInstanceId> offeredClearTokenIds,
             IReadOnlyList<TokenInstanceId> selectedClearTokenIds)
         {
             var cues = new Dictionary<BoardObjectReference, PieceTargetCueViewModel>();
@@ -841,10 +824,13 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
+            // Milestone 8.15a: the open Clear selection's cues stand on their own - every offered
+            // token Eligible, every chosen one Selected - because the board is where the choice is
+            // made, and a piece a player may click has to say so before the pointer finds it.
             foreach (var token in projection.PlacedTokens)
             {
                 var isSelected = selectedClearTokenIds.Contains(token.Id);
-                var isEligible = token.Id.Equals(highlightedClearTokenId);
+                var isEligible = offeredClearTokenIds.Contains(token.Id);
                 if (isSelected || isEligible)
                 {
                     Add(
@@ -2356,6 +2342,21 @@ namespace GuardsDigital.Presentation.Match
             return AfterClearSelectionChanged();
         }
 
+        /// <summary>
+        /// Toggles the offered token standing on this space, for the board click. Milestone 8.15a, at
+        /// the user's direction: a Clear candidate is a piece on the map, so the map is where it is
+        /// chosen - the same board-first rule every other standing piece already follows. A space
+        /// carrying no offered token toggles nothing, so the click falls through to whatever else the
+        /// board may mean by it.
+        /// </summary>
+        public bool ToggleClearTokenAtSpace(HexCoordinate space)
+        {
+            var current = GetOrCreateViewModel(session.Projection);
+            var candidate = current.ClearSelection?.Candidates
+                .FirstOrDefault(value => value.Space.Equals(space));
+            return candidate != null && ToggleClearToken(candidate);
+        }
+
         /// <summary>Forwards the projected invocation for exactly the chosen subset, unchanged.</summary>
         public bool ConfirmClear()
         {
@@ -2843,9 +2844,12 @@ namespace GuardsDigital.Presentation.Match
                     continue;
                 }
 
-                // Milestone 8.15: a candidate that names a card is named as that card. The chooser
+                // Milestone 8.15: a candidate that names a card is named as that card - the chooser
                 // rulebook p.10 hands a discard to was reading `OPTION #1` where their own hand
                 // stood, which the first player-pipeline journey met and no headless fixture could.
+                // Milestone 8.15a carries the whole printed face beside the name, at the user's
+                // direction, so the control is the card itself exactly as a Defense offer is; the
+                // name stays as the control's hover and assistive reading.
                 if (candidate.Kind == EffectChoiceCandidateKind.Value &&
                     candidate.Value.Kind == EffectValueKind.CardInstance)
                 {
@@ -2859,7 +2863,8 @@ namespace GuardsDigital.Presentation.Match
                                 repeatedCardNames.Contains(cardName)
                                     ? ordinals[candidate]
                                     : (int?)null),
-                        command));
+                        command,
+                        card: CreateCardFace(projection, candidate.Value.CardInstanceId)));
                     continue;
                 }
 
@@ -3123,7 +3128,7 @@ namespace GuardsDigital.Presentation.Match
                             choice.ChoiceId,
                             offer.SourceCardInstanceId),
                         CreateDefenseBreakdown(projection.Version, preview, choicePreview),
-                        CreateDefenseCardFace(projection, offer.SourceCardInstanceId));
+                        CreateCardFace(projection, offer.SourceCardInstanceId));
                 })
                 .ToList();
             if (choice.CanDecline)
@@ -3139,17 +3144,18 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// One offered Defense card as the tray draws it.
+        /// One offered card as the tray draws it.
         ///
-        /// <para>Milestone 8.11b. It is <see cref="CurrentRoundCards.TrayCard"/> and nothing composed
-        /// beside it, so an offer shows the same Initiative, name, printed values, qualifiers and exact
-        /// source text the same card shows in the hand it is still sitting in - one card, one face. The
-        /// card an offer names is always in that hand: p.11 answers an Attack with a card the defender
-        /// holds, and the discard happens on choosing rather than on being offered. It is built
-        /// selectable because the authority is offering it, which is what keeps the face at full
-        /// strength rather than wearing the spent-card treatment.</para>
+        /// <para>Milestone 8.11b built it for p.11's Defense response; milestone 8.15a hands the same
+        /// face to every card-instance effect-choice candidate - rulebook p.10's discard chooser
+        /// included - so a choice among cards is a choice among the cards themselves. It is
+        /// <see cref="CurrentRoundCards.TrayCard"/> and nothing composed beside it, so an offer shows
+        /// the same Initiative, name, printed values, qualifiers and exact source text the same card
+        /// shows in the hand it is still sitting in - one card, one face. It is built selectable
+        /// because the authority is offering it, which is what keeps the face at full strength rather
+        /// than wearing the spent-card treatment.</para>
         /// </summary>
-        private static TrayCardViewModel CreateDefenseCardFace(
+        private static TrayCardViewModel CreateCardFace(
             MatchSessionProjection projection,
             CardInstanceId cardInstanceId)
         {

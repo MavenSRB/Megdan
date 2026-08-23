@@ -1737,20 +1737,11 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Milestone 6.3a: the Clear replacement whose control was activated.</summary>
         public event Action<ClearOfferViewModel> ClearSelected;
 
-        /// <summary>One offered token control was activated, added to or taken out of the subset.</summary>
-        public event Action<ClearTokenCandidateViewModel> ClearTokenToggled;
         public event Action ClearConfirmed;
         public event Action ClearCancelled;
 
-        /// <summary>
-        /// The Clear token control the pointer or keyboard focus is on, or null when none is. The
-        /// board reads this to mark that exact piece.
-        /// </summary>
-        public event Action<ClearTokenCandidateViewModel> ClearTokenHighlighted;
-
         public EffectChoiceTargetViewModel HighlightedTarget { get; private set; }
         public HeroRespawnOptionViewModel HighlightedRespawn { get; private set; }
-        public ClearTokenCandidateViewModel HighlightedClearToken { get; private set; }
 
         /// <summary>
         /// The upgrade option the pointer or keyboard focus is on, or null when none is.
@@ -1820,16 +1811,6 @@ namespace GuardsDigital.Presentation.Match
                 SetRespawnHighlight(null);
             }
 
-            // Milestone 6.3a: on the same terms. A rebuilt model - a new projection, or a change to
-            // the selection itself - drops the pointed-at token, so the board never keeps a cue for a
-            // control that is no longer drawn.
-            if (HighlightedClearToken != null &&
-                Model.ClearSelection?.Candidates.Any(value =>
-                    ReferenceEquals(value, HighlightedClearToken)) != true)
-            {
-                SetClearTokenHighlight(null);
-            }
-
             Rebuild();
         }
 
@@ -1849,10 +1830,6 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Reports a hovered or keyboard-focused respawn control without a pointer driver.</summary>
         public void ForwardRespawnHighlight(HeroRespawnOptionViewModel option) =>
             SetRespawnHighlight(option);
-
-        /// <summary>Reports a pointed-at Clear token control directly, for a driver with no pointer.</summary>
-        public void ForwardClearTokenHighlight(ClearTokenCandidateViewModel candidate) =>
-            SetClearTokenHighlight(candidate);
 
         public void ForwardInvocation(TypedInvocationViewModel invocation)
         {
@@ -1890,17 +1867,6 @@ namespace GuardsDigital.Presentation.Match
 
             HighlightedRespawn = option;
             RespawnHighlighted?.Invoke(option);
-        }
-
-        private void SetClearTokenHighlight(ClearTokenCandidateViewModel candidate)
-        {
-            if (ReferenceEquals(HighlightedClearToken, candidate))
-            {
-                return;
-            }
-
-            HighlightedClearToken = candidate;
-            ClearTokenHighlighted?.Invoke(candidate);
         }
 
         private void Rebuild()
@@ -2290,25 +2256,12 @@ namespace GuardsDigital.Presentation.Match
 
         private void BuildClearSelection(ClearSelectionViewModel selection)
         {
+            // Milestone 8.15a, at the user's direction: every offered token is a piece standing on
+            // the board, so the board is where it is chosen - marked Eligible or Selected where it
+            // stands and toggled by clicking it, exactly as the Minion Battle's candidates have been
+            // since 8.11a. The controls that used to name them are gone; what stays is what has no
+            // board surface: agreeing to the chosen subset, and closing the selection.
             var section = Section("CLEAR");
-            foreach (var candidate in selection.Candidates)
-            {
-                var control = HudElements.Control(
-                    candidate.Label, () => ClearTokenToggled?.Invoke(candidate));
-                HudElements.MarkSelected(control, candidate.IsSelected);
-                HudElements.OnPointedAt(control, pointedAt =>
-                    SetClearTokenHighlight(pointedAt ? candidate : null));
-                section.Add(control);
-            }
-
-            if (selection.Candidates.Count == 0)
-            {
-                section.Add(HudElements.Text(
-                    "NO ADJACENT TOKEN - CLEARING NONE STILL RESOLVES THE CARD",
-                    11f,
-                    MatchHudTheme.MutedText));
-            }
-
             var confirm = HudElements.Control(
                 selection.Confirm.Label, () => ClearConfirmed?.Invoke());
             confirm.style.backgroundColor = MatchHudTheme.ConfirmAccent;
@@ -2457,7 +2410,17 @@ namespace GuardsDigital.Presentation.Match
 
             foreach (var effectChoice in Model.EffectChoices)
             {
-                AddInvocation(section, effectChoice);
+                // Milestone 8.15a, at the user's direction: a choice that is about a card is drawn
+                // as the card - rulebook p.10's discard chooser above all - through the same shared
+                // face a Defense offer wears. A choice about no card keeps its labelled control.
+                if (effectChoice.Card != null)
+                {
+                    section.Add(BuildEffectCardChoice(effectChoice));
+                }
+                else
+                {
+                    AddInvocation(section, effectChoice);
+                }
             }
 
             // Milestone 6.5ac: a mode the actor cannot perform keeps its label and its ordinal and
@@ -2503,6 +2466,39 @@ namespace GuardsDigital.Presentation.Match
             {
                 section.Add(HudElements.Control(invocation.Label, () => ForwardInvocation(invocation)));
             }
+        }
+
+        /// <summary>
+        /// One card-valued effect choice as the whole printed face, on the terms milestone 8.11b gave
+        /// a legal Defense offer: the tray's own standalone builder inside a fixed-width frame with
+        /// the shared always-drawn selection outline, the whole face forwarding exactly the projected
+        /// invocation, and the card's name in the control's hover and assistive reading.
+        /// </summary>
+        private Button BuildEffectCardChoice(TypedInvocationViewModel choice)
+        {
+            var control = new Button(() => ForwardInvocation(choice))
+            {
+                name = "gd-effect-card",
+                text = string.Empty
+            };
+            control.style.flexDirection = FlexDirection.Column;
+            control.style.alignItems = Align.Stretch;
+            control.style.flexShrink = 0f;
+            control.style.alignSelf = Align.Stretch;
+            control.style.width = DefenseCardFootprint;
+            control.style.marginLeft = 0f;
+            control.style.marginRight = 0f;
+            control.style.marginTop = 0f;
+            control.style.marginBottom = 0f;
+            HudElements.Padding(control, DefenseCardInset);
+            control.style.backgroundColor = MatchHudTheme.PanelBackground;
+            HudElements.MarkSelectedWithoutResizing(control, false);
+
+            var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
+            face.style.flexGrow = 1f;
+            control.Add(face);
+            control.tooltip = choice.Label.Replace('\n', ' ');
+            return control;
         }
 
         public void ShowDefensePreview(DefenseBreakdownViewModel model, Rect anchorScreenRect)

@@ -121,7 +121,11 @@ namespace GuardsDigital.Presentation.Match
                         GuardsDigital.Core.Rules.Modifications.RuleObject.ForMinion(minionId)),
                 coordinate =>
                     BoardPresenter.SubmitDestination(coordinate) ||
-                    RoundPresenter.SubmitRespawnAtDestination(coordinate));
+                    RoundPresenter.SubmitRespawnAtDestination(coordinate) ||
+                    // Milestone 8.15a: an offered Clear token is toggled where it stands. The toggle
+                    // is local presentation state, so nothing authoritative redraws the surfaces -
+                    // the refresh here is what the removed prompt control's handler used to do.
+                    Refreshed(RoundPresenter.ToggleClearTokenAtSpace(coordinate)));
             HandsView.CardSelected += cardId => HandsPresenter.SelectCommitmentCard(cardId);
             HandsView.ConfirmRequested += () => HandsPresenter.ConfirmSelectedCard();
             HandsView.PassRequested += heroId => HandsPresenter.Pass(heroId);
@@ -163,13 +167,6 @@ namespace GuardsDigital.Presentation.Match
                     RefreshAll();
                 }
             };
-            RoundView.ClearTokenToggled += candidate =>
-            {
-                if (RoundPresenter.ToggleClearToken(candidate))
-                {
-                    RefreshAll();
-                }
-            };
             RoundView.ClearConfirmed += () => RoundPresenter.ConfirmClear();
             RoundView.ClearCancelled += () =>
             {
@@ -178,21 +175,11 @@ namespace GuardsDigital.Presentation.Match
                     RefreshAll();
                 }
             };
-            RoundView.ClearTokenHighlighted += candidate =>
-            {
-                // Only the board, for the reason every other hover notification gives: this fires
-                // inside the HUD's own draw, and rebuilding the immediate-mode models mid-pass would
-                // change the control count between layout and repaint.
-                if (BoardPresenter.HighlightClearTokenCandidate(
-                    candidate?.TokenId ?? default))
-                {
-                    BoardPresenter.Refresh();
-                }
-            };
+            // Milestone 8.15a: the open selection is the board's whole clear-cue input - every offered
+            // token marked Eligible where it stands, every chosen one Selected - so the board is the
+            // choosing surface with no pointer state involved.
             RoundPresenter.ClearSelectionChanged += selection =>
-                BoardPresenter.SetSelectedClearTokens(
-                    selection?.SelectedTokenIds ??
-                    Array.Empty<GuardsDigital.Core.Components.TokenInstanceId>());
+                BoardPresenter.SetOpenClearSelection(selection);
             UndoRestartView.UndoRequested += () => UndoRestartPresenter.Undo();
             UndoRestartView.RestartRequested += () => UndoRestartPresenter.Restart();
             DiagnosticView.ToggleRequested += () => DiagnosticPresenter.Toggle();
@@ -547,24 +534,6 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return changed;
-        }
-
-        /// <summary>
-        /// Reports which Clear token control is pointed at, addressed by identity, for a driver with
-        /// no pointer. Passing an undefined identity clears the cue. It reaches the board through the
-        /// view, so a driver and a pointer take the identical route - and because that route already
-        /// marks the board, what is returned is whether the named control was found and forwarded
-        /// rather than whether this call is what moved the cue.
-        /// </summary>
-        public bool HighlightClearToken(GuardsDigital.Core.Components.TokenInstanceId tokenId)
-        {
-            var candidate = tokenId.IsDefined
-                ? RoundView.Model?.ClearSelection?.Candidates.SingleOrDefault(value =>
-                    value.TokenId.Equals(tokenId))
-                : null;
-            RoundView.ForwardClearTokenHighlight(candidate);
-            BoardPresenter.HighlightClearTokenCandidate(candidate?.TokenId ?? default);
-            return candidate != null || !tokenId.IsDefined;
         }
 
         public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection

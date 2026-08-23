@@ -147,9 +147,8 @@ namespace GuardsDigital.Tests.EditMode
             var view = new RoundActionUnityView();
             new RoundActionPresenter(session, view).Refresh();
 
-            var chooserLabels = view.Model.EffectChoices
+            var chooserChoices = view.Model.EffectChoices
                 .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .Select(value => value.Label)
                 .ToArray();
             var handNames = session.Projection.Cards
                 .Where(card => card.OwnerId.Equals(blue) &&
@@ -158,10 +157,28 @@ namespace GuardsDigital.Tests.EditMode
                     .Single(definition => definition.Reference.Equals(card.DefinitionReference))
                     .DisplayName.ToUpperInvariant())
                 .ToArray();
-            Assert.That(chooserLabels, Is.EquivalentTo(handNames),
+            Assert.That(chooserChoices.Select(value => value.Label), Is.EquivalentTo(handNames),
                 "One control per in-hand card, each named as the card it would give up.");
-            Assert.That(chooserLabels, Has.All.Not.StartsWith("OPTION #"),
+            Assert.That(chooserChoices.Select(value => value.Label),
+                Has.All.Not.StartsWith("OPTION #"),
                 "No anonymous ordinal survives where a card has a name.");
+
+            // Milestone 8.15a, at the user's direction: each control carries the whole printed face,
+            // built by the same reading a Defense offer's is, and the view draws it as the card.
+            Assert.That(chooserChoices.Select(value => value.Card), Has.All.Not.Null,
+                "A choice about a card carries the card.");
+            Assert.That(
+                chooserChoices.Select(value => value.Card.DisplayName.ToUpperInvariant()),
+                Is.EquivalentTo(handNames),
+                "and the face is the card the control gives up, one for one.");
+            Assert.That(chooserChoices.Select(value => value.Card.Face.PrintedTextKind),
+                Has.All.EqualTo(CardSourceContentKind.Transcribed),
+                "Wasp's faces carry their transcribed words, exactly as the tray shows them.");
+            var faces = Buttons(view.Root)
+                .Where(button => button.name == "gd-effect-card")
+                .ToArray();
+            Assert.That(faces, Has.Length.EqualTo(chooserChoices.Length),
+                "The region draws one whole-face control per offered card, none as a text button.");
         }
 
         private static CardInstance HandCardOf(

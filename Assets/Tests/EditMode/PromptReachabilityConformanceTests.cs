@@ -280,6 +280,83 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// And for the Clear selection, which milestone 8.15a moved onto the board at the user's
+        /// direction - the last choice whose subject stands on the map that still carried prompt
+        /// controls. The rule is the Minion Battle's: every offered token markable where it stands
+        /// and toggleable by a click on its space, no prompt control naming one, and the controls
+        /// that stay are exactly the ones with no board surface - confirm and cancel.
+        /// </summary>
+        [Test]
+        public void TheOpenClearSelection_IsAnsweredOnTheBoardAndKeepsNoCandidateControl()
+        {
+            var session = ClearPresentationTests.StartAttackTurnBesideAHazard(out var token, out _);
+            var boardView = new CapturingBoardInteractionView();
+            var board = new BoardInteractionPresenter(session, boardView);
+            var roundView = new RoundActionUnityView();
+            var round = new RoundActionPresenter(session, roundView);
+            round.ClearSelectionChanged += selection => board.SetOpenClearSelection(selection);
+            round.Refresh();
+            Assert.That(round.SelectClear(roundView.Model.ClearOffers.Single()), Is.True);
+            round.Refresh();
+            board.Refresh();
+
+            var selection = roundView.Model.ClearSelection;
+            Assert.That(selection, Is.Not.Null, "The selection is open, or this asserts nothing.");
+            Assert.That(selection.Candidates, Is.Not.Empty);
+
+            foreach (var candidate in selection.Candidates)
+            {
+                var cue = boardView.Model.PieceTargetCues.SingleOrDefault(value =>
+                    value.Target.Equals(BoardObjectReference.ForToken(candidate.TokenId)));
+                Assert.That(cue, Is.Not.Null,
+                    $"The offered token '{candidate.TokenId.Value}' is marked where it stands, " +
+                    "before any pointer finds it.");
+                Assert.That(cue.State, Is.EqualTo(candidate.IsSelected
+                    ? BoardTargetCueState.Selected
+                    : BoardTargetCueState.Eligible));
+                Assert.That(cue.ConsequenceIntent,
+                    Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+                Assert.That(round.ToggleClearTokenAtSpace(candidate.Space), Is.True,
+                    "and a click on its space is what toggles it.");
+                round.Refresh();
+                board.Refresh();
+            }
+
+            Assert.That(roundView.Model.ClearSelection.SelectedTokenIds,
+                Is.EquivalentTo(selection.Candidates.Select(value => value.TokenId)),
+                "Every offered token was chosen by its own space click.");
+
+            var drawnControls = ClearSectionButtons(roundView);
+            Assert.That(drawnControls, Is.EquivalentTo(new[]
+                {
+                    selection.Confirm.Label, selection.CancelLabel
+                }),
+                "The prompt keeps exactly the controls that have no board surface. A control naming " +
+                "an offered token would be a second way to say what the board already says.");
+        }
+
+        /// <summary>Every button label the rendered Clear section currently draws.</summary>
+        private static string[] ClearSectionButtons(RoundActionUnityView view)
+        {
+            var labels = new List<string>();
+            void Collect(UnityEngine.UIElements.VisualElement element)
+            {
+                if (element is UnityEngine.UIElements.Button button)
+                {
+                    labels.Add(button.text);
+                }
+
+                foreach (var child in element.Children())
+                {
+                    Collect(child);
+                }
+            }
+
+            Collect(view.Root);
+            return labels.ToArray();
+        }
+
         private static bool IsBlock(IMatchSession session, ActionOffer offer) =>
             GuardsDigital.Core.Rules.CardResolution.DefenseBlockQuery.IsBlock(
                 offer, session.Projection.Definitions);

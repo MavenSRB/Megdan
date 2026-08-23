@@ -691,7 +691,10 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
         }
 
-        /// <summary>Answers the chosen hero's own discard by clicking one offered card control.</summary>
+        /// <summary>
+        /// Answers the chosen hero's own discard by clicking one offered card - a whole printed face
+        /// since milestone 8.15a, found by the name on its own band exactly as a Defense face is.
+        /// </summary>
         private static IEnumerator AnswerDiscardChooser(
             MatchSceneCompositionRoot root, HeroId chooserHeroId)
         {
@@ -704,9 +707,15 @@ namespace GuardsDigital.Tests.PlayMode
                     value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                 .ToArray();
             Assert.That(choices, Is.Not.Empty,
-                "The chooser's cards are offered as controls. Shown controls: " +
-                UiPlayer.Describe(root.Hud));
-            UiPlayer.Click(UiPlayer.Button(root.Hud, choices[0].Label));
+                "The chooser's cards are offered. Shown controls: " + UiPlayer.Describe(root.Hud));
+            Assert.That(choices.Select(value => value.Card), Has.All.Not.Null,
+                "Each offer is the whole printed face rather than a text button.");
+            var faceName = choices[0].Card.DisplayName.ToUpperInvariant();
+            UiPlayer.EnsureVisible(
+                UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", faceName));
+            yield return null;
+            UiPlayer.Click(
+                UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", faceName));
             yield return null;
         }
 

@@ -244,9 +244,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.AcceptedCommands.Count, Is.EqualTo(acceptedBefore),
                 "Opening the selection submits nothing and leaves the card unresolved.");
 
-            Assert.That(runtime.HighlightClearToken(token.Id), Is.True);
-            yield return null;
-
+            // Milestone 8.15a: the offered token is marked Eligible where it stands the moment the
+            // selection opens - the cue is the open selection's own, with no pointer involved -
+            // because the board is now the choosing surface.
             var view = runtime.BoardView.TokenViews.Single(value =>
                 value.BoundTokenId.Equals(token.Id));
             var ring = view.TargetRing;
@@ -266,7 +266,16 @@ namespace GuardsDigital.Tests.PlayMode
                 BoardTargetRing.EligibleWashAlpha);
             AssertTargetRingIsReadableThroughTheCamera(view);
 
-            Assert.That(runtime.ToggleClearToken(token.Id), Is.True);
+            // And the marked piece is toggled by clicking it: the pointer ray lands on the token's
+            // space, the intent chain finds no destination or respawn use for it, and the open
+            // selection claims it - the same route every board answer takes.
+            var pointerInput = Object.FindAnyObjectByType<
+                GuardsDigital.Presentation.Interaction.PrimitiveHeroPointerInput>();
+            Assert.That(
+                pointerInput.TryHandlePointerRay(
+                    new Ray(view.transform.position + (Vector3.up * 2f), Vector3.down)),
+                Is.True,
+                "The board click on the offered token must be claimed by the Clear selection.");
             yield return null;
 
             Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected),
