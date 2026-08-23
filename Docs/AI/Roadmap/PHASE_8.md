@@ -309,9 +309,11 @@ Non-goals: no Lane Push, Spawn, Place, obstacle, nearest-space, Tie Breaker, tra
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816c-answer-blocked-lane-push-respawn-placement-on-the-board-completion-evidence).
 
-### [!] 8.17 Select the five additional pitch heroes
+### [x] 8.17 Select the five additional pitch heroes
 
 Observable outcome: The user approves five specific heroes that join Wasp as six different heroes divided into three Red and three Blue roster slots for the private pitch.
+
+**Approved 2026-08-23: the rulebook's own recommended first-game line-up, chosen by the user from p.6's setup step 7 over the analysis-recommended alternative.** Red: Wasp the Warmaiden, Xargatha the Changed, Tigerclaw the Cutpurse; Blue: Arien the Tidemaster, Brogan the Destroyer, Sabina the Gunslinger - the exact dashboards the printed step names for a six-player game, so the team slots come from the source rather than from invention. All five newcomers are one-star Challenging, none carries the profile cards' `Tokens` role, and every extraction set is Wasp-shaped: nineteen faces at the same readable resolution, with all thirty-two dashboard backs blank placeholders - the recorded W-01-class open question each hero shard inherits at its 8.18 slice.
 
 Acceptance checks:
 
@@ -322,25 +324,37 @@ Acceptance checks:
 
 Non-goals: No card transcription, effect implementation, production art, balance adjustment, or seventh pitch hero.
 
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-817-select-the-five-additional-pitch-heroes-completion-evidence).
+
 Milestone 8.18 was split five ways by the 8.2 re-baseline (2026-08-21, user approved, applying the 7.9a recommendation): its own acceptance contract says a missing component blocks the affected hero, but one milestone made a single blocked hero hold four others, and the one-shard-per-hero contract already exists. Each slice below applies the same inventory contract to the one hero milestone 8.17 assigns to its slot: every required face and component present and readable; structured data manually checked against source images and applicable official rulings; missing, ambiguous, or conflicting content recorded in that hero's own `Rules/HERO_<NAME>.md` shard per the milestone 6.1y contract, blocking only that hero rather than being guessed, with content affecting more than one hero staying in `RULES_LEDGER.md`; and no implementation from unverified filenames, OCR, display text, or assumed cross-hero similarity.
 
 ### [!] 8.18a Inventory and verify pitch hero slot A
+
+Slot-A hero, assigned by 8.17's approved roster: **Arien the Tidemaster** (Blue).
 
 Observable outcome: the slot-A hero's cards, tiers, values, action types, text, item possibilities, Ultimate, tokens/markers, and other hero-owned components are traceable to source material under the shared 8.18 contract above.
 
 ### [!] 8.18b Inventory and verify pitch hero slot B
 
+Slot-B hero, assigned by 8.17's approved roster: **Brogan the Destroyer** (Blue).
+
 Observable outcome: the slot-B hero's complete set is source-verified under the shared 8.18 contract above.
 
 ### [!] 8.18c Inventory and verify pitch hero slot C
+
+Slot-C hero, assigned by 8.17's approved roster: **Sabina the Gunslinger** (Blue).
 
 Observable outcome: the slot-C hero's complete set is source-verified under the shared 8.18 contract above.
 
 ### [!] 8.18d Inventory and verify pitch hero slot D
 
+Slot-D hero, assigned by 8.17's approved roster: **Tigerclaw the Cutpurse** (Red).
+
 Observable outcome: the slot-D hero's complete set is source-verified under the shared 8.18 contract above.
 
 ### [!] 8.18e Inventory and verify pitch hero slot E
+
+Slot-E hero, assigned by 8.17's approved roster: **Xargatha the Changed** (Red).
 
 Observable outcome: the slot-E hero's complete set is source-verified under the shared 8.18 contract above.
 

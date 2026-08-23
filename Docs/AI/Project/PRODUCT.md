@@ -6,7 +6,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 Create a polished private digital prototype of *Guards of Atlantis II* that can be demonstrated to its publisher as the basis for a possible licensed, cross-platform adaptation.
 
-The private pitch prototype is a complete 3v3 match with six different heroes: Wasp plus five later user-approved, source-verified heroes. It retains single-controller director mode for development and demonstration, and now also targets an invite-only pre-production internet playtest in which six humans each control their independently owned hero before production presentation begins.
+The private pitch prototype is a complete 3v3 match with six different heroes: the roster the user approved on 2026-08-23 at milestone 8.17, which is the rulebook's own recommended first-game line-up from p.6's setup step 7 - Wasp the Warmaiden, Xargatha the Changed and Tigerclaw the Cutpurse on Red against Arien the Tidemaster, Brogan the Destroyer and Sabina the Gunslinger on Blue - each source-verified before implementation. It retains single-controller director mode for development and demonstration, and now also targets an invite-only pre-production internet playtest in which six humans each control their independently owned hero before production presentation begins.
 
 ## Rights and distribution boundary
 
@@ -26,7 +26,7 @@ This is a project boundary, not a legal determination.
 
 A complete 3v3 match with both director and private online validation modes:
 
-- Three Red heroes and three Blue heroes, all different: Wasp plus five later user-approved, source-verified heroes.
+- Three Red heroes and three Blue heroes, all different: Wasp, Xargatha and Tigerclaw against Arien, Brogan and Sabina, per the approved 8.17 roster.
 - Wasp is implemented and integrated first; a mirrored Wasp 1v1 remains an intermediate development gate, not the pitch endpoint.
 - One human controls all six heroes in director mode.
 - All six hero hands are available to the controller through team/hero grouping; each nonempty hero hand requires exactly one facedown commitment, each empty hand requires Pass, reveal waits for all six hero responses, and a read-only four-turn history identifies every hero's authoritative revealed card or empty-hand Pass while current Facedown commitments and private hands remain protected by the applicable projection.
