@@ -232,13 +232,6 @@ namespace GuardsDigital.Tests.EditMode
         {
             // Red buys two levels, so two cards are set aside and two items are gained; Blue buys none.
             var fixture = new LevelUpFixture(redCoins: 3);
-
-            // F-PROG-08, closed at milestone 8.14. p.16 takes "each card set aside during
-            // the Upgrade card step", and Blue's leveling does not run at all this round, so
-            // this card of Blue's is not one of them however its location reads. Until the
-            // sweep was scoped by the transition's own completed items it read the location
-            // alone, and Blue gained an item no level of Blue's ever paid for.
-            fixture.SetAsideOutsideTheUpgradeStep("blue-feint-t2a-card");
             fixture.Begin();
             fixture.AnswerRed("red-bulwark-card->red-bulwark-t2a-card");
             fixture.AnswerRed("red-pursuit-card->red-pursuit-t2b-card");
@@ -266,12 +259,54 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(fixture.Items.GetItems(fixture.BlueHeroId), Is.Empty);
-            Assert.That(fixture.LocationOf("blue-feint-t2a-card"),
-                Is.EqualTo(CardLocation.SetAside),
-                "A card this leveling did not set aside is left exactly where it was.");
             Assert.That(
                 fixture.Outcomes.Count(outcome => outcome.Kind == HeroLevelUpOutcomeKind.ItemGained),
                 Is.EqualTo(2));
+        }
+
+
+        [Test]
+        public void TheSetAsideLocation_HasExactlyOneWriterAndItIsPageFifteensUpgradeStep()
+        {
+            // p.16's Gain an Item takes every card in the set-aside location, which is correct only
+            // while that location has one writer. Milestone 8.14 assessed scoping the sweep instead
+            // (F-PROG-08) and withdrew it, because the scope a completed item can carry is the hero
+            // and not the card: a hero who both levelled and had a card set aside by some other rule
+            // would defeat that scope anyway, so it would buy confidence rather than correctness.
+            // This rule fails the day a second writer is added, which is the moment the decision has
+            // to be made again - and then against the rule that actually needs it.
+            var writer = ILConformanceScanner.Method(
+                typeof(CardLifecycleAuthority),
+                nameof(CardLifecycleAuthority.TrySetAsideFromDeck),
+                typeof(CardInstance));
+
+            var production = new[]
+                {
+                    typeof(CardInstance).Assembly,
+                    typeof(HeroLevelUpStepRules).Assembly,
+                    typeof(GuardsDigital.Application.MatchSession).Assembly
+                }
+                .Distinct()
+                .SelectMany(ILConformanceScanner.TypesIn)
+                .Where(type => type.Namespace != null &&
+                    type.Namespace.StartsWith("GuardsDigital.", StringComparison.Ordinal) &&
+                    !type.Namespace.StartsWith("GuardsDigital.Tests", StringComparison.Ordinal))
+                .ToArray();
+
+            var callers = ILConformanceScanner.Scan(production)
+                .Where(scanned => scanned.Calls(writer))
+                .Select(scanned => scanned.Method.DeclaringType?.FullName + "." + scanned.Method.Name)
+                .Distinct()
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.That(callers, Is.EqualTo(new[]
+                {
+                    typeof(HeroLevelUpStepRules).FullName + "." + nameof(HeroLevelUpStepRules.ApplyAnswer)
+                }),
+                "p.15's \"set the other one aside\" is the only rule that may put a card there. A new " +
+                "one means p.16's sweep can no longer read the location alone, and needs the card's " +
+                "own provenance rather than its owner's.");
         }
 
         // ----- p.16's Ultimate -----
@@ -449,13 +484,6 @@ namespace GuardsDigital.Tests.EditMode
         public void APausedLeveling_ReproducesItselfFromTheCardsAndRefusesAPayloadItCouldNotHaveProduced()
         {
             var fixture = new LevelUpFixture(redCoins: 3);
-
-            // F-PROG-08, closed at milestone 8.14. p.16 takes "each card set aside during
-            // the Upgrade card step", and Blue's leveling does not run at all this round, so
-            // this card of Blue's is not one of them however its location reads. Until the
-            // sweep was scoped by the transition's own completed items it read the location
-            // alone, and Blue gained an item no level of Blue's ever paid for.
-            fixture.SetAsideOutsideTheUpgradeStep("blue-feint-t2a-card");
             fixture.Begin();
             fixture.AnswerRed(0);
 
@@ -635,17 +663,6 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(result.Accepted, Is.True, result.RejectionReason.ToString());
                 outcomes.AddRange(Rules.DrainOutcomes());
             }
-
-            /// <summary>
-            /// Puts one deck card into p.15's set-aside location without any leveling having
-            /// put it there. That is the state F-PROG-08 was about: the location alone cannot
-            /// say which step a card was set aside during, so p.16's sweep cannot read it
-            /// alone either.
-            /// </summary>
-            public void SetAsideOutsideTheUpgradeStep(string instanceId) =>
-                Assert.That(
-                    CardLifecycleAuthority.TrySetAsideFromDeck(CardOf(instanceId)), Is.True,
-                    "The fixture's own precondition: this card starts in its owner's deck.");
 
             public HeroLevel LevelOf(HeroId heroId) => Levels.GetLevel(heroId);
 

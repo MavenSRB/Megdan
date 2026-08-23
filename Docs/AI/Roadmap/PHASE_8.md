@@ -220,7 +220,7 @@ Observable outcome: the complete p.15/p.16 progression runs over Wasp's real eig
 Acceptance checks:
 
 - p.15's mandatory end-of-round leveling runs over the verified upgrade pairs the 8.1 inventory records, through the implemented 7.5 transition, with the set-aside card of each pair becoming the p.16 item under its verified icon and slot.
-- The `SetAside` sweep is scoped by the transition's own completed items (closes F-PROG-08; the extended `HeroLevelUpTests` item-step case observed failing pre-fix).
+- The `SetAside` sweep keeps reading the location, and `HeroLevelUpTests.TheSetAsideLocation_HasExactlyOneWriterAndItIsPageFifteensUpgradeStep` fails the day that location gains a second writer. Scoping the sweep by the transition's own completed items was implemented, reviewed and **withdrawn by user-approved amendment on 2026-08-23**: F-PROG-08 is a growth finding with no reachable case - `CardLifecycleAuthority.TrySetAsideFromDeck` has exactly one caller and admits a card only from the deck - and a completed item can name the hero rather than the card, so the scope would not have covered the future rule the finding anticipates. F-PROG-08 stays open against the rule that first needs it.
 - Item bonuses compose per icon onto verified cards, including the 2026-08-21 approved interpretation of ledger question 12: an item's +1 reaches a matching printed icon on the Ultimate, so a +1 Radius item makes High Voltage's Radius 4; the interpretation is recorded in `RULES_LEDGER.md` and superseded by any later official ruling.
 - Upgrading every non-basic card to Tier III and leveling once more unlocks the Ultimate - faceup beside the dashboard, no further levels, coins still collectable - and 8.13's ability is reachable end-to-end from an ordinary match.
 
