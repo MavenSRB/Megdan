@@ -3,9 +3,16 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
@@ -167,6 +174,255 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(events.Select(value => value.EffectId.Value), Is.EqualTo(new[] { "blue", "red" }));
             Assert.That(tie.RevealedSide, Is.EqualTo(TeamSide.Blue));
+        }
+
+        [Test]
+        public void AnEffectDeclaringATriggerWindow_RunsItsDeclaredEffectWhenTheCheckpointArrives()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var sourceCard = configuration.RedHand.Instances[0];
+            var sourceAction = configuration.CardDefinitions.Single(definition =>
+                    definition.Reference.Equals(sourceCard.DefinitionReference))
+                .ActionDefinitions[0];
+            var triggeredEffect = new EffectDefinition(
+                new EffectDefinitionId("synthetic-triggered-mark"),
+                "rev-1",
+                new EffectNodeId("mark"),
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        new EffectNodeId("mark"),
+                        EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.MarkActorV1,
+                        outputs: new[] { new EffectOutputBinding("marked", EffectValueKind.Hero) })
+                });
+            var lifecycle = new ActiveEffectLifecycle();
+            lifecycle.Create(new ActiveEffectId("trigger-source"), Definition(
+                ActiveEffectDurationKind.ThisRound,
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.RoundEnd,
+                false,
+                "trigger-source-definition",
+                triggers: new[] { TimingCheckpoint.ActionEnded },
+                controller: sourceCard.OwnerId,
+                triggeredEffect: triggeredEffect.Reference),
+                sourceCard.Id, sourceAction.Id, 1, 1);
+            var authority = new TriggeredEffectResolutionAuthority(
+                new TriggeredEffectCatalog(new[] { triggeredEffect }),
+                SyntheticEffectCapabilities.CreateCatalog());
+
+            var events = authority.ApplyCheckpoint(
+                lifecycle,
+                new ActiveEffectCheckpointContext(TimingCheckpoint.ActionEnded, 1, 1, sourceCard.OwnerId),
+                new TieBreakerState(TeamSide.Red),
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants,
+                RuleModificationSet.Empty);
+
+            Assert.That(events.Select(value => value.Kind),
+                Is.EqualTo(new[] { ActiveEffectLifecycleEventKind.Triggered }));
+            Assert.That(lifecycle.Effects, Has.Count.EqualTo(2),
+                "The Triggered visit must execute the effect declared by its source, not only emit a lifecycle fact.");
+        }
+
+        [Test]
+        public void ActiveAndContinuousTriggers_UseTieBreakerOrderWithoutFlippingIt()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var redCard = configuration.RedHand.Instances[0];
+            var blueCard = configuration.BlueHand.Instances[0];
+            var redDefinition = configuration.CardDefinitions.Single(value =>
+                value.Reference.Equals(redCard.DefinitionReference));
+            var blueDefinition = configuration.CardDefinitions.Single(value =>
+                value.Reference.Equals(blueCard.DefinitionReference));
+            var redAction = redDefinition.ActionDefinitions[0];
+            var blueAction = blueDefinition.ActionDefinitions[0];
+            var triggeredEffect = MarkTriggeredEffect("ordered-trigger");
+            var lifecycle = new ActiveEffectLifecycle();
+            lifecycle.Create(new ActiveEffectId("red-active-trigger"), Definition(
+                ActiveEffectDurationKind.ThisRound,
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.RoundEnd,
+                false,
+                "red-active-trigger-definition",
+                controller: redCard.OwnerId,
+                side: TeamSide.Red,
+                triggers: new[] { TimingCheckpoint.ActionEnded },
+                triggeredEffect: triggeredEffect.Reference), redCard.Id, redAction.Id, 1, 1);
+            var continuous = new ContinuousTriggeredEffectSource(
+                "blue-continuous-trigger",
+                blueCard.OwnerId,
+                TeamSide.Blue,
+                blueCard.Id,
+                blueDefinition.Reference,
+                blueAction.Id,
+                blueAction.Kind,
+                triggeredEffect.Reference,
+                new[] { TimingCheckpoint.ActionEnded });
+            var tie = new TieBreakerState(TeamSide.Blue);
+            var authority = new TriggeredEffectResolutionAuthority(
+                new TriggeredEffectCatalog(new[] { triggeredEffect }),
+                SyntheticEffectCapabilities.CreateCatalog());
+
+            authority.ApplyCheckpoint(
+                lifecycle,
+                new ActiveEffectCheckpointContext(TimingCheckpoint.ActionEnded, 1, 1),
+                tie,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants,
+                RuleModificationSet.Empty,
+                continuousSources: new[] { continuous });
+
+            Assert.That(lifecycle.Effects.Skip(1).Select(value => value.ControllerHeroId),
+                Is.EqualTo(new[] { blueCard.OwnerId, redCard.OwnerId }));
+            Assert.That(tie.RevealedSide, Is.EqualTo(TeamSide.Blue));
+        }
+
+        [Test]
+        public void CancelledOrExpiredActiveEffect_DoesNotExecuteItsTrigger()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var sourceCard = configuration.RedHand.Instances[0];
+            var sourceDefinition = configuration.CardDefinitions.Single(value =>
+                value.Reference.Equals(sourceCard.DefinitionReference));
+            var sourceAction = sourceDefinition.ActionDefinitions[0];
+            var triggeredEffect = MarkTriggeredEffect("cancelled-trigger");
+            var authority = new TriggeredEffectResolutionAuthority(
+                new TriggeredEffectCatalog(new[] { triggeredEffect }),
+                SyntheticEffectCapabilities.CreateCatalog());
+
+            foreach (var checkpoint in new[]
+                     {
+                         TimingCheckpoint.SourceCardStateChanged,
+                         TimingCheckpoint.ControllerHeroDefeated,
+                         TimingCheckpoint.RoundEnd
+                     })
+            {
+                var lifecycle = new ActiveEffectLifecycle();
+                lifecycle.Create(new ActiveEffectId("source-" + checkpoint), Definition(
+                    ActiveEffectDurationKind.ThisRound,
+                    TimingCheckpoint.ActionStarted,
+                    TimingCheckpoint.ActionStarted,
+                    TimingCheckpoint.RoundEnd,
+                    false,
+                    "source-definition-" + checkpoint,
+                    controller: sourceCard.OwnerId,
+                    triggers: new[] { TimingCheckpoint.ActionEnded },
+                    triggeredEffect: triggeredEffect.Reference), sourceCard.Id, sourceAction.Id, 1, 1);
+                var context = new ActiveEffectCheckpointContext(
+                    checkpoint,
+                    1,
+                    1,
+                    affectedHeroId: sourceCard.OwnerId,
+                    sourceCardInstanceId: sourceCard.Id);
+
+                authority.ApplyCheckpoint(
+                    lifecycle, context, new TieBreakerState(TeamSide.Red),
+                    configuration.CardDefinitions, configuration.CardInstances,
+                    configuration.Participants, RuleModificationSet.Empty);
+                authority.ApplyCheckpoint(
+                    lifecycle,
+                    new ActiveEffectCheckpointContext(TimingCheckpoint.ActionEnded, 2, 1, sourceCard.OwnerId),
+                    new TieBreakerState(TeamSide.Red),
+                    configuration.CardDefinitions, configuration.CardInstances,
+                    configuration.Participants, RuleModificationSet.Empty);
+
+                Assert.That(lifecycle.Effects, Has.Count.EqualTo(1), checkpoint.ToString());
+                Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Ended));
+            }
+        }
+
+        [Test]
+        public void TriggeredEffectThatPauses_UsesTheExistingSerializableEffectFrame()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var sourceCard = configuration.RedHand.Instances[0];
+            var sourceDefinition = configuration.CardDefinitions.Single(value =>
+                value.Reference.Equals(sourceCard.DefinitionReference));
+            var sourceAction = sourceDefinition.ActionDefinitions[0];
+            var choiceEffect = new EffectDefinition(
+                new EffectDefinitionId("paused-trigger"), "rev-1", new EffectNodeId("choose"),
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        new EffectNodeId("choose"), EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory, SyntheticEffectCapabilities.ChooseHeroV1,
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Hero) })
+                });
+            var lifecycle = new ActiveEffectLifecycle();
+            lifecycle.Create(new ActiveEffectId("pausing-source"), Definition(
+                ActiveEffectDurationKind.ThisRound,
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.RoundEnd,
+                false,
+                "pausing-source-definition",
+                controller: sourceCard.OwnerId,
+                triggers: new[] { TimingCheckpoint.ActionEnded },
+                triggeredEffect: choiceEffect.Reference), sourceCard.Id, sourceAction.Id, 1, 1);
+            var catalog = new TriggeredEffectCatalog(new[] { choiceEffect });
+            var authority = new TriggeredEffectResolutionAuthority(
+                catalog, SyntheticEffectCapabilities.CreateCatalog());
+            authority.ApplyCheckpoint(
+                lifecycle,
+                new ActiveEffectCheckpointContext(TimingCheckpoint.ActionEnded, 1, 1),
+                new TieBreakerState(TeamSide.Red),
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants,
+                RuleModificationSet.Empty);
+
+            var rebuilt = Rebuild(authority.PendingResolution);
+            var board = new AdjacentMoveAuthority(
+                new[]
+                {
+                    new HexCoordinate(-1, 0),
+                    new HexCoordinate(0, 0),
+                    new HexCoordinate(1, 0)
+                },
+                new[]
+                {
+                    new HeroOccupancy(configuration.Participants.Heroes[0].Id, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(configuration.Participants.Heroes[1].Id, new HexCoordinate(-1, 0))
+                });
+            var catalogs = new MatchContentCatalogs(
+                SyntheticEffectCapabilities.CreateCatalog(),
+                GuardsDigital.Core.Components.Synthetic.SyntheticComponentDefinitions.CreateCatalog(),
+                catalog);
+            var restored = CardActionResolutionAuthority.Restore(
+                catalogs,
+                board,
+                CardActionResolutionRestoreState.WithPendingSkill(
+                    rebuilt,
+                    HeroCoinLedgerRestoreStateHolder.Absent()),
+                null,
+                null,
+                null,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants,
+                new MarkerAttachmentRegister(),
+                RuleModificationSet.Empty);
+            Assert.That(restored.IsPendingTriggeredEffect, Is.True,
+                "The existing Skill continuation discriminator must restore a trigger frame without a new pending kind.");
+            var selected = restored.AnswerTriggeredEffectChoice(
+                rebuilt.PendingChoice.SelectInvocations[0],
+                configuration.CardDefinitions, configuration.CardInstances,
+                configuration.Participants, lifecycle, RuleModificationSet.Empty, 1, 1);
+            Assert.That(selected.Accepted, Is.True);
+            var confirmed = restored.AnswerTriggeredEffectChoice(
+                restored.PendingSkillResolution.PendingChoice.ConfirmInvocation,
+                configuration.CardDefinitions, configuration.CardInstances,
+                configuration.Participants, lifecycle, RuleModificationSet.Empty, 1, 1);
+
+            Assert.That(confirmed.Accepted, Is.True);
+            Assert.That(confirmed.IsComplete, Is.True);
+            Assert.That(restored.PendingSkillResolution, Is.Null);
         }
 
         [Test]
@@ -518,17 +774,56 @@ namespace GuardsDigital.Tests.EditMode
             TeamSide side = TeamSide.Red,
             TimingCheckpoint[] triggers = null,
             ActiveEffectAffectedScopeKind scope = ActiveEffectAffectedScopeKind.ControllerHero,
-            HeroId affectedHero = default)
+            HeroId affectedHero = default,
+            EffectDefinitionReference? triggeredEffect = null)
         {
             if (!controller.IsDefined) controller = RedHero;
             return new EffectSpec(
                 new ActiveEffectDefinition(id, scope, duration, creation, activation,
                     expiration, Conditions(), carries, "SyntheticModifier", id + "-unique",
-                    triggers ?? Array.Empty<TimingCheckpoint>()),
+                    triggers ?? Array.Empty<TimingCheckpoint>(),
+                    triggeredEffect: triggeredEffect),
                 controller,
                 side,
                 affectedHero);
         }
+
+        private static EffectDefinition MarkTriggeredEffect(string id) =>
+            new EffectDefinition(
+                new EffectDefinitionId(id), "rev-1", new EffectNodeId("mark"),
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        new EffectNodeId("mark"), EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory, SyntheticEffectCapabilities.MarkActorV1,
+                        outputs: new[] { new EffectOutputBinding("marked", EffectValueKind.Hero) })
+                });
+
+        private static PendingResolution Rebuild(PendingResolution live) =>
+            new PendingResolution(
+                live.ResolutionId,
+                live.SourceCardInstanceId,
+                live.SourceDefinitionReference,
+                live.ActionDefinitionId,
+                live.EffectDefinitionReference,
+                live.ActorId,
+                live.ControllerId,
+                live.InvocationContext,
+                live.Continuation.Select(value =>
+                    new EffectContinuationFrame(value.NodeId, value.ChildIndex)).ToArray(),
+                live.CompletedOutcomes.Select(value =>
+                    new EffectNodeOutcome(value.NodeId, value.ResultKind, value.Outputs)).ToArray(),
+                live.AcceptedChoices.ToArray(),
+                new PendingEffectChoice(
+                    live.PendingChoice.ResolutionId,
+                    live.PendingChoice.ChoiceId,
+                    live.PendingChoice.NodeId,
+                    live.PendingChoice.ChooserId,
+                    live.PendingChoice.Kind,
+                    live.PendingChoice.Candidates,
+                    live.PendingChoice.MinimumSelections,
+                    live.PendingChoice.MaximumSelections,
+                    live.PendingChoice.SelectedCandidates));
 
         private static ActiveEffectCancellationCondition[] Conditions() => new[]
         {

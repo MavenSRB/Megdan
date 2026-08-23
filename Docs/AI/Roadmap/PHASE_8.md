@@ -178,7 +178,9 @@ Non-goals: no game-rule, verified-card, candidate, legality, action-offer, conse
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811e-make-accepted-commands-and-their-resulting-projections-atomic-completion-evidence).
 
-### [ ] 8.12 Execute Active-effect and continuous trigger windows
+### [x] 8.12 Execute Active-effect and continuous trigger windows
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-812-execute-active-effect-and-continuous-trigger-windows-completion-evidence).
 
 Blocked by: milestone 8.11e, so triggered continuations inherit one atomic command/reconstruction-to-projection publication boundary.
 

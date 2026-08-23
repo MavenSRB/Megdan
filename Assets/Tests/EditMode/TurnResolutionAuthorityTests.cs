@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -18,6 +20,108 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class TurnResolutionAuthorityTests
     {
+        [Test]
+        public void ActionEndedTriggerThatPauses_WithholdsInitiativeUntilItsEffectChoiceCompletes()
+        {
+            var participants = CreateParticipants(1, 1);
+            var redDefinition = CreateMovementDefinition("red-trigger-turn", 7, 1);
+            var blueDefinition = CreateMovementDefinition("blue-trigger-turn", 4, 1);
+            var sourceDefinition = CreateMovementDefinition("trigger-source", 1, 1);
+            var red = CreateRevealedCard("red-trigger-turn-card", redDefinition, "red-hero-1");
+            var blue = CreateRevealedCard("blue-trigger-turn-card", blueDefinition, "blue-hero-1");
+            var source = CardInstance.CreateInHand(
+                new CardInstanceId("trigger-source-card"),
+                sourceDefinition.Reference,
+                red.OwnerId);
+            var definitions = new[] { redDefinition, blueDefinition, sourceDefinition };
+            var instances = new[] { red, blue, source };
+            var board = new AdjacentMoveAuthority(
+                new[]
+                {
+                    new HexCoordinate(-1, 0),
+                    new HexCoordinate(0, 0),
+                    new HexCoordinate(1, 0)
+                },
+                new[]
+                {
+                    new HeroOccupancy(red.OwnerId, new HexCoordinate(0, 0)),
+                    new HeroOccupancy(blue.OwnerId, new HexCoordinate(-1, 0))
+                });
+            var triggeredEffect = new EffectDefinition(
+                new EffectDefinitionId("turn-action-ended-choice"),
+                "rev-1",
+                new EffectNodeId("choose"),
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        new EffectNodeId("choose"),
+                        EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.ChooseHeroV1,
+                        outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Hero) })
+                });
+            var timing = new ActiveEffectLifecycle();
+            timing.Create(
+                new ActiveEffectId("turn-action-ended-source"),
+                new ActiveEffectDefinition(
+                    "turn-action-ended-source-definition",
+                    ActiveEffectAffectedScopeKind.ControllerHero,
+                    ActiveEffectDurationKind.ThisTurn,
+                    TimingCheckpoint.ActionStarted,
+                    TimingCheckpoint.ActionStarted,
+                    TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded,
+                    new[]
+                    {
+                        ActiveEffectCancellationCondition.SourceCardStateChanged,
+                        ActiveEffectCancellationCondition.ControllerHeroDefeated,
+                        ActiveEffectCancellationCondition.CardsRetrieved,
+                        ActiveEffectCancellationCondition.Explicit
+                    },
+                    false,
+                    "SyntheticTurnTrigger",
+                    "turn-action-ended-source",
+                    new[] { TimingCheckpoint.ActionEnded },
+                    triggeredEffect: triggeredEffect.Reference),
+                red.OwnerId,
+                TeamSide.Red,
+                default,
+                source.Id,
+                sourceDefinition.ActionDefinitions.Single().Id,
+                1,
+                1);
+            var catalogs = new MatchContentCatalogs(
+                SyntheticEffectCapabilities.CreateCatalog(),
+                GuardsDigital.Core.Components.Synthetic.SyntheticComponentDefinitions.CreateCatalog(),
+                new TriggeredEffectCatalog(new[] { triggeredEffect }));
+            var authority = new TurnResolutionAuthority(
+                definitions,
+                instances,
+                participants,
+                new TieBreakerState(TeamSide.Red),
+                new CardActionResolutionAuthority(catalogs, board),
+                timing,
+                1,
+                1);
+
+            Assert.That(authority.TryStart().Accepted, Is.True);
+            var held = authority.TryPerformHold(red.Id);
+
+            Assert.That(held.Accepted, Is.True);
+            Assert.That(authority.PendingEffectChoice, Is.Not.Null);
+            Assert.That(authority.SelectedActor.IsDefined, Is.False,
+                "The completed card may be acknowledged, but no next actor may be selected while the trigger is paused.");
+            var selected = authority.TryAnswerEffectChoice(
+                authority.PendingEffectChoice.SelectInvocations[0]);
+            Assert.That(selected.Accepted, Is.True);
+            var completed = authority.TryAnswerEffectChoice(
+                authority.PendingEffectChoice.ConfirmInvocation);
+
+            Assert.That(completed.Accepted, Is.True);
+            Assert.That(authority.PendingEffectChoice, Is.Null);
+            Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(blue.Id),
+                "The existing effect continuation must release the withheld Initiative advance.");
+        }
+
         [Test]
         public void TwoUnresolvedCards_PerformHoldInInitiativeOrderAndEndTurn()
         {

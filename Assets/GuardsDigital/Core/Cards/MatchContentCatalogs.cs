@@ -41,10 +41,12 @@ namespace GuardsDigital.Core.Cards
     {
         public MatchContentCatalogs(
             EffectCapabilityCatalog capabilities,
-            ComponentDefinitionCatalog components)
+            ComponentDefinitionCatalog components,
+            TriggeredEffectCatalog triggeredEffects = null)
         {
             Capabilities = capabilities ?? throw new ArgumentNullException(nameof(capabilities));
             Components = components ?? throw new ArgumentNullException(nameof(components));
+            TriggeredEffects = triggeredEffects ?? TriggeredEffectCatalog.Empty;
         }
 
         /// <summary>The registered capability handlers a Skill's effect frame may reach.</summary>
@@ -52,6 +54,8 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>The registered token and marker definitions a component operation may reach.</summary>
         public ComponentDefinitionCatalog Components { get; }
+
+        public TriggeredEffectCatalog TriggeredEffects { get; }
 
         /// <summary>
         /// What this build registers - the single declared origin of both catalogs.

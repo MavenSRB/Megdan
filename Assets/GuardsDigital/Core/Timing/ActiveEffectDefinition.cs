@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
@@ -74,7 +75,8 @@ namespace GuardsDigital.Core.Timing
             IEnumerable<RuleModification> modifications = null,
             IEnumerable<ConditionalObstacleOverlay> obstacleOverlays = null,
             DeclaredRadius radius = default,
-            SourceTeamRelation affectedUnitRelation = SourceTeamRelation.None)
+            SourceTeamRelation affectedUnitRelation = SourceTeamRelation.None,
+            EffectDefinitionReference? triggeredEffect = null)
         {
             if (string.IsNullOrWhiteSpace(definitionId))
                 throw new ArgumentException("An Active-effect definition requires a stable ID.", nameof(definitionId));
@@ -98,6 +100,14 @@ namespace GuardsDigital.Core.Timing
             var triggers = (triggerCheckpoints ?? throw new ArgumentNullException(nameof(triggerCheckpoints))).ToArray();
             if (triggers.Contains(TimingCheckpoint.None) || triggers.Distinct().Count() != triggers.Length)
                 throw new ArgumentException("Active-effect trigger checkpoints must be defined and unique.", nameof(triggerCheckpoints));
+            if (triggeredEffect.HasValue && !triggeredEffect.Value.IsDefined)
+                throw new ArgumentException("A triggered effect reference must be defined.", nameof(triggeredEffect));
+            if (triggeredEffect.HasValue && triggers.Length == 0)
+                throw new ArgumentException("A declared triggered effect requires at least one trigger checkpoint.", nameof(triggerCheckpoints));
+            if (triggeredEffect.HasValue && triggers.Any(value => value != TimingCheckpoint.ActionEnded))
+                throw new ArgumentException(
+                    "Milestone 8.12 implements only the Action Ended trigger window required by its synthetic proof.",
+                    nameof(triggerCheckpoints));
             var declaredModifications = (modifications ?? Enumerable.Empty<RuleModification>()).ToArray();
             if (declaredModifications.Any(modification => modification == null))
                 throw new ArgumentException("Declared modifications must be non-null.", nameof(modifications));
@@ -121,6 +131,7 @@ namespace GuardsDigital.Core.Timing
             EffectKind = effectKind;
             UniquenessKey = uniquenessKey;
             TriggerCheckpoints = new ReadOnlyCollection<TimingCheckpoint>(triggers);
+            TriggeredEffect = triggeredEffect;
             Modifications = new ReadOnlyCollection<RuleModification>(declaredModifications);
             ObstacleOverlays = new ReadOnlyCollection<ConditionalObstacleOverlay>(declaredOverlays);
         }
@@ -136,6 +147,13 @@ namespace GuardsDigital.Core.Timing
         public string EffectKind { get; }
         public string UniquenessKey { get; }
         public IReadOnlyList<TimingCheckpoint> TriggerCheckpoints { get; }
+
+        /// <summary>
+        /// Milestone 8.12. The trusted effect definition executed when one of
+        /// <see cref="TriggerCheckpoints"/> is visited. The reference, rather than a copied definition,
+        /// keeps trigger meaning in the configured content catalog across restore and replay.
+        /// </summary>
+        public EffectDefinitionReference? TriggeredEffect { get; }
 
         /// <summary>
         /// The typed rules this effect supplies while it is active, as definition content.

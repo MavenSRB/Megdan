@@ -1324,6 +1324,18 @@ namespace GuardsDigital.Core.Cards
                 return AnswerPausedCardText(command);
             }
 
+            if (cardActions?.IsPendingTriggeredEffect == true)
+            {
+                var answeredTrigger = cardActions.AnswerTriggeredEffectChoice(
+                    command, definitions, instances, participants, timing, CurrentModifications(),
+                    roundIndex, turnIndex);
+                if (!answeredTrigger.Accepted)
+                    return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+                return cardActions.IsPendingTriggeredEffect
+                    ? TurnResolutionResult.Accept(Array.Empty<TurnResolutionEvent>())
+                    : AdvanceInitiative(Array.Empty<TurnResolutionEvent>());
+            }
+
             if (cardActions?.PendingSkillResolution == null || !initiative.SelectedActor.IsDefined)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
@@ -1714,6 +1726,12 @@ namespace GuardsDigital.Core.Cards
         {
             var events = new List<TurnResolutionEvent>(priorEvents);
 
+            // Milestone 8.12. Action Ended has been reached, but its triggered effect stopped on an
+            // ordinary effect choice. The action is already complete; Initiative is the remainder this
+            // existing frame withholds until its answer completes.
+            if (cardActions?.IsPendingTriggeredEffect == true)
+                return TurnResolutionResult.Accept(events);
+
             // Milestone 6.9's immediate checkpoint, which milestone 6.11 turned from a stop into p.8's
             // transition. The page pushes the Lane in the middle of the turn and only then does "the
             // turn continue in the Initiative order as normal", so the push runs here rather than after
@@ -1908,13 +1926,17 @@ namespace GuardsDigital.Core.Cards
         {
             if (!affectedHeroId.IsDefined && initiative.SelectedActor.IsDefined)
                 affectedHeroId = initiative.SelectedActor.ActorId;
-            var timingEvents = timing.ApplyCheckpoint(new ActiveEffectCheckpointContext(
+            var context = new ActiveEffectCheckpointContext(
                 checkpoint,
                 roundIndex,
                 turnIndex,
                 affectedHeroId,
-                sourceCardInstanceId),
-                initiative.TieBreakerState);
+                sourceCardInstanceId);
+            var timingEvents = checkpoint == TimingCheckpoint.ActionEnded && cardActions != null
+                ? cardActions.ApplyTriggeredActionEnded(
+                    timing, context, initiative.TieBreakerState, definitions, instances,
+                    participants, CurrentModifications())
+                : timing.ApplyCheckpoint(context, initiative.TieBreakerState);
             foreach (var timingEvent in timingEvents) events.Add(TurnResolutionEvent.FromTiming(timingEvent));
         }
 

@@ -27,6 +27,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly FastTravelCardActionStrategyBackend fastTravelBackend;
         private readonly ClearCardActionStrategyBackend clearBackend;
         private readonly SkillCardActionStrategyBackend skillBackend;
+        private readonly TriggeredEffectResolutionAuthority triggeredEffects;
         private readonly MatchComponents components;
         private readonly AdjacentMoveAuthority board;
 
@@ -127,6 +128,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             this.skillBackend = skillBackend ?? throw new ArgumentNullException(nameof(skillBackend));
             this.components = components ?? throw new ArgumentNullException(nameof(components));
             this.board = board ?? throw new ArgumentNullException(nameof(board));
+            triggeredEffects = new TriggeredEffectResolutionAuthority(
+                catalogs.TriggeredEffects, catalogs.Capabilities, components);
         }
 
         /// <summary>
@@ -229,7 +232,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal AdjacentMoveAuthority Board => board;
 
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>
-            skillBackend.PendingResolution;
+            triggeredEffects.PendingResolution ?? skillBackend.PendingResolution;
+
+        public bool IsPendingTriggeredEffect => triggeredEffects.PendingResolution != null;
 
         /// <summary>
         /// The question an effect frame is waiting on, whichever frame is holding it. Milestone 8.10
@@ -238,7 +243,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// draw and answer the other, and a match can only ever be holding one of the two.
         /// </summary>
         public GuardsDigital.Core.Rules.EffectResolution.PendingEffectChoice PendingEffectChoice =>
-            pendingCardText?.Frame.PendingChoice ?? skillBackend.PendingChoice;
+            pendingCardText?.Frame.PendingChoice ?? triggeredEffects.PendingResolution?.PendingChoice ??
+            skillBackend.PendingChoice;
 
         /// <summary>
         /// Milestone 6.5c: what each space-valued candidate of the pending effect choice currently
@@ -252,7 +258,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 IEnumerable<CardDefinition> definitions,
                 RuleModificationSet modifications)
         {
-            var pending = pendingCardText?.Frame ?? skillBackend.PendingResolution;
+            var pending = pendingCardText?.Frame ?? triggeredEffects.PendingResolution ??
+                skillBackend.PendingResolution;
             var choice = pending?.PendingChoice;
             if (pending == null || choice == null)
             {
@@ -261,8 +268,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var materialized = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var effectRoot = triggeredEffects.PendingResolution != null &&
+                ContentCatalogs.TriggeredEffects.TryGet(pending.EffectDefinitionReference, out var triggered)
+                    ? triggered
+                    : SkillCardActionStrategyBackend.FindEffectRoot(materialized, pending);
             return GuardsDigital.Core.Rules.EffectResolution.EffectChoicePreviewQuery.Describe(
-                SkillCardActionStrategyBackend.FindEffectRoot(materialized, pending),
+                effectRoot,
                 choice,
                 pending.ActorId,
                 components,
@@ -303,6 +314,32 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         public PendingAttackCardTextResolution PendingCardTextResolution => pendingCardText;
 
+        internal IReadOnlyList<ActiveEffectLifecycleEvent> ApplyTriggeredActionEnded(
+            ActiveEffectLifecycle timing,
+            ActiveEffectCheckpointContext checkpoint,
+            TieBreakerState tieBreaker,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            IEnumerable<ContinuousTriggeredEffectSource> continuousSources = null) =>
+            triggeredEffects.ApplyCheckpoint(
+                timing, checkpoint, tieBreaker, definitions, instances, participants, modifications,
+                skillBackend.HeroItems, continuousSources);
+
+        internal EffectResolutionStepResult AnswerTriggeredEffectChoice(
+            EffectChoiceCommand command,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex) =>
+            triggeredEffects.Answer(
+                command, timing, definitions, instances, participants, modifications,
+                roundIndex, turnIndex, skillBackend.HeroItems);
+
         /// <summary>
         /// Milestone 8.10. Whether an Attack's own card text asked for that Attack to happen again -
         /// Thunder Boomerang's "may repeat once on a different target" - and the instance that asked
@@ -340,7 +377,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||
-            skillBackend.HasPendingResolution || pendingCorrection != null || pendingRepeat != null ||
+            skillBackend.HasPendingResolution || triggeredEffects.PendingResolution != null ||
+            pendingCorrection != null || pendingRepeat != null ||
             pendingCardText != null;
 
         public CardActionResolutionResult StartTurnSkill(
@@ -973,17 +1011,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         adjacentMoveAuthority);
 
                 case CardActionContinuationKind.Skill:
-                    return new CardActionResolutionAuthority(
+                    var isTriggered = catalogs.TriggeredEffects.TryGet(
+                        state.PendingSkillResolution.EffectDefinitionReference, out _);
+                    var restoredEffect = new CardActionResolutionAuthority(
                         catalogs,
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
                         new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        SkillCardActionStrategyBackend.Restore(
-                            catalogs.Capabilities,
-                            new SkillBackendRestoreState(state.PendingSkillResolution)),
+                        isTriggered
+                            ? new SkillCardActionStrategyBackend(catalogs.Capabilities)
+                            : SkillCardActionStrategyBackend.Restore(
+                                catalogs.Capabilities,
+                                new SkillBackendRestoreState(state.PendingSkillResolution)),
                         components,
                         adjacentMoveAuthority);
+                    if (isTriggered)
+                        restoredEffect.triggeredEffects.RestorePending(state.PendingSkillResolution);
+                    return restoredEffect;
 
                 case CardActionContinuationKind.Correction:
                     var restored = new CardActionResolutionAuthority(
