@@ -1330,6 +1330,69 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// The verified Wasp mirror standing where rulebook p.16's Ultimate can reach: a Blue melee
+        /// minion in its starting Battle Zone, the Red hero within three spaces of it, and the Blue
+        /// hero beside it.
+        ///
+        /// <para>The caller supplies the configuration rather than this method building one, because
+        /// the two fixtures that want this board differ in exactly one thing - how the Ultimate came
+        /// to be beside the dashboard. Milestone 8.13 staged it there directly, which its own roadmap
+        /// block allowed; milestone 8.14 levels a hero to it through p.15's purchases first. The board
+        /// is the same either way, so it is built once.</para>
+        /// </summary>
+        public static MatchSession CreateVerifiedMirrorInRadiusOfAMinion(
+            PlaceholderOneVsOneTestConfiguration configuration,
+            out HeroId redHeroId,
+            out HeroId blueHeroId,
+            out MinionId targetMinionId)
+        {
+            var participants = configuration.Participants;
+            var redHero = participants.Heroes.Single(hero =>
+                participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
+            var blueHero = participants.Heroes.Single(hero =>
+                participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue).Id;
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(), participants, map,
+                configuration.TieBreakerState);
+            var target = setup.Minions.First(minion =>
+                minion.TeamSide == TeamSide.Blue && minion.MinionType == StandardMinionType.Melee &&
+                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                    map, minion.Coordinate));
+            var occupied = new HashSet<HexCoordinate>(setup.Minions.Select(value => value.Coordinate));
+            var playable = map.Spaces.Where(space => space.Kind == BoardMapSpaceKind.Playable).ToArray();
+            var redAt = playable.Select(space => space.Coordinate).First(coordinate =>
+                !occupied.Contains(coordinate) &&
+                HexDistanceQuery.Calculate(coordinate, target.Coordinate) is > 0 and <= 3);
+            var blueAt = target.Coordinate.GetNeighbors().First(coordinate =>
+                !occupied.Contains(coordinate) && !coordinate.Equals(redAt) &&
+                playable.Any(space => space.Coordinate.Equals(coordinate)));
+            var heroes = setup.Heroes.Select(hero =>
+            {
+                var coordinate = hero.HeroId.Equals(redHero) ? redAt : blueAt;
+                var space = playable.Single(value => value.Coordinate.Equals(coordinate));
+                return new QuickGameHeroSetupState(
+                    hero.HeroId, hero.ContentId, hero.DisplayName, hero.TeamId, hero.TeamSide,
+                    hero.SpawnPoint, new ConfiguredSpaceReference(map.Id, space.Id), coordinate);
+            }).ToArray();
+            var staged = new QuickGameSetupState(
+                setup.SelectedMap, setup.WaveCount, setup.TieBreakerState, setup.Teams, heroes,
+                setup.Minions);
+            var scenario = new InitialScenarioDescription(
+                participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            redHeroId = redHero;
+            blueHeroId = blueHero;
+            targetMinionId = target.MinionId;
+            return new MatchSession(new MatchSessionInitialState(scenario, staged, new[] { map }));
+        }
+
+        /// <summary>
         /// Two heroes standing next to each other on a four-space synthetic map, with a Red Attack
         /// resolved as far as the Blue hero's Defense response.
         ///

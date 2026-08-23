@@ -211,7 +211,7 @@ Non-goals: no leveling or item integration.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-813-complete-high-voltage-completion-evidence).
 
-### [ ] 8.14 Integrate Wasp progression, items, and the Ultimate unlock
+### [x] 8.14 Integrate Wasp progression, items, and the Ultimate unlock
 
 Blocked by: milestones 8.6, 8.8, 8.9, 8.10, 8.11, and 8.13 - every upgraded card a Level Up can put in hand must already resolve its text.
 
@@ -225,6 +225,8 @@ Acceptance checks:
 - Upgrading every non-basic card to Tier III and leveling once more unlocks the Ultimate - faceup beside the dashboard, no further levels, coins still collectable - and 8.13's ability is reachable end-to-end from an ordinary match.
 
 Non-goals: no rebalance, no second hero.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-814-integrate-wasp-progression-items-and-the-ultimate-unlock-completion-evidence).
 
 ### [!] 8.15 Complete and verify every Wasp card behavior
 

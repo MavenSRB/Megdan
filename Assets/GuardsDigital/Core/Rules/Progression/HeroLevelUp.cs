@@ -408,6 +408,18 @@ namespace GuardsDigital.Core.Rules.Progression
         private HeroItemState items;
         private HeroCoinLedger coins;
 
+        /// <summary>
+        /// Which heroes p.15's Upgrade a Card step just finished upgrading, handed from that
+        /// step to p.16's Gain an Item and consumed there (F-PROG-08, milestone 8.14).
+        ///
+        /// It is derived rather than accumulated: the value is built in one place, from the
+        /// completed items the transition authority hands the upgrade step, at the moment that
+        /// step reports itself finished. Nothing reads it before then and nothing survives the
+        /// step that consumes it, so it cannot become a second record of where the transition
+        /// is - the defect milestone 6.10a's division exists to make unrepresentable.
+        /// </summary>
+        private HashSet<string> upgradedThisTransition;
+
         public HeroLevelUpStepRules(
             MatchParticipants participants,
             IEnumerable<CardDefinition> definitions,
@@ -544,6 +556,14 @@ namespace GuardsDigital.Core.Rules.Progression
                 }
             }
 
+            // p.15's leveling is over, so p.16's step can be told whose Upgrade a Card step
+            // ran here. A hero with no completed Upgrade item ran none, and a card of theirs
+            // lying set aside was therefore not set aside during it.
+            upgradedThisTransition = new HashSet<string>(
+                completed
+                    .Where(item => item.Kind == HeroLevelUpItemKind.Upgrade)
+                    .Select(item => item.HeroId.Value),
+                StringComparer.Ordinal);
             return SystemTransitionStepResolution.Completed;
         }
 
@@ -816,10 +836,20 @@ namespace GuardsDigital.Core.Rules.Progression
         /// p.16's Gain an Item: "Take each card set aside during the Upgrade card step and tuck it
         /// Faceup under your hero dashboard, under the slot with a matching icon."
         ///
-        /// Every set-aside card in the match, because that is what the page says and because the step
-        /// runs once after every hero has finished upgrading. It asks nobody anything - which slot is
-        /// the card's own icon's - so it resolves itself and can never be the step a snapshot is paused
-        /// inside.
+        /// Every card <em>this</em> leveling set aside, which is what the page's own qualifier
+        /// says: it takes each card set aside during the Upgrade card step, not each card that
+        /// happens to be lying set aside. The scope is the transition's own completed items -
+        /// a hero with no completed Upgrade item ran no Upgrade card step here, so nothing of
+        /// that hero's was set aside during one, and its cards are left where they are
+        /// (F-PROG-08, milestone 8.14; before this the sweep read the location alone and gave
+        /// such a hero an item no level of theirs had paid for). For a hero that did upgrade,
+        /// every set-aside card of theirs is this step's: <see cref="ApplyAnswer"/> is the
+        /// only thing in the build that sets a card aside, and the previous leveling's own
+        /// item step emptied the location for that hero before this one began.
+        ///
+        /// The step still runs once after every hero has finished upgrading, and it asks
+        /// nobody anything - which slot is the card's own icon's - so it resolves itself and
+        /// can never be the step a snapshot is paused inside.
         ///
         /// The order is hero id then card instance id. p.16 attaches no consequence to which item a hero
         /// gained first, and <c>HeroItem.Order</c> exists so that an ordering the state does not hold is
@@ -829,8 +859,22 @@ namespace GuardsDigital.Core.Rules.Progression
         private SystemTransitionStepResolution ResolveItemGain()
         {
             RequireBinding();
+
+            // Handed over by the step that produced it rather than re-derived here, because
+            // the transition authority clears a step's completed items when that step
+            // finishes: by the time p.16's step is asked, p.15's own record is already gone.
+            // The hand-over is not a record of where the transition is - it is derived from
+            // the authority's completed items inside the same Advance that reaches this step,
+            // and a restored leveling re-derives it there from the payload's own items before
+            // ever arriving here.
+            var upgraded = upgradedThisTransition ?? throw new InvalidOperationException(
+                "p.16's Gain an Item ran without p.15's Upgrade a Card step finishing ahead " +
+                "of it, so nothing can say which cards were set aside during that step.");
+            upgradedThisTransition = null;
+
             foreach (var card in instances
-                .Where(card => card.State.Location == CardLocation.SetAside)
+                .Where(card => card.State.Location == CardLocation.SetAside &&
+                    upgraded.Contains(card.OwnerId.Value))
                 .OrderBy(card => card.OwnerId.Value, StringComparer.Ordinal)
                 .ThenBy(card => card.Id.Value, StringComparer.Ordinal)
                 .ToArray())

@@ -410,18 +410,39 @@ namespace GuardsDigital.Tests.EditMode
                 RuleModificationSet.Empty);
             Assert.That(restored.IsPendingTriggeredEffect, Is.True,
                 "The existing Skill continuation discriminator must restore a trigger frame without a new pending kind.");
-            var selected = restored.AnswerTriggeredEffectChoice(
-                rebuilt.PendingChoice.SelectInvocations[0],
-                configuration.CardDefinitions, configuration.CardInstances,
-                configuration.Participants, lifecycle, RuleModificationSet.Empty, 1, 1);
-            Assert.That(selected.Accepted, Is.True);
-            var confirmed = restored.AnswerTriggeredEffectChoice(
-                restored.PendingSkillResolution.PendingChoice.ConfirmInvocation,
-                configuration.CardDefinitions, configuration.CardInstances,
-                configuration.Participants, lifecycle, RuleModificationSet.Empty, 1, 1);
 
-            Assert.That(confirmed.Accepted, Is.True);
-            Assert.That(confirmed.IsComplete, Is.True);
+            // AnswerTriggeredEffectChoice is internal and GuardsDigital.Core stays closed - the scope
+            // Application/AssemblyInfo.cs deliberately declined to widen - so the restored frame is
+            // finished through its real caller: the turn authority, whose effect answer reaches a
+            // pending trigger before a pending Skill. That also puts the restored frame on the path a
+            // command actually takes, which is what the milestone claims about it. Two revealed cards
+            // are what p.7 needs before a turn can start at all.
+            foreach (var committed in new[]
+                { configuration.RedHand.Instances[1], configuration.BlueHand.Instances[0] })
+            {
+                Assert.That(CardLifecycleAuthority.TryPlayFacedown(committed), Is.True);
+                Assert.That(CardLifecycleAuthority.TryReveal(committed), Is.True);
+            }
+
+            var turn = new TurnResolutionAuthority(
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.Participants,
+                new TieBreakerState(TeamSide.Red),
+                restored,
+                lifecycle,
+                1,
+                1);
+            Assert.That(turn.TryStart().Accepted, Is.True);
+            Assert.That(
+                turn.TryAnswerEffectChoice(rebuilt.PendingChoice.SelectInvocations[0]).Accepted,
+                Is.True);
+            Assert.That(
+                turn.TryAnswerEffectChoice(
+                    restored.PendingSkillResolution.PendingChoice.ConfirmInvocation).Accepted,
+                Is.True);
+
+            Assert.That(restored.IsPendingTriggeredEffect, Is.False);
             Assert.That(restored.PendingSkillResolution, Is.Null);
         }
 

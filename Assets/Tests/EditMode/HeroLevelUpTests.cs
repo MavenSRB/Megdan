@@ -232,6 +232,13 @@ namespace GuardsDigital.Tests.EditMode
         {
             // Red buys two levels, so two cards are set aside and two items are gained; Blue buys none.
             var fixture = new LevelUpFixture(redCoins: 3);
+
+            // F-PROG-08, closed at milestone 8.14. p.16 takes "each card set aside during
+            // the Upgrade card step", and Blue's leveling does not run at all this round, so
+            // this card of Blue's is not one of them however its location reads. Until the
+            // sweep was scoped by the transition's own completed items it read the location
+            // alone, and Blue gained an item no level of Blue's ever paid for.
+            fixture.SetAsideOutsideTheUpgradeStep("blue-feint-t2a-card");
             fixture.Begin();
             fixture.AnswerRed("red-bulwark-card->red-bulwark-t2a-card");
             fixture.AnswerRed("red-pursuit-card->red-pursuit-t2b-card");
@@ -259,6 +266,9 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(fixture.Items.GetItems(fixture.BlueHeroId), Is.Empty);
+            Assert.That(fixture.LocationOf("blue-feint-t2a-card"),
+                Is.EqualTo(CardLocation.SetAside),
+                "A card this leveling did not set aside is left exactly where it was.");
             Assert.That(
                 fixture.Outcomes.Count(outcome => outcome.Kind == HeroLevelUpOutcomeKind.ItemGained),
                 Is.EqualTo(2));
@@ -439,6 +449,13 @@ namespace GuardsDigital.Tests.EditMode
         public void APausedLeveling_ReproducesItselfFromTheCardsAndRefusesAPayloadItCouldNotHaveProduced()
         {
             var fixture = new LevelUpFixture(redCoins: 3);
+
+            // F-PROG-08, closed at milestone 8.14. p.16 takes "each card set aside during
+            // the Upgrade card step", and Blue's leveling does not run at all this round, so
+            // this card of Blue's is not one of them however its location reads. Until the
+            // sweep was scoped by the transition's own completed items it read the location
+            // alone, and Blue gained an item no level of Blue's ever paid for.
+            fixture.SetAsideOutsideTheUpgradeStep("blue-feint-t2a-card");
             fixture.Begin();
             fixture.AnswerRed(0);
 
@@ -618,6 +635,17 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(result.Accepted, Is.True, result.RejectionReason.ToString());
                 outcomes.AddRange(Rules.DrainOutcomes());
             }
+
+            /// <summary>
+            /// Puts one deck card into p.15's set-aside location without any leveling having
+            /// put it there. That is the state F-PROG-08 was about: the location alone cannot
+            /// say which step a card was set aside during, so p.16's sweep cannot read it
+            /// alone either.
+            /// </summary>
+            public void SetAsideOutsideTheUpgradeStep(string instanceId) =>
+                Assert.That(
+                    CardLifecycleAuthority.TrySetAsideFromDeck(CardOf(instanceId)), Is.True,
+                    "The fixture's own precondition: this card starts in its owner's deck.");
 
             public HeroLevel LevelOf(HeroId heroId) => Levels.GetLevel(heroId);
 

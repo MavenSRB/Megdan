@@ -209,51 +209,17 @@ namespace GuardsDigital.Tests.EditMode
             var participants = configuration.Participants;
             var redHero = participants.Heroes.Single(hero =>
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
-            var blueHero = participants.Heroes.Single(hero =>
-                participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue).Id;
             var ultimate = configuration.CardInstances.Single(card =>
                 card.OwnerId.Equals(redHero) &&
                 card.DefinitionReference.DefinitionId.Equals(WaspCardContent.HighVoltage));
             Assert.That(CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate), Is.True);
 
-            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var setup = QuickGameSetupAuthority.Create(
-                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(), participants, map,
-                configuration.TieBreakerState);
-            var target = setup.Minions.First(minion =>
-                minion.TeamSide == TeamSide.Blue && minion.MinionType == StandardMinionType.Melee &&
-                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
-                    map, minion.Coordinate));
-            var occupied = new HashSet<HexCoordinate>(setup.Minions.Select(value => value.Coordinate));
-            var playable = map.Spaces.Where(space => space.Kind == BoardMapSpaceKind.Playable).ToArray();
-            var redAt = playable.Select(space => space.Coordinate).First(coordinate =>
-                !occupied.Contains(coordinate) &&
-                HexDistanceQuery.Calculate(coordinate, target.Coordinate) is > 0 and <= 3);
-            var blueAt = target.Coordinate.GetNeighbors().First(coordinate =>
-                !occupied.Contains(coordinate) && !coordinate.Equals(redAt) &&
-                playable.Any(space => space.Coordinate.Equals(coordinate)));
-            var heroes = setup.Heroes.Select(hero =>
-            {
-                var coordinate = hero.HeroId.Equals(redHero) ? redAt : blueAt;
-                var space = playable.Single(value => value.Coordinate.Equals(coordinate));
-                return new QuickGameHeroSetupState(
-                    hero.HeroId, hero.ContentId, hero.DisplayName, hero.TeamId, hero.TeamSide,
-                    hero.SpawnPoint, new ConfiguredSpaceReference(map.Id, space.Id), coordinate);
-            }).ToArray();
-            var staged = new QuickGameSetupState(
-                setup.SelectedMap, setup.WaveCount, setup.TieBreakerState, setup.Teams, heroes,
-                setup.Minions);
-            var scenario = new InitialScenarioDescription(
-                participants,
-                configuration.CardDefinitions,
-                configuration.CardInstances,
-                configuration.TieBreakerState,
-                map.Reference,
-                heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
-                Array.Empty<ObstacleOccupancy>());
-            return new SessionFixture(
-                new MatchSession(new MatchSessionInitialState(scenario, staged, new[] { map })),
-                redHero, blueHero, target.MinionId);
+            // The board itself is ConfiguredMatchFixtures'. Milestone 8.14 wants the same one
+            // under an Ultimate that p.15's leveling unlocked, and two copies of it could
+            // disagree about which minion this fixture is aimed at.
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorInRadiusOfAMinion(
+                configuration, out var red, out var blue, out var target);
+            return new SessionFixture(session, red, blue, target);
         }
 
         private static Fixture CreateFixture(
