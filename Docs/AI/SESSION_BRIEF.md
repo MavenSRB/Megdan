@@ -14,11 +14,13 @@ The project has completed roadmap milestones through **8.16a**. The configured v
 
 - Current completed milestone: **8.16a**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.17**.
+- Next proposed milestone: **8.16c**.
 
-Milestone **8.16a** completed on 2026-08-23, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). The fresh analysis-only review traced every implemented Wasp capability to source, contract, composition, persisted state, events and evidence, and found **no confirmed defect and nothing gate-blocking**: no card-name branch, printed-text parse, untyped payload or disguised custom handler anywhere - the engine generalises, while eight findings price the scaffolding around it, led by the performance capture still measuring the retired showcase deck, its growth guard crossed on shipping content. Proposed corrective **8.16b** (seven named checks) awaits scheduling approval; three findings are owed before hero content is implemented, none before inventory.
+Milestone **8.16a** completed on 2026-08-23, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). Its fresh analysis-only review found **no confirmed defect and nothing gate-blocking** in Wasp's generic card/effect architecture. Eight findings price surrounding evidence and identity machinery; proposed corrective **8.16b** (seven named checks) awaits scheduling approval, with three findings owed before hero implementation but none before inventory.
 
-Milestone **8.16** completed on 2026-08-23, same archive. The verified Wasp mirror now plays itself from p.5's setup to each of the rulebook's three endings: 7.9's deterministic loop answers whatever the projection is waiting on, and determinism, replay, halfway restore, Undo across the ending, restart, the event log and the Tie Breaker override are proved on that mirror. **It found two defects and both are fixed**: a mid-turn p.8 Lane Push ended a match without the phase recording it, and such a payload could not be restored. **T3 closed green on its first unfiltered run - Edit Mode 1599, Play Mode 66, harness 1365. Schema stays v24, digests unchanged.**
+Corrective **8.16c** is next proposed from the user's running-match observation: the blocked-Spawn-point Lane-Push pause still draws `PLACE AT ...` buttons contrary to 8.11a/8.15a. It moves those options onto highlighted board spaces and closes on conformance plus configured pointer-path evidence. Scheduling is approved; implementation is not.
+
+Milestone **8.16** completed on 2026-08-23, same archive. The verified Wasp mirror reaches all three endings with determinism, replay, restore, Undo, restart, event-log and Tie Breaker evidence. It found and fixed two mid-turn Lane-Push ending/restore defects. **T3: Edit Mode 1599, Play Mode 66, harness 1365; schema v24 and digests unchanged.**
 
 Milestones **8.13** through **8.15a** completed on 2026-08-23, same archive. High Voltage derives an on-board continuous trigger after Wasp's basic Skill, offering its optional enemy minion in printed Radius with Heavy immunity and pre-removal adjacency for the `if able` discard; p.15's mandatory leveling then runs over Wasp's printed deck, filing every verified pair's card under its icon until six items fill the four slots and the seventh level unlocks the Ultimate, whose icon an item's +1 reaches per ledger question 12. Twenty-one Play Mode journeys click the live HUD and board through the camera's pointer ray at every p.15 stage, catching what the headless surface could not - anonymous discard and distance options, and the unlocked Ultimate drawn nowhere. 8.15a made a card candidate its whole printed face, the open Clear's tokens marked and toggled where they stand.
 
@@ -26,7 +28,7 @@ Milestones **8.1** through **8.11e** completed 2026-08-21 through 2026-08-23 and
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1 through 7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed its 7.9a review's findings.
 
-The remaining route is **Phase 8**: 8.17, selecting the five additional pitch heroes, is next proposed - the 8.16a review found nothing gate-blocking, so approving its record opens the inventory gate. Each otherwise proposed item requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
+The remaining **Phase 8** route starts with corrective 8.16c, then 8.17 hero selection. The separate proposed 8.16b review corrections await scheduling approval. Each implementation requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
 
 **User-approved amendments, 2026-08-23:** milestone **8.15a** is inserted from the user's direction on 8.15's result, and 8.14's `SetAside`-scoping check is withdrawn as unreachable and mis-scoped, a conformance rule fencing that location's single writer instead. Both roadmap blocks carry the reasoning.
 
