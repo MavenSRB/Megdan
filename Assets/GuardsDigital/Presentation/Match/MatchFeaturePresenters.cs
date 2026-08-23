@@ -163,6 +163,24 @@ namespace GuardsDigital.Presentation.Match
                     : ordinal.Value < 1
                         ? throw new ArgumentOutOfRangeException(nameof(ordinal))
                         : $"{displayName.ToUpperInvariant()} #{ordinal.Value}";
+
+        /// <summary>
+        /// Milestone 8.15: a candidate that names a card instance is named as that card, so the hero
+        /// rulebook p.10 hands the choice to reads which card each control gives up rather than an
+        /// anonymous ordinal - the first player-pipeline journey met `OPTION #1` where a discard
+        /// chooser stood. The name is the card's projected display name, exactly the reading the
+        /// tray draws the same card by, and the ordinal appears only where the offered set repeats a
+        /// name, the same rule the token label follows.
+        /// </summary>
+        public static string CardTargetLabel(string displayName, int? ordinal) =>
+            string.IsNullOrWhiteSpace(displayName)
+                ? throw new ArgumentException(
+                    "A card target label requires the projected display name.", nameof(displayName))
+                : !ordinal.HasValue
+                    ? displayName.ToUpperInvariant()
+                    : ordinal.Value < 1
+                        ? throw new ArgumentOutOfRangeException(nameof(ordinal))
+                        : $"{displayName.ToUpperInvariant()} #{ordinal.Value}";
     }
 
     /// <summary>
@@ -2771,6 +2789,19 @@ namespace GuardsDigital.Presentation.Match
                 .GroupBy(name => name, StringComparer.Ordinal)
                 .Where(group => group.Count() > 1)
                 .Select(group => group.Key), StringComparer.Ordinal);
+
+            // Milestone 8.15, on the same decided-once-over-the-set terms: which card names this
+            // choice offers more than once. Wasp's eighteen are distinct, so the ordinal this feeds
+            // is for content that deals duplicates, exactly as the token rule is.
+            var repeatedCardNames = new HashSet<string>(choice.SelectInvocations
+                .Select(invocation => invocation.Candidate)
+                .Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    candidate.Value.Kind == EffectValueKind.CardInstance)
+                .Select(candidate => FindCardName(projection, candidate.Value.CardInstanceId))
+                .Where(name => name != null)
+                .GroupBy(name => name, StringComparer.Ordinal)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key), StringComparer.Ordinal);
             var invocations = new List<TypedInvocationViewModel>();
             var namedTargets = new List<EffectChoiceTargetViewModel>();
             var boardDestinations = new List<TypedInvocationViewModel>();
@@ -2794,6 +2825,40 @@ namespace GuardsDigital.Presentation.Match
                 {
                     invocations.Add(new TypedInvocationViewModel(
                         FormatSupplyMinionLabel(projection, candidate.Value.MinionId, ordinals[candidate]),
+                        command));
+                    continue;
+                }
+
+                // Milestone 8.15: a candidate that is a printed number is named as that number. The
+                // one production select of this shape is the kinetic "3 or 4 spaces" distance, whose
+                // two controls read `OPTION #1` and `OPTION #2` until the player-pipeline journey
+                // met them - a player choosing between the printed 3 and the printed 4 reads 3 and 4.
+                if (candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    candidate.Value.Kind == EffectValueKind.Integer)
+                {
+                    invocations.Add(new TypedInvocationViewModel(
+                        candidate.Value.IntegerValue.ToString(
+                            System.Globalization.CultureInfo.InvariantCulture),
+                        command));
+                    continue;
+                }
+
+                // Milestone 8.15: a candidate that names a card is named as that card. The chooser
+                // rulebook p.10 hands a discard to was reading `OPTION #1` where their own hand
+                // stood, which the first player-pipeline journey met and no headless fixture could.
+                if (candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    candidate.Value.Kind == EffectValueKind.CardInstance)
+                {
+                    var cardName = FindCardName(projection, candidate.Value.CardInstanceId);
+                    invocations.Add(new TypedInvocationViewModel(
+                        cardName == null
+                            ? EffectChoiceLabels.CandidateLabel(
+                                candidate.OptionNodeId, ordinals[candidate])
+                            : EffectChoiceLabels.CardTargetLabel(
+                                cardName,
+                                repeatedCardNames.Contains(cardName)
+                                    ? ordinals[candidate]
+                                    : (int?)null),
                         command));
                     continue;
                 }
@@ -2859,6 +2924,25 @@ namespace GuardsDigital.Presentation.Match
                     EffectChoiceLabels.CandidateLabel(candidate.OptionNodeId, ordinals[candidate]),
                     candidate))
                 .ToArray();
+        }
+
+        /// <summary>
+        /// The projected display name of one card instance, or null when the projection does not
+        /// carry it. Read exactly the way the tray names the same card - instance to definition to
+        /// display name - and never from printed card text.
+        /// </summary>
+        private static string FindCardName(
+            MatchSessionProjection projection, CardInstanceId cardInstanceId)
+        {
+            var card = projection.Cards.FirstOrDefault(value => value.Id.Equals(cardInstanceId));
+            if (card == null)
+            {
+                return null;
+            }
+
+            return projection.Definitions
+                .FirstOrDefault(value => value.Reference.Equals(card.DefinitionReference))?
+                .DisplayName;
         }
 
         /// <summary>

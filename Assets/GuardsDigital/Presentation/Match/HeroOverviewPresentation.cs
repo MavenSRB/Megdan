@@ -39,7 +39,17 @@ namespace GuardsDigital.Presentation.Match
         /// borrowing <see cref="Available"/>, which would put the word `AVAILABLE` on the lifecycle band
         /// of a card that is not in anybody's hand.
         /// </summary>
-        Deck = 4
+        Deck = 4,
+
+        /// <summary>
+        /// Faceup in rulebook p.16's Ultimate area beside the dashboard: unlocked, permanent, and not
+        /// an action anybody plays.
+        ///
+        /// Milestone 8.15. Only the hero rail's Ultimate marker produces it, for milestone 8.8a's
+        /// reason: every other word the lifecycle band can carry claims something - a turn, a pile, a
+        /// hand, a deck - that p.16's card is exactly not in.
+        /// </summary>
+        Unlocked = 5
     }
 
     /// <summary>
@@ -254,7 +264,9 @@ namespace GuardsDigital.Presentation.Match
                         ? "DISCARDED"
                         : group == TrayCardGroup.Deck
                             ? "IN DECK"
-                            : "AVAILABLE";
+                            : group == TrayCardGroup.Unlocked
+                                ? "UNLOCKED"
+                                : "AVAILABLE";
             ActiveLabel = isActiveEffectSource ? "ACTIVE" : string.Empty;
             AssistiveLabel = $"{DisplayName} - {ColorName} - {Face.ValueLine} - {HistoryLabel}" +
                 (isActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty);
@@ -516,7 +528,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HeroTurnSlotViewModel> turnSlots,
             IEnumerable<TrayCardViewModel> discardCards,
             bool isViewed,
-            HeroCurrentCardViewModel currentCard = null)
+            HeroCurrentCardViewModel currentCard = null,
+            TrayCardViewModel ultimateCard = null)
         {
             if (!heroId.IsDefined)
             {
@@ -535,9 +548,11 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<TrayCardViewModel>()).ToArray());
             IsViewed = isViewed;
             CurrentCard = currentCard;
+            UltimateCard = ultimateCard;
             TeamLabel = teamSide == TeamSide.Red ? "RED HERO" : "BLUE HERO";
             LevelLabel = "LVL " + level.ToString(System.Globalization.CultureInfo.InvariantCulture);
             DiscardLabel = "DISCARD";
+            UltimateLabel = "ULTIMATE";
 
             // The icon slot the milestone 7.8a decision wired: a configured image drops in here later,
             // and until one exists the disc carries the hero's own initial so the two rails are told
@@ -591,6 +606,17 @@ namespace GuardsDigital.Presentation.Match
         /// none - awaiting a commitment, passed, or already resolved this turn's card.
         /// </summary>
         public HeroCurrentCardViewModel CurrentCard { get; }
+
+        /// <summary>
+        /// Milestone 8.15: the card faceup in rulebook p.16's Ultimate area, or null while the hero
+        /// has not unlocked one. It is a reading of the card's own projected location - the unlock
+        /// <em>is</em> the position - so a restore, a replay and a retained-prefix Undo redraw it
+        /// with no presentation-owned state.
+        /// </summary>
+        public TrayCardViewModel UltimateCard { get; }
+
+        /// <summary>`ULTIMATE`, the marker row's caption.</summary>
+        public string UltimateLabel { get; }
     }
 
     public sealed class HeroOverviewsViewModel
@@ -675,7 +701,8 @@ namespace GuardsDigital.Presentation.Match
                 CurrentRoundCards.TurnSlots(projection, heroId),
                 CurrentRoundCards.DiscardedCards(projection, heroId),
                 heroId.Equals(viewedHeroId),
-                CurrentRoundCards.CurrentCard(projection, heroId));
+                CurrentRoundCards.CurrentCard(projection, heroId),
+                CurrentRoundCards.UnlockedUltimate(projection, heroId));
         }
     }
 
@@ -793,6 +820,27 @@ namespace GuardsDigital.Presentation.Match
                 .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
                 .Select(card => TrayCard(projection, card, TrayCardGroup.Discarded, 0, false, false))
                 .ToArray());
+        }
+
+        /// <summary>
+        /// The card faceup in rulebook p.16's Ultimate area for this hero, or null while none is.
+        ///
+        /// <para>Milestone 8.15. The unlock is the card's own position - milestone 7.3's deliberate
+        /// modelling - so this is a location read exactly like <see cref="DiscardedCards"/>, and the
+        /// serializer already refuses an area p.16 could not have produced, which is what makes one
+        /// card the most this can find.</para>
+        /// </summary>
+        public static TrayCardViewModel UnlockedUltimate(
+            MatchSessionProjection projection,
+            HeroId heroId)
+        {
+            if (projection == null) throw new ArgumentNullException(nameof(projection));
+            var card = projection.Cards.FirstOrDefault(value =>
+                value.OwnerId.Equals(heroId) &&
+                value.State.Location == CardLocation.UltimateArea);
+            return card == null
+                ? null
+                : TrayCard(projection, card, TrayCardGroup.Unlocked, 0, false, false);
         }
 
         /// <summary>

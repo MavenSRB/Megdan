@@ -114,6 +114,63 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void TheDiscardChooser_NamesEachControlAsTheCardItWouldGiveUp()
+        {
+            // Milestone 8.15. The first player-pipeline journey met `OPTION #1` where rulebook
+            // p.10's discard chooser stood: the chosen hero was picking which of their own cards to
+            // give up from controls that did not say which card any of them was. The candidates are
+            // card-instance values, and each control is named as its card - the projected display
+            // name, exactly the reading the tray names the same card by.
+            var session = ConfiguredMatchFixtures.CreateRadiusDiscardRiderSession(out var minionId);
+            var red = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Red).HeroId;
+            var blue = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            Accept(session, DirectorCommand.CommitCard(
+                red, HandCardOf(session, red, WaspCardContent.Shock).Id));
+            Accept(session, DirectorCommand.CommitCard(
+                blue, HandCardOf(session, blue, WaspCardContent.StopProjectiles).Id));
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                offer.IsAvailable && offer.ActionDefinitionId.Equals(WaspCardContent.PrimaryAttack));
+            Accept(session, DirectorCommand.StartAction(attack.ActionDefinitionId));
+            var target = session.Projection.PendingAttackTargetChoice;
+            Accept(session, DirectorCommand.ChooseAttackTarget(
+                target.ResolutionId, target.ChoiceId, minionId));
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.SelectInvocations.Single()));
+            Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            Assert.That(session.Projection.PendingEffectChoice?.ChooserId, Is.EqualTo(blue),
+                "The fixture must be standing on the chosen hero's own card question.");
+
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            var chooserLabels = view.Model.EffectChoices
+                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+                .Select(value => value.Label)
+                .ToArray();
+            var handNames = session.Projection.Cards
+                .Where(card => card.OwnerId.Equals(blue) &&
+                    card.State.Location == CardLocation.Hand)
+                .Select(card => session.Projection.Definitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .DisplayName.ToUpperInvariant())
+                .ToArray();
+            Assert.That(chooserLabels, Is.EquivalentTo(handNames),
+                "One control per in-hand card, each named as the card it would give up.");
+            Assert.That(chooserLabels, Has.All.Not.StartsWith("OPTION #"),
+                "No anonymous ordinal survives where a card has a name.");
+        }
+
+        private static CardInstance HandCardOf(
+            MatchSession session, HeroId heroId, CardDefinitionId definitionId) =>
+            session.Projection.Cards.Single(card =>
+                card.OwnerId.Equals(heroId) &&
+                card.State.Location == CardLocation.Hand &&
+                card.DefinitionReference.DefinitionId.Equals(definitionId));
+
         private static IEnumerable<UnityEngine.UIElements.Button> Buttons(
             UnityEngine.UIElements.VisualElement element)
         {

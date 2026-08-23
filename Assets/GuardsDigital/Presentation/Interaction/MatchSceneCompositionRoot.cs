@@ -30,7 +30,31 @@ namespace GuardsDigital.Presentation.Interaction
         /// generated token views. Verified content cannot stand in for them, because Wasp's own text
         /// lands at the 8.6-8.13 slices and until then every printed primary of hers is refused.
         /// </summary>
-        MechanicsShowcaseFixture = 1
+        MechanicsShowcaseFixture = 1,
+
+        /// <summary>
+        /// The verified starting hands with both Wasps restaged already engaged - each adjacent to one
+        /// Blue melee Battle-Zone minion, two spaces from each other around it - for the milestone
+        /// 8.15 player-pipeline journeys whose subject is a played card and not the approach march.
+        /// Cards, values and rules are exactly <see cref="ConfiguredMatch"/>'s; only the two heroes'
+        /// staged spaces differ, and the Tie Breaker side is fixed under `DEV-005` so a journey is
+        /// deterministic.
+        /// </summary>
+        VerifiedEngagedMirror = 2,
+
+        /// <summary>
+        /// The engaged mirror at rulebook p.15's Tier II stage: complementary Tier II hands between
+        /// the seats, returned Tier I cards in the deck. Milestone 8.15, on `DEV-004` terms - a live
+        /// match cannot be seeded to this position, so the journeys that verify the upgraded cards
+        /// in play start from the position p.15's own procedure produces.
+        /// </summary>
+        VerifiedTierTwoEngagedMirror = 3,
+
+        /// <summary>
+        /// The engaged mirror at rulebook p.15's Tier III stage with p.16's Ultimate unlocked faceup
+        /// on both seats. Milestone 8.15, on the same terms.
+        /// </summary>
+        VerifiedTierThreeEngagedMirror = 4
     }
 
     [ExecuteAlways]
@@ -117,14 +141,33 @@ namespace GuardsDigital.Presentation.Interaction
             // because nothing else could put a token on the board, and without one 6.3's Clear and two
             // of 6.6a's three modes were controls with nothing to act on. Blue Sentinel and Blue Feint
             // carry those capabilities now, so the scene keeps them at five.
-            var configuration = TakeRequestedCardContent() == SceneCardContent.MechanicsShowcaseFixture
-                ? PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture()
-                : PlaceholderOneVsOneTestConfiguration.Create();
+            var content = TakeRequestedCardContent();
+            var configuration = content switch
+            {
+                SceneCardContent.MechanicsShowcaseFixture =>
+                    PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture(),
+                SceneCardContent.VerifiedEngagedMirror =>
+                    PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedMirror =>
+                    PlaceholderOneVsOneTestConfiguration.CreateVerifiedTierTwoMirrorForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedMirror =>
+                    PlaceholderOneVsOneTestConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
+                        TeamSide.Red),
+                _ => PlaceholderOneVsOneTestConfiguration.Create()
+            };
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
+            if (content == SceneCardContent.VerifiedEngagedMirror ||
+                content == SceneCardContent.VerifiedTierTwoEngagedMirror ||
+                content == SceneCardContent.VerifiedTierThreeEngagedMirror)
+            {
+                setup = EngagedMirrorStaging.Restage(map, setup, out _);
+            }
             mapView.ConfiguredMinionViewsChanged -= RebindConfiguredMinionViews;
             mapView.ConfiguredMinionViewsChanged += RebindConfiguredMinionViews;
             mapView.ConfigureSceneBindings(eventCamera, heroViews);

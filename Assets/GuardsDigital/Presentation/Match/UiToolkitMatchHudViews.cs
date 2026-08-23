@@ -661,6 +661,40 @@ namespace GuardsDigital.Presentation.Match
 
             rail.Add(bonuses);
 
+            // Milestone 8.15: the unlocked Ultimate, faceup beside the dashboard on the table and
+            // therefore on the rail here - the one card a hero owns that is neither in the round the
+            // tray draws nor in the pile below. It is the same mini icon every other rail card is,
+            // revealing the same full face on a pointer rest, and it is only drawn while a card
+            // actually stands in rulebook p.16's area, so most of a match has no row here at all.
+            if (hero.UltimateCard != null)
+            {
+                var ultimate = HudElements.Row(4f);
+                ultimate.name = "gd-ultimate";
+                ultimate.style.marginTop = 6f;
+                ultimate.style.flexWrap = Wrap.NoWrap;
+                ultimate.style.alignItems = Align.Center;
+                ultimate.style.justifyContent = mirrored ? Justify.FlexEnd : Justify.FlexStart;
+                var ultimateCaption = HudElements.Text(
+                    hero.UltimateLabel, 9f, MatchHudTheme.MutedText, FontStyle.Bold);
+                var ultimateIcon = BuildMiniCard(
+                    "gd-ultimate-card",
+                    hero.UltimateCard,
+                    hero.UltimateCard.AssistiveLabel,
+                    hero.UltimateCard);
+                if (mirrored)
+                {
+                    ultimate.Add(ultimateIcon);
+                    ultimate.Add(ultimateCaption);
+                }
+                else
+                {
+                    ultimate.Add(ultimateCaption);
+                    ultimate.Add(ultimateIcon);
+                }
+
+                rail.Add(ultimate);
+            }
+
             // Milestone 8.7a: the four slots are captioned as what they now are. Without the caption
             // the row is four card icons whose meaning a player has to infer, and the whole point of
             // that milestone is that they mean resolved turns and the header marker means the turn

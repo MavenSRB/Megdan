@@ -228,7 +228,7 @@ Non-goals: no rebalance, no second hero.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-814-integrate-wasp-progression-items-and-the-ultimate-unlock-completion-evidence).
 
-### [~] 8.15 Complete and verify every Wasp card behavior
+### [x] 8.15 Complete and verify every Wasp card behavior
 
 Observable outcome: Every Wasp definition and legal action at each pitch-relevant tier passes source-linked focused scenarios after its re-baselined dependencies are available.
 
@@ -238,6 +238,8 @@ Acceptance checks:
 - No placeholder value, display-name branch, runtime text parsing, or UI-owned rule path remains.
 - Interaction tests cover each required timing, target, modifier, replacement, repeat, state change, Active effect, and continuous source.
 - Any unresolved source question prevents completion rather than being guessed.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-815-complete-and-verify-every-wasp-card-behavior-completion-evidence).
 
 ### [!] 8.16 Complete the deterministic Wasp mirror integration gate
 

@@ -162,6 +162,62 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// The verified mirror at rulebook p.15's Tier II stage: both seats hold the two basics plus
+        /// one Tier II card of each colour, complementary between the seats so every Tier II card is
+        /// in some hand, with the returned Tier I cards and everything else in the deck. Milestone
+        /// 8.15, on `DEV-004` terms - a live match cannot be seeded to this position, for the reason
+        /// <see cref="Verified.WaspProgressedHands"/> records.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateVerifiedTierTwoMirrorForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedWaspHand(TeamSide.Blue, tierThree: false));
+        }
+
+        /// <summary>
+        /// The verified mirror at rulebook p.15's Tier III stage with p.16's Ultimate unlocked on both
+        /// seats: the two basics plus one Tier III card of each colour in each hand, complementary
+        /// between the seats, High Voltage faceup in each seat's Ultimate area, and every lower Tier
+        /// in the deck. Milestone 8.15, on the same `DEV-004` terms.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateVerifiedTierThreeMirrorForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedWaspHand(TeamSide.Blue, tierThree: true));
+
+            // The initial-setup validator rightly admits only hand and deck, so the hands deal High
+            // Voltage to the deck and each seat's copy is unlocked here through the one p.16
+            // transition allowed to put a card in the Ultimate area - the same order the fixture
+            // behind milestone 8.14's ordinary-match case established.
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The Tier III mirror could not unlock a seat's dealt High Voltage.");
+                }
+            }
+
+            return configuration;
+        }
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedWaspHand(
+            TeamSide side, bool tierThree) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.WaspProgressedHands.CreateTierThreeHand(
+                    ownerId, side == TeamSide.Red ? "red" : "blue", side)
+                : GuardsDigital.Core.Cards.Verified.WaspProgressedHands.CreateTierTwoHand(
+                    ownerId, side == TeamSide.Red ? "red" : "blue", side);
+
+        /// <summary>
         /// The mechanics-showcase hands with p.5's coin flip, which is what
         /// <see cref="Create"/> was before milestone 8.4 dealt verified content there.
         ///

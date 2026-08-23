@@ -33,6 +33,53 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class MatchHudPresentationTests
     {
         // -------------------------------------------------------------------------------------------
+        // The rail's Ultimate marker (milestone 8.15)
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void TheRail_ShowsTheUnlockedUltimateAsARevealableIconReadingUnlocked()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorInRadiusOfAMinion(
+                PlaceholderOneVsOneTestConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
+                    TeamSide.Red),
+                out _, out _, out _);
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+
+            foreach (var hero in view.Model.Heroes)
+            {
+                Assert.That(hero.UltimateCard, Is.Not.Null,
+                    "Both mirrored Wasps unlocked High Voltage, and each rail says so.");
+                Assert.That(hero.UltimateCard.DisplayName, Is.EqualTo("High Voltage"));
+                Assert.That(hero.UltimateCard.HistoryLabel, Is.EqualTo("UNLOCKED"),
+                    "The lifecycle band claims no turn, hand, pile or deck the card is not in.");
+                Assert.That(hero.UltimateLabel, Is.EqualTo("ULTIMATE"));
+                Assert.That(hero.UltimateCard.AssistiveLabel, Does.Contain("UNLOCKED"),
+                    "The fact is available without a pointer.");
+            }
+
+            var icons = Descendants(view.Root)
+                .Where(element => element.name == "gd-ultimate-card")
+                .ToArray();
+            Assert.That(icons, Has.Length.EqualTo(2),
+                "One marker per rail, drawn through the shared mini-card builder.");
+        }
+
+        [Test]
+        public void TheRail_DrawsNoUltimateRowWhileTheCardWaitsInTheDeck()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+
+            Assert.That(view.Model.Heroes, Has.All.Matches<HeroOverviewViewModel>(hero =>
+                hero.UltimateCard == null),
+                "p.6 leaves the Ultimate in the deck, and a deck card is not player-visible state.");
+            Assert.That(Descendants(view.Root).Any(element => element.name == "gd-ultimate-card"),
+                Is.False, "No marker is drawn for a card the unlock has not turned faceup.");
+        }
+
+        // -------------------------------------------------------------------------------------------
         // The tray: five colours, the three groups, and the order they are read in
         // -------------------------------------------------------------------------------------------
 

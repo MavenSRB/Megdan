@@ -149,13 +149,19 @@ namespace GuardsDigital.Presentation.Units.Heroes
                     $"Setup hero '{setupState.HeroId}' does not match view hero '{Occupancy.HeroId}'.");
             }
 
+            // The occupied space no longer has to be the spawn point's own space. Where a hero
+            // starts is the setup authority's decision, not this view's: p.5's ordinary setup puts
+            // every hero on its spawn, and milestone 8.15's engaged staging deliberately does not.
+            // What this view still refuses is genuine disagreement with the rendered map - a foreign
+            // map id, a spawn or space the map does not contain, or a space whose coordinate is not
+            // the one the setup claims to occupy.
             var spawn = definition.SpawnPoints.SingleOrDefault(value =>
                 value.Id.Equals(setupState.SpawnPoint.SpawnPointId));
             var space = definition.Spaces.SingleOrDefault(value =>
                 value.Id.Equals(setupState.OccupiedSpace.SpaceId));
             if (!setupState.SpawnPoint.MapId.Equals(definition.Id) ||
                 !setupState.OccupiedSpace.MapId.Equals(definition.Id) ||
-                spawn == null || space == null || !spawn.SpaceId.Equals(space.Id) ||
+                spawn == null || space == null ||
                 !space.Coordinate.Equals(setupState.Coordinate))
             {
                 throw new System.InvalidOperationException("Hero setup placement is not valid for the rendered map.");
