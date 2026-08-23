@@ -6,6 +6,17 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Every item remains a separate micro-milestone. Phase 9 starts only after milestone 8.28 establishes URP as the accepted rendering baseline, milestone 8.36 proves the private six-human internet flow with primitive UI, and independent reviews 8.28a and 8.36a dispose of every gate-blocking finding.
 
+Milestone 8.19's designated roadmap audit recommends **keeping 9.1-9.16a unchanged**. The capability
+matrix changes which rule events and prompts presentation must consume, but 8.20-8.24 and the primitive
+online HUD must prove those typed projections before production presentation is scoped. Board, hero,
+minion, camera, representation switching, five hero-animation families, shared minion animation, event
+queue, final HUD, readability, audio, the final gate, and its fresh review each have distinct asset,
+lifecycle, visual, accessibility, or evidence boundaries; merging them would obscure a failed visual or
+runtime path, while splitting them now would guess at an asset pipeline and playtest findings not yet
+known. Reassess exact asset counts and acceptance at the 8.36a gate. Current planning range is **25-50
+focused engineering days**, excluding asset procurement/licensing, external feedback, approval latency,
+and corrective work.
+
 Each visible milestone runs focused Play Mode checks for the affected presentation path plus one targeted visual inspection. The disposable migration-check build from milestone 8.28 and invited-tester online build from milestone 8.36 are not retained as pitch deliverables or publicly distributed; the first retained private pitch player build remains milestone 10.1. Complete unfiltered suites wait for milestone 9.16 unless a T3 risk trigger applies earlier.
 
 ### [ ] 9.1 Production board environment

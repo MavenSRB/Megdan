@@ -29,7 +29,7 @@ The pitch requires Sabina's complete progression. Before verified Sabina definit
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **source-verified at 8.18c (2026-08-23), with the display-name field blocked by S-01**. Every printed value, icon and word on the nineteen faces below is transcribed here, read twice - once from the whole face and again from icon-region and text-region enlargements built for the purpose. Nothing is mapped onto a capability yet: milestone 8.19 produces the roster-wide capability matrix and assigns the implementation slices, and the fields above that name capability IDs, typed bindings, effect-node IDs and source-linked tests stay owed until it does. No Sabina definition, effect, or test exists in the build.
+Current status: **source-verified at 8.18c and capability-mapped at 8.19 (2026-08-23), with the display-name field blocked by S-01**. Every printed value, icon and word on the nineteen faces below is transcribed here, read twice - once from the whole face and again from icon-region and text-region enlargements built for the purpose. The roster-wide [capability matrix](ROSTER_CAPABILITY_MATRIX.md#sabina) now assigns every face/component, typed binding, policy, checkpoint, and source-linked scenario family without using the disputed epithet. No Sabina definition, effect, or test exists in the build; milestones 8.19a-8.19c own the shared dependencies and 8.22 owns composition.
 
 ## Sabina source faces
 

@@ -30,13 +30,13 @@ implemented, the inventory must be implementation-grade, containing at least:
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **source-verified at 8.18e (2026-08-23)**. Every printed value, icon and word on the
+Current status: **source-verified at 8.18e and capability-mapped at 8.19 (2026-08-23)**. Every printed value, icon and word on the
 nineteen action faces below is transcribed here, read twice - once from the whole face and again from the
 value/icon and text regions. The dashboard, profile, common backs, and manifest-owned standee art were also
-inspected. Nothing is mapped onto a capability yet: milestone 8.19 produces the roster-wide capability
-matrix and assigns implementation slices, and the fields above that name capability IDs, typed bindings,
-effect-node IDs and source-linked tests stay owed until it does. No Xargatha definition, effect, component,
-or test exists in the build.
+inspected. The roster-wide [capability matrix](ROSTER_CAPABILITY_MATRIX.md#xargatha) now assigns every
+face/component, typed binding, policy, checkpoint, and source-linked scenario family. No Xargatha
+definition, effect, component, or test exists in the build; milestones 8.19a-8.19c own the shared
+dependencies and 8.24 owns composition.
 
 ## Xargatha source faces and components
 

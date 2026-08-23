@@ -29,12 +29,12 @@ The pitch requires Arien's complete progression. Before verified Arien definitio
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **source-verified at 8.18a (2026-08-23)**. Every printed value, icon and word on the
+Current status: **source-verified at 8.18a and capability-mapped at 8.19 (2026-08-23)**. Every printed value, icon and word on the
 nineteen faces below is transcribed here, read twice - once from the whole face and again from
-icon-region and text-region enlargements built for the purpose. Nothing is mapped onto a capability yet:
-milestone 8.19 produces the roster-wide capability matrix and assigns the implementation slices, and the
-fields above that name capability IDs, typed bindings, effect-node IDs and source-linked tests stay owed
-until it does. No Arien definition, effect, or test exists in the build.
+icon-region and text-region enlargements built for the purpose. The roster-wide
+[capability matrix](ROSTER_CAPABILITY_MATRIX.md#arien) now assigns every face/component, typed binding,
+policy, checkpoint, and source-linked scenario family. No Arien definition, effect, or test exists in the
+build; milestones 8.19a-8.19c own the shared dependencies and 8.20 owns composition.
 
 ## Arien source faces
 

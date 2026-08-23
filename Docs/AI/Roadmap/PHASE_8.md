@@ -368,7 +368,7 @@ Observable outcome: the slot-E hero's complete set is source-verified under the 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818e-inventory-and-verify-pitch-hero-slot-e-completion-evidence).
 
-### [!] 8.19 Map the five heroes to capabilities and re-baseline the 3v3 pitch work
+### [x] 8.19 Map the five heroes to capabilities and re-baseline the 3v3 pitch work
 
 Observable outcome: Every verified action and hero-owned component maps to existing or new typed capabilities, and the remaining hero, 3v3 integration, and presentation milestones are re-baselined from evidence.
 
@@ -382,25 +382,80 @@ Acceptance checks:
 
 Non-goals: No effect implementation or production art.
 
-### [!] 8.20 Complete and verify additional pitch hero slot A
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819-map-the-five-heroes-to-capabilities-and-re-baseline-the-3v3-pitch-work-completion-evidence).
 
-The exact hero name, dependency slices, acceptance checks, and validation are assigned by milestone 8.19 before authorization.
+The completed audit, effort range, retained-gate decisions, and dependency-ordered shared foundations
+8.19a-8.19c live in [PHASE_8_ROSTER_REBASE.md](PHASE_8_ROSTER_REBASE.md).
 
-### [!] 8.21 Complete and verify additional pitch hero slot B
+### [!] 8.22 Complete and verify additional pitch hero slot C - Sabina
 
-The exact hero name, dependency slices, acceptance checks, and validation are assigned by milestone 8.19 before authorization.
+Blocked by: Milestone 8.21 must prove the unique roster system interaction. S-01 blocks only Sabina's
+player-facing epithet and does not block stable-ID definition work; the milestone cannot finalize the
+display label until S-01 is answered.
 
-### [!] 8.22 Complete and verify additional pitch hero slot C
+Observable outcome: Sabina's complete verified set is defined, dealt, resolved through the ordinary
+player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested, with the
+approved epithet displayed consistently.
 
-The exact hero name, dependency slices, acceptance checks, and validation are assigned by milestone 8.19 before authorization.
+Acceptance checks:
 
-### [!] 8.23 Complete and verify additional pitch hero slot D
+- Every Sabina face/component maps exactly as the roster matrix records; conditional Attack values,
+  paired Swap/Heavy override, multi-target Remove, minion direct Move/Repeat, retrieve, discard-or-Defeat,
+  and all After-Attack paths have source-linked scenarios.
+- Big Sodding Gun modifies only Sabina's Basic Attack and its after-Push escalation triggers only on her
+  applied Push of an enemy hero, with exact ordering, restore, repeated action, and no-card Defeat coverage.
+- Up-to-two Remove proves chosen-set legality, deterministic ordered application, removal prevention,
+  immediate Lane Push/game end after either target, and no Defeat reward.
+- Definitions, projection/player journeys, progression, complete-set interaction, and directly affected
+  earlier-hero/Wasp/core regressions pass at the applicable tier; no epithet string drives rules.
 
-The exact hero name, dependency slices, acceptance checks, and validation are assigned by milestone 8.19 before authorization.
+Non-goals: No other new hero, six-player setup, networking, or production art.
 
-### [!] 8.24 Complete and verify additional pitch hero slot E
+### [!] 8.23 Complete and verify additional pitch hero slot D - Tigerclaw
 
-The exact hero name, dependency slices, acceptance checks, and validation are assigned by milestone 8.19 before authorization.
+Blocked by: Milestone 8.22 must complete the third shared-composition consumer.
+
+Observable outcome: Tigerclaw the Cutpurse's complete verified set and Poison component are defined,
+dealt, resolved through the ordinary player pipeline, progressed through every printed upgrade/item/
+Ultimate stage, and source-tested.
+
+Acceptance checks:
+
+- Every Tigerclaw face/component maps exactly as the roster matrix records; move-through-target Attacks,
+  before/after movement, conditional values, Defense riders/restriction, card retrieval, coin transfer,
+  Poison attachment, and Repeat paths have source-linked scenarios.
+- Poison's one physical supply, Tier-specific -1/-2 Initiative/Attack/Defense source, holder-defeat and
+  end-round return, upgrade boundary, restore, and simultaneous modifier order are authoritative and never
+  inferred from the marker art.
+- Cloak and Daggers repeats every legal Basic action once, excludes the original Attack target, forbids a
+  replacement/recursive repeat, and preserves action/checkpoint/progression semantics across restore and
+  Undo without a Tigerclaw-name branch.
+- Definitions, projection/player journeys, progression, complete-set interaction, and directly affected
+  earlier-hero/Wasp/core regressions pass at the applicable tier.
+
+Non-goals: No other new hero, six-player setup, networking, or production art.
+
+### [!] 8.24 Complete and verify additional pitch hero slot E - Xargatha
+
+Blocked by: Milestone 8.23 must complete the marker/general-action Repeat consumer.
+
+Observable outcome: Xargatha the Changed's complete verified set is defined, dealt, resolved through the
+ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested.
+
+Acceptance checks:
+
+- Every Xargatha face/component maps exactly as the roster matrix records; dynamic Attack/Range,
+  conditional target movement, typed Repeat targets, card retrieval, before/after primary Movement,
+  Heavy override, and End-of-Round Defeat paths have source-linked scenarios.
+- Next-Turn petrification preserves Hero and adds Terrain as effective types, prevents only Movement
+  actions, follows Xargatha's moving radius, respects intrinsic-representation exceptions, and restores/
+  cancels in exact p.17 order without materializing a statue component.
+- Constrict/Final Embrace run before Minion Battle and consume immediate Lane Push/game end correctly;
+  Metamorphosis recalculates Initiative/Movement from presence at each owning query and reuses Move Through.
+- Definitions, projection/player journeys, progression, complete-set interaction, and directly affected
+  roster/Wasp/core regressions pass at the applicable tier without an Xargatha-name branch.
+
+Non-goals: No six-player setup, networking, production art, alternate miniature, or statue component.
 
 ### [!] 8.25 Replace the staged 1v1 setup with the official six-player Quick Game configuration
 

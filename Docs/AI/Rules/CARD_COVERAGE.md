@@ -2,6 +2,9 @@
 
 Canonical active shard. Return to [../RULES_LEDGER.md](../RULES_LEDGER.md).
 
+The verified six-hero planning map is [ROSTER_CAPABILITY_MATRIX.md](ROSTER_CAPABILITY_MATRIX.md); exact
+per-face source text and verification stay in each linked hero shard.
+
 Both tables below are architecture and planning maps, not implementation claims. The rule status they
 depend on stays in the ledger; what lives here is the seam each rule pressure requires and the
 milestone that proves it.
@@ -19,13 +22,13 @@ Milestones 0.4-0.5 specify these representation and capability seams; they do no
 | Defense interrupts Attack | Reaction offer nested in the same resolution | 2.3 opens the defender-owned response frame; 2.4-2.5 answer and resume it |
 | Undo/networking must preserve partial resolution | Deterministic initial-scenario plus typed accepted-command replay for internal Undo; versioned snapshot of participant/round/board/card state and resolver-validated pending choice for persistence/resynchronization | 3.9 snapshots remain implemented and verified; corrective 3.10a replaces 3.10's per-command snapshot history with command replay; later networking milestones reuse the snapshot boundary rather than internal Undo history |
 | Played/resolved/discarded/facedown facts overlap | Orthogonal lifecycle axes and validated transitions | 3.1-3.8; verified Wasp data in 8.3 |
-| Real Wasp cards introduce ordered effects and dependencies | Verified Wasp capability matrix before Wasp effect work | 8.1-8.2 |
-| Timed and persistent text outlives one resolver step | Serializable active-effect instances and timing windows | 5.4, 6.13, and verified Wasp slices |
+| Verified hero cards introduce ordered effects and dependencies | Per-hero source inventory followed by a capability matrix before effect work | Wasp at 8.1-8.2; the other five heroes at 8.18a-8.19 |
+| Timed and persistent text outlives one resolver step | Serializable active-effect instances and timing windows | 5.4, 6.13, verified Wasp slices, and planned roster foundations 8.19a/8.19c |
 | Ultimate/token rules persist without ordinary Active-effect semantics | Distinct continuous-rule sources and effective-characteristic queries | 6.3, 7.3, and verified Wasp slices |
 
 ## Effect capability coverage
 
-The capability catalog is source-reviewed architecture, not an implementation claim. Phases 1 through 7 prove verified general/core slices with synthetic definitions. The user-approved mechanics-showcase schedule converts six of the ten configured cards only after each reusable dependency exists: 6.8a Red Bulwark (complete), 6.8b Blue Feint (complete), 6.5a Red Needle (complete), 6.5b Red Bombard (complete), 6.6a Blue Sentinel (complete), and 6.7a Blue Longbow (complete), with the exact complete matrix gated at 7.9. After that deterministic core-match gate, milestone 8.2 maps verified Wasp content to the smallest Wasp-specific slices and records any capability deltas without retroactively gating the core rules.
+The capability catalog is source-reviewed architecture, not an implementation claim. Phases 1 through 7 prove verified general/core slices with synthetic definitions. The user-approved mechanics-showcase schedule converts six of the ten configured cards only after each reusable dependency exists: 6.8a Red Bulwark (complete), 6.8b Blue Feint (complete), 6.5a Red Needle (complete), 6.5b Red Bombard (complete), 6.6a Blue Sentinel (complete), and 6.7a Blue Longbow (complete), with the exact complete matrix gated at 7.9. After that deterministic core-match gate, milestone 8.2 mapped Wasp and milestone 8.19 mapped the five additional verified heroes. Their shared planned deltas land at 8.19a-8.19c before complete hero compositions 8.20-8.24; none retroactively gates the completed core/Wasp rules.
 
 | Capability family | Primary general source | Architecture status | Planned proving/integration milestones |
 | --- | --- | --- | --- |
