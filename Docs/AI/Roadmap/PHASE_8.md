@@ -336,11 +336,13 @@ Observable outcome: the slot-A hero's cards, tiers, values, action types, text, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818a-inventory-and-verify-pitch-hero-slot-a-completion-evidence).
 
-### [!] 8.18b Inventory and verify pitch hero slot B
+### [x] 8.18b Inventory and verify pitch hero slot B
 
 Slot-B hero, assigned by 8.17's approved roster: **Brogan the Destroyer** (Blue).
 
 Observable outcome: the slot-B hero's complete set is source-verified under the shared 8.18 contract above.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818b-inventory-and-verify-pitch-hero-slot-b-completion-evidence).
 
 ### [!] 8.18c Inventory and verify pitch hero slot C
 

@@ -8,7 +8,7 @@ The project owner states that the public repository and included rulebook are sh
 
 A rules-accurate implementation of the board game, built as a pure C# rules engine with Unity acting only as passive presentation. The current build plays a mirrored 1v1 match on the official single-lane map, dealt from one hero's source-verified printed cards, with movement, attack/defense, minions, and an end-of-round minion battle. Each card's printed text is composed slice by slice, and a primary action whose text is not composed yet is offered greyed and refused rather than performed without it.
 
-Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **8.18a**.
+Progress is tracked as numbered micro-milestones. As of the last update the project has completed milestones through **8.18b**.
 
 ## Requirements
 
