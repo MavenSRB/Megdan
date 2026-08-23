@@ -43,24 +43,26 @@ namespace GuardsDigital.Core.Effects
         NodeReachableThroughTwoParents = 14,
 
         /// <summary>
-        /// Milestone 8.5. A printed Attack's or Defense's card text contains a node that would open an
-        /// authoritative choice. Rulebook p.14 applies that text inside an Attack whose remaining steps
-        /// are produced in the same command that began them, and this build persists no state that
-        /// could hold them while a question stands - so the composition is refused at content load
-        /// rather than faulting halfway through an attack that has already been announced. A Skill's
-        /// effect is the action itself and pauses freely; only text applied inside another action is
-        /// bound by this. The slice that first transcribes a rider needing a question owns the nesting
-        /// and the schema move it costs.
-        /// </summary>
-        CardTextCannotPauseInsideAnAttack = 15,
-
-        /// <summary>
         /// Milestone 8.6. A `on the same target` repeat names a selection whose target it could not
         /// inherit: one this definition does not declare, one that publishes no single space, one that
         /// has not certainly run by the time the repeat is reached, or a second such repeat in the same
         /// definition, which would leave one inherited target with two nodes claiming it.
         /// </summary>
-        UnresolvedRepeatTargetBinding = 16
+        UnresolvedRepeatTargetBinding = 16,
+
+        /// <summary>
+        /// Milestone 8.19a. Text applied around a primary action does not have the shape that timing
+        /// requires: a root sequence of exactly two nodes - the question that places the work and the
+        /// work it places - whose first node is rulebook p.10's <c>Choose</c> over branches that each
+        /// publish one side through `around-primary-action@1`.
+        ///
+        /// <para>The shape is declared rather than inferred because the definition is entered twice,
+        /// once per side of the action, and entering a definition at a node inside it is only
+        /// meaningful if the definition says which node means what. Milestone 8.5's opposite rule -
+        /// that text inside an Attack could not pause at all - was retired here: rulebook p.14's step 1
+        /// now holds a question, so a pausing shape is admitted at every one of the page's moments.</para>
+        /// </summary>
+        AroundActionShapeIsMalformed = 17
     }
 
     public readonly struct EffectDefinitionRejection
@@ -93,30 +95,24 @@ namespace GuardsDigital.Core.Effects
     public static class EffectDefinitionValidator
     {
         /// <summary>
-        /// Everything <see cref="Validate"/> checks, plus the one extra rule text applied inside
-        /// another action is bound by at the one of rulebook p.14's moments that cannot hold a
-        /// question.
+        /// Everything <see cref="Validate"/> checks, plus the extra rule the moment this text is
+        /// applied at imposes on its shape.
         ///
-        /// <para>Milestone 8.5 refused a pausing shape at all three of the page's moments, because an
-        /// attack's remaining steps were produced in the command that began them and nothing could hold
-        /// them while a question stood. Milestone 8.10 supplied the holding for two of the three: what
-        /// p.14 leaves after step 4 and after step 7 is a function of the attack's own identity, so a
-        /// paused frame plus that identity is enough to finish the page, and Wasp's riders - which
-        /// choose an enemy hero and then let that hero choose a card - resolve through it.</para>
+        /// <para><b>Rulebook p.14's three moments impose nothing any more.</b> Milestone 8.5 refused a
+        /// pausing shape at all three, because an attack's remaining steps were produced in the command
+        /// that began them and nothing could hold them while a question stood. Milestone 8.10 supplied
+        /// the holding for steps 4 and 7, whose remainders are a function of the attack's own identity.
+        /// Milestone 8.19a supplied it for step 1, whose remainder is the rest of the page: the Attack
+        /// resolver now produces everything after that step against live state through one generator,
+        /// so a question standing there is held by the same paused frame the other two use. Arien's
+        /// Noble Blade and Brogan's Mad Dash both ask one, which is why the moment had to open.</para>
         ///
-        /// <para><b>Step 1 still cannot.</b> What follows the attacker's "Before the attack" text is
-        /// not a function of identity: on the arm where p.13 simply defeats a targeted minion, it
-        /// contains the facts of a Defeat the resolver has already computed and applied, and no
-        /// persisted identity reproduces those. A composition that could ask a question there is
-        /// therefore still refused here, at content load, rather than faulting halfway through an
-        /// attack that has already been announced. A Skill is unaffected at every moment: its effect is
-        /// the action, and pausing it is what the whole frame exists for.</para>
-        ///
-        /// <para>The rule is about the three node shapes that open a choice on their own: p.10's
-        /// <c>Choose</c>, anything policied <c>May</c> (which opens the page's confirm-or-decline), and
-        /// <c>RepeatAction</c>, whose eligible <c>may</c> does the same. A capability that requests one
-        /// is caught at execution instead, because nothing a definition declares says whether a handler
-        /// will ask.</para>
+        /// <para><b>Text applied around a primary action imposes a shape instead of a prohibition.</b>
+        /// That timing is not one of the page's moments at all - the actor chooses which side of the
+        /// action the text runs on - so the definition is entered twice, once for the question and once
+        /// for the work it places. Entering a definition at a node inside it is only meaningful if the
+        /// definition says which node means what, so the shape is declared: a root sequence of exactly
+        /// two nodes, whose first is p.10's <c>Choose</c> over branches that each publish one side.</para>
         /// </summary>
         public static IReadOnlyList<EffectDefinitionRejection> ValidateCardText(
             EffectDefinition definition,
@@ -124,31 +120,61 @@ namespace GuardsDigital.Core.Effects
             CardTextTiming moment)
         {
             var rejections = Validate(definition, catalog).ToList();
-            if (definition == null || moment != CardTextTiming.BeforeTheAttack)
+            if (definition == null || moment != CardTextTiming.AroundTheAction)
             {
                 return Array.AsReadOnly(rejections.ToArray());
             }
 
-            foreach (var node in definition.Nodes)
+            ValidateAroundActionShape(definition, rejections);
+            return Array.AsReadOnly(rejections.ToArray());
+        }
+
+        /// <summary>
+        /// The declared shape of text applied around a primary action, checked at content load so a
+        /// malformed composition is a rejected card rather than a turn that cannot continue.
+        /// </summary>
+        private static void ValidateAroundActionShape(
+            EffectDefinition definition,
+            ICollection<EffectDefinitionRejection> rejections)
+        {
+            if (!AroundActionShape.IsWellFormed(definition))
             {
-                var pausingShape =
-                    node.Kind == EffectNodeKind.Choose ? "rulebook p.10's Choose" :
-                    node.Kind == EffectNodeKind.RepeatAction ? "a repeat the actor may decline" :
-                    node.FailurePolicy == EffectFailurePolicy.May ? "a `may` step" :
-                    null;
-                if (pausingShape == null)
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.AroundActionShapeIsMalformed,
+                    $"Effect definition '{definition.Id}' is applied around a primary action, so its " +
+                    "root is a sequence of exactly two nodes: the question that places its work and " +
+                    "the work it places."));
+                return;
+            }
+
+            var orderingNodeId = AroundActionShape.OrderingNode(definition);
+            if (!definition.TryGetNode(orderingNodeId, out var ordering) ||
+                ordering.Kind != EffectNodeKind.Choose ||
+                ordering.ChildNodeIds.Count == 0)
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.AroundActionShapeIsMalformed,
+                    $"Node '{orderingNodeId}' places this text on one side of its action, so it is " +
+                    "rulebook p.10's Choose over at least one branch."));
+                return;
+            }
+
+            foreach (var childId in ordering.ChildNodeIds)
+            {
+                if (definition.TryGetNode(childId, out var child) &&
+                    child.Kind == EffectNodeKind.Capability &&
+                    child.Capability.Equals(
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticContinuationCapabilities
+                            .AroundPrimaryActionV1))
                 {
                     continue;
                 }
 
                 rejections.Add(new EffectDefinitionRejection(
-                    EffectDefinitionRejectionReason.CardTextCannotPauseInsideAnAttack,
-                    $"Node '{node.Id}' is {pausingShape}, which asks the player a question. Card text " +
-                    "applied at rulebook p.14's step 1 has to finish inside the command that reached " +
-                    "it, because what the page does next is not a function of the attack's identity."));
+                    EffectDefinitionRejectionReason.AroundActionShapeIsMalformed,
+                    $"Branch '{childId}' of an around-action ordering question publishes which side " +
+                    "of the action this text runs on, so it invokes `around-primary-action@1`."));
             }
-
-            return Array.AsReadOnly(rejections.ToArray());
         }
 
         public static IReadOnlyList<EffectDefinitionRejection> Validate(

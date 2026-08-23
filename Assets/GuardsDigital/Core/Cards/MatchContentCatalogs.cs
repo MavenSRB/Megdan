@@ -77,7 +77,12 @@ namespace GuardsDigital.Core.Cards
                 SyntheticComponentDefinitions.CreateCatalog(),
                 new TriggeredEffectCatalog(new[]
                 {
-                    WaspEffectContent.HighVoltageTriggeredEffect(WaspCardContent.ContentRevision)
+                    WaspEffectContent.HighVoltageTriggeredEffect(WaspCardContent.ContentRevision),
+                    // Milestone 8.19a. The effect a `before-action-trigger@1` source runs. It joins the
+                    // one catalog rather than forming a second, for the reason 8.9's verified effects
+                    // did: a match registers one set and the snapshot compares one.
+                    GuardsDigital.Core.Cards.Synthetic.SyntheticShowcaseHand
+                        .BeforeActionTriggeredEffect.Definition
                 }));
     }
 }

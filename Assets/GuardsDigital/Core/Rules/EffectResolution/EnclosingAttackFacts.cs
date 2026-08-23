@@ -1,5 +1,7 @@
 using System;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.EffectResolution
@@ -14,6 +16,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     /// of them exclude the attacker from a selection the defender makes. Three loose fields describing
     /// one thing is what this replaces.</para>
     ///
+    /// <para>Milestone 8.19a adds the two the roster's Before/After-Attack text reads. The minion the
+    /// Attack took joins the hero, because a text that may bind either has to be able to see either -
+    /// p.13 lets an Attack take a unit of either kind, and asking only about the hero made a minion
+    /// target indistinguishable from no target at all. Beside them is the space the target stood on
+    /// <em>before</em> the page's consequences, which is the one fact about a target that stops being
+    /// readable from the board: at step 7 a defeated hero has already been removed, and Brogan's
+    /// Onslaught moves into exactly that space. It is captured once, when the target is validated, and
+    /// carried from there rather than re-read.</para>
+    ///
     /// <para><b>It is context rather than a published fact.</b> These are properties of the action the
     /// text is printed inside, not of anything a node in that text did, so they arrive the way
     /// <c>EnclosingActionKind</c> does. Every field is undefined outside card text inside an Attack,
@@ -22,6 +33,16 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     public readonly struct EnclosingAttackFacts : IEquatable<EnclosingAttackFacts>
     {
         public EnclosingAttackFacts(HeroId actorId, HeroId heroTargetId, AttackRangeKind range)
+            : this(actorId, heroTargetId, default, range, null)
+        {
+        }
+
+        public EnclosingAttackFacts(
+            HeroId actorId,
+            HeroId heroTargetId,
+            MinionId minionTargetId,
+            AttackRangeKind range,
+            HexCoordinate? targetSpaceBeforeConsequences)
         {
             if (!Enum.IsDefined(typeof(AttackRangeKind), range))
             {
@@ -30,9 +51,19 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     nameof(range));
             }
 
+            if (heroTargetId.IsDefined && minionTargetId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "An Attack takes one unit, so its enclosing facts name a hero or a minion and " +
+                    "never both.",
+                    nameof(minionTargetId));
+            }
+
             ActorId = actorId;
             HeroTargetId = heroTargetId;
+            MinionTargetId = minionTargetId;
             Range = range;
+            TargetSpaceBeforeConsequences = targetSpaceBeforeConsequences;
         }
 
         /// <summary>No enclosing Attack: every effect that is not card text inside one.</summary>
@@ -52,10 +83,33 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public HeroId HeroTargetId { get; }
 
         /// <summary>
+        /// The minion the Attack took, or the undefined minion when it took a hero. Milestone 8.19a:
+        /// the other half of p.13's sentence, needed because a text whose target is bound by the text
+        /// itself has to be able to say which unit it bound.
+        /// </summary>
+        public MinionId MinionTargetId { get; }
+
+        /// <summary>Whether this Attack has taken a unit yet at all.</summary>
+        public bool HasTarget => HeroTargetId.IsDefined || MinionTargetId.IsDefined;
+
+        /// <summary>
         /// p.13's printed subtype of the Attack, or <see cref="AttackRangeKind.None"/> outside one.
         /// It is what Wasp's Block cards are conditioned on: "Block a ranged attack."
         /// </summary>
         public AttackRangeKind Range { get; }
+
+        /// <summary>
+        /// Milestone 8.19a. Where the target stood when the Attack bound it, before p.14's steps 6 and
+        /// 7 could remove it - or nothing at all where the Attack has no target yet.
+        ///
+        /// <para>It is carried rather than re-read because it is the one target fact the board stops
+        /// answering: p.14 removes a defeated hero at step 6 and applies "After the attack:" text at
+        /// step 7, so a rider that names the target's space is asking about a piece that is no longer
+        /// standing anywhere. Capturing it at validation also makes it a fact about the attack rather
+        /// than about the moment the rider happened to run, which is what lets a pause and a restore
+        /// stand between the two.</para>
+        /// </summary>
+        public HexCoordinate? TargetSpaceBeforeConsequences { get; }
 
         /// <summary>Whether there is an enclosing Attack to ask about at all.</summary>
         public bool IsDefined => ActorId.IsDefined;
@@ -63,7 +117,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public bool Equals(EnclosingAttackFacts other) =>
             ActorId.Equals(other.ActorId) &&
             HeroTargetId.Equals(other.HeroTargetId) &&
-            Range == other.Range;
+            MinionTargetId.Equals(other.MinionTargetId) &&
+            Range == other.Range &&
+            Nullable.Equals(TargetSpaceBeforeConsequences, other.TargetSpaceBeforeConsequences);
 
         public override bool Equals(object obj) => obj is EnclosingAttackFacts other && Equals(other);
 
@@ -71,11 +127,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         {
             unchecked
             {
-                return ((ActorId.GetHashCode() * 397) ^ HeroTargetId.GetHashCode()) * 397 ^ (int)Range;
+                var hash = (ActorId.GetHashCode() * 397) ^ HeroTargetId.GetHashCode();
+                hash = (hash * 397) ^ MinionTargetId.GetHashCode();
+                hash = (hash * 397) ^ (int)Range;
+                return (hash * 397) ^ (TargetSpaceBeforeConsequences?.GetHashCode() ?? 0);
             }
         }
 
-        public override string ToString() =>
-            IsDefined ? $"{ActorId.Value} -> {HeroTargetId.Value} ({Range})" : "no enclosing attack";
+        public override string ToString()
+        {
+            if (!IsDefined) return "no enclosing attack";
+            var target = HeroTargetId.IsDefined ? HeroTargetId.Value
+                : MinionTargetId.IsDefined ? MinionTargetId.Value
+                : "no target";
+            return $"{ActorId.Value} -> {target} ({Range})";
+        }
     }
 }

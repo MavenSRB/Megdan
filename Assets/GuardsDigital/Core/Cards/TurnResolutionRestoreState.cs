@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Core.Cards
@@ -20,7 +22,8 @@ namespace GuardsDigital.Core.Cards
             TieBreakerState tieBreakerState,
             InitiativeResolutionRestoreState initiative,
             int roundIndex,
-            int turnIndex)
+            int turnIndex,
+            IEnumerable<string> consumedBeforeActionTriggers = null)
         {
             IsStarted = isStarted;
             IsEnded = isEnded;
@@ -28,6 +31,8 @@ namespace GuardsDigital.Core.Cards
             Initiative = initiative ?? throw new ArgumentNullException(nameof(initiative));
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
+            ConsumedBeforeActionTriggers = Array.AsReadOnly(
+                (consumedBeforeActionTriggers ?? Enumerable.Empty<string>()).ToArray());
         }
 
         public bool IsStarted { get; }
@@ -36,6 +41,13 @@ namespace GuardsDigital.Core.Cards
         public InitiativeResolutionRestoreState Initiative { get; }
         public int RoundIndex { get; }
         public int TurnIndex { get; }
+
+        /// <summary>
+        /// Milestone 8.19a. The `before-action-trigger@1` sources that have already fired this turn, by
+        /// stable source identity, in the order they fired. Empty on every turn in which none has -
+        /// which is every turn in this build before a hero unlocks one.
+        /// </summary>
+        public IReadOnlyList<string> ConsumedBeforeActionTriggers { get; }
 
         public void Deconstruct(
             out bool isStarted,

@@ -168,7 +168,21 @@ namespace GuardsDigital.Core.Snapshots
         // milestone writes. It is also the one field whose absence cannot be recovered from anything
         // else on the wire: a Block reaches the comparison with no Defense Total, so a restored
         // resolution missing it would be indistinguishable from a malformed one.
-        public const int CurrentSchemaVersion = 24;
+        // Milestone 8.19a moves it to 25 for the pause altitudes the roster's printed text needs, and
+        // for the one target fact those pauses make unreadable from the board. Four things a v24
+        // payload cannot describe: an outer pre-action continuation - a frame standing outside an
+        // action that has not started, holding the exact validated offer it will start from - the side
+        // of a primary action the actor placed that frame's work on, the before-action triggers a turn
+        // has already consumed, and the space an Attack's target stood on before rulebook p.14's
+        // consequences removed it.
+        //
+        // v24 is rejected rather than migrated on the standing ground. Three of the four have no
+        // reading available for their absence that is true of both builds: a v24 payload has no
+        // pre-action frame because no content could produce one, so "absent" and "none" coincide there
+        // - but the target space does not coincide, because every v24 Attack had one and simply did
+        // not write it. Recovering it would mean reading a piece off the restored board, and the whole
+        // reason the field exists is that p.14 may already have taken that piece off.
+        public const int CurrentSchemaVersion = 25;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

@@ -489,18 +489,17 @@ namespace GuardsDigital.Tests.EditMode
 
 
         /// <summary>
-        /// Milestone 8.5. Card text applied at one of rulebook p.14's Attack moments has to finish
-        /// inside the command that reached it, because an Attack's remaining steps are produced there
-        /// and no persisted state can hold them while a question stands. The three node shapes that
-        /// open a question on their own are refused, with the compliant twin beside each so the rule
-        /// states what it accepts as well as what it rejects.
+        /// Milestone 8.19a, and the retirement of milestone 8.5's opposite rule.
         ///
-        /// A Skill is deliberately unaffected. Its effect <i>is</i> the action, and pausing it is what
-        /// the whole frame exists for, which is why the ordinary <c>Validate</c> below admits every one
-        /// of these.
+        /// <para>Card text applied at any of rulebook p.14's three moments may now ask the player a
+        /// question. 8.5 refused all three node shapes that open one, because an Attack's remaining
+        /// steps were produced in the command that began them; 8.10 held steps 4 and 7, whose
+        /// remainders follow from the attack's identity; this milestone holds step 1, whose remainder is
+        /// the rest of the page produced against live state. All three shapes are asserted at step 1
+        /// specifically, because that is the moment that changed.</para>
         /// </summary>
         [Test]
-        public void CardTextThatCouldPauseInsideAnAttack_IsRefusedWithItsCompliantTwin()
+        public void EveryPausingShape_IsAdmittedAtRulebookPageFourteensFirstStep()
         {
             var choose = new EffectNodeDefinition(
                 new EffectNodeId("root"), EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
@@ -516,33 +515,111 @@ namespace GuardsDigital.Tests.EditMode
                 new EffectNodeId("root"), EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
                 childNodeIds: new[] { new EffectNodeId("a"), new EffectNodeId("b") });
 
-            AssertCardTextRefuses(choose, Leaf("a"), Leaf("b"));
-            AssertCardTextRefuses(mayStep, Leaf("a"));
-            AssertCardTextRefuses(
-                repeat,
-                Leaf("a"),
-                new EffectNodeDefinition(
-                    new EffectNodeId("b"), EffectNodeKind.RepeatAction, EffectFailurePolicy.IfAble));
+            Assert.That(ValidateCardText(choose, Leaf("a"), Leaf("b")), Is.Empty,
+                "Rulebook p.10's Choose is what Brogan's Mad Dash asks at step 1.");
+            Assert.That(ValidateCardText(mayStep, Leaf("a")), Is.Empty,
+                "A `may` step is what Arien's Noble Blade offers at step 1.");
+            Assert.That(
+                ValidateCardText(
+                    repeat,
+                    Leaf("a"),
+                    new EffectNodeDefinition(
+                        new EffectNodeId("b"), EffectNodeKind.RepeatAction,
+                        EffectFailurePolicy.IfAble)),
+                Is.Empty,
+                "A repeat the actor may decline opens the same question the other two do.");
 
-            // The compliant twin: the same table with no node that opens a question.
-            var compliant = ValidateCardText(Sequence("root", "a", "b"), Leaf("a"), Leaf("b"));
-            Assert.That(compliant, Is.Empty,
+            // The unchanged twin: text that only performs was admitted before and still is.
+            Assert.That(ValidateCardText(Sequence("root", "a", "b"), Leaf("a"), Leaf("b")), Is.Empty,
                 "Text that only performs is admitted, which is what the seam exists to run.");
-
-            // And the rule is the card-text one alone: a Skill's own effect may ask anything.
-            Assert.That(
-                Validate(choose, Leaf("a"), Leaf("b")).Select(rejection => rejection.Reason),
-                Has.None.EqualTo(EffectDefinitionRejectionReason.CardTextCannotPauseInsideAnAttack));
         }
 
-        private static void AssertCardTextRefuses(params EffectNodeDefinition[] nodes)
+        /// <summary>
+        /// Milestone 8.19a. Text applied around a primary action is entered twice - once for the
+        /// question that places it and once for the work that question placed - so the definition has to
+        /// say which node is which. Each way the declaration can fail is asserted beside the compliant
+        /// twin.
+        /// </summary>
+        [Test]
+        public void TextAppliedAroundAPrimaryAction_DeclaresItsTwoHalvesOrIsRefused()
         {
+            var compliant = new[]
+            {
+                Sequence("root", "order", "work"),
+                new EffectNodeDefinition(
+                    new EffectNodeId("order"), EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { new EffectNodeId("before"), new EffectNodeId("after") },
+                    chooser: EffectChooserRole.Actor,
+                    minimumSelections: 1,
+                    maximumSelections: 1),
+                Placement("before", SyntheticContinuationCapabilities.PlacementBeforeTheAction),
+                Placement("after", SyntheticContinuationCapabilities.PlacementAfterTheAction),
+                Leaf("work")
+            };
             Assert.That(
-                ValidateCardText(nodes).Select(rejection => rejection.Reason),
-                Does.Contain(EffectDefinitionRejectionReason.CardTextCannotPauseInsideAnAttack),
-                $"'{nodes[0].Kind}/{nodes[0].FailurePolicy}' can open a question, so it cannot be " +
-                "card text applied inside an Attack.");
+                ValidateCardTextAt(GuardsDigital.Core.Cards.CardTextTiming.AroundTheAction, compliant),
+                Is.Empty,
+                "The declared shape is a root sequence of the ordering question and the work it places.");
+
+            // A root that is not two nodes: nothing says which half is which.
+            Assert.That(
+                ValidateCardTextAt(
+                    GuardsDigital.Core.Cards.CardTextTiming.AroundTheAction,
+                    Sequence("root", "work"), Leaf("work"))
+                    .Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.AroundActionShapeIsMalformed));
+
+            // A first node that asks nothing: the actor never places the work.
+            Assert.That(
+                ValidateCardTextAt(
+                    GuardsDigital.Core.Cards.CardTextTiming.AroundTheAction,
+                    Sequence("root", "order", "work"), Leaf("order"), Leaf("work"))
+                    .Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.AroundActionShapeIsMalformed));
+
+            // A branch that publishes no side: the question is asked and its answer says nothing.
+            var branchless = new[]
+            {
+                Sequence("root", "order", "work"),
+                new EffectNodeDefinition(
+                    new EffectNodeId("order"), EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { new EffectNodeId("before"), new EffectNodeId("after") },
+                    chooser: EffectChooserRole.Actor,
+                    minimumSelections: 1,
+                    maximumSelections: 1),
+                Placement("before", SyntheticContinuationCapabilities.PlacementBeforeTheAction),
+                Leaf("after"),
+                Leaf("work")
+            };
+            Assert.That(
+                ValidateCardTextAt(
+                    GuardsDigital.Core.Cards.CardTextTiming.AroundTheAction, branchless)
+                    .Select(rejection => rejection.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.AroundActionShapeIsMalformed));
+
+            // And the rule belongs to that timing alone: the same table is ordinary text elsewhere.
+            Assert.That(
+                ValidateCardTextAt(
+                    GuardsDigital.Core.Cards.CardTextTiming.AfterTheAttack,
+                    Sequence("root", "work"), Leaf("work")),
+                Is.Empty);
         }
+
+        private static EffectNodeDefinition Placement(string id, int side) =>
+            new EffectNodeDefinition(
+                new EffectNodeId(id), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                SyntheticContinuationCapabilities.AroundPrimaryActionV1,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromLiteral(
+                        SyntheticContinuationCapabilities.PlacementParameter,
+                        EffectValue.Integer(side))
+                },
+                outputs: new[]
+                {
+                    new EffectOutputBinding(
+                        SyntheticContinuationCapabilities.PlacementOutput, EffectValueKind.Integer)
+                });
 
         // ---------------------------------------------------------------------------------------
         // Milestone 8.6: a same-target repeat has to be able to inherit a target

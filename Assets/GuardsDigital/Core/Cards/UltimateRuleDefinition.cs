@@ -66,8 +66,10 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<PrintedValueDefinition> printedValues,
             EffectDefinitionReference? triggeredEffect = null,
             IEnumerable<TimingCheckpoint> triggerCheckpoints = null,
-            UltimateTriggerCondition triggerCondition = UltimateTriggerCondition.None)
+            UltimateTriggerCondition triggerCondition = UltimateTriggerCondition.None,
+            BeforeActionTrigger beforeAction = default)
         {
+            BeforeAction = beforeAction;
             if (string.IsNullOrWhiteSpace(ruleId) || string.IsNullOrWhiteSpace(ruleKind))
             {
                 throw new ArgumentException("An Ultimate's ability requires stable identity and a rule kind.");
@@ -82,9 +84,22 @@ namespace GuardsDigital.Core.Cards
             TriggerCheckpoints = Array.AsReadOnly(
                 (triggerCheckpoints ?? Enumerable.Empty<TimingCheckpoint>()).ToArray());
 
+            // Milestone 8.19a. A before-action trigger runs an effect too, and it runs it at a moment
+            // the lifecycle has no checkpoint for, so it satisfies the pairing below by declaring a
+            // trigger rather than a checkpoint. The two shapes stay mutually exclusive: one Ultimate
+            // prints one ability, and an ability that both preceded an action and followed one would be
+            // two sentences the page does not print.
+            var isCheckpointTriggered = TriggerCheckpoints.Count > 0;
+            if (beforeAction.IsDeclared && isCheckpointTriggered)
+            {
+                throw new ArgumentException(
+                    "An Ultimate declares one trigger: a checkpoint after an action, or a start " +
+                    "before one.", nameof(beforeAction));
+            }
+
             if (!Enum.IsDefined(typeof(UltimateTriggerCondition), triggerCondition) ||
-                triggeredEffect.HasValue != (TriggerCheckpoints.Count > 0) ||
-                triggeredEffect.HasValue != (triggerCondition != UltimateTriggerCondition.None) ||
+                triggeredEffect.HasValue != (isCheckpointTriggered || beforeAction.IsDeclared) ||
+                isCheckpointTriggered != (triggerCondition != UltimateTriggerCondition.None) ||
                 (triggeredEffect.HasValue && !triggeredEffect.Value.IsDefined) ||
                 TriggerCheckpoints.Any(value => value != TimingCheckpoint.ActionEnded) ||
                 TriggerCheckpoints.Distinct().Count() != TriggerCheckpoints.Count)
@@ -165,6 +180,35 @@ namespace GuardsDigital.Core.Cards
                 ruleId, ruleKind, null, PrintedTextComposition.None, printedValues,
                 triggeredEffect, triggerCheckpoints, triggerCondition);
 
+        /// <summary>
+        /// Milestone 8.19a. A permanent Ultimate ability that runs before its controller performs an
+        /// action of a named kind, which is Living Tsunami's shape: "Once per turn, before performing
+        /// an Attack action, you may move 1 space."
+        ///
+        /// <para>It is a third factory rather than a parameter on <see cref="TriggeredAbility"/>
+        /// because the two answer different questions. That one names a lifecycle checkpoint and a
+        /// completed-action condition, both of which describe something that has already happened; this
+        /// one names an action that has not started and must start unchanged afterwards, so what it
+        /// declares is a kind and a frequency and nothing about checkpoints at all.</para>
+        /// </summary>
+        public static UltimateRuleDefinition BeforeActionAbility(
+            string ruleId,
+            string ruleKind,
+            EffectDefinitionReference triggeredEffect,
+            BeforeActionTrigger beforeAction,
+            IEnumerable<PrintedValueDefinition> printedValues)
+        {
+            if (!beforeAction.IsDeclared)
+            {
+                throw new ArgumentException(
+                    "A before-action Ultimate declares the action kind it precedes.", nameof(beforeAction));
+            }
+
+            return new UltimateRuleDefinition(
+                ruleId, ruleKind, null, PrintedTextComposition.None, printedValues,
+                triggeredEffect, null, UltimateTriggerCondition.None, beforeAction);
+        }
+
         /// <summary>This ability's stable identity inside its card, and the derived source's identity suffix.</summary>
         public string RuleId { get; }
 
@@ -181,6 +225,13 @@ namespace GuardsDigital.Core.Cards
         public UltimateTriggerCondition TriggerCondition { get; }
 
         public IReadOnlyList<TimingCheckpoint> TriggerCheckpoints { get; }
+
+        /// <summary>
+        /// Milestone 8.19a. `before-action-trigger@1`, or <see cref="BeforeActionTrigger.None"/> on
+        /// every Ultimate that declares no such trigger - which is every one in this build before
+        /// Arien's.
+        /// </summary>
+        public BeforeActionTrigger BeforeAction { get; }
 
         /// <summary>
         /// Stable effect-frame identity for a permanent ability. An Ultimate is not an action, but the

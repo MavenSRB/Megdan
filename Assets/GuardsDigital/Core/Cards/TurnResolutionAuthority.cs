@@ -437,6 +437,19 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private GuardsDigital.Core.Rules.Progression.HeroItemState heroItems;
 
+        /// <summary>
+        /// Milestone 8.19a. The `before-action-trigger@1` sources that have already fired this turn,
+        /// by their stable source identity.
+        ///
+        /// <para>It is a set on the turn because "once per turn" is a fact about the turn, and this
+        /// authority is built fresh for each one. It is persisted rather than re-derived for the reason
+        /// milestone 6.9's Lane-Push cause is: nothing about a restored board says whether a trigger
+        /// has already been taken, and a hero who saved mid-turn and reloaded would otherwise get the
+        /// ability twice.</para>
+        /// </summary>
+        private readonly HashSet<string> consumedBeforeActionTriggers =
+            new HashSet<string>(StringComparer.Ordinal);
+
         private int roundIndex;
         private int turnIndex;
 
@@ -646,7 +659,8 @@ namespace GuardsDigital.Core.Cards
                 TieBreakerState,
                 initiative.CaptureRestoreState(),
                 roundIndex,
-                turnIndex);
+                turnIndex,
+                consumedBeforeActionTriggers);
 
         internal static TurnResolutionAuthority Restore(
             IEnumerable<CardDefinition> definitions,
@@ -676,6 +690,7 @@ namespace GuardsDigital.Core.Cards
                     state.TieBreakerState,
                     state.Initiative)
             };
+            authority.consumedBeforeActionTriggers.UnionWith(state.ConsumedBeforeActionTriggers);
             // A started turn that has not ended normally has either an actor or a choice deciding who
             // acts next. Milestone 6.9 adds the third state it can legitimately be in: rulebook p.8's
             // mid-turn Lane Push has been requested, the acting hero's card has resolved, and Initiative
@@ -927,6 +942,83 @@ namespace GuardsDigital.Core.Cards
                     TurnResolutionRejectionReason.PrintedCardTextNotComposed);
             }
 
+            // Milestone 8.19a, in the order rulebook p.17 implies: a trigger that precedes the action
+            // runs before anything the action's own card says, because the action has not started.
+            var intercepted = TryInterceptWithBeforeActionTrigger(
+                resolutionId, offer, ActionKind.Movement, out var precedingEvents);
+            if (intercepted != null)
+            {
+                return intercepted.Value;
+            }
+
+            return StartMovementCore(resolutionId, offer, precedingEvents);
+        }
+
+        /// <summary>
+        /// Milestone 8.19a. Starts the Movement, first asking the actor which side of it this card's
+        /// text belongs to when the card declares text applied around the action.
+        ///
+        /// <para>The question is asked before the Movement, whichever side wins, because it is a
+        /// question about the Movement rather than a step in it: a player who has already spent their
+        /// allowance cannot be asked whether the rider should have gone first.</para>
+        /// </summary>
+        private TurnResolutionResult StartMovementCore(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            List<TurnResolutionEvent> precedingEvents)
+        {
+            var events = precedingEvents ?? new List<TurnResolutionEvent>();
+            if (DeclaresTextAroundTheAction(offer))
+            {
+                var ordering = cardActions.StartAroundActionText(
+                    resolutionId, offer, definitions, instances, participants, timing,
+                    CurrentModifications(), roundIndex, turnIndex);
+                if (!ordering.Accepted)
+                {
+                    return TurnResolutionResult.Reject(
+                        TurnResolutionRejectionReason.MovementActionRejected);
+                }
+
+                events.AddRange(MaterializeSteps(ordering.Steps, TurnResolutionEvent.FromCardAction));
+                var placed = cardActions.PendingPreActionResolution;
+                if (placed?.Frame != null)
+                {
+                    // The ordering question stands. The Movement starts when it is answered.
+                    return TurnResolutionResult.Accept(events);
+                }
+
+                if (placed != null &&
+                    placed.Placement ==
+                        GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.BeforeTheAction)
+                {
+                    var before = RunPlacedAroundActionWork(events);
+                    if (before != null)
+                    {
+                        return before.Value;
+                    }
+                }
+            }
+
+            return StartHeldMovement(resolutionId, offer, events);
+        }
+
+        private TurnResolutionResult StartHeldMovement(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            List<TurnResolutionEvent> events)
+        {
+            var awaited = cardActions.PendingPreActionResolution;
+            if (awaited != null &&
+                awaited.Placement ==
+                    GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.AfterTheAction)
+            {
+                cardActions.ParkPreActionContinuation();
+            }
+            else
+            {
+                cardActions.ClearPreActionContinuation();
+            }
+
             var result = cardActions.StartTurnMovementResolution(
                 resolutionId,
                 offer,
@@ -935,9 +1027,36 @@ namespace GuardsDigital.Core.Cards
                 CurrentModifications());
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementActionRejected);
-            return TurnResolutionResult.Accept(
-                MaterializeSteps(result.Steps, TurnResolutionEvent.FromCardAction));
+            events.AddRange(MaterializeSteps(result.Steps, TurnResolutionEvent.FromCardAction));
+            return TurnResolutionResult.Accept(events);
         }
+
+        /// <summary>
+        /// Runs the work an ordering question placed, wherever the answer put it. Returns a result when
+        /// that work stopped on a question of its own, and <c>null</c> when it finished and whatever
+        /// was waiting on it may continue.
+        /// </summary>
+        private TurnResolutionResult? RunPlacedAroundActionWork(List<TurnResolutionEvent> events)
+        {
+            var work = cardActions.StartOwedAroundActionWork(
+                definitions, instances, participants, timing, CurrentModifications(),
+                roundIndex, turnIndex);
+            if (!work.Accepted)
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.MovementActionRejected);
+            }
+
+            events.AddRange(MaterializeSteps(work.Steps, TurnResolutionEvent.FromCardAction));
+            return cardActions.PendingPreActionResolution?.Frame != null
+                ? (TurnResolutionResult?)TurnResolutionResult.Accept(events)
+                : null;
+        }
+
+        private bool DeclaresTextAroundTheAction(ActionOffer offer) =>
+            ActionOfferQuery.TryFindActionDefinition(offer, definitions, out var action) &&
+            action.CardTextTiming == CardTextTiming.AroundTheAction &&
+            action.EffectRoot != null;
 
         public TurnResolutionResult TryAnswerMovementChoice(MovementChoiceCommand command)
         {
@@ -980,6 +1099,27 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Accept(events);
             }
 
+            // Milestone 8.19a. The actor may have placed this card's text after the Movement. That work
+            // runs here, before the card resolves and Initiative advances, because it is part of the
+            // action rather than something that follows it - and if it asks a question, the action is
+            // not over yet.
+            var owed = cardActions.PendingPreActionResolution;
+            if (owed != null && owed.OwesWork)
+            {
+                var placed = RunPlacedAroundActionWork(events);
+                if (placed != null)
+                {
+                    return placed.Value;
+                }
+            }
+
+            return CompleteMovementAndAdvance(card, events);
+        }
+
+        private TurnResolutionResult CompleteMovementAndAdvance(
+            CardInstance card,
+            List<TurnResolutionEvent> events)
+        {
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -1341,6 +1481,13 @@ namespace GuardsDigital.Core.Cards
                 return AnswerPausedCardText(command);
             }
 
+            // Milestone 8.19a. Same command again, one altitude further out: a frame standing outside
+            // an action that has not started. What finishes when it completes is the action itself.
+            if (cardActions?.PendingPreActionResolution?.Frame != null)
+            {
+                return AnswerPausedPreAction(command);
+            }
+
             if (cardActions?.IsPendingTriggeredEffect == true)
             {
                 var answeredTrigger = cardActions.AnswerTriggeredEffectChoice(
@@ -1426,6 +1573,19 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Accept(events);
             }
 
+            // Milestone 8.19a. Step 1's remainder is the rest of the page, and the page is usually not
+            // over when it ends: the ordinary arm opens the Defense response, and only the arm p.13
+            // resolves without one - a targeted minion, or a text that named no target at all - runs
+            // through to the end of the action here.
+            if (paused.Moment == CardTextTiming.BeforeTheAttack)
+            {
+                return cardActions.HasPendingResolution ||
+                    cardActions.PendingDefenseChoice != null ||
+                    cardActions.PendingCardTextResolution != null
+                        ? TurnResolutionResult.Accept(events)
+                        : CompleteAttackOrStartItsRepeat(events);
+            }
+
             // What the finished text hands back differs by moment. Step 7's remainder ends the action,
             // so the attack is over; step 4's ends at the comparison p.14 opens next, which is the call
             // the Defense response would have made had nothing paused.
@@ -1449,6 +1609,79 @@ namespace GuardsDigital.Core.Cards
             }
 
             return CompleteAttackOrStartItsRepeat(events);
+        }
+
+        /// <summary>
+        /// Milestone 8.19a. Answers the question a pre-action frame stopped on, and then does whatever
+        /// that frame was standing in front of.
+        ///
+        /// <para>Three completions and no fourth. A finished trigger starts the action it held, from
+        /// the offer it held rather than from one re-derived against the board the trigger just
+        /// changed. A finished ordering question either runs the work it placed and then starts the
+        /// action, or starts the action and parks the work behind it. A finished piece of placed work
+        /// either lets the action start or, when the action has already run, ends it.</para>
+        /// </summary>
+        private TurnResolutionResult AnswerPausedPreAction(EffectChoiceCommand command)
+        {
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+            }
+
+            var paused = cardActions.PendingPreActionResolution;
+            if (!paused.HeldOffer.SourceCardInstanceId.Equals(
+                    initiative.SelectedActor.CardInstanceId) ||
+                !paused.HeldOffer.ActorId.Equals(initiative.SelectedActor.ActorId))
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+            }
+
+            var answered = cardActions.AnswerPreActionChoice(
+                command, definitions, instances, participants, timing, CurrentModifications(),
+                roundIndex, turnIndex);
+            if (!answered.Accepted)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+            }
+
+            var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromTriggeredEffect);
+            if (!answered.IsComplete || cardActions.PendingPreActionResolution?.Frame != null)
+            {
+                return TurnResolutionResult.Accept(events);
+            }
+
+            return ContinueAfterPreAction(paused, events);
+        }
+
+        private TurnResolutionResult ContinueAfterPreAction(
+            GuardsDigital.Core.Rules.CardResolution.PendingPreActionResolution paused,
+            List<TurnResolutionEvent> events)
+        {
+            var owed = cardActions.PendingPreActionResolution;
+            if (owed != null && owed.OwesWork &&
+                owed.Placement ==
+                    GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.BeforeTheAction)
+            {
+                var placed = RunPlacedAroundActionWork(events);
+                if (placed != null)
+                {
+                    return placed.Value;
+                }
+            }
+
+            // The action has already run when the work the actor placed after it has just finished.
+            if (owed == null && paused.HeldActionHasStarted)
+            {
+                var card = instances.Single(candidate =>
+                    candidate.Id.Equals(paused.HeldOffer.SourceCardInstanceId));
+                return CompleteMovementAndAdvance(card, events);
+            }
+
+            var heldKind = ActionOfferQuery
+                .FindActionDefinition(paused.HeldOffer, definitions).Kind;
+            return heldKind == ActionKind.Attack
+                ? StartAttackCore(paused.HeldResolutionId, paused.HeldOffer, events)
+                : StartHeldMovement(paused.HeldResolutionId, paused.HeldOffer, events);
         }
 
         /// <summary>Milestone 6.4a's paused after-action correction, or <c>null</c>.</summary>
@@ -1577,6 +1810,25 @@ namespace GuardsDigital.Core.Cards
                     TurnResolutionRejectionReason.PrintedCardTextNotComposed);
             }
 
+            // Milestone 8.19a. A rule source may have declared that it runs before an Attack begins.
+            // If one has, it runs first and this offer is held exactly as it was validated - the whole
+            // point of the altitude, because the trigger's own effect can move the hero who is about to
+            // attack.
+            var intercepted = TryInterceptWithBeforeActionTrigger(
+                resolutionId, offer, ActionKind.Attack, out var interceptEvents);
+            if (intercepted != null)
+            {
+                return intercepted.Value;
+            }
+
+            return StartAttackCore(resolutionId, offer, interceptEvents);
+        }
+
+        private TurnResolutionResult StartAttackCore(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            List<TurnResolutionEvent> precedingEvents)
+        {
             var result = cardActions.StartTurnAttackResolution(
                 resolutionId,
                 offer,
@@ -1586,8 +1838,60 @@ namespace GuardsDigital.Core.Cards
                 CurrentModifications());
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackActionRejected);
-            return TurnResolutionResult.Accept(
-                MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction));
+            var events = precedingEvents ?? new List<TurnResolutionEvent>();
+            events.AddRange(MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction));
+
+            // An Attack whose own text names its target and whose text stopped on a question has not
+            // reached p.14's step 2 yet; one that finished may already have run the whole page over a
+            // minion and be complete.
+            return cardActions.PendingCardTextResolution == null && !cardActions.HasPendingResolution
+                ? CompleteAttackOrStartItsRepeat(events)
+                : TurnResolutionResult.Accept(events);
+        }
+
+        /// <summary>
+        /// Milestone 8.19a. Runs the first `before-action-trigger@1` that applies to this action start,
+        /// if any, and reports whether the start has to wait for it.
+        ///
+        /// <para>Returns a result when the caller must stop - the trigger asked a question, or refused -
+        /// and <c>null</c> when the start may proceed, with anything the trigger already produced in
+        /// <paramref name="events"/>. The trigger is recorded as consumed the moment it runs, because
+        /// "once per turn" is a fact about the turn and this is the turn.</para>
+        /// </summary>
+        private TurnResolutionResult? TryInterceptWithBeforeActionTrigger(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            ActionKind actionKind,
+            out List<TurnResolutionEvent> events)
+        {
+            events = new List<TurnResolutionEvent>();
+            if (cardActions?.Board == null)
+            {
+                return null;
+            }
+
+            var triggers = GuardsDigital.Core.Rules.Progression.BeforeActionTriggerQuery.Derive(
+                CurrentUltimates(), cardActions.Board, participants, offer, actionKind,
+                consumedBeforeActionTriggers);
+            if (triggers.Count == 0)
+            {
+                return null;
+            }
+
+            var source = triggers[0];
+            consumedBeforeActionTriggers.Add(source.SourceId);
+            var started = cardActions.StartBeforeActionTrigger(
+                source, resolutionId, offer, definitions, instances, participants, timing,
+                CurrentModifications(), roundIndex, turnIndex);
+            if (!started.Accepted)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+            }
+
+            events.AddRange(MaterializeSteps(started.Steps, TurnResolutionEvent.FromTriggeredEffect));
+            return cardActions.PendingPreActionResolution == null
+                ? (TurnResolutionResult?)null
+                : TurnResolutionResult.Accept(events);
         }
 
         public TurnResolutionResult TryAnswerAttackTarget(AttackTargetChoiceCommand command)

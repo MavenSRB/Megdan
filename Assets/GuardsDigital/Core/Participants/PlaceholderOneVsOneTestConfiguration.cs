@@ -285,6 +285,24 @@ namespace GuardsDigital.Core.Participants
                 SyntheticShowcaseHand.CreateBlueWithAttackText);
         }
 
+        /// <summary>
+        /// Milestone 8.19a. The ordinary configuration plus the four roster continuation shapes: two
+        /// attacker-side cards in Red's hand and the defender-side rider and around-the-Movement card
+        /// in Blue's.
+        ///
+        /// <para>Its own configuration for the reason the orbit and kinesis fixtures have theirs: these
+        /// cards reach pause altitudes no other content in the build reaches, and a fixture asserting
+        /// over the ordinary hand would read past them.</para>
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForContinuationFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticShowcaseHand.CreateRedWithContinuationText,
+                SyntheticShowcaseHand.CreateBlueWithContinuationText);
+        }
+
         public static PlaceholderOneVsOneTestConfiguration CreateForInternalTest(
             TeamSide initialTieBreakerSide)
         {

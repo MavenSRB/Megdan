@@ -107,7 +107,13 @@ namespace GuardsDigital.Tests.EditMode
             // enclosing Attack.s printed subtype is the new one.
             // Milestone 8.13 adds the staged minion-Defeat request and the pre-removal adjacency
             // selector. The Radius-minion declaration shares the existing printed-icon handler.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(31),
+            // Milestone 8.19a adds two, and both are new contracts rather than new declarations over an
+            // existing one: one names the unit an Attack's own text binds as its target, and one
+            // publishes which side of a primary action the rest of that text runs on. The milestone's
+            // other two identities - `attack-target@2` and `before-action-trigger@1` - are typed
+            // declarations on a card and on a rule source, so they register no handler and move nothing
+            // here.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(33),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

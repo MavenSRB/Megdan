@@ -568,6 +568,75 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, BlueProfiles, BlueUltimateProfile, null,
                 attackTextProfiles: new[] { BlueDefenseTextProfile });
         }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.19a: the four roster continuation shapes, on content that is nobody's card
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>Arien's Noble Blade shape: a Before-Attack move the actor may decline.</summary>
+        private static SyntheticAttackTextProfile RedBeforeAttackMoveProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-tidecaller", "Red Tidecaller", 5, 3, 2, 2, CardTextTiming.BeforeTheAttack,
+                false, false, continuation: SyntheticContinuationShape.BeforeAttackMove);
+
+        /// <summary>Brogan's Mad Dash shape: move first, then name what this Attack takes.</summary>
+        private static SyntheticAttackTextProfile RedChargeProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-charger", "Red Charger", 6, 4, 2, 2, CardTextTiming.BeforeTheAttack,
+                false, false, continuation: SyntheticContinuationShape.BeforeAttackBindTarget);
+
+        /// <summary>Tigerclaw's Sidestep shape: a defender-anchored move at p.14's step 4.</summary>
+        private static SyntheticAttackTextProfile BlueDefenderRiderProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "blue-sidestepper", "Blue Sidestepper", 4, 3, 3, 2, CardTextTiming.None,
+                true, false, continuation: SyntheticContinuationShape.DefenderRider);
+
+        /// <summary>
+        /// Xargatha's Charm shape: a Movement the actor's text runs either side of.
+        ///
+        /// It is dealt to Red rather than Blue for a reason about the fixture rather than the rules:
+        /// the card is a primary the acting hero performs, and Red's committed card is the one this
+        /// hand's Initiative values put first. The defender-side rider below is Blue's for the mirror
+        /// reason - p.14's step 4 belongs to whoever is being attacked.
+        /// </summary>
+        private static SyntheticAttackTextProfile RedAroundMovementProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-charmer", "Red Charmer", 8, 0, 3, 3, CardTextTiming.None,
+                false, false, continuation: SyntheticContinuationShape.AroundTheMovement);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.19a's two attacker-side continuation shapes: an
+        /// Arien-shaped Before-Attack move, and a Brogan-shaped charge whose text names the unit the
+        /// Attack takes.
+        /// </summary>
+        /// <summary>
+        /// The Ultimate this hand carries instead of milestone 7.3's: a permanent ability that runs
+        /// before its controller performs an Attack, which is `before-action-trigger@1`.
+        /// </summary>
+        private static SyntheticUltimateProfile ContinuationUltimateProfile { get; } =
+            new SyntheticUltimateProfile(
+                "red-tidal-ultimate", "Red Tidal Ultimate", declaresBeforeActionTrigger: true);
+
+        public static ConfiguredHand CreateRedWithContinuationText(HeroId ownerId)
+        {
+            return Create(
+                ownerId, RedProfiles, ContinuationUltimateProfile, null,
+                attackTextProfiles: new[]
+                {
+                    RedBeforeAttackMoveProfile, RedChargeProfile, RedAroundMovementProfile
+                });
+        }
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.19a's defender-side continuation shape: a
+        /// Tigerclaw-shaped rider applied at rulebook p.14's step 4.
+        /// </summary>
+        public static ConfiguredHand CreateBlueWithContinuationText(HeroId ownerId)
+        {
+            return Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                attackTextProfiles: new[] { BlueDefenderRiderProfile });
+        }
         private static ConfiguredHand Create(
             HeroId ownerId,
             IReadOnlyList<SyntheticCardProfile> profiles,
@@ -1822,6 +1891,43 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// Milestone 8.5. One fixture card whose printed Attack, or whose printed secondary Defense,
         /// carries card text applied at one of rulebook p.14's numbered moments.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.19a. Which of the roster's resumable continuation shapes a fixture card stands
+        /// for. A discriminator rather than a branch on the card's id, for the reason every other
+        /// discriminator in this file is one: a rule that read a card's name would be the rule the
+        /// showcase milestones forbid.
+        /// </summary>
+        private enum SyntheticContinuationShape
+        {
+            /// <summary>Milestone 8.5's and 8.10's cards: text that performs without asking.</summary>
+            None = 0,
+
+            /// <summary>
+            /// Arien's Noble Blade shape: "Before the attack:" text that moves another unit one space
+            /// and may be declined, so rulebook p.14's step 1 stops twice - once on the offer and once
+            /// on the selection.
+            /// </summary>
+            BeforeAttackMove = 1,
+
+            /// <summary>
+            /// Brogan's Mad Dash shape: an Attack declaring `attack-target@2`, whose step-1 text moves
+            /// the attacker and only then names the unit it attacks through `set-attack-target@1`.
+            /// </summary>
+            BeforeAttackBindTarget = 2,
+
+            /// <summary>
+            /// Tigerclaw's Sidestep shape: Defense-action text at p.14's step 4 that moves the defender
+            /// one space and may be declined, so the page stops on the defender's own side.
+            /// </summary>
+            DefenderRider = 3,
+
+            /// <summary>
+            /// Xargatha's Charm shape: a printed primary Movement whose text moves an enemy unit either
+            /// before or after that Movement, with the side chosen by the actor.
+            /// </summary>
+            AroundTheMovement = 4
+        }
+
         private sealed class SyntheticAttackTextProfile
         {
             public SyntheticAttackTextProfile(
@@ -1834,8 +1940,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 CardTextTiming primaryTiming,
                 bool defenseCarriesText,
                 bool narrowedToHeroes,
-                bool readsTheAttacksTarget = false)
+                bool readsTheAttacksTarget = false,
+                SyntheticContinuationShape continuation = SyntheticContinuationShape.None)
             {
+                Continuation = continuation;
                 ReadsTheAttacksTarget = readsTheAttacksTarget;
                 Id = id;
                 DisplayName = displayName;
@@ -1858,6 +1966,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
 
             /// <summary>Milestone 8.10: whether this card.s text asks what the Attack took.</summary>
             public bool ReadsTheAttacksTarget { get; }
+
+            /// <summary>Milestone 8.19a: which resumable continuation shape this card stands for.</summary>
+            public SyntheticContinuationShape Continuation { get; }
             public bool DefenseCarriesText { get; }
             public bool NarrowedToHeroes { get; }
         }
@@ -1950,30 +2061,305 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         outputs: new[] { new EffectOutputBinding("hero", EffectValueKind.Hero) })
                 });
 
+        /// <summary>
+        /// Milestone 8.19a. The four fixture effect tables the roster's resumable continuations need,
+        /// each the smallest composition that reaches the altitude under test.
+        ///
+        /// <para>None of them is a hero's card. They exist so the engine seam is proved on content that
+        /// is nobody's, which is what milestone 7.9's deferral gate requires of every hero slice: the
+        /// verified faces at 8.20-8.24 then name capabilities that already work.</para>
+        /// </summary>
+        private static EffectDefinition ContinuationEffect(
+            string id,
+            SyntheticContinuationShape shape)
+        {
+            switch (shape)
+            {
+                case SyntheticContinuationShape.BeforeAttackMove:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-19a-rev-1",
+                        new EffectNodeId("may-move"),
+                        MayMoveAnotherUnitNodes("may-move", includeSelf: false));
+
+                case SyntheticContinuationShape.DefenderRider:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-19a-rev-1",
+                        new EffectNodeId("may-move"),
+                        MayMoveAnotherUnitNodes("may-move", includeSelf: true));
+
+                case SyntheticContinuationShape.BeforeAttackBindTarget:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-19a-rev-1",
+                        new EffectNodeId("charge"),
+                        MayMoveAnotherUnitNodes("may-move", includeSelf: true)
+                            .Concat(new[]
+                            {
+                                new EffectNodeDefinition(
+                                    new EffectNodeId("charge"), EffectNodeKind.Sequence,
+                                    EffectFailurePolicy.Mandatory,
+                                    childNodeIds: new[]
+                                    {
+                                        new EffectNodeId("may-move"), new EffectNodeId("pick-target")
+                                    }),
+                                // The hero this Attack ends up taking, chosen after the move rather
+                                // than before it. p.9's Radius disk stands in for a charge's reach:
+                                // what the fixture is proving is the binding, not the geometry.
+                                new EffectNodeDefinition(
+                                    new EffectNodeId("pick-target"), EffectNodeKind.Sequence,
+                                    EffectFailurePolicy.Mandatory,
+                                    childNodeIds: new[]
+                                    {
+                                        new EffectNodeId("choose-hero"), new EffectNodeId("bind")
+                                    }),
+                                new EffectNodeDefinition(
+                                    new EffectNodeId("choose-hero"), EffectNodeKind.Capability,
+                                    EffectFailurePolicy.Mandatory,
+                                    SyntheticTargetingCapabilities.RadiusHeroTargetV1,
+                                    inputs: new[]
+                                    {
+                                        EffectInputBinding.FromLiteral(
+                                            "activity",
+                                            EffectValue.Integer(
+                                                (int)GuardsDigital.Core.Rules.Modifications
+                                                    .RuleActivity.Attack)),
+                                        EffectInputBinding.FromLiteral(
+                                            SyntheticTargetingCapabilities
+                                                .TargetRelationParameterName,
+                                            EffectValue.Integer(
+                                                (int)GuardsDigital.Core.Rules.Modifications
+                                                    .SourceTeamRelation.OpposingSource)),
+                                        EffectInputBinding.FromLiteral(
+                                            SyntheticTargetingCapabilities
+                                                .ExcludeAdjacentParameterName,
+                                            EffectValue.Boolean(false))
+                                    },
+                                    outputs: new[]
+                                    {
+                                        new EffectOutputBinding(
+                                            SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                            EffectValueKind.Hero)
+                                    }),
+                                new EffectNodeDefinition(
+                                    new EffectNodeId("bind"), EffectNodeKind.Capability,
+                                    EffectFailurePolicy.Mandatory,
+                                    SyntheticContinuationCapabilities.SetAttackTargetV1,
+                                    inputs: new[]
+                                    {
+                                        EffectInputBinding.FromNodeOutput(
+                                            SyntheticContinuationCapabilities.HeroParameter,
+                                            new EffectNodeId("choose-hero"),
+                                            SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                            EffectValueKind.Hero)
+                                    },
+                                    outputs: new[]
+                                    {
+                                        new EffectOutputBinding(
+                                            SyntheticContinuationCapabilities.BoundHeroTargetOutput,
+                                            EffectValueKind.Hero)
+                                    })
+                            })
+                            .ToArray());
+
+                case SyntheticContinuationShape.AroundTheMovement:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-19a-rev-1",
+                        new EffectNodeId("root"),
+                        new[]
+                        {
+                            new EffectNodeDefinition(
+                                new EffectNodeId("root"), EffectNodeKind.Sequence,
+                                EffectFailurePolicy.Mandatory,
+                                childNodeIds: new[]
+                                {
+                                    new EffectNodeId("order"), new EffectNodeId("may-move")
+                                }),
+                            new EffectNodeDefinition(
+                                new EffectNodeId("order"), EffectNodeKind.Choose,
+                                EffectFailurePolicy.Mandatory,
+                                childNodeIds: new[]
+                                {
+                                    new EffectNodeId("place-before"), new EffectNodeId("place-after")
+                                },
+                                chooser: EffectChooserRole.Actor,
+                                minimumSelections: 1,
+                                maximumSelections: 1),
+                            PlacementBranch(
+                                "place-before",
+                                SyntheticContinuationCapabilities.PlacementBeforeTheAction),
+                            PlacementBranch(
+                                "place-after",
+                                SyntheticContinuationCapabilities.PlacementAfterTheAction)
+                        }
+                        .Concat(MayMoveAnotherUnitNodes("may-move", includeSelf: false))
+                        .ToArray());
+
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(shape), shape, "This shape declares no continuation effect table.");
+            }
+        }
+
+        /// <summary>
+        /// One branch of an around-action ordering question: a leaf publishing the side it stands for.
+        /// </summary>
+        private static EffectNodeDefinition PlacementBranch(string id, int side) =>
+            new EffectNodeDefinition(
+                new EffectNodeId(id), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                SyntheticContinuationCapabilities.AroundPrimaryActionV1,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromLiteral(
+                        SyntheticContinuationCapabilities.PlacementParameter,
+                        EffectValue.Integer(side))
+                },
+                outputs: new[]
+                {
+                    new EffectOutputBinding(
+                        SyntheticContinuationCapabilities.PlacementOutput, EffectValueKind.Integer)
+                });
+
+        /// <summary>
+        /// "You may move one unit one space." The smallest text that asks two questions - the offer and
+        /// the selection - which is what makes it the right shape for proving a pause altitude.
+        /// </summary>
+        private static EffectNodeDefinition[] MayMoveAnotherUnitNodes(string rootId, bool includeSelf) =>
+            new[]
+            {
+                new EffectNodeDefinition(
+                    new EffectNodeId(rootId), EffectNodeKind.Optional, EffectFailurePolicy.May,
+                    childNodeIds: new[] { new EffectNodeId($"{rootId}-sequence") },
+                    chooser: EffectChooserRole.Actor),
+                new EffectNodeDefinition(
+                    new EffectNodeId($"{rootId}-sequence"), EffectNodeKind.Sequence,
+                    EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[]
+                    {
+                        new EffectNodeId($"{rootId}-subject"), new EffectNodeId($"{rootId}-move")
+                    }),
+                new EffectNodeDefinition(
+                    new EffectNodeId($"{rootId}-subject"), EffectNodeKind.Capability,
+                    EffectFailurePolicy.Mandatory,
+                    SyntheticTargetingCapabilities.ChooseTargetV3,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                        EffectInputBinding.FromLiteral(
+                            "includeSelf", EffectValue.Boolean(includeSelf)),
+                        EffectInputBinding.FromLiteral(
+                            EffectSelectionDeclaration.ConsumerParameterName,
+                            EffectValue.Node(new EffectNodeId($"{rootId}-move")))
+                    },
+                    outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Coordinate) }),
+                new EffectNodeDefinition(
+                    new EffectNodeId($"{rootId}-move"), EffectNodeKind.Capability,
+                    EffectFailurePolicy.UpTo,
+                    SyntheticDisplacementCapabilities.DirectMoveV3,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "mover", new EffectNodeId($"{rootId}-subject"), "chosen",
+                            EffectValueKind.Coordinate),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                        EffectInputBinding.FromLiteral(
+                            SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                            EffectValue.Integer(
+                                (int)Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted))
+                    },
+                    outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) })
+            };
+
+        /// <summary>
+        /// Milestone 8.19a's Xargatha shape: a printed <i>primary</i> Movement whose text the actor
+        /// places either side of it. Every other fixture card here prints its Movement as a secondary,
+        /// where p.13 suppresses the card's text; this one has to print it as the primary, because text
+        /// applied around an action is text the action applies.
+        /// </summary>
+        private static CardDefinition CreateAroundMovementDefinition(SyntheticAttackTextProfile profile)
+        {
+            var actions = new[]
+            {
+                new ActionDefinition(
+                    new ActionDefinitionId("primary-movement-around"),
+                    ActionKind.Movement,
+                    ActionDefinitionOrigin.PrintedPrimary,
+                    new[] { new PrintedValueDefinition(PrintedValueChannel.Movement, profile.MovementValue) },
+                    new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                    AttackRangeKind.None,
+                    default,
+                    ContinuationEffect(profile.Id, profile.Continuation),
+                    default,
+                    PrintedDefenseResolution.None,
+                    CardTextTiming.AroundTheAction),
+                CreateDefenseAction(profile.DefenseValue)
+            };
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-19a-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                actions);
+        }
+
         private static CardDefinition CreateAttackTextDefinition(SyntheticAttackTextProfile profile)
         {
+            if (profile.Continuation == SyntheticContinuationShape.AroundTheMovement)
+            {
+                return CreateAroundMovementDefinition(profile);
+            }
+
             var actions = new List<ActionDefinition>
             {
                 new ActionDefinition(
                     new ActionDefinitionId("primary-attack-text"),
                     ActionKind.Attack,
                     ActionDefinitionOrigin.PrintedPrimary,
-                    new[] { new PrintedValueDefinition(PrintedValueChannel.Attack, profile.AttackValue) },
+                    // Milestone 8.19a. The charge shape prints rulebook p.9's Radius icon beside its
+                    // Attack value, because the selection its text makes is a printed-icon one. p.13
+                    // contemplates exactly that pairing - a non-Ranged Attack reaches adjacent units
+                    // "even if the card has a radius icon" - so the icon narrows the text's selection
+                    // and changes nothing about what the Attack itself may reach.
+                    profile.Continuation == SyntheticContinuationShape.BeforeAttackBindTarget
+                        ? new[]
+                        {
+                            new PrintedValueDefinition(
+                                PrintedValueChannel.Attack, profile.AttackValue),
+                            new PrintedValueDefinition(PrintedValueChannel.Radius, 1)
+                        }
+                        : new[]
+                        {
+                            new PrintedValueDefinition(
+                                PrintedValueChannel.Attack, profile.AttackValue)
+                        },
                     new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                     AttackRangeKind.NonRanged,
                     default,
                     profile.PrimaryTiming == CardTextTiming.None
                         ? null
-                        : profile.ReadsTheAttacksTarget
-                            ? ConditionalCardTextEffect(profile.Id)
-                            : CardTextEffect(profile.Id),
+                        : profile.Continuation != SyntheticContinuationShape.None &&
+                            profile.Continuation != SyntheticContinuationShape.DefenderRider
+                            ? ContinuationEffect(profile.Id, profile.Continuation)
+                            : profile.ReadsTheAttacksTarget
+                                ? ConditionalCardTextEffect(profile.Id)
+                                : CardTextEffect(profile.Id),
                     default,
                     PrintedDefenseResolution.None,
                     profile.PrimaryTiming,
-                    profile.NarrowedToHeroes
+                    // Milestone 8.19a. `attack-target@2`: the Attack whose step-1 text charges and only
+                    // then names what it attacks declares that its target is bound by that text.
+                    profile.Continuation == SyntheticContinuationShape.BeforeAttackBindTarget
                         ? PrintedAttackTargetPolicy
-                            .ForClassification(AttackRangeKind.NonRanged).NarrowedToHeroes()
-                        : (PrintedAttackTargetPolicy?)null),
+                            .ForClassification(AttackRangeKind.NonRanged).BoundByCardText()
+                        : profile.NarrowedToHeroes
+                            ? PrintedAttackTargetPolicy
+                                .ForClassification(AttackRangeKind.NonRanged).NarrowedToHeroes()
+                            : (PrintedAttackTargetPolicy?)null),
                 CreateMovementAction(profile.MovementValue)
             };
 
@@ -1991,9 +2377,11 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 AttackRangeKind.None,
                 new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile),
                 profile.DefenseCarriesText
-                    ? profile.ReadsTheAttacksTarget
-                        ? RangedAttackCardTextEffect(profile.Id + "-defense")
-                        : CardTextEffect(profile.Id + "-defense")
+                    ? profile.Continuation == SyntheticContinuationShape.DefenderRider
+                        ? ContinuationEffect(profile.Id + "-defense", profile.Continuation)
+                        : profile.ReadsTheAttacksTarget
+                            ? RangedAttackCardTextEffect(profile.Id + "-defense")
+                            : CardTextEffect(profile.Id + "-defense")
                     : null,
                 default,
                 PrintedDefenseResolution.None,
@@ -2978,15 +3366,26 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// </summary>
         private sealed class SyntheticUltimateProfile
         {
-            public SyntheticUltimateProfile(string id, string displayName)
+            public SyntheticUltimateProfile(
+                string id,
+                string displayName,
+                bool declaresBeforeActionTrigger = false)
             {
                 Id = id;
                 DisplayName = displayName;
+                DeclaresBeforeActionTrigger = declaresBeforeActionTrigger;
             }
 
             public string Id { get; }
 
             public string DisplayName { get; }
+
+            /// <summary>
+            /// Milestone 8.19a. Whether this Ultimate declares `before-action-trigger@1` rather than
+            /// milestone 7.3's permanent permission. A discriminator rather than a second card class,
+            /// for the reason every other one in this file is one.
+            /// </summary>
+            public bool DeclaresBeforeActionTrigger { get; }
         }
 
         /// <summary>
@@ -3020,21 +3419,62 @@ namespace GuardsDigital.Core.Cards.Synthetic
             public static CardDefinitionId DefinitionId(SyntheticUltimateProfile profile) =>
                 new CardDefinitionId($"placeholder-{profile.Id}");
 
+            /// <summary>
+            /// Milestone 8.19a's revision, carried by the one Ultimate that declares a before-action
+            /// trigger and by nothing else. New content rather than changed content, so milestone
+            /// 7.3's Ultimate keeps <see cref="UltimateRevision"/> and no existing payload moves.
+            /// </summary>
+            public const string BeforeActionRevision = "phase-8-19a-rev-1";
+
             public static CardDefinition Definition(SyntheticUltimateProfile profile) =>
                 new CardDefinition(
                     DefinitionId(profile),
-                    UltimateRevision,
+                    profile.DeclaresBeforeActionTrigger ? BeforeActionRevision : UltimateRevision,
                     $"TEST - {profile.DisplayName}",
                     default,
                     CardContentAuthority.SyntheticTestFixture,
                     CardProgressionProfile.UltimateCard(),
                     Array.Empty<ActionDefinition>(),
-                    new UltimateRuleDefinition(
-                        "permanent-move-through",
-                        "SyntheticPermission",
-                        GuardsDigital.Core.Rules.Modifications.RuleModification.ForPermission(
-                            GuardsDigital.Core.Rules.Modifications.RulePermissionKind
-                                .MoveThroughObstacles)));
+                    profile.DeclaresBeforeActionTrigger
+                        // Milestone 8.19a. Arien's Living Tsunami shape: "Once per turn, before
+                        // performing an Attack action, you may move 1 space." What the effect does is
+                        // the smallest thing that can be watched happening before an action starts;
+                        // what is under test is that the action it precedes starts afterwards from the
+                        // offer it was validated with.
+                        ? UltimateRuleDefinition.BeforeActionAbility(
+                            "before-attack-move",
+                            "SyntheticBeforeAction",
+                            BeforeActionTriggeredEffect.Reference,
+                            new BeforeActionTrigger(
+                                ActionKind.Attack, BeforeActionTriggerFrequency.OncePerTurn),
+                            Array.Empty<PrintedValueDefinition>())
+                        : new UltimateRuleDefinition(
+                            "permanent-move-through",
+                            "SyntheticPermission",
+                            GuardsDigital.Core.Rules.Modifications.RuleModification.ForPermission(
+                                GuardsDigital.Core.Rules.Modifications.RulePermissionKind
+                                    .MoveThroughObstacles)));
+        }
+
+        /// <summary>
+        /// Milestone 8.19a. The effect a before-action trigger runs, registered in this build's
+        /// triggered-effect catalog beside High Voltage's.
+        ///
+        /// <para>It is the same "you may move one unit one space" table the four continuation card
+        /// shapes use, because what a before-action trigger has to prove is not what its effect does but
+        /// where it happens: before the action, holding that action's validated offer, and resumable
+        /// across a question and a snapshot.</para>
+        /// </summary>
+        public static class BeforeActionTriggeredEffect
+        {
+            public static EffectDefinitionReference Reference =>
+                Definition.Reference;
+
+            public static EffectDefinition Definition { get; } = new EffectDefinition(
+                new EffectDefinitionId("synthetic-before-action-move"),
+                "phase-8-19a-rev-1",
+                new EffectNodeId("may-move"),
+                MayMoveAnotherUnitNodes("may-move", includeSelf: true));
         }
 
         /// <summary>

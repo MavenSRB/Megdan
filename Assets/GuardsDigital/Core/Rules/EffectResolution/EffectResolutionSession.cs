@@ -67,8 +67,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RepeatRequest repeatRequested,
             GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause,
             IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> requestedHeroDefeats,
-            IReadOnlyList<GuardsDigital.Core.Setup.MinionId> requestedMinionDefeats)
+            IReadOnlyList<GuardsDigital.Core.Setup.MinionId> requestedMinionDefeats,
+            GuardsDigital.Core.Rules.CardResolution.AttackTarget boundAttackTarget = default,
+            GuardsDigital.Core.Rules.CardResolution.PreActionPlacement aroundActionPlacement =
+                GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided)
         {
+            BoundAttackTarget = boundAttackTarget;
+            AroundActionPlacement = aroundActionPlacement;
             Accepted = accepted;
             RejectionReason = rejectionReason;
             Frame = frame;
@@ -133,6 +138,25 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         public IReadOnlyList<GuardsDigital.Core.Setup.MinionId> RequestedMinionDefeats { get; }
 
+        /// <summary>
+        /// Milestone 8.19a. The unit this step's completed outcomes named as the enclosing Attack's
+        /// target, or the undefined target on every step that named none - which is every step in this
+        /// build outside an Attack whose card declares `attack-target@2`.
+        ///
+        /// <para>It is reported here rather than read off the frame for the reason
+        /// <see cref="RequestedHeroDefeats"/> is: the completing frame is the last thing that carries
+        /// the outcome the binding lives on, and by the time the caller sees the result that frame is
+        /// gone. What it says nothing about is whether the Attack may take that unit - the target set
+        /// is the Attack resolver's, re-derived against the board this text has just changed.</para>
+        /// </summary>
+        public GuardsDigital.Core.Rules.CardResolution.AttackTarget BoundAttackTarget { get; }
+
+        /// <summary>
+        /// Milestone 8.19a. Which side of its primary action this step's completed outcomes placed the
+        /// rest of the text on, or <c>Undecided</c> wherever no ordering question was answered.
+        /// </summary>
+        public GuardsDigital.Core.Rules.CardResolution.PreActionPlacement AroundActionPlacement { get; }
+
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
             bool isComplete,
@@ -141,10 +165,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause =
                 GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None,
             IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> requestedHeroDefeats = null,
-            IReadOnlyList<GuardsDigital.Core.Setup.MinionId> requestedMinionDefeats = null) =>
+            IReadOnlyList<GuardsDigital.Core.Setup.MinionId> requestedMinionDefeats = null,
+            GuardsDigital.Core.Rules.CardResolution.AttackTarget boundAttackTarget = default,
+            GuardsDigital.Core.Rules.CardResolution.PreActionPlacement aroundActionPlacement =
+                GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
-                repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats);
+                repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats,
+                boundAttackTarget, aroundActionPlacement);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -290,7 +318,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroId controllerId,
             ActionInvocationContext invocationContext,
             EffectResolutionContext context,
-            RepeatContinuation repeat = default)
+            RepeatContinuation repeat = default,
+            EffectNodeId entryNodeId = default)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
@@ -304,7 +333,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     controllerId,
                     invocationContext,
                     context,
-                    repeat),
+                    repeat,
+                    entryNodeId),
                 context,
                 new List<EffectResolutionEvent>());
         }
@@ -329,7 +359,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroId controllerId,
             ActionInvocationContext invocationContext,
             EffectResolutionContext context,
-            RepeatContinuation repeat = default) =>
+            RepeatContinuation repeat = default,
+            EffectNodeId entryNodeId = default) =>
             new PendingResolution(
                 resolutionId,
                 sourceCardInstanceId,
@@ -339,8 +370,37 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 actorId,
                 controllerId,
                 invocationContext,
-                new[] { new EffectContinuationFrame(context.Definition.RootNodeId, 0) },
+                new[] { new EffectContinuationFrame(EntryNode(context, entryNodeId), 0) },
                 repeat: repeat);
+
+        /// <summary>
+        /// Where a start begins walking. The definition's own root unless a caller names a node inside
+        /// it, which milestone 8.19a added for exactly one shape: text applied around a primary action
+        /// is one definition entered twice - once for the question that places it, and once for the
+        /// work that question placed - because what stands between those two entries is a whole
+        /// Movement action with a continuation of its own.
+        ///
+        /// <para>The named node is checked against the definition, so an entry point is an address in
+        /// trusted content rather than a claim a caller makes. Nothing else about the walk changes: the
+        /// frame is the same frame, and its continuation stack is rooted at whichever node it entered.</para>
+        /// </summary>
+        private static EffectNodeId EntryNode(EffectResolutionContext context, EffectNodeId entryNodeId)
+        {
+            if (!entryNodeId.IsDefined)
+            {
+                return context.Definition.RootNodeId;
+            }
+
+            if (!context.Definition.TryGetNode(entryNodeId, out _))
+            {
+                throw new ArgumentException(
+                    $"Effect definition '{context.Definition.Id}' does not declare entry node " +
+                    $"'{entryNodeId}'.",
+                    nameof(entryNodeId));
+            }
+
+            return entryNodeId;
+        }
 
         public static EffectResolutionStepResult Answer(
             PendingResolution frame,
@@ -471,7 +531,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                 RecordedLanePushQuery.Recorded(context.Definition, outcomes),
                 RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
-                RequestedMinionDefeatQuery.Requested(context.Definition, outcomes));
+                RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
+                        RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
+                        AroundActionPlacementQuery.Placed(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult Resume(
@@ -619,7 +681,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                         RecordedLanePushQuery.Recorded(context.Definition, outcomes),
                         RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
-                        RequestedMinionDefeatQuery.Requested(context.Definition, outcomes));
+                        RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
+                        RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
+                        AroundActionPlacementQuery.Placed(context.Definition, outcomes));
                 }
 
                 var top = continuation[continuation.Count - 1];
@@ -896,7 +960,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                 RecordedLanePushQuery.Recorded(context.Definition, outcomes),
                 RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
-                RequestedMinionDefeatQuery.Requested(context.Definition, outcomes));
+                RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
+                        RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
+                        AroundActionPlacementQuery.Placed(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult PauseOn(

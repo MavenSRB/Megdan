@@ -59,6 +59,32 @@ namespace GuardsDigital.Core.Cards
     }
 
     /// <summary>
+    /// When a printed Attack's target is bound. Milestone 8.19a, and the difference between the
+    /// roster matrix's `attack-target@1` and `attack-target@2`.
+    /// </summary>
+    public enum AttackTargetBinding
+    {
+        /// <summary>
+        /// Rulebook p.14's ordinary reading and every Attack in this build before Brogan: the target
+        /// is chosen when the action starts, and p.14's step 1 text is applied against it.
+        /// </summary>
+        AtActionStart = 0,
+
+        /// <summary>
+        /// The target is named by the Attack's own "Before the attack:" text rather than chosen before
+        /// it. Brogan's Mad Dash charges two spaces in a straight line and attacks the enemy it ends
+        /// beside; Tigerclaw's Blink Strike moves through a unit and attacks the unit it crossed. In
+        /// both, the target is a consequence of the move, so there is nothing to choose at the moment
+        /// p.14 would ordinarily ask - and asking anyway would offer units the charge cannot reach.
+        ///
+        /// <para>An Attack declaring this reaches step 1 with no target and no Attack Total, and its
+        /// text binds one through the `set-attack-target@1` capability. Text that binds none stops the
+        /// action there under p.10's mandatory-step rule, keeping everything the text already did.</para>
+        /// </summary>
+        ByCardText = 1
+    }
+
+    /// <summary>
     /// What a printed Attack may target, as typed content rather than as a sentence something reads at
     /// runtime.
     ///
@@ -89,8 +115,16 @@ namespace GuardsDigital.Core.Cards
         public PrintedAttackTargetPolicy(
             AttackTargetableUnits targetableUnits,
             AttackTargetReach reach,
-            AttackTargetLine line = AttackTargetLine.AnyLine)
+            AttackTargetLine line = AttackTargetLine.AnyLine,
+            AttackTargetBinding binding = AttackTargetBinding.AtActionStart)
         {
+            if (!Enum.IsDefined(typeof(AttackTargetBinding), binding))
+            {
+                throw new ArgumentException(
+                    "A printed Attack target policy states when its target is bound.", nameof(binding));
+            }
+
+            Binding = binding;
             if (!Enum.IsDefined(typeof(AttackTargetableUnits), targetableUnits))
             {
                 throw new ArgumentException(
@@ -136,6 +170,23 @@ namespace GuardsDigital.Core.Cards
         public AttackTargetLine Line { get; }
 
         /// <summary>
+        /// Milestone 8.19a. When this Attack's target is bound - at the action's start, or by its own
+        /// "Before the attack:" text.
+        /// </summary>
+        public AttackTargetBinding Binding { get; }
+
+        /// <summary>Whether this Attack's own text names its target rather than the action's start.</summary>
+        public bool TargetIsBoundByCardText => Binding == AttackTargetBinding.ByCardText;
+
+        /// <summary>
+        /// The same policy whose target its own "Before the attack:" text names, which is Mad Dash's
+        /// and Blink Strike's shape. Milestone 8.19a.
+        /// </summary>
+        public PrintedAttackTargetPolicy BoundByCardText() =>
+            new PrintedAttackTargetPolicy(
+                TargetableUnits, Reach, Line, AttackTargetBinding.ByCardText);
+
+        /// <summary>
         /// p.13's default for an Attack of this subtype: every enemy unit, adjacent for a non-Ranged
         /// Attack and within the printed Range for a Ranged one.
         /// </summary>
@@ -158,7 +209,7 @@ namespace GuardsDigital.Core.Cards
 
         /// <summary>The same policy narrowed to p.13's heroes alone, which is Crackling Dagger's shape.</summary>
         public PrintedAttackTargetPolicy NarrowedToHeroes() =>
-            new PrintedAttackTargetPolicy(AttackTargetableUnits.HeroesOnly, Reach, Line);
+            new PrintedAttackTargetPolicy(AttackTargetableUnits.HeroesOnly, Reach, Line, Binding);
 
         /// <summary>
         /// The same policy with p.19's straight line taken out of it, which is both Boomerangs' shape.
@@ -166,14 +217,15 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public PrintedAttackTargetPolicy ExcludingTheStraightLine() =>
             new PrintedAttackTargetPolicy(
-                TargetableUnits, Reach, AttackTargetLine.NotInStraightLine);
+                TargetableUnits, Reach, AttackTargetLine.NotInStraightLine, Binding);
 
         /// <summary>Whether this policy says anything the subtype's default does not.</summary>
         public bool NarrowsTheDefault(AttackRangeKind attackRange) =>
             !Equals(ForClassification(attackRange));
 
         public bool Equals(PrintedAttackTargetPolicy other) =>
-            TargetableUnits == other.TargetableUnits && Reach == other.Reach && Line == other.Line;
+            TargetableUnits == other.TargetableUnits && Reach == other.Reach && Line == other.Line &&
+            Binding == other.Binding;
 
         public override bool Equals(object obj) =>
             obj is PrintedAttackTargetPolicy other && Equals(other);
@@ -182,10 +234,11 @@ namespace GuardsDigital.Core.Cards
         {
             unchecked
             {
-                return (((int)TargetableUnits * 397) ^ (int)Reach) * 397 ^ (int)Line;
+                return ((((int)TargetableUnits * 397) ^ (int)Reach) * 397 ^ (int)Line) * 397 ^
+                    (int)Binding;
             }
         }
 
-        public override string ToString() => $"{TargetableUnits}, {Reach}, {Line}";
+        public override string ToString() => $"{TargetableUnits}, {Reach}, {Line}, {Binding}";
     }
 }

@@ -91,7 +91,23 @@ namespace GuardsDigital.Tests.EditMode
                 CardActionResolutionEventKind.DefenseResponseChoiceRequested
             }));
             Assert.That(answer.Events.All(ruleEvent => ruleEvent.TargetHeroId.Equals(fixture.DefenderId)), Is.True);
-            Assert.That(answer.Events.All(ruleEvent => ruleEvent.AttackTotal == 4), Is.True);
+
+            // Milestone 8.19a. Rulebook p.14 announces the Attack Total at step 2, which is on the far
+            // side of step 1's card text, so the target's validation now precedes it and reports none.
+            // Before this milestone the page was produced in one command and the validation carried a
+            // total the page had not announced yet.
+            Assert.That(
+                answer.Events
+                    .Where(ruleEvent =>
+                        ruleEvent.Kind != CardActionResolutionEventKind.AttackTargetValidated)
+                    .All(ruleEvent => ruleEvent.AttackTotal == 4),
+                Is.True);
+            Assert.That(
+                answer.Events
+                    .Single(ruleEvent =>
+                        ruleEvent.Kind == CardActionResolutionEventKind.AttackTargetValidated)
+                    .AttackTotal,
+                Is.Zero);
             Assert.That(fixture.Authority.PendingAttackTargetChoice, Is.Null);
             Assert.That(fixture.Authority.PendingDefenseChoice, Is.SameAs(answer.PendingDefenseChoice));
             Assert.That(

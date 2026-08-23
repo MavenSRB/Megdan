@@ -308,7 +308,12 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticShowcaseHand.CreateRedWithOrbitSkill(owner),
                     SyntheticShowcaseHand.CreateBlueWithOrbitSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithKinesisSkill(owner),
-                    SyntheticShowcaseHand.CreateBlueWithKinesisSkill(owner)
+                    SyntheticShowcaseHand.CreateBlueWithKinesisSkill(owner),
+                    // Milestone 8.19a's four roster continuation shapes, which is where
+                    // `set-attack-target@1` and `around-primary-action@1` become reachable from
+                    // showcase content rather than waiting for a hero's card.
+                    SyntheticShowcaseHand.CreateRedWithContinuationText(owner),
+                    SyntheticShowcaseHand.CreateBlueWithContinuationText(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)

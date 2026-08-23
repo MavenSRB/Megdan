@@ -265,9 +265,9 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(24),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(25),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
-                "own. The version has since moved ten times, none of them for it: milestone 6.7 for " +
+                "own. The version has since moved thirteen times, none of them for it: milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +
                 "mid-turn Lane-Push request a completed action can leave behind, milestone 6.10 for " +
                 "p.8's Battle Zone itself, milestone 6.10a for a paused system transition, " +
@@ -275,7 +275,11 @@ namespace GuardsDigital.Tests.EditMode
                 "milestone 7.1 for every hero's current Level, milestone 7.2 for p.16's items, " +
                 "milestone 7.2a for the four dashboard item slots every hero declares, " +
                 "milestone 7.4 for every team's remaining Life counters, and milestone 8.6 for how " +
-                "far through a bounded repeat an instance is and the target it inherited. " +
+                "far through a bounded repeat an instance is and the target it inherited, " +
+                "milestone 8.10 for an Attack paused inside p.14's card text and the unit a repeated " +
+                "instance may not take, milestone 8.11 for what p.14's Block did, and milestone " +
+                "8.19a for the outer pre-action continuation, the before-action triggers a turn has " +
+                "spent, and the space an Attack's target stood on before p.14's consequences. " +
                 "The decision is still re-derived from the state as it then stands.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),

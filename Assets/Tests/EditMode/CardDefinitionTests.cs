@@ -311,8 +311,10 @@ namespace GuardsDigital.Tests.EditMode
                     CardTextTiming.AfterTheAttack)).Message,
                 Does.Contain("applies its source card's text"));
 
-            // A Movement, a Hold, a Fast Travel and a Clear are algorithms rather than effect content,
-            // and stay so: the seam widened by exactly two kinds.
+            // A Hold, a Fast Travel and a Clear are algorithms rather than effect content, and stay so.
+            // Milestone 8.19a admitted the fourth kind, and only in the one shape that is text rather
+            // than an algorithm: a Movement carrying a root without naming the moment it is applied
+            // around is still refused, exactly as an Attack carrying one without a moment is.
             Assert.That(
                 Assert.Throws<ArgumentException>(() => new ActionDefinition(
                     new ActionDefinitionId("movement-with-text"),
@@ -323,7 +325,7 @@ namespace GuardsDigital.Tests.EditMode
                     AttackRangeKind.None,
                     default,
                     SingleNodeText())).Message,
-                Does.Contain("Skill, an Attack or a Defense"));
+                Does.Contain("Movement action applying text around itself"));
         }
 
         /// <summary>

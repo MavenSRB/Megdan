@@ -373,12 +373,17 @@ namespace GuardsDigital.Core.Cards
             // which is why the second kind must name its moment and the first must not. Movement, Hold,
             // Fast Travel and Clear still carry none: each is an algorithm, and the two replacements
             // suppress their source card's text by their own definition.
+            // Milestone 8.19a added the fourth kind. A Movement action carries an effect root only as
+            // text applied around it - Xargatha's Charm moves an enemy minion before or after her own
+            // Movement - so the root and the timing arrive together or not at all, which is what the
+            // rule below already requires of an Attack's and a Defense's.
             if (EffectRoot != null &&
-                Kind != ActionKind.Skill && Kind != ActionKind.Attack && Kind != ActionKind.Defense)
+                Kind != ActionKind.Skill && Kind != ActionKind.Attack && Kind != ActionKind.Defense &&
+                !(Kind == ActionKind.Movement && CardTextTiming == CardTextTiming.AroundTheAction))
             {
                 throw new ArgumentException(
-                    "Only a Skill, an Attack or a Defense action definition executes through the " +
-                    "typed effect frame.", nameof(EffectRoot));
+                    "Only a Skill, an Attack, a Defense, or a Movement action applying text around " +
+                    "itself executes through the typed effect frame.", nameof(EffectRoot));
             }
 
             if (CardTextTiming != CardTextTiming.None)
@@ -413,6 +418,19 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException(
                     "An Attack or Defense action's effect root is card text, so it names the moment " +
                     "rulebook p.14 applies it at.", nameof(CardTextTiming));
+            }
+
+            // Milestone 8.19a. An Attack whose target its own text names has to have text to name it
+            // with, and that text has to be the moment rulebook p.14 puts before the Attack Total: step
+            // 1. Both refusals are the statement failing in the only two ways it can - no text at all,
+            // and text at a moment the target is already needed by.
+            if (AttackTargetPolicy.HasValue && AttackTargetPolicy.Value.TargetIsBoundByCardText &&
+                CardTextTiming != CardTextTiming.BeforeTheAttack)
+            {
+                throw new ArgumentException(
+                    "An Attack whose target is bound by its card text applies that text at rulebook " +
+                    "p.14's step 1, before the page announces the Attack Total against it.",
+                    nameof(AttackTargetPolicy));
             }
 
             if (AttackTargetPolicy.HasValue &&

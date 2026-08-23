@@ -60,8 +60,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingDisplacedMinionCorrection pendingCorrection = null,
             PendingRepeatedAction pendingRepeat = null,
             PendingImmediateLanePushRequest pendingLanePush = null,
-            PendingAttackCardTextResolution pendingCardText = null)
+            PendingAttackCardTextResolution pendingCardText = null,
+            PendingPreActionResolution pendingPreAction = null)
         {
+            PendingPreAction = pendingPreAction;
             PendingCardText = pendingCardText;
             ContinuationKind = continuationKind;
             PendingSkillResolution = pendingSkillResolution;
@@ -185,6 +187,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Set only when <see cref="ContinuationKind"/> is AttackCardText. Milestone 8.10.</summary>
         public PendingAttackCardTextResolution PendingCardText { get; }
+
+        /// <summary>
+        /// Milestone 8.19a's outer pre-action continuation, or <c>null</c>. It rides every continuation
+        /// kind for the reason milestone 6.9's Lane-Push request does, and the reason is sharper here:
+        /// work the actor placed after a Movement is parked while that Movement runs, so a payload
+        /// carrying both is the ordinary case rather than an exception.
+        /// </summary>
+        public PendingPreActionResolution PendingPreAction { get; }
+
+        /// <summary>The same state carrying a pre-action continuation beside whatever it already holds.</summary>
+        public CardActionResolutionRestoreState WithPreAction(
+            PendingPreActionResolution pendingPreAction) =>
+            new CardActionResolutionRestoreState(
+                ContinuationKind,
+                PendingMovementResolution,
+                PendingAttackResolution,
+                PendingSkillResolution,
+                CoinLedger,
+                PendingCorrection,
+                PendingRepeat,
+                PendingImmediateLanePush,
+                PendingCardText,
+                pendingPreAction);
 
         public static CardActionResolutionRestoreState WithPendingCardText(
             PendingAttackCardTextResolution pendingCardText,

@@ -377,6 +377,49 @@ namespace GuardsDigital.Tests.EditMode
                 PlaceholderOneVsOneTestConfiguration.CreateForOrbitFixture(TeamSide.Red));
 
         /// <summary>
+        /// Milestone 8.19a. The two heroes standing beside each other with the four roster continuation
+        /// shapes dealt, so a fixture can watch rulebook p.14's step 1 stop, an Attack's own text name
+        /// what it attacks, a defender's step-4 rider stop, and a Movement's text be placed either side
+        /// of it.
+        ///
+        /// <para>The adjacency is what makes any of them resolvable: three of the four are Attacks or
+        /// Defenses, and the internal-test setup stands the two heroes at opposite ends of the map.</para>
+        /// </summary>
+        public static MatchSession CreateContinuationSession() =>
+            CreateEngagedFixtureSession(
+                PlaceholderOneVsOneTestConfiguration.CreateForContinuationFixture(TeamSide.Red));
+
+        /// <summary>
+        /// Milestone 8.19a. The same board with the Red hero's Ultimate already beside the dashboard,
+        /// so the `before-action-trigger@1` it declares is in effect.
+        ///
+        /// <para>The unlock happens on the configuration's own instances before the session exists,
+        /// which is the order milestone 8.13's High Voltage fixture established: rulebook p.16's
+        /// transition is the one way a card reaches the Ultimate area, and a session built first would
+        /// be holding a different copy of the card.</para>
+        /// </summary>
+        public static MatchSession CreateContinuationSessionWithUnlockedUltimate()
+        {
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForContinuationFixture(
+                TeamSide.Red);
+            var redHero = configuration.Participants.Heroes.Single(hero =>
+                configuration.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
+            var ultimate = configuration.CardInstances.Single(card =>
+                card.OwnerId.Equals(redHero) &&
+                configuration.CardDefinitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .Progression.IsUltimate);
+            if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+            {
+                throw new InvalidOperationException(
+                    "The continuation fixture could not unlock the Red hero's Ultimate, so the " +
+                    "before-action trigger it declares would not be in effect.");
+            }
+
+            return CreateEngagedFixtureSession(configuration);
+        }
+
+        /// <summary>
         /// Milestone 8.6. The kinesis Skill dealt with a Blue minion standing inside the acting card's
         /// printed Range but off every file through the actor, so a fixture can watch p.19's
         /// straight-line complement decide what the selection may name.

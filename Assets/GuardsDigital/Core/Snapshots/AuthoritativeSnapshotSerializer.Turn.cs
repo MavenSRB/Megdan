@@ -31,6 +31,12 @@ namespace GuardsDigital.Core.Snapshots
             var (pendingChoice, selectedActor) = initiative;
             WritePendingInitiativeChoice(writer, pendingChoice);
             WriteSelectedActor(writer, selectedActor);
+
+            // Milestone 8.19a, schema v25. Which `before-action-trigger@1` sources this turn has
+            // already spent. Nothing about a restored board says so - the ability is permanent and its
+            // hero is still standing - and Living Tsunami prints "Once per turn", so a hero who saved
+            // between the trigger and the Attack it precedes would otherwise be given it twice.
+            WriteStrings(writer, state.ConsumedBeforeActionTriggers);
             WriteCardAction(writer, turn.CardActions?.CaptureRestoreState());
         }
 
@@ -56,6 +62,13 @@ namespace GuardsDigital.Core.Snapshots
                 SnapshotEnumReader.Read<TeamSide>(reader, "turn tie-breaker revealed side"));
             var pendingChoice = ReadPendingInitiativeChoice(reader);
             var selectedActor = ReadSelectedActor(reader);
+            var consumedTriggers = ReadStrings(reader, "consumed before-action triggers");
+            if (consumedTriggers.Distinct(StringComparer.Ordinal).Count() != consumedTriggers.Length)
+            {
+                throw Malformed(
+                    "Snapshot turn records the same before-action trigger as consumed twice.");
+            }
+
             // Milestone 6.8: the restored continuation is cross-checked against the modifications the
             // restored effects and tokens supply, so a Defense total or a target list that a modifier
             // produced live is reproduced here rather than looking like tampering. Milestone 7.3 adds
@@ -92,7 +105,8 @@ namespace GuardsDigital.Core.Snapshots
                     tieBreaker,
                     new InitiativeResolutionRestoreState(pendingChoice, selectedActor),
                     roundIndex,
-                    turnIndex),
+                    turnIndex,
+                    consumedTriggers),
                 lanePush,
                 matchHasEnded);
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -13,7 +14,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
         ChooseTarget = 1,
         DefenseResponse = 2,
         CompareOutcome = 3,
-        ResolveMinionDefeat = 4
+        ResolveMinionDefeat = 4,
+
+        /// <summary>
+        /// Milestone 8.19a. Rulebook p.14's step 1 is being applied, and the rest of the page is owed.
+        ///
+        /// <para>It is a phase of its own because the page genuinely stops there now. Before this
+        /// milestone every step from the target's validation to the Defense request was produced in the
+        /// command that answered the target, so there was no moment between them for a state to be in;
+        /// text that could have asked a question at step 1 was refused at content load instead. Two of
+        /// the roster's printed shapes ask one - Arien's Noble Blade moves a unit beside the target,
+        /// and Brogan's Mad Dash charges and only then names what it attacks - so the moment has to
+        /// exist, and a state that can be snapshotted in it has to exist with it.</para>
+        ///
+        /// <para>A resolution in this phase carries its target when the Attack chose one at its start
+        /// and no target at all when the card declares that its text binds one. It never carries an
+        /// Attack Total: p.14 announces that at step 2, which is on the far side of this moment.</para>
+        /// </summary>
+        ApplyBeforeAttackText = 5
     }
 
     public enum AttackResolutionOutcome
@@ -84,11 +102,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer? defenseOffer = null,
             ValueResult defenseValue = null,
             AttackTarget excludedTarget = default,
-            DefenseBlockResult blockResult = DefenseBlockResult.None)
+            DefenseBlockResult blockResult = DefenseBlockResult.None,
+            HexCoordinate? targetSpaceBeforeConsequences = null)
             : this(resolutionId, sourceCardInstanceId, sourceDefinitionReference, actionDefinitionId,
                 actorId, invocationContext, currentStepId, phase,
                 targetHeroId.IsDefined ? AttackTarget.Hero(targetHeroId) : default,
-                attackValue, defenseOffer, defenseValue, excludedTarget, blockResult)
+                attackValue, defenseOffer, defenseValue, excludedTarget, blockResult,
+                targetSpaceBeforeConsequences)
         {
         }
 
@@ -106,10 +126,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer? defenseOffer = null,
             ValueResult defenseValue = null,
             AttackTarget excludedTarget = default,
-            DefenseBlockResult blockResult = DefenseBlockResult.None)
+            DefenseBlockResult blockResult = DefenseBlockResult.None,
+            HexCoordinate? targetSpaceBeforeConsequences = null)
         {
             ExcludedTarget = excludedTarget;
             BlockResult = blockResult;
+            TargetSpaceBeforeConsequences = targetSpaceBeforeConsequences;
+            if (targetSpaceBeforeConsequences.HasValue && !target.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A pre-consequence target space belongs to a target; an Attack with none has no " +
+                    "space to record.",
+                    nameof(targetSpaceBeforeConsequences));
+            }
+
             if (!Enum.IsDefined(typeof(DefenseBlockResult), blockResult))
             {
                 throw new ArgumentException(
@@ -164,6 +194,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                          defenseOffer.Value.InvocationContext != ActionInvocationContext.Reaction)))
                 {
                     throw new ArgumentException("Outcome-comparison state requires a target, typed Attack Total, and an optional typed Defense response.");
+                }
+            }
+            else if (phase == AttackResolutionPhase.ApplyBeforeAttackText)
+            {
+                if (attackValue != null || defenseOffer.HasValue || defenseValue != null)
+                {
+                    throw new ArgumentException(
+                        "Rulebook p.14 announces the Attack Total at step 2, so a resolution still " +
+                        "applying step 1's text carries no total and no Defense response.");
                 }
             }
             else if (phase == AttackResolutionPhase.ResolveMinionDefeat)
@@ -225,6 +264,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// read at step 6, so it crosses the pause between them.
         /// </summary>
         public DefenseBlockResult BlockResult { get; }
+
+        /// <summary>
+        /// Milestone 8.19a. Where this Attack's target stood when the Attack bound it, or nothing where
+        /// it has no target yet.
+        ///
+        /// <para>It is recorded because rulebook p.14 removes a defeated target at step 6 and applies
+        /// "After the attack:" text at step 7, so the space a rider names is a space nothing is standing
+        /// on by the time the rider runs. Brogan's Onslaught moves into exactly that space and Sabina's
+        /// Point Blank Shot asks whether the target is still beside her, so the fact has to survive the
+        /// consequences - and, since either rider may pause, a snapshot as well.</para>
+        /// </summary>
+        public HexCoordinate? TargetSpaceBeforeConsequences { get; }
+
         public ValueResult AttackValue { get; }
         public int AttackTotal => AttackValue?.Total ?? 0;
         public ActionOffer? DefenseOffer { get; }

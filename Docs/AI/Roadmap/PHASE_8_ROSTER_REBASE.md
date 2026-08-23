@@ -36,7 +36,7 @@ remaining private pitch through 9.16a is approximately **82-155 days** before co
 
 ## Shared implementation foundations
 
-### [ ] 8.19a Make card text and pre-action continuations fully resumable
+### [x] 8.19a Make card text and pre-action continuations fully resumable
 
 Observable outcome: Printed text may pause before an action begins and inside Before-Attack,
 Defense-text, and After-Attack windows while preserving one enclosing typed action and its exact target,
@@ -61,9 +61,9 @@ Acceptance checks:
 Non-goals: No verified Arien/Brogan/Sabina/Tigerclaw/Xargatha definition, new board operation, production
 presentation, or general expression language.
 
-### [!] 8.19b Add the roster's reusable derived-query, value, and state-operation vocabulary
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819a-make-card-text-and-pre-action-continuations-fully-resumable-completion-evidence).
 
-Blocked by: Milestone 8.19a must establish the continuation every chooser-owned result resumes through.
+### [ ] 8.19b Add the roster's reusable derived-query, value, and state-operation vocabulary
 
 Observable outcome: The roster's shared target-set/pair, geometry, history, presence/count, value,
 card-retrieval, and resource operations exist as typed reusable contracts with pure feasibility answers.

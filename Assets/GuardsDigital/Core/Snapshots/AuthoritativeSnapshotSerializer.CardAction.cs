@@ -37,6 +37,7 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write((int)continuationKind);
             WriteCoinLedger(writer, coinLedger);
             WriteImmediateLanePush(writer, state.PendingImmediateLanePush);
+            WritePreAction(writer, state.PendingPreAction);
             if (continuationKind == CardActionContinuationKind.Movement)
             {
                 WriteMovementResolution(writer, pendingMovement);
@@ -105,6 +106,90 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(request.LosingTeamId.Value);
             writer.Write((int)request.LosingSide);
             writer.Write(request.CauseResolutionId.Value);
+        }
+
+        /// <summary>
+        /// Milestone 8.19a, schema v25. The outer pre-action continuation: an effect frame standing
+        /// outside an action that has not started, or the side of that action the actor placed its work
+        /// on while the work is still owed.
+        ///
+        /// <para>It is written outside the continuation discriminator, beside milestone 6.9's Lane-Push
+        /// request and for a sharper version of the same reason: it does not merely accompany another
+        /// continuation, it coexists with one. Work the actor placed after a Movement is parked while
+        /// that Movement is mid-route, so a payload holding both is the ordinary case.</para>
+        ///
+        /// <para>What crosses the wire is identity and the held offer, never semantics. The frame names
+        /// an effect definition and a restore rebinds it to the trusted catalog; the offer is the exact
+        /// one the turn validated, which is what the acceptance check means by resuming the offer
+        /// rather than re-deriving one against a board the trigger has changed.</para>
+        /// </summary>
+        private static void WritePreAction(
+            BinaryWriter writer,
+            GuardsDigital.Core.Rules.CardResolution.PendingPreActionResolution pending)
+        {
+            writer.Write(pending != null);
+            if (pending == null)
+            {
+                return;
+            }
+
+            writer.Write((int)pending.Kind);
+            writer.Write((int)pending.Placement);
+            writer.Write(pending.HeldResolutionId.Value);
+            WriteActionOffer(writer, pending.HeldOffer);
+            writer.Write(pending.HeldActionHasStarted);
+            writer.Write(pending.Frame != null);
+            if (pending.Frame != null)
+            {
+                WriteSkillResolution(writer, pending.Frame);
+            }
+        }
+
+        private static GuardsDigital.Core.Rules.CardResolution.PendingPreActionResolution ReadPreAction(
+            BinaryReader reader,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> cards,
+            MatchParticipants participants,
+            MatchContentCatalogs catalogs,
+            MatchComponents components,
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+        {
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            var kind = SnapshotEnumReader.Read<GuardsDigital.Core.Rules.CardResolution.PreActionContinuationKind>(
+                reader, "pre-action continuation kind");
+            var placement = SnapshotEnumReader.Read<GuardsDigital.Core.Rules.CardResolution.PreActionPlacement>(
+                reader, "pre-action continuation placement");
+            var heldResolutionId = new ActionResolutionId(reader.ReadString());
+            var heldOffer = ReadActionOffer(reader);
+            var heldActionHasStarted = reader.ReadBoolean();
+            var frame = reader.ReadBoolean()
+                ? ReadSkillResolution(
+                    reader, definitions, cards, catalogs.Capabilities, participants, components,
+                    modifications, heroItems, catalogs.TriggeredEffects)
+                : null;
+
+            // Every disagreement the shape admits is refused here rather than thrown by the type's own
+            // guard, so a tampered payload is a rejected snapshot instead of an exception.
+            if (kind == GuardsDigital.Core.Rules.CardResolution.PreActionContinuationKind.None ||
+                (frame == null &&
+                    placement == GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided) ||
+                (kind == GuardsDigital.Core.Rules.CardResolution.PreActionContinuationKind.BeforeActionTrigger &&
+                    placement != GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.BeforeTheAction) ||
+                (heldActionHasStarted &&
+                    placement != GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.AfterTheAction) ||
+                !heldOffer.IsAvailable)
+            {
+                throw Malformed(
+                    "Snapshot pre-action continuation describes a shape this engine cannot be in.");
+            }
+
+            return new GuardsDigital.Core.Rules.CardResolution.PendingPreActionResolution(
+                frame, kind, placement, heldResolutionId, heldOffer, heldActionHasStarted);
         }
 
         private static PendingImmediateLanePushRequest ReadImmediateLanePush(BinaryReader reader)
@@ -303,6 +388,10 @@ namespace GuardsDigital.Core.Snapshots
             var coinLedger = ReadCoinLedger(reader);
             if (kind == NoCardActionAuthorityKind) return null;
             var lanePush = ReadImmediateLanePush(reader);
+            var preAction = ReadPreAction(
+                reader, definitions, cards, participants, catalogs,
+                CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
+                modifications, heroItems);
 
             CardActionResolutionRestoreState state;
             switch ((CardActionContinuationKind)kind)
@@ -354,8 +443,8 @@ namespace GuardsDigital.Core.Snapshots
             // The snapshot never stores the pending choices; they are derived during
             // restore, so no verified choice is supplied here.
             return CardActionResolutionAuthority.Restore(
-                catalogs, board, state, null, null, null, definitions, cards, participants, markers, modifications,
-                heroItems);
+                catalogs, board, state.WithPreAction(preAction), null, null, null, definitions, cards,
+                participants, markers, modifications, heroItems);
         }
 
         /// <summary>
@@ -990,6 +1079,16 @@ namespace GuardsDigital.Core.Snapshots
             // card text among them - and because a Block is the one Defense that reaches the
             // comparison with no Defense Total to re-derive it from.
             writer.Write((int)pending.BlockResult);
+
+            // Milestone 8.19a, schema v25. Where the target stood before rulebook p.14's consequences.
+            // It crosses the wire because it is the one target fact the restored board cannot answer:
+            // step 6 removes a defeated hero and step 7 applies text that may name the space it stood
+            // on, and a rider that pauses at step 7 has a whole save and reload between the two.
+            writer.Write(pending.TargetSpaceBeforeConsequences.HasValue);
+            if (pending.TargetSpaceBeforeConsequences.HasValue)
+            {
+                WriteCoordinate(writer, pending.TargetSpaceBeforeConsequences.Value);
+            }
         }
 
         private static PendingAttackResolution ReadAttackResolution(BinaryReader reader)
@@ -1041,11 +1140,17 @@ namespace GuardsDigital.Core.Snapshots
 
             var blockResult = SnapshotEnumReader.Read<DefenseBlockResult>(
                 reader, "pending attack Block result");
+            var targetSpace = reader.ReadBoolean() ? (HexCoordinate?)ReadCoordinate(reader) : null;
+            if (targetSpace.HasValue && !target.IsDefined)
+            {
+                throw Malformed(
+                    "Snapshot pending attack records where a target stood while naming no target.");
+            }
 
             return new PendingAttackResolution(
                 common.ResolutionId, common.CardId, common.DefinitionReference, common.ActionId,
                 common.ActorId, common.InvocationContext, common.StepId, phase, target,
-                attackValue, defenseOffer, defenseValue, excludedTarget, blockResult);
+                attackValue, defenseOffer, defenseValue, excludedTarget, blockResult, targetSpace);
         }
 
         private static void WriteCoinLedger(BinaryWriter writer, HeroCoinLedgerRestoreStateHolder holder)

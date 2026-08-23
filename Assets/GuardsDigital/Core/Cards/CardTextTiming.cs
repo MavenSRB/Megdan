@@ -39,7 +39,26 @@ namespace GuardsDigital.Core.Cards
         /// p.14 step 7: "Apply 'After the attack:' text on the Attack card, if any" - after step 6 has
         /// checked the attack and removed the defending hero if it succeeded.
         /// </summary>
-        AfterTheAttack = 3
+        AfterTheAttack = 3,
+
+        /// <summary>
+        /// Milestone 8.19a. Text the actor applies either side of the primary action it is printed on,
+        /// choosing which when the action starts.
+        ///
+        /// <para>p.14's numbered order is the Attack's alone, and the three moments above are its.
+        /// Xargatha's Charm prints a Movement card whose text moves an enemy minion "before or after"
+        /// that Movement, so the moment is neither of p.14's and is not fixed by the page at all - it
+        /// is a decision the acting player makes, once, at the start of the action. That is why this
+        /// timing names the action rather than a numbered step: what it declares is that the text is
+        /// applied <em>around</em> the action, with the side chosen through the
+        /// `around-primary-action@1` capability.</para>
+        ///
+        /// <para>It is declared on a Movement action alone in this build, which is the one printed
+        /// shape the roster inventories contain. A later slice transcribing the same wording on
+        /// another action kind widens <see cref="CardTextTimingQuery.OwningActionKind"/> rather than
+        /// this reading being guessed at now.</para>
+        /// </summary>
+        AroundTheAction = 4
     }
 
     public static class CardTextTimingQuery
@@ -62,7 +81,9 @@ namespace GuardsDigital.Core.Cards
                     return TimingCheckpoint.AfterAttack;
                 default:
                     throw new ArgumentOutOfRangeException(
-                        nameof(timing), timing, "No Attack checkpoint corresponds to this card-text timing.");
+                        nameof(timing), timing,
+                        "Only rulebook p.14's three numbered moments correspond to an Attack " +
+                        "checkpoint; text applied around a primary action is placed by the actor.");
             }
         }
 
@@ -76,6 +97,8 @@ namespace GuardsDigital.Core.Cards
                     return ActionKind.Attack;
                 case CardTextTiming.DefenseAction:
                     return ActionKind.Defense;
+                case CardTextTiming.AroundTheAction:
+                    return ActionKind.Movement;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(timing), timing, "No action kind owns this card-text timing.");

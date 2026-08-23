@@ -46,12 +46,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "A paused card-text continuation names the attack whose remaining steps it owes.");
             }
 
-            if (moment != CardTextTiming.AfterTheAttack && moment != CardTextTiming.DefenseAction)
+            if (moment != CardTextTiming.AfterTheAttack &&
+                moment != CardTextTiming.DefenseAction &&
+                moment != CardTextTiming.BeforeTheAttack)
             {
                 throw new ArgumentException(
-                    "Only rulebook p.14's steps 4 and 7 leave a remainder that can be rebuilt from the " +
-                    "attack's identity, so only they can hold a question.",
+                    "Only rulebook p.14's three numbered card-text moments leave a remainder that can " +
+                    "be rebuilt from the attack's identity, so only they can hold a question.",
                     nameof(moment));
+            }
+
+            // Milestone 8.19a. Step 1 stands before the page announces anything, so a pause there has
+            // no outcome to report yet; the two later moments do. Stating it here keeps a payload from
+            // claiming an attack succeeded while its very first step is still being applied.
+            if (moment == CardTextTiming.BeforeTheAttack && outcome != AttackResolutionOutcome.None)
+            {
+                throw new ArgumentException(
+                    "Rulebook p.14's step 1 precedes every outcome the page reaches, so a question " +
+                    "standing in it reports none.",
+                    nameof(outcome));
             }
 
             if (!Enum.IsDefined(typeof(AttackResolutionOutcome), outcome))

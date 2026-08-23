@@ -109,6 +109,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingAttackCardTextResolution pendingCardText;
         private PendingAttackResolution owedAttackRepeat;
         private AttackTarget owedAttackRepeatExclusion;
+
+        /// <summary>
+        /// Milestone 8.19a's outer pre-action continuation, or null. It is held beside the card-action
+        /// continuation rather than as one of its kinds because the two genuinely coexist: work the
+        /// actor placed after a Movement waits while that Movement runs with a continuation of its own.
+        /// </summary>
+        private PendingPreActionResolution pendingPreAction;
         private readonly List<ResolutionStep> triggeredResolutionSteps = new List<ResolutionStep>();
 
         private CardActionResolutionAuthority(
@@ -244,8 +251,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// draw and answer the other, and a match can only ever be holding one of the two.
         /// </summary>
         public GuardsDigital.Core.Rules.EffectResolution.PendingEffectChoice PendingEffectChoice =>
-            pendingCardText?.Frame.PendingChoice ?? triggeredEffects.PendingResolution?.PendingChoice ??
+            pendingCardText?.Frame.PendingChoice ??
+            pendingPreAction?.Frame?.PendingChoice ??
+            triggeredEffects.PendingResolution?.PendingChoice ??
             skillBackend.PendingChoice;
+
+        /// <summary>
+        /// Milestone 8.19a's outer pre-action continuation, or null. A reader that already knew how to
+        /// draw and answer a paused effect frame needs nothing new for this one - which is the point:
+        /// the new pause altitudes reach the player through the same projection every other choice does.
+        /// </summary>
+        public PendingPreActionResolution PendingPreActionResolution => pendingPreAction;
 
         /// <summary>
         /// Milestone 6.5c: what each space-valued candidate of the pending effect choice currently
@@ -259,7 +275,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 IEnumerable<CardDefinition> definitions,
                 RuleModificationSet modifications)
         {
-            var pending = pendingCardText?.Frame ?? triggeredEffects.PendingResolution ??
+            var pending = pendingCardText?.Frame ?? pendingPreAction?.Frame ??
+                triggeredEffects.PendingResolution ??
                 skillBackend.PendingResolution;
             var choice = pending?.PendingChoice;
             if (pending == null || choice == null)
@@ -422,7 +439,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||
             skillBackend.HasPendingResolution || triggeredEffects.PendingResolution != null ||
             pendingCorrection != null || pendingRepeat != null ||
-            pendingCardText != null;
+            // Milestone 8.19a. A pre-action continuation counts as pending exactly while it is holding
+            // a question. One with no frame is work the actor has placed and the turn has not entered
+            // yet - and in the `after the action` case it is deliberately parked behind the very action
+            // that is about to start, so counting it would make the action refuse itself.
+            pendingCardText != null || pendingPreAction?.Frame != null;
 
         public CardActionResolutionResult StartTurnSkill(
             ActionResolutionId resolutionId,
@@ -894,7 +915,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     step.Subject.MinionId, step.CorrectionKind, origin, step.Destination.Destination))));
         }
 
-        public CardActionResolutionRestoreState CaptureRestoreState()
+        public CardActionResolutionRestoreState CaptureRestoreState() =>
+            // Milestone 8.19a. The outer pre-action continuation is captured beside whichever
+            // continuation the action itself left, never instead of it: work the actor placed after a
+            // Movement is parked while that Movement is still mid-route, and a capture that chose
+            // between them would lose one of the two.
+            CaptureContinuation().WithPreAction(pendingPreAction);
+
+        private CardActionResolutionRestoreState CaptureContinuation()
         {
             var ledger = CoinLedger == null
                 ? HeroCoinLedgerRestoreStateHolder.Absent()
@@ -977,6 +1005,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 verifiedDefenseChoice, definitions, instances, participants, markers, modifications,
                 heroItems);
             restoredAuthority.pendingLanePush = state.PendingImmediateLanePush;
+            restoredAuthority.pendingPreAction = state.PendingPreAction;
 
             // Every continuation, not only the Attack one that needed the items to verify itself: the
             // restored dispatcher answers the next command, and that command may be the Defense whose
@@ -1091,10 +1120,34 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // has left to do is regenerated from the continuation's own identity when the question
                 // is answered, so a restored pause owns exactly what the live one owned.
                 case CardActionContinuationKind.AttackCardText:
+                    // Milestone 8.19a. The attack underneath is restored at the two moments it is still
+                    // in flight, and at neither of them is anything about it rebuilt: the payload
+                    // already carries the resolution, and the rest of rulebook p.14 is produced from it
+                    // when the question is answered. Step 7's attack is finished by the time its text
+                    // runs - the page's own last step - so restoring one there would put a completed
+                    // attack back into the pending slot.
+                    var attackUnderTheText =
+                        state.PendingCardText.Moment == CardTextTiming.AfterTheAttack
+                            ? null
+                            : state.PendingCardText.Attack;
                     var restoredCardText = new CardActionResolutionAuthority(
                         catalogs,
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
+                        attackUnderTheText == null
+                            ? new AttackDefenseCardActionStrategyBackend(
+                                adjacentMoveAuthority, coinLedger, markers)
+                            : AttackDefenseCardActionStrategyBackend.RestoreAttack(
+                                adjacentMoveAuthority,
+                                new AttackDefenseBackendRestoreState(attackUnderTheText),
+                                null,
+                                null,
+                                definitions,
+                                instances,
+                                participants,
+                                coinLedger,
+                                markers,
+                                modifications,
+                                heroItems),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(catalogs.Capabilities),
@@ -1434,7 +1487,63 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 result, step.CardTextRemainderResolution, materializedDefinitions, instances,
                 participants, modifications, steps);
             RecordOwedAttackRepeat(result, step.CardTextRemainderResolution);
+
+            // Milestone 8.19a. Rulebook p.14's step 1 is the one moment whose remainder is the rest of
+            // the page rather than a list of facts, so when the text finishes without asking anything
+            // the page is resumed here - through the same generator the answer path uses.
+            if (step.CardTextTiming == CardTextTiming.BeforeTheAttack && pendingCardText == null)
+            {
+                steps.AddRange(ResumeAttackAfterBeforeText(
+                    result.BoundAttackTarget, materializedDefinitions, instances, participants,
+                    modifications));
+            }
+
             return Array.AsReadOnly(steps.ToArray());
+        }
+
+        /// <summary>
+        /// Milestone 8.19a. Hands the Attack back everything rulebook p.14 does after its step 1, once
+        /// that step's text has finished.
+        ///
+        /// <para>The one thing carried across is the unit the text named, read off the frame's own
+        /// completed outcomes by <see cref="RequestedAttackTargetQuery"/> - the transport milestone
+        /// 8.10's Defeat request and milestone 6.9's Lane-Push cause already use, and the reason a
+        /// binding survives however many questions the text stopped on. The backend re-derives that
+        /// unit's legality against the board the text has just changed; nothing here decides it.</para>
+        ///
+        /// <para>The steps it produces cannot contain another card-text step, because an action
+        /// declares one moment and this one's is step 1. The refusal below states that rather than
+        /// trusting it, so a future action that could declare two is caught here instead of silently
+        /// skipping its second.</para>
+        /// </summary>
+        private IReadOnlyList<ResolutionStep> ResumeAttackAfterBeforeText(
+            AttackTarget boundTarget,
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var resolutionId = attackDefenseBackend.PendingResolution?.ResolutionId ?? default;
+            var continued = attackDefenseBackend.ContinueAfterBeforeAttackText(
+                Array.Empty<ResolutionStep>(), definitions, instances, participants, modifications,
+                boundTarget);
+            if (!continued.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "Rulebook p.14's step 1 finished on an Attack that could no longer be resumed " +
+                    $"({continued.RejectionReason}); the page is produced from the resolution the " +
+                    "step was applied against, which nothing between them may clear.");
+            }
+
+            if (continued.Steps.Any(produced => produced.Kind == ResolutionStepKind.CardText))
+            {
+                throw new InvalidOperationException(
+                    "An action declares one of rulebook p.14's card-text moments, so the remainder of " +
+                    "a step-1 pause cannot contain another.");
+            }
+
+            RecordAttackLanePush(continued, resolutionId, participants, modifications);
+            return continued.Steps;
         }
 
         /// <summary>
@@ -1482,8 +1591,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .FirstOrDefault(definition => definition.Reference.Equals(attack.SourceDefinitionReference))
                 ?.ActionDefinitions
                 .FirstOrDefault(candidate => candidate.Id.Equals(attack.ActionDefinitionId));
+
+            // Milestone 8.19a added the minion the Attack took and the space its target stood on
+            // before p.14's consequences. Both come off the resolution rather than off the board: a
+            // step-7 rider asks about a hero the page has already removed, and a text that binds its
+            // own target has to be able to see which unit it bound.
             return new GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts(
-                attack.ActorId, attack.TargetHeroId, action?.AttackRange ?? AttackRangeKind.None);
+                attack.ActorId,
+                attack.TargetHeroId,
+                attack.TargetMinionId,
+                action?.AttackRange ?? AttackRangeKind.None,
+                attack.TargetSpaceBeforeConsequences);
         }
 
         private void RecordOwedAttackRepeat(
@@ -1659,10 +1777,404 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 step, paused.Attack, materializedDefinitions, instances, participants, modifications,
                 facts);
             RecordOwedAttackRepeat(step, paused.Attack);
-            facts.AddRange(AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
-                paused.Moment, paused.Attack, paused.Outcome));
+
+            // Milestone 8.19a. Step 1's remainder is the rest of rulebook p.14 rather than a list of
+            // facts, so it is produced against live state - including the unit this text named, if it
+            // named one. Steps 4 and 7 keep the static generator they have had since 8.10.
+            facts.AddRange(paused.Moment == CardTextTiming.BeforeTheAttack
+                ? ResumeAttackAfterBeforeText(
+                    step.BoundAttackTarget, materializedDefinitions, instances, participants,
+                    modifications)
+                : AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
+                    paused.Moment, paused.Attack, paused.Outcome));
             return CardActionResolutionResult.Accept(true, null, null, facts);
         }
+
+        /// <summary>
+        /// Milestone 8.19a. Runs a rule source's `before-action-trigger@1` effect, holding the action it
+        /// precedes exactly as the turn validated it.
+        ///
+        /// <para>Nothing about the held action is started here and nothing about it is re-derived. The
+        /// offer is carried because that is the whole point of the altitude: Living Tsunami moves its
+        /// hero one space before an Attack, and the offer the turn built <em>before</em> that move is
+        /// the one p.10 gave the player.</para>
+        /// </summary>
+        public CardActionResolutionResult StartBeforeActionTrigger(
+            GuardsDigital.Core.Rules.Progression.BeforeActionTriggerSource source,
+            ActionResolutionId heldResolutionId,
+            ActionOffer heldOffer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (pendingPreAction != null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.ResolutionAlreadyPending, null, null);
+            }
+
+            if (!ContentCatalogs.TriggeredEffects.TryGet(source.TriggeredEffect, out var effect))
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.UnavailableOffer, null, null);
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var context = new EffectResolutionContext(
+                effect,
+                ContentCatalogs.Capabilities,
+                participants,
+                timing,
+                roundIndex,
+                turnIndex,
+                modifications,
+                EffectCardState.Of(materializedDefinitions, instances),
+                ActionKind.Skill,
+                components: components,
+                heroItems: skillBackend.HeroItems);
+            var result = EffectResolutionSession.Start(
+                new EffectResolutionId(
+                    $"before-action-{source.SourceId}-{heldResolutionId.Value}"),
+                source.SourceCardInstanceId,
+                source.SourceDefinitionReference,
+                source.SourceActionDefinitionId,
+                source.ControllerId,
+                source.ControllerId,
+                ActionInvocationContext.PrintedPrimary,
+                context);
+            if (!result.Accepted)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.InvalidChoice, null, null);
+            }
+
+            if (result.Frame?.PendingChoice != null)
+            {
+                pendingPreAction = new PendingPreActionResolution(
+                    result.Frame,
+                    PreActionContinuationKind.BeforeActionTrigger,
+                    PreActionPlacement.BeforeTheAction,
+                    heldResolutionId,
+                    heldOffer);
+            }
+
+            return CardActionResolutionResult.Accept(
+                pendingPreAction == null,
+                null,
+                null,
+                PreActionFacts(result, source.SourceCardInstanceId, source.SourceActionDefinitionId,
+                    source.ControllerId, CardTextTiming.None));
+        }
+
+        /// <summary>
+        /// Milestone 8.19a. Asks the actor which side of this primary action its printed text belongs
+        /// to, holding the action while the question stands.
+        ///
+        /// <para>The definition is entered at its ordering node rather than at its root, and the work
+        /// it places is entered later at the node beside it. One definition, two entries, because what
+        /// stands between them is a whole action with a continuation of its own - which is exactly what
+        /// the shape rule in <c>EffectDefinitionValidator</c> makes the content declare.</para>
+        /// </summary>
+        public CardActionResolutionResult StartAroundActionText(
+            ActionResolutionId heldResolutionId,
+            ActionOffer heldOffer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            if (pendingPreAction != null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.ResolutionAlreadyPending, null, null);
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var action = ActionOfferQuery.FindActionDefinition(heldOffer, materializedDefinitions);
+            if (action.CardTextTiming != CardTextTiming.AroundTheAction || action.EffectRoot == null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.UnsupportedInvocationContext, null, null);
+            }
+
+            return StartAroundActionEntry(
+                AroundActionShape.OrderingNode(action.EffectRoot),
+                isWorkEntry: false,
+                PreActionPlacement.Undecided,
+                heldResolutionId,
+                heldOffer,
+                action,
+                materializedDefinitions,
+                instances,
+                participants,
+                timing,
+                modifications,
+                roundIndex,
+                turnIndex,
+                heldActionHasStarted: false);
+        }
+
+        /// <summary>
+        /// Milestone 8.19a. Enters the work the actor placed after the primary action, once that action
+        /// has finished. The continuation carried the side and the identity; the work itself is read
+        /// from the trusted definition the held offer names, never from anything the payload said.
+        /// </summary>
+        public CardActionResolutionResult StartOwedAroundActionWork(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            var owed = pendingPreAction;
+            if (owed == null || !owed.OwesWork)
+            {
+                return CardActionResolutionResult.Accept(
+                    true, null, null, Array.Empty<ResolutionStep>());
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var action = ActionOfferQuery.FindActionDefinition(
+                owed.HeldOffer, materializedDefinitions);
+            pendingPreAction = null;
+            return StartAroundActionEntry(
+                AroundActionShape.WorkNode(action.EffectRoot),
+                isWorkEntry: true,
+                owed.Placement,
+                owed.HeldResolutionId,
+                owed.HeldOffer,
+                action,
+                materializedDefinitions,
+                instances,
+                participants,
+                timing,
+                modifications,
+                roundIndex,
+                turnIndex,
+                owed.HeldActionHasStarted);
+        }
+
+        private CardActionResolutionResult StartAroundActionEntry(
+            GuardsDigital.Core.Effects.EffectNodeId entryNodeId,
+            bool isWorkEntry,
+            PreActionPlacement placement,
+            ActionResolutionId heldResolutionId,
+            ActionOffer heldOffer,
+            ActionDefinition action,
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex,
+            bool heldActionHasStarted)
+        {
+            var context = new EffectResolutionContext(
+                action.EffectRoot,
+                ContentCatalogs.Capabilities,
+                participants,
+                timing,
+                roundIndex,
+                turnIndex,
+                modifications,
+                EffectCardState.Of(definitions, instances),
+                action.Kind,
+                components: components,
+                heroItems: skillBackend.HeroItems);
+            var result = EffectResolutionSession.Start(
+                new EffectResolutionId(
+                    $"around-action-{heldOffer.SourceCardInstanceId.Value}-{entryNodeId.Value}"),
+                heldOffer.SourceCardInstanceId,
+                heldOffer.SourceDefinitionReference,
+                action.Id,
+                heldOffer.ActorId,
+                heldOffer.ActorId,
+                ActionInvocationContext.PrintedPrimary,
+                context,
+                entryNodeId: entryNodeId);
+            if (!result.Accepted)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.InvalidChoice, null, null);
+            }
+
+            pendingPreAction = ContinuationAfterAroundEntry(
+                result, isWorkEntry, placement, heldResolutionId, heldOffer, heldActionHasStarted);
+            return CardActionResolutionResult.Accept(
+                pendingPreAction == null || pendingPreAction.OwesWork,
+                null,
+                null,
+                PreActionFacts(
+                    result, heldOffer.SourceCardInstanceId, action.Id, heldOffer.ActorId,
+                    CardTextTiming.AroundTheAction));
+        }
+
+        /// <summary>
+        /// The continuation an around-action entry leaves behind. Three shapes and no fourth: a frame
+        /// still standing on a question, a decided side whose work has not been entered, and nothing at
+        /// all once that work is done.
+        /// </summary>
+        private static PendingPreActionResolution ContinuationAfterAroundEntry(
+            EffectResolutionStepResult result,
+            bool isWorkEntry,
+            PreActionPlacement placement,
+            ActionResolutionId heldResolutionId,
+            ActionOffer heldOffer,
+            bool heldActionHasStarted)
+        {
+            var decided = placement == PreActionPlacement.Undecided
+                ? result.AroundActionPlacement
+                : placement;
+            if (!result.IsComplete)
+            {
+                return new PendingPreActionResolution(
+                    result.Frame, PreActionContinuationKind.AroundPrimaryAction, decided,
+                    heldResolutionId, heldOffer, heldActionHasStarted);
+            }
+
+            if (isWorkEntry)
+            {
+                return null;
+            }
+
+            if (decided == PreActionPlacement.Undecided)
+            {
+                throw new InvalidOperationException(
+                    "Text applied around a primary action places itself on one side of it; a finished " +
+                    "ordering question that placed neither is a composition the definition validator " +
+                    "refuses at content load.");
+            }
+
+            return new PendingPreActionResolution(
+                null, PreActionContinuationKind.AroundPrimaryAction, decided, heldResolutionId,
+                heldOffer, heldActionHasStarted);
+        }
+
+        /// <summary>
+        /// Milestone 8.19a. Answers the question a pre-action frame stopped on, and reports whether the
+        /// frame has finished. What happens next belongs to the turn: a finished trigger's held action
+        /// starts, and a finished ordering question either runs its work now or waits for the action.
+        /// </summary>
+        public CardActionResolutionResult AnswerPreActionChoice(
+            EffectChoiceCommand command,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            var paused = pendingPreAction;
+            if (paused?.Frame == null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.NoPendingResolution, null, null);
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var effectRoot = SkillCardActionStrategyBackend.FindEffectRoot(
+                materializedDefinitions, paused.Frame);
+            if (effectRoot == null &&
+                !ContentCatalogs.TriggeredEffects.TryGet(
+                    paused.Frame.EffectDefinitionReference, out effectRoot))
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.UnavailableOffer, null, null);
+            }
+
+            var enclosingKind = paused.Kind == PreActionContinuationKind.AroundPrimaryAction
+                ? ActionOfferQuery.FindActionDefinition(paused.HeldOffer, materializedDefinitions).Kind
+                : ActionKind.Skill;
+            var context = new EffectResolutionContext(
+                effectRoot,
+                ContentCatalogs.Capabilities,
+                participants,
+                timing,
+                roundIndex,
+                turnIndex,
+                modifications,
+                EffectCardState.Of(materializedDefinitions, instances),
+                enclosingKind,
+                components: components,
+                heroItems: skillBackend.HeroItems);
+            var step = EffectResolutionSession.Answer(paused.Frame, command, context);
+            if (!step.Accepted)
+            {
+                switch (step.RejectionReason)
+                {
+                    case EffectResolutionRejectionReason.StaleChoice:
+                        return CardActionResolutionResult.Reject(
+                            CardActionResolutionRejectionReason.StaleChoice, null, null);
+                    case EffectResolutionRejectionReason.WrongChooser:
+                        return CardActionResolutionResult.Reject(
+                            CardActionResolutionRejectionReason.WrongChooser, null, null);
+                    default:
+                        return CardActionResolutionResult.Reject(
+                            CardActionResolutionRejectionReason.InvalidChoice, null, null);
+                }
+            }
+
+            var timingLabel = paused.Kind == PreActionContinuationKind.AroundPrimaryAction
+                ? CardTextTiming.AroundTheAction
+                : CardTextTiming.None;
+            var facts = PreActionFacts(
+                step, paused.Frame.SourceCardInstanceId, paused.Frame.ActionDefinitionId,
+                paused.Frame.ActorId, timingLabel);
+
+            if (!step.IsComplete)
+            {
+                pendingPreAction = paused.WithFrame(step.Frame);
+                return CardActionResolutionResult.Accept(false, null, null, facts);
+            }
+
+            // A finished trigger leaves nothing standing: the turn starts the action it held. A
+            // finished ordering question leaves the side it chose, with the work still owed; a finished
+            // piece of work leaves nothing.
+            pendingPreAction = ContinuationAfterAroundEntry(
+                step,
+                isWorkEntry: paused.Kind != PreActionContinuationKind.AroundPrimaryAction ||
+                    paused.Placement != PreActionPlacement.Undecided,
+                paused.Placement,
+                paused.HeldResolutionId,
+                paused.HeldOffer,
+                paused.HeldActionHasStarted);
+            return CardActionResolutionResult.Accept(true, null, null, facts);
+        }
+
+        /// <summary>Forgets a pre-action continuation whose held action the turn has now started.</summary>
+        public void ClearPreActionContinuation() => pendingPreAction = null;
+
+        /// <summary>Records that the held action has started and the placed work is still owed.</summary>
+        public void ParkPreActionContinuation() => pendingPreAction = pendingPreAction?.Parked();
+
+        private static IReadOnlyList<ResolutionStep> PreActionFacts(
+            EffectResolutionStepResult result,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            CardTextTiming timing) =>
+            Array.AsReadOnly(result.Events
+                .Select(value => CardActionResolutionEvent.CardTextApplied(
+                    sourceCardInstanceId, actionDefinitionId, actorId, timing, value))
+                .Select(ResolutionStep.FromFact)
+                .ToArray());
 
         public AttackActionResolutionResult AnswerAttackTarget(
             AttackTargetChoiceCommand command,
