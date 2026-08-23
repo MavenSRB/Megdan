@@ -80,6 +80,21 @@ namespace GuardsDigital.Core.Cards
                 .SingleOrDefault(action => action.Id.Equals(actionDefinitionId));
             if (actionDefinition == null)
             {
+                if (definition.UltimateRule != null &&
+                    definition.UltimateRule.EffectSourceId.Equals(actionDefinitionId))
+                {
+                    return new ValueResult(
+                        channel,
+                        definition.UltimateRule.PrintedValues
+                            .Where(value => value.Channel == channel)
+                            .Select(value => new ValueContribution(
+                                ValueContributionKind.PrintedIcon,
+                                sourceCardInstanceId,
+                                actionDefinitionId,
+                                value.Channel,
+                                value.Amount)));
+                }
+
                 throw new ArgumentException(
                     "Action offer references an unresolved action definition ID.",
                     nameof(actionDefinitionId));

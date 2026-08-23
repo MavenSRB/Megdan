@@ -194,7 +194,7 @@ Acceptance checks:
 
 Non-goals: no High Voltage composition (8.13), no new trigger vocabulary beyond what the synthetic proof needs.
 
-### [!] 8.13 Complete High Voltage
+### [x] 8.13 Complete High Voltage
 
 Blocked by: milestones 8.9 (the basic-action fact), 8.10 (effect-invoked Defeat), and 8.12 (trigger execution).
 
@@ -209,7 +209,9 @@ Acceptance checks:
 
 Non-goals: no leveling or item integration.
 
-### [!] 8.14 Integrate Wasp progression, items, and the Ultimate unlock
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-813-complete-high-voltage-completion-evidence).
+
+### [ ] 8.14 Integrate Wasp progression, items, and the Ultimate unlock
 
 Blocked by: milestones 8.6, 8.8, 8.9, 8.10, 8.11, and 8.13 - every upgraded card a Level Up can put in hand must already resolve its text.
 

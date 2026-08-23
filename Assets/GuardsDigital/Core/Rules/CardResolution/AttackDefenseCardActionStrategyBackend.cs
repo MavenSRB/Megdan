@@ -691,7 +691,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var removalAttempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
             var defeat = ResolveRemovalStage(
-                targetMinionId, outcome, reward, removalAttempt, participants, modifications);
+                targetMinionId, outcome, reward, removalAttempt, participants, modifications,
+                resolution.ActorId, RuleActivity.Attack);
             var events = new List<ResolutionStep>
             {
                 ResolutionStep.FromFact(CardActionResolutionEvent.AttackTargetValidated(resolution)),
@@ -751,12 +752,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             DefeatRewardResult reward,
             DefeatRemovalAttempt removalAttempt,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            HeroId actorId,
+            RuleActivity activity)
         {
             var subject = BoardObjectReference.ForMinion(targetMinionId);
             var removalStage = new RemovalStageDecision(
-                RuleActivity.Attack,
-                RuleObject.ForHero(pendingAttackResolution.ActorId),
+                activity,
+                RuleObject.ForHero(actorId),
                 adjacentMoveAuthority,
                 adjacentMoveAuthority,
                 participants,
@@ -788,6 +791,50 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 new DefeatRemovalResult(outcome.Id, outcome.TargetId, DefeatRemovalResultKind.Removed),
                 removed,
                 removalStage.QualifyLanePush(subject, origin));
+        }
+
+        internal MinionDefeatResolution ResolveEffectInvokedMinionDefeat(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId sourceAbilityId,
+            HeroId actorId,
+            MinionId targetMinionId,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            out PendingAttackResolution eventIdentity)
+        {
+            var target = adjacentMoveAuthority.Minions
+                .Single(minion => minion.MinionId.Equals(targetMinionId));
+            eventIdentity = new PendingAttackResolution(
+                resolutionId,
+                sourceCardInstanceId,
+                sourceDefinitionReference,
+                sourceAbilityId,
+                actorId,
+                ActionInvocationContext.PrintedPrimary,
+                new ActionResolutionStepId("triggered-minion-defeat"),
+                AttackResolutionPhase.ResolveMinionDefeat,
+                AttackTarget.Minion(targetMinionId),
+                null);
+
+            var coins = StandardMinionProfileCatalog.Rulebook.Get(target.MinionType).DefeatCoins;
+            var outcome = new DefeatOutcome(
+                new DefeatOutcomeId($"{resolutionId.Value}:minion-defeat"),
+                new DefeatTargetId(targetMinionId.Value),
+                target.TeamId,
+                actorId,
+                coins,
+                0);
+            if (coinLedger == null) coinLedger = new HeroCoinLedger(participants);
+            var reward = coinLedger.Award(outcome);
+            if (!reward.Accepted)
+                throw new InvalidOperationException("A triggered minion Defeat could not award its declared reward.");
+
+            var attempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
+            return ResolveRemovalStage(
+                targetMinionId, outcome, reward, attempt, participants, modifications,
+                actorId, RuleActivity.Skill);
         }
 
 

@@ -109,6 +109,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingAttackCardTextResolution pendingCardText;
         private PendingAttackResolution owedAttackRepeat;
         private AttackTarget owedAttackRepeatExclusion;
+        private readonly List<ResolutionStep> triggeredResolutionSteps = new List<ResolutionStep>();
 
         private CardActionResolutionAuthority(
             MatchContentCatalogs catalogs,
@@ -336,9 +337,51 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             int roundIndex,
             int turnIndex) =>
-            triggeredEffects.Answer(
+            CompleteTriggeredConsequences(triggeredEffects.Answer(
                 command, timing, definitions, instances, participants, modifications,
-                roundIndex, turnIndex, skillBackend.HeroItems);
+                roundIndex, turnIndex, skillBackend.HeroItems), participants, modifications);
+
+        internal IReadOnlyList<ResolutionStep> ConsumeTriggeredResolutionSteps()
+        {
+            var result = triggeredResolutionSteps.ToArray();
+            triggeredResolutionSteps.Clear();
+            return Array.AsReadOnly(result);
+        }
+
+        private EffectResolutionStepResult CompleteTriggeredConsequences(
+            EffectResolutionStepResult step,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (!step.Accepted || !step.IsComplete || step.RequestedMinionDefeats.Count == 0)
+                return step;
+
+            var source = triggeredEffects.LastCompletedResolution ??
+                throw new InvalidOperationException("A completed triggered Defeat lost its source identity.");
+            foreach (var minionId in step.RequestedMinionDefeats)
+            {
+                var defeat = attackDefenseBackend.ResolveEffectInvokedMinionDefeat(
+                    new ActionResolutionId(source.ResolutionId.Value),
+                    source.SourceCardInstanceId,
+                    source.SourceDefinitionReference,
+                    source.ActionDefinitionId,
+                    source.ActorId,
+                    minionId,
+                    participants,
+                    modifications,
+                    out var eventIdentity);
+                triggeredResolutionSteps.AddRange(defeat.Facts.Select(fact =>
+                    ResolutionStep.FromFact(CardActionResolutionEvent.MinionDefeatFact(
+                        eventIdentity, defeat, fact))));
+                RecordImmediateLanePush(
+                    defeat.LanePush.Cause,
+                    new ActionResolutionId(source.ResolutionId.Value),
+                    participants,
+                    modifications);
+            }
+
+            return step;
+        }
 
         /// <summary>
         /// Milestone 8.10. Whether an Attack's own card text asked for that Attack to happen again -

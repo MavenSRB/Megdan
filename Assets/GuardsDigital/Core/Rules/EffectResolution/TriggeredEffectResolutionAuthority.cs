@@ -45,6 +45,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         public PendingResolution PendingResolution { get; private set; }
 
+        public PendingResolution LastCompletedResolution { get; private set; }
+
         internal void RestorePending(PendingResolution pending)
         {
             if (PendingResolution != null) throw new InvalidOperationException("A triggered continuation is already present.");
@@ -206,6 +208,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             if (command == null) throw new ArgumentNullException(nameof(command));
             if (PendingResolution == null)
                 throw new InvalidOperationException("No triggered effect is waiting for an answer.");
+            var resolving = PendingResolution;
             if (!effects.TryGet(PendingResolution.EffectDefinitionReference, out var effect))
                 throw new InvalidOperationException($"Triggered effect '{PendingResolution.EffectDefinitionReference}' is not configured.");
 
@@ -213,8 +216,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             var instances = (cardInstances ?? throw new ArgumentNullException(nameof(cardInstances))).ToArray();
             var sourceDefinition = definitions.Single(definition =>
                 definition.Reference.Equals(PendingResolution.SourceDefinitionReference));
-            var sourceAction = sourceDefinition.ActionDefinitions.Single(action =>
+            var sourceAction = sourceDefinition.ActionDefinitions.SingleOrDefault(action =>
                 action.Id.Equals(PendingResolution.ActionDefinitionId));
+            var enclosingActionKind = sourceAction?.Kind ??
+                (sourceDefinition.UltimateRule != null &&
+                 sourceDefinition.UltimateRule.EffectSourceId.Equals(PendingResolution.ActionDefinitionId)
+                    ? ActionKind.Skill
+                    : throw new InvalidOperationException(
+                        "A triggered continuation references neither an action nor its Ultimate ability."));
             var context = new EffectResolutionContext(
                 effect,
                 capabilities,
@@ -224,12 +233,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 turnIndex,
                 modifications ?? throw new ArgumentNullException(nameof(modifications)),
                 EffectCardState.Of(definitions, instances),
-                sourceAction.Kind,
+                enclosingActionKind,
                 components: components,
                 heroItems: heroItems);
             var step = EffectResolutionSession.Answer(PendingResolution, command, context);
             if (step.Accepted)
+            {
                 PendingResolution = step.Frame;
+                LastCompletedResolution = step.IsComplete ? resolving : null;
+            }
             return step;
         }
     }

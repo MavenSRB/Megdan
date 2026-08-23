@@ -392,16 +392,15 @@ namespace GuardsDigital.Core.Cards.Verified
 
             // p.16's Ultimate. It prints no Initiative and no action at all - the card is placed beside
             // the dashboard and its ability "is always in effect" - so its whole printed content is the
-            // permanent ability and the Radius that ability reads. The ability is a triggered one, which
-            // none of RuleModification's five families can express, so it ships as an explicit
-            // outstanding composition owed to milestone 8.13 rather than as a stand-in rule.
+            // permanent ability and the Radius that ability reads. Milestone 8.13 composes the
+            // triggered declaration below; the profile therefore carries no outstanding text debt.
             new WaspCardProfile(
                 HighVoltage, "High Voltage", 0, 0, 0,
                 WaspPrimaryKind.None, 0, PrintedValueChannel.Radius, 3,
                 CardProgressionProfile.UltimateCard(),
                 "Each time after you perform a basic skill, you may defeat an enemy minion in radius; " +
                 "an enemy hero who was adjacent to that minion discards a card, if able.",
-                PrintedTextComposition.AwaitedAt("8.13"))
+                PrintedTextComposition.None)
         };
 
         private static CardDefinition Build(WaspCardProfile profile)
@@ -416,10 +415,12 @@ namespace GuardsDigital.Core.Cards.Verified
                 profile.Progression,
                 BuildActions(profile),
                 isUltimate
-                    ? UltimateRuleDefinition.AwaitingComposition(
+                    ? UltimateRuleDefinition.TriggeredAbility(
                         "high-voltage-basic-skill-trigger",
                         "WaspHighVoltage",
-                        profile.TextComposition,
+                        WaspEffectContent.HighVoltageTriggeredEffect(ContentRevision).Reference,
+                        UltimateTriggerCondition.AfterControllerPerformsBasicSkill,
+                        new[] { GuardsDigital.Core.Timing.TimingCheckpoint.ActionEnded },
                         PrintedIcon(profile))
                     : null,
                 CardSourceContent.Transcribed(profile.PrintedText));

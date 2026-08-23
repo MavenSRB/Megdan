@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Timing;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -258,7 +259,7 @@ namespace GuardsDigital.Tests.EditMode
                     "wasp-telekinesis -> composed",
                     "wasp-reflect-projectiles -> composed",
                     "wasp-mass-telekinesis -> composed",
-                    "wasp-high-voltage -> 8.13"
+                    "wasp-high-voltage -> composed"
                 }),
                 "Each card is either composed or owned by the slice milestone 8.2's capability matrix " +
                 "assigned it.");
@@ -319,7 +320,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void HighVoltagePrintsItsRadiusAndNoInitiative_AndOwesItsAbilityToItsMilestone()
+        public void HighVoltagePrintsItsRadiusAndNoInitiative_AndDeclaresItsTriggeredAbility()
         {
             var ultimate = WaspCardContent.Definition(WaspCardContent.HighVoltage);
 
@@ -328,9 +329,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(ultimate.ActionDefinitions, Is.Empty,
                 "It is placed beside the dashboard rather than performed.");
             Assert.That(ultimate.UltimateRule.Modification, Is.Null);
-            Assert.That(ultimate.UltimateRule.TextComposition.OwningMilestoneId, Is.EqualTo("8.13"),
-                "Its ability is a trigger, which none of RuleModification's five families expresses; " +
-                "the debt is stated rather than filled with a stand-in rule.");
+            Assert.That(ultimate.UltimateRule.TextComposition.IsAwaited, Is.False);
+            Assert.That(
+                ultimate.UltimateRule.TriggeredEffect,
+                Is.EqualTo(WaspEffectContent.HighVoltageTriggeredEffect(
+                    WaspCardContent.ContentRevision).Reference));
+            Assert.That(
+                ultimate.UltimateRule.TriggerCheckpoints,
+                Is.EqualTo(new[] { TimingCheckpoint.ActionEnded }));
+            Assert.That(
+                ultimate.UltimateRule.TriggerCondition,
+                Is.EqualTo(UltimateTriggerCondition.AfterControllerPerformsBasicSkill));
             Assert.That(
                 ultimate.UltimateRule.PrintedValues.Single(),
                 Is.EqualTo(new PrintedValueDefinition(PrintedValueChannel.Radius, 3)),

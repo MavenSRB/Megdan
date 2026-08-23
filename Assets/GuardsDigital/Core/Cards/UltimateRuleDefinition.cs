@@ -1,10 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Cards
 {
+    /// <summary>The typed completed-action fact that may awaken a permanent Ultimate ability.</summary>
+    public enum UltimateTriggerCondition
+    {
+        None = 0,
+        AfterControllerPerformsBasicSkill = 1
+    }
+
     /// <summary>
     /// The permanent ability one Ultimate card prints, as immutable definition content.
     ///
@@ -54,7 +63,10 @@ namespace GuardsDigital.Core.Cards
             string ruleKind,
             RuleModification modification,
             PrintedTextComposition textComposition,
-            IEnumerable<PrintedValueDefinition> printedValues)
+            IEnumerable<PrintedValueDefinition> printedValues,
+            EffectDefinitionReference? triggeredEffect = null,
+            IEnumerable<TimingCheckpoint> triggerCheckpoints = null,
+            UltimateTriggerCondition triggerCondition = UltimateTriggerCondition.None)
         {
             if (string.IsNullOrWhiteSpace(ruleId) || string.IsNullOrWhiteSpace(ruleKind))
             {
@@ -65,6 +77,21 @@ namespace GuardsDigital.Core.Cards
             RuleKind = ruleKind;
             Modification = modification;
             TextComposition = textComposition;
+            TriggeredEffect = triggeredEffect;
+            TriggerCondition = triggerCondition;
+            TriggerCheckpoints = Array.AsReadOnly(
+                (triggerCheckpoints ?? Enumerable.Empty<TimingCheckpoint>()).ToArray());
+
+            if (!Enum.IsDefined(typeof(UltimateTriggerCondition), triggerCondition) ||
+                triggeredEffect.HasValue != (TriggerCheckpoints.Count > 0) ||
+                triggeredEffect.HasValue != (triggerCondition != UltimateTriggerCondition.None) ||
+                (triggeredEffect.HasValue && !triggeredEffect.Value.IsDefined) ||
+                TriggerCheckpoints.Any(value => value != TimingCheckpoint.ActionEnded) ||
+                TriggerCheckpoints.Distinct().Count() != TriggerCheckpoints.Count)
+            {
+                throw new ArgumentException(
+                    "A triggered Ultimate requires one defined effect and unique supported checkpoints.");
+            }
 
             var values = (printedValues ?? throw new ArgumentNullException(nameof(printedValues)))
                 .ToArray();
@@ -122,6 +149,22 @@ namespace GuardsDigital.Core.Cards
             return new UltimateRuleDefinition(ruleId, ruleKind, null, textComposition, printedValues);
         }
 
+        /// <summary>
+        /// A permanent Ultimate ability whose trusted declaration enters the ordinary effect frame at
+        /// its named checkpoint. It is a continuous source rather than an Active effect, so its
+        /// lifetime remains derived from the unlocked card and the controller being on the board.
+        /// </summary>
+        public static UltimateRuleDefinition TriggeredAbility(
+            string ruleId,
+            string ruleKind,
+            EffectDefinitionReference triggeredEffect,
+            UltimateTriggerCondition triggerCondition,
+            IEnumerable<TimingCheckpoint> triggerCheckpoints,
+            IEnumerable<PrintedValueDefinition> printedValues) =>
+            new UltimateRuleDefinition(
+                ruleId, ruleKind, null, PrintedTextComposition.None, printedValues,
+                triggeredEffect, triggerCheckpoints, triggerCondition);
+
         /// <summary>This ability's stable identity inside its card, and the derived source's identity suffix.</summary>
         public string RuleId { get; }
 
@@ -132,6 +175,18 @@ namespace GuardsDigital.Core.Cards
         /// <see cref="TextComposition"/> names the milestone that owes it.
         /// </summary>
         public RuleModification Modification { get; }
+
+        public EffectDefinitionReference? TriggeredEffect { get; }
+
+        public UltimateTriggerCondition TriggerCondition { get; }
+
+        public IReadOnlyList<TimingCheckpoint> TriggerCheckpoints { get; }
+
+        /// <summary>
+        /// Stable effect-frame identity for a permanent ability. An Ultimate is not an action, but the
+        /// shared frame addresses its source text through the same typed slot used by action text.
+        /// </summary>
+        public ActionDefinitionId EffectSourceId => new ActionDefinitionId(RuleId);
 
         /// <summary>
         /// Milestone 8.3. Whether this Ultimate's printed ability still owes its typed composition, and

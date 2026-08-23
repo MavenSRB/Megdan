@@ -6,6 +6,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -148,6 +149,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference RangeHeroTargetV1 =>
             new EffectCapabilityReference(RangeHeroTarget, 1);
 
+        public static EffectCapabilityId RadiusMinionTarget { get; } =
+            new EffectCapabilityId("synthetic-radius-minion-target");
+
+        public static EffectCapabilityReference RadiusMinionTargetV1 =>
+            new EffectCapabilityReference(RadiusMinionTarget, 1);
+
+        public static EffectCapabilityId HeroAdjacentToMinion { get; } =
+            new EffectCapabilityId("synthetic-hero-adjacent-to-minion");
+
+        public static EffectCapabilityReference HeroAdjacentToMinionV1 =>
+            new EffectCapabilityReference(HeroAdjacentToMinion, 1);
+
         /// <summary>
         /// The straight-line filter parameter's name, spelled once so a definition cannot mistype it.
         /// </summary>
@@ -174,6 +187,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>The hero a printed-Radius hero selection chose.</summary>
         public const string ChosenHeroOutputName = "chosenHero";
 
+        public const string ChosenMinionOutputName = "chosenMinion";
+
+        public const string MinionParameterName = "minion";
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
@@ -188,7 +205,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     declaresStraightLineFilter: false, PrintedIconSelectionSubject.Hero),
                 new PrintedIconTargetHandler(
                     RangeHeroTargetV1, PrintedValueChannel.Range,
-                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Hero)
+                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Hero),
+                new PrintedIconTargetHandler(
+                    RadiusMinionTargetV1, PrintedValueChannel.Radius,
+                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Minion),
+                new HeroAdjacentToMinionHandler()
             };
 
         /// <summary>
@@ -202,6 +223,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             /// <summary>The heroes on a declared side of it, published as the hero.</summary>
             Hero = 1
+            ,
+            Minion = 2
         }
 
         /// <summary>
@@ -339,7 +362,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     parameters.Insert(0, new EffectCapabilityParameter(
                         "includeSelf", EffectValueKind.Boolean));
                 }
-                else
+                else if (subject == PrintedIconSelectionSubject.Hero)
                 {
                     parameters.Add(new EffectCapabilityParameter(
                         TargetRelationParameterName, EffectValueKind.Integer));
@@ -354,6 +377,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             ExcludeAdjacentParameterName, EffectValueKind.Boolean)
                         : new EffectCapabilityParameter(
                             ExcludeTheAttackerParameterName, EffectValueKind.Boolean));
+                }
+                else
+                {
+                    parameters.Add(new EffectCapabilityParameter(
+                        TargetRelationParameterName, EffectValueKind.Integer));
                 }
 
                 if (declaresStraightLineFilter)
@@ -372,7 +400,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     {
                         subject == PrintedIconSelectionSubject.BoardObject
                             ? new EffectOutputBinding("chosen", EffectValueKind.Coordinate)
-                            : new EffectOutputBinding(ChosenHeroOutputName, EffectValueKind.Hero)
+                            : subject == PrintedIconSelectionSubject.Hero
+                                ? new EffectOutputBinding(ChosenHeroOutputName, EffectValueKind.Hero)
+                                : new EffectOutputBinding(ChosenMinionOutputName, EffectValueKind.Minion)
                     });
             }
 
@@ -414,6 +444,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     });
                 }
 
+                if (subject == PrintedIconSelectionSubject.Minion)
+                {
+                    if (selected == null || selected.Count != 1 ||
+                        selected[0].Kind != EffectValueKind.Minion ||
+                        !MinionCandidates(context).Contains(selected[0].MinionId))
+                    {
+                        return EffectExecutionResult.ImpossibleMandatory();
+                    }
+
+                    return EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(
+                            ChosenMinionOutputName, EffectValue.Minion(selected[0].MinionId))
+                    });
+                }
+
                 if (selected == null || selected.Count != 1 ||
                     selected[0].Kind != EffectValueKind.Coordinate)
                 {
@@ -440,7 +486,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
                 subject == PrintedIconSelectionSubject.Hero
                     ? HeroCandidates(context).Select(EffectValue.Hero).ToArray()
+                    : subject == PrintedIconSelectionSubject.Minion
+                        ? MinionCandidates(context).Select(EffectValue.Minion).ToArray()
                     : Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
+
+            private IReadOnlyList<MinionId> MinionCandidates(EffectCapabilityContext context)
+            {
+                var relation = (SourceTeamRelation)context
+                    .Input(TargetRelationParameterName).IntegerValue;
+                if (relation == SourceTeamRelation.None ||
+                    !Enum.IsDefined(typeof(SourceTeamRelation), relation))
+                {
+                    return Array.Empty<MinionId>();
+                }
+
+                var targets = PrintedIconTargets(context, channel, includeSelf: false, out _);
+                var board = context.Components?.Board;
+                if (board == null) return Array.Empty<MinionId>();
+
+                return targets
+                    .Where(target => target.Kind == BoardObjectKind.Minion &&
+                        TargetQuery.StandsInRelationTo(
+                            relation, target, context.ActorId, context.Participants, board))
+                    .Select(target => target.MinionId)
+                    .ToArray();
+            }
 
             /// <summary>
             /// Milestone 8.10. The heroes on the declared side of the board inside the same disk, which
@@ -549,6 +619,89 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.Input(ExcludeStraightLineParameterName).BooleanValue
                     ? StraightLineQuery.FilterOutStraightLine(origin, spaces)
                     : (IReadOnlyList<HexCoordinate>)spaces;
+            }
+        }
+
+        private sealed class HeroAdjacentToMinionHandler
+            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => HeroAdjacentToMinionV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter(MinionParameterName, EffectValueKind.Minion),
+                        new EffectCapabilityParameter(
+                            TargetRelationParameterName, EffectValueKind.Integer),
+                        new EffectCapabilityParameter(
+                            EffectSelectionDeclaration.ConsumerParameterName,
+                            EffectValueKind.Node, isRequired: false)
+                    },
+                    new[] { new EffectOutputBinding(ChosenHeroOutputName, EffectValueKind.Hero) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var candidates = Candidates(context);
+                return candidates.Count == 0
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor, candidates.Select(EffectValue.Hero).ToArray(), 1, 1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Hero ||
+                    !Candidates(context).Contains(selected[0].HeroId))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(
+                        ChosenHeroOutputName, EffectValue.Hero(selected[0].HeroId))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Candidates(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
+                Candidates(context).Select(EffectValue.Hero).ToArray();
+
+            private static IReadOnlyList<HeroId> Candidates(EffectCapabilityContext context)
+            {
+                var board = context.Components?.Board;
+                var minionId = context.Input(MinionParameterName).MinionId;
+                var relation = (SourceTeamRelation)context
+                    .Input(TargetRelationParameterName).IntegerValue;
+                if (board == null || !minionId.IsDefined || relation == SourceTeamRelation.None ||
+                    !Enum.IsDefined(typeof(SourceTeamRelation), relation))
+                {
+                    return Array.Empty<HeroId>();
+                }
+
+                var minion = BoardObjectReference.ForMinion(minionId);
+                if (!board.TryGetObjectCoordinate(minion, out var origin))
+                    return Array.Empty<HeroId>();
+
+                return board.Occupancies
+                    .Where(occupancy =>
+                        HexDistanceQuery.Calculate(origin, occupancy.Coordinate) == 1 &&
+                        TargetQuery.StandsInRelationTo(
+                            relation, BoardObjectReference.ForHero(occupancy.HeroId),
+                            context.ActorId, context.Participants, board))
+                    .Select(occupancy => occupancy.HeroId)
+                    .OrderBy(id => id.Value, StringComparer.Ordinal)
+                    .ToArray();
             }
         }
 

@@ -66,7 +66,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IEnumerable<EffectResolutionEvent> events,
             RepeatRequest repeatRequested,
             GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause,
-            IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> requestedHeroDefeats)
+            IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> requestedHeroDefeats,
+            IReadOnlyList<GuardsDigital.Core.Setup.MinionId> requestedMinionDefeats)
         {
             Accepted = accepted;
             RejectionReason = rejectionReason;
@@ -78,6 +79,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             LanePushCause = lanePushCause;
             RequestedHeroDefeats = new ReadOnlyCollection<GuardsDigital.Core.Units.Heroes.HeroId>(
                 (requestedHeroDefeats ?? Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>())
+                    .ToArray());
+            RequestedMinionDefeats = new ReadOnlyCollection<GuardsDigital.Core.Setup.MinionId>(
+                (requestedMinionDefeats ?? Array.Empty<GuardsDigital.Core.Setup.MinionId>())
                     .ToArray());
         }
 
@@ -127,6 +131,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> RequestedHeroDefeats { get; }
 
+        public IReadOnlyList<GuardsDigital.Core.Setup.MinionId> RequestedMinionDefeats { get; }
+
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
             bool isComplete,
@@ -134,10 +140,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RepeatRequest repeatRequested = default,
             GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause =
                 GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None,
-            IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> requestedHeroDefeats = null) =>
+            IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> requestedHeroDefeats = null,
+            IReadOnlyList<GuardsDigital.Core.Setup.MinionId> requestedMinionDefeats = null) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
-                repeatRequested, lanePushCause, requestedHeroDefeats);
+                repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -150,7 +157,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
             return new EffectResolutionStepResult(
                 false, reason, frame, false, null, RepeatRequest.None,
-                GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None, null);
+                GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None, null, null);
         }
     }
 
@@ -463,7 +470,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 Rebuild(frame, continuation, outcomes, frame.AcceptedChoices), true, events,
                 RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                 RecordedLanePushQuery.Recorded(context.Definition, outcomes),
-                RequestedHeroDefeatQuery.Requested(context.Definition, outcomes));
+                RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
+                RequestedMinionDefeatQuery.Requested(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult Resume(
@@ -610,7 +618,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         Rebuild(frame, continuation, outcomes, choices), true, events,
                         RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                         RecordedLanePushQuery.Recorded(context.Definition, outcomes),
-                RequestedHeroDefeatQuery.Requested(context.Definition, outcomes));
+                        RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
+                        RequestedMinionDefeatQuery.Requested(context.Definition, outcomes));
                 }
 
                 var top = continuation[continuation.Count - 1];
@@ -886,7 +895,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 Rebuild(frame, continuation, outcomes, choices), true, events,
                 RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                 RecordedLanePushQuery.Recorded(context.Definition, outcomes),
-                RequestedHeroDefeatQuery.Requested(context.Definition, outcomes));
+                RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
+                RequestedMinionDefeatQuery.Requested(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult PauseOn(

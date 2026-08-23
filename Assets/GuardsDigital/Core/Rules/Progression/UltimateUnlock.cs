@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -29,12 +30,12 @@ namespace GuardsDigital.Core.Rules.Progression
         internal UnlockedUltimate(
             HeroId ownerId,
             CardInstanceId sourceCardInstanceId,
-            CardDefinitionId sourceDefinitionId,
+            CardDefinitionReference sourceDefinitionReference,
             UltimateRuleDefinition rule)
         {
             OwnerId = ownerId;
             SourceCardInstanceId = sourceCardInstanceId;
-            SourceDefinitionId = sourceDefinitionId;
+            SourceDefinitionReference = sourceDefinitionReference;
             Rule = rule;
             Source = new ContinuousRuleSource(
                 SourceId(sourceCardInstanceId, rule),
@@ -50,7 +51,9 @@ namespace GuardsDigital.Core.Rules.Progression
         /// <summary>The card instance that sits beside this hero's dashboard.</summary>
         public CardInstanceId SourceCardInstanceId { get; }
 
-        public CardDefinitionId SourceDefinitionId { get; }
+        public CardDefinitionId SourceDefinitionId => SourceDefinitionReference.DefinitionId;
+
+        public CardDefinitionReference SourceDefinitionReference { get; }
 
         /// <summary>The permanent ability that card prints.</summary>
         public UltimateRuleDefinition Rule { get; }
@@ -63,6 +66,26 @@ namespace GuardsDigital.Core.Rules.Progression
         /// </summary>
         public ContinuousRuleSource Source { get; }
 
+        public ContinuousTriggeredEffectSource TriggeredSource(
+            MatchParticipants participants,
+            long orderingSequence = 0)
+        {
+            if (!Rule.TriggeredEffect.HasValue) return null;
+            if (participants == null) throw new ArgumentNullException(nameof(participants));
+
+            return new ContinuousTriggeredEffectSource(
+                Source.SourceId,
+                OwnerId,
+                participants.GetTeamForHero(OwnerId).Side,
+                SourceCardInstanceId,
+                SourceDefinitionReference,
+                Rule.EffectSourceId,
+                ActionKind.Skill,
+                Rule.TriggeredEffect.Value,
+                Rule.TriggerCheckpoints,
+                orderingSequence);
+        }
+
         /// <summary>
         /// The source's stable identity: the card instance beside the dashboard plus the ability's own
         /// id. The card instance is already unique within a match, so this is unique without consulting
@@ -71,7 +94,7 @@ namespace GuardsDigital.Core.Rules.Progression
         private static string SourceId(CardInstanceId cardInstanceId, UltimateRuleDefinition rule) =>
             $"ultimate:{cardInstanceId.Value}:{rule.RuleId}";
 
-        public override string ToString() => $"{OwnerId} Ultimate {SourceDefinitionId} ({Rule})";
+        public override string ToString() => $"{OwnerId} Ultimate {SourceDefinitionReference.DefinitionId} ({Rule})";
     }
 
     /// <summary>
@@ -206,7 +229,7 @@ namespace GuardsDigital.Core.Rules.Progression
                     definition.Progression.IsUltimate &&
                     definition.UltimateRule != null
                         ? new UnlockedUltimate(
-                            instance.OwnerId, instance.Id, definition.Id, definition.UltimateRule)
+                            instance.OwnerId, instance.Id, definition.Reference, definition.UltimateRule)
                         : null)
                 .Where(ultimate => ultimate != null));
         }
@@ -329,7 +352,7 @@ namespace GuardsDigital.Core.Rules.Progression
             }
 
             return UltimateUnlockResult.Unlocked(new UnlockedUltimate(
-                ultimateCard.OwnerId, ultimateCard.Id, definition.Id, definition.UltimateRule));
+                ultimateCard.OwnerId, ultimateCard.Id, definition.Reference, definition.UltimateRule));
         }
     }
 }

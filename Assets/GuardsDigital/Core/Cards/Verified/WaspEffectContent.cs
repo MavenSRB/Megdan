@@ -39,6 +39,106 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class WaspEffectContent
     {
+        public static EffectDefinition HighVoltageTriggeredEffect(string contentRevision)
+        {
+            var root = new EffectNodeId("high-voltage-may");
+            var sequence = new EffectNodeId("high-voltage-sequence");
+            var chooseMinion = new EffectNodeId("high-voltage-minion");
+            var defeatMinion = new EffectNodeId("high-voltage-defeat");
+            var adjacency = new EffectNodeId("high-voltage-adjacency-if-able");
+            var rider = new EffectNodeId("high-voltage-adjacency-rider");
+            var chooseHero = new EffectNodeId("high-voltage-adjacent-hero");
+            var discard = new EffectNodeId("high-voltage-discard");
+
+            return new EffectDefinition(
+                new EffectDefinitionId("wasp-high-voltage-triggered"),
+                contentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        childNodeIds: new[] { sequence }, chooser: EffectChooserRole.Actor),
+                    new EffectNodeDefinition(
+                        sequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { chooseMinion, defeatMinion, adjacency }),
+                    new EffectNodeDefinition(
+                        chooseMinion, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.RadiusMinionTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                "activity", EffectValue.Integer((int)RuleActivity.Skill)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.TargetRelationParameterName,
+                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(defeatMinion))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticTargetingCapabilities.ChosenMinionOutputName,
+                                EffectValueKind.Minion)
+                        }),
+                    new EffectNodeDefinition(
+                        defeatMinion, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticConsequenceCapabilities.DefeatMinionV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticConsequenceCapabilities.MinionParameter,
+                                chooseMinion,
+                                SyntheticTargetingCapabilities.ChosenMinionOutputName,
+                                EffectValueKind.Minion)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticConsequenceCapabilities.DefeatedMinionOutput,
+                                EffectValueKind.Minion)
+                        }),
+                    new EffectNodeDefinition(
+                        adjacency, EffectNodeKind.Optional, EffectFailurePolicy.IfAble,
+                        childNodeIds: new[] { rider }),
+                    new EffectNodeDefinition(
+                        rider, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { chooseHero, discard }),
+                    new EffectNodeDefinition(
+                        chooseHero, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.HeroAdjacentToMinionV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticTargetingCapabilities.MinionParameterName,
+                                chooseMinion,
+                                SyntheticTargetingCapabilities.ChosenMinionOutputName,
+                                EffectValueKind.Minion),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.TargetRelationParameterName,
+                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        }),
+                    new EffectNodeDefinition(
+                        discard, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticCardStateCapabilities.DiscardChosenCardV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticCardStateCapabilities.HeroParameter,
+                                chooseHero,
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        })
+                });
+        }
+
         /// <summary>
         /// Wasp's Skill effect for one card, or <c>null</c> for a Skill whose composition is still
         /// owed. The card content asks this for every Skill primary it builds, so a card that has one

@@ -229,7 +229,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
             var capabilityId = consumer.Capability.CapabilityId;
             return capabilityId.Equals(SyntheticExchangeCapabilities.Remove) ||
-                capabilityId.Equals(SyntheticConsequenceCapabilities.DefeatHero)
+                capabilityId.Equals(SyntheticConsequenceCapabilities.DefeatHero) ||
+                capabilityId.Equals(SyntheticConsequenceCapabilities.DefeatMinion)
                     ? EffectChoiceConsequenceIntent.Removal
                     : EffectChoiceConsequenceIntent.Affect;
         }

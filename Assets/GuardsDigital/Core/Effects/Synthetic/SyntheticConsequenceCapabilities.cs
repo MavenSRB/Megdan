@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Core.Effects.Synthetic
 {
@@ -29,6 +30,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference DefeatHeroV1 =>
             new EffectCapabilityReference(DefeatHero, 1);
 
+        public static EffectCapabilityId DefeatMinion { get; } =
+            new EffectCapabilityId("synthetic-defeat-minion");
+
+        public static EffectCapabilityReference DefeatMinionV1 =>
+            new EffectCapabilityReference(DefeatMinion, 1);
+
         /// <summary>The parameter naming the hero rulebook p.13's list is run about.</summary>
         public const string HeroParameter = "hero";
 
@@ -38,6 +45,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <c>RecordedLanePushQuery.OutcomeFactName</c> is shared.
         /// </summary>
         public const string DefeatedHeroOutput = "defeatedHero";
+
+        public const string MinionParameter = "minion";
+
+        public const string DefeatedMinionOutput = "defeatedMinion";
 
         /// <summary>
         /// Milestone 8.10. Whether the Attack this card text is printed inside took a hero, which is
@@ -86,6 +97,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static IEnumerable<IEffectCapabilityHandler> Handlers()
         {
             yield return new DefeatHeroHandler();
+            yield return new DefeatMinionHandler();
             yield return new AttackTookAHeroHandler();
             yield return new AttackIsRangedHandler();
         }
@@ -194,6 +206,39 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 context.Input(HeroParameter).HeroId.IsDefined
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+        }
+
+        private sealed class DefeatMinionHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => DefeatMinionV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                new[] { new EffectCapabilityParameter(MinionParameter, EffectValueKind.Minion) },
+                new[] { new EffectOutputBinding(DefeatedMinionOutput, EffectValueKind.Minion) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var minion = context.Input(MinionParameter).MinionId;
+                return minion.IsDefined
+                    ? EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(
+                            DefeatedMinionOutput, EffectValue.Minion(minion))
+                    })
+                    : EffectExecutionResult.ImpossibleMandatory();
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                EffectExecutionResult.ImpossibleMandatory();
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                context.Input(MinionParameter).MinionId.IsDefined
                     ? EffectExecutionResultKind.Applied
                     : EffectExecutionResultKind.ImpossibleMandatory;
         }

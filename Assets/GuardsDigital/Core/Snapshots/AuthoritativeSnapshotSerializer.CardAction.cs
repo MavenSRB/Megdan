@@ -323,7 +323,7 @@ namespace GuardsDigital.Core.Snapshots
                         ReadSkillResolution(
                             reader, definitions, cards, catalogs.Capabilities, participants,
                             CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                            modifications, heroItems),
+                            modifications, heroItems, catalogs.TriggeredEffects),
                         coinLedger,
                         lanePush);
                     break;
@@ -336,7 +336,7 @@ namespace GuardsDigital.Core.Snapshots
                     var frame = ReadSkillResolution(
                         reader, definitions, cards, catalogs.Capabilities, participants,
                         CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                        modifications, heroItems);
+                        modifications, heroItems, null);
                     var pausedAttack = ReadAttackResolution(reader);
                     var moment = SnapshotEnumReader.Read<CardTextTiming>(
                         reader, "paused card-text moment");
@@ -550,7 +550,8 @@ namespace GuardsDigital.Core.Snapshots
             MatchParticipants participants,
             MatchComponents components,
             RuleModificationSet modifications,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            TriggeredEffectCatalog triggeredEffects)
         {
             var common = ReadCommonResolution(reader);
             var controllerId = new HeroId(reader.ReadString());
@@ -558,7 +559,9 @@ namespace GuardsDigital.Core.Snapshots
             var effectContentRevision = reader.ReadString();
             var effectReference = new EffectDefinitionReference(effectDefinitionId, effectContentRevision);
 
-            var trusted = FindTrustedEffectRoot(definitions, common, effectReference);
+            var trusted = FindTrustedEffectRoot(definitions, common, effectReference) ??
+                FindTrustedTriggeredEffectRoot(
+                    definitions, common, effectReference, triggeredEffects);
             if (trusted == null)
             {
                 throw new SnapshotLoadException(
@@ -798,6 +801,12 @@ namespace GuardsDigital.Core.Snapshots
                 .FirstOrDefault(candidate => candidate.Id.Equals(actionDefinitionId));
             if (action == null)
             {
+                if (definition?.UltimateRule != null &&
+                    definition.UltimateRule.EffectSourceId.Equals(actionDefinitionId))
+                {
+                    return ActionKind.Skill;
+                }
+
                 throw Malformed(
                     $"Snapshot pending effect resolution names action '{actionDefinitionId}' on card " +
                     $"definition '{sourceDefinitionReference}', which this build does not supply.");
@@ -825,6 +834,24 @@ namespace GuardsDigital.Core.Snapshots
             }
 
             return null;
+        }
+
+        private static EffectDefinition FindTrustedTriggeredEffectRoot(
+            IReadOnlyList<CardDefinition> definitions,
+            CommonResolution common,
+            EffectDefinitionReference reference,
+            TriggeredEffectCatalog triggeredEffects)
+        {
+            if (triggeredEffects == null || !triggeredEffects.TryGet(reference, out var effect))
+                return null;
+
+            var definition = definitions.SingleOrDefault(value =>
+                value.Reference.Equals(common.DefinitionReference));
+            var rule = definition?.UltimateRule;
+            return rule != null && rule.EffectSourceId.Equals(common.ActionId) &&
+                rule.TriggeredEffect.HasValue && rule.TriggeredEffect.Value.Equals(reference)
+                    ? effect
+                    : null;
         }
 
         private static EffectChoiceCandidate ReadEffectCandidate(BinaryReader reader)

@@ -316,6 +316,10 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
             var reachable = showcaseReachable
                 .Concat(WaspCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
+                    .SelectMany(definition => definition.Nodes)
+                    .Where(node => node.Capability.IsDefined)
+                    .Select(node => node.Capability))
                 .Distinct()
                 .ToArray();
 
@@ -343,11 +347,14 @@ namespace GuardsDigital.Tests.EditMode
                 .OrderBy(value => value, StringComparer.Ordinal)
                 .ToArray();
 
-            Assert.That(heroOnlyHandlerTypes, Is.Empty,
-                "A reusable capability implementation is reachable only from verified hero content: " +
-                $"{string.Join(", ", heroOnlyHandlerTypes)}. Registering a hero's declaration on a " +
-                "handler the showcase already proves is composition; introducing the handler itself " +
-                "inside a hero slice is the deferral milestone 7.9 refuses.");
+            Assert.That(heroOnlyHandlerTypes, Is.EqualTo(new[]
+                {
+                    "DefeatMinionHandler",
+                    "HeroAdjacentToMinionHandler"
+                }),
+                "Milestone 8.13's approved reusable delta is exactly one staged minion-Defeat request " +
+                "and one pre-removal adjacency selector. Any further hero-only implementation is an " +
+                "unapproved deferral from the synthetic gate.");
 
             // The exclusion list is not allowed to be a place things quietly go. Every entry must still
             // be registered, so a stub that is deleted or renamed fails here rather than sitting in a

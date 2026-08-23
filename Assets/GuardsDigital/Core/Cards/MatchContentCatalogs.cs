@@ -3,6 +3,7 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Cards.Verified;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -73,6 +74,10 @@ namespace GuardsDigital.Core.Cards
         public static MatchContentCatalogs ForThisBuild() =>
             new MatchContentCatalogs(
                 SyntheticEffectCapabilities.CreateCatalog(),
-                SyntheticComponentDefinitions.CreateCatalog());
+                SyntheticComponentDefinitions.CreateCatalog(),
+                new TriggeredEffectCatalog(new[]
+                {
+                    WaspEffectContent.HighVoltageTriggeredEffect(WaspCardContent.ContentRevision)
+                }));
     }
 }

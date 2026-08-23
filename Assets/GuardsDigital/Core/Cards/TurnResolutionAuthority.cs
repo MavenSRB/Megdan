@@ -125,7 +125,8 @@ namespace GuardsDigital.Core.Cards
         /// basic action. The event carries <see cref="TurnResolutionEvent.BasicAction"/>, which names
         /// the kind as well as the card, because the trigger that reads it says "a basic skill".
         /// </summary>
-        BasicActionPerformed = 16
+        BasicActionPerformed = 16,
+        TriggeredEffectProgressed = 17
     }
 
     public readonly struct TurnResolutionEvent
@@ -313,6 +314,11 @@ namespace GuardsDigital.Core.Cards
         public static TurnResolutionEvent FromSkillAction(CardActionResolutionEvent cardActionEvent)
         {
             return FromCardAction(cardActionEvent, TurnResolutionEventKind.SkillActionProgressed);
+        }
+
+        public static TurnResolutionEvent FromTriggeredEffect(CardActionResolutionEvent cardActionEvent)
+        {
+            return FromCardAction(cardActionEvent, TurnResolutionEventKind.TriggeredEffectProgressed);
         }
 
         private static TurnResolutionEvent FromCardAction(
@@ -678,7 +684,8 @@ namespace GuardsDigital.Core.Cards
             if (!state.IsStarted ||
                 (!state.IsEnded && state.Initiative.PendingChoice == null &&
                     !state.Initiative.SelectedActor.IsDefined &&
-                    cardActions?.PendingImmediateLanePush == null))
+                    cardActions?.PendingImmediateLanePush == null &&
+                    cardActions?.IsPendingTriggeredEffect != true))
             {
                 throw new ArgumentException("Restored active turn state is incomplete.", nameof(state));
             }
@@ -1331,9 +1338,12 @@ namespace GuardsDigital.Core.Cards
                     roundIndex, turnIndex);
                 if (!answeredTrigger.Accepted)
                     return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+                var triggerEvents = MaterializeSteps(
+                    cardActions.ConsumeTriggeredResolutionSteps(),
+                    TurnResolutionEvent.FromTriggeredEffect);
                 return cardActions.IsPendingTriggeredEffect
-                    ? TurnResolutionResult.Accept(Array.Empty<TurnResolutionEvent>())
-                    : AdvanceInitiative(Array.Empty<TurnResolutionEvent>());
+                    ? TurnResolutionResult.Accept(triggerEvents)
+                    : AdvanceInitiative(triggerEvents);
             }
 
             if (cardActions?.PendingSkillResolution == null || !initiative.SelectedActor.IsDefined)
@@ -1915,14 +1925,16 @@ namespace GuardsDigital.Core.Cards
                 events.Add(TurnResolutionEvent.BasicActionPerformed(basicAction));
             }
 
-            AddTiming(events, TimingCheckpoint.ActionEnded, default, sourceCardInstanceId);
+            AddTiming(
+                events, TimingCheckpoint.ActionEnded, default, sourceCardInstanceId, basicAction);
         }
 
         private void AddTiming(
             ICollection<TurnResolutionEvent> events,
             TimingCheckpoint checkpoint,
             HeroId affectedHeroId = default,
-            CardInstanceId sourceCardInstanceId = default)
+            CardInstanceId sourceCardInstanceId = default,
+            PerformedBasicAction basicAction = default)
         {
             if (!affectedHeroId.IsDefined && initiative.SelectedActor.IsDefined)
                 affectedHeroId = initiative.SelectedActor.ActorId;
@@ -1935,9 +1947,20 @@ namespace GuardsDigital.Core.Cards
             var timingEvents = checkpoint == TimingCheckpoint.ActionEnded && cardActions != null
                 ? cardActions.ApplyTriggeredActionEnded(
                     timing, context, initiative.TieBreakerState, definitions, instances,
-                    participants, CurrentModifications())
+                    participants, CurrentModifications(),
+                    ContinuousTriggersFor(basicAction))
                 : timing.ApplyCheckpoint(context, initiative.TieBreakerState);
             foreach (var timingEvent in timingEvents) events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+        }
+
+        private IEnumerable<ContinuousTriggeredEffectSource> ContinuousTriggersFor(
+            PerformedBasicAction basicAction)
+        {
+            if (cardActions == null)
+                return Array.Empty<ContinuousTriggeredEffectSource>();
+
+            return GuardsDigital.Core.Rules.Progression.UltimateTriggeredEffectSourceQuery.Derive(
+                CurrentUltimates(), cardActions.Board, participants, basicAction);
         }
 
         public IReadOnlyList<ActiveEffectLifecycleEvent> NotifySourceCardStateChanged(

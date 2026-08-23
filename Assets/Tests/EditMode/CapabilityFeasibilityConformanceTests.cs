@@ -105,7 +105,9 @@ namespace GuardsDigital.Tests.EditMode
             // moves it by one more, and again only one of its two new declarations does: the
             // printed-Range hero selection shares the same implementation, and the predicate over the
             // enclosing Attack.s printed subtype is the new one.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(29),
+            // Milestone 8.13 adds the staged minion-Defeat request and the pre-removal adjacency
+            // selector. The Radius-minion declaration shares the existing printed-icon handler.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(31),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

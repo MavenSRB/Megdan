@@ -833,22 +833,26 @@ namespace GuardsDigital.Tests.EditMode
         /// <c>wasp-8-10-rev-1</c> to <c>wasp-8-11-rev-1</c> is the same width and moves nothing, which
         /// is why <c>verified-hand-setup-v24</c> grows by 63 like the rest rather than by more.
         /// </summary>
+        // Milestone 8.13 migrate-in-place decision: v24 already records the registered capability
+        // contract set. High Voltage adds three general declarations and one triggered definition but
+        // no state field or continuation discriminator, so the schema remains v24 and every supported
+        // fixture is re-pinned to that expanded trusted-content registration.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v24", "44b104170885981721bedc052b65930ffe5e3adcf03f0c638b70a91f680b215f"),
-            new CompatibilityFixture("active-turn-v24", "bcd9276de0c7fd5edb657b9d302e548c6c12fe9a84a62a9bd2c780db0f51ea94"),
-            new CompatibilityFixture("pending-choice-v24", "04b4adcf3a0c9711c87db1a000248e8fb05f79ac52a8b643fb21f9d05d5e3185"),
-            new CompatibilityFixture("end-of-round-v24", "bd2125973f8a8812f05d05502e0d4b3e5878c991627a9a4fd2b3b8a7ef23e568"),
-            new CompatibilityFixture("pending-minion-battle-v24", "0cce812204fb074ca6f763583ba4c1fdc23ef44b9b1536e9fbcf68281ff48b4f"),
-            new CompatibilityFixture("placed-token-v24", "72d2c1074cdf18bc90c29f88e9ebabb64feeabc29c3525ff1b0c9bc7774cffe0"),
-            new CompatibilityFixture("attached-marker-v24", "4666234e204c2e80891c0622690a102969d06d8d398024b5272b591b4a6f848d"),
-            new CompatibilityFixture("pending-correction-v24", "cbdfdf6305c34f350503494f81b1342a1d9325ff7f93f5afc85ff8a95c19f3e8"),
-            new CompatibilityFixture("paused-level-up-v24", "b53d33ea049869dfa8758de213382ee245a12db437ec1c6cfae876ca6ea52d55"),
-            new CompatibilityFixture("ended-match-v24", "3855caae13defaaa27f9807fb72ca96c7e75b716a1d095231a823a8ebeb8e592"),
-            new CompatibilityFixture("verified-hand-setup-v24", "5092e39b929a7ed723e02a2fd1c45f9bb445f67de762de0498f32802434fe63b"),
-            new CompatibilityFixture("paused-orbit-repeat-v24", "341e546d01a5e4ad479a0c468ed39e4606dda366017ca674819c139549ce71bd"),
-            new CompatibilityFixture("paused-card-text-v24", "3a10e7153d0f27096983e56d26ece20f400130de52f8f131626b192bec0ed0fa"),
-            new CompatibilityFixture("paused-block-rider-v24", "037a2fe7aac2f92ec92dba5a5d29b8c4a82b7ebbde989208471d4116595ecc33")
+            new CompatibilityFixture("setup-v24", "ca94104c6f8f564b6e514cbb9b7128aaaae966a9d127458fc35961d603a076a3"),
+            new CompatibilityFixture("active-turn-v24", "bbe76b869ee0d0dba623e9aab295e191153c92e3c3923a44637f78c54421b08b"),
+            new CompatibilityFixture("pending-choice-v24", "f2da0b6ec613bf3f763391d5c65cde2b5c7aa644d9fd3a4681d5f771b8b215c4"),
+            new CompatibilityFixture("end-of-round-v24", "5fd690ef78f690270b373396b90bfaca8285ab6fa60e2b6db98862c783c379a8"),
+            new CompatibilityFixture("pending-minion-battle-v24", "c1f437266c1773b38449ba48925ef756b56acd1bb923f9502760aaef770ae4f5"),
+            new CompatibilityFixture("placed-token-v24", "dd5e4228918cf3e98ab6bd84ada282c1cb9eb58b71ea8aae1a9f793ebc4bd113"),
+            new CompatibilityFixture("attached-marker-v24", "9675c5738a2a1303375e93475ad0087652f35896cb6c930e6e456a1b4cc6316a"),
+            new CompatibilityFixture("pending-correction-v24", "fb0abd7d0bb6bc2439dc6b919cfa160e3d6ac6440594de6453b9157ee0332757"),
+            new CompatibilityFixture("paused-level-up-v24", "6a4535fe4ca50428744cfcb2839635807bf59cc36fb2c8bccd9f0a7cd8bee875"),
+            new CompatibilityFixture("ended-match-v24", "8d530048fb226ff13649d44d1be3d9d7a930c7c26df2a20595dd06ec6708a1ac"),
+            new CompatibilityFixture("verified-hand-setup-v24", "bb100f4398889a37a7a6552c729f9c4a87df0a24deb1beadae224d7b33e16621"),
+            new CompatibilityFixture("paused-orbit-repeat-v24", "b748d1274e4adaba25cb458aede83d3d73f282df479ea329a02cf3aae6448b72"),
+            new CompatibilityFixture("paused-card-text-v24", "aae481f4e2a2e79c8aaa03f5145ab436dfb9af4e1e1dad54a59595f53023dcb3"),
+            new CompatibilityFixture("paused-block-rider-v24", "5870932f67aa8b5b0827058d64105fb409d6f201eb2fee4af600ca506f5c71c0")
         };
 
         [Test]
