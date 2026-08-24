@@ -201,13 +201,15 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 
 ## First complete hero consumers
 
-### [!] 8.20 Complete and verify additional pitch hero slot A - Arien
+### [ ] 8.20 Complete and verify additional pitch hero slot A - Arien
 
-Blocked by: Milestones 8.19a, 8.19a1, 8.19b-8.19c, and 8.19c1 must complete the shared roster
+Prerequisites satisfied: Milestones 8.19a, 8.19a1, 8.19b-8.19c, and 8.19c1 completed the shared roster
 foundations.
 
 Observable outcome: Arien the Tidemaster's complete verified set is defined, dealt, resolved through the
-ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested.
+ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested;
+the staged one-hero-per-team match replaces its Blue mirrored Wasp with Arien and presents him as a
+controllable hero on the map.
 
 Acceptance checks:
 
@@ -219,9 +221,18 @@ Acceptance checks:
   and remains separate from those cancellation rules.
 - Definitions, source metadata, offer/choice projections, controller ownership, progression, snapshot,
   replay, Undo, restart, and live HUD/board journeys cover all nineteen faces without an Arien-name branch.
+- The private-source preparation route produces Arien's official circular Blue hero token under the same
+  ignored-resource, content-identity, team-rim, and generated-prism fallback contract as Wasp's token. The
+  staged configuration binds that content identity to the Blue participant, places Arien at the configured
+  Blue hero spawn, and presents the token there as the visible, selectable, movable, defeatable, respawnable
+  board piece; focused Edit Mode and Play Mode journeys prove initial spawn, pointer selection, Movement,
+  Defeat/respawn, snapshot restore, replay, Undo, restart, and presentation rebuild without stale or duplicate
+  hero views.
 - Focused capability consumers and directly affected Wasp/core regressions pass at the applicable tier.
 
-Non-goals: No other new hero, six-player setup, networking, or production art.
+Non-goals: No other new hero, six-player setup, networking, or production art. This staged Arien spawn does
+not add a second Blue hero or retire the one-hero-per-team development deviation; milestone 8.25 still owns
+the official six-player configuration and all six official hero spawn assignments.
 
 ### [!] 8.21 Complete and verify additional pitch hero slot B - Brogan
 
