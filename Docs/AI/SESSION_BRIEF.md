@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **8.20**. The roster's shar
 ## Current authorization and next route
 
 - Current completed milestone: **8.20**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **8.20a**, in progress.
 - Next proposed milestone: **8.20a**.
 
 Milestone **8.20** completed on 2026-08-24, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). The build deals two heroes: Arien the Tidemaster's nineteen printed faces are verified content at revision `arien-8-20-rev-1`, and the staged match deals Wasp on Red and Arien on Blue where it dealt one printed set twice. Three of his sentences needed vocabulary no 8.19 slice built - a restriction carving out the cards it leaves alone, an immunity excepting the one hero its occurrence was bound to, and a cap on how far a Movement action may go - and four more followed: spawn-point Place exclusions, p.14's Primary Defense Value, a Movement primary carrying p.9's icon, and p.11's own default moment for a Movement card's text. Schema **v28** persists the bound actor and rejects v27, because the hero "this attacker" named cannot be re-derived once the Attack has ended. His official circular token is prepared by the generalised private-source route and stands at the configured Blue hero spawn. The permanent player-path gate is 8.20a's.

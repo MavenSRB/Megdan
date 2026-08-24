@@ -232,7 +232,7 @@ player-path gate is milestone 8.20a's, not this one's.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820-complete-and-verify-additional-pitch-hero-slot-a---arien-completion-evidence).
 
-### [ ] 8.20a Pass the permanent hero player-path gate for Arien
+### [~] 8.20a Pass the permanent hero player-path gate for Arien
 
 Prerequisite satisfied: Milestone 8.20 defined, dealt, resolved and stood Arien on the map.
 
