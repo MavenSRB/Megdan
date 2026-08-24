@@ -32,6 +32,12 @@ revision: `synthetic-direct-move@1`, `synthetic-object-push@3`, `synthetic-place
 `repeat-action@1`. New or refined planned identities are named in the tables and are introduced only by
 the dependency slice assigned in [Phase 8](../Roadmap/PHASE_8.md).
 
+Implementation status through milestone 8.19b: dependency steps 1-3 below are complete. Step 3's new
+handlers execute in bounded synthetic catalogs over at least two hero-shaped consumers; they are not in
+the default production catalog because no verified additional-hero definition is authorized yet and the
+catalog rejects unreachable registration. Persistent/system declarations remain step 4 and verified
+face composition remains step 5.
+
 ## Arien
 
 Source: [HERO_ARIEN.md](HERO_ARIEN.md). Arien owns no token or marker.
@@ -144,7 +150,7 @@ from ordinary action/effect dispatch.
    exact current-turn assignment and printed-primary card identity, with no second state record; retain
    completed p.13 hero-Defeat outcomes as typed current-round authority. Snapshot schema v26 persists the
    latter and rejects v25 because cumulative coins/Life and diagnostic events cannot recover round scope.
-3. **Reusable query/value/state foundation:** the target pair/set, source-oriented line, consumers of
+3. **Reusable query/value/state foundation (completed 8.19b):** the target pair/set, source-oriented line, consumers of
    the played-card/hero-Defeat facts above, count/presence, former-space, retrieve,
    gain/transfer-resource, contribution suppression, defense-offer restriction, and typed
    immunity-override contracts. These add no snapshot fields: their answers are derived from existing

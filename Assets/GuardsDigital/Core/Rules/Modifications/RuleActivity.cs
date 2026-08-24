@@ -11,9 +11,10 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// affected by other effects and actions". <see cref="All"/> is the first form; every other member is
     /// the second, so a declaration cannot be silently widened by omission.
     ///
-    /// The members mirror <see cref="ActionKind"/> plus the three effect families that are not action
-    /// kinds - <see cref="ObjectPush"/> (p.18, Push), <see cref="Swap"/> (p.19) and <see cref="Place"/>
-    /// (p.18). <see cref="RuleActivityQuery.ForAction"/> is the only bridge between the two enums;
+    /// The members mirror <see cref="ActionKind"/> plus the four effect families that are not action
+    /// kinds - <see cref="ObjectPush"/> (p.18, Push), <see cref="Swap"/> (p.19), <see cref="Place"/>
+    /// (p.18), and <see cref="DirectMove"/> (p.11 card-text movement). <see cref="RuleActivityQuery.ForAction"/>
+    /// is the only bridge between the two enums;
     /// neither is cast into the other, and it deliberately maps no action kind to the three families.
     /// </summary>
     public enum RuleActivity
@@ -49,7 +50,14 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// Rulebook p.18's Place: "Take an object and put it into a different space (without moving)."
         /// Named beside <see cref="Swap"/> and by the same card.
         /// </summary>
-        Place = 11
+        Place = 11,
+
+        /// <summary>
+        /// Card text that directly moves a named unit without performing a Movement action. It is
+        /// separate from Movement for the same reason Swap and Place are: the operation targets the
+        /// moved unit and can be named by an exact immunity or Heavy-immunity exception.
+        /// </summary>
+        DirectMove = 12
     }
 
     public static class RuleActivityQuery

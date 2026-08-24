@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.BoardObjects;
@@ -22,6 +23,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingAttackTargetChoice pendingAttackTargetChoice;
         private PendingDefenseResponseChoice pendingDefenseChoice;
         private HeroCoinLedger coinLedger;
+        private EffectRosterState rosterState = EffectRosterState.Absent;
 
         /// <summary>
         /// Milestone 6.12: the same register the round authority holds, so rulebook p.13's "Any markers
@@ -129,6 +131,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal void BindHeroItems(GuardsDigital.Core.Rules.Progression.HeroItemState items)
         {
             heroItems = items;
+        }
+
+        /// <summary>
+        /// Binds the round's live history/resource state used by roster-derived Attack values. It is
+        /// the same reference effect frames receive, so restore and live resolution rederive from one
+        /// authority without a snapshot field.
+        /// </summary>
+        internal void BindRosterState(EffectRosterState state)
+        {
+            rosterState = state ?? throw new ArgumentNullException(nameof(state));
         }
 
         /// <summary>
@@ -660,7 +672,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     steps);
             }
 
-            var attackValue = CalculateAttackValue(offer.Value, materializedDefinitions);
+            var attackValue = CalculateAttackValue(
+                offer.Value,
+                resolution.Target,
+                materializedDefinitions,
+                materializedInstances,
+                participants,
+                modifications);
             var defenseResolution = new PendingAttackResolution(
                 resolution.ResolutionId,
                 resolution.SourceCardInstanceId,
@@ -676,7 +694,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 targetSpaceBeforeConsequences: resolution.TargetSpaceBeforeConsequences);
             var defenseOffers = FindDefenseOffers(
                 materializedDefinitions, materializedInstances, defenseResolution.TargetHeroId,
-                modifications);
+                modifications, offer.Value);
             pendingAttackResolution = defenseResolution;
             pendingAttackTargetChoice = null;
             pendingDefenseChoice = new PendingDefenseResponseChoice(
@@ -1145,7 +1163,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 participants,
                 modifications);
-            var expectedAttackValue = CalculateAttackValue(attackOffer.Value, materializedDefinitions);
+            var expectedAttackValue = CalculateAttackValue(
+                attackOffer.Value,
+                pendingAttackResolution.Target,
+                materializedDefinitions,
+                materializedInstances,
+                participants,
+                modifications);
             if (!legalTargets.Contains(AttackTarget.Hero(pendingAttackResolution.TargetHeroId)) ||
                 !PrintedValuesMatch(pendingAttackResolution.AttackValue, expectedAttackValue))
             {
@@ -1154,7 +1178,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var currentDefenseOffers = FindDefenseOffers(
                 materializedDefinitions, materializedInstances,
-                pendingAttackResolution.TargetHeroId, modifications);
+                pendingAttackResolution.TargetHeroId, modifications, attackOffer.Value);
             if (!DefenseChoicesMatch(pendingAttackResolution, currentDefenseOffers, pendingDefenseChoice))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
@@ -1317,7 +1341,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 participants,
                 modifications);
-            var expectedAttackValue = CalculateAttackValue(attackOffer.Value, materializedDefinitions);
+            var expectedAttackValue = CalculateAttackValue(
+                attackOffer.Value,
+                pendingAttackResolution.Target,
+                materializedDefinitions,
+                materializedInstances,
+                participants,
+                modifications);
             if (!pendingAttackResolution.CurrentStepId.Equals(
                     new ActionResolutionStepId("attack-outcome-comparison")) ||
                 !legalTargets.Contains(AttackTarget.Hero(pendingAttackResolution.TargetHeroId)) ||
@@ -1640,7 +1670,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroCoinLedger coinLedger,
             MarkerAttachmentRegister markers,
             RuleModificationSet modifications,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
+            EffectRosterState rosterState = null)
         {
             if (state == null)
             {
@@ -1661,6 +1692,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // against the same items the live one used; a restore that verified it without them would
             // refuse a legitimate payload as soon as a hero owns one.
             backend.BindHeroItems(heroItems);
+            if (rosterState != null)
+            {
+                backend.BindRosterState(rosterState);
+            }
             var offer = FindPendingAttackOffer(pendingResolution, materializedDefinitions, materializedInstances);
             if (!offer.HasValue)
             {
@@ -1722,7 +1757,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     throw new ArgumentException("Pending Attack target is no longer legal.", nameof(pendingResolution));
                 }
 
-                var expectedAttackValue = backend.CalculateAttackValue(offer.Value, materializedDefinitions);
+                var expectedAttackValue = backend.CalculateAttackValue(
+                    offer.Value,
+                    pendingResolution.Target,
+                    materializedDefinitions,
+                    materializedInstances,
+                    participants,
+                    modifications);
                 if (verifiedTargetChoice != null ||
                     !PrintedValuesMatch(pendingResolution.AttackValue, expectedAttackValue))
                 {
@@ -1733,7 +1774,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 {
                     var expectedDefenseOffers = FindDefenseOffers(
                         materializedDefinitions, materializedInstances,
-                        pendingResolution.TargetHeroId, modifications);
+                        pendingResolution.TargetHeroId, modifications, offer.Value);
                     if (verifiedDefenseChoice != null &&
                         !DefenseChoicesMatch(pendingResolution, expectedDefenseOffers, verifiedDefenseChoice))
                     {
@@ -1878,8 +1919,34 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private ValueResult CalculateAttackValue(
             ActionOffer offer,
-            IReadOnlyList<CardDefinition> definitions) =>
-            ComposeItems(offer, definitions, PrintedValueChannel.Attack);
+            AttackTarget target,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var composed = ComposeItems(offer, definitions, PrintedValueChannel.Attack);
+            var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
+            var current = FindCurrentTurnSlot(offer);
+            var roster = RosterDynamicValueQuery.Contributions(
+                action,
+                offer,
+                target,
+                PrintedValueChannel.Attack,
+                definitions,
+                instances,
+                participants,
+                adjacentMoveAuthority,
+                modifications,
+                rosterState,
+                current?.RoundIndex ?? 0,
+                current?.TurnIndex ?? 0);
+            return roster.Count == 0
+                ? composed
+                : new ValueResult(
+                    PrintedValueChannel.Attack,
+                    composed.Contributions.Concat(roster));
+        }
 
         /// <summary>
         /// The attacker's Range value, composed the same way (milestone 7.2a). Milestone 8.6 moved the
@@ -1887,8 +1954,50 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// a second reader of the same printed icon; this stays as the local name the resolution's
         /// three re-derivation sites call.
         /// </summary>
-        private ValueResult RangeValue(ActionOffer offer, IReadOnlyList<CardDefinition> definitions) =>
-            RangeValueQuery.Calculate(offer, definitions, heroItems);
+        private ValueResult RangeValue(
+            ActionOffer offer,
+            IReadOnlyList<CardDefinition> definitions,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var composed = RangeValueQuery.Calculate(offer, definitions, heroItems);
+            var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
+            var roster = RosterDynamicValueQuery.Contributions(
+                action,
+                offer,
+                default,
+                PrintedValueChannel.Range,
+                definitions,
+                Array.Empty<CardInstance>(),
+                participants,
+                adjacentMoveAuthority,
+                modifications,
+                rosterState,
+                0,
+                0);
+            return roster.Count == 0
+                ? composed
+                : new ValueResult(
+                    PrintedValueChannel.Range,
+                    composed.Contributions.Concat(roster));
+        }
+
+        private RoundTurnSlot FindCurrentTurnSlot(ActionOffer offer)
+        {
+            if (!rosterState.IsAvailable)
+            {
+                return null;
+            }
+
+            return rosterState.TurnSlots
+                .Where(slot => slot != null && slot.Assignments.Any(assignment =>
+                    assignment.HeroId.Equals(offer.ActorId) &&
+                    assignment.CardInstanceId.HasValue &&
+                    assignment.CardInstanceId.Value.Equals(offer.SourceCardInstanceId)))
+                .OrderByDescending(slot => slot.RoundIndex)
+                .ThenByDescending(slot => slot.TurnIndex)
+                .FirstOrDefault();
+        }
 
         private ValueResult ComposeItems(
             ActionOffer offer,
@@ -1956,7 +2065,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // only to a card printing that icon. A non-Ranged Attack has no Range icon and is adjacency
             // by rule rather than by a Range of one, so nothing is composed onto it.
             var rangeTotal = offer.AttackRange == AttackRangeKind.Ranged
-                ? RangeValue(offer, definitions).Total
+                ? RangeValue(offer, definitions, participants, modifications).Total
                 : 1;
 
             // Milestone 8.5. The policy is the card's own, not the classification's: p.13 states what
@@ -2036,8 +2145,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
             HeroId defenderId,
-            RuleModificationSet modifications) =>
-            DefenseOfferQuery.Offers(definitions, instances, defenderId, modifications).ToArray();
+            RuleModificationSet modifications,
+            ActionOffer incomingAttack) =>
+            DefenseOfferQuery.Offers(
+                definitions,
+                instances,
+                defenderId,
+                modifications,
+                ActionOfferQuery.FindActionDefinition(incomingAttack, definitions)).ToArray();
 
         private static bool DefenseChoicesMatch(
             PendingAttackResolution resolution,

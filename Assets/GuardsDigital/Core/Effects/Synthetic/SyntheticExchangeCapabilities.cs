@@ -85,8 +85,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
-                new SwapHandler(),
-                new SwapWithActorHandler(),
+                new SwapHandler(SwapV2, supportsImmunityOverrides: true),
+                new SwapWithActorHandler(SwapWithActorV1, supportsImmunityOverrides: true),
                 new ReplaceTokenHandler(),
                 new RemoveHandler()
             };
@@ -115,9 +115,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// let an immune hero be dragged out of its space by naming it first. The declared eligible
         /// kind is read about both for the same reason.
         /// </summary>
-        private sealed class SwapHandler : IEffectCapabilityHandler
+        private sealed class SwapHandler :
+            IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler
         {
-            public EffectCapabilityReference Reference => SwapV2;
+            private readonly bool supportsImmunityOverrides;
+
+            public SwapHandler(
+                EffectCapabilityReference reference,
+                bool supportsImmunityOverrides)
+            {
+                Reference = reference;
+                this.supportsImmunityOverrides = supportsImmunityOverrides;
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
+                supportsImmunityOverrides ? SwapActivity : Array.Empty<RuleActivity>();
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
                 new[]
@@ -137,7 +151,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 Array.Empty<ActiveEffectDefinition>();
 
             public EffectExecutionResult Execute(EffectCapabilityContext context) =>
-                PerformSwap(context, First(context), context.Input("second"));
+                PerformSwap(
+                    context, First(context), context.Input("second"),
+                    supportsImmunityOverrides);
 
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
@@ -149,7 +165,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// rather than pausing, so asking by running it would perform the Swap it asked about.
             /// </summary>
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                AnticipateSwap(context, First(context), context.Input("second"));
+                AnticipateSwap(
+                    context, First(context), context.Input("second"),
+                    supportsImmunityOverrides);
 
             private static EffectValue First(EffectCapabilityContext context) =>
                 context.Input("first");
@@ -167,9 +185,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// cannot take would spend the action on a stop. The actor is in the frame, so the same
         /// question is answerable when the option is judged and again when the choice is offered.
         /// </summary>
-        private sealed class SwapWithActorHandler : IEffectCapabilityHandler
+        private sealed class SwapWithActorHandler :
+            IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler
         {
-            public EffectCapabilityReference Reference => SwapWithActorV1;
+            private readonly bool supportsImmunityOverrides;
+
+            public SwapWithActorHandler(
+                EffectCapabilityReference reference,
+                bool supportsImmunityOverrides)
+            {
+                Reference = reference;
+                this.supportsImmunityOverrides = supportsImmunityOverrides;
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
+                supportsImmunityOverrides ? SwapActivity : Array.Empty<RuleActivity>();
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
                 new[]
@@ -189,7 +221,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
-                var applied = PerformSwap(context, ActorSpace(context), context.Input("subject"));
+                var applied = PerformSwap(
+                    context, ActorSpace(context), context.Input("subject"),
+                    supportsImmunityOverrides);
                 if (applied.Kind != EffectExecutionResultKind.Applied)
                 {
                     return applied;
@@ -214,7 +248,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 throw new InvalidOperationException("This capability never requests a choice.");
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                AnticipateSwap(context, ActorSpace(context), context.Input("subject"));
+                AnticipateSwap(
+                    context, ActorSpace(context), context.Input("subject"),
+                    supportsImmunityOverrides);
 
             /// <summary>
             /// The space the acting hero stands in, or the undefined value when it stands nowhere -
@@ -236,9 +272,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// declares them.
         /// </summary>
         private static EffectExecutionResult PerformSwap(
-            EffectCapabilityContext context, EffectValue firstSpace, EffectValue secondSpace)
+            EffectCapabilityContext context,
+            EffectValue firstSpace,
+            EffectValue secondSpace,
+            bool supportsImmunityOverrides)
         {
-            if (!TryResolvePair(context, firstSpace, secondSpace, out var first, out var second))
+            if (!TryResolvePair(
+                    context, firstSpace, secondSpace, supportsImmunityOverrides,
+                    out var first, out var second))
             {
                 return EffectExecutionResult.ImpossibleMandatory();
             }
@@ -261,8 +302,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
         }
 
         private static EffectExecutionResultKind AnticipateSwap(
-            EffectCapabilityContext context, EffectValue firstSpace, EffectValue secondSpace) =>
-            TryResolvePair(context, firstSpace, secondSpace, out _, out _)
+            EffectCapabilityContext context,
+            EffectValue firstSpace,
+            EffectValue secondSpace,
+            bool supportsImmunityOverrides) =>
+            TryResolvePair(
+                context, firstSpace, secondSpace, supportsImmunityOverrides, out _, out _)
                 ? EffectExecutionResultKind.Applied
                 : EffectExecutionResultKind.ImpossibleMandatory;
 
@@ -274,6 +319,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             EffectCapabilityContext context,
             EffectValue firstSpace,
             EffectValue secondSpace,
+            bool supportsImmunityOverrides,
             out BoardObjectReference first,
             out BoardObjectReference second)
         {
@@ -299,7 +345,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return false;
             }
 
-            return !IsImmune(context, first) && !IsImmune(context, second) &&
+            return !IsImmune(context, first, supportsImmunityOverrides) &&
+                !IsImmune(context, second, supportsImmunityOverrides) &&
                 !IsRestrictedFromBeingSwapped(context, first) &&
                 !IsRestrictedFromBeingSwapped(context, second);
         }
@@ -657,7 +704,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// apart from which action reached it. "Immune to Skills" and "immune to being swapped" are
         /// different declarations, and a Swap inside a Skill has to honour both.
         /// </summary>
-        private static bool IsImmune(EffectCapabilityContext context, BoardObjectReference subject)
+        private static bool IsImmune(
+            EffectCapabilityContext context,
+            BoardObjectReference subject,
+            bool supportsImmunityOverrides)
         {
             var unit = subject.AsRuleObject();
             if (!unit.IsDefined || context.Participants == null)
@@ -665,18 +715,28 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return false;
             }
 
-            return IsImmuneTo(context, unit, ActivityOf(context)) ||
-                IsImmuneTo(context, unit, RuleActivity.Swap);
+            return IsImmuneTo(context, unit, ActivityOf(context), supportsImmunityOverrides) ||
+                IsImmuneTo(context, unit, RuleActivity.Swap, supportsImmunityOverrides);
         }
 
         private static bool IsImmuneTo(
-            EffectCapabilityContext context, RuleObject unit, RuleActivity activity) =>
+            EffectCapabilityContext context,
+            RuleObject unit,
+            RuleActivity activity,
+            bool supportsImmunityOverrides) =>
             ImmunityQuery.IsImmuneTo(
                 unit,
                 activity,
                 RuleObject.ForHero(context.ActorId),
                 context.Components.Board,
                 context.Participants,
-                context.Modifications);
+                context.Modifications,
+                supportsImmunityOverrides
+                    ? context.ImmunityOverrides
+                    : Array.Empty<ImmunityOverrideDeclaration>(),
+                RuleActivity.Swap);
+
+        private static IReadOnlyList<RuleActivity> SwapActivity { get; } =
+            Array.AsReadOnly(new[] { RuleActivity.Swap });
     }
 }

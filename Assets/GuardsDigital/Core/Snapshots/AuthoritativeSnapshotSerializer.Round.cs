@@ -158,6 +158,12 @@ namespace GuardsDigital.Core.Snapshots
                     lanePushAuthority, systemTransitions);
             var hasRoundCardActions = reader.ReadBoolean();
             var roundCoinLedger = ReadCoinLedger(reader);
+            var verifyingRosterState = roundCoinLedger.IsPresent
+                ? EffectRosterState.Of(
+                    slots,
+                    RoundHeroDefeatHistory.Restore(participants, heroDefeats),
+                    HeroCoinLedger.Restore(participants, roundCoinLedger.State))
+                : EffectRosterState.Absent;
 
             TurnCardCommitmentAuthority commitment = null;
             if (reader.ReadBoolean())
@@ -174,7 +180,7 @@ namespace GuardsDigital.Core.Snapshots
                 // that is legitimate rather than a truncated payload.
                 turn = ReadTurn(reader, definitions, cards, participants, board, timing, markers,
                     roundIndex, turnIndex, catalogs, lanePush, verifyingHeroItems,
-                    phase == RoundResolutionPhase.GameEnded, out cardActions);
+                    verifyingRosterState, phase == RoundResolutionPhase.GameEnded, out cardActions);
             }
             else if (hasRoundCardActions)
             {
@@ -206,7 +212,8 @@ namespace GuardsDigital.Core.Snapshots
                         // Active effect's declared Radius icon is raised by them exactly as a
                         // performed card's is.
                         verifyingHeroItems),
-                    verifyingHeroItems);
+                    verifyingHeroItems,
+                    rosterState: verifyingRosterState);
             }
 
             // Milestone 7.7. The match's ending is derived from the two authorities that hold its facts

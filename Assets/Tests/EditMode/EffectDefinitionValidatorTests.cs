@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Rules.Modifications;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -83,6 +84,40 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(rejections.Select(rejection => rejection.Reason),
                 Does.Contain(EffectDefinitionRejectionReason.MissingRequiredParameter));
+        }
+
+        [Test]
+        public void ImmunityOverride_IsAcceptedOnlyByACapabilityThatConsumesItsExactActivity()
+        {
+            var declaration = new ImmunityOverrideDeclaration(
+                RuleActivity.DirectMove,
+                ImmunityOverrideReason.PrintedHeavyMinionImmunity);
+            var ignored = Validate(new EffectNodeDefinition(
+                new EffectNodeId("ignored-override"), EffectNodeKind.Capability,
+                EffectFailurePolicy.Mandatory,
+                SyntheticEffectCapabilities.NoteActorV1,
+                immunityOverrides: new[] { declaration }));
+            var consumed = Validate(new EffectNodeDefinition(
+                new EffectNodeId("consumed-override"), EffectNodeKind.Capability,
+                EffectFailurePolicy.Mandatory,
+                SyntheticDisplacementCapabilities.DirectMoveV3,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromLiteral(
+                        "mover", EffectValue.Space(new GuardsDigital.Core.Board.HexCoordinate(0, 0))),
+                    EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                    EffectInputBinding.FromLiteral(
+                        SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                        EffectValue.Integer((int)GuardsDigital.Core.Rules.Displacement
+                            .DirectMoveDestinationPolicy.Unrestricted))
+                },
+                immunityOverrides: new[] { declaration }));
+
+            Assert.That(ignored.Select(value => value.Reason),
+                Does.Contain(EffectDefinitionRejectionReason.UnsupportedImmunityOverride));
+            Assert.That(consumed, Is.Empty,
+                "The existing capability identity consumes a trusted node declaration without a " +
+                "registry or snapshot revision.");
         }
 
         /// <summary>

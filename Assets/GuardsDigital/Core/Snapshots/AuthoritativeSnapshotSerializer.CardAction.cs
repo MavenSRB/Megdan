@@ -153,7 +153,10 @@ namespace GuardsDigital.Core.Snapshots
             MatchContentCatalogs catalogs,
             MatchComponents components,
             RuleModificationSet modifications,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            int roundIndex,
+            int turnIndex,
+            EffectRosterState rosterState)
         {
             if (!reader.ReadBoolean())
             {
@@ -170,7 +173,8 @@ namespace GuardsDigital.Core.Snapshots
             var frame = reader.ReadBoolean()
                 ? ReadSkillResolution(
                     reader, definitions, cards, catalogs.Capabilities, participants, components,
-                    modifications, heroItems, catalogs.TriggeredEffects)
+                    modifications, heroItems, catalogs.TriggeredEffects,
+                    roundIndex, turnIndex, rosterState)
                 : null;
 
             // Every disagreement the shape admits is refused here rather than thrown by the type's own
@@ -382,7 +386,10 @@ namespace GuardsDigital.Core.Snapshots
             MarkerAttachmentRegister markers,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
-            TieBreakerState tieBreaker)
+            TieBreakerState tieBreaker,
+            int roundIndex,
+            int turnIndex,
+            EffectRosterState rosterState)
         {
             var kind = reader.ReadInt32();
             var coinLedger = ReadCoinLedger(reader);
@@ -391,7 +398,7 @@ namespace GuardsDigital.Core.Snapshots
             var preAction = ReadPreAction(
                 reader, definitions, cards, participants, catalogs,
                 CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                modifications, heroItems);
+                modifications, heroItems, roundIndex, turnIndex, rosterState);
 
             CardActionResolutionRestoreState state;
             switch ((CardActionContinuationKind)kind)
@@ -412,7 +419,8 @@ namespace GuardsDigital.Core.Snapshots
                         ReadSkillResolution(
                             reader, definitions, cards, catalogs.Capabilities, participants,
                             CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                            modifications, heroItems, catalogs.TriggeredEffects),
+                            modifications, heroItems, catalogs.TriggeredEffects,
+                            roundIndex, turnIndex, rosterState),
                         coinLedger,
                         lanePush);
                     break;
@@ -425,7 +433,8 @@ namespace GuardsDigital.Core.Snapshots
                     var frame = ReadSkillResolution(
                         reader, definitions, cards, catalogs.Capabilities, participants,
                         CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                        modifications, heroItems, null);
+                        modifications, heroItems, null,
+                        roundIndex, turnIndex, rosterState);
                     var pausedAttack = ReadAttackResolution(reader);
                     var moment = SnapshotEnumReader.Read<CardTextTiming>(
                         reader, "paused card-text moment");
@@ -444,7 +453,8 @@ namespace GuardsDigital.Core.Snapshots
             // restore, so no verified choice is supplied here.
             return CardActionResolutionAuthority.Restore(
                 catalogs, board, state.WithPreAction(preAction), null, null, null, definitions, cards,
-                participants, markers, modifications, heroItems);
+                participants, markers, modifications, heroItems,
+                rosterState: rosterState);
         }
 
         /// <summary>
@@ -640,7 +650,10 @@ namespace GuardsDigital.Core.Snapshots
             MatchComponents components,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
-            TriggeredEffectCatalog triggeredEffects)
+            TriggeredEffectCatalog triggeredEffects,
+            int roundIndex,
+            int turnIndex,
+            EffectRosterState rosterState)
         {
             var common = ReadCommonResolution(reader);
             var controllerId = new HeroId(reader.ReadString());
@@ -749,10 +762,10 @@ namespace GuardsDigital.Core.Snapshots
             // action the resolution began from, so re-deriving the kind from the content is exact and
             // adds no wire field, while a written one could disagree with the definition it names.
             var resolution = new EffectResolutionContext(
-                trusted, capabilities, participants, null, 1, 1, modifications,
+                trusted, capabilities, participants, null, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(definitions, cards),
                 EnclosingActionKindOf(definitions, common.DefinitionReference, common.ActionId),
-                components: components, heroItems: heroItems);
+                components: components, heroItems: heroItems, rosterState: rosterState);
 
             // Candidates are never written. A control node's options come from the trusted
             // definition; a capability's come from asking the trusted handler again. Either way a
@@ -844,8 +857,8 @@ namespace GuardsDigital.Core.Snapshots
                 restored.SourceDefinitionReference,
                 restored.ActionDefinitionId,
                 EffectResolutionSession.ResolveInputBindings(node, restored, restored.CompletedOutcomes),
-                1,
-                1,
+                resolution.RoundIndex,
+                resolution.TurnIndex,
                 resolution.Participants,
                 null,
                 resolution.Modifications,
@@ -858,7 +871,10 @@ namespace GuardsDigital.Core.Snapshots
                 // those are the resolution's own accepted choices, which this payload has just
                 // restored. Without them the re-ask reproduces the first question rather than the one
                 // the frame paused on.
-                EffectResolutionSession.AnswersAlreadyGiven(restored, node)));
+                answersAlreadyGiven: EffectResolutionSession.AnswersAlreadyGiven(restored, node),
+                enclosingAttack: resolution.EnclosingAttack,
+                rosterState: resolution.RosterState,
+                immunityOverrides: node.ImmunityOverrides));
             if (offered.Choice == null)
             {
                 throw Malformed(

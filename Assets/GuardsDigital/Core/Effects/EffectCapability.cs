@@ -118,7 +118,9 @@ namespace GuardsDigital.Core.Effects
             MatchComponents components = null,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
             IReadOnlyList<IReadOnlyList<EffectValue>> answersAlreadyGiven = null,
-            EnclosingAttackFacts enclosingAttack = default)
+            EnclosingAttackFacts enclosingAttack = default,
+            EffectRosterState rosterState = null,
+            IReadOnlyList<ImmunityOverrideDeclaration> immunityOverrides = null)
         {
             EnclosingAttack = enclosingAttack;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
@@ -157,6 +159,9 @@ namespace GuardsDigital.Core.Effects
             Components = components;
             HeroItems = heroItems;
             AnswersAlreadyGiven = answersAlreadyGiven ?? Array.Empty<IReadOnlyList<EffectValue>>();
+            RosterState = rosterState ?? EffectRosterState.Absent;
+            ImmunityOverrides = new ReadOnlyCollection<ImmunityOverrideDeclaration>(
+                (immunityOverrides ?? Enumerable.Empty<ImmunityOverrideDeclaration>()).ToArray());
         }
 
         public EffectNodeId NodeId { get; }
@@ -267,6 +272,15 @@ namespace GuardsDigital.Core.Effects
         /// applies to.</para>
         /// </summary>
         public IReadOnlyList<IReadOnlyList<EffectValue>> AnswersAlreadyGiven { get; }
+
+        /// <summary>The round-owned roster state, or its named absence.</summary>
+        public EffectRosterState RosterState { get; }
+
+        /// <summary>
+        /// Exact trusted immunity exceptions on this node. A handler must advertise support before the
+        /// definition validator admits any.
+        /// </summary>
+        public IReadOnlyList<ImmunityOverrideDeclaration> ImmunityOverrides { get; }
 
         public EffectValue Input(string parameterName) =>
             Inputs.TryGetValue(parameterName, out var value) ? value : default;
@@ -474,5 +488,14 @@ namespace GuardsDigital.Core.Effects
         /// state its probe reports as <see cref="EffectExecutionResultKind.ImpossibleMandatory"/>.
         /// </summary>
         IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context);
+    }
+
+    /// <summary>
+    /// A capability that consumes exact immunity-override declarations. Content load rejects a node
+    /// declaring an activity this handler does not ask.
+    /// </summary>
+    public interface IEffectImmunityOverrideCapabilityHandler
+    {
+        IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities { get; }
     }
 }

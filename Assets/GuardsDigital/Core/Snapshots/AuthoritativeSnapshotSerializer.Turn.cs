@@ -53,6 +53,7 @@ namespace GuardsDigital.Core.Snapshots
             MatchContentCatalogs catalogs,
             GuardsDigital.Core.Rules.LanePush.LanePushConsumption lanePush,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            EffectRosterState rosterState,
             bool matchHasEnded,
             out CardActionResolutionAuthority cardActions)
         {
@@ -92,7 +93,10 @@ namespace GuardsDigital.Core.Snapshots
                     // width after a restore as before it.
                     heroItems),
                 heroItems,
-                tieBreaker);
+                tieBreaker,
+                roundIndex,
+                turnIndex,
+                rosterState);
             return TurnResolutionAuthority.Restore(
                 definitions,
                 cards,

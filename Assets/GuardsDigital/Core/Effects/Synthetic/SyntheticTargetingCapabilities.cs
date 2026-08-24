@@ -191,6 +191,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
         public const string MinionParameterName = "minion";
 
+        private static IReadOnlyList<RuleActivity> AllActivities { get; } =
+            Array.AsReadOnly(Enum.GetValues(typeof(RuleActivity)).Cast<RuleActivity>()
+                .Where(value => value != RuleActivity.None).ToArray());
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
@@ -303,7 +307,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     activity,
                     board,
                     context.Participants,
-                    context.Modifications)
+                    context.Modifications,
+                    context.ImmunityOverrides,
+                    activity)
                 : TargetQuery.FindTargetsWithin(
                     origin,
                     printedTotal.Total,
@@ -312,7 +318,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     activity,
                     board,
                     context.Participants,
-                    context.Modifications);
+                    context.Modifications,
+                    context.ImmunityOverrides,
+                    activity);
         }
 
         /// <summary>
@@ -334,7 +342,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// about anything except which icon they read.
         /// </summary>
         private sealed class PrintedIconTargetHandler
-            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
+            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler,
+                IEffectImmunityOverrideCapabilityHandler
         {
             private readonly PrintedValueChannel channel;
             private readonly bool declaresStraightLineFilter;
@@ -407,6 +416,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             public EffectCapabilityReference Reference { get; }
+
+            public IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
+                AllActivities;
 
             public EffectCapabilityParameterSchema Schema { get; }
 

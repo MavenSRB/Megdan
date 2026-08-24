@@ -49,7 +49,9 @@ namespace GuardsDigital.Core.Rules.Modifications
             RuleActivity activity,
             IBoardDisplacementAuthority board,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            IReadOnlyList<ImmunityOverrideDeclaration> immunityOverrides = null,
+            RuleActivity overrideActivity = RuleActivity.None)
         {
             if (board == null)
             {
@@ -92,7 +94,14 @@ namespace GuardsDigital.Core.Rules.Modifications
 
                     var asRuleObject = occupant.AsRuleObject();
                     if (asRuleObject.IsDefined && ImmunityQuery.IsImmuneTo(
-                            asRuleObject, activity, targetingUnit, board, participants, modifications))
+                            asRuleObject,
+                            activity,
+                            targetingUnit,
+                            board,
+                            participants,
+                            modifications,
+                            immunityOverrides ?? Array.Empty<ImmunityOverrideDeclaration>(),
+                            overrideActivity == RuleActivity.None ? activity : overrideActivity))
                     {
                         continue;
                     }

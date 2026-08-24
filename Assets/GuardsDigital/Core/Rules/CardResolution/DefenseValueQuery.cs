@@ -69,7 +69,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 contributions.AddRange(ItemBonusQuery.Contributions(printed, heroItems, defenderId));
             }
 
-            contributions.AddRange(CalculateMinionContributions(defenderId, participants, board));
+            var action = ActionOfferQuery.FindActionDefinition(defenseOffer, definitions);
+            if (action == null)
+            {
+                throw new ArgumentException(
+                    "Defense value query requires an offer backed by a current action definition.",
+                    nameof(defenseOffer));
+            }
+
+            if (action.MinionDefenseContributions == MinionDefenseContributionPolicy.IncludeAll)
+            {
+                contributions.AddRange(CalculateMinionContributions(defenderId, participants, board));
+            }
             if (modifications != null)
             {
                 contributions.AddRange(modifications.ValueContributions(

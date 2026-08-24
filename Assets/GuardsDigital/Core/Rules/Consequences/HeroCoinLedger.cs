@@ -296,7 +296,10 @@ namespace GuardsDigital.Core.Rules.Consequences
     public enum CoinGrantKind
     {
         None = 0,
-        PityCoin = 1
+        PityCoin = 1,
+
+        /// <summary>A card effect gains coins from the supply without a Defeat source.</summary>
+        CardEffect = 2
     }
 
     /// <summary>
@@ -319,7 +322,8 @@ namespace GuardsDigital.Core.Rules.Consequences
                 throw new ArgumentException("Coin grant requires a typed recipient and team.");
             }
 
-            if (grantKind != CoinGrantKind.PityCoin)
+            if (grantKind != CoinGrantKind.PityCoin &&
+                grantKind != CoinGrantKind.CardEffect)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(grantKind), grantKind, "Coin grant kind must name what put the coin there.");
@@ -352,6 +356,57 @@ namespace GuardsDigital.Core.Rules.Consequences
         public int BalanceBefore { get; }
 
         public int BalanceAfter { get; }
+
+        public ResourceOperationFailureBehavior FailureBehavior =>
+            ResourceOperationFailureBehavior.RejectWithoutMutation;
+    }
+
+    /// <summary>
+    /// One atomic transfer between two existing hero balances. It neither creates nor destroys coins:
+    /// the amount removed from the source is exactly the amount added to the recipient.
+    /// </summary>
+    public readonly struct CoinTransferOperation
+    {
+        public CoinTransferOperation(
+            HeroId sourceHeroId,
+            HeroId recipientHeroId,
+            int amount,
+            int sourceBalanceBefore,
+            int sourceBalanceAfter,
+            int recipientBalanceBefore,
+            int recipientBalanceAfter)
+        {
+            if (!sourceHeroId.IsDefined || !recipientHeroId.IsDefined ||
+                sourceHeroId.Equals(recipientHeroId))
+            {
+                throw new ArgumentException(
+                    "A coin transfer requires two distinct, defined heroes.");
+            }
+
+            if (amount <= 0 || sourceBalanceAfter < CoinResourceOperation.MinimumBalance ||
+                sourceBalanceAfter != sourceBalanceBefore - amount ||
+                recipientBalanceAfter != recipientBalanceBefore + amount)
+            {
+                throw new ArgumentException(
+                    "A coin transfer must be positive, affordable, and preserve both balance transitions.");
+            }
+
+            SourceHeroId = sourceHeroId;
+            RecipientHeroId = recipientHeroId;
+            Amount = amount;
+            SourceBalanceBefore = sourceBalanceBefore;
+            SourceBalanceAfter = sourceBalanceAfter;
+            RecipientBalanceBefore = recipientBalanceBefore;
+            RecipientBalanceAfter = recipientBalanceAfter;
+        }
+
+        public HeroId SourceHeroId { get; }
+        public HeroId RecipientHeroId { get; }
+        public int Amount { get; }
+        public int SourceBalanceBefore { get; }
+        public int SourceBalanceAfter { get; }
+        public int RecipientBalanceBefore { get; }
+        public int RecipientBalanceAfter { get; }
 
         public ResourceOperationFailureBehavior FailureBehavior =>
             ResourceOperationFailureBehavior.RejectWithoutMutation;
@@ -559,12 +614,19 @@ namespace GuardsDigital.Core.Rules.Consequences
 
         public int GetCoins(HeroId heroId)
         {
-            if (!heroId.IsDefined || !coinBalances.TryGetValue(heroId, out var coins))
+            if (!TryGetCoins(heroId, out var coins))
             {
                 throw new KeyNotFoundException($"Unknown hero ID '{heroId}'.");
             }
 
             return coins;
+        }
+
+        /// <summary>Purely reads one known participant's balance without throwing for stale input.</summary>
+        public bool TryGetCoins(HeroId heroId, out int coins)
+        {
+            coins = 0;
+            return heroId.IsDefined && coinBalances.TryGetValue(heroId, out coins);
         }
 
         /// <summary>
@@ -651,6 +713,56 @@ namespace GuardsDigital.Core.Rules.Consequences
                 balanceBefore,
                 (int)candidateBalance);
             coinBalances[heroId] = operation.BalanceAfter;
+            return true;
+        }
+
+        /// <summary>Whether a positive grant can be committed without overflowing the balance.</summary>
+        public bool CanGrant(HeroId heroId, int amount)
+        {
+            return amount > 0 && TryGetCoins(heroId, out var balance) &&
+                (long)balance + amount <= int.MaxValue;
+        }
+
+        /// <summary>
+        /// Transfers existing coins in one commit. Every refusal leaves both balances untouched, so a
+        /// stale choice cannot spend from one hero and fail while crediting the other.
+        /// </summary>
+        public bool TryTransfer(
+            HeroId sourceHeroId,
+            HeroId recipientHeroId,
+            int amount,
+            out CoinTransferOperation operation)
+        {
+            if (!sourceHeroId.IsDefined || !recipientHeroId.IsDefined ||
+                sourceHeroId.Equals(recipientHeroId) || amount <= 0)
+            {
+                operation = default;
+                return false;
+            }
+
+            if (!TryGetCoins(sourceHeroId, out var sourceBefore) ||
+                !TryGetCoins(recipientHeroId, out var recipientBefore))
+            {
+                operation = default;
+                return false;
+            }
+            var recipientAfter = (long)recipientBefore + amount;
+            if (sourceBefore < amount || recipientAfter > int.MaxValue)
+            {
+                operation = default;
+                return false;
+            }
+
+            operation = new CoinTransferOperation(
+                sourceHeroId,
+                recipientHeroId,
+                amount,
+                sourceBefore,
+                sourceBefore - amount,
+                recipientBefore,
+                (int)recipientAfter);
+            coinBalances[sourceHeroId] = operation.SourceBalanceAfter;
+            coinBalances[recipientHeroId] = operation.RecipientBalanceAfter;
             return true;
         }
 

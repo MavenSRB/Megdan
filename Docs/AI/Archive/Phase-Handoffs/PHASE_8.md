@@ -235,3 +235,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.19a1 | Rules authority now answers whether a named hero played a printed-primary Attack in a named turn from the committed slot, and whether any hero was defeated in the current round from one ordered typed p.13 record. Ordinary and effect-invoked Defeats share one append seam; the record resets at the next round and persists in schema v26 as opaque outcome ID plus defeated `HeroId`, with v25 rejected and malformed/incoherent restore refused. T2 Windows Edit Mode transitioned from the intentional two-digest red to **149/149** green; the four-perspective review found no acceptance defect, and no Unity-facing path changed. | `e525b1f` |
+
+## Milestone 8.19b Add the roster's reusable derived-query, value, and state-operation vocabulary completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.19b | The roster's target/set/pair, line and former-space geometry, history, presence/count, pre-consequence, card-retrieval, resource, Attack/Range value, Defense suppression/restriction, and exact Heavy-immunity-override contracts now execute through typed pure-feasibility handlers over existing authority. Candidates are canonically ordered and rederived on answer/restore; charge/through selection does not move; retrieval and atomic transfer enforce the exact chooser, ownership, lifecycle and balance; DirectMove/Swap overrides bypass only standing Heavy immunity while a declared immunity still wins. Schema v26 and the default production catalog remain unchanged until verified hero definitions consume the bounded synthetic contracts. T2 passed **1407/1407** in the cross-platform harness and **198/198** in Windows Edit Mode; five review defects each closed on a recorded failing-then-passing transition, and no Unity-facing path changed. | `pending` |

@@ -23,6 +23,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         private readonly TriggeredEffectCatalog effects;
         private readonly EffectCapabilityCatalog capabilities;
         private readonly MatchComponents components;
+        private EffectRosterState rosterState = EffectRosterState.Absent;
 
         public TriggeredEffectResolutionAuthority(
             TriggeredEffectCatalog effects,
@@ -46,6 +47,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public PendingResolution PendingResolution { get; private set; }
 
         public PendingResolution LastCompletedResolution { get; private set; }
+
+        internal void BindRosterState(EffectRosterState state)
+        {
+            rosterState = state ?? throw new ArgumentNullException(nameof(state));
+        }
 
         internal void RestorePending(PendingResolution pending)
         {
@@ -111,7 +117,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     EffectCardState.Of(definitions, instances),
                     candidate.EnclosingActionKind,
                     components: components,
-                    heroItems: heroItems);
+                    heroItems: heroItems,
+                    rosterState: rosterState);
                 var step = EffectResolutionSession.Start(
                     new EffectResolutionId(
                         $"trigger-{candidate.SourceId}-{checkpoint.Checkpoint}-{checkpoint.RoundIndex}-{checkpoint.TurnIndex}"),
@@ -235,7 +242,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 EffectCardState.Of(definitions, instances),
                 enclosingActionKind,
                 components: components,
-                heroItems: heroItems);
+                heroItems: heroItems,
+                rosterState: rosterState);
             var step = EffectResolutionSession.Answer(PendingResolution, command, context);
             if (step.Accepted)
             {

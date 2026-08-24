@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -183,11 +184,14 @@ namespace GuardsDigital.Core.Cards
             // and for the same reason: this authority owns all three and the transition authority the
             // rules are composed into is built before it.
             levelUp = compositionLevelUp;
+            var roundCoinLedger = this.cardActions?.EnsureCoinLedger(participants) ??
+                new GuardsDigital.Core.Rules.Consequences.HeroCoinLedger(participants);
             levelUp?.Bind(
                 HeroProgression,
                 HeroItems,
-                this.cardActions?.EnsureCoinLedger(participants) ??
-                    new GuardsDigital.Core.Rules.Consequences.HeroCoinLedger(participants));
+                roundCoinLedger);
+            this.cardActions?.BindRosterState(EffectRosterState.Of(
+                turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger));
             this.endOfRoundStageAvailability = endOfRoundStageAvailability ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
@@ -764,6 +768,10 @@ namespace GuardsDigital.Core.Cards
             authority.tieBreakerState = tieBreakerState;
             authority.turnSlots.Clear();
             authority.turnSlots.AddRange(state.History.TurnSlots);
+            cardActions?.BindRosterState(EffectRosterState.Of(
+                authority.turnSlots.AsReadOnly(),
+                authority.HeroDefeatHistory,
+                cardActions.EnsureCoinLedger(participants)));
             authority.completedRounds.Clear();
             authority.completedRounds.AddRange(state.History.CompletedRounds);
             authority.endOfRoundOutcomes.Clear();

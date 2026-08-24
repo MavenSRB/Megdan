@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Rules.CardResolution;
 
 namespace GuardsDigital.Core.Cards
 {
@@ -36,7 +37,11 @@ namespace GuardsDigital.Core.Cards
             PrintedTextComposition textComposition = default,
             PrintedDefenseResolution defenseResolution = PrintedDefenseResolution.None,
             CardTextTiming cardTextTiming = CardTextTiming.None,
-            PrintedAttackTargetPolicy? attackTargetPolicy = null)
+            PrintedAttackTargetPolicy? attackTargetPolicy = null,
+            IEnumerable<RosterValueContributionDefinition> rosterValueContributions = null,
+            MinionDefenseContributionPolicy minionDefenseContributions =
+                MinionDefenseContributionPolicy.IncludeAll,
+            DefenseOfferOriginRestriction defenseOfferRestriction = default)
         {
             if (!id.IsDefined)
             {
@@ -88,6 +93,11 @@ namespace GuardsDigital.Core.Cards
             EffectRoot = effectRoot;
             TextComposition = textComposition;
             CardTextTiming = cardTextTiming;
+            RosterValueContributions = Array.AsReadOnly(
+                (rosterValueContributions ??
+                    Enumerable.Empty<RosterValueContributionDefinition>()).ToArray());
+            MinionDefenseContributions = minionDefenseContributions;
+            DefenseOfferRestriction = defenseOfferRestriction;
 
             // Milestone 8.5. p.13 states an Attack's reach as a rule about the card - adjacent for a
             // non-Ranged one "even if the card has a radius icon", the printed Range for a Ranged one -
@@ -125,6 +135,62 @@ namespace GuardsDigital.Core.Cards
             if (BaseValues.Select(value => value.Channel).Distinct().Count() != BaseValues.Count)
             {
                 throw new ArgumentException("Action definition base values must have unique channels.", nameof(baseValues));
+            }
+
+            if (!Enum.IsDefined(typeof(MinionDefenseContributionPolicy), MinionDefenseContributions))
+            {
+                throw new ArgumentException(
+                    "An action definition requires a valid minion Defense contribution policy.",
+                    nameof(minionDefenseContributions));
+            }
+
+            if (RosterValueContributions.Distinct().Count() != RosterValueContributions.Count)
+            {
+                throw new ArgumentException(
+                    "An action definition cannot declare the same roster value contribution twice.",
+                    nameof(rosterValueContributions));
+            }
+
+            if (RosterValueContributions.Any(value =>
+                    (value.Channel != PrintedValueChannel.Attack &&
+                     value.Channel != PrintedValueChannel.Range) ||
+                    value.Query == RosterValueQueryKind.None ||
+                    value.AmountPerMatch <= 0))
+            {
+                throw new ArgumentException(
+                    "Roster value contributions must be fully defined typed declarations.",
+                    nameof(rosterValueContributions));
+            }
+
+            if (RosterValueContributions.Count > 0 && Kind != ActionKind.Attack)
+            {
+                throw new ArgumentException(
+                    "This milestone's dynamic Attack/Range declarations belong to an Attack action.",
+                    nameof(rosterValueContributions));
+            }
+
+            if (RosterValueContributions.Any(value =>
+                    value.Channel == PrintedValueChannel.Range) &&
+                AttackRange != AttackRangeKind.Ranged)
+            {
+                throw new ArgumentException(
+                    "A dynamic Range contribution belongs to a Ranged Attack that prints Range.",
+                    nameof(rosterValueContributions));
+            }
+
+            if (MinionDefenseContributions != MinionDefenseContributionPolicy.IncludeAll &&
+                Kind != ActionKind.Defense)
+            {
+                throw new ArgumentException(
+                    "Only a Defense action changes p.14's minion Defense contributions.",
+                    nameof(minionDefenseContributions));
+            }
+
+            if (DefenseOfferRestriction.IsDefined && Kind != ActionKind.Attack)
+            {
+                throw new ArgumentException(
+                    "Only an incoming Attack restricts which Defense origins may answer it.",
+                    nameof(defenseOfferRestriction));
             }
 
             ValidateActionShape(baseValues);
@@ -176,6 +242,22 @@ namespace GuardsDigital.Core.Cards
         /// states it - present on every classified Attack and null on every other kind.
         /// </summary>
         public PrintedAttackTargetPolicy? AttackTargetPolicy { get; }
+
+        /// <summary>
+        /// Milestone 8.19b's trusted Attack/Range contribution declarations. Empty means the printed
+        /// total has no roster-derived card-text addition.
+        /// </summary>
+        public IReadOnlyList<RosterValueContributionDefinition> RosterValueContributions { get; }
+
+        /// <summary>
+        /// Whether this Defense includes p.14's ordinary friendly and enemy minion modifiers.
+        /// </summary>
+        public MinionDefenseContributionPolicy MinionDefenseContributions { get; }
+
+        /// <summary>
+        /// The exact Defense-origin restriction this incoming Attack applies, or the typed absence.
+        /// </summary>
+        public DefenseOfferOriginRestriction DefenseOfferRestriction { get; }
 
         private void ValidateActionShape(IEnumerable<PrintedValueDefinition> baseValues)
         {

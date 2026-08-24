@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Effects
 {
@@ -62,7 +63,13 @@ namespace GuardsDigital.Core.Effects
         /// that text inside an Attack could not pause at all - was retired here: rulebook p.14's step 1
         /// now holds a question, so a pausing shape is admitted at every one of the page's moments.</para>
         /// </summary>
-        AroundActionShapeIsMalformed = 17
+        AroundActionShapeIsMalformed = 17,
+
+        /// <summary>
+        /// A node declares an immunity exception its capability does not consume, or an activity the
+        /// capability never asks. Ignored override semantics are rejected at content load.
+        /// </summary>
+        UnsupportedImmunityOverride = 18
     }
 
     public readonly struct EffectDefinitionRejection
@@ -388,6 +395,22 @@ namespace GuardsDigital.Core.Effects
                     EffectDefinitionRejectionReason.UnregisteredCapability,
                     $"Node '{node.Id}' names capability '{node.Capability}', which is not registered in this build."));
                 return;
+            }
+
+            if (node.ImmunityOverrides.Count > 0)
+            {
+                var consumer = handler as IEffectImmunityOverrideCapabilityHandler;
+                foreach (var declaration in node.ImmunityOverrides)
+                {
+                    if (consumer == null ||
+                        !consumer.SupportedImmunityOverrideActivities.Contains(declaration.Activity))
+                    {
+                        rejections.Add(new EffectDefinitionRejection(
+                            EffectDefinitionRejectionReason.UnsupportedImmunityOverride,
+                            $"Node '{node.Id}' declares immunity override '{declaration}', but " +
+                            $"capability '{node.Capability}' does not consume that activity."));
+                    }
+                }
             }
 
             var declared = handler.Schema.Parameters.ToDictionary(

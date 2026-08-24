@@ -30,6 +30,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly TriggeredEffectResolutionAuthority triggeredEffects;
         private readonly MatchComponents components;
         private readonly AdjacentMoveAuthority board;
+        private EffectRosterState rosterState = EffectRosterState.Absent;
 
         public CardActionResolutionAuthority(
             MatchContentCatalogs catalogs,
@@ -245,6 +246,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
             GuardsDigital.Core.Rules.Consequences.RoundHeroDefeatHistory history)
         {
             attackDefenseBackend.BindHeroDefeatHistory(history);
+        }
+
+        /// <summary>
+        /// Binds the round's live roster authorities to every effect-entry altitude. The dispatcher is
+        /// composed before the round, so this follows the same one-authority binding used for items,
+        /// Defeat history and coin accounting.
+        /// </summary>
+        internal void BindRosterState(EffectRosterState state)
+        {
+            rosterState = state ?? throw new ArgumentNullException(nameof(state));
+            attackDefenseBackend.BindRosterState(rosterState);
+            skillBackend.BindRosterState(rosterState);
+            triggeredEffects.BindRosterState(rosterState);
         }
 
         internal AdjacentMoveAuthority Board => board;
@@ -1003,7 +1017,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
             GuardsDigital.Core.Rules.Progression.HeroProgressionState heroLevels = null,
-            GuardsDigital.Core.Rules.Consequences.TeamLifeState teamLives = null)
+            GuardsDigital.Core.Rules.Consequences.TeamLifeState teamLives = null,
+            EffectRosterState rosterState = null)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
 
@@ -1013,7 +1028,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var restoredAuthority = RestoreContinuation(
                 catalogs, adjacentMoveAuthority, state, verifiedMovementChoice, verifiedTargetChoice,
                 verifiedDefenseChoice, definitions, instances, participants, markers, modifications,
-                heroItems);
+                heroItems, rosterState);
             restoredAuthority.pendingLanePush = state.PendingImmediateLanePush;
             restoredAuthority.pendingPreAction = state.PendingPreAction;
 
@@ -1031,6 +1046,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 restoredAuthority.BindDefeatConsequenceState(heroLevels, teamLives);
             }
 
+            if (rosterState != null)
+            {
+                restoredAuthority.BindRosterState(rosterState);
+            }
+
             return restoredAuthority;
         }
 
@@ -1046,7 +1066,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             MarkerAttachmentRegister markers,
             RuleModificationSet modifications,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            EffectRosterState rosterState)
         {
             var coinLedger = state.CoinLedger.IsPresent
                 ? HeroCoinLedger.Restore(participants, state.CoinLedger.State)
@@ -1085,7 +1106,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             coinLedger,
                             markers,
                             modifications,
-                            heroItems),
+                            heroItems,
+                            rosterState),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(catalogs.Capabilities),
@@ -1157,7 +1179,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                                 coinLedger,
                                 markers,
                                 modifications,
-                                heroItems),
+                                heroItems,
+                                rosterState),
                         new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
                         new ClearCardActionStrategyBackend(adjacentMoveAuthority),
                         new SkillCardActionStrategyBackend(catalogs.Capabilities),
@@ -1448,7 +1471,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // Milestone 8.10, widened at 8.11. What this text may ask about the Attack it is
                 // printed inside: who is attacking, what the Attack took, and p.13.s subtype. Every
                 // field is undefined at p.14.s step 1, because the page has not chosen a target yet.
-                enclosingAttack: EnclosingAttackOf(step.CardTextRemainderResolution, materializedDefinitions));
+                enclosingAttack: EnclosingAttackOf(step.CardTextRemainderResolution, materializedDefinitions),
+                rosterState: rosterState);
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"card-text-{card.Id.Value}-{action.Id.Value}-{step.CardTextTiming}"),
@@ -1746,7 +1770,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ActionKind.Attack,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                enclosingAttack: EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions));
+                enclosingAttack: EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions),
+                rosterState: rosterState);
             var step = EffectResolutionSession.Answer(pendingCardText.Frame, command, context);
             if (!step.Accepted)
             {
@@ -1847,7 +1872,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 EffectCardState.Of(materializedDefinitions, instances),
                 ActionKind.Skill,
                 components: components,
-                heroItems: skillBackend.HeroItems);
+                heroItems: skillBackend.HeroItems,
+                rosterState: rosterState);
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"before-action-{source.SourceId}-{heldResolutionId.Value}"),
@@ -2004,7 +2030,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 EffectCardState.Of(definitions, instances),
                 action.Kind,
                 components: components,
-                heroItems: skillBackend.HeroItems);
+                heroItems: skillBackend.HeroItems,
+                rosterState: rosterState);
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"around-action-{heldOffer.SourceCardInstanceId.Value}-{entryNodeId.Value}"),
@@ -2123,7 +2150,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 EffectCardState.Of(materializedDefinitions, instances),
                 enclosingKind,
                 components: components,
-                heroItems: skillBackend.HeroItems);
+                heroItems: skillBackend.HeroItems,
+                rosterState: rosterState);
             var step = EffectResolutionSession.Answer(paused.Frame, command, context);
             if (!step.Accepted)
             {

@@ -89,7 +89,9 @@ namespace GuardsDigital.Core.Rules.Modifications
             RuleActivity activity,
             IBoardDisplacementAuthority board,
             MatchParticipants participants,
-            RuleModificationSet modifications) =>
+            RuleModificationSet modifications,
+            IReadOnlyList<ImmunityOverrideDeclaration> immunityOverrides = null,
+            RuleActivity overrideActivity = RuleActivity.None) =>
             TargetQuery.FindTargetsWithin(
                 origin,
                 RequireRadiusTotal(radiusTotal),
@@ -98,7 +100,9 @@ namespace GuardsDigital.Core.Rules.Modifications
                 activity,
                 board,
                 participants,
-                modifications);
+                modifications,
+                immunityOverrides,
+                overrideActivity);
 
         /// <summary>
         /// Every unit inside the disk whose effective type is <paramref name="effectiveUnitKind"/>, in

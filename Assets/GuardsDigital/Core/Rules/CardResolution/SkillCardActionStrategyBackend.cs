@@ -36,6 +36,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// set of items than the one the player was offered. Absent in a composition with no items.
         /// </summary>
         private GuardsDigital.Core.Rules.Progression.HeroItemState heroItems;
+        private EffectRosterState rosterState = EffectRosterState.Absent;
 
         internal SkillCardActionStrategyBackend(EffectCapabilityCatalog catalog)
         {
@@ -45,6 +46,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal void BindHeroItems(GuardsDigital.Core.Rules.Progression.HeroItemState items)
         {
             heroItems = items;
+        }
+
+        internal void BindRosterState(EffectRosterState state)
+        {
+            rosterState = state ?? throw new ArgumentNullException(nameof(state));
         }
 
         /// <summary>
@@ -116,7 +122,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
-                components: components, heroItems: heroItems);
+                components: components, heroItems: heroItems, rosterState: rosterState);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 offer.SourceCardInstanceId,
@@ -193,7 +199,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
-                components: components, heroItems: heroItems);
+                components: components, heroItems: heroItems, rosterState: rosterState);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 repeat.SourceCardInstanceId,
@@ -288,7 +294,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
-                components: components, heroItems: heroItems);
+                components: components, heroItems: heroItems, rosterState: rosterState);
             return EffectOptionFeasibilityQuery.CanApplyAnything(
                 EffectResolutionSession.BuildStartFrame(
                     new EffectResolutionId($"probe-{offer.SourceCardInstanceId.Value}-{offer.ActionDefinitionId.Value}"),
@@ -333,7 +339,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var context = new EffectResolutionContext(
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
-                components: components, heroItems: heroItems);
+                components: components, heroItems: heroItems, rosterState: rosterState);
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
             {

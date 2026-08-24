@@ -485,6 +485,10 @@ namespace GuardsDigital.Tests.EditMode
                     "p.18 protects a unit from being pushed through immunity, which is consumed; " +
                     "nothing in the rulebook or in any verified source makes a unit unable to " +
                     "perform a push, so a restriction naming it would forbid nothing that happens.",
+                ["Restriction/DirectMove"] =
+                    "The verified sources protect a unit from card-text direct Move through " +
+                    "immunity, which is consumed; none restricts a unit from performing that " +
+                    "operation, so a restriction naming it would forbid nothing that happens.",
                 ["Immunity/Movement"] =
                     "p.18's immunity is a targeting rule - \"you cannot target that unit\" - and a " +
                     "Movement action targets no unit. ActionDefinition also refuses a Movement " +
@@ -599,6 +603,11 @@ namespace GuardsDigital.Tests.EditMode
                 "SyntheticDisplacementCapabilities push target derivation",
                 Declaring(RuleModification.ForImmunity(RuleActivity.ObjectPush), blue, fixture),
                 fixture.ReadPushAnticipation));
+            cases.Add(new ConsumptionCase(
+                "Immunity/DirectMove",
+                "SyntheticDisplacementCapabilities direct Move target derivation",
+                Declaring(RuleModification.ForImmunity(RuleActivity.DirectMove), blue, fixture),
+                fixture.ReadDirectMoveAnticipation));
 
             // The enclosing action's own activity is what a capability asks immunity with, so the two
             // action kinds that may carry an effect root beside a Skill are proven the same way: the
@@ -863,6 +872,20 @@ namespace GuardsDigital.Tests.EditMode
                             ["ignoresObstacles"] = EffectValue.Boolean(false),
                             [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
                                 EffectValue.Integer((int)PushEligiblePieceKind.UnitOrToken)
+                        }))
+                    .ToString();
+
+            public string ReadDirectMoveAnticipation(RuleModificationSet modifications) =>
+                Handler(SyntheticDisplacementCapabilities.DirectMoveV3)
+                    .Anticipate(Context(
+                        ActionKind.Skill,
+                        modifications,
+                        new Dictionary<string, EffectValue>
+                        {
+                            ["mover"] = EffectValue.Space(BlueAt),
+                            ["distance"] = EffectValue.Integer(1),
+                            [SyntheticDisplacementCapabilities.DestinationPolicyParameterName] =
+                                EffectValue.Integer((int)DirectMoveDestinationPolicy.Unrestricted)
                         }))
                     .ToString();
 

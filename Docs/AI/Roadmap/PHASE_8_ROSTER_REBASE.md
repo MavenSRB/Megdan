@@ -97,7 +97,7 @@ verified hero definition, removal-prevention source, presentation, scene, or gen
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819a1-persist-the-rosters-typed-turnround-rules-history-in-schema-v26-completion-evidence).
 
-### [ ] 8.19b Add the roster's reusable derived-query, value, and state-operation vocabulary
+### [x] 8.19b Add the roster's reusable derived-query, value, and state-operation vocabulary
 
 Blocked by: Milestone 8.19a1 must supply the typed played-card and current-round hero-Defeat facts this
 vocabulary consumes.
@@ -127,7 +127,9 @@ Acceptance checks:
 Non-goals: No verified hero definition, Active-effect/system trigger, removal-prevention source, UI work,
 or schema change.
 
-### [!] 8.19c Add the roster's persistent, trigger, and Minion-Battle rule sources
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819b-add-the-rosters-reusable-derived-query-value-and-state-operation-vocabulary-completion-evidence).
+
+### [ ] 8.19c Add the roster's persistent, trigger, and Minion-Battle rule sources
 
 Blocked by: Milestone 8.19b must supply the derived queries and operations these sources consume.
 

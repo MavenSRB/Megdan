@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Effects
 {
@@ -86,7 +87,8 @@ namespace GuardsDigital.Core.Effects
             int maximumSelections = 0,
             int maximumRepeats = 1,
             RepeatTargetBinding repeatTargetBinding = RepeatTargetBinding.Unbound,
-            EffectNodeId boundSelectionNodeId = default)
+            EffectNodeId boundSelectionNodeId = default,
+            IEnumerable<ImmunityOverrideDeclaration> immunityOverrides = null)
         {
             if (!id.IsDefined)
             {
@@ -129,6 +131,16 @@ namespace GuardsDigital.Core.Effects
                 throw new ArgumentException("Effect node output names must be unique.", nameof(outputs));
             }
 
+            var declaredOverrides = (immunityOverrides ??
+                Enumerable.Empty<ImmunityOverrideDeclaration>()).ToArray();
+            if (declaredOverrides.Any(value => !value.IsDefined) ||
+                declaredOverrides.Distinct().Count() != declaredOverrides.Length)
+            {
+                throw new ArgumentException(
+                    "Effect-node immunity overrides must be defined and distinct.",
+                    nameof(immunityOverrides));
+            }
+
             Id = id;
             Kind = kind;
             FailurePolicy = failurePolicy;
@@ -142,6 +154,7 @@ namespace GuardsDigital.Core.Effects
             MaximumRepeats = maximumRepeats;
             RepeatTargetBinding = repeatTargetBinding;
             BoundSelectionNodeId = boundSelectionNodeId;
+            ImmunityOverrides = new ReadOnlyCollection<ImmunityOverrideDeclaration>(declaredOverrides);
 
             ValidateNodeShape();
         }
@@ -181,6 +194,12 @@ namespace GuardsDigital.Core.Effects
         public EffectNodeId BoundSelectionNodeId { get; }
 
         /// <summary>
+        /// Exact trusted immunity exceptions this capability may consume. They are definition semantics,
+        /// so a snapshot carries none and restore rebinds them from this node.
+        /// </summary>
+        public IReadOnlyList<ImmunityOverrideDeclaration> ImmunityOverrides { get; }
+
+        /// <summary>
         /// Per-kind legality that depends only on this node. Cross-node concerns - unresolved children,
         /// cycles, unreachable nodes, binding types, unregistered capabilities - belong to
         /// <see cref="EffectDefinitionValidator"/>, which can see the whole table.
@@ -196,6 +215,13 @@ namespace GuardsDigital.Core.Effects
             {
                 throw new ArgumentException(
                     $"A {Kind} node is not a repeat, so it declares no repeat maximum and no target binding.");
+            }
+
+            if (ImmunityOverrides.Count > 0 &&
+                Kind != EffectNodeKind.Capability && Kind != EffectNodeKind.Conditional)
+            {
+                throw new ArgumentException(
+                    "Only a node that invokes a capability declares an immunity override.");
             }
 
             switch (Kind)

@@ -19,7 +19,52 @@ namespace GuardsDigital.Core.Rules.Modifications
             RuleObject actingUnit,
             IBoardDisplacementAuthority board,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications) =>
+            IsImmuneTo(
+                target,
+                activity,
+                actingUnit,
+                board,
+                participants,
+                modifications,
+                Array.Empty<ImmunityOverrideDeclaration>());
+
+        /// <summary>
+        /// The same immunity question with trusted, exact node declarations. A Heavy override suppresses
+        /// only standing Heavy immunity for its named activity; a source-declared immunity still wins.
+        /// </summary>
+        public static bool IsImmuneTo(
+            RuleObject target,
+            RuleActivity activity,
+            RuleObject actingUnit,
+            IBoardDisplacementAuthority board,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            System.Collections.Generic.IReadOnlyList<ImmunityOverrideDeclaration> overrides) =>
+            IsImmuneTo(
+                target,
+                activity,
+                actingUnit,
+                board,
+                participants,
+                modifications,
+                overrides,
+                activity);
+
+        /// <summary>
+        /// The same query when an operation asks both its enclosing activity and its own family. The
+        /// override stays addressed to the exact operation while source-declared immunity for either
+        /// queried activity still wins.
+        /// </summary>
+        public static bool IsImmuneTo(
+            RuleObject target,
+            RuleActivity activity,
+            RuleObject actingUnit,
+            IBoardDisplacementAuthority board,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            System.Collections.Generic.IReadOnlyList<ImmunityOverrideDeclaration> overrides,
+            RuleActivity overrideActivity)
         {
             if (!target.IsDefined)
             {
@@ -34,9 +79,29 @@ namespace GuardsDigital.Core.Rules.Modifications
             if (board == null) throw new ArgumentNullException(nameof(board));
             if (participants == null) throw new ArgumentNullException(nameof(participants));
             if (modifications == null) throw new ArgumentNullException(nameof(modifications));
+            if (overrideActivity == RuleActivity.None ||
+                !Enum.IsDefined(typeof(RuleActivity), overrideActivity))
+            {
+                throw new ArgumentException(
+                    "An immunity override query requires the exact affected activity.",
+                    nameof(overrideActivity));
+            }
 
-            return modifications.IsImmuneTo(target, activity, actingUnit) ||
-                HasStandingHeavyImmunity(target, board, participants, modifications);
+            if (modifications.IsImmuneTo(target, activity, actingUnit))
+            {
+                return true;
+            }
+
+            var standingHeavy = HasStandingHeavyImmunity(
+                target, board, participants, modifications);
+            if (!standingHeavy)
+            {
+                return false;
+            }
+
+            return !(overrides ?? Array.Empty<ImmunityOverrideDeclaration>()).Any(value =>
+                value.Activity == overrideActivity &&
+                value.Reason == ImmunityOverrideReason.PrintedHeavyMinionImmunity);
         }
 
         private static bool HasStandingHeavyImmunity(

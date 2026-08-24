@@ -205,7 +205,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroId opposingHeroId = default,
             MatchComponents components = null,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
-            EnclosingAttackFacts enclosingAttack = default)
+            EnclosingAttackFacts enclosingAttack = default,
+            EffectRosterState rosterState = null)
         {
             EnclosingAttack = enclosingAttack;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
@@ -231,6 +232,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             OpposingHeroId = opposingHeroId;
             Components = components;
             HeroItems = heroItems;
+            RosterState = rosterState ?? EffectRosterState.Absent;
         }
 
         public EffectDefinition Definition { get; }
@@ -290,6 +292,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// Radius would come back a ring smaller than the one the player was offered.
         /// </summary>
         public GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems { get; }
+
+        /// <summary>Milestone 8.19b's live round-owned query and resource state.</summary>
+        public EffectRosterState RosterState { get; }
     }
 
     /// <summary>
@@ -1101,7 +1106,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.Components,
                 context.HeroItems,
                 AnswersAlreadyGiven(frame, node),
-                context.EnclosingAttack);
+                context.EnclosingAttack,
+                context.RosterState,
+                node.ImmunityOverrides);
         }
 
         /// <summary>

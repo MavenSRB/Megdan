@@ -34,7 +34,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
             HeroId defenderId,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            ActionDefinition incomingAttack = null)
         {
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
             if (instances == null) throw new ArgumentNullException(nameof(instances));
@@ -48,7 +49,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return Array.AsReadOnly(ActionOfferQuery
                 .GetAvailableOffers(definitions, instances, defenderId, ActionOfferWindow.Reaction)
                 .Where(candidate => IsPerformable(candidate, definitions))
+                .Where(candidate => !IsForbiddenByIncomingAttack(
+                    candidate, definitions, incomingAttack))
                 .ToArray());
+        }
+
+        private static bool IsForbiddenByIncomingAttack(
+            ActionOffer defenseOffer,
+            IReadOnlyList<CardDefinition> definitions,
+            ActionDefinition incomingAttack)
+        {
+            if (incomingAttack == null || !incomingAttack.DefenseOfferRestriction.IsDefined)
+            {
+                return false;
+            }
+
+            var defense = ActionOfferQuery.FindActionDefinition(defenseOffer, definitions);
+            return incomingAttack.DefenseOfferRestriction.Forbids(defense);
         }
 
         /// <summary>

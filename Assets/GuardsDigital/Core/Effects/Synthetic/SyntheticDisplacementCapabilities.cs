@@ -162,7 +162,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
-                new DirectMoveHandler(),
+                new DirectMoveHandler(DirectMoveV3, supportsImmunityOverrides: true),
                 new ObjectPushHandler(),
                 new PushTargetHandler()
             };
@@ -187,9 +187,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// resolves roles without board access, so no role can supply a coordinate, and the definition
         /// validator refuses one that tries at content load.
         /// </summary>
-        private sealed class DirectMoveHandler : IEffectCapabilityHandler
+        private sealed class DirectMoveHandler :
+            IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler
         {
-            public EffectCapabilityReference Reference => DirectMoveV3;
+            private readonly bool supportsImmunityOverrides;
+
+            public DirectMoveHandler(
+                EffectCapabilityReference reference,
+                bool supportsImmunityOverrides)
+            {
+                Reference = reference;
+                this.supportsImmunityOverrides = supportsImmunityOverrides;
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
+                supportsImmunityOverrides
+                    ? DirectMoveActivity
+                    : Array.Empty<RuleActivity>();
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
                 new[]
@@ -275,7 +291,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// and p.11 here as well let this capability and Object Push disagree about whether `up to
             /// X spaces` admits no spaces at all, and they did.
             /// </summary>
-            private static IReadOnlyList<HexCoordinate> Candidates(EffectCapabilityContext context)
+            private IReadOnlyList<HexCoordinate> Candidates(EffectCapabilityContext context)
             {
                 var components = context.Components;
                 if (components == null || !components.CanDisplace)
@@ -343,7 +359,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// reports itself impossible, which is what a stale selection becomes by the time it is
             /// consumed here: the space is re-read, not remembered.
             /// </summary>
-            private static bool TryResolveMover(
+            private bool TryResolveMover(
                 EffectCapabilityContext context,
                 out BoardObjectReference mover,
                 out HexCoordinate moverAt)
@@ -370,14 +386,37 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var unit = mover.AsRuleObject();
-                return !unit.IsDefined || !ImmunityQuery.IsImmuneTo(
-                    unit,
-                    context.EnclosingActivity,
-                    RuleObject.ForHero(context.ActorId),
-                    components.Board,
-                    context.Participants,
-                    context.Modifications);
+                if (!unit.IsDefined)
+                {
+                    return true;
+                }
+
+                var overrides = supportsImmunityOverrides
+                    ? context.ImmunityOverrides
+                    : Array.Empty<ImmunityOverrideDeclaration>();
+                var source = RuleObject.ForHero(context.ActorId);
+                return !ImmunityQuery.IsImmuneTo(
+                        unit,
+                        context.EnclosingActivity,
+                        source,
+                        components.Board,
+                        context.Participants,
+                        context.Modifications,
+                        overrides,
+                        RuleActivity.DirectMove) &&
+                    !ImmunityQuery.IsImmuneTo(
+                        unit,
+                        RuleActivity.DirectMove,
+                        source,
+                        components.Board,
+                        context.Participants,
+                        context.Modifications,
+                        overrides,
+                        RuleActivity.DirectMove);
             }
+
+            private static IReadOnlyList<RuleActivity> DirectMoveActivity { get; } =
+                Array.AsReadOnly(new[] { RuleActivity.DirectMove });
         }
 
         /// <summary>
