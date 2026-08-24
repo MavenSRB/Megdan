@@ -248,6 +248,27 @@ namespace GuardsDigital.Tests.PlayMode
                 "with p.6's starting hand back in front of him.");
         }
 
+        /// <summary>
+        /// Arien's half of milestone 8.20c's standard-footprint conformance: every one of his verified
+        /// faces, drawn on the live panel at the validated player viewport, is exactly
+        /// <see cref="CardFootprint"/> and shows its content whole.
+        ///
+        /// <para>The measurement is <see cref="StandardCardFootprintCheck"/>'s and is hero-neutral;
+        /// this case supplies <see cref="ArienCardContent"/> and the panel. His set is the one that
+        /// makes the check worth having on more than one hero: his longest printed sentence is longer
+        /// than anything Wasp prints, and under the old floor-plus-stretch sizing that sentence was
+        /// what decided how tall every card in a hand of his was.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_DrawsEveryArienFaceAtTheStandardCardFootprint()
+        {
+            yield return LoadConfiguredScene();
+            var root = Root();
+
+            yield return StandardCardFootprintCheck.EveryVerifiedFaceKeepsTheStandardFootprint(
+                "Arien", ArienCardContent.AllDefinitions, root.Hud);
+        }
+
         // ---------------------------------------------------------------------------------------
         // Steps
         // ---------------------------------------------------------------------------------------

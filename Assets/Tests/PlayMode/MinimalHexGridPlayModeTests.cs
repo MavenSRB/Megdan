@@ -336,12 +336,15 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the words on screen are the verified transcriptions, whole and unabbreviated.");
 
             var tray = Named(hud.RootElement, "gd-tray-region");
-            // The vertical bound is only claimed where the viewport is tall enough to hold a card plus
-            // the tray's own chrome. A 480-line Game View cannot, and the tray scrolls there rather than
-            // clipping; milestone 8.5a's acceptance is stated at the supported Windows validation
-            // resolution, which is where the targeted non-batch inspection runs.
-            var trayHoldsACard =
-                hud.CardPanelRect.height >= DirectorHandsUnityView.CardMinimumHeight + 140f;
+            // Milestone 8.20c replaced the vertical half of this claim, which used to be made only
+            // where the viewport was tall enough to hold a card plus the tray's chrome. A card is now
+            // exactly `CardFootprint` tall on every surface and no supported desktop viewport leaves
+            // the region room for the contextual region above it *and* a whole card, so the region's
+            // own scroll is what keeps the cards reachable - and a card inside the region's rectangle
+            // is not something this layout tries to do any more. What replaces it is stronger and
+            // always runs: the card is the standard size whatever its words say, which is the property
+            // the old bound existed to protect. Reachability is proved by the 8.20c journeys, which
+            // scroll to a card and click it.
             foreach (var card in cards)
             {
                 var bounds = card.worldBound;
@@ -349,19 +352,15 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(bounds.xMin, Is.GreaterThanOrEqualTo(tray.worldBound.xMin - 0.5f));
                 Assert.That(bounds.xMax, Is.LessThanOrEqualTo(tray.worldBound.xMax + 0.5f),
                     "and no card runs out through the side of the tray.");
-                if (trayHoldsACard)
-                {
-                    Assert.That(bounds.yMin, Is.GreaterThanOrEqualTo(tray.worldBound.yMin - 0.5f));
-                    Assert.That(bounds.yMax, Is.LessThanOrEqualTo(tray.worldBound.yMax + 0.5f),
-                        "and none is cut off at its foot or pushed behind a scrollbar - the tray's " +
-                        "height bound has to hold the tallest verified face's wrapped rules text.");
-                }
+                Assert.That(bounds.height, Is.EqualTo(CardFootprint.Height).Within(0.5f),
+                    "and every card in the live tray is the standard footprint, so the tallest " +
+                    "verified face's wrapped rules text no longer decides how tall a hand is.");
             }
 
             // One row: the cards share a top edge. Checked only where the viewport is actually wide
             // enough for five of them, so a cramped Game View reports nothing rather than a false
             // failure - the fixed-resolution arithmetic is asserted in MatchHudPresentationTests.
-            var required = (5f * (DirectorHandsUnityView.CardWidth + DirectorHandsUnityView.CardGap +
+            var required = (5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap +
                 (2f * (DirectorHandsUnityView.ActiveOutlineGap +
                     DirectorHandsUnityView.ActiveOutlineWidth)))) + 30f;
             if (hud.CardPanelRect.width >= required)

@@ -134,6 +134,24 @@ namespace GuardsDigital.Tests.PlayMode
         private const string UltimateDeclined =
             "HighVoltage_DeclinedThroughItsControlDefeatsNobody";
 
+        /// <summary>Milestone 8.20c: every verified Wasp face measured against the standard footprint.</summary>
+        private const string FootprintConformance =
+            "Scene_DrawsEveryWaspFaceAtTheStandardCardFootprint";
+
+        /// <summary>
+        /// Milestone 8.20c's focused regression, and the reason the footprint is a shared contract
+        /// rather than one hero's number: pointing the tray from one hero to the other on the map.
+        /// </summary>
+        private const string FootprintAcrossHeroes =
+            "Scene_KeepsEveryTrayCardTheSameSizeWhenTheMapPointerSwitchesHeroes";
+
+        /// <summary>
+        /// Milestone 8.20c's other half: the short supported desktop viewport, where the region holding
+        /// the cards scrolls and the cards keep their size.
+        /// </summary>
+        private const string FootprintAtAShortViewport =
+            "Scene_KeepsTheCardFootprintAtAShortViewportAndScrollsTheRegion";
+
         // -----------------------------------------------------------------------------------------
         // The matrix. One row per printed face in the shard's table order, then the hero-owned
         // components. Read it beside Docs/AI/Rules/HERO_WASP.md's inventory table, which is in the
@@ -431,6 +449,27 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(RestartReconstruction, DrawerAndRestart)
                     },
                     new[] { "WaspHeroPieceLifecycleTests" }),
+
+                // Milestone 8.20c. The whole printed set at once: every verified face drawn at the
+                // standard card footprint with its title, values, action, rules text and history
+                // whole. It is a component rather than a face row because the claim is about the set -
+                // "no face of this hero resizes a card" is not something one face can say - and
+                // because `StandardCardFootprintCheck` enumerates `WaspCardContent` itself, so the row
+                // naming it cannot narrow what is measured. The second journey is the cross-hero half:
+                // a footprint one hero keeps alone is a number, not a standard.
+                Component("wasp-card-footprint",
+                    "every verified face at the standard card footprint",
+                    new[]
+                    {
+                        Prove(StandardCardFootprintConformance, FootprintConformance),
+                        Prove(StandardCardFootprintConformance, FootprintAcrossHeroes),
+                        Prove(StandardCardFootprintConformance, FootprintAtAShortViewport)
+                    },
+                    new[]
+                    {
+                        "MatchHudPresentationTests.EveryFullCardSurface_DrawsItsFaceAtTheStandardFootprint",
+                        "MatchHudPresentationTests.NoCardStateOrContent_ChangesTheStandardFootprint"
+                    }),
 
                 // Milestone 8.16c's live regression lives in Wasp's own engaged fixture because her
                 // staged mirror is the match that reaches p.8's blocked Spawn-point pause, and the

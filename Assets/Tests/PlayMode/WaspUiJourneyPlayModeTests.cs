@@ -365,6 +365,263 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Wasp's half of milestone 8.20c's standard-footprint conformance: every one of her verified
+        /// faces, drawn on the live panel at the validated player viewport, is exactly
+        /// <see cref="CardFootprint"/> and shows its content whole.
+        ///
+        /// <para>The measurement is <see cref="StandardCardFootprintCheck"/>'s and is hero-neutral;
+        /// this case supplies <see cref="WaspCardContent"/> and the panel. It covers every face rather
+        /// than the five a hand happens to hold, because the footprint has to hold for the card a
+        /// player meets in a Defense response, an effect choice or an upgrade prompt as much as for the
+        /// one they were dealt - and because a face that will not fit must block this hero's gate
+        /// whether or not this staging deals it.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_DrawsEveryWaspFaceAtTheStandardCardFootprint()
+        {
+            yield return LoadScene();
+            var root = Root();
+            LogUiEnvironment(root);
+
+            yield return StandardCardFootprintCheck.EveryVerifiedFaceKeepsTheStandardFootprint(
+                "Wasp", WaspCardContent.AllDefinitions, root.Hud);
+        }
+
+        /// <summary>
+        /// Milestone 8.20c's focused regression: pointing the tray from one hero to the other through
+        /// the configured map leaves every card exactly the same size, and moves nothing around them.
+        ///
+        /// <para>This is the defect stated as a journey. A tray card used to take a floor rather than a
+        /// height and the row stretched all five to the tallest one's <em>content</em>, so a hand's
+        /// card size was a function of the hero holding it: switching heroes resized every card on the
+        /// screen, and the tray region reflowed under them. Two heroes are configured, which is what
+        /// makes this observable at all - and 8.21 adds a third printed set to the same surface.</para>
+        ///
+        /// <para>It also holds the two states a player can reach from here - the shared selection
+        /// outline, and pointer/keyboard focus - to changing nothing about the box. The remaining
+        /// treatments (in play, unavailable, Active-effect) are exhaustively covered at the Edit Mode
+        /// tier by <c>MatchHudPresentationTests</c>, because reaching all five through real play would
+        /// prove the same property at several times the cost.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_KeepsEveryTrayCardTheSameSizeWhenTheMapPointerSwitchesHeroes()
+        {
+            yield return LoadScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            LogUiEnvironment(root);
+
+            var waspHeroId = WaspSeat(runtime).HeroId;
+            var otherHeroId = runtime.Setup.Heroes
+                .Single(hero => !hero.HeroId.Equals(waspHeroId)).HeroId;
+
+            yield return PointTrayAt(root, waspHeroId);
+            yield return null;
+            AssertEveryTrayCardIsTheStandardFootprint(hud, "Wasp's own hand");
+
+            // The laid-out row, not the region's arithmetic rect: the rect is a function of the screen
+            // and could not move, while the row is what a content-sized card actually grew.
+            var rowBefore = NamedElement(hud, "gd-card-buttons").worldBound;
+            var regionBefore = NamedElement(hud, "gd-tray-region").worldBound;
+
+            yield return UiPlayer.CaptureGameView("8-20c", "wasp-hand-at-the-standard-footprint");
+
+            yield return PointTrayAt(root, otherHeroId);
+            yield return null;
+            Assert.That(runtime.ViewedHeroId, Is.EqualTo(otherHeroId),
+                "The map click must have pointed the tray at the other hero.");
+            AssertEveryTrayCardIsTheStandardFootprint(hud, "the other hero's hand");
+            yield return UiPlayer.CaptureGameView("8-20c", "arien-hand-at-the-standard-footprint");
+
+            // Back again, because the property under test is symmetric and a one-way check would pass
+            // on a surface that had simply settled at the second hero's size.
+            yield return PointTrayAt(root, waspHeroId);
+            yield return null;
+            AssertEveryTrayCardIsTheStandardFootprint(hud, "Wasp's hand after switching back");
+
+            Assert.That(NamedElement(hud, "gd-card-buttons").worldBound, Is.EqualTo(rowBefore),
+                "Switching heroes must not move or resize the row the cards stand on.");
+            Assert.That(NamedElement(hud, "gd-tray-region").worldBound, Is.EqualTo(regionBefore),
+                "and must not reflow the tray region around it.");
+
+            // The bounded scroll a fixed footprint relies on at a short supported viewport: the cards
+            // stand inside a scrolling region, so a card taller than the region is reached by
+            // scrolling rather than by being made smaller.
+            var scroll = UiPlayer.Descendants(NamedElement(hud, "gd-tray-region"))
+                .OfType<UnityEngine.UIElements.ScrollView>()
+                .ToArray();
+            Assert.That(scroll, Has.Length.EqualTo(1),
+                "The tray region holds exactly one scroll view, which is what keeps every card and " +
+                "control reachable without resizing any of them.");
+            Assert.That(
+                UiPlayer.Descendants(scroll[0]).Any(element => element.name == "gd-card-buttons"),
+                Is.True,
+                "and the cards are inside it.");
+
+            // Selection and focus, on a real card, through the real control. Both are drawn as an
+            // always-present outline that only changes colour, and this is what says so on the live
+            // panel rather than in the builder's comment.
+            var card = TrayCard(hud, InitiativeEightCardOf(runtime, waspHeroId));
+            UiPlayer.EnsureVisible(card);
+            yield return null;
+            var beforeSelection = card.worldBound;
+            UiPlayer.Click(TrayCard(hud, InitiativeEightCardOf(runtime, waspHeroId)));
+            yield return null;
+
+            Assert.That(runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId.HasValue, Is.True,
+                "The click must have picked the card up, or this proves nothing about selection.");
+            AssertEveryTrayCardIsTheStandardFootprint(hud, "the hand with a card picked up");
+            var selected = TrayCard(hud, InitiativeEightCardOf(runtime, waspHeroId));
+            Assert.That(selected.worldBound.size, Is.EqualTo(beforeSelection.size),
+                "Selecting a card must not change its size.");
+
+            selected.Focus();
+            yield return null;
+            Assert.That(
+                TrayCard(hud, InitiativeEightCardOf(runtime, waspHeroId)).worldBound.size,
+                Is.EqualTo(beforeSelection.size),
+                "and neither must focusing it.");
+        }
+
+        /// <summary>
+        /// Milestone 8.20c's bounded short-viewport fallback, on the live surface: at a short supported
+        /// desktop screen the region holding the cards scrolls and the cards keep their size.
+        ///
+        /// <para>It is the other half of the standard footprint's bargain. One fixed height for every
+        /// card in the game is only supportable if some screens can show less of the tray rather than a
+        /// smaller card, and this is the screen where that happens: at 1280x720 the tray region is
+        /// shorter than one card, so the region's own scroll view is what keeps every card reachable -
+        /// which the journey proves by scrolling to the last card and clicking it.</para>
+        ///
+        /// <para><b>Why the assertions come after the viewport is restored.</b> This is the one journey
+        /// in the suite that shrinks the play view, and every other journey reads its geometry from
+        /// whatever size is left behind - <c>UiPlayer.EnsurePlayerViewport</c> accepts 1280x720 as
+        /// already a real player's. So the facts are collected, the size this session was running at is
+        /// put back, and only then are they judged, which keeps a failure here from silently changing
+        /// the geometry every later journey runs at.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_KeepsTheCardFootprintAtAShortViewportAndScrollsTheRegion()
+        {
+            yield return LoadScene();
+            var root = Root();
+            var hud = root.Hud;
+
+            // The size to put back afterwards is the one this session was actually running at, not the
+            // validated default: a non-batch pass runs at whatever window the developer opened, and
+            // milestone 8.20b's captures were taken at 2560x1440.
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+
+            UiPlayer.SetPlayerViewport(ShortViewportWidth, ShortViewportHeight, "8.20c short viewport");
+            yield return null;
+
+            // `ConfiguredMatchHudRenderer.Layout` applies the current viewport to every absolutely
+            // placed region and runs on a projection refresh rather than every frame, so a resized
+            // screen is followed at the next refresh - which is what this asks for, through the same
+            // `RefreshAll` the presentation-rebuild journey uses. Two frames after it, because an
+            // element rebuilt this frame has no resolved layout until the panel's next update.
+            root.Runtime.RefreshAll();
+            yield return null;
+            yield return null;
+
+            var shortWidth = Screen.width;
+            var shortHeight = Screen.height;
+            var region = NamedElement(hud, "gd-tray-region").worldBound;
+            var scroll = UiPlayer.Descendants(NamedElement(hud, "gd-tray-region"))
+                .OfType<UnityEngine.UIElements.ScrollView>()
+                .Single();
+            var content = scroll.contentContainer.worldBound.height;
+            var viewport = scroll.contentViewport.worldBound.height;
+            var sizes = UiPlayer.Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-card-choice")
+                .Select(element => element.worldBound.size)
+                .ToArray();
+
+            // Reachability, before anything is judged: the last card in the row is scrolled to and
+            // clicked through the real panel, which is what "bounded scrolling keeps every card
+            // reachable" means when the region cannot show them all at once.
+            var last = UiPlayer.Descendants(hud.RootElement)
+                .Last(element => element.name == "gd-card-choice");
+            UiPlayer.EnsureVisible(last);
+            yield return null;
+            var reached = UiPlayer.Descendants(hud.RootElement)
+                .Last(element => element.name == "gd-card-choice");
+            var reachedIsClickable = UiPlayer.IsShown(reached) && reached.enabledInHierarchy;
+
+            yield return UiPlayer.CaptureGameView("8-20c", "short-viewport-scrolls-rather-than-resizing");
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.20c restore the viewport this session was running at");
+            yield return null;
+            root.Runtime.RefreshAll();
+            yield return null;
+            yield return null;
+
+            Assert.That(shortWidth, Is.EqualTo((int)ShortViewportWidth),
+                "The journey must actually have run at the short viewport.");
+            Assert.That(shortHeight, Is.EqualTo((int)ShortViewportHeight));
+            Assert.That(sizes, Is.Not.Empty, "The short viewport still draws the hand.");
+            foreach (var size in sizes)
+            {
+                Assert.That(size.x, Is.EqualTo(CardFootprint.Width).Within(0.01f),
+                    "A card is the same width on a short screen as on a tall one.");
+                Assert.That(size.y, Is.EqualTo(CardFootprint.Height).Within(0.01f),
+                    "and the same height - what gives on a short screen is the region, not the card.");
+            }
+
+            Assert.That(region.height, Is.LessThan(CardFootprint.Height + 40f),
+                "The short viewport is the case this rule is about: the region cannot comfortably " +
+                "hold a whole card.");
+            Assert.That(content, Is.GreaterThan(viewport),
+                "so its scroll view has more content than it can show, which is the bounded scroll " +
+                "that replaces resizing the cards.");
+            Assert.That(reachedIsClickable, Is.True,
+                "and the last card in the row is still shown and pressable after scrolling to it.");
+            Assert.That((uint)Screen.width, Is.EqualTo(restoreWidth),
+                "The viewport this session was running at is restored before this journey ends, " +
+                "because every other journey reads its geometry from whatever size is left behind.");
+            Assert.That((uint)Screen.height, Is.EqualTo(restoreHeight));
+        }
+
+        /// <summary>
+        /// The short supported desktop viewport milestone 8.20c states the bounded-scroll fallback at.
+        /// 1280x720 is the smallest screen this project's own HUD arithmetic is written against.
+        /// </summary>
+        private const uint ShortViewportWidth = 1280;
+
+        private const uint ShortViewportHeight = 720;
+
+        /// <summary>The one live element carrying <paramref name="name"/>.</summary>
+        private static UnityEngine.UIElements.VisualElement NamedElement(
+            ConfiguredMatchHudRenderer hud, string name) =>
+            UiPlayer.Descendants(hud.RootElement).Single(element => element.name == name);
+
+        /// <summary>
+        /// Every card the tray is currently drawing, held to the standard footprint as the panel
+        /// resolved it. Reads the live elements rather than the view model, because the question is
+        /// what a player's screen actually shows.
+        /// </summary>
+        private static void AssertEveryTrayCardIsTheStandardFootprint(
+            ConfiguredMatchHudRenderer hud, string what)
+        {
+            var cards = UiPlayer.Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-card-choice")
+                .ToArray();
+            Assert.That(cards, Is.Not.Empty, $"The tray draws no cards for {what}.");
+
+            foreach (var card in cards)
+            {
+                var box = card.worldBound;
+                Assert.That(box.width, Is.EqualTo(CardFootprint.Width).Within(0.01f),
+                    $"A card in {what} is {box.width} wide rather than the standard footprint.");
+                Assert.That(box.height, Is.EqualTo(CardFootprint.Height).Within(0.01f),
+                    $"A card in {what} is {box.height} tall rather than the standard footprint.");
+            }
+        }
+
+        /// <summary>
         /// The staged seat dealt Wasp's printed set, found by the content identity the configuration
         /// bound to it rather than by team colour - the seat is Red today and the question this asks is
         /// which seat is Wasp's. Milestone 8.20b, and the twin of

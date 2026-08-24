@@ -99,6 +99,10 @@ namespace GuardsDigital.Tests.PlayMode
         private const string UltimateJourney =
             "LivingTsunami_IsDrawnOnTheRailAndOffersItsOneSpaceStepBeforeAnAttack";
 
+        /// <summary>Milestone 8.20c: every verified Arien face measured against the standard footprint.</summary>
+        private const string FootprintConformance =
+            "Scene_DrawsEveryArienFaceAtTheStandardCardFootprint";
+
         // -----------------------------------------------------------------------------------------
         // The matrix. One row per printed face in the shard's table order, then the hero-owned
         // components. Read it beside Docs/AI/Rules/HERO_ARIEN.md's inventory table, which is in the
@@ -375,6 +379,22 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(RestartReconstruction, DrawerAndRestart)
                     },
                     new[] { "ArienHeroPieceLifecycleTests" }),
+
+                // Milestone 8.20c. The whole printed set at once: every verified face drawn at the
+                // standard card footprint with its title, values, action, rules text and history
+                // whole. A component rather than a face row for the reason Wasp's twin records - the
+                // claim is about the set - and Arien is the set that makes it worth measuring twice:
+                // his longest sentence is the longest in this build, and under the old
+                // floor-plus-stretch sizing it was what decided how tall every card in a hand of his
+                // was.
+                Component("arien-card-footprint",
+                    "every verified face at the standard card footprint",
+                    new[] { Prove(StandardCardFootprintConformance, FootprintConformance) },
+                    new[]
+                    {
+                        "MatchHudPresentationTests.EveryFullCardSurface_DrawsItsFaceAtTheStandardFootprint",
+                        "MatchHudPresentationTests.NoCardStateOrContent_ChangesTheStandardFootprint"
+                    }),
 
                 // p.16's item is gained from the sibling p.15's Level Up did not take, and it is drawn
                 // on the hero rail once gained. No journey reaches it: the item track is derived

@@ -167,7 +167,22 @@ namespace GuardsDigital.Tests.PlayMode
         /// A rebuilt presentation reconstructs hero, hand, prompt and cues from the current
         /// projection alone - no stale view, no duplicate piece.
         /// </summary>
-        PresentationRebuild
+        PresentationRebuild,
+
+        /// <summary>
+        /// Milestone 8.20c: every verified face this hero prints, drawn at the validated player
+        /// viewport, is exactly <see cref="GuardsDigital.Presentation.Match.CardFootprint"/> and shows
+        /// its title, values, action, rules text and history whole.
+        ///
+        /// <para>A reading rather than an input, on the same terms as the Active-effect and Ultimate
+        /// readings above: what it proves is what a player sees. It is a component shape because its
+        /// subject is the whole printed set at once - "no face of this hero resizes a card" is not a
+        /// claim any one face can make - and it is required of every hero rather than derived from
+        /// content, because a hero whose longest sentence does not fit is exactly the case that must
+        /// fail. The check is <c>StandardCardFootprintCheck</c>, which enumerates the hero's own
+        /// content, so the coverage cannot be narrowed by the row that names it.</para>
+        /// </summary>
+        StandardCardFootprintConformance
     }
 
     /// <summary>
@@ -328,7 +343,12 @@ namespace GuardsDigital.Tests.PlayMode
             PlayerInteractionShape.RetainedPrefixUndo,
             PlayerInteractionShape.ReplayReconstruction,
             PlayerInteractionShape.RestartReconstruction,
-            PlayerInteractionShape.PresentationRebuild
+            PlayerInteractionShape.PresentationRebuild,
+
+            // Milestone 8.20c. Required of every hero, including one added after the mapped pitch
+            // roster: the standard card footprint is only a standard while the hero who cannot fit it
+            // fails here instead of widening it.
+            PlayerInteractionShape.StandardCardFootprintConformance
         };
 
         /// <summary>

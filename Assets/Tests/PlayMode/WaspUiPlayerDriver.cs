@@ -46,18 +46,33 @@ namespace GuardsDigital.Tests.PlayMode
                 return;
             }
 
+            SetPlayerViewport(1920, 1080, "8.15 journey");
+        }
+
+        /// <summary>
+        /// Sizes the Play Mode view to an exact viewport, for a journey whose subject <em>is</em> the
+        /// viewport. Milestone 8.20c, which needs a short supported desktop screen to show that the
+        /// region holding the cards scrolls rather than the cards shrinking.
+        ///
+        /// <para>Unlike <see cref="EnsurePlayerViewport"/> this always applies, so a caller that
+        /// shrinks the view owns putting it back: every other journey in the suite reads its geometry
+        /// from whatever size is left behind, and <see cref="EnsurePlayerViewport"/> would accept a
+        /// leaked short one as already good enough.</para>
+        /// </summary>
+        public static void SetPlayerViewport(uint width, uint height, string reason)
+        {
             var playModeWindow = Type.GetType(
                 "UnityEditor.PlayModeWindow,UnityEditor" /* absence-intended: Editor-only view sizing */);
             Assert.That(playModeWindow, Is.Not.Null,
-                $"The {Screen.width}x{Screen.height} viewport is below any real player's, and the " +
-                "Editor play-view sizing type is unavailable to correct it.");
+                $"The {Screen.width}x{Screen.height} viewport cannot be set to {width}x{height}, and " +
+                "the Editor play-view sizing type is unavailable to correct it.");
 
             var custom = playModeWindow.GetMethod(
                 "SetCustomRenderingResolution",
                 new[] { typeof(uint), typeof(uint), typeof(string) });
             if (custom != null)
             {
-                custom.Invoke(null, new object[] { (uint)1920, (uint)1080, "8.15 journey" });
+                custom.Invoke(null, new object[] { width, height, reason });
                 return;
             }
 
@@ -65,7 +80,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "SetViewSize", new[] { typeof(uint), typeof(uint) });
             if (setViewSize != null)
             {
-                setViewSize.Invoke(null, new object[] { (uint)1920, (uint)1080 });
+                setViewSize.Invoke(null, new object[] { width, height });
                 return;
             }
 

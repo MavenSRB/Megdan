@@ -290,7 +290,7 @@ setup, networking, or production art.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820b-pass-the-permanent-hero-player-path-gate-for-wasp-completion-evidence).
 
-### [ ] 8.20c Standardize every hero card footprint
+### [x] 8.20c Standardize every hero card footprint
 
 Prerequisite satisfied: Milestone 8.20b completed the permanent player-path gate for both currently
 configured heroes, providing the real Wasp/Arien surfaces and journeys against which this shared
@@ -323,6 +323,8 @@ Acceptance checks:
 
 Non-goals: No card wording, rules, balance, hero content, production art, broad HUD redesign, responsive
 card scaling, six-player setup, or networking.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820c-standardize-every-hero-card-footprint-completion-evidence).
 
 ### [ ] 8.20d Name every standing decision in the status line
 
@@ -361,9 +363,12 @@ footprint work, broad HUD redesign, hero content, six-player setup, networking, 
 
 ### [!] 8.21 Complete and verify additional pitch hero slot B - Brogan
 
-Blocked by: Milestone 8.20c must establish the standard card footprint before another hero face enters the
-configured player path. Milestones 8.20 and 8.20a proved the shared continuation and player-path gate on
-Arien, and milestone 8.20b closed the same permanent gate for Wasp with no grandfathered exception.
+Blocked by: Milestone 8.20d must name the standing effect choice in the status line before this milestone's
+own removal-prevention prompt arrives as the next unnamed pending family and inherits that defect by
+construction. Milestone 8.20c established the standard card footprint the gate now measures every newly
+configured hero's faces against, so Brogan's set must fit it without resizing or clipping; milestones 8.20
+and 8.20a proved the shared continuation and player-path gate on Arien, and milestone 8.20b closed the same
+permanent gate for Wasp with no grandfathered exception.
 
 Observable outcome: Brogan the Destroyer's complete verified set is defined, dealt, resolved through the
 ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested.

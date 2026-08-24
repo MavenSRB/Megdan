@@ -480,7 +480,7 @@ namespace GuardsDigital.Tests.EditMode
             const float trayBorder = 1f * 2f;
             const float scrollbarAllowance = 16f;
             var available = tray.width - trayPadding - trayBorder - scrollbarAllowance;
-            var row = 5f * (DirectorHandsUnityView.CardWidth + DirectorHandsUnityView.CardGap +
+            var row = 5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap +
                 (2f * (DirectorHandsUnityView.ActiveOutlineGap +
                     DirectorHandsUnityView.ActiveOutlineWidth)));
 
@@ -489,8 +489,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(tray.height, Is.GreaterThanOrEqualTo(480f),
                 "and the tray is tall enough for the longest verified face's wrapped rules text.");
             Assert.That(
-                DirectorHandsUnityView.CardMinimumHeight,
-                Is.GreaterThanOrEqualTo(DirectorHandsUnityView.CardWidth * 1.5f),
+                CardFootprint.Height,
+                Is.GreaterThanOrEqualTo(CardFootprint.Width * 1.5f),
                 "A card is drawn as a card: portrait, at roughly the approved mockup's proportions, " +
                 "and never as a wide tile with a paragraph squeezed into it.");
             Assert.That(ConfiguredMatchHudRenderer.CalculatePlayfieldRect(1920f, 1080f).height,
@@ -1743,15 +1743,249 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(tray.width - occupied, Is.GreaterThan(120f),
                 "Four whole faces, their gutters and the section label leave DECLINE DEFENSE room on " +
                 "the same row at the validated desktop viewport.");
-            Assert.That(DirectorHandsUnityView.CardMinimumHeight, Is.LessThan(tray.height),
+            Assert.That(CardFootprint.Height, Is.LessThan(tray.height),
                 "and one row of them stands inside the tray's ordinary bound, so this response needs " +
                 "no taller context than it has always had.");
 
             // The short desktop viewport keeps the existing bounded-scroll fallback rather than a new
             // rule: the region is smaller than the row, and the tray region already scrolls.
             var short0 = ConfiguredMatchHudRenderer.CalculateCardPanelRect(778f, 300f);
-            Assert.That(short0.height, Is.LessThan(DirectorHandsUnityView.CardMinimumHeight));
+            Assert.That(short0.height, Is.LessThan(CardFootprint.Height));
         }
+
+        // -------------------------------------------------------------------------------------------
+        // The standard card footprint (milestone 8.20c)
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Every surface that draws a complete card face draws it at the one shared footprint.
+        ///
+        /// <para>Milestone 8.20c. Before it the width was shared and the height was not: the tray gave
+        /// a card a floor and stretched the row to the tallest one's content, a Defense offer and a
+        /// card-valued effect choice grew their face to the frame around them, and the rail's preview
+        /// drew the same card at whatever its own words needed - so one printed face came out four
+        /// different heights depending on which surface asked for it. The check is on the face's own
+        /// box rather than on the control around it, because the frame is each surface's own business
+        /// and only the face is shared.</para>
+        /// </summary>
+        [Test]
+        public void EveryFullCardSurface_DrawsItsFaceAtTheStandardFootprint()
+        {
+            var tray = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(ConfiguredMatchFixtures.CreateVerifiedMirrorSession(), tray)
+                .Refresh();
+
+            var preview = new VisualElement();
+            preview.Add(DirectorHandsUnityView.BuildStandaloneCard(CurrentRoundCards.DeckCard(
+                new CardInstanceId("footprint-preview"),
+                WaspCardContent.Definition(WaspCardContent.Shock))));
+
+            var defense = new RoundActionUnityView();
+            new RoundActionPresenter(
+                ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse(), defense).Refresh();
+
+            var upgrade = new RoundActionUnityView();
+            new RoundActionPresenter(
+                ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _), upgrade)
+                .Refresh();
+
+            var chooser = new RoundActionUnityView();
+            new RoundActionPresenter(SessionAwaitingACardValuedEffectChoice(), chooser).Refresh();
+
+            var surfaces = new (string Name, VisualElement Root, string Control)[]
+            {
+                ("the ordinary tray", tray.Root, "gd-card-choice"),
+                ("a complete-face preview", preview, "gd-card-preview"),
+                ("p.14's Defense response", defense.Root, "gd-defense-card"),
+                ("p.15's Upgrade a Card", upgrade.Root, "gd-upgrade-option"),
+                ("a card-valued effect choice", chooser.Root, "gd-effect-card")
+            };
+
+            foreach (var surface in surfaces)
+            {
+                Assert.That(
+                    Descendants(surface.Root).Any(element => element.name == surface.Control),
+                    Is.True,
+                    $"{surface.Name} draws no {surface.Control}, so this case proves nothing about " +
+                    "it and the surface must be reached differently rather than dropped.");
+
+                var faces = Descendants(surface.Root)
+                    .Where(element =>
+                        element.name == "gd-card-preview" || element.name == "gd-card-choice")
+                    .ToArray();
+                Assert.That(faces, Is.Not.Empty,
+                    $"{surface.Name} draws no complete card face.");
+                foreach (var face in faces)
+                {
+                    AssertIsTheStandardFootprint(face, surface.Name);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Neither what a card says nor what state it is in changes its footprint.
+        ///
+        /// <para>Milestone 8.20c, and this is the exhaustive half the Play Mode journey deliberately
+        /// does not attempt: every verified face of both configured heroes, every lifecycle group, and
+        /// each of the five state treatments a card can wear - selected, in play, unavailable,
+        /// Active-effect source, and the plain available card. The journey proves the two states a
+        /// player reaches by pointing at the live surface; reaching all of these through real play
+        /// would prove the same property several times over at several times the cost.</para>
+        /// </summary>
+        [Test]
+        public void NoCardStateOrContent_ChangesTheStandardFootprint()
+        {
+            // Content: every printed face both configured heroes have, including the ones no player
+            // can reach - a footprint the box's cards do not keep is a footprint the next staging
+            // could break by dealing one.
+            var everyFace = WaspCardContent.AllDefinitions
+                .Concat(ArienCardContent.AllDefinitions)
+                .ToArray();
+            Assert.That(everyFace, Has.Length.GreaterThan(30),
+                "Both configured heroes' whole sets are measured, not one hand of five.");
+            foreach (var definition in everyFace)
+            {
+                var face = DirectorHandsUnityView.BuildStandaloneCard(CurrentRoundCards.DeckCard(
+                    new CardInstanceId($"footprint-{definition.Id.Value}"), definition));
+                AssertIsTheStandardFootprint(face, definition.DisplayName);
+            }
+
+            // State: the five treatments, each on the tray's own control, taken from real positions
+            // rather than from hand-built view models - a state a match cannot reach is not a state
+            // this HUD has to keep a promise about.
+            var states = new (string Name, MatchSession Session)[]
+            {
+                ("an untouched hand", ConfiguredMatchFixtures.CreateVerifiedMirrorSession()),
+                ("a card picked up and committed facedown",
+                    ConfiguredMatchFixtures.CreateSessionWithAFacedownCommitment(out _)),
+                ("a revealed card being resolved",
+                    ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn()),
+                ("a spent, discarded card",
+                    ConfiguredMatchFixtures.CreateSessionWithADiscardedCard(out _)),
+                ("a card sourcing a live Active effect",
+                    ConfiguredMatchFixtures.CreateSessionWithALiveActiveEffect(out _))
+            };
+
+            foreach (var state in states)
+            {
+                var view = new DirectorHandsUnityView();
+                new DirectorHandsPresenter(state.Session, view).Refresh();
+                var cards = Descendants(view.Root)
+                    .Where(element => element.name == "gd-card-choice")
+                    .ToArray();
+                Assert.That(cards, Is.Not.Empty, $"The tray draws no card for {state.Name}.");
+                foreach (var card in cards)
+                {
+                    AssertIsTheStandardFootprint(card, state.Name);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The tray region scrolls at a short supported desktop viewport rather than shrinking the
+        /// cards inside it, which is what makes one fixed footprint supportable on every screen.
+        /// </summary>
+        [Test]
+        public void AtAShortViewport_TheRegionScrollsAndTheCardKeepsItsFootprint()
+        {
+            var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(1920f, 1080f);
+            Assert.That(CardFootprint.Height, Is.LessThan(tray.height),
+                "One card stands inside the tray region at the validated desktop viewport.");
+            Assert.That(CardFootprint.Height,
+                Is.GreaterThanOrEqualTo(CardFootprint.Width * 1.5f),
+                "A card is drawn as a card: portrait, at roughly the approved mockup's proportions, " +
+                "and never as a wide tile with a paragraph squeezed into it.");
+
+            // The tray region's own padding and border, which the cards inside it never get.
+            const float regionChrome = (12f * 2f) + (1f * 2f);
+            var shortViewport = ConfiguredMatchHudRenderer.CalculateCardPanelRect(1280f, 720f);
+            Assert.That(shortViewport.height - regionChrome, Is.LessThan(CardFootprint.Height),
+                "The short supported desktop viewport is the case this rule is about: the region " +
+                "cannot hold a whole card, and what gives is the region rather than the card.");
+
+            var view = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(ConfiguredMatchFixtures.CreateVerifiedMirrorSession(), view)
+                .Refresh();
+            foreach (var card in Descendants(view.Root)
+                .Where(element => element.name == "gd-card-choice"))
+            {
+                AssertIsTheStandardFootprint(card, "the short viewport");
+            }
+
+            // The card is the same card there, and the region it stands in is what takes the
+            // difference. That the region actually scrolls is a fact about the live composition, so
+            // it is asserted on the live panel by
+            // WaspUiJourneyPlayModeTests.Scene_KeepsEveryTrayCardTheSameSizeWhenTheMapPointerSwitchesHeroes
+            // rather than guessed at here.
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateCardPanelRect(1280f, 720f).width,
+                Is.GreaterThanOrEqualTo(
+                    (5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap)) - 30f),
+                "and the short viewport still holds p.6's five cards on one row, so the scroll it " +
+                "needs is vertical only.");
+        }
+
+        /// <summary>
+        /// One card face's outer box, held to the shared contract at both ends. The minimum and the
+        /// maximum are checked as well as the size, because a size alone is a preference a container
+        /// can overrule and containers had been overruling it.
+        /// </summary>
+        private static void AssertIsTheStandardFootprint(VisualElement face, string where)
+        {
+            Assert.That(face.style.width.value.value, Is.EqualTo(CardFootprint.Width).Within(0.01f),
+                $"A card face on {where} is not the standard width.");
+            Assert.That(face.style.height.value.value, Is.EqualTo(CardFootprint.Height).Within(0.01f),
+                $"A card face on {where} is not the standard height.");
+            Assert.That(face.style.minHeight.value.value,
+                Is.EqualTo(CardFootprint.Height).Within(0.01f),
+                $"A card face on {where} may still be squeezed shorter than the footprint.");
+            Assert.That(face.style.maxHeight.value.value,
+                Is.EqualTo(CardFootprint.Height).Within(0.01f),
+                $"A card face on {where} may still be stretched taller than the footprint.");
+            Assert.That(face.style.flexGrow.value, Is.EqualTo(0f),
+                $"A card face on {where} still grows with the space it is given.");
+            Assert.That(face.style.flexShrink.value, Is.EqualTo(0f),
+                $"A card face on {where} still shrinks with the space it is given.");
+        }
+
+        /// <summary>
+        /// A position standing on rulebook p.10's discard chooser, which is the card-valued effect
+        /// choice this build reaches: the chosen hero is being asked which of their own cards to give
+        /// up, and every option is drawn as a whole printed face.
+        /// </summary>
+        private static MatchSession SessionAwaitingACardValuedEffectChoice()
+        {
+            var session = ConfiguredMatchFixtures.CreateRadiusDiscardRiderSession(out var minionId);
+            var red = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Red).HeroId;
+            var blue = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(
+                red, HandCardOf(session, red, WaspCardContent.Shock).Id));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(
+                blue, HandCardOf(session, blue, WaspCardContent.StopProjectiles).Id));
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                offer.IsAvailable && offer.ActionDefinitionId.Equals(WaspCardContent.PrimaryAttack));
+            ConfiguredMatchFixtures.Accept(
+                session, DirectorCommand.StartAction(attack.ActionDefinitionId));
+            var target = session.Projection.PendingAttackTargetChoice;
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseAttackTarget(
+                target.ResolutionId, target.ChoiceId, minionId));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.SelectInvocations.Single()));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            Assert.That(session.Projection.PendingEffectChoice?.ChooserId, Is.EqualTo(blue),
+                "The fixture must be standing on the chosen hero's own card question.");
+            return session;
+        }
+
+        private static CardInstance HandCardOf(
+            MatchSession session, HeroId heroId, CardDefinitionId definitionId) =>
+            session.Projection.Cards.Single(card =>
+                card.OwnerId.Equals(heroId) &&
+                card.State.Location == CardLocation.Hand &&
+                card.DefinitionReference.DefinitionId.Equals(definitionId));
 
         // -------------------------------------------------------------------------------------------
         // One usable interaction context
@@ -2215,10 +2449,10 @@ namespace GuardsDigital.Tests.EditMode
             // so the region is allowed the height under the status strip while this prompt stands.
             Assert.That(view.HasUpgradeCardGrid, Is.True);
             var tall = ConfiguredMatchHudRenderer.CalculateTallContextHeight(1152f);
-            Assert.That(DirectorHandsUnityView.CardMinimumHeight * 2f, Is.GreaterThan(tray.height),
+            Assert.That(CardFootprint.Height * 2f, Is.GreaterThan(tray.height),
                 "which the ordinary bound could not hold.");
             Assert.That(
-                (DirectorHandsUnityView.CardMinimumHeight * 2f) + DirectorHandsUnityView.CardGap,
+                (CardFootprint.Height * 2f) + DirectorHandsUnityView.CardGap,
                 Is.LessThanOrEqualTo(tall),
                 "Both rows of card faces stand inside the viewport at the validated desktop view.");
             Assert.That(tall, Is.GreaterThan(tray.height),

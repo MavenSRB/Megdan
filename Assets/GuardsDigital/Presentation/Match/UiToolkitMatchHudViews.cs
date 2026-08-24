@@ -491,13 +491,13 @@ namespace GuardsDigital.Presentation.Match
             var onLeft = anchor.center.x < width / 2f;
             var left = onLeft
                 ? anchor.xMax + 10f
-                : anchor.xMin - DirectorHandsUnityView.CardWidth - 10f;
+                : anchor.xMin - CardFootprint.Width - 10f;
             preview.style.left = Mathf.Max(0f, left);
             preview.style.top = Mathf.Max(
                 0f,
                 Mathf.Min(
                     anchor.yMin - 40f,
-                    Mathf.Max(0f, height - DirectorHandsUnityView.CardMinimumHeight - 8f)));
+                    Mathf.Max(0f, height - CardFootprint.Height - 8f)));
         }
 
         public void Layout(Rect red, Rect blue, Rect playfield)
@@ -984,25 +984,11 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class DirectorHandsUnityView : IDirectorHandsView
     {
-        /// <summary>
-        /// Every card in the tray is this wide, so a hand reads as one row of equal cards.
-        ///
-        /// Milestone 8.5a. A tray card carries the whole printed face now, and the shape that carries it
-        /// is the shape a card has: taller than it is wide, at roughly the proportions of the approved
-        /// mockup, rather than a wide tile with a paragraph squeezed into it. The height comes from the
-        /// tray's own bound, so the width is what keeps the ratio portrait - and five of these plus
-        /// their gutters leave the tray's 1280 bound comfortable, which is the constraint that matters:
-        /// p.6 deals five cards and they are one row.
-        /// </summary>
-        public const float CardWidth = 186f;
-
-        /// <summary>
-        /// The floor a card is never shorter than, and the floor that makes it portrait: no viewport
-        /// draws one of these wider than it is tall. Its actual height comes from the row, which
-        /// stretches every card to the tallest one's content, so the cards match without a fixed height
-        /// that a longer name could overflow.
-        /// </summary>
-        public const float CardMinimumHeight = 344f;
+        // Milestone 8.20c: a card's own size is CardFootprint's, and this class no longer states one.
+        // Milestone 8.5a's `CardWidth` and its `CardMinimumHeight` floor lived here, and the floor is
+        // what the milestone removed - the row used to stretch every card to the tallest one's
+        // *content*, so a hand's card size was decided by whichever sentence in it ran longest and
+        // switching to the other hero resized every card on the screen.
 
         /// <summary>
         /// The Initiative flag's width. It is a fixed column so that five flags line up down the left
@@ -1073,8 +1059,10 @@ namespace GuardsDigital.Presentation.Match
             header.style.justifyContent = Justify.SpaceBetween;
             header.style.marginBottom = 8f;
             cards = HudElements.Row(8f);
-            // Stretch, so the line's tallest card sets the height of every card on it.
-            cards.style.alignItems = Align.Stretch;
+            // Milestone 8.20c: the row no longer sizes the cards. It used to stretch, so the tallest
+            // card's content set the height of every card on the line - which is exactly the
+            // content-driven sizing the standard footprint replaces.
+            cards.style.alignItems = Align.FlexStart;
             // Room for the raise, so a still-playable card lifts into space of its own rather than into
             // the label above it.
             cards.style.marginTop = AvailableCardRaise;
@@ -1178,14 +1166,13 @@ namespace GuardsDigital.Presentation.Match
             };
             button.text = string.Empty;
 
-            // One size for every card in the tray, without a fixed height. A minimum alone let each
-            // card settle at whatever its own wrapped name and value line needed, so five cards of one
-            // hand came out five different shapes; a fixed height instead pushed the history line out
-            // through the bottom of any card whose content was taller. The row stretches every card to
-            // the tallest one's content, so they match and none of them can overflow.
-            button.style.width = CardWidth;
-            button.style.minHeight = CardMinimumHeight;
-            button.style.flexGrow = 1f;
+            // Milestone 8.20c: one size for every card in the game, stated once and pinned at both
+            // ends. What stood here before was a width, a minimum height and a flex-grow, which made a
+            // card's height whatever the tallest content in its own row needed - so five cards matched
+            // each other and matched nothing else, and a hand of longer sentences was a taller hand.
+            // The rules panel takes the slack inside the box instead, which is what keeps the bands of
+            // five cards lined up without the box itself moving.
+            CardFootprint.Apply(button);
             button.style.flexDirection = FlexDirection.Column;
             button.style.alignItems = Align.Stretch;
             button.style.justifyContent = Justify.FlexStart;
@@ -1266,8 +1253,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var element = new VisualElement { name = "gd-card-preview" };
-            element.style.width = CardWidth;
-            element.style.minHeight = CardMinimumHeight;
+            CardFootprint.Apply(element);
             element.style.flexDirection = FlexDirection.Column;
             element.style.alignItems = Align.Stretch;
             element.style.backgroundColor = MatchHudTheme.Face(card.Color);
@@ -1663,7 +1649,7 @@ namespace GuardsDigital.Presentation.Match
         /// change another's width, re-wrap its rules text, or move the row.
         /// </summary>
         public const float DefenseCardFootprint =
-            DirectorHandsUnityView.CardWidth + (DefenseCardInset * 2f);
+            CardFootprint.Width + (DefenseCardInset * 2f);
 
         public static readonly Color DefensePreviewBackgroundColor =
             new Color(0.025f, 0.035f, 0.045f, 1f);
@@ -2073,7 +2059,7 @@ namespace GuardsDigital.Presentation.Match
             control.style.flexDirection = FlexDirection.Column;
             control.style.alignItems = Align.Stretch;
             control.style.flexShrink = 0f;
-            control.style.width = DirectorHandsUnityView.CardWidth + (UpgradeOptionInset * 2f);
+            control.style.width = CardFootprint.Width + (UpgradeOptionInset * 2f);
             control.style.marginLeft = 0f;
             control.style.marginRight = 0f;
             control.style.marginTop = 0f;
@@ -2152,7 +2138,7 @@ namespace GuardsDigital.Presentation.Match
         private static VisualElement BuildUpgradeOptionGap()
         {
             var gap = new VisualElement { name = "gd-upgrade-gap" };
-            gap.style.width = DirectorHandsUnityView.CardWidth + (UpgradeOptionInset * 2f);
+            gap.style.width = CardFootprint.Width + (UpgradeOptionInset * 2f);
             gap.style.flexShrink = 0f;
             gap.pickingMode = PickingMode.Ignore;
             return gap;
@@ -2343,11 +2329,12 @@ namespace GuardsDigital.Presentation.Match
             control.style.flexDirection = FlexDirection.Column;
             control.style.alignItems = Align.Stretch;
             control.style.flexShrink = 0f;
-            // Stretched to the row rather than centred in it, which is what the tray does with its own
-            // five: a Block prints no Defense value and an Attack's rules text runs longer, so
-            // content-sized offers came out four different heights sitting at four different
-            // baselines. The row is as tall as its tallest card and every face fills it.
-            control.style.alignSelf = Align.Stretch;
+            // Milestone 8.20c: the offers line up because every face is the standard footprint, not
+            // because the row stretches them. A Block prints no Defense value and an Attack's rules
+            // text runs longer, so content-sized offers used to come out four different heights at
+            // four different baselines; stretching them to the row fixed that inside this prompt and
+            // left the same four cards a different size everywhere else.
+            control.style.alignSelf = Align.FlexStart;
             control.style.width = DefenseCardFootprint;
             control.style.marginLeft = 0f;
             control.style.marginRight = 0f;
@@ -2357,12 +2344,7 @@ namespace GuardsDigital.Presentation.Match
             control.style.backgroundColor = MatchHudTheme.PanelBackground;
             HudElements.MarkSelectedWithoutResizing(control, false);
 
-            // The face grows to its frame, so the row is four cards of one size rather than four
-            // content-sized ones sharing a top edge. It is set here rather than in the shared builder
-            // because the rail's hover preview must stay exactly as tall as the card it draws.
-            var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
-            face.style.flexGrow = 1f;
-            control.Add(face);
+            control.Add(DirectorHandsUnityView.BuildStandaloneCard(choice.Card));
             control.tooltip = choice.Label.Replace('\n', ' ');
             return control;
         }
@@ -2493,7 +2475,7 @@ namespace GuardsDigital.Presentation.Match
             control.style.flexDirection = FlexDirection.Column;
             control.style.alignItems = Align.Stretch;
             control.style.flexShrink = 0f;
-            control.style.alignSelf = Align.Stretch;
+            control.style.alignSelf = Align.FlexStart;
             control.style.width = DefenseCardFootprint;
             control.style.marginLeft = 0f;
             control.style.marginRight = 0f;
@@ -2503,9 +2485,7 @@ namespace GuardsDigital.Presentation.Match
             control.style.backgroundColor = MatchHudTheme.PanelBackground;
             HudElements.MarkSelectedWithoutResizing(control, false);
 
-            var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
-            face.style.flexGrow = 1f;
-            control.Add(face);
+            control.Add(DirectorHandsUnityView.BuildStandaloneCard(choice.Card));
             control.tooltip = choice.Label.Replace('\n', ' ');
             return control;
         }
