@@ -185,6 +185,198 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
+    /// What a standing effect choice is asking about, as one typed fact.
+    ///
+    /// <para>Milestone 8.20d. It exists so the status line and the region heading can say which
+    /// decision the match is waiting on without either of them reading an option identity, a
+    /// resolution ID, a node name, or printed card text. The candidates the authority projected
+    /// already carry their own kinds, and those kinds are the whole of this reading: a set of card
+    /// instances is a question about cards, a set of integers is a question about a printed number,
+    /// a set of option nodes is a question about modes.</para>
+    /// </summary>
+    public enum EffectChoiceSubject
+    {
+        /// <summary>Nothing is chosen among: a printed `may` is taken or refused.</summary>
+        OptionalStep = 0,
+
+        /// <summary>The modes of a control node.</summary>
+        Mode = 1,
+
+        Card = 2,
+
+        /// <summary>A printed number, such as the kinetic `3 or 4 spaces` distance.</summary>
+        Number = 3,
+
+        /// <summary>Pieces - heroes, minions, tokens - whether standing on the board or in supply.</summary>
+        Piece = 4,
+
+        /// <summary>Empty spaces the actor may be put on.</summary>
+        Space = 5,
+
+        /// <summary>Candidates of more than one shape, so no narrower noun is true of all of them.</summary>
+        Mixed = 6
+    }
+
+    /// <summary>
+    /// Milestone 8.20d: the one place a standing effect choice says what it is.
+    ///
+    /// <para>Written because it had never said anything. The status derivation ran two phase checks
+    /// and six pending-family branches and had no <see cref="PendingEffectChoice"/> branch at all, so
+    /// every effect choice since milestone 8.15 - rulebook p.10's discard chooser above all - fell
+    /// through to "Initiative N: choose an action or End Turn" while its controls sat under a row
+    /// headed <c>ACTIONS</c>. A player being asked which card to give up was labelled as though they
+    /// were picking an action. Milestone 8.20b's Wasp journey met it and recorded it rather than
+    /// fixing it, because one derivation branch plus the heading corrects every effect choice at
+    /// once and wanted doing in one place.</para>
+    ///
+    /// <para>Every word here is composed from the pause's own typed facts - its kind, its bounds, how
+    /// many candidates it offers, how many are selected, and whether it projected a decline or a stop.
+    /// Nothing decodes an option identity, a resolution ID, or a printed sentence, which is the same
+    /// rule <see cref="EffectChoiceLabels"/> has followed since milestone 6.8a.</para>
+    /// </summary>
+    public static class EffectChoicePromptLabels
+    {
+        /// <summary>
+        /// The one noun the offered candidates are all true of, or <see cref="EffectChoiceSubject.Mixed"/>
+        /// where they are not. The previews are consulted only to separate a candidate naming a piece
+        /// from one naming an empty space, which is the same reading milestone 8.11c gave the board.
+        /// </summary>
+        public static EffectChoiceSubject SubjectOf(
+            PendingEffectChoice choice,
+            IReadOnlyList<EffectChoiceCandidatePreview> previews)
+        {
+            if (choice == null)
+            {
+                throw new ArgumentNullException(nameof(choice));
+            }
+
+            if (choice.Kind == EffectChoiceKind.ConfirmOrDecline)
+            {
+                return EffectChoiceSubject.OptionalStep;
+            }
+
+            var named = new HashSet<EffectValue>((previews ??
+                    Array.Empty<EffectChoiceCandidatePreview>())
+                .Where(preview => preview.NamesObject)
+                .Select(preview => preview.CandidateValue));
+            var subjects = choice.Candidates
+                .Select(candidate => SubjectOfCandidate(candidate, named))
+                .Distinct()
+                .ToArray();
+            return subjects.Length == 1 ? subjects[0] : EffectChoiceSubject.Mixed;
+        }
+
+        private static EffectChoiceSubject SubjectOfCandidate(
+            EffectChoiceCandidate candidate, HashSet<EffectValue> namesObject)
+        {
+            if (candidate.Kind == EffectChoiceCandidateKind.Option)
+            {
+                return EffectChoiceSubject.Mode;
+            }
+
+            switch (candidate.Value.Kind)
+            {
+                case EffectValueKind.CardInstance:
+                    return EffectChoiceSubject.Card;
+                case EffectValueKind.Integer:
+                    return EffectChoiceSubject.Number;
+                case EffectValueKind.Hero:
+                case EffectValueKind.Minion:
+                    return EffectChoiceSubject.Piece;
+                case EffectValueKind.Coordinate:
+                    // Milestone 8.11c's reading: a coordinate with something standing on it is that
+                    // piece, and one with nothing standing on it is a space the actor may take.
+                    return namesObject.Contains(candidate.Value)
+                        ? EffectChoiceSubject.Piece
+                        : EffectChoiceSubject.Space;
+                default:
+                    return EffectChoiceSubject.Mixed;
+            }
+        }
+
+        /// <summary>
+        /// What the status line says while this decision stands. It states the bounds the authority
+        /// set, what is being chosen among, and the two answers that are not selections - declining,
+        /// which milestone 8.20a made an answer a player must be able to give by name, and milestone
+        /// 6.5ae's stop, which is the only answer left when every offered mode was refused.
+        /// </summary>
+        public static string StatusLine(PendingEffectChoice choice, EffectChoiceSubject subject)
+        {
+            if (choice == null)
+            {
+                throw new ArgumentNullException(nameof(choice));
+            }
+
+            if (choice.StopInvocation != null)
+            {
+                return "No offered mode can be performed: End Turn closes the action.";
+            }
+
+            if (choice.Kind == EffectChoiceKind.ConfirmOrDecline)
+            {
+                return "An optional step is offered: confirm it or decline.";
+            }
+
+            var count = choice.Candidates.Count;
+            var bounds = choice.MinimumSelections == choice.MaximumSelections
+                ? $"Choose {choice.MinimumSelections}"
+                : choice.MinimumSelections == 0
+                    ? $"Choose up to {choice.MaximumSelections}"
+                    : $"Choose {choice.MinimumSelections} to {choice.MaximumSelections}";
+            var line = $"{bounds} of {count} {Noun(subject, count)}" +
+                (choice.DeclineInvocation != null ? ", or decline." : ".");
+            return choice.MaximumSelections > 1
+                ? $"{line} {choice.SelectedCandidates.Count} chosen."
+                : line;
+        }
+
+        /// <summary>
+        /// The gutter label of the region holding this decision's controls. It names the family the
+        /// way <c>DEFENSE</c>, <c>CLEAR</c> and <c>LEVEL UP</c> name theirs, so the controls no longer
+        /// arrive under a heading that says the player is choosing an action.
+        /// </summary>
+        public static string SectionLabel(EffectChoiceSubject subject)
+        {
+            switch (subject)
+            {
+                case EffectChoiceSubject.OptionalStep:
+                    return "OPTIONAL STEP";
+                case EffectChoiceSubject.Mode:
+                    return "MODE CHOICE";
+                case EffectChoiceSubject.Card:
+                    return "CARD CHOICE";
+                case EffectChoiceSubject.Number:
+                    return "NUMBER CHOICE";
+                case EffectChoiceSubject.Piece:
+                    return "TARGET CHOICE";
+                case EffectChoiceSubject.Space:
+                    return "SPACE CHOICE";
+                default:
+                    return "CHOICE";
+            }
+        }
+
+        private static string Noun(EffectChoiceSubject subject, int count)
+        {
+            switch (subject)
+            {
+                case EffectChoiceSubject.Mode:
+                    return count == 1 ? "mode" : "modes";
+                case EffectChoiceSubject.Card:
+                    return count == 1 ? "card" : "cards";
+                case EffectChoiceSubject.Number:
+                    return count == 1 ? "printed number" : "printed numbers";
+                case EffectChoiceSubject.Piece:
+                    return count == 1 ? "target" : "targets";
+                case EffectChoiceSubject.Space:
+                    return count == 1 ? "space" : "spaces";
+                default:
+                    return count == 1 ? "option" : "options";
+            }
+        }
+    }
+
+    /// <summary>
     /// Milestone 6.3a: the one place the Clear surface names its controls.
     ///
     /// A candidate is named by <see cref="EffectChoiceLabels.TokenTargetLabel"/> rather than by a
@@ -1884,6 +2076,29 @@ namespace GuardsDigital.Presentation.Match
         public EffectChoiceCandidate Candidate { get; }
     }
 
+    /// <summary>
+    /// Milestone 8.20d: the standing effect choice as the region that draws it needs to know it -
+    /// what it is asking about, and the gutter label its controls arrive under.
+    ///
+    /// <para>Null whenever no effect choice is pending, and non-null whenever one is, so the region
+    /// cannot draw a decision's controls without the heading that names them. The words are composed
+    /// by <see cref="EffectChoicePromptLabels"/>, which is also where
+    /// <see cref="RoundActionViewModel.Status"/> gets its sentence, so a heading and a status line
+    /// describing one pause cannot disagree about which pause it is.</para>
+    /// </summary>
+    public sealed class EffectChoicePromptViewModel
+    {
+        public EffectChoicePromptViewModel(EffectChoiceSubject subject)
+        {
+            Subject = subject;
+            SectionLabel = EffectChoicePromptLabels.SectionLabel(subject);
+        }
+
+        public EffectChoiceSubject Subject { get; }
+
+        public string SectionLabel { get; }
+    }
+
     public sealed class RoundActionViewModel
     {
         public RoundActionViewModel(
@@ -1907,9 +2122,11 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<UnavailableActionViewModel> unavailableActions = null,
             IEnumerable<ClearOfferViewModel> clearOffers = null,
             ClearSelectionViewModel clearSelection = null,
-            SystemTransitionPromptViewModel systemTransitionPrompt = null)
+            SystemTransitionPromptViewModel systemTransitionPrompt = null,
+            EffectChoicePromptViewModel effectChoicePrompt = null)
         {
             SystemTransitionPrompt = systemTransitionPrompt;
+            EffectChoicePrompt = effectChoicePrompt;
             Version = version;
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
@@ -1947,6 +2164,20 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentException(
                     "An open Clear selection belongs to an offer this model still carries.",
                     nameof(clearSelection));
+            }
+
+            // Milestone 8.20d: a decision's controls and the heading that names them arrive together
+            // or not at all. Before this the controls were appended to the shared `ACTIONS` row, so
+            // there was nothing to disagree with; now that the region asks the model what to call
+            // them, a model carrying controls and no prompt would put a discard chooser back under
+            // the heading this milestone exists to stop.
+            if (effectChoicePrompt == null &&
+                (EffectChoices.Count > 0 || UnavailableEffectChoices.Count > 0))
+            {
+                throw new ArgumentException(
+                    "An effect choice's controls are drawn under the prompt that names them, so a " +
+                    "model carrying either list carries the prompt too.",
+                    nameof(effectChoicePrompt));
             }
 
             HudHeader =$"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
@@ -2021,6 +2252,13 @@ namespace GuardsDigital.Presentation.Match
         /// decision, because the match asks exactly one thing at a time.
         /// </summary>
         public SystemTransitionPromptViewModel SystemTransitionPrompt { get; }
+
+        /// <summary>
+        /// Milestone 8.20d: the standing effect choice, or <c>null</c> when none is pending. It is
+        /// what the contextual region reads to head this decision's own section, rather than adding
+        /// its controls to the row of actions the player is not being asked for.
+        /// </summary>
+        public EffectChoicePromptViewModel EffectChoicePrompt { get; }
 
         public string HudHeader { get; }
     }
@@ -2504,15 +2742,43 @@ namespace GuardsDigital.Presentation.Match
         /// control the turn authority refuses with <c>HeroRespawnChoicePending</c> every time. Adding the
         /// missing entry to the second list would have left the next pending kind free to drift the same
         /// way, so there is now one list and no second place to forget.
+        ///
+        /// <para>Milestone 8.20d separates the two things that list had always held together, and
+        /// reads nothing of its own so neither half can be bypassed. A <b>question</b> is a family the
+        /// match is waiting for an answer to, and every one of them is named by
+        /// <see cref="FormatStatus"/>; <c>StatusDerivationConformanceTests</c> compares the two by
+        /// what the compiled code reads, so a family added to the question list without a status
+        /// branch fails there rather than reaching a player as "choose an action or End Turn". A
+        /// <b>frame</b> is a resolution in progress, which asks nothing itself - its question, when it
+        /// has one, is one of the families above it.</para>
         /// </summary>
         private static bool HasPendingDecision(MatchSessionProjection projection) =>
+            IsAwaitingAnAnsweredDecision(projection) || IsInsideAnUnfinishedResolution(projection);
+
+        /// <summary>
+        /// Every pending family the match is waiting for a player's answer to. Milestone 8.20d: the
+        /// set <see cref="FormatStatus"/> must name, one entry per family, checked as compiled reads
+        /// rather than as a written-down list a later milestone could forget to extend.
+        /// </summary>
+        private static bool IsAwaitingAnAnsweredDecision(MatchSessionProjection projection) =>
             projection.PendingInitiativeChoice != null ||
+            projection.PendingDefenseChoice != null ||
+            projection.PendingEffectChoice != null ||
             projection.PendingHeroRespawnChoice != null ||
-            projection.PendingMovementChoice != null || projection.PendingMovementResolution != null ||
-            projection.PendingAttackTargetChoice != null || projection.PendingDefenseChoice != null ||
-            projection.PendingAttackResolution != null ||
-            projection.PendingSkillResolution != null || projection.PendingEffectChoice != null ||
+            projection.PendingAttackTargetChoice != null ||
+            projection.PendingMovementChoice != null ||
             projection.PendingDisplacedMinionCorrection != null;
+
+        /// <summary>
+        /// A resolution that has started and not finished. It suppresses the offers a second action
+        /// would produce, exactly as a question does - Core refuses a second action while one is in
+        /// progress - but it is not itself something a player answers, so it carries no status words
+        /// of its own.
+        /// </summary>
+        private static bool IsInsideAnUnfinishedResolution(MatchSessionProjection projection) =>
+            projection.PendingMovementResolution != null ||
+            projection.PendingAttackResolution != null ||
+            projection.PendingSkillResolution != null;
 
         private static RoundActionViewModel CreateViewModel(
             MatchSessionProjection projection,
@@ -2631,7 +2897,13 @@ namespace GuardsDigital.Presentation.Match
                 unavailableActions,
                 clearOffers,
                 clearSelection,
-                CreateSystemTransitionPrompt(projection));
+                CreateSystemTransitionPrompt(projection),
+                // Milestone 8.20d: read from the same pause the controls above were built from, so
+                // the heading names the decision those controls answer and nothing else.
+                projection.PendingEffectChoice == null
+                    ? null
+                    : new EffectChoicePromptViewModel(EffectChoicePromptLabels.SubjectOf(
+                        projection.PendingEffectChoice, projection.PendingEffectChoicePreview)));
         }
 
         /// <summary>
@@ -3365,6 +3637,22 @@ namespace GuardsDigital.Presentation.Match
             if (projection.PendingDefenseChoice != null)
             {
                 return $"Defense response pending against Attack {projection.PendingDefenseChoice.AttackTotal}.";
+            }
+
+            // Milestone 8.20d: the seventh pending family, and the one that had never been here.
+            //
+            // It is read directly after the Defense response because that is the order the region
+            // itself draws in: a standing Defense response is the whole of the contextual region and
+            // returns before any effect control is built, so the status must say Defense there; below
+            // it the decision has its own labelled section, and the four families under this branch
+            // share the action row with it.
+            var effectChoice = projection.PendingEffectChoice;
+            if (effectChoice != null)
+            {
+                return EffectChoicePromptLabels.StatusLine(
+                    effectChoice,
+                    EffectChoicePromptLabels.SubjectOf(
+                        effectChoice, projection.PendingEffectChoicePreview));
             }
 
             if (projection.PendingHeroRespawnChoice != null)

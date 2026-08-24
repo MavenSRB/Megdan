@@ -20,6 +20,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Tests.PlayMode
 {
@@ -178,18 +179,39 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The card-face prompt as a player meets it, which is the half a batch tier cannot see.
             //
-            // **What the capture shows, recorded rather than changed here.** The four faces are the
-            // whole of the question and each is named as the card it would give up, but they are
-            // appended to the shared contextual row that `BuildActionRow` labels ACTIONS, beneath a
-            // round status line still reading "choose an action or End Turn" - so a player being
-            // asked which card to discard is labelled as though they were picking an action. It is
-            // how every effect choice in this build has been drawn since milestone 8.15, Arien's
-            // included, so correcting it is a shared presentation change rather than this hero's
-            // conformance backfill, and milestone 8.20a's own precedent is to record such an
-            // observation rather than take it inside a gate milestone.
+            // **Milestone 8.20b recorded a defect here and milestone 8.20d corrected it.** The four
+            // faces were the whole of the question and each was named as the card it would give up,
+            // but they were appended to the shared contextual row that `BuildActionRow` labels
+            // ACTIONS, beneath a round status line still reading "choose an action or End Turn" - so
+            // a player being asked which card to discard was labelled as though they were picking an
+            // action. It was how every effect choice had been drawn since milestone 8.15, Arien's
+            // included, so it was corrected once for all of them rather than inside this hero's gate.
+            // The before-picture is `tmp/8-20b-shock-discard-faces-under-the-shared-action-row.png`.
+            var prompt = runtime.RoundView.Model.EffectChoicePrompt;
+            Assert.That(prompt, Is.Not.Null,
+                "A standing decision carries the prompt that names it.");
+            Assert.That(prompt.SectionLabel, Is.EqualTo("CARD CHOICE"));
+            Assert.That(runtime.RoundView.Model.Status, Does.StartWith("Choose 1 of "));
+            Assert.That(runtime.RoundView.Model.Status, Does.EndWith(" cards."));
+            Assert.That(runtime.RoundView.Model.Status,
+                Does.Not.Contain("choose an action or End Turn"),
+                "which is the line this discard chooser used to arrive under.");
+
+            var heading = UiPlayer.Descendants(hud.RootElement)
+                .OfType<Label>()
+                .Where(label => UiPlayer.IsShown(label) && label.text == prompt.SectionLabel)
+                .ToArray();
+            Assert.That(heading, Has.Length.EqualTo(1),
+                "The heading is drawn once, over this decision. " + UiPlayer.Describe(hud));
+            Assert.That(
+                UiPlayer.Descendants(heading[0].hierarchy.parent)
+                    .Count(element => element.name == "gd-effect-card" && UiPlayer.IsShown(element)),
+                Is.EqualTo(EffectCardChoices(runtime).Length),
+                "and every offered face is inside the section it heads. " + UiPlayer.Describe(hud));
+
             yield return null;
             yield return UiPlayer.CaptureGameView(
-                "8-20b", "shock-discard-faces-under-the-shared-action-row");
+                "8-20d", "shock-discard-faces-under-their-own-card-choice-heading");
             var commandsAtCapture = runtime.AcceptedCommands.Count;
             var payload = runtime.CaptureSnapshot();
             Assert.That(payload, Is.Not.Null.And.Not.Empty);

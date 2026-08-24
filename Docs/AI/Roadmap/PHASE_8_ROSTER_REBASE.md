@@ -326,7 +326,7 @@ card scaling, six-player setup, or networking.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820c-standardize-every-hero-card-footprint-completion-evidence).
 
-### [ ] 8.20d Name every standing decision in the status line
+### [x] 8.20d Name every standing decision in the status line
 
 Prerequisite satisfied: Milestones 8.20a and 8.20b drove both configured heroes through the real player
 path, which is what surfaced this: milestone 8.20b's Wasp journey observed a discard chooser presented as
@@ -361,11 +361,14 @@ Acceptance checks:
 Non-goals: No new decision family, rules change, projection field beyond what naming requires, card
 footprint work, broad HUD redesign, hero content, six-player setup, networking, or production art.
 
-### [!] 8.21 Complete and verify additional pitch hero slot B - Brogan
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820d-name-every-standing-decision-in-the-status-line-completion-evidence).
 
-Blocked by: Milestone 8.20d must name the standing effect choice in the status line before this milestone's
-own removal-prevention prompt arrives as the next unnamed pending family and inherits that defect by
-construction. Milestone 8.20c established the standard card footprint the gate now measures every newly
+### [ ] 8.21 Complete and verify additional pitch hero slot B - Brogan
+
+Prerequisite satisfied: Milestone 8.20d named the standing effect choice in the status line and gave its
+controls a heading of their own - discharged - so this milestone's removal-prevention prompt arrives as a
+family the status derivation's own conformance rule requires to be named rather than inheriting that defect
+by construction. Milestone 8.20c established the standard card footprint the gate now measures every newly
 configured hero's faces against, so Brogan's set must fit it without resizing or clipping; milestones 8.20
 and 8.20a proved the shared continuation and player-path gate on Arien, and milestone 8.20b closed the same
 permanent gate for Wasp with no grandfathered exception.

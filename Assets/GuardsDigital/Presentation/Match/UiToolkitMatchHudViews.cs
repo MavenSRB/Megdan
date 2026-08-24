@@ -2351,6 +2351,12 @@ namespace GuardsDigital.Presentation.Match
 
         private void BuildActionRow()
         {
+            // Milestone 8.20d: a standing decision gets its own labelled section, and it is built
+            // before the action row rather than appended into it. Everything below is what the match
+            // is offering; a pause is what the match is asking, and the two had been one row under
+            // one heading that said `ACTIONS`.
+            BuildEffectChoiceSection();
+
             var section = Section("ACTIONS");
             AddInvocation(section, Model.ContinueEndOfRoundInvocation);
             foreach (var choice in Model.InitiativeChoices)
@@ -2399,30 +2405,6 @@ namespace GuardsDigital.Presentation.Match
                 section.Add(control);
             }
 
-            foreach (var effectChoice in Model.EffectChoices)
-            {
-                // Milestone 8.15a, at the user's direction: a choice that is about a card is drawn
-                // as the card - rulebook p.10's discard chooser above all - through the same shared
-                // face a Defense offer wears. A choice about no card keeps its labelled control.
-                if (effectChoice.Card != null)
-                {
-                    section.Add(BuildEffectCardChoice(effectChoice));
-                }
-                else
-                {
-                    AddInvocation(section, effectChoice);
-                }
-            }
-
-            // Milestone 6.5ac: a mode the actor cannot perform keeps its label and its ordinal and
-            // carries no command at all.
-            foreach (var unavailable in Model.UnavailableEffectChoices)
-            {
-                var control = HudElements.Control(unavailable.Label, null);
-                HudElements.MarkUnavailable(control);
-                section.Add(control);
-            }
-
             // Milestone 8.11a, at the user's request: each Respawn destination is a space, so it is
             // marked on the board and chosen by clicking it. The controls that used to name them are
             // gone; `HeroRespawnOptions` stays on the model because the board resolves a click through
@@ -2448,6 +2430,54 @@ namespace GuardsDigital.Presentation.Match
                     Model.EndTurnInvocation.Label, () => ForwardInvocation(Model.EndTurnInvocation));
                 endTurn.style.marginLeft = 18f;
                 section.Add(endTurn);
+            }
+        }
+
+        /// <summary>
+        /// The standing effect choice, under a gutter that names the decision it is.
+        ///
+        /// <para>Milestone 8.20d. These controls used to be appended to the action row, so rulebook
+        /// p.10's discard chooser reached the table as four card faces under a heading reading
+        /// <c>ACTIONS</c>, beneath a status line reading "choose an action or End Turn" - the shape
+        /// milestone 8.20b's Wasp journey met and recorded. The controls, their order and their
+        /// invocations are exactly what they were; what changed is the heading they arrive under,
+        /// which the model now carries because the pause projected it.</para>
+        ///
+        /// <para>The section is empty, and therefore hidden, for a choice answered entirely on the
+        /// board - milestone 8.11a moved every candidate naming a piece or a space out of this region
+        /// - and the status line is then the whole of what names the pause.</para>
+        /// </summary>
+        private void BuildEffectChoiceSection()
+        {
+            var prompt = Model.EffectChoicePrompt;
+            if (prompt == null)
+            {
+                return;
+            }
+
+            var section = Section(prompt.SectionLabel);
+            foreach (var effectChoice in Model.EffectChoices)
+            {
+                // Milestone 8.15a, at the user's direction: a choice that is about a card is drawn
+                // as the card - rulebook p.10's discard chooser above all - through the same shared
+                // face a Defense offer wears. A choice about no card keeps its labelled control.
+                if (effectChoice.Card != null)
+                {
+                    section.Add(BuildEffectCardChoice(effectChoice));
+                }
+                else
+                {
+                    AddInvocation(section, effectChoice);
+                }
+            }
+
+            // Milestone 6.5ac: a mode the actor cannot perform keeps its label and its ordinal and
+            // carries no command at all.
+            foreach (var unavailable in Model.UnavailableEffectChoices)
+            {
+                var control = HudElements.Control(unavailable.Label, null);
+                HudElements.MarkUnavailable(control);
+                section.Add(control);
             }
         }
 
