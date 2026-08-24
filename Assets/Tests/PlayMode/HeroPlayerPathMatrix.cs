@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
@@ -57,6 +58,17 @@ namespace GuardsDigital.Tests.PlayMode
         /// </summary>
         PrimaryDefenseOffer,
 
+        /// <summary>
+        /// p.14's Block card, offered as a whole face in the same prompt and resolving as the page's
+        /// other Defense: "a Block succeeds regardless of the Attack Value" when its printed condition
+        /// is met, and the defender is defeated when it is not. Milestone 8.20b separated it from the
+        /// Primary Defense Value above because the two are one input and two transitions - the Value
+        /// is compared and the Block is not - and a hero printing a Block would otherwise inherit a
+        /// journey in which nobody was ever defeated by answering. Wasp's three Green cards are the
+        /// only Blocks in this build.
+        /// </summary>
+        BlockDefenseOffer,
+
         /// <summary>The ordinary numeric secondary Defense icon, offered in the same prompt.</summary>
         SecondaryDefenseOffer,
 
@@ -94,9 +106,14 @@ namespace GuardsDigital.Tests.PlayMode
         ActiveEffectReading,
 
         /// <summary>
-        /// An Active effect of this hero's that forbids something an enemy could otherwise do, read as
-        /// the greyed control the enemy is actually shown. p.17's restrictions are only honest if the
-        /// player who is stopped can see they are stopped.
+        /// An Active effect of this hero's that forbids an enemy an activity they could otherwise
+        /// perform, read as the greyed control the enemy is actually shown. p.17's restrictions are
+        /// only honest if the player who is stopped can see they are stopped.
+        ///
+        /// <para>Milestone 8.20b narrowed this to restrictions on what the affected enemy <em>does</em>
+        /// - the ones a player meets as their own control. A restriction on what may be done <em>to</em>
+        /// a unit is enforced by leaving that piece out of the offering hero's candidates, which draws
+        /// no control at all; the derivation below records why.</para>
         /// </summary>
         OpponentRestrictionReading,
 
@@ -283,7 +300,7 @@ namespace GuardsDigital.Tests.PlayMode
     /// <para>The gate is permanent and applies to "any hero first becomes configured and playable",
     /// so the part that can be shared is: what a face introduces, what every hero owes for its own
     /// piece, and what makes a row's evidence real. Only the rows themselves are per hero. Milestone
-    /// 8.20a builds this for Arien and 8.20b brings Wasp to the same table.</para>
+    /// 8.20a built this for Arien and milestone 8.20b brought Wasp to the same table.</para>
     ///
     /// <para><b>Why a derivation and not a checklist.</b> A hand-maintained list of faces answers the
     /// question "did somebody remember to add a line", which is the question milestone 6.1k built the
@@ -335,17 +352,32 @@ namespace GuardsDigital.Tests.PlayMode
                 ["synthetic-place-in-range"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
                 ["synthetic-direct-move"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
 
-                // p.18's batch Push takes which piece on the board and how far on its own controls.
-                ["synthetic-object-push"] = new[]
-                {
-                    PlayerInteractionShape.BoardUnitSelection,
-                    PlayerInteractionShape.PushDistanceChoice
-                },
+                // Milestone 8.20b. p.9's printed-icon selections, which differ from one another in
+                // which icon they read and which class of piece they offer, and agree in what they ask
+                // a player for: the piece, where it stands. Wasp's content is the first to name any of
+                // them, and every one is answered by a board click in her own journeys.
+                ["synthetic-radius-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["synthetic-range-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["synthetic-radius-hero-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["synthetic-range-hero-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["synthetic-radius-minion-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["synthetic-hero-adjacent-to-minion"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // The written-radius Place, whose destination is a space a player clicks. Its
+                // printed-Range sibling `synthetic-place-in-range` is above.
+                ["synthetic-place"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // p.18's batch Push takes which piece on the board. How far is a second question only
+                // when the card printed a range of distances, and that is read off the node rather
+                // than off the capability - see NamesMoreThanOnePushDistance.
+                ["synthetic-object-push"] = new[] { PlayerInteractionShape.BoardUnitSelection },
 
                 ["synthetic-discard-chosen-card"] = new[] { PlayerInteractionShape.HandCardSelection },
 
                 // Consequences, predicates and readings: real work, no player input of their own.
                 ["synthetic-defeat-hero"] = Array.Empty<PlayerInteractionShape>(),
+                ["synthetic-defeat-minion"] = Array.Empty<PlayerInteractionShape>(),
                 ["synthetic-is-flagged"] = Array.Empty<PlayerInteractionShape>(),
                 ["synthetic-actor-space"] = Array.Empty<PlayerInteractionShape>(),
                 ["spaces-adjacent"] = Array.Empty<PlayerInteractionShape>()
@@ -449,8 +481,13 @@ namespace GuardsDigital.Tests.PlayMode
                 case ActionKind.Movement when isSecondary:
                     shapes.Add(PlayerInteractionShape.SecondaryMovementDestination);
                     break;
+                // p.14 prints two kinds of Defense in the primary slot and they resolve differently:
+                // a Defense Value is compared against the Attack Total, and a Block succeeds outright
+                // or leaves the defender defeated. One input, two transitions, so two shapes.
                 case ActionKind.Defense when isPrimary:
-                    shapes.Add(PlayerInteractionShape.PrimaryDefenseOffer);
+                    shapes.Add(action.DefenseResolution == PrintedDefenseResolution.Block
+                        ? PlayerInteractionShape.BlockDefenseOffer
+                        : PlayerInteractionShape.PrimaryDefenseOffer);
                     break;
                 // p.10's secondary Defense icon is declared with a Reaction origin rather than a
                 // printed-secondary one, because it is offered inside somebody else's Attack rather
@@ -554,6 +591,56 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 shapes.Add(shape);
             }
+
+            if (string.Equals(
+                    capabilityId,
+                    SyntheticDisplacementCapabilities.ObjectPush.Value,
+                    StringComparison.Ordinal) &&
+                NamesMoreThanOnePushDistance(node))
+            {
+                shapes.Add(PlayerInteractionShape.PushDistanceChoice);
+            }
+        }
+
+        /// <summary>
+        /// Whether this batch Push offers the player a distance to pick, read off the node's own
+        /// declared bounds. Milestone 8.20b.
+        ///
+        /// <para>The capability is one capability and the question is not always asked. Arien's Rogue
+        /// Wave prints "up to 2 spaces" and declares a floor of zero, so the distance is a decision;
+        /// Wasp's Kinetic Repulse prints "3 spaces" and declares floor and ceiling alike at 3, so
+        /// there is one legal answer and the handler opens no second question - which
+        /// <c>KineticRepulse_SelectsItsPushedUnitOnTheBoardAndConfirmsTheBatch</c> has asserted since
+        /// milestone 8.15. Classifying the shape on the capability alone would have made that row
+        /// claim a control no player is ever shown.</para>
+        /// </summary>
+        private static bool NamesMoreThanOnePushDistance(EffectNodeDefinition node) =>
+            DeclaredInteger(node, PushDistanceParameterName) >
+            DeclaredInteger(node, SyntheticDisplacementCapabilities.LeastDistanceParameterName);
+
+        /// <summary>
+        /// The batch Push's own ceiling parameter. It is the one bound of the two the capability does
+        /// not spell as a constant, so it is spelled here and <see cref="DeclaredInteger"/> refuses a
+        /// node that does not bind it - a rename fails this gate loudly rather than quietly deciding
+        /// that no card offers a distance.
+        /// </summary>
+        private const string PushDistanceParameterName = "distance";
+
+        /// <summary>
+        /// One literal integer this node binds. The push declares both of its bounds as literals, so a
+        /// node that binds neither is a definition this gate cannot read rather than one with a
+        /// default worth inventing.
+        /// </summary>
+        private static int DeclaredInteger(EffectNodeDefinition node, string parameterName)
+        {
+            var bound = node.Inputs
+                .Where(input =>
+                    string.Equals(input.ParameterName, parameterName, StringComparison.Ordinal))
+                .ToArray();
+            Assert.That(bound, Has.Length.EqualTo(1),
+                $"The batch Push at node '{node.Id.Value}' binds no literal '{parameterName}', so " +
+                "this gate cannot tell whether it offers a player a distance to pick.");
+            return bound[0].Literal.IntegerValue;
         }
 
         private static void AddActiveEffectShapes(
@@ -572,11 +659,26 @@ namespace GuardsDigital.Tests.PlayMode
                 shapes.Add(PlayerInteractionShape.RoundLongActiveEffectReading);
             }
 
-            var stopsAnEnemy = activeEffect.AffectedUnitRelation == SourceTeamRelation.OpposingSource &&
+            // Milestone 8.20b narrowed this to the restrictions an enemy meets as a control of their
+            // own. A restriction that names no actor bars the activity however it is reached, so the
+            // affected enemy performing it is one of the barred actors and the enemy's own control is
+            // drawn greyed - Arien's Spell Break, Slippery Ground and Deluge are all of that shape. A
+            // restriction that names its actors is about what may be done *to* the affected unit, and
+            // this build deliberately never draws a control for it at all: both consumers filter such
+            // a piece out of the offered candidates, "because a piece the rules will not let this hero
+            // move is not one to offer and then refuse" (SyntheticPlacementCapabilities,
+            // SyntheticExchangeCapabilities). Wasp's Magnetic Dagger is the only content of that shape
+            // in this build, and requiring a reading journey of it would require a journey for
+            // something no player is shown. What the pin does is owned at the authoritative tier by
+            // ConfiguredBasicCardTests, which the card's own row links.
+            var stopsAnEnemyFromActing =
+                activeEffect.AffectedUnitRelation == SourceTeamRelation.OpposingSource &&
                 activeEffect.Modifications.Any(modification =>
-                    modification.Kind == RuleModificationKind.Restriction ||
-                    modification.Kind == RuleModificationKind.ActivityLimit);
-            if (stopsAnEnemy)
+                    (modification.Kind == RuleModificationKind.Restriction ||
+                        modification.Kind == RuleModificationKind.ActivityLimit) &&
+                    modification.RestrictedActors != null &&
+                    modification.RestrictedActors.IsUnqualified);
+            if (stopsAnEnemyFromActing)
             {
                 shapes.Add(PlayerInteractionShape.OpponentRestrictionReading);
             }

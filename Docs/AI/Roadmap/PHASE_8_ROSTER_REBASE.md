@@ -256,7 +256,7 @@ Non-goals: No new Arien content, no other hero, no six-player setup, networking,
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820a-pass-the-permanent-hero-player-path-gate-for-arien-completion-evidence).
 
-### [ ] 8.20b Pass the permanent hero player-path gate for Wasp
+### [x] 8.20b Pass the permanent hero player-path gate for Wasp
 
 Prerequisite satisfied: Milestone 8.20a established the permanent gate's guarded matrix and real-input
 evidence shape on the staged Wasp-versus-Arien configuration. `HeroPlayerPathMatrix` is hero-neutral
@@ -288,10 +288,13 @@ Acceptance checks:
 Non-goals: No new Wasp face or component, rule reinterpretation, balance change, other hero, six-player
 setup, networking, or production art.
 
-### [!] 8.21 Complete and verify additional pitch hero slot B - Brogan
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820b-pass-the-permanent-hero-player-path-gate-for-wasp-completion-evidence).
 
-Blocked by: Milestones 8.20 and 8.20a must prove the shared continuation and the player-path gate on Arien,
-and milestone 8.20b must close the same permanent gate for Wasp without a grandfathered exception.
+### [ ] 8.21 Complete and verify additional pitch hero slot B - Brogan
+
+Prerequisite satisfied: Milestones 8.20 and 8.20a proved the shared continuation and the player-path gate
+on Arien, and milestone 8.20b closed the same permanent gate for Wasp with no grandfathered exception, so
+both dealt heroes now stand on one guarded matrix.
 
 Observable outcome: Brogan the Destroyer's complete verified set is defined, dealt, resolved through the
 ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested.

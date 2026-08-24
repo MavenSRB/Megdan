@@ -80,6 +80,36 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Captures the live Game View to <c>tmp/</c> for the targeted non-batch inspection the
+        /// permanent hero player-path gate asks of every visible addition. Milestone 8.20b lifted it
+        /// here from the per-hero fixture that first needed it, because two heroes now need it and a
+        /// second copy would drift from the first.
+        ///
+        /// <para>A batch run has no Game View to photograph, so it captures nothing rather than
+        /// failing: the gate's own sentence is that screenshot evidence cannot substitute for the
+        /// real-input journey, and the journey is what runs in both tiers.</para>
+        /// </summary>
+        public static System.Collections.IEnumerator CaptureGameView(string milestone, string name)
+        {
+            if (Application.isBatchMode)
+            {
+                yield break;
+            }
+
+            var path = System.IO.Path.GetFullPath($"tmp/{milestone}-{name}.png");
+            if (System.IO.File.Exists(path))
+            {
+                System.IO.File.Delete(path);
+            }
+
+            ScreenCapture.CaptureScreenshot(path);
+            yield return new WaitForEndOfFrame();
+            yield return null;
+            Assert.That(System.IO.File.Exists(path), Is.True,
+                $"The targeted Game View evidence must be captured under tmp/ as {name}.png.");
+        }
+
+        /// <summary>
         /// Scrolls the control into its enclosing scroll view's visible area, as a player would before
         /// clicking something the tray has scrolled away. A control in no scroll view is left alone.
         /// The caller yields a frame afterwards so the scroll's layout resolves before the click.

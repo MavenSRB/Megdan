@@ -124,6 +124,162 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the discard is on the hero's own rail where a player reads it.");
         }
 
+        /// <summary>
+        /// Shock's p.14 step-7 pause, answered again after a retained-prefix Undo and again after a
+        /// snapshot restore, both on the surface a player is looking at. Milestone 8.20b.
+        ///
+        /// <para>The permanent hero player-path gate asks that "at least one pausing path unique to or
+        /// first made reachable by the hero must continue after snapshot restore and retained-prefix
+        /// Undo through the same visible player surface". Wasp's after-attack rider is that path: it is
+        /// her own printed sentence, it stops the Attack twice, and the two stops are answered on two
+        /// different surfaces - the board for the hero, the tray's own card faces for the discard - so
+        /// the Undo and the restore are each checked against a different one.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator ShocksAfterAttackPause_IsAnsweredAgainAfterAnUndoAndAfterARestore()
+        {
+            yield return LoadEngagedScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var redHeroId = HeroOf(runtime, TeamSide.Red);
+            var blueHeroId = HeroOf(runtime, TeamSide.Blue);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            Commit(runtime, TeamSide.Red, WaspCardContent.Shock);
+            Commit(runtime, TeamSide.Blue, WaspCardContent.StopProjectiles);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId),
+                "Shock's printed Initiative 8 acts before Stop Projectiles' 3.");
+
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
+            var minionView = Object.FindObjectsByType<StandardMinionView>()
+                .Single(view => view.Occupancy != null &&
+                    view.Occupancy.MinionId.Equals(targetId));
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, minionView.transform.position), Is.True);
+            yield return null;
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The journey needs Shock's own after-attack pause standing.");
+            Assert.That(runtime.RoundView.Model.EffectChoiceTargets, Is.Not.Empty,
+                "Its first question is the board-answered hero selection.");
+            var commandsAtBoardQuestion = runtime.AcceptedCommands.Count;
+
+            // Answer the board question, so the pause is standing on its second, card-valued one.
+            var blueHeroView = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Single(view => view.Occupancy.HeroId.Equals(blueHeroId));
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, blueHeroView.transform.position), Is.True);
+            yield return null;
+            Assert.That(EffectCardChoices(runtime), Is.Not.Empty,
+                "The chosen hero's own discard stops the Attack again, as whole card faces. " +
+                "Shown: " + UiPlayer.Describe(hud));
+
+            // The card-face prompt as a player meets it, which is the half a batch tier cannot see.
+            //
+            // **What the capture shows, recorded rather than changed here.** The four faces are the
+            // whole of the question and each is named as the card it would give up, but they are
+            // appended to the shared contextual row that `BuildActionRow` labels ACTIONS, beneath a
+            // round status line still reading "choose an action or End Turn" - so a player being
+            // asked which card to discard is labelled as though they were picking an action. It is
+            // how every effect choice in this build has been drawn since milestone 8.15, Arien's
+            // included, so correcting it is a shared presentation change rather than this hero's
+            // conformance backfill, and milestone 8.20a's own precedent is to record such an
+            // observation rather than take it inside a gate milestone.
+            yield return null;
+            yield return UiPlayer.CaptureGameView(
+                "8-20b", "shock-discard-faces-under-the-shared-action-row");
+            var commandsAtCapture = runtime.AcceptedCommands.Count;
+            var payload = runtime.CaptureSnapshot();
+            Assert.That(payload, Is.Not.Null.And.Not.Empty);
+
+            // Retained-prefix Undo first, because a restore adopts a state rather than a history and
+            // leaves nothing to undo afterwards.
+            //
+            // **One board click is two accepted commands here**, and the Undo is what makes that
+            // visible: the click submits the selection and, the selection being complete at its own
+            // printed maximum, the confirm behind it. So the first UNDO gives back the actor's own
+            // confirm-or-nothing step and the second gives back the board question itself, which is
+            // exactly the order a player pressing UNDO twice walks back through.
+            //
+            // Each press is also this journey's replay evidence rather than a separate claim: Undo is
+            // implemented as a reconstruction of the retained prefix into a fresh aggregate, so what
+            // comes back on screen after a press is what replaying those commands produces.
+            UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
+            yield return null;
+            UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
+            yield return null;
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtCapture - 1),
+                "One UNDO drops exactly one accepted command.");
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "and Shock's rider is standing again rather than having resolved.");
+            Assert.That(EffectCardChoices(runtime), Is.Empty,
+                "The discard the Undo dropped leaves no card face on screen. " +
+                UiPlayer.Describe(hud));
+            Assert.That(
+                runtime.RoundView.Model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm),
+                Is.True,
+                "and the actor's own confirm step is drawn again. " + UiPlayer.Describe(hud));
+
+            UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
+            yield return null;
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtBoardQuestion),
+                "The second UNDO gives back the board question the click answered.");
+            Assert.That(runtime.RoundView.Model.EffectChoiceTargets, Is.Not.Empty,
+                "which is drawn on the board again, as candidates rather than controls. " +
+                UiPlayer.Describe(hud));
+            // Close the drawer the same way it was opened, on the toggle rather than on its text: an
+            // open drawer relabels its own control to "DIRECTOR" plus a chevron, so the label that
+            // opened it finds nothing once it is open.
+            if (hud.IsDirectorDrawerOpen)
+            {
+                UiPlayer.Click(DirectorToggle(hud));
+                yield return null;
+                Assert.That(hud.IsDirectorDrawerOpen, Is.False,
+                    "The clicked toggle must close the drawer before the restored prompt is answered.");
+            }
+
+            // The snapshot taken on the discard question, restored onto the same session: it has to
+            // come back as a pause a player can answer, not as a state that merely deserializes.
+            Assert.That(runtime.RestoreSnapshot(payload), Is.True,
+                "The captured payload must restore.");
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The restored match is stopped on the same decision it was captured on.");
+            Assert.That(runtime.AcceptedCommands, Is.Empty,
+                "carrying no accepted history, because a restore adopts a state rather than a " +
+                "history - which is why the Undo half above is proved on the live session first,");
+            var restoredChoices = EffectCardChoices(runtime);
+            Assert.That(restoredChoices, Is.Not.Empty,
+                "and drawing its own card faces again. " + UiPlayer.Describe(hud));
+
+            // and it is answerable on the same visible surface, by clicking a real printed face.
+            var faceName = restoredChoices[0].Card.DisplayName.ToUpperInvariant();
+            UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
+            yield return null;
+            UiPlayer.Click(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
+            yield return null;
+
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "The click a player made after the restore finished the rider.");
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
+                "and the Attack it interrupted completed.");
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    card.OwnerId.Equals(blueHeroId) &&
+                    card.State.Location == CardLocation.DiscardPile),
+                Is.EqualTo(1),
+                "Exactly the clicked card left the chosen hero's hand.");
+            Assert.That(
+                UiPlayer.Descendants(hud.RootElement)
+                    .Where(element => element.name == "gd-effect-card")
+                    .ToArray(),
+                Is.Empty,
+                "and the answered question leaves no face behind for a stale click to hit.");
+        }
+
         [UnityTest]
         public IEnumerator MagneticDagger_RunsItsAttackAndItsThisTurnPinWearsTheActiveOutline()
         {
@@ -521,6 +677,37 @@ namespace GuardsDigital.Tests.PlayMode
 
         private static HeroId HeroOf(ConfiguredMatchSceneRuntime runtime, TeamSide side) =>
             runtime.Setup.Heroes.Single(hero => hero.TeamSide == side).HeroId;
+
+        /// <summary>
+        /// The Director drawer's own toggle, found by the one label prefix it keeps in both states.
+        /// Milestone 8.20b.
+        /// </summary>
+        private static UnityEngine.UIElements.VisualElement DirectorToggle(
+            ConfiguredMatchHudRenderer hud)
+        {
+            var toggles = UiPlayer.Descendants(hud.RootElement)
+                .OfType<UnityEngine.UIElements.Button>()
+                .Where(button => UiPlayer.IsShown(button) && button.text != null &&
+                    button.text.StartsWith("DIRECTOR", System.StringComparison.Ordinal))
+                .ToArray();
+            Assert.That(toggles, Has.Length.EqualTo(1),
+                "Exactly one shown control opens and closes the Director drawer; shown: " +
+                UiPlayer.Describe(hud));
+            return toggles[0];
+        }
+
+        /// <summary>
+        /// The card-valued answers the standing effect pause is drawing, each carrying its whole
+        /// printed face under milestone 8.15a's contract. Milestone 8.20b.
+        /// </summary>
+        private static TypedInvocationViewModel[] EffectCardChoices(
+            ConfiguredMatchSceneRuntime runtime) =>
+            runtime.RoundView.Model.EffectChoices
+                .Where(value =>
+                    value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
+                    value.Card != null)
+                .ToArray();
 
         private sealed class SeededChoice
         {

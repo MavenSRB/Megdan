@@ -128,6 +128,105 @@ namespace GuardsDigital.Tests.PlayMode
                 "p.14: the Block itself is paid by discarding the Block card.");
         }
 
+        /// <summary>
+        /// p.10's numeric secondary Defense icon, offered beside a Block and spent on its own face.
+        /// Milestone 8.20b.
+        ///
+        /// <para>Fifteen of Wasp's nineteen faces print that icon and no journey had ever taken one:
+        /// every Defense her fixtures answered was one of the three Green Blocks, which resolve the
+        /// other way p.14 offers - outright, or with the defender defeated. This is the same prompt and
+        /// the other transition, and it is the shape the gate's matrix rests those fifteen rows on.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator SecondaryDefense_IsOfferedBesideTheBlockAndSpentOnItsOwnNumericFace()
+        {
+            yield return LoadStage(SceneCardContent.VerifiedTierTwoEngagedMirror);
+            var root = Root();
+            var runtime = root.Runtime;
+            var redHeroId = HeroOf(runtime, TeamSide.Red);
+            var blueHeroId = HeroOf(runtime, TeamSide.Blue);
+
+            // The same opening the Block journey uses: Red commits its Magnetic Dagger, acts first at
+            // 12, and Holds, so the rest of its hand is still the hand p.14's step 3 reads.
+            Commit(runtime, TeamSide.Red, WaspCardContent.MagneticDagger);
+            Commit(runtime, TeamSide.Blue, WaspCardContent.ChargedBoomerang);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
+            Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its turn.");
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
+
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var redHeroView = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Single(view => view.Occupancy.HeroId.Equals(redHeroId));
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, root.Hud, redHeroView.transform.position), Is.True);
+            yield return null;
+
+            // The subject: p.14's two Defense shapes in one prompt - the Block printed in the primary
+            // slot, and the numeric secondary icons the rest of the hand prints.
+            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
+            var defense = runtime.PendingDefenseChoice;
+            Assert.That(
+                defense.LegalDefenseOffers.Any(offer =>
+                    OriginOf(runtime, offer) == ActionDefinitionOrigin.PrintedPrimary),
+                Is.True,
+                "The defender's Block must be one of the offers.");
+            var numeric = defense.LegalDefenseOffers
+                .Where(offer => OriginOf(runtime, offer) == ActionDefinitionOrigin.Reaction)
+                .OrderByDescending(offer => PrintedDefenseOf(runtime, offer))
+                .ThenBy(offer => DefinitionOf(runtime, offer).Id.Value, System.StringComparer.Ordinal)
+                .ToArray();
+            Assert.That(numeric, Is.Not.Empty,
+                "and an ordinary secondary Defense icon must be another. Offers: " +
+                string.Join(", ", defense.LegalDefenseOffers
+                    .Select(offer => DefinitionOf(runtime, offer).DisplayName)));
+
+            // The prompt as a player meets it: p.14's two Defense shapes drawn side by side as whole
+            // printed faces, which is the half a batch tier cannot see.
+            yield return UiPlayer.CaptureGameView("8-20b", "block-beside-numeric-defense-faces");
+
+            var chosen = numeric[0];
+            var printed = PrintedDefenseOf(runtime, chosen);
+            Assert.That(printed, Is.GreaterThan(defense.AttackTotal),
+                "This journey needs a printed Defense above the Attack Total, with headroom for the " +
+                "minion contributions p.14 adds to both totals, so that what the numeric face does " +
+                "is visible as the defender surviving. Printed " + printed + " against Attack Total " +
+                defense.AttackTotal + ".");
+
+            var faceName = DefinitionOf(runtime, chosen).DisplayName.ToUpperInvariant();
+            var handBefore = runtime.Cards.Count(card =>
+                card.OwnerId.Equals(redHeroId) && card.State.Location == CardLocation.Hand);
+            var acceptedBefore = runtime.AcceptedCommands.Count;
+            yield return ClickDefenseFace(root, faceName);
+
+            Assert.That(runtime.PendingDefenseChoice, Is.Null,
+                "The clicked numeric face answers p.14's response. Shown: " +
+                UiPlayer.Describe(root.Hud));
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(acceptedBefore + 1),
+                "One click on one card face is one accepted command.");
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(redHeroId)), Is.True,
+                "p.14 compares the two totals rather than deciding outright, and here the comparison " +
+                "leaves the defender standing - which is the outcome a Block reaches only by meeting " +
+                "its own printed condition, and never by comparison at all.");
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    card.OwnerId.Equals(redHeroId) && card.State.Location == CardLocation.Hand),
+                Is.EqualTo(handBefore - 1),
+                "A Defense is paid by discarding the card from hand.");
+            Assert.That(
+                runtime.Cards.Single(card =>
+                        card.OwnerId.Equals(redHeroId) &&
+                        card.DefinitionReference.Equals(chosen.SourceDefinitionReference))
+                    .State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "and it is the clicked card that was spent.");
+            Assert.That(
+                runtime.HeroOverviewsView.Model.Heroes
+                    .Single(hero => hero.HeroId.Equals(redHeroId)).DiscardCards,
+                Has.Count.EqualTo(1),
+                "which the defender's own rail says where a player reads it.");
+        }
+
         [UnityTest]
         public IEnumerator KineticRepulse_SelectsItsPushedUnitOnTheBoardAndConfirmsTheBatch()
         {
@@ -679,6 +778,33 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.Click(UiPlayer.Button(root.Hud, action.Label));
             yield return null;
         }
+
+        /// <summary>The printed definition one offered action belongs to.</summary>
+        private static CardDefinition DefinitionOf(
+            ConfiguredMatchSceneRuntime runtime, ActionOffer offer) =>
+            runtime.Definitions.Single(definition =>
+                definition.Reference.Equals(offer.SourceDefinitionReference));
+
+        /// <summary>Where on its card this offered action is printed. Milestone 8.20b.</summary>
+        private static ActionDefinitionOrigin OriginOf(
+            ConfiguredMatchSceneRuntime runtime, ActionOffer offer) =>
+            DefinitionOf(runtime, offer).ActionDefinitions
+                .Single(action => action.Id.Equals(offer.ActionDefinitionId))
+                .Origin;
+
+        /// <summary>
+        /// The Defense value this offer's face prints, or zero where it prints none - which is what a
+        /// p.14 Block does, and why a Block cannot be picked by "the biggest number".
+        /// </summary>
+        private static int PrintedDefenseOf(
+            ConfiguredMatchSceneRuntime runtime, ActionOffer offer) =>
+            DefinitionOf(runtime, offer).ActionDefinitions
+                .Single(action => action.Id.Equals(offer.ActionDefinitionId))
+                .BaseValues
+                .Where(value => value.Channel == PrintedValueChannel.Defense)
+                .Select(value => value.Amount)
+                .DefaultIfEmpty(0)
+                .First();
 
         /// <summary>Clicks one legal Defense card by its whole printed face.</summary>
         private static IEnumerator ClickDefenseFace(MatchSceneCompositionRoot root, string printedName)

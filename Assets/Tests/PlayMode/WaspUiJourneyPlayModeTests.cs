@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -113,6 +114,14 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// Milestone 8.20b made the piece this clicks Wasp's own rather than whichever seat the coin
+        /// flip left the tray away from. The staged match deals two different heroes since milestone
+        /// 8.20, so "the other hero" was Arien on half the runs - which is fine for the fall-through
+        /// contract this case owns and useless as Wasp's evidence for it. The tray is pointed at the
+        /// other seat first, so the click under test is what brings it back rather than something that
+        /// was already true.
+        /// </summary>
         [UnityTest]
         public IEnumerator Scene_PointsTheTrayAtTheOtherHeroThroughAMapClickTheHudDoesNotBlock()
         {
@@ -121,19 +130,119 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             LogUiEnvironment(root);
 
-            var viewedHeroId = runtime.ViewedHeroId;
-            var otherHero = Object.FindObjectsByType<PrimitiveHeroView>()
-                .Single(view => !view.Occupancy.HeroId.Equals(viewedHeroId));
+            var waspHeroId = WaspSeat(runtime).HeroId;
+            var otherHeroId = runtime.Setup.Heroes
+                .Single(hero => !hero.HeroId.Equals(waspHeroId)).HeroId;
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var waspHero = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Single(view => view.Occupancy.HeroId.Equals(waspHeroId));
 
+            if (runtime.ViewedHeroId.Equals(waspHeroId))
+            {
+                var otherHero = Object.FindObjectsByType<PrimitiveHeroView>()
+                    .Single(view => view.Occupancy.HeroId.Equals(otherHeroId));
+                Assert.That(
+                    UiPlayer.ClickBoard(pointerInput, root.Hud, otherHero.transform.position),
+                    Is.True);
+                yield return null;
+            }
+
+            Assert.That(runtime.ViewedHeroId, Is.Not.EqualTo(waspHeroId),
+                "The tray must be pointed away before the click this case owns.");
             Assert.That(
-                UiPlayer.ClickBoard(pointerInput, root.Hud, otherHero.transform.position),
+                UiPlayer.ClickBoard(pointerInput, root.Hud, waspHero.transform.position),
                 Is.True,
-                "The map click on the other hero must be claimed by the selector chain.");
+                "The map click on Wasp's own piece must be claimed by the selector chain.");
             yield return null;
 
-            Assert.That(runtime.ViewedHeroId, Is.EqualTo(otherHero.Occupancy.HeroId),
+            Assert.That(runtime.ViewedHeroId, Is.EqualTo(waspHeroId),
                 "A click the authority has no use for falls through to pointing the tray.");
+        }
+
+        /// <summary>
+        /// Wasp's own board piece at p.6's spawn, and the whole visual layer rebuilt around it.
+        /// Milestone 8.20b.
+        ///
+        /// <para>The permanent hero player-path gate asks for "initial hero spawn and identity" and for
+        /// a presentation rebuild that reconstructs the hero "without stale or duplicate views". Wasp's
+        /// journeys have driven her cards since milestone 8.15 and never once asked what the piece
+        /// itself is, which is the half this closes.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator HeroPiece_StandsAtTheRedSpawnAsWaspAndSurvivesAPresentationRebuild()
+        {
+            yield return LoadScene();
+            var root = Root();
+            var runtime = root.Runtime;
+
+            var heroViews = Object.FindObjectsByType<PrimitiveHeroView>();
+            Assert.That(heroViews, Has.Length.EqualTo(2),
+                "The staged match deals one hero a side, so two pieces stand on the board and a " +
+                "third would be a stale or duplicated view. Found: " +
+                string.Join(", ", heroViews.Select(view => view.Occupancy.HeroId.Value)));
+
+            var waspSetup = WaspSeat(runtime);
+            var waspView = heroViews.Single(view =>
+                view.Occupancy.HeroId.Equals(waspSetup.HeroId));
+
+            // Identity: the piece knows which printed set it is, wears the prepared official token
+            // rather than the generated prism fallback, and stands on the side its seat was dealt.
+            Assert.That(waspView.HeroContentId.HasValue, Is.True,
+                "The staged Red piece carries no content identity, so nothing on the board says " +
+                "which hero it is.");
+            Assert.That(waspView.HeroContentId.Value.Value,
+                Is.EqualTo(WaspCardContent.ContentSetId));
+            Assert.That(waspView.TeamSide, Is.EqualTo(TeamSide.Red));
+            Assert.That(waspView.HasTokenVisual, Is.True,
+                "Wasp's official circular token is prepared, so the piece must be wearing it " +
+                "rather than the generated prism the fallback draws.");
+
+            // Placement: the configured Red hero spawn, and the space the authority agrees she is on.
+            Assert.That(waspView.ConfiguredSpawnPointId.HasValue, Is.True);
+            Assert.That(waspView.ConfiguredSpawnPointId.Value,
+                Is.EqualTo(waspSetup.SpawnPoint.SpawnPointId),
+                "The piece must stand at the spawn point the configuration assigned it.");
+            Assert.That(waspView.Coordinate, Is.EqualTo(waspSetup.Coordinate));
+            Assert.That(
+                runtime.Heroes.Single(hero => hero.HeroId.Equals(waspSetup.HeroId)).Coordinate,
+                Is.EqualTo(waspView.Coordinate),
+                "The drawn piece and the authoritative state must name one space.");
+
+            // The hand the piece is dealt is Wasp's printed set and nobody else's, which is what makes
+            // this piece this hero rather than a Red-coloured one.
+            var dealt = runtime.Cards
+                .Where(card => card.OwnerId.Equals(waspSetup.HeroId))
+                .Select(card => card.DefinitionReference.DefinitionId.Value)
+                .OrderBy(id => id)
+                .ToArray();
+            Assert.That(dealt, Is.EqualTo(WaspCardContent.DealtDefinitions
+                .Select(definition => definition.Id.Value)
+                .OrderBy(id => id)
+                .ToArray()));
+
+            // Wasp's whole player surface as she is dealt it: her own token on its spawn, her five
+            // starting faces in the tray, and the rails either side of the board.
+            yield return PointTrayAt(root, waspSetup.HeroId);
+            yield return UiPlayer.CaptureGameView("8-20b", "wasps-piece-and-her-own-tray");
+
+            // Presentation rebuild: the whole visual layer is rebuilt from the current projection and
+            // must come back as one piece per hero, in the same places, with no orphan left behind.
+            runtime.RefreshAll();
+            yield return null;
+            var rebuilt = Object.FindObjectsByType<PrimitiveHeroView>();
+            Assert.That(rebuilt, Has.Length.EqualTo(2),
+                "A rebuild that leaves a stale or duplicated hero view is the defect this checks.");
+            var rebuiltWasp = rebuilt.Single(view =>
+                view.Occupancy.HeroId.Equals(waspSetup.HeroId));
+            Assert.That(rebuiltWasp.Coordinate, Is.EqualTo(waspSetup.Coordinate));
+            Assert.That(rebuiltWasp.HasTokenVisual, Is.True);
+            Assert.That(runtime.ViewedHeroId, Is.EqualTo(waspSetup.HeroId),
+                "The rebuilt tray still follows the hero the player pointed it at.");
+            Assert.That(
+                runtime.HandsView.Model.Hands
+                    .Single(hand => hand.HeroId.Equals(waspSetup.HeroId)).TrayCards,
+                Has.Count.EqualTo(WaspCardContent.StartingHand.Count),
+                "and her whole starting hand is drawn again from the projection alone.");
         }
 
         [UnityTest]
@@ -144,16 +253,18 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var hud = root.Hud;
 
-            // The first-viewed hand plays its highest-Initiative card that prints a secondary Movement,
-            // and the other hand plays its lowest-Initiative card, so the clicked hand acts first
-            // whichever seat it is and whichever hero is holding it. Milestone 8.20 made that a
-            // question worth asking of the hand rather than answering with a card name: the two seats
-            // deal different printed sets now, and the Tie Breaker's own coin flip decides which of
-            // them the tray opens on.
-            var actingHeroId = runtime.ViewedHeroId;
+            // Wasp plays the highest-Initiative card in her hand that prints a secondary Movement,
+            // against the other hand's lowest, so she takes the first turn whichever seat the coin
+            // flip opened the tray on. Milestone 8.20 made the card a question worth asking of the
+            // hand rather than answering with a name - the two seats deal different printed sets now -
+            // and milestone 8.20b fixed the acting hero to Wasp, because a journey that walked
+            // whichever seat the tray opened on was Wasp's evidence only half the time.
+            var actingHeroId = WaspSeat(runtime).HeroId;
             var otherHeroId = runtime.Setup.Heroes
                 .Single(hero => !hero.HeroId.Equals(actingHeroId)).HeroId;
+            yield return PointTrayAt(root, actingHeroId);
             yield return CommitThroughTray(root, MovingCardOf(runtime, actingHeroId));
+            yield return PointTrayAt(root, otherHeroId);
             yield return CommitThroughTray(root, LowestInitiativeCardOf(runtime, otherHeroId));
             Assert.That(runtime.IsTurnActive, Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(actingHeroId));
@@ -182,6 +293,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(actingHeroId)).Coordinate,
                 Is.EqualTo(destination),
                 "The clicked destination is where the hero now stands.");
+
+            // The piece follows the state: this is the hero-piece movement half of the row.
+            var waspView = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Single(view => view.Occupancy.HeroId.Equals(actingHeroId));
+            Assert.That(waspView.Coordinate, Is.EqualTo(destination),
+                "The token must be standing where Wasp now is, not where she was.");
 
             if (runtime.PendingMovementChoice != null)
             {
@@ -245,6 +362,44 @@ namespace GuardsDigital.Tests.PlayMode
                 "RESET restarts the match, so the commitment is gone.");
             Assert.That(runtime.AcceptedCommands, Is.Empty,
                 "A restart adopts the initial state with no accepted history.");
+        }
+
+        /// <summary>
+        /// The staged seat dealt Wasp's printed set, found by the content identity the configuration
+        /// bound to it rather than by team colour - the seat is Red today and the question this asks is
+        /// which seat is Wasp's. Milestone 8.20b, and the twin of
+        /// <see cref="ArienUiJourneyPlayModeTests.ArienSeat"/>.
+        /// </summary>
+        internal static QuickGameHeroSetupState WaspSeat(ConfiguredMatchSceneRuntime runtime)
+        {
+            var seats = runtime.Setup.Heroes
+                .Where(hero => hero.ContentId.Value == WaspCardContent.ContentSetId)
+                .ToArray();
+            Assert.That(seats, Has.Length.EqualTo(1),
+                "The staged configuration deals Wasp to exactly one seat; it dealt her to " +
+                seats.Length + ".");
+            return seats[0];
+        }
+
+        /// <summary>
+        /// Points the tray at one hero through a board click on that hero's own piece, which is the
+        /// route a player has. A tray already pointing there is left alone.
+        /// </summary>
+        private static IEnumerator PointTrayAt(
+            MatchSceneCompositionRoot root, GuardsDigital.Core.Units.Heroes.HeroId heroId)
+        {
+            if (root.Runtime.ViewedHeroId.Equals(heroId))
+            {
+                yield break;
+            }
+
+            var view = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Single(candidate => candidate.Occupancy.HeroId.Equals(heroId));
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            Assert.That(UiPlayer.ClickBoard(pointerInput, root.Hud, view.transform.position), Is.True,
+                "The board click that points the tray at " + heroId.Value + " must be claimed.");
+            yield return null;
+            Assert.That(root.Runtime.ViewedHeroId, Is.EqualTo(heroId));
         }
 
         /// <summary>
