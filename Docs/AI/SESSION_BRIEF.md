@@ -36,6 +36,8 @@ The remaining **Phase 8** route continues with 8.20c standardizing every hero ca
 
 **User-approved amendment, 2026-08-24:** inserted milestone **8.20c** gives every complete card face one fixed shared footprint across all full-card surfaces and extends the permanent hero gate so Wasp, Arien, every mapped newcomer, and every later hero must fit it without content-driven resizing or meaningful clipping before completion.
 
+**User-approved amendment, 2026-08-24:** milestone **8.21** must reach the player as well as the rules. Brogan's Shield/Bolster/Fortify are the first content that can open 8.19c1's removal-prevention pause, left unprojected there under its presentation non-goal, so 8.21 owns the projected decision and its typed invocations, the contextual-region prompt, the board cue, a prompt-reachability case, and a pointer journey. The roadmap block carries the reasoning.
+
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes and its binding constraints.
 
 Standing route exceptions: none remain. Phase 6's exact sequencing lives in its three [Roadmap/](Roadmap/) shards and its per-milestone evidence is addressed by SHA from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md); scheduling is not authorization.
