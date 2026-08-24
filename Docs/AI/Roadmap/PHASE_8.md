@@ -407,8 +407,10 @@ Acceptance checks:
   applied Push of an enemy hero, with exact ordering, restore, repeated action, and no-card Defeat coverage.
 - Up-to-two Remove proves chosen-set legality, deterministic ordered application, removal prevention,
   immediate Lane Push/game end after either target, and no Defeat reward.
-- Definitions, projection/player journeys, progression, complete-set interaction, and directly affected
-  earlier-hero/Wasp/core regressions pass at the applicable tier; no epithet string drives rules.
+- The permanent hero player-path gate in `Testing/POLICY.md` has a complete guarded row for every Sabina
+  face/component and distinct interaction shape, exercised through real configured player input and its
+  resulting visible HUD/board state; definitions, progression, complete-set interaction, and directly
+  affected earlier-hero/Wasp/core regressions pass at the applicable tier, and no epithet string drives rules.
 
 Non-goals: No other new hero, six-player setup, networking, or production art.
 
@@ -431,8 +433,10 @@ Acceptance checks:
 - Cloak and Daggers repeats every legal Basic action once, excludes the original Attack target, forbids a
   replacement/recursive repeat, and preserves action/checkpoint/progression semantics across restore and
   Undo without a Tigerclaw-name branch.
-- Definitions, projection/player journeys, progression, complete-set interaction, and directly affected
-  earlier-hero/Wasp/core regressions pass at the applicable tier.
+- The permanent hero player-path gate has a complete guarded row for every Tigerclaw face/component and
+  distinct interaction shape, exercised through real configured player input and its resulting visible
+  HUD/board state; definitions, progression, complete-set interaction, and directly affected earlier-hero/
+  Wasp/core regressions pass at the applicable tier.
 
 Non-goals: No other new hero, six-player setup, networking, or production art.
 
@@ -453,8 +457,10 @@ Acceptance checks:
   cancels in exact p.17 order without materializing a statue component.
 - Constrict/Final Embrace run before Minion Battle and consume immediate Lane Push/game end correctly;
   Metamorphosis recalculates Initiative/Movement from presence at each owning query and reuses Move Through.
-- Definitions, projection/player journeys, progression, complete-set interaction, and directly affected
-  roster/Wasp/core regressions pass at the applicable tier without an Xargatha-name branch.
+- The permanent hero player-path gate has a complete guarded row for every Xargatha face/component and
+  distinct interaction shape, exercised through real configured player input and its resulting visible
+  HUD/board state; definitions, progression, complete-set interaction, and directly affected roster/Wasp/core
+  regressions pass at the applicable tier without an Xargatha-name branch.
 
 Non-goals: No six-player setup, networking, production art, alternate miniature, or statue component.
 

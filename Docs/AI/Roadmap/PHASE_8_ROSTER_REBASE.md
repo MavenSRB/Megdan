@@ -219,8 +219,11 @@ Acceptance checks:
 - The four Active effects obey moving-radius applicability, attacker exception, action-start Movement
   limit, end-turn/end-round cancellation, restore, and p.17 order; Living Tsunami is a continuous Ultimate
   and remains separate from those cancellation rules.
-- Definitions, source metadata, offer/choice projections, controller ownership, progression, snapshot,
-  replay, Undo, restart, and live HUD/board journeys cover all nineteen faces without an Arien-name branch.
+- The permanent hero player-path gate in `Testing/POLICY.md` has a complete guarded row for every Arien
+  face/component and distinct interaction shape. Its configured journeys use real panel-picked pointer events
+  or camera rays from card commit through the resulting visible HUD/board state; definitions, source metadata,
+  controller ownership, progression, snapshot, replay, Undo, restart, and all nineteen faces are covered
+  without an Arien-name branch or direct presenter/session submission standing in for player input.
 - The private-source preparation route produces Arien's official circular Blue hero token under the same
   ignored-resource, content-identity, team-rim, and generated-prism fallback contract as Wasp's token. The
   staged configuration binds that content identity to the Blue participant, places Arien at the configured
@@ -270,7 +273,9 @@ Acceptance checks:
 - One Man Army proves ordinary and Heavy Minion-Battle strength, selected/not-selected removal, PushLost,
   round continuation, snapshot/replay/Undo, and no Defeat/reward/Life side effect through its isolated typed
   handler and no Brogan-name branch.
-- Definitions, projection/player journeys, progression, complete-set interaction, and directly affected
-  Arien/Wasp/core regressions pass at the applicable tier.
+- The permanent hero player-path gate has a complete guarded row for every Brogan face/component and distinct
+  interaction shape, exercised through real configured player input and its resulting visible HUD/board state;
+  definitions, progression, complete-set interaction, and directly affected Arien/Wasp/core regressions pass
+  at the applicable tier.
 
 Non-goals: No other new hero, general Minion-Battle redesign, six-player setup, networking, or art.
