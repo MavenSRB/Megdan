@@ -263,7 +263,10 @@ Acceptance checks:
   p.14's Attack and an effect-invoked Defeat. Milestone 8.19c1 left this deliberately unbuilt under its
   presentation non-goal and recorded that no configured content could reach the pause; these two checks
   are what keep that true, because `HasPendingResolution` refuses every other turn command while the
-  decision stands.
+  decision stands. That journey also Undoes across the answered decision, which is the one thing
+  milestone 8.19c1's own coverage could not reach: the answer is an ordinary recorded command and
+  `DirectorCommand` already compares its payload, so retained-prefix Undo follows from the general
+  machinery rather than from a measurement until a match can actually open the pause.
 - One Man Army proves ordinary and Heavy Minion-Battle strength, selected/not-selected removal, PushLost,
   round continuation, snapshot/replay/Undo, and no Defeat/reward/Life side effect through its isolated typed
   handler and no Brogan-name branch.
