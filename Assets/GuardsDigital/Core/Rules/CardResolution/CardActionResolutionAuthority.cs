@@ -117,6 +117,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// actor placed after a Movement waits while that Movement runs with a continuation of its own.
         /// </summary>
         private PendingPreActionResolution pendingPreAction;
+
+        /// <summary>
+        /// Milestone 8.19c1's after-push trigger frame, or null. It is held beside the card-action
+        /// continuation for the reason the pre-action one is, and the reason is sharper: the effect it
+        /// interrupted is still standing in its own backend, at the node it had reached.
+        /// </summary>
+        private GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt pendingEffectInterrupt;
         private readonly List<ResolutionStep> triggeredResolutionSteps = new List<ResolutionStep>();
 
         private CardActionResolutionAuthority(
@@ -277,6 +284,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public GuardsDigital.Core.Rules.EffectResolution.PendingEffectChoice PendingEffectChoice =>
             pendingCardText?.Frame.PendingChoice ??
             pendingPreAction?.Frame?.PendingChoice ??
+            pendingEffectInterrupt?.Frame.PendingChoice ??
             triggeredEffects.PendingResolution?.PendingChoice ??
             skillBackend.PendingChoice;
 
@@ -286,6 +294,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// the new pause altitudes reach the player through the same projection every other choice does.
         /// </summary>
         public PendingPreActionResolution PendingPreActionResolution => pendingPreAction;
+
+        /// <summary>
+        /// Milestone 8.19c1's after-push trigger frame, or null. Like the pre-action continuation, a
+        /// reader that can already draw a paused effect frame needs nothing new for it.
+        /// </summary>
+        public GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt PendingEffectInterrupt =>
+            pendingEffectInterrupt;
 
         /// <summary>
         /// Milestone 6.5c: what each space-valued candidate of the pending effect choice currently
@@ -377,10 +392,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             int roundIndex,
-            int turnIndex) =>
-            CompleteTriggeredConsequences(triggeredEffects.Answer(
-                command, timing, definitions, instances, participants, modifications,
-                roundIndex, turnIndex, skillBackend.HeroItems), participants, modifications);
+            int turnIndex)
+        {
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ??
+                throw new ArgumentNullException(nameof(instances));
+            return CompleteTriggeredConsequences(
+                triggeredEffects.Answer(
+                    command, timing, materializedDefinitions, materializedInstances, participants,
+                    modifications, roundIndex, turnIndex, skillBackend.HeroItems),
+                participants,
+                modifications,
+                materializedDefinitions,
+                materializedInstances);
+        }
 
         internal IReadOnlyList<ResolutionStep> ConsumeTriggeredResolutionSteps()
         {
@@ -392,7 +418,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private EffectResolutionStepResult CompleteTriggeredConsequences(
             EffectResolutionStepResult step,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances)
         {
             if (!step.Accepted || !step.IsComplete || step.RequestedMinionDefeats.Count == 0)
                 return step;
@@ -410,7 +438,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     minionId,
                     participants,
                     modifications,
+                    definitions,
+                    instances,
                     out var eventIdentity);
+
+                // Milestone 8.19c1. A prevention source is offering and its controller has not
+                // answered. The Defeat's remaining facts and p.8's cause are owed to that answer, which
+                // is why they are produced there rather than here; a further Defeat this effect asked
+                // for waits behind it, because a second removal stage cannot stand inside the first.
+                if (defeat == null)
+                {
+                    triggeredResolutionSteps.Add(ResolutionStep.FromFact(
+                        CardActionResolutionEvent.RemovalPreventionRequested(
+                            eventIdentity, attackDefenseBackend.PendingRemovalPrevention)));
+                    return step;
+                }
+
                 triggeredResolutionSteps.AddRange(defeat.Facts.Select(fact =>
                     ResolutionStep.FromFact(CardActionResolutionEvent.MinionDefeatFact(
                         eventIdentity, defeat, fact))));
@@ -467,7 +510,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // a question. One with no frame is work the actor has placed and the turn has not entered
             // yet - and in the `after the action` case it is deliberately parked behind the very action
             // that is about to start, so counting it would make the action refuse itself.
-            pendingCardText != null || pendingPreAction?.Frame != null;
+            pendingCardText != null || pendingPreAction?.Frame != null ||
+            // Milestone 8.19c1. A standing after-push trigger holds the whole action: the effect that
+            // pushed is waiting at the node it reached, and nothing else may be commanded until the
+            // trigger finishes. A Defeat standing at its removal stage holds it for the same reason -
+            // the miniature is still on the board and the page is not finished with it.
+            pendingEffectInterrupt != null ||
+            attackDefenseBackend.PendingRemovalPrevention != null;
 
         public CardActionResolutionResult StartTurnSkill(
             ActionResolutionId resolutionId,
@@ -496,16 +545,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     PendingChoice);
             }
 
+            var boundary = new ActionBoundaryContext(
+                prepared.Definitions, prepared.Instances, participants, timing, tieBreaker,
+                roundIndex, turnIndex);
             var result = skillBackend.StartTurnSkill(
                 resolutionId, offer, prepared.Definitions, prepared.Instances, participants,
                 timing, modifications, components, roundIndex, turnIndex, out var repeat,
-                out var lanePushCause);
+                out var lanePushCause, out var appliedPushes);
+            result = RunAppliedPushTriggers(
+                result, appliedPushes, boundary, ref repeat, ref lanePushCause);
             return CloseActionBoundary(
                 result, repeat, lanePushCause, resolutionId, offer.SourceCardInstanceId,
-                offer.ActionDefinitionId, offer.ActorId,
-                new ActionBoundaryContext(
-                    prepared.Definitions, prepared.Instances, participants, timing, tieBreaker,
-                    roundIndex, turnIndex));
+                offer.ActionDefinitionId, offer.ActorId, boundary);
         }
 
         /// <summary>
@@ -558,18 +609,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentNullException(nameof(instances));
             var result = skillBackend.AnswerEffectChoice(
                 command, materializedDefinitions, materializedInstances, participants, timing,
-                modifications, components, roundIndex, turnIndex, out var repeat, out var lanePushCause);
+                modifications, components, roundIndex, turnIndex, out var repeat, out var lanePushCause,
+                out var appliedPushes);
             if (frame == null)
             {
                 return result;
             }
 
+            var boundary = new ActionBoundaryContext(
+                materializedDefinitions, materializedInstances, participants, timing, tieBreaker,
+                roundIndex, turnIndex);
+            result = RunAppliedPushTriggers(
+                result, appliedPushes, boundary, ref repeat, ref lanePushCause);
             return CloseActionBoundary(
                 result, repeat, lanePushCause, new ActionResolutionId(frame.ResolutionId.Value),
-                frame.SourceCardInstanceId, frame.ActionDefinitionId, frame.ActorId,
-                new ActionBoundaryContext(
-                    materializedDefinitions, materializedInstances, participants, timing, tieBreaker,
-                    roundIndex, turnIndex));
+                frame.SourceCardInstanceId, frame.ActionDefinitionId, frame.ActorId, boundary);
         }
 
         /// <summary>
@@ -779,7 +833,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 boundary.RoundIndex,
                 boundary.TurnIndex,
                 out var furtherRepeat,
-                out var repeatedLanePushCause);
+                out var repeatedLanePushCause,
+                out var repeatedPushes);
             if (!repeated.Accepted)
             {
                 throw new InvalidOperationException(
@@ -787,6 +842,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "just resolved from; the trusted definitions and the recorded repeat disagree.");
             }
 
+            repeated = RunAppliedPushTriggers(
+                repeated, repeatedPushes, boundary, ref furtherRepeat, ref repeatedLanePushCause);
             steps.AddRange(repeated.Steps);
             return CloseActionBoundary(
                 CardActionResolutionResult.Accept(repeated.IsComplete, null, null, steps),
@@ -944,7 +1001,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // continuation the action itself left, never instead of it: work the actor placed after a
             // Movement is parked while that Movement is still mid-route, and a capture that chose
             // between them would lose one of the two.
-            CaptureContinuation().WithPreAction(pendingPreAction);
+            // Milestone 8.19c1. Its two pauses are captured the same way and for the same reason: an
+            // after-push trigger stands inside a continuation that is still there, and a Defeat at its
+            // removal stage stands beside whatever the Defeat's own path left behind.
+            CaptureContinuation()
+                .WithPreAction(pendingPreAction)
+                .WithInterruptions(
+                    pendingEffectInterrupt, attackDefenseBackend.PendingRemovalPrevention);
 
         private CardActionResolutionRestoreState CaptureContinuation()
         {
@@ -1031,6 +1094,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 heroItems, rosterState);
             restoredAuthority.pendingLanePush = state.PendingImmediateLanePush;
             restoredAuthority.pendingPreAction = state.PendingPreAction;
+
+            // Milestone 8.19c1. Restored outside the continuation switch for the reason the Lane-Push
+            // request is: neither is a continuation, and both stand beside whichever one the action
+            // left behind.
+            restoredAuthority.pendingEffectInterrupt = state.PendingEffectInterrupt;
+            restoredAuthority.attackDefenseBackend.RestorePendingRemovalPrevention(
+                state.PendingRemovalPrevention);
 
             // Every continuation, not only the Attack one that needed the items to verify itself: the
             // restored dispatcher answers the next command, and that command may be the Defense whose
@@ -2194,6 +2264,449 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 paused.HeldOffer,
                 paused.HeldActionHasStarted);
             return CardActionResolutionResult.Accept(true, null, null, facts);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Runs whatever declared an `after-push-trigger@1` for the objects a Skill's
+        /// Push has just displaced, and carries that Skill on when nothing stops it.
+        ///
+        /// <para>The loop is the whole shape of the moment. A Push stops the effect at the node it
+        /// finished; every source concerned by an object it displaced runs in turn; and when none of
+        /// them is left standing the effect carries on from that exact node - which may itself push
+        /// again, which is why this repeats rather than running once. The bound is the effect's own:
+        /// each pass advances the walk, and a definition that cycles is refused at content load.</para>
+        ///
+        /// <para>Nothing is derived here that the query cannot answer: which sources apply, and which
+        /// of the displaced objects each of them concerns, is <c>AfterPushTriggerQuery</c>'s, asked
+        /// against this authority's board and the caller's participants.</para>
+        /// </summary>
+        private CardActionResolutionResult RunAppliedPushTriggers(
+            CardActionResolutionResult result,
+            IReadOnlyList<RuleObject> appliedPushes,
+            ActionBoundaryContext boundary,
+            ref PendingRepeatedAction repeat,
+            ref LanePushCauseKind lanePushCause)
+        {
+            if (!result.Accepted || appliedPushes == null || appliedPushes.Count == 0 || board == null)
+            {
+                return result;
+            }
+
+            var steps = new List<ResolutionStep>(result.Steps);
+            var pushes = appliedPushes;
+            var complete = result.IsComplete;
+            while (pushes.Count > 0)
+            {
+                var interrupted = skillBackend.PendingResolution;
+                if (interrupted == null || interrupted.PendingChoice != null)
+                {
+                    // Nothing is standing to interrupt. A Push whose effect has already finished has
+                    // no node to come back to, so the moment simply passes.
+                    break;
+                }
+
+                if (!TryStartAfterPushTrigger(interrupted, pushes, boundary, steps))
+                {
+                    var continued = skillBackend.ContinueAfterInterrupt(
+                        boundary.Definitions, boundary.Instances, boundary.Participants,
+                        boundary.Timing, CurrentModificationsFor(boundary, interrupted.ActorId),
+                        components, boundary.RoundIndex, boundary.TurnIndex,
+                        out var furtherRepeat, out var furtherCause, out var furtherPushes);
+                    if (!continued.Accepted)
+                    {
+                        return continued;
+                    }
+
+                    steps.AddRange(continued.Steps);
+                    complete = continued.IsComplete;
+                    if (furtherRepeat != null) repeat = furtherRepeat;
+                    if (furtherCause != LanePushCauseKind.None) lanePushCause = furtherCause;
+                    pushes = furtherPushes;
+                    continue;
+                }
+
+                return CardActionResolutionResult.Accept(false, null, null, steps);
+            }
+
+            return CardActionResolutionResult.Accept(complete, null, null, steps);
+        }
+
+        /// <summary>
+        /// Starts the first after-push trigger owed for these displaced objects, and reports whether it
+        /// is still standing when this returns. A trigger that finished in one pass leaves nothing and
+        /// answers <c>false</c>, exactly as no applicable source does.
+        /// </summary>
+        private bool TryStartAfterPushTrigger(
+            GuardsDigital.Core.Rules.EffectResolution.PendingResolution interrupted,
+            IReadOnlyList<RuleObject> pushes,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            var sources = GuardsDigital.Core.Rules.Progression.AfterPushTriggerQuery.Derive(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    boundary.Definitions, boundary.Instances),
+                board,
+                boundary.Participants,
+                interrupted.ActorId,
+                pushes);
+            for (var index = 0; index < sources.Count; index++)
+            {
+                var owed = sources.Skip(index + 1).Select(source => source.PushedObject).ToArray();
+                if (RunOneAfterPushTrigger(
+                        sources[index], interrupted, owed, boundary, steps))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// One source's effect, run for one displaced object. Returns whether it paused; a trigger that
+        /// resolved in a single pass has already published its facts and left nothing standing.
+        /// </summary>
+        private bool RunOneAfterPushTrigger(
+            GuardsDigital.Core.Rules.Progression.AfterPushTriggerSource source,
+            GuardsDigital.Core.Rules.EffectResolution.PendingResolution interrupted,
+            IReadOnlyList<RuleObject> remainingSubjects,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (!ContentCatalogs.TriggeredEffects.TryGet(source.TriggeredEffect, out var effect))
+            {
+                throw new InvalidOperationException(
+                    $"After-push trigger effect '{source.TriggeredEffect}' is not configured.");
+            }
+
+            var step = EffectResolutionSession.Start(
+                new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                    source.ResolutionIdValue),
+                source.SourceCardInstanceId,
+                source.SourceDefinitionReference,
+                source.SourceActionDefinitionId,
+                source.ControllerId,
+                source.ControllerId,
+                ActionInvocationContext.PrintedPrimary,
+                AfterPushTriggerContext(effect, source, boundary));
+            if (!step.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A configured after-push trigger was refused by its own effect frame.");
+            }
+
+            steps.AddRange(PreActionFacts(
+                step, source.SourceCardInstanceId, source.SourceActionDefinitionId,
+                source.ControllerId, CardTextTiming.None));
+            if (step.Frame?.PendingChoice == null)
+            {
+                return false;
+            }
+
+            pendingEffectInterrupt =
+                new GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt(
+                    step.Frame,
+                    GuardsDigital.Core.Rules.EffectResolution.EffectInterruptKind.AfterPushTrigger,
+                    source.PushedObject,
+                    interrupted.ResolutionId,
+                    remainingSubjects);
+            return true;
+        }
+
+        /// <summary>
+        /// The frame context an after-push trigger runs under. Its opposing hero is the pushed unit
+        /// when that unit is a hero, because "that hero" is the whole subject of the printed rider and
+        /// the frame's own vocabulary for the other side of a moment is this slot.
+        /// </summary>
+        private EffectResolutionContext AfterPushTriggerContext(
+            EffectDefinition effect,
+            GuardsDigital.Core.Rules.Progression.AfterPushTriggerSource source,
+            ActionBoundaryContext boundary) =>
+            new EffectResolutionContext(
+                effect,
+                ContentCatalogs.Capabilities,
+                boundary.Participants,
+                boundary.Timing,
+                boundary.RoundIndex,
+                boundary.TurnIndex,
+                CurrentModificationsFor(boundary, source.ControllerId),
+                EffectCardState.Of(boundary.Definitions, boundary.Instances),
+                ActionKind.Skill,
+                opposingHeroId: IntrinsicKindQuery.Of(source.PushedObject) == RuleObjectKind.Hero
+                    ? source.PushedObject.HeroId
+                    : default,
+                components: components,
+                heroItems: skillBackend.HeroItems,
+                rosterState: rosterState);
+
+        /// <summary>
+        /// The live rules for one acting hero, derived from a boundary context. The unlocked Ultimates
+        /// are read from the same cards the boundary carries, so a trigger and the effect it
+        /// interrupted are judged against one moment.
+        /// </summary>
+        private RuleModificationSet CurrentModificationsFor(
+            ActionBoundaryContext boundary,
+            HeroId actingHeroId) =>
+            CurrentModifications(
+                boundary.Timing,
+                boundary.Participants,
+                boundary.TieBreaker,
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    boundary.Definitions, boundary.Instances),
+                RuleObject.ForHero(actingHeroId));
+
+        /// <summary>
+        /// Milestone 8.19c1. Answers the question a standing after-push trigger asked, and carries the
+        /// effect it interrupted on once nothing is left standing.
+        /// </summary>
+        public CardActionResolutionResult AnswerEffectInterruptChoice(
+            GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommand command,
+            ActionBoundaryContext boundary)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            var standing = pendingEffectInterrupt;
+            if (standing == null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.NoPendingResolution, null, null);
+            }
+
+            if (!ContentCatalogs.TriggeredEffects.TryGet(
+                    standing.Frame.EffectDefinitionReference, out var effect))
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.UnavailableOffer, null, null);
+            }
+
+            var context = new EffectResolutionContext(
+                effect,
+                ContentCatalogs.Capabilities,
+                boundary.Participants,
+                boundary.Timing,
+                boundary.RoundIndex,
+                boundary.TurnIndex,
+                CurrentModificationsFor(boundary, standing.Frame.ActorId),
+                EffectCardState.Of(boundary.Definitions, boundary.Instances),
+                ActionKind.Skill,
+                opposingHeroId: IntrinsicKindQuery.Of(standing.Subject) == RuleObjectKind.Hero
+                    ? standing.Subject.HeroId
+                    : default,
+                components: components,
+                heroItems: skillBackend.HeroItems,
+                rosterState: rosterState);
+            var step = EffectResolutionSession.Answer(standing.Frame, command, context);
+            if (!step.Accepted)
+            {
+                switch (step.RejectionReason)
+                {
+                    case EffectResolutionRejectionReason.StaleChoice:
+                        return CardActionResolutionResult.Reject(
+                            CardActionResolutionRejectionReason.StaleChoice, null, null);
+                    case EffectResolutionRejectionReason.WrongChooser:
+                        return CardActionResolutionResult.Reject(
+                            CardActionResolutionRejectionReason.WrongChooser, null, null);
+                    default:
+                        return CardActionResolutionResult.Reject(
+                            CardActionResolutionRejectionReason.InvalidChoice, null, null);
+                }
+            }
+
+            var steps = new List<ResolutionStep>(PreActionFacts(
+                step, standing.Frame.SourceCardInstanceId, standing.Frame.ActionDefinitionId,
+                standing.Frame.ActorId, CardTextTiming.None));
+            if (!step.IsComplete)
+            {
+                pendingEffectInterrupt = standing.WithFrame(step.Frame);
+                return CardActionResolutionResult.Accept(false, null, null, steps);
+            }
+
+            pendingEffectInterrupt = null;
+            AppendRequestedHeroDefeatsFromInterrupt(step, boundary, steps);
+            var interrupted = skillBackend.PendingResolution;
+            if (interrupted == null ||
+                !interrupted.ResolutionId.Equals(standing.InterruptedResolutionId))
+            {
+                // The effect this trigger interrupted is no longer standing. Nothing is invented in its
+                // place: the trigger's own work is reported and the action is left exactly as the rest
+                // of the engine finds it.
+                return CardActionResolutionResult.Accept(true, null, null, steps);
+            }
+
+            var repeat = default(PendingRepeatedAction);
+            var lanePushCause = LanePushCauseKind.None;
+            var owed = standing.RemainingSubjects;
+            if (owed.Count > 0 && TryStartAfterPushTrigger(interrupted, owed, boundary, steps))
+            {
+                return CardActionResolutionResult.Accept(false, null, null, steps);
+            }
+
+            var continued = skillBackend.ContinueAfterInterrupt(
+                boundary.Definitions, boundary.Instances, boundary.Participants, boundary.Timing,
+                CurrentModificationsFor(boundary, interrupted.ActorId), components,
+                boundary.RoundIndex, boundary.TurnIndex,
+                out repeat, out lanePushCause, out var furtherPushes);
+            if (!continued.Accepted)
+            {
+                return continued;
+            }
+
+            steps.AddRange(continued.Steps);
+            var afterPushes = RunAppliedPushTriggers(
+                CardActionResolutionResult.Accept(
+                    continued.IsComplete, null, null, Array.Empty<ResolutionStep>()),
+                furtherPushes, boundary, ref repeat, ref lanePushCause);
+            steps.AddRange(afterPushes.Steps);
+            return CloseActionBoundary(
+                CardActionResolutionResult.Accept(afterPushes.IsComplete, null, null, steps),
+                repeat,
+                lanePushCause,
+                new ActionResolutionId(interrupted.ResolutionId.Value),
+                interrupted.SourceCardInstanceId,
+                interrupted.ActionDefinitionId,
+                interrupted.ActorId,
+                boundary);
+        }
+
+        /// <summary>
+        /// Rulebook p.13's Defeat list, run for any hero a finished after-push trigger asked about.
+        /// It is the same request every other effect frame publishes, honoured through the same backend
+        /// - Sabina's rider escalates to a Defeat when the pushed hero has no card to give.
+        /// </summary>
+        private void AppendRequestedHeroDefeatsFromInterrupt(
+            EffectResolutionStepResult step,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (step.RequestedHeroDefeats.Count == 0)
+            {
+                return;
+            }
+
+            var interrupted = skillBackend.PendingResolution;
+            if (interrupted == null)
+            {
+                return;
+            }
+
+            AppendRequestedHeroDefeats(
+                step,
+                new PendingAttackResolution(
+                    new ActionResolutionId(interrupted.ResolutionId.Value),
+                    interrupted.SourceCardInstanceId,
+                    interrupted.SourceDefinitionReference,
+                    interrupted.ActionDefinitionId,
+                    interrupted.ActorId,
+                    ActionInvocationContext.PrintedPrimary,
+                    new ActionResolutionStepId("after-push-trigger"),
+                    AttackResolutionPhase.ResolveMinionDefeat,
+                    default(AttackTarget),
+                    null),
+                boundary.Definitions,
+                boundary.Instances,
+                boundary.Participants,
+                CurrentModificationsFor(boundary, interrupted.ActorId),
+                steps);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1's Defeat standing at its removal stage, or <c>null</c>.
+        /// </summary>
+        public PendingRemovalPreventionDecision PendingRemovalPrevention =>
+            attackDefenseBackend.PendingRemovalPrevention;
+
+        /// <summary>
+        /// Milestone 8.19c1. Which sources are still offering to stop the standing removal, and what
+        /// each would cost, derived against live state. Empty when no decision is standing.
+        ///
+        /// <para>It is derived rather than stored for the reason the answer re-derives: a reader that
+        /// drew a stale list would offer a card the hand no longer holds.</para>
+        /// </summary>
+        public IReadOnlyList<RemovalPreventionOption> DescribeRemovalPreventionOptions(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var standing = attackDefenseBackend.PendingRemovalPrevention;
+            if (standing == null || board == null)
+            {
+                return Array.Empty<RemovalPreventionOption>();
+            }
+
+            return new RemovalStageDecision(
+                    standing.Activity,
+                    RuleObject.ForHero(standing.Resolution.ActorId),
+                    board,
+                    board,
+                    participants,
+                    modifications,
+                    GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.Defeat)
+                .OfferedPreventions(
+                    GuardsDigital.Core.Components.BoardObjectReference.ForMinion(
+                        standing.SubjectMinionId),
+                    definitions,
+                    instances)
+                .Where(offer => offer.DecidingHeroId.Equals(standing.DecidingHeroId))
+                .ToArray();
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Answers the standing removal-prevention decision, then finishes the Defeat
+        /// and whatever its origin still owes.
+        ///
+        /// <para>The two origins owe different remainders and both are produced from the identity the
+        /// pause carries: rulebook p.14's minion arm owes the rest of the page, and an effect-invoked
+        /// Defeat owes its own facts and p.8's recorded cause. Neither carries a list of steps across
+        /// the wire, which is milestone 8.10's rule for every pause in this engine.</para>
+        /// </summary>
+        public CardActionResolutionResult AnswerRemovalPrevention(
+            RemovalPreventionCommand command,
+            ActionBoundaryContext boundary,
+            RuleModificationSet modifications)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            var defeat = attackDefenseBackend.AnswerRemovalPrevention(
+                command, boundary.Participants, modifications, boundary.Definitions,
+                boundary.Instances, out var answered, out var paidCard, out var rejection);
+            if (defeat == null)
+            {
+                return CardActionResolutionResult.Reject(rejection, null, null);
+            }
+
+            var steps = new List<ResolutionStep>();
+            if (paidCard.IsDefined)
+            {
+                steps.Add(ResolutionStep.FromFact(
+                    CardActionResolutionEvent.RemovalPreventionPaid(
+                        answered.Resolution, answered, paidCard)));
+            }
+
+            steps.AddRange(defeat.Facts.Select(fact => ResolutionStep.FromFact(
+                CardActionResolutionEvent.MinionDefeatFact(answered.Resolution, defeat, fact))));
+
+            if (answered.Origin == RemovalPreventionOrigin.EffectInvokedMinionDefeat)
+            {
+                RecordImmediateLanePush(
+                    defeat.LanePush.Cause,
+                    new ActionResolutionId(answered.Resolution.ResolutionId.Value),
+                    boundary.Participants,
+                    modifications);
+                triggeredResolutionSteps.AddRange(steps);
+                return CardActionResolutionResult.Accept(
+                    true, null, null, Array.Empty<ResolutionStep>());
+            }
+
+            steps.AddRange(attackDefenseBackend.StepsAfterMinionDefeat(
+                answered.Resolution, boundary.Definitions));
+            return CloseActionBoundary(
+                CardActionResolutionResult.Accept(true, null, null, steps),
+                null,
+                defeat.LanePush.Cause,
+                new ActionResolutionId(answered.Resolution.ResolutionId.Value),
+                answered.Resolution.SourceCardInstanceId,
+                answered.Resolution.ActionDefinitionId,
+                answered.Resolution.ActorId,
+                boundary);
         }
 
         /// <summary>Forgets a pre-action continuation whose held action the turn has now started.</summary>

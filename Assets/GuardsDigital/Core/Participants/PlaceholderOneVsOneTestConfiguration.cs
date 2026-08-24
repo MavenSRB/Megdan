@@ -320,6 +320,36 @@ namespace GuardsDigital.Core.Participants
                 SyntheticShowcaseHand.CreateBlue);
         }
 
+        /// <summary>
+        /// Milestone 8.19c1. Both hands carry the two-mode pausing-source Skill, so either side can
+        /// create the removal-prevention source or the pre-Minion-Battle one.
+        ///
+        /// Its own configuration for the reason the persistent-source and Minion-Battle fixtures have
+        /// theirs: these two sources stop the game at moments no other content reaches, and a fixture
+        /// asserting over the ordinary hand would be asserting about a pause nothing had opened.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForPausingSourceFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticShowcaseHand.CreateRedWithPausingSourceSkill,
+                SyntheticShowcaseHand.CreateBlueWithPausingSourceSkill);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Red's Ultimate declares the after-Push trigger and Red's hand carries the
+        /// Skill that performs rulebook p.18's Push, which is the pair the trigger needs.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForAfterPushFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticShowcaseHand.CreateRedWithAfterPushUltimate,
+                SyntheticShowcaseHand.CreateBlue);
+        }
+
         public static PlaceholderOneVsOneTestConfiguration CreateForInternalTest(
             TeamSide initialTieBreakerSide)
         {

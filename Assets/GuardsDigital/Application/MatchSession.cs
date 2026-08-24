@@ -292,6 +292,8 @@ namespace GuardsDigital.Application
                     return AnswerMinionBattle(command, MinionBattleChoiceCommandKind.Confirm);
                 case DirectorCommandKind.AnswerEffectChoice:
                     return AnswerEffectChoice(command);
+                case DirectorCommandKind.AnswerRemovalPrevention:
+                    return AnswerRemovalPrevention(command);
                 case DirectorCommandKind.ChooseCorrectionSubject:
                     return AnswerCorrection(command,
                         GuardsDigital.Core.Rules.Displacement
@@ -383,6 +385,30 @@ namespace GuardsDigital.Application
             }
 
             return DispatchResult.From(round.TryAnswerEffectChoice(command.EffectChoice));
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Closes the standing removal-prevention decision. The identity is checked
+        /// here for the reason an effect choice's is: a stale answer arriving after the decision moved
+        /// on is refused as stale rather than as a generic unavailable command.
+        /// </summary>
+        private DispatchResult AnswerRemovalPrevention(DirectorCommand command)
+        {
+            var standing = round.PendingRemovalPrevention;
+            if (standing == null)
+            {
+                return DispatchResult.Unavailable("No removal-prevention decision is pending.");
+            }
+
+            if (command.RemovalPrevention == null ||
+                !string.Equals(
+                    command.RemovalPrevention.RequestId, standing.RequestId, StringComparison.Ordinal))
+            {
+                return DispatchResult.Unavailable(
+                    "The removal-prevention identity is stale or does not match the pending decision.");
+            }
+
+            return DispatchResult.From(round.TryAnswerRemovalPrevention(command.RemovalPrevention));
         }
 
         private DispatchResult AnswerCorrection(

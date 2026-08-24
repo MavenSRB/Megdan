@@ -48,7 +48,34 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// beside the added one, so a declaration that could mean either would decide, by omission,
         /// whether a petrified hero is still a hero.
         /// </summary>
-        EffectiveTypeOverlay = 6
+        EffectiveTypeOverlay = 6,
+
+        /// <summary>
+        /// Milestone 8.19c1. The affected object's removal may be stopped, at a price, by the hero
+        /// whose source declared it - rulebook p.13's own example of the family, "Bolster", which that
+        /// page names while stopping short of printing it.
+        ///
+        /// It is a seventh family rather than a qualified <see cref="Immunity"/> because the two are
+        /// different rules. p.18's immunity is unconditional and answers before anything happens: an
+        /// immune unit is not a legal target at all. This one is a decision taken after a Defeat has
+        /// been recorded and its reward awarded, by somebody who pays for it, and declining it is a
+        /// legal answer - so a declaration folded into immunity would have made the unit untargetable
+        /// and deleted the Defeat the card is meant to keep.
+        /// </summary>
+        RemovalPrevention = 7
+    }
+
+    /// <summary>What a source charges for stopping one removal, as definition content.</summary>
+    public enum RemovalPreventionCostKind
+    {
+        None = 0,
+
+        /// <summary>
+        /// One card the deciding hero owns, discarded from a declared location. Brogan's Shield,
+        /// Bolster and Fortify are the roster's shape of it; the card is the price and the discard is
+        /// what makes the decision cost something rather than being taken every time.
+        /// </summary>
+        DiscardOwnedCard = 1
     }
 
     /// <summary>
@@ -172,7 +199,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             EffectiveUnitKind effectiveUnitKind,
             RestrictedActorScope restrictedActors,
             RuleValueApplicability valueApplicability,
-            SourceValueQueryKind derivedQuery)
+            SourceValueQueryKind derivedQuery,
+            RemovalPreventionCost removalPreventionCost = default)
         {
             Kind = kind;
             Activities = activities;
@@ -183,6 +211,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             RestrictedActors = restrictedActors;
             ValueApplicability = valueApplicability;
             DerivedQuery = derivedQuery;
+            RemovalPreventionCost = removalPreventionCost;
         }
 
         /// <summary>A typed contribution of <paramref name="amount"/> to one value channel.</summary>
@@ -444,6 +473,44 @@ namespace GuardsDigital.Core.Rules.Modifications
                 SourceValueQueryKind.None);
         }
 
+        /// <summary>
+        /// Milestone 8.19c1's `before-removal-prevention@1`: the affected object's removal may be
+        /// stopped by the hero controlling this source, for <paramref name="cost"/>.
+        ///
+        /// <para>The declaration carries the price and nothing else. Who decides is the source's
+        /// controller, which <see cref="AppliedRuleModification"/> already binds; which objects are
+        /// covered is the source's own affected scope, so "friendly minions in radius" is stated once,
+        /// by the effect, and moves with the disk exactly as every other radius-scoped rule does. What
+        /// the prevention <em>does</em> is p.13's, not this declaration's: the Defeat and its reward
+        /// stand, and the miniature stays on the board.</para>
+        ///
+        /// <para>A free prevention is refused. A source that stops a removal for nothing is an
+        /// immunity, and p.18 already has one; declaring it here would give a card two spellings of the
+        /// same rule with different answers to "may this unit be targeted".</para>
+        /// </summary>
+        public static RuleModification ForRemovalPrevention(RemovalPreventionCost cost)
+        {
+            if (!cost.IsDeclared)
+            {
+                throw new ArgumentException(
+                    "A removal prevention states what it costs; a prevention that costs nothing is " +
+                    "rulebook p.18's immunity, which is declared as an immunity.",
+                    nameof(cost));
+            }
+
+            return new RuleModification(
+                RuleModificationKind.RemovalPrevention,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                0,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor,
+                RuleValueApplicability.Always,
+                SourceValueQueryKind.None,
+                cost);
+        }
+
         public static RuleModification ForCountsAs(EffectiveUnitKind effectiveUnitKind)
         {
             if (effectiveUnitKind == EffectiveUnitKind.None)
@@ -512,6 +579,13 @@ namespace GuardsDigital.Core.Rules.Modifications
 
         /// <summary>Whether this declaration's amount still has to be counted from live state.</summary>
         public bool IsDerived => DerivedQuery != SourceValueQueryKind.None;
+
+        /// <summary>
+        /// Milestone 8.19c1. What a removal prevention charges;
+        /// <see cref="Modifications.RemovalPreventionCost.Free"/> on every other family, because the
+        /// question is not asked of them.
+        /// </summary>
+        public RemovalPreventionCost RemovalPreventionCost { get; }
 
         /// <summary>The exact grant for a permission; otherwise <c>None</c>.</summary>
         public RulePermissionKind Permission { get; }

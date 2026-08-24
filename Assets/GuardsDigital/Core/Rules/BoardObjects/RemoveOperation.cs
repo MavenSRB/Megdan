@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Modifications;
@@ -41,11 +43,12 @@ namespace GuardsDigital.Core.Rules.BoardObjects
         /// non-Heavy minion arriving beside a Heavy one (p.13), or an Active effect coming into effect -
         /// is not removed, and nothing about the board changed.
         ///
-        /// The general <c>PreventRemovalEffect</c> source family is a different producer of this same
-        /// outcome and stays unimplemented: p.13's own example of it is card text ("Bolster"), no
-        /// verified text is available, and the declared modification vocabulary reaches heroes alone
-        /// while <c>TokenPropertyDefinition</c> carries a recorded decision against widening its
-        /// affected object ahead of that text.
+        /// Milestone 8.19c1 adds the second producer p.13's Bolster example names, and it is a
+        /// different rule reaching the same outcome: a source covering the piece offers to stop the
+        /// removal at a typed card price, and its controller decides. It is asked through
+        /// <see cref="RemovalStageDecision.OfferedPreventions"/> rather than here, because a price
+        /// somebody has to be asked about is a decision and this operation answers none - and because
+        /// asking it beside the immunity above is what keeps both p.13 Defeat paths honouring it.
         /// </summary>
         RemovalPrevented = 2
     }
@@ -261,6 +264,36 @@ namespace GuardsDigital.Core.Rules.BoardObjects
             var unit = subject.AsRuleObject();
             return unit.IsDefined && ImmunityQuery.IsImmuneTo(
                 unit, activity, actingUnit, board, participants, modifications);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Which sources are offering to stop this removal at a price, and what each
+        /// of them would cost, or an empty list when none is.
+        ///
+        /// <para>It is the removal stage's second question, and it is asked here for exactly the reason
+        /// the first one is: rulebook p.13's Defeat and p.19's standalone Remove both reach this object,
+        /// so a prevention source added to the rules is honoured by both paths or by neither. That is
+        /// what milestone 6.6b closed for immunity, and a family that asked its own question at one of
+        /// the two call sites would reopen it.</para>
+        ///
+        /// <para>The two questions stay separate because they are different rules and they are answered
+        /// at different moments. <see cref="IsPrevented"/> is the page's own unconditional interception,
+        /// asked and answered before anything happens; this one is a decision somebody makes and pays
+        /// for, so it is asked only where the removal was going to succeed - an immune subject is
+        /// already staying on the board and has nothing to buy.</para>
+        /// </summary>
+        public IReadOnlyList<RemovalPreventionOption> OfferedPreventions(
+            BoardObjectReference subject,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> cards)
+        {
+            var unit = subject.AsRuleObject();
+            if (!unit.IsDefined || IsPrevented(subject))
+            {
+                return Array.Empty<RemovalPreventionOption>();
+            }
+
+            return RemovalPreventionQuery.Offered(unit, modifications, definitions, cards);
         }
 
         /// <summary>p.8's cause, asked after the piece has actually left the board.</summary>

@@ -63,6 +63,12 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(currentStage.HasValue);
             if (currentStage.HasValue) writer.Write((int)currentStage.Value);
             WriteOutcomes(writer, outcomes);
+
+            // Milestone 8.19c1, schema v27. Whether this round has already run rulebook p.8's moment
+            // before its Minion Battle. Nothing else records it - the stage cursor says the round is at
+            // its Minion Battle either way - so a restore without it would fire every card that
+            // declared the window a second time, on a battle it had already interrupted once.
+            writer.Write(endOfRound.PreMinionBattleTriggersVisited);
             WritePendingMinionBattleChoice(writer, pendingMinionBattleChoice);
             WritePendingLanePushRequest(writer, pendingLanePushRequest);
             WriteTiming(writer, round.Timing.CaptureRestoreState());
@@ -115,6 +121,15 @@ namespace GuardsDigital.Core.Snapshots
             });
             var stage = SnapshotEnumReader.ReadNullable<EndOfRoundStage>(reader, "current end-of-round stage");
             var outcomes = ReadOutcomes(reader);
+            var preMinionBattleTriggersVisited = reader.ReadBoolean();
+            if (preMinionBattleTriggersVisited && stage != EndOfRoundStage.MinionBattle &&
+                (!stage.HasValue || (int)stage.Value < (int)EndOfRoundStage.MinionBattle))
+            {
+                throw Malformed(
+                    "Snapshot records rulebook p.8's pre-Minion-Battle moment as visited in a round " +
+                    "that has not reached its Minion Battle.");
+            }
+
             var pendingMinionBattleChoice = ReadPendingMinionBattleChoice(reader);
             var pendingLanePushRequest = ReadPendingLanePushRequest(reader);
             var timing = ActiveEffectLifecycle.Restore(ReadTiming(reader, catalogs.Capabilities));
@@ -247,7 +262,8 @@ namespace GuardsDigital.Core.Snapshots
                         stage,
                         outcomes,
                         pendingMinionBattleChoice,
-                        pendingLanePushRequest),
+                        pendingLanePushRequest,
+                        preMinionBattleTriggersVisited),
                     new RoundCardActionsRestoreState(hasRoundCardActions, roundCoinLedger),
                     systemTransitions.CaptureRestoreState(),
                     heroProgression,

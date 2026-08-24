@@ -321,6 +321,53 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return FromAttackResolution(CardActionResolutionEventKind.AttackStarted, resolution);
         }
 
+        /// <summary>
+        /// Milestone 8.19c1. A Defeat is standing at its removal stage while the hero controlling a
+        /// prevention source decides. The fact names the miniature still on the board and the Defeat it
+        /// belongs to, so a reader can place the pause without inferring it from what stopped arriving.
+        /// </summary>
+        public static CardActionResolutionEvent RemovalPreventionRequested(
+            PendingAttackResolution resolution,
+            PendingRemovalPreventionDecision decision)
+        {
+            if (resolution == null) throw new ArgumentNullException(nameof(resolution));
+            if (decision == null) throw new ArgumentNullException(nameof(decision));
+
+            return new CardActionResolutionEvent(
+                CardActionResolutionEventKind.RemovalPreventionRequested,
+                resolution.ResolutionId, resolution.SourceCardInstanceId,
+                resolution.ActionDefinitionId, default, resolution.ActorId, decision.DecidingHeroId,
+                resolution.CurrentStepId, 0, resolution.AttackTotal, default, 0,
+                AttackResolutionOutcome.None, default, default,
+                MinionDefeatFactKind.RemovalAttempted, decision.SubjectMinionId, decision.Defeat.Id);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. The card one hero discarded to stop a removal. The discarded card rides
+        /// the Defense-card slot, which is the event's one place for a card a hero paid with.
+        /// </summary>
+        public static CardActionResolutionEvent RemovalPreventionPaid(
+            PendingAttackResolution resolution,
+            PendingRemovalPreventionDecision decision,
+            CardInstanceId paymentCardInstanceId)
+        {
+            if (resolution == null) throw new ArgumentNullException(nameof(resolution));
+            if (decision == null) throw new ArgumentNullException(nameof(decision));
+            if (!paymentCardInstanceId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A paid prevention names the card that paid.", nameof(paymentCardInstanceId));
+            }
+
+            return new CardActionResolutionEvent(
+                CardActionResolutionEventKind.RemovalPreventionPaid,
+                resolution.ResolutionId, resolution.SourceCardInstanceId,
+                resolution.ActionDefinitionId, default, resolution.ActorId, decision.DecidingHeroId,
+                resolution.CurrentStepId, 0, resolution.AttackTotal, paymentCardInstanceId, 0,
+                AttackResolutionOutcome.None, default, default,
+                MinionDefeatFactKind.RemovalPrevented, decision.SubjectMinionId, decision.Defeat.Id);
+        }
+
         public static CardActionResolutionEvent AttackTargetValidated(PendingAttackResolution resolution)
         {
             return FromAttackResolution(CardActionResolutionEventKind.AttackTargetValidated, resolution);

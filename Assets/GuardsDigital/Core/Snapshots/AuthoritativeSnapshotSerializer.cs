@@ -192,7 +192,19 @@ namespace GuardsDigital.Core.Snapshots
         // taken after a hero Defeat answer Brogan's "if any hero was defeated this round" condition as
         // false after restore, and neither the cumulative state nor an opaque resolution id can recover
         // the lost round scope without inventing authority.
-        public const int CurrentSchemaVersion = 26;
+        // Milestone 8.19c1 moves it to 27 for three stopped decisions v26 has nowhere to put. A trigger
+        // running inside the effect that pushed needs two effect positions at once, and a
+        // PendingResolution holds one; a Defeat waiting at its removal stage needs the recorded Defeat
+        // and the coin operations that paid it, which cannot be re-derived once the ledger has moved;
+        // and rulebook p.8's moment before the Minion Battle needs a round-scoped record that it has
+        // already run, which the stage cursor cannot give because the cursor is unchanged either way.
+        //
+        // v26 is rejected rather than migrated. Every one of the three is a decision a player has been
+        // asked and has not answered, and a payload that never held the question cannot be restored
+        // into a match that is waiting for its answer: the trigger would resume as the effect that
+        // pushed, the Defeat would remove a miniature its controller had been offered the chance to
+        // keep, and the round would fire its pre-battle cards a second time.
+        public const int CurrentSchemaVersion = 27;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

@@ -61,8 +61,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingRepeatedAction pendingRepeat = null,
             PendingImmediateLanePushRequest pendingLanePush = null,
             PendingAttackCardTextResolution pendingCardText = null,
-            PendingPreActionResolution pendingPreAction = null)
+            PendingPreActionResolution pendingPreAction = null,
+            PendingEffectInterrupt pendingEffectInterrupt = null,
+            PendingRemovalPreventionDecision pendingRemovalPrevention = null)
         {
+            PendingEffectInterrupt = pendingEffectInterrupt;
+            PendingRemovalPrevention = pendingRemovalPrevention;
             PendingPreAction = pendingPreAction;
             PendingCardText = pendingCardText;
             ContinuationKind = continuationKind;
@@ -196,6 +200,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         public PendingPreActionResolution PendingPreAction { get; }
 
+        /// <summary>
+        /// Milestone 8.19c1's after-push trigger frame, or <c>null</c>. It rides every continuation kind
+        /// for the reason the pre-action continuation does, and for a sharper version of that reason:
+        /// the effect it interrupted is the continuation, standing at the node it reached.
+        /// </summary>
+        public PendingEffectInterrupt PendingEffectInterrupt { get; }
+
+        /// <summary>
+        /// Milestone 8.19c1's Defeat standing at its removal stage, or <c>null</c>. It rides every
+        /// continuation kind because the two Defeats that can reach it are in different ones: rulebook
+        /// p.14's minion arm leaves no continuation at all, and an effect-invoked Defeat is inside a
+        /// triggered Skill's.
+        /// </summary>
+        public PendingRemovalPreventionDecision PendingRemovalPrevention { get; }
+
         /// <summary>The same state carrying a pre-action continuation beside whatever it already holds.</summary>
         public CardActionResolutionRestoreState WithPreAction(
             PendingPreActionResolution pendingPreAction) =>
@@ -209,7 +228,27 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 PendingRepeat,
                 PendingImmediateLanePush,
                 PendingCardText,
-                pendingPreAction);
+                pendingPreAction,
+                PendingEffectInterrupt,
+                PendingRemovalPrevention);
+
+        /// <summary>The same state carrying milestone 8.19c1's two pauses beside whatever it holds.</summary>
+        public CardActionResolutionRestoreState WithInterruptions(
+            PendingEffectInterrupt pendingEffectInterrupt,
+            PendingRemovalPreventionDecision pendingRemovalPrevention) =>
+            new CardActionResolutionRestoreState(
+                ContinuationKind,
+                PendingMovementResolution,
+                PendingAttackResolution,
+                PendingSkillResolution,
+                CoinLedger,
+                PendingCorrection,
+                PendingRepeat,
+                PendingImmediateLanePush,
+                PendingCardText,
+                PendingPreAction,
+                pendingEffectInterrupt,
+                pendingRemovalPrevention);
 
         public static CardActionResolutionRestoreState WithPendingCardText(
             PendingAttackCardTextResolution pendingCardText,

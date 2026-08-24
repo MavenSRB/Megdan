@@ -26,6 +26,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private EffectRosterState rosterState = EffectRosterState.Absent;
 
         /// <summary>
+        /// Milestone 8.19c1: a Defeat standing at its removal stage while the hero controlling a
+        /// prevention source decides whether to pay for it, or <c>null</c>.
+        ///
+        /// It is held here rather than beside the attack continuation because both of this build's
+        /// minion Defeats reach it and only one of them is inside an Attack: the effect-invoked Defeat
+        /// has no pending attack at all, and a continuation kept on that slot would have had nowhere to
+        /// live for half the cases the rule covers.
+        /// </summary>
+        private PendingRemovalPreventionDecision pendingRemovalPrevention;
+
+        /// <summary>
         /// Milestone 6.12: the same register the round authority holds, so rulebook p.13's "Any markers
         /// they had are returned" happens where the Defeat is recorded rather than at some later
         /// checkpoint that would have to rediscover which hero was defeated. Absent outside a live match,
@@ -669,6 +680,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 return ResolveMinionTarget(
                     resolution.TargetMinionId, participants, modifications, materializedDefinitions,
+                    materializedInstances,
                     steps);
             }
 
@@ -933,6 +945,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications,
             IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
             List<ResolutionStep> precedingSteps)
         {
             var target = adjacentMoveAuthority.Minions.Single(minion => minion.MinionId.Equals(targetMinionId));
@@ -971,7 +984,27 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var removalAttempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
             var defeat = ResolveRemovalStage(
                 targetMinionId, outcome, reward, removalAttempt, participants, modifications,
-                resolution.ActorId, RuleActivity.Attack);
+                resolution.ActorId, RuleActivity.Attack,
+                RemovalPreventionOrigin.AttackMinionDefeat, resolution, definitions, instances);
+
+            // Milestone 8.19c1. A source has offered to stop the removal and its controller has not
+            // answered. Everything rulebook p.13 does before the removal has happened - the Defeat is
+            // recorded and the coins are paid - and the rest of p.14 is owed to the answer, produced
+            // from this resolution exactly as the page's card-text pause produces its own remainder.
+            if (defeat == null)
+            {
+                var paused = precedingSteps ?? new List<ResolutionStep>();
+                paused.Add(ResolutionStep.FromFact(
+                    CardActionResolutionEvent.AttackStarted(resolution)));
+                paused.Add(ResolutionStep.FromFact(
+                    CardActionResolutionEvent.RemovalPreventionRequested(
+                        resolution, pendingRemovalPrevention)));
+                pendingAttackResolution = null;
+                pendingAttackTargetChoice = null;
+                pendingDefenseChoice = null;
+                return AttackActionResolutionResult.Accept(
+                    null, null, null, paused, AttackResolutionOutcome.None, null);
+            }
 
             // Milestone 8.19a. p.14's step 1 and the two checkpoints around it are already in
             // <paramref name="precedingSteps"/>: this arm is now reached from
@@ -988,12 +1021,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             events.Add(ResolutionStep.FromFact(CardActionResolutionEvent.AttackStarted(resolution)));
             events.AddRange(defeat.Facts.Select(fact => ResolutionStep.FromFact(
                 CardActionResolutionEvent.MinionDefeatFact(resolution, defeat, fact))));
-            events.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.AfterAttack));
-            events.AddRange(CardTextAt(
-                CardTextTiming.AfterTheAttack, resolution, resolution.ActorId, definitions,
-                AttackResolutionOutcome.AttackSuccessful));
-            events.AddRange(StepsAfterCardText(
-                CardTextTiming.AfterTheAttack, resolution, AttackResolutionOutcome.AttackSuccessful));
+            events.AddRange(StepsAfterMinionDefeat(resolution, definitions));
 
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;
@@ -1033,7 +1061,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications,
             HeroId actorId,
-            RuleActivity activity)
+            RuleActivity activity,
+            RemovalPreventionOrigin preventionOrigin = RemovalPreventionOrigin.None,
+            PendingAttackResolution preventionResolution = null,
+            IReadOnlyList<CardDefinition> definitions = null,
+            IReadOnlyList<CardInstance> instances = null)
         {
             var subject = BoardObjectReference.ForMinion(targetMinionId);
             var removalStage = new RemovalStageDecision(
@@ -1045,9 +1077,177 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 LanePushCauseKind.Defeat);
 
+            // Milestone 8.19c1. The removal stage's second question, asked of the same shared decision
+            // the first one is asked of, so both p.13 Defeat paths reach it or neither does. A caller
+            // that supplies no identity to rebuild a remainder from cannot hold a pause, so it is not
+            // offered one - and no such caller exists: both of this build's minion Defeats supply it.
+            if (preventionOrigin != RemovalPreventionOrigin.None && preventionResolution != null &&
+                definitions != null && instances != null)
+            {
+                var offers = removalStage.OfferedPreventions(subject, definitions, instances);
+                if (offers.Count > 0)
+                {
+                    pendingRemovalPrevention = new PendingRemovalPreventionDecision(
+                        preventionOrigin,
+                        preventionResolution,
+                        targetMinionId,
+                        outcome,
+                        reward.Operations,
+                        offers[0].DecidingHeroId,
+                        activity);
+                    return null;
+                }
+            }
+
+            return CompleteRemovalStage(
+                targetMinionId, outcome, reward, removalAttempt, removalStage,
+                removalStage.IsPrevented(subject));
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1's Defeat standing at its removal stage, or <c>null</c>. Non-null only while
+        /// a prevention source's controller is deciding.
+        /// </summary>
+        internal PendingRemovalPreventionDecision PendingRemovalPrevention => pendingRemovalPrevention;
+
+        /// <summary>Milestone 8.19c1: restores a decision that was standing when the match was saved.</summary>
+        internal void RestorePendingRemovalPrevention(PendingRemovalPreventionDecision decision)
+        {
+            pendingRemovalPrevention = decision;
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Answers a standing removal-prevention decision and finishes the Defeat.
+        ///
+        /// <para>Everything the answer names is checked against a fresh derivation rather than against
+        /// anything the pause carried - which sources are still offering, and which cards could still
+        /// pay them - for the reason milestone 6.8l re-derives a paused selection's eligibility: what
+        /// was true when the question opened is not what its answer applies to. A refused answer leaves
+        /// the decision exactly as it was, so it is still there to be made.</para>
+        ///
+        /// <para>Declining is always legal, and a paid prevention produces exactly what p.18's immunity
+        /// produces, because both go through the one <see cref="CompleteRemovalStage"/>.</para>
+        /// </summary>
+        internal MinionDefeatResolution AnswerRemovalPrevention(
+            RemovalPreventionCommand command,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            out PendingRemovalPreventionDecision answered,
+            out CardInstanceId paidCardInstanceId,
+            out CardActionResolutionRejectionReason rejection)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            answered = pendingRemovalPrevention;
+            paidCardInstanceId = default;
+            rejection = CardActionResolutionRejectionReason.None;
+            if (answered == null)
+            {
+                rejection = CardActionResolutionRejectionReason.NoPendingResolution;
+                return null;
+            }
+
+            if (!string.Equals(command.RequestId, answered.RequestId, StringComparison.Ordinal))
+            {
+                rejection = CardActionResolutionRejectionReason.StaleChoice;
+                return null;
+            }
+
+            if (!command.DecidingHeroId.Equals(answered.DecidingHeroId))
+            {
+                rejection = CardActionResolutionRejectionReason.WrongChooser;
+                return null;
+            }
+
+            var removalStage = new RemovalStageDecision(
+                answered.Activity,
+                RuleObject.ForHero(answered.Resolution.ActorId),
+                adjacentMoveAuthority,
+                adjacentMoveAuthority,
+                participants,
+                modifications,
+                LanePushCauseKind.Defeat);
+            var subject = BoardObjectReference.ForMinion(answered.SubjectMinionId);
+            var prevented = false;
+            if (command.Accepted)
+            {
+                var decidingHeroId = answered.DecidingHeroId;
+                var option = removalStage
+                    .OfferedPreventions(subject, definitions, instances)
+                    .FirstOrDefault(offer =>
+                        string.Equals(offer.SourceId, command.SourceId, StringComparison.Ordinal) &&
+                        offer.DecidingHeroId.Equals(decidingHeroId) &&
+                        offer.PayableCards.Contains(command.PaymentCardInstanceId));
+                if (option == null)
+                {
+                    rejection = CardActionResolutionRejectionReason.InvalidChoice;
+                    return null;
+                }
+
+                var payment = instances.Single(card => card.Id.Equals(command.PaymentCardInstanceId));
+                if (!CardLifecycleAuthority.TryDiscardFromHand(payment))
+                {
+                    rejection = CardActionResolutionRejectionReason.InvalidChoice;
+                    return null;
+                }
+
+                paidCardInstanceId = payment.Id;
+                prevented = true;
+            }
+
+            pendingRemovalPrevention = null;
+            return CompleteRemovalStage(
+                answered.SubjectMinionId,
+                answered.Defeat,
+                answered.Reward,
+                new DefeatRemovalAttempt(answered.Defeat.Id, answered.Defeat.TargetId),
+                removalStage,
+                prevented || removalStage.IsPrevented(subject));
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. The rest of rulebook p.14 after a minion Defeat, produced from the
+        /// resolution's own identity rather than from a list of steps a pause would have had to carry.
+        /// It is the same generator whether or not anything stopped at the removal stage.
+        /// </summary>
+        internal IReadOnlyList<ResolutionStep> StepsAfterMinionDefeat(
+            PendingAttackResolution resolution,
+            IReadOnlyList<CardDefinition> definitions)
+        {
+            var steps = new List<ResolutionStep>
+            {
+                ResolutionStep.AtCheckpoint(TimingCheckpoint.AfterAttack)
+            };
+            steps.AddRange(CardTextAt(
+                CardTextTiming.AfterTheAttack, resolution, resolution.ActorId, definitions,
+                AttackResolutionOutcome.AttackSuccessful));
+            steps.AddRange(StepsAfterCardText(
+                CardTextTiming.AfterTheAttack, resolution, AttackResolutionOutcome.AttackSuccessful));
+            return steps;
+        }
+
+        /// <summary>
+        /// The removal stage once the two questions before it have been answered: it commits, or it
+        /// does not, and either way it reports p.8's cause from where the miniature stood.
+        ///
+        /// <para>Extracted at milestone 8.19c1 so that a prevention paid for by a card produces exactly
+        /// what p.18's immunity produces. The two reasons a removal stops are different rules and are
+        /// decided in different places; what happens once one of them has decided is one thing, written
+        /// once, and neither reason can drift into producing a different Defeat than the other.</para>
+        /// </summary>
+        private MinionDefeatResolution CompleteRemovalStage(
+            MinionId targetMinionId,
+            DefeatOutcome outcome,
+            DefeatRewardResult reward,
+            DefeatRemovalAttempt removalAttempt,
+            RemovalStageDecision removalStage,
+            bool prevented)
+        {
+            var subject = BoardObjectReference.ForMinion(targetMinionId);
             var origin = adjacentMoveAuthority.Minions
                 .Single(minion => minion.MinionId.Equals(targetMinionId)).Coordinate;
-            if (removalStage.IsPrevented(subject))
+            if (prevented)
             {
                 // Milestone 6.9: p.8's first sentence is answered by the Defeat, so a prevented removal
                 // still records the cause. The stage is asked from where the miniature still stands,
@@ -1081,6 +1281,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MinionId targetMinionId,
             MatchParticipants participants,
             RuleModificationSet modifications,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
             out PendingAttackResolution eventIdentity)
         {
             var target = adjacentMoveAuthority.Minions
@@ -1111,9 +1313,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new InvalidOperationException("A triggered minion Defeat could not award its declared reward.");
 
             var attempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
+
+            // Milestone 8.19c1. The same identity, the same shared removal stage, and therefore the
+            // same prevention question the Attack's own minion arm asks. This is what "or neither does"
+            // means structurally: the offer is asked once, inside the decision both paths go through,
+            // and this path can hold the pause because it supplies the identity its remainder is
+            // rebuilt from. A null answer here is that pause; the caller reports it.
             return ResolveRemovalStage(
                 targetMinionId, outcome, reward, attempt, participants, modifications,
-                actorId, RuleActivity.Skill);
+                actorId, RuleActivity.Skill,
+                RemovalPreventionOrigin.EffectInvokedMinionDefeat, eventIdentity, definitions,
+                instances);
         }
 
 

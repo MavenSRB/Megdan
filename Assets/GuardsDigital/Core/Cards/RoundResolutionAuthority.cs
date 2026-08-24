@@ -52,6 +52,12 @@ namespace GuardsDigital.Core.Cards
         private readonly IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers;
         private readonly AdjacentMoveAuthority board;
         private TieBreakerState tieBreakerState;
+
+        /// <summary>
+        /// Milestone 8.19c1. Whether this round has already run the moment before its Minion Battle is
+        /// planned. Reset when the next round begins, because the moment belongs to a round.
+        /// </summary>
+        private bool preMinionBattleTriggersVisited;
         private readonly ActiveEffectLifecycle timing;
         private readonly MarkerAttachmentRegister markers;
         private readonly GuardsDigital.Core.Rules.Transitions.SystemTransitionAuthority systemTransitions;
@@ -273,6 +279,16 @@ namespace GuardsDigital.Core.Cards
         internal MatchParticipants Participants => participants;
 
         internal CardActionResolutionAuthority CardActions => cardActions;
+
+        /// <summary>
+        /// Milestone 8.19c1's Defeat standing at its removal stage, or <c>null</c>.
+        ///
+        /// The round reads it rather than owning it, the way it reads the mid-turn Lane-Push request:
+        /// the dispatcher records it, and what the round adds is that a decision standing here belongs
+        /// to whichever hero's source is offering rather than to whoever is acting.
+        /// </summary>
+        public GuardsDigital.Core.Rules.CardResolution.PendingRemovalPreventionDecision
+            PendingRemovalPrevention => cardActions?.PendingRemovalPrevention;
 
         public ActiveEffectLifecycle Timing => timing;
 
@@ -691,7 +707,8 @@ namespace GuardsDigital.Core.Cards
                     CurrentEndOfRoundStage,
                     EndOfRoundOutcomes,
                     PendingMinionBattleChoice,
-                    PendingLanePushRequest),
+                    PendingLanePushRequest,
+                    preMinionBattleTriggersVisited),
                 new RoundCardActionsRestoreState(CardActions != null, ledger),
                 systemTransitions.CaptureRestoreState(),
                 HeroProgression.CaptureRestoreState(),
@@ -792,6 +809,7 @@ namespace GuardsDigital.Core.Cards
             authority.endOfRoundOutcomes.Clear();
             authority.endOfRoundOutcomes.AddRange(state.EndOfRound.Outcomes);
             authority.CurrentEndOfRoundStage = currentEndOfRoundStage;
+            authority.preMinionBattleTriggersVisited = state.EndOfRound.PreMinionBattleTriggersVisited;
             authority.CurrentCommitmentAuthority = commitmentAuthority;
             authority.CurrentTurnAuthority = turnAuthority;
 
@@ -1010,7 +1028,28 @@ namespace GuardsDigital.Core.Cards
 
         public RoundResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)
         {
+            // Milestone 8.19c1. A question asked at rulebook p.8's moment before the Minion Battle is
+            // answered with the same command a Skill's is, because it is the same frame paused in the
+            // same way. What differs is who owns it: the round is between turns, so the turn authority
+            // that answers every other effect choice has nothing to resume.
+            if (Phase == RoundResolutionPhase.EndOfRound &&
+                cardActions != null && cardActions.IsPendingTriggeredEffect)
+            {
+                return TryAnswerEndOfRoundTriggerChoice(command);
+            }
+
             return ExecuteTurnCommand(() => CurrentTurnAuthority.TryAnswerEffectChoice(command));
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Closes the standing removal-prevention decision. It goes through the turn
+        /// like every other card-action answer, because the Defeat it is standing inside belongs to an
+        /// action the turn is resolving.
+        /// </summary>
+        public RoundResolutionResult TryAnswerRemovalPrevention(
+            GuardsDigital.Core.Rules.CardResolution.RemovalPreventionCommand command)
+        {
+            return ExecuteTurnCommand(() => CurrentTurnAuthority.TryAnswerRemovalPrevention(command));
         }
 
         public RoundResolutionResult TryAnswerDisplacedMinionCorrection(
@@ -1118,7 +1157,126 @@ namespace GuardsDigital.Core.Cards
                 choice.SelectedUnits);
         }
 
-        private RoundResolutionResult ResolveMinionBattle()
+        /// <summary>
+        /// Milestone 8.19c1. Runs whatever declared rulebook p.8's pre-Minion-Battle moment, and
+        /// returns everything it produced.
+        ///
+        /// <para>It is the ordinary triggered-effect visit, at a checkpoint the lifecycle already had
+        /// and nothing had ever raised. The card-action dispatcher runs it because it holds the
+        /// triggered-effect authority, the capability catalog and the components an effect executes
+        /// against - the same collaborators a triggered `Action Ended` needs, at a different moment. A
+        /// composition with no card actions has nothing that could declare the window, so the moment
+        /// passes silently and the battle is planned exactly as it was before this milestone.</para>
+        /// </summary>
+        private List<RoundResolutionEvent> VisitPreMinionBattleTriggers()
+        {
+            preMinionBattleTriggersVisited = true;
+            var events = new List<RoundResolutionEvent>();
+            if (cardActions == null)
+            {
+                return events;
+            }
+
+            var modifications = cardActions.CurrentModifications(
+                timing, participants, TieBreakerState, CurrentUltimates(),
+                GuardsDigital.Core.Rules.Modifications.RuleObject.None);
+            foreach (var timingEvent in cardActions.ApplyTriggeredActionEnded(
+                timing,
+                new ActiveEffectCheckpointContext(
+                    TimingCheckpoint.EndOfRoundBeforeMinionBattle, RoundIndex, TurnsPerRound),
+                TieBreakerState,
+                definitions,
+                instances,
+                participants,
+                modifications))
+            {
+                events.Add(RoundResolutionEvent.FromTiming(RoundIndex, TurnsPerRound, timingEvent));
+            }
+
+            AppendTriggeredEffectEvents(events);
+            return events;
+        }
+
+        /// <summary>
+        /// Everything a pre-Minion-Battle trigger's own frame produced, in the round's vocabulary. A
+        /// fact becomes the nested turn event every other triggered effect publishes; a checkpoint the
+        /// effect raised is applied here, in stream order, exactly as the turn applies one.
+        /// </summary>
+        private void AppendTriggeredEffectEvents(ICollection<RoundResolutionEvent> events)
+        {
+            foreach (var step in cardActions.ConsumeTriggeredResolutionSteps())
+            {
+                if (step.Kind == GuardsDigital.Core.Rules.CardResolution.ResolutionStepKind.Checkpoint)
+                {
+                    foreach (var timingEvent in timing.ApplyCheckpoint(
+                        new ActiveEffectCheckpointContext(
+                            step.Checkpoint,
+                            RoundIndex,
+                            TurnsPerRound,
+                            step.CheckpointAffectedHeroId,
+                            step.CheckpointSourceCardInstanceId),
+                        TieBreakerState))
+                    {
+                        events.Add(RoundResolutionEvent.FromTiming(
+                            RoundIndex, TurnsPerRound, timingEvent));
+                    }
+
+                    continue;
+                }
+
+                if (step.Kind == GuardsDigital.Core.Rules.CardResolution.ResolutionStepKind.Fact)
+                {
+                    events.Add(RoundResolutionEvent.FromTurn(
+                        RoundIndex, TurnsPerRound, TurnResolutionEvent.FromTriggeredEffect(step.Fact)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Answers the question a pre-Minion-Battle trigger stopped on. When nothing
+        /// is left standing the round is exactly where it was - at its Minion Battle stage, with the
+        /// battle still to plan - so the next advance resumes into the same battle.
+        /// </summary>
+        public RoundResolutionResult TryAnswerEndOfRoundTriggerChoice(
+            GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommand command)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            if (Phase == RoundResolutionPhase.GameEnded)
+            {
+                return RoundResolutionResult.Reject(RoundResolutionRejectionReason.GameAlreadyEnded);
+            }
+
+            if (Phase != RoundResolutionPhase.EndOfRound ||
+                CurrentEndOfRoundStage != EndOfRoundStage.MinionBattle ||
+                cardActions == null || !cardActions.IsPendingTriggeredEffect)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.NotResolvingEndOfRound);
+            }
+
+            var answered = cardActions.AnswerTriggeredEffectChoice(
+                command,
+                definitions,
+                instances,
+                participants,
+                timing,
+                cardActions.CurrentModifications(
+                    timing, participants, TieBreakerState, CurrentUltimates(),
+                    GuardsDigital.Core.Rules.Modifications.RuleObject.None),
+                RoundIndex,
+                TurnsPerRound);
+            if (!answered.Accepted)
+            {
+                return RoundResolutionResult.Reject(
+                    RoundResolutionRejectionReason.NotResolvingEndOfRound);
+            }
+
+            var events = new List<RoundResolutionEvent>();
+            AppendTriggeredEffectEvents(events);
+            return RoundResolutionResult.Accept(events);
+        }
+
+        private RoundResolutionResult ResolveMinionBattle(List<RoundResolutionEvent> precedingEvents = null)
         {
             if (board == null)
             {
@@ -1136,17 +1294,17 @@ namespace GuardsDigital.Core.Cards
                     GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
                 CurrentMinionBattleRules(),
                 GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook);
+            var preceding = precedingEvents ?? new List<RoundResolutionEvent>();
             if (plan.PendingChoice != null)
             {
                 PendingMinionBattleChoice = plan.PendingChoice;
-                return RoundResolutionResult.Accept(new[]
-                {
-                    RoundResolutionEvent.MinionBattleChoiceRequested(RoundIndex, plan.PendingChoice),
-                    RoundResolutionEvent.EndOfRoundStageOutcome(
-                        RoundIndex,
-                        EndOfRoundStage.MinionBattle,
-                        EndOfRoundStageOutcomeKind.Paused)
-                });
+                preceding.Add(
+                    RoundResolutionEvent.MinionBattleChoiceRequested(RoundIndex, plan.PendingChoice));
+                preceding.Add(RoundResolutionEvent.EndOfRoundStageOutcome(
+                    RoundIndex,
+                    EndOfRoundStage.MinionBattle,
+                    EndOfRoundStageOutcomeKind.Paused));
+                return RoundResolutionResult.Accept(preceding);
             }
 
             if (!plan.LosingTeamId.IsDefined)
@@ -1156,7 +1314,8 @@ namespace GuardsDigital.Core.Cards
                     plan.BattleZoneId,
                     null,
                     null,
-                    Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>());
+                    Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
+                    preceding);
             }
 
             return CompleteMinionBattle(
@@ -1164,7 +1323,8 @@ namespace GuardsDigital.Core.Cards
                 plan.BattleZoneId,
                 participants.GetTeam(plan.WinningTeamId),
                 participants.GetTeam(plan.LosingTeamId),
-                plan.AutomaticRemovalUnits);
+                plan.AutomaticRemovalUnits,
+                preceding);
         }
 
         /// <summary>
@@ -1176,7 +1336,8 @@ namespace GuardsDigital.Core.Cards
             GuardsDigital.Core.Board.ZoneId battleZoneId,
             Team winningTeam,
             Team losingTeam,
-            IEnumerable<GuardsDigital.Core.Rules.Modifications.RuleObject> removalUnits)
+            IEnumerable<GuardsDigital.Core.Rules.Modifications.RuleObject> removalUnits,
+            List<RoundResolutionEvent> precedingEvents = null)
         {
             var units = (removalUnits ?? throw new ArgumentNullException(nameof(removalUnits))).ToArray();
             if (units.Distinct().Count() != units.Length)
@@ -1208,7 +1369,11 @@ namespace GuardsDigital.Core.Cards
                     ? value.Unit.HeroId.Value
                     : value.Unit.MinionId.Value, StringComparer.Ordinal)
                 .ToArray();
-            var events = new List<RoundResolutionEvent>();
+
+            // Milestone 8.19c1. Whatever the pre-battle moment produced stands ahead of the battle in
+            // the stream, because that is where it happened: the effect ran and then the battle counted
+            // what it left standing.
+            var events = precedingEvents ?? new List<RoundResolutionEvent>();
             var pushLostBySubstitution = false;
             foreach (var candidate in ordered)
             {
@@ -1498,6 +1663,29 @@ namespace GuardsDigital.Core.Cards
                 endOfRoundStageAvailability.IsAvailable(EndOfRoundStage.MinionBattle) &&
                 board != null)
             {
+                // Milestone 8.19c1. Rulebook p.8's end of round, at the moment before the battle is
+                // planned - the position Xargatha's Constrict prints in its own reminder text. It runs
+                // before anything about the battle is derived, so an effect that defeats a minion here
+                // changes what the battle then counts, which is the whole point of the card.
+                if (!preMinionBattleTriggersVisited)
+                {
+                    var preBattle = VisitPreMinionBattleTriggers();
+                    if (cardActions != null && cardActions.IsPendingTriggeredEffect)
+                    {
+                        return RoundResolutionResult.Accept(preBattle);
+                    }
+
+                    return ResolveMinionBattle(preBattle);
+                }
+
+                // A question the moment asked is still standing. The round waits for it rather than
+                // planning a battle around half-run card text.
+                if (cardActions != null && cardActions.IsPendingTriggeredEffect)
+                {
+                    return RoundResolutionResult.Reject(
+                        RoundResolutionRejectionReason.NotResolvingEndOfRound);
+                }
+
                 return ResolveMinionBattle();
             }
 
@@ -1812,6 +2000,10 @@ namespace GuardsDigital.Core.Cards
             // Level Up stage, because the stage cursor only moves forward and this round's is behind it.
             RoundLeveling.BeginRound();
             HeroDefeatHistory.BeginRound();
+
+            // Milestone 8.19c1, and round-scoped for exactly the reason those two are: p.8's moment
+            // before the Minion Battle belongs to a round, so the next round owes its own.
+            preMinionBattleTriggersVisited = false;
             CurrentEndOfRoundStage = null;
             CurrentTurnAuthority = null;
             CurrentCommitmentAuthority = new TurnCardCommitmentAuthority(instances, participants);

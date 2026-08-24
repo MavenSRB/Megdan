@@ -38,6 +38,8 @@ namespace GuardsDigital.Core.Snapshots
             WriteCoinLedger(writer, coinLedger);
             WriteImmediateLanePush(writer, state.PendingImmediateLanePush);
             WritePreAction(writer, state.PendingPreAction);
+            WriteEffectInterrupt(writer, state.PendingEffectInterrupt);
+            WriteRemovalPrevention(writer, state.PendingRemovalPrevention);
             if (continuationKind == CardActionContinuationKind.Movement)
             {
                 WriteMovementResolution(writer, pendingMovement);
@@ -194,6 +196,174 @@ namespace GuardsDigital.Core.Snapshots
 
             return new GuardsDigital.Core.Rules.CardResolution.PendingPreActionResolution(
                 frame, kind, placement, heldResolutionId, heldOffer, heldActionHasStarted);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1, schema v27. A trigger's effect frame standing inside the effect it
+        /// interrupted: the frame, why, the object the moment named, the resolution it interrupted, and
+        /// the objects of the same Push still owed a run.
+        ///
+        /// <para>It is written outside the continuation discriminator for the reason milestone 8.19a's
+        /// pre-action continuation is, in its sharpest form yet: the effect it interrupted <em>is</em>
+        /// the continuation, standing at the exact node it reached, and a payload that could hold only
+        /// one of the two would have to choose between the trigger's position and its host's. That is
+        /// the schema boundary this milestone exists for.</para>
+        ///
+        /// <para>Nothing about either effect's semantics crosses. The frame names an effect definition
+        /// and a restore rebinds it to the trusted catalog; the interrupted resolution's identity is
+        /// carried so a restore can check that the two frames it read belong together.</para>
+        /// </summary>
+        private static void WriteEffectInterrupt(
+            BinaryWriter writer,
+            GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt pending)
+        {
+            writer.Write(pending != null);
+            if (pending == null)
+            {
+                return;
+            }
+
+            writer.Write((int)pending.Kind);
+            WriteRuleObject(writer, pending.Subject);
+            writer.Write(pending.InterruptedResolutionId.Value);
+            writer.Write(pending.RemainingSubjects.Count);
+            foreach (var subject in pending.RemainingSubjects)
+            {
+                WriteRuleObject(writer, subject);
+            }
+
+            WriteSkillResolution(writer, pending.Frame);
+        }
+
+        private static GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt
+            ReadEffectInterrupt(
+                BinaryReader reader,
+                IReadOnlyList<CardDefinition> definitions,
+                IReadOnlyList<CardInstance> cards,
+                MatchParticipants participants,
+                MatchContentCatalogs catalogs,
+                MatchComponents components,
+                RuleModificationSet modifications,
+                GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+                int roundIndex,
+                int turnIndex,
+                EffectRosterState rosterState)
+        {
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            var kind = SnapshotEnumReader.Read<
+                GuardsDigital.Core.Rules.EffectResolution.EffectInterruptKind>(
+                reader, "effect interrupt kind");
+            var subject = ReadRuleObject(reader, "effect interrupt subject");
+            var interruptedResolutionId =
+                new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(reader.ReadString());
+            var remaining = ReadMany(reader, "effect interrupt remaining subjects", () =>
+                ReadRuleObject(reader, "effect interrupt remaining subject"));
+            var frame = ReadSkillResolution(
+                reader, definitions, cards, catalogs.Capabilities, participants, components,
+                modifications, heroItems, catalogs.TriggeredEffects, roundIndex, turnIndex, rosterState);
+
+            // Every disagreement the shape admits is refused here rather than thrown by the type's own
+            // guard, so a tampered payload is a rejected snapshot instead of an exception.
+            if (kind == GuardsDigital.Core.Rules.EffectResolution.EffectInterruptKind.None ||
+                !subject.IsDefined ||
+                remaining.Any(value => !value.IsDefined || value.Equals(subject)) ||
+                interruptedResolutionId.Equals(frame.ResolutionId))
+            {
+                throw Malformed(
+                    "Snapshot effect interrupt describes a shape this engine cannot be in.");
+            }
+
+            return new GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt(
+                frame, kind, subject, interruptedResolutionId, remaining);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1, schema v27. A Defeat standing at its removal stage while the hero
+        /// controlling a prevention source decides.
+        ///
+        /// <para>What crosses is exactly what cannot be re-derived: which Defeat is standing, on which
+        /// miniature, under which p.18 activity, who decides, and the coin operations the ledger already
+        /// performed - those last because they record balances before a payment that has happened, and
+        /// re-running the award would be refused as a second payment. What does <em>not</em> cross is
+        /// the offer: which sources are still offering and which cards could still pay them are
+        /// questions about live state, re-derived when the answer arrives.</para>
+        /// </summary>
+        private static void WriteRemovalPrevention(
+            BinaryWriter writer,
+            PendingRemovalPreventionDecision pending)
+        {
+            writer.Write(pending != null);
+            if (pending == null)
+            {
+                return;
+            }
+
+            writer.Write((int)pending.Origin);
+            writer.Write(pending.SubjectMinionId.Value);
+            writer.Write((int)pending.Activity);
+            writer.Write(pending.DecidingHeroId.Value);
+            WriteDefeatOutcome(writer, pending.Defeat);
+            writer.Write(pending.RewardOperations.Count);
+            foreach (var operation in pending.RewardOperations)
+            {
+                WriteCoinOperation(writer, operation);
+            }
+
+            WriteAttackResolution(writer, pending.Resolution);
+        }
+
+        private static PendingRemovalPreventionDecision ReadRemovalPrevention(BinaryReader reader)
+        {
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            var origin = SnapshotEnumReader.Read<RemovalPreventionOrigin>(
+                reader, "removal-prevention origin");
+            var subjectMinionId = new MinionId(reader.ReadString());
+            var activity = SnapshotEnumReader.Read<RuleActivity>(
+                reader, "removal-prevention activity");
+            var decidingHeroId = new HeroId(reader.ReadString());
+            var defeat = ReadDefeatOutcome(reader);
+            var operations = ReadMany(
+                reader, "removal-prevention reward operations", () => ReadCoinOperation(reader));
+            var resolution = ReadAttackResolution(reader);
+
+            if (origin == RemovalPreventionOrigin.None ||
+                activity == RuleActivity.None ||
+                !subjectMinionId.IsDefined ||
+                !decidingHeroId.IsDefined ||
+                !defeat.HasRewardAmounts ||
+                operations.Any(operation => !operation.SourceOutcomeId.Equals(defeat.Id)))
+            {
+                throw Malformed(
+                    "Snapshot removal-prevention decision describes a shape this engine cannot be in.");
+            }
+
+            return new PendingRemovalPreventionDecision(
+                origin, resolution, subjectMinionId, defeat, operations, decidingHeroId, activity);
+        }
+
+        private static void WriteRuleObject(BinaryWriter writer, RuleObject subject)
+        {
+            writer.Write((int)subject.Kind);
+            writer.Write(subject.Kind == RuleObjectKind.Hero
+                ? subject.HeroId.Value
+                : subject.MinionId.Value);
+        }
+
+        private static RuleObject ReadRuleObject(BinaryReader reader, string description)
+        {
+            var kind = SnapshotEnumReader.Read<RuleObjectKind>(reader, description);
+            var identity = reader.ReadString();
+            return kind == RuleObjectKind.Hero
+                ? RuleObject.ForHero(new HeroId(identity))
+                : RuleObject.ForMinion(new MinionId(identity));
         }
 
         private static PendingImmediateLanePushRequest ReadImmediateLanePush(BinaryReader reader)
@@ -399,6 +569,11 @@ namespace GuardsDigital.Core.Snapshots
                 reader, definitions, cards, participants, catalogs,
                 CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
                 modifications, heroItems, roundIndex, turnIndex, rosterState);
+            var effectInterrupt = ReadEffectInterrupt(
+                reader, definitions, cards, participants, catalogs,
+                CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
+                modifications, heroItems, roundIndex, turnIndex, rosterState);
+            var removalPrevention = ReadRemovalPrevention(reader);
 
             CardActionResolutionRestoreState state;
             switch ((CardActionContinuationKind)kind)
@@ -452,7 +627,10 @@ namespace GuardsDigital.Core.Snapshots
             // The snapshot never stores the pending choices; they are derived during
             // restore, so no verified choice is supplied here.
             return CardActionResolutionAuthority.Restore(
-                catalogs, board, state.WithPreAction(preAction), null, null, null, definitions, cards,
+                catalogs,
+                board,
+                state.WithPreAction(preAction).WithInterruptions(effectInterrupt, removalPrevention),
+                null, null, null, definitions, cards,
                 participants, markers, modifications, heroItems,
                 rosterState: rosterState);
         }
@@ -1183,6 +1361,68 @@ namespace GuardsDigital.Core.Snapshots
             }
             writer.Write(awardedOutcomeIds.Count);
             foreach (var outcomeId in awardedOutcomeIds) writer.Write(outcomeId.Value);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1, schema v27. One recorded Defeat, with the reward amounts rulebook p.13
+        /// priced it at. Written only inside a removal-prevention decision, which is the one place a
+        /// Defeat is still outstanding when a snapshot is taken.
+        /// </summary>
+        private static void WriteDefeatOutcome(BinaryWriter writer, DefeatOutcome outcome)
+        {
+            writer.Write(outcome.Id.Value);
+            writer.Write(outcome.TargetId.Value);
+            writer.Write(outcome.DefeatedTeamId.Value);
+            writer.Write(outcome.DefeatingHeroId.Value);
+            writer.Write(outcome.DefeatCoins);
+            writer.Write(outcome.AssistCoins);
+        }
+
+        private static DefeatOutcome ReadDefeatOutcome(BinaryReader reader) =>
+            new DefeatOutcome(
+                new DefeatOutcomeId(reader.ReadString()),
+                new DefeatTargetId(reader.ReadString()),
+                new TeamId(reader.ReadString()),
+                new HeroId(reader.ReadString()),
+                reader.ReadInt32(),
+                reader.ReadInt32());
+
+        /// <summary>
+        /// One coin movement the ledger performed, with the balances either side of it. The balances
+        /// are what makes it unreproducible after the fact, and therefore what makes it payload.
+        /// </summary>
+        private static void WriteCoinOperation(BinaryWriter writer, CoinResourceOperation operation)
+        {
+            writer.Write(operation.SourceOutcomeId.Value);
+            writer.Write(operation.SourceTargetId.Value);
+            writer.Write(operation.RecipientHeroId.Value);
+            writer.Write(operation.RecipientTeamId.Value);
+            writer.Write((int)operation.AwardKind);
+            writer.Write(operation.Amount);
+            writer.Write(operation.BalanceBefore);
+            writer.Write(operation.BalanceAfter);
+        }
+
+        private static CoinResourceOperation ReadCoinOperation(BinaryReader reader)
+        {
+            var sourceOutcomeId = new DefeatOutcomeId(reader.ReadString());
+            var sourceTargetId = new DefeatTargetId(reader.ReadString());
+            var recipientHeroId = new HeroId(reader.ReadString());
+            var recipientTeamId = new TeamId(reader.ReadString());
+            var awardKind = SnapshotEnumReader.Read<CoinAwardKind>(reader, "coin award kind");
+            var amount = reader.ReadInt32();
+            var balanceBefore = reader.ReadInt32();
+            var balanceAfter = reader.ReadInt32();
+            if (awardKind == CoinAwardKind.None || amount <= 0 ||
+                balanceBefore < CoinResourceOperation.MinimumBalance ||
+                balanceAfter != balanceBefore + amount)
+            {
+                throw Malformed("Snapshot coin operation does not preserve its balance transition.");
+            }
+
+            return new CoinResourceOperation(
+                sourceOutcomeId, sourceTargetId, recipientHeroId, recipientTeamId, awardKind, amount,
+                balanceBefore, balanceAfter);
         }
 
         private static HeroCoinLedgerRestoreStateHolder ReadCoinLedger(BinaryReader reader)

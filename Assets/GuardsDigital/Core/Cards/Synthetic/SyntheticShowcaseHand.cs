@@ -683,6 +683,47 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, BlueProfiles, BlueUltimateProfile, null,
                 persistentSourceSkillProfile: BluePersistentSourceSkillProfile);
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.19c1: the pausing sources, on content that is nobody's card
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.19c1's two-mode pausing-source Skill cards, sitting outside their team's
+        /// ordinary Initiative band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedPausingSourceSkillProfile { get; } =
+            new SyntheticSkillProfile("red-shieldbearer", "Red Shieldbearer", 16);
+
+        private static SyntheticSkillProfile BluePausingSourceSkillProfile { get; } =
+            new SyntheticSkillProfile("blue-shieldbearer", "Blue Shieldbearer", 1);
+
+        /// <summary>The five ordinary cards plus milestone 8.19c1's pausing-source Skill alone.</summary>
+        public static ConfiguredHand CreateRedWithPausingSourceSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                pausingSourceSkillProfile: RedPausingSourceSkillProfile);
+
+        public static ConfiguredHand CreateBlueWithPausingSourceSkill(HeroId ownerId) =>
+            Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                pausingSourceSkillProfile: BluePausingSourceSkillProfile);
+
+        /// <summary>Sabina's Big Sodding Gun shape, as an Ultimate on the Red hand.</summary>
+        private static SyntheticUltimateProfile AfterPushUltimateProfile { get; } =
+            new SyntheticUltimateProfile(
+                "red-gunner-ultimate", "Red Gunner Ultimate",
+                SyntheticUltimateShape.AfterPushTrigger);
+
+        /// <summary>
+        /// The five ordinary cards with milestone 8.19c1's after-Push Ultimate and a Skill that pushes,
+        /// which is the pair the trigger needs: one card to perform p.18's Push and one permanent
+        /// ability watching for it.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithAfterPushUltimate(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, AfterPushUltimateProfile, null,
+                displacementSkillProfile: RedDisplacementSkillProfile);
+
         public static ConfiguredHand CreateRedWithContinuationText(HeroId ownerId)
         {
             return Create(
@@ -719,6 +760,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile orbitSkillProfile = null,
             SyntheticSkillProfile kinesisSkillProfile = null,
             SyntheticSkillProfile persistentSourceSkillProfile = null,
+            SyntheticSkillProfile pausingSourceSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -844,6 +886,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreatePersistentSourceSkillDefinition(persistentSourceSkillProfile),
                     persistentSourceSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (pausingSourceSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreatePausingSourceSkillDefinition(pausingSourceSkillProfile),
+                    pausingSourceSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -1929,6 +1979,66 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 {
                     new ActionDefinition(
                         new ActionDefinitionId("primary-persistent-source-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1's two-mode pausing-source Skill, in the shape milestone 8.19c's five-mode
+        /// one already has: one `Choose` whose modes are the capabilities this milestone registered.
+        /// The card supplies no rule of its own; each declaration lives on the Active-effect definition
+        /// its mode points at.
+        ///
+        /// <para>Two modes because the milestone registers two sources: a removal prevention bought with
+        /// a card, and an effect that runs at rulebook p.8's moment before the Minion Battle. Both hands
+        /// deal one, which is what makes each contract reachable from two hero-shaped consumers rather
+        /// than from one. Board-neutral, no printed value, and none of it official content.</para>
+        /// </summary>
+        private static CardDefinition CreatePausingSourceSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("pausing-root");
+            var shield = new EffectNodeId("pausing-shield-friendly-minions");
+            var constrict = new EffectNodeId("pausing-constrict");
+
+            EffectNodeDefinition Mode(EffectNodeId id, EffectCapabilityReference capability) =>
+                new EffectNodeDefinition(
+                    id, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    capability,
+                    outputs: new[] { new EffectOutputBinding("affected", EffectValueKind.Hero) });
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-19c1-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { shield, constrict },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    Mode(shield, SyntheticPausingSourceCapabilities.ShieldFriendlyMinionsV1),
+                    Mode(constrict, SyntheticPausingSourceCapabilities.ConstrictBeforeMinionBattleV1)
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-19c1-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-pausing-source-skill"),
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
                         Array.Empty<PrintedValueDefinition>(),
@@ -3548,7 +3658,13 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// rather than a replacement: the same fixture asks both, and the narrow one must still
             /// refuse a basic Movement.
             /// </summary>
-            AfterBasicSkillTrigger = 5
+            AfterBasicSkillTrigger = 5,
+
+            /// <summary>
+            /// Milestone 8.19c1: `after-push-trigger@1`, Sabina's Big Sodding Gun shape - the ability
+            /// that runs the moment one of its controller's Pushes has applied to an enemy hero.
+            /// </summary>
+            AfterPushTrigger = 6
         }
 
         private sealed class SyntheticUltimateProfile
@@ -3616,6 +3732,12 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// </summary>
             public const string PersistentSourceRevision = "phase-8-19c-rev-1";
 
+            /// <summary>
+            /// Milestone 8.19c1's revision, carried by the one Ultimate that declares an after-Push
+            /// trigger and by nothing else, for the same reason the two above are separate.
+            /// </summary>
+            public const string PausingSourceRevision = "phase-8-19c1-rev-1";
+
             public static CardDefinition Definition(SyntheticUltimateProfile profile) =>
                 new CardDefinition(
                     DefinitionId(profile),
@@ -3635,6 +3757,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         return UltimateRevision;
                     case SyntheticUltimateShape.BeforeActionTrigger:
                         return BeforeActionRevision;
+                    case SyntheticUltimateShape.AfterPushTrigger:
+                        return PausingSourceRevision;
                     default:
                         return PersistentSourceRevision;
                 }
@@ -3709,6 +3833,20 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             BeforeActionTriggeredEffect.Reference,
                             UltimateTriggerCondition.AfterControllerPerformsBasicSkill,
                             new[] { GuardsDigital.Core.Timing.TimingCheckpoint.ActionEnded },
+                            Array.Empty<PrintedValueDefinition>());
+
+                    case SyntheticUltimateShape.AfterPushTrigger:
+                        // Milestone 8.19c1. Sabina's Big Sodding Gun shape: "If you push an enemy hero,
+                        // that hero discards a card, or is defeated." The declaration names the pushed
+                        // object it fires for and nothing about a hero or a card; what it runs is the
+                        // same two-question text every pause altitude in this build is proven against,
+                        // because what is under test is the moment rather than the sentence.
+                        return UltimateRuleDefinition.AfterPushAbility(
+                            "after-push-rider",
+                            "SyntheticAfterPush",
+                            GuardsDigital.Core.Effects.Synthetic.SyntheticPausingSourceCapabilities
+                                .PausingTriggeredEffect.Reference,
+                            new AfterPushTrigger(AfterPushTriggerSubject.EnemyHero),
                             Array.Empty<PrintedValueDefinition>());
 
                     default:

@@ -167,7 +167,7 @@ broad Minion-Battle rewrite, or the three pausing sources milestone 8.19c1 owns.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819c-add-the-rosters-persistent-rule-sources-and-the-minion-battle-replacement-completion-evidence).
 
-### [ ] 8.19c1 Add the roster's pausing rule sources in schema v27
+### [x] 8.19c1 Add the roster's pausing rule sources in schema v27
 
 Blocked by: Milestone 8.19c must supply the persistent-source vocabulary and the Minion-Battle
 replacement these three sources stand beside.
@@ -196,6 +196,8 @@ Acceptance checks:
 
 Non-goals: No verified hero definition, production art, player-facing presentation, general expression
 language, or new derived query, value, or state operation.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819c1-add-the-rosters-pausing-rule-sources-in-schema-v27-completion-evidence).
 
 ## First complete hero consumers
 

@@ -35,8 +35,8 @@ the dependency slice assigned in [Phase 8](../Roadmap/PHASE_8.md).
 Implementation status through milestone 8.19c: dependency steps 1-4 below are complete. Steps 3 and 4's
 new handlers and declarations execute in bounded synthetic catalogs over hero-shaped consumers; they are
 not in the default production catalog because no verified additional-hero definition is authorized yet
-and the catalog rejects unreachable registration. Step 4a's three pausing sources remain milestone
-8.19c1, and verified face composition remains step 5.
+and the catalog rejects unreachable registration. Step 4a's three pausing sources completed at milestone
+8.19c1 in snapshot schema v27, and verified face composition remains step 5.
 
 ## Arien
 
@@ -159,10 +159,13 @@ from ordinary action/effect dispatch.
    action-qualified value sources, additive effective-type overlays, the after-action source, and the
    isolated One Man Army transition rule. Trusted definition and digest changes are explicit; no rule
    declaration is serialized as payload data and no snapshot field is added.
-4a. **Pausing sources:** before-removal prevention, pre-Minion-Battle end-of-round trigger execution, and
-   the after-Push source. Split out of step 4 by the 2026-08-24 amendment because each stops the game on a
-   player decision at an altitude the snapshot cannot hold, which is an explicit schema boundary rather
-   than more of the same vocabulary.
+4a. **Pausing sources (completed 8.19c1):** before-removal prevention, pre-Minion-Battle end-of-round
+   trigger execution, and the after-Push source. Split out of step 4 by the 2026-08-24 amendment because
+   each stops the game on a player decision at an altitude the snapshot could not hold, which is an
+   explicit schema boundary rather than more of the same vocabulary. Snapshot schema v27 persists all
+   three and rejects v26. The removal prevention covers minions only, and says why: p.13 removes a
+   defeated hero on its first line and pays its coins on its fourth, so a hero has no moment between the
+   reward and the removal for the family to stand in.
 5. **Hero composition:** Arien, Brogan, Sabina, Tigerclaw, then Xargatha. That order proves ordinary
    continuation/refinement consumers first, the unique Minion-Battle interaction next, multi-target board
    composition third, markers/general action Repeat fourth, and additive effective types/end-of-round

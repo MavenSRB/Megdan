@@ -317,7 +317,12 @@ namespace GuardsDigital.Tests.EditMode
                     // Milestone 8.19c's five persistent source shapes, dealt to both hands so each
                     // contract is reachable from two hero-shaped consumers rather than from one.
                     SyntheticShowcaseHand.CreateRedWithPersistentSourceSkill(owner),
-                    SyntheticShowcaseHand.CreateBlueWithPersistentSourceSkill(owner)
+                    SyntheticShowcaseHand.CreateBlueWithPersistentSourceSkill(owner),
+                    // Milestone 8.19c1's two pausing source shapes, dealt to both hands for the same
+                    // reason. The milestone's third pause is an Ultimate declaration rather than a
+                    // capability, so it has nothing to register and nothing to reach.
+                    SyntheticShowcaseHand.CreateRedWithPausingSourceSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithPausingSourceSkill(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)

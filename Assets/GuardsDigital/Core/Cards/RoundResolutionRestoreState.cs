@@ -88,19 +88,39 @@ namespace GuardsDigital.Core.Cards
             EndOfRoundStage? currentStage,
             IEnumerable<EndOfRoundStageOutcome> outcomes,
             PendingMinionBattleChoice pendingMinionBattleChoice,
-            PendingLanePushRequest pendingLanePushRequest)
+            PendingLanePushRequest pendingLanePushRequest,
+            bool preMinionBattleTriggersVisited = false)
         {
             CurrentStage = currentStage;
             Outcomes = Array.AsReadOnly(
                 (outcomes ?? throw new ArgumentNullException(nameof(outcomes))).ToArray());
             PendingMinionBattleChoice = pendingMinionBattleChoice;
             PendingLanePushRequest = pendingLanePushRequest;
+            PreMinionBattleTriggersVisited = preMinionBattleTriggersVisited;
         }
 
         public EndOfRoundStage? CurrentStage { get; }
         public IReadOnlyList<EndOfRoundStageOutcome> Outcomes { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingLanePushRequest PendingLanePushRequest { get; }
+
+        /// <summary>
+        /// Milestone 8.19c1, schema v27. Whether this round has already visited the moment before its
+        /// Minion Battle is planned, at which an Active effect declaring
+        /// <see cref="GuardsDigital.Core.Timing.TimingCheckpoint.EndOfRoundBeforeMinionBattle"/> runs.
+        ///
+        /// <para>It is a fact about the round rather than about any effect, which is why it is here and
+        /// not on the lifecycle. Nothing else records it: the stage cursor says the round is at its
+        /// Minion Battle, and a trigger that stopped on a question leaves that cursor exactly where it
+        /// was - so a restore without this would run the moment a second time and fire every card that
+        /// declared it again, on a battle it had already interrupted once.</para>
+        ///
+        /// <para>It is not a stage outcome and not a stage. p.8 lists the stages a round runs and this
+        /// is not one of them; it is a moment inside the first, before that stage has counted anything.
+        /// A stage would have had to appear in every completed round's record and in the persisted
+        /// cursor, which would make a card's trigger window part of the shape of a round.</para>
+        /// </summary>
+        public bool PreMinionBattleTriggersVisited { get; }
 
         public void Deconstruct(
             out EndOfRoundStage? currentStage,

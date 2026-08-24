@@ -70,8 +70,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IReadOnlyList<GuardsDigital.Core.Setup.MinionId> requestedMinionDefeats,
             GuardsDigital.Core.Rules.CardResolution.AttackTarget boundAttackTarget = default,
             GuardsDigital.Core.Rules.CardResolution.PreActionPlacement aroundActionPlacement =
-                GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided)
+                GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided,
+            IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> appliedPushes = null)
         {
+            AppliedPushes =
+                new ReadOnlyCollection<GuardsDigital.Core.Rules.Modifications.RuleObject>(
+                    (appliedPushes ??
+                        Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>()).ToArray());
             BoundAttackTarget = boundAttackTarget;
             AroundActionPlacement = aroundActionPlacement;
             Accepted = accepted;
@@ -157,6 +162,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public GuardsDigital.Core.Rules.CardResolution.PreActionPlacement AroundActionPlacement { get; }
 
+        /// <summary>
+        /// Milestone 8.19c1. The objects a Push applied to at the node this step stopped on, in commit
+        /// order; empty on every step where no Push applied.
+        ///
+        /// <para>It is nonempty only on a frame that stopped <em>without</em> a pending choice, which
+        /// is the one shape this milestone adds: the resolver holds the enclosing effect exactly where
+        /// it is so that whatever declared an <c>after-push-trigger@1</c> can run before the next node
+        /// does. The resolver knows nothing about triggers - it is told, through
+        /// <see cref="EffectResolutionContext.WatchesAppliedPushes"/>, that somebody is watching, and
+        /// stopping is all it does about it. Who runs, in what order, and what happens if nobody
+        /// applies is the caller's, exactly as <see cref="LanePushCause"/> and
+        /// <see cref="RequestedHeroDefeats"/> are.</para>
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> AppliedPushes { get; }
+
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
             bool isComplete,
@@ -168,11 +188,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IReadOnlyList<GuardsDigital.Core.Setup.MinionId> requestedMinionDefeats = null,
             GuardsDigital.Core.Rules.CardResolution.AttackTarget boundAttackTarget = default,
             GuardsDigital.Core.Rules.CardResolution.PreActionPlacement aroundActionPlacement =
-                GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided) =>
+                GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided,
+            IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> appliedPushes = null) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
                 repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats,
-                boundAttackTarget, aroundActionPlacement);
+                boundAttackTarget, aroundActionPlacement, appliedPushes);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -206,8 +227,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             MatchComponents components = null,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
             EnclosingAttackFacts enclosingAttack = default,
-            EffectRosterState rosterState = null)
+            EffectRosterState rosterState = null,
+            bool watchesAppliedPushes = false)
         {
+            WatchesAppliedPushes = watchesAppliedPushes;
             EnclosingAttack = enclosingAttack;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
                 enclosingActionKind == ActionKind.None)
@@ -234,6 +257,19 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroItems = heroItems;
             RosterState = rosterState ?? EffectRosterState.Absent;
         }
+
+        /// <summary>
+        /// Milestone 8.19c1. Whether any live rule source has declared that it runs after one of
+        /// rulebook p.18's Pushes applies.
+        ///
+        /// <para>A boolean rather than the sources themselves, and false by default, because the
+        /// resolver's whole part in the moment is to stop at it. Which sources apply, which pushed
+        /// object each of them concerns, and what their effects do are the caller's questions - it
+        /// holds the unlocked Ultimates and the triggered-effect catalog, and this walker deliberately
+        /// holds neither. False costs nothing: the walk is exactly what it was before this milestone,
+        /// so a match with no such source cannot pay for one.</para>
+        /// </summary>
+        public bool WatchesAppliedPushes { get; }
 
         public EffectDefinition Definition { get; }
         public EffectCapabilityCatalog Catalog { get; }
@@ -405,6 +441,31 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             }
 
             return entryNodeId;
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Carries on a frame that stopped for something other than a question.
+        ///
+        /// <para><see cref="Answer"/> is the entry for a frame holding a
+        /// <see cref="PendingEffectChoice"/>, and every pause before this milestone held one. An
+        /// after-push trigger stops the enclosing effect with no question outstanding - the question,
+        /// if the trigger asks one, belongs to the trigger's own frame - so resuming it is not
+        /// answering anything and must not record a choice. This is that entry: the same walk, from the
+        /// position the frame already holds.</para>
+        /// </summary>
+        public static EffectResolutionStepResult Continue(
+            PendingResolution frame,
+            EffectResolutionContext context)
+        {
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (frame.PendingChoice != null)
+            {
+                throw new InvalidOperationException(
+                    "A frame holding a question is resumed by answering it, not by carrying on past it.");
+            }
+
+            return Advance(frame, context, new List<EffectResolutionEvent>());
         }
 
         public static EffectResolutionStepResult Answer(
@@ -930,6 +991,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 default:
                     Pop(continuation);
                     Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied, result);
+
+                    // Milestone 8.19c1. The node is finished and its facts are recorded before the walk
+                    // stops, so what the caller resumes is the effect standing exactly after the Push -
+                    // "the exact node it left" is this frame, and a later node binding to a fact this
+                    // push published still finds it. Stopping happens only when a source is watching
+                    // and only when a displacement actually happened, so an ordinary push is the walk
+                    // it always was.
+                    if (context.WatchesAppliedPushes && result.AppliedPushes.Count > 0)
+                    {
+                        return EffectResolutionStepResult.Accept(
+                            Rebuild(frame, continuation, outcomes, choices), false, events,
+                            appliedPushes: result.AppliedPushes);
+                    }
+
                     return null;
             }
         }

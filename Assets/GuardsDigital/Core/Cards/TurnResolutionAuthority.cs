@@ -1489,6 +1489,14 @@ namespace GuardsDigital.Core.Cards
                 return AnswerPausedPreAction(command);
             }
 
+            // Milestone 8.19c1. Same command again, one altitude further in: a trigger standing inside
+            // the effect that pushed. What finishes when it completes is that effect, carried on from
+            // the exact node it left - and, when nothing is left of it either, the Skill it was.
+            if (cardActions?.PendingEffectInterrupt != null)
+            {
+                return AnswerPausedEffectInterrupt(command);
+            }
+
             if (cardActions?.IsPendingTriggeredEffect == true)
             {
                 var answeredTrigger = cardActions.AnswerTriggeredEffectChoice(
@@ -1652,6 +1660,129 @@ namespace GuardsDigital.Core.Cards
             }
 
             return ContinueAfterPreAction(paused, events);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1's Defeat standing at its removal stage, or <c>null</c>.
+        /// </summary>
+        public GuardsDigital.Core.Rules.CardResolution.PendingRemovalPreventionDecision
+            PendingRemovalPrevention =>
+            IsResolutionStoppedByGameEnd ? null : cardActions?.PendingRemovalPrevention;
+
+        /// <summary>
+        /// Milestone 8.19c1. Answers a standing removal-prevention decision, then finishes whatever the
+        /// Defeat still owed.
+        ///
+        /// <para>rulebook p.14's minion arm finishes the page and therefore the Attack; an
+        /// effect-invoked Defeat hands back to the effect that asked for it. The gate is the decision
+        /// itself rather than the selected actor, because the hero who decides is the one whose source
+        /// is offering and that is usually the defender's team - the frame carries its own chooser and
+        /// refuses anybody else, exactly as every other choice in this engine does.</para>
+        /// </summary>
+        public TurnResolutionResult TryAnswerRemovalPrevention(
+            GuardsDigital.Core.Rules.CardResolution.RemovalPreventionCommand command)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            if (!IsStarted || IsEnded)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.TurnNotStarted);
+            }
+
+            var standing = cardActions?.PendingRemovalPrevention;
+            if (standing == null)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            }
+
+            var origin = standing.Origin;
+            var answered = cardActions.AnswerRemovalPrevention(
+                command,
+                new GuardsDigital.Core.Rules.CardResolution.ActionBoundaryContext(
+                    definitions, instances, participants, timing, TieBreakerState,
+                    roundIndex, turnIndex),
+                CurrentModifications());
+            if (!answered.Accepted)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+            }
+
+            if (origin ==
+                GuardsDigital.Core.Rules.CardResolution.RemovalPreventionOrigin
+                    .EffectInvokedMinionDefeat)
+            {
+                var triggerEvents = MaterializeSteps(
+                    cardActions.ConsumeTriggeredResolutionSteps(),
+                    TurnResolutionEvent.FromTriggeredEffect);
+                return cardActions.IsPendingTriggeredEffect
+                    ? TurnResolutionResult.Accept(triggerEvents)
+                    : AdvanceInitiative(triggerEvents);
+            }
+
+            var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromAttackAction);
+            return cardActions.PendingCardTextResolution == null && !cardActions.HasPendingResolution
+                ? CompleteAttackOrStartItsRepeat(events)
+                : TurnResolutionResult.Accept(events);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Answers the question an after-push trigger stopped on, then lets the
+        /// effect it interrupted carry on.
+        ///
+        /// <para>The gate is the selected actor's card, as it is for a paused Skill: what pushed is
+        /// that actor's own effect, and the trigger belongs to whoever performed the push. Which hero
+        /// may answer is not decided here - the frame carries its own chooser and refuses anybody
+        /// else, the same rule p.10 gives every other choice in this engine.</para>
+        /// </summary>
+        private TurnResolutionResult AnswerPausedEffectInterrupt(EffectChoiceCommand command)
+        {
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+            }
+
+            var answered = cardActions.AnswerEffectInterruptChoice(
+                command,
+                new GuardsDigital.Core.Rules.CardResolution.ActionBoundaryContext(
+                    definitions, instances, participants, timing, TieBreakerState,
+                    roundIndex, turnIndex));
+            if (!answered.Accepted)
+            {
+                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+            }
+
+            var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromTriggeredEffect);
+            if (!answered.IsComplete)
+            {
+                return TurnResolutionResult.Accept(events);
+            }
+
+            var card = instances.SingleOrDefault(candidate =>
+                candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
+            if (card == null || card.State.ResolutionStatus != CardResolutionStatus.Unresolved)
+            {
+                return TurnResolutionResult.Accept(events);
+            }
+
+            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+            {
+                throw new InvalidOperationException(
+                    "A Skill completed after its after-push trigger could not resolve its " +
+                    "prevalidated source card.");
+            }
+
+            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
+                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            if (!acknowledgement.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A card resolved after an after-push trigger could not be acknowledged by " +
+                    "Initiative authority.");
+            }
+
+            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
+            return AdvanceInitiative(events);
         }
 
         private TurnResolutionResult ContinueAfterPreAction(

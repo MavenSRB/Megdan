@@ -81,9 +81,11 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<TimingCheckpoint> triggerCheckpoints = null,
             UltimateTriggerCondition triggerCondition = UltimateTriggerCondition.None,
             BeforeActionTrigger beforeAction = default,
-            GuardsDigital.Core.Rules.Consequences.MinionBattleRuleDeclaration minionBattleRule = null)
+            GuardsDigital.Core.Rules.Consequences.MinionBattleRuleDeclaration minionBattleRule = null,
+            AfterPushTrigger afterPush = default)
         {
             BeforeAction = beforeAction;
+            AfterPush = afterPush;
             MinionBattleRule = minionBattleRule;
             if (string.IsNullOrWhiteSpace(ruleId) || string.IsNullOrWhiteSpace(ruleKind))
             {
@@ -112,13 +114,24 @@ namespace GuardsDigital.Core.Cards
                     "before one.", nameof(beforeAction));
             }
 
+            // Milestone 8.19c1. An after-push trigger is the third shape of the same pairing, and it
+            // stays exclusive with the other two for the same reason they are exclusive with each
+            // other: p.16 gives an Ultimate one permanent ability, and a card that both preceded an
+            // action and followed a Push would be printing two sentences.
+            if (afterPush.IsDeclared && (isCheckpointTriggered || beforeAction.IsDeclared))
+            {
+                throw new ArgumentException(
+                    "An Ultimate declares one trigger: a checkpoint after an action, a start before " +
+                    "one, or the moment a Push it performed applied.", nameof(afterPush));
+            }
+
             // Milestone 8.19c. p.16 gives an Ultimate one permanent ability, and a Minion-Battle rule
             // is the whole of the one that declares it. An Ultimate that also modified a value or ran
             // an effect would be two abilities on a card that prints one sentence, and the reader would
             // have to decide which of them "the ability" meant.
             if (minionBattleRule != null &&
                 (modification != null || triggeredEffect.HasValue || beforeAction.IsDeclared ||
-                    textComposition.IsAwaited))
+                    afterPush.IsDeclared || textComposition.IsAwaited))
             {
                 throw new ArgumentException(
                     "An Ultimate that declares a Minion-Battle rule declares nothing else.",
@@ -126,7 +139,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             if (!Enum.IsDefined(typeof(UltimateTriggerCondition), triggerCondition) ||
-                triggeredEffect.HasValue != (isCheckpointTriggered || beforeAction.IsDeclared) ||
+                triggeredEffect.HasValue !=
+                    (isCheckpointTriggered || beforeAction.IsDeclared || afterPush.IsDeclared) ||
                 isCheckpointTriggered != (triggerCondition != UltimateTriggerCondition.None) ||
                 (triggeredEffect.HasValue && !triggeredEffect.Value.IsDefined) ||
                 TriggerCheckpoints.Any(value => value != TimingCheckpoint.ActionEnded) ||
@@ -272,6 +286,35 @@ namespace GuardsDigital.Core.Cards
                 triggeredEffect, null, UltimateTriggerCondition.None, beforeAction);
         }
 
+        /// <summary>
+        /// Milestone 8.19c1. A permanent Ultimate ability that runs immediately after one of its
+        /// controller's Pushes has applied to an object it names - Sabina's Big Sodding Gun, "If you
+        /// push an enemy hero, that hero discards a card, or is defeated".
+        ///
+        /// <para>It is a fifth factory rather than a checkpoint on <see cref="TriggeredAbility"/>
+        /// because that factory's checkpoints are the lifecycle's own action windows, and this one
+        /// fires <em>inside</em> an effect that is still running. What resumes afterwards is the
+        /// enclosing effect at the exact node it left, which is the whole reason the moment needed a
+        /// milestone of its own.</para>
+        /// </summary>
+        public static UltimateRuleDefinition AfterPushAbility(
+            string ruleId,
+            string ruleKind,
+            EffectDefinitionReference triggeredEffect,
+            AfterPushTrigger afterPush,
+            IEnumerable<PrintedValueDefinition> printedValues)
+        {
+            if (!afterPush.IsDeclared)
+            {
+                throw new ArgumentException(
+                    "An after-push Ultimate names the pushed object it fires for.", nameof(afterPush));
+            }
+
+            return new UltimateRuleDefinition(
+                ruleId, ruleKind, null, PrintedTextComposition.None, printedValues,
+                triggeredEffect, null, UltimateTriggerCondition.None, default, null, afterPush);
+        }
+
         /// <summary>This ability's stable identity inside its card, and the derived source's identity suffix.</summary>
         public string RuleId { get; }
 
@@ -295,6 +338,12 @@ namespace GuardsDigital.Core.Cards
         /// Arien's.
         /// </summary>
         public BeforeActionTrigger BeforeAction { get; }
+
+        /// <summary>
+        /// Milestone 8.19c1. `after-push-trigger@1`, or <see cref="AfterPushTrigger.None"/> on every
+        /// Ultimate that declares no such trigger - which is every one in this build before Sabina's.
+        /// </summary>
+        public AfterPushTrigger AfterPush { get; }
 
         /// <summary>
         /// Milestone 8.19c. The Minion-Battle rule this Ultimate declares, or <c>null</c> on every

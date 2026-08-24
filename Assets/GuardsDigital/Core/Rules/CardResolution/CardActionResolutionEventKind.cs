@@ -77,6 +77,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// is, and which of the page's three moments this was, so a reader can place it in the order
         /// without inferring anything from position.
         /// </summary>
-        CardTextApplied = 49
+        CardTextApplied = 49,
+
+        /// <summary>
+        /// Milestone 8.19c1: a Defeat reached its removal stage and a trusted source offered to stop
+        /// the removal at a price, so the game is waiting for the hero controlling it to answer.
+        ///
+        /// It is a kind of its own rather than a flag on <see cref="MinionRemovalAttempted"/> because
+        /// the two say different things: that fact says the removal was tried, and this one says it has
+        /// not been tried yet and a decision is standing in front of it.
+        /// </summary>
+        RemovalPreventionRequested = 50,
+
+        /// <summary>
+        /// Milestone 8.19c1: the hero paid a prevention source's price. The card it discarded is the
+        /// fact; what the payment bought is reported by the Defeat's own
+        /// <see cref="MinionRemovalPrevented"/>, exactly as it is when p.18's immunity stops one.
+        /// </summary>
+        RemovalPreventionPaid = 51
     }
 }

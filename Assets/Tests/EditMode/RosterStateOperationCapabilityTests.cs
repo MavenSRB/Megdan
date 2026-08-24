@@ -327,11 +327,11 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<QuickGameMinionSetupState>());
             var restoredChoice = restored.Round.CurrentTurnAuthority.PendingEffectChoice;
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(26));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(27));
             Assert.That(restoredChoice.ChooserId, Is.EqualTo(Blue));
             Assert.That(restoredChoice.Candidates.Select(value => value.Value.IntegerValue),
                 Is.EqualTo(new[] { 1, 2 }),
-                "Restore re-asks the transfer against slots/history/ledger already on schema v26.");
+                "Restore re-asks the transfer against slots/history/ledger already on schema v27.");
             Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
                 Is.EqualTo(payload));
 

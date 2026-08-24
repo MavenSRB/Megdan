@@ -27,10 +27,15 @@ namespace GuardsDigital.Tests.EditMode
     /// that is a property of the engine rather than a shortcut. The only prevention the rules can
     /// currently express is p.18's immunity, and an Attack filters an immune minion out of its legal
     /// targets and revalidates that filter immediately before the removal runs, so no legal Attack
-    /// target can be immune by the time its removal stage is reached. What this milestone guarantees is
-    /// that both removal paths will honour a prevention source on the day one exists; the general
-    /// prevent-removal family named on p.13's Bolster example is still unimplemented for want of
-    /// verified card text.
+    /// target can be immune by the time its removal stage is reached. What milestone 6.6b guaranteed is
+    /// that both removal paths would honour a prevention source on the day one existed.
+    ///
+    /// <para>Milestone 8.19c1 is that day. The general prevent-removal family p.13 names in its Bolster
+    /// example is a declaration now - a source covering a minion, at a typed card price - so the cases
+    /// below drive a real p.14 Defeat to the decision, pay it, decline it, refuse a stale or foreign
+    /// answer, and round-trip the standing decision through a snapshot. They share the same shared
+    /// decision the immunity cases above ask, which is the whole point of 6.6b's sharing: a paid
+    /// prevention and p.18's immunity produce the same Defeat.</para>
     ///
     /// Unity-independent, so it runs in the cross-platform harness as well as the Windows tier.
     /// </summary>
@@ -184,6 +189,203 @@ namespace GuardsDigital.Tests.EditMode
                 "A rule that stopped every removal would pass the two assertions above and protect nothing.");
         }
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.19c1: the general prevent-removal family this file's summary had been recording
+        // as unimplemented since 6.6b, now that a source can declare it and pay for it
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void AShieldedMinion_StopsThePageAfterItsRewardAndBeforeItsRemoval()
+        {
+            var fixture = CreateShieldedFixture();
+            var coinsBefore = CoinsOf(fixture);
+
+            var result = AttackMinion(fixture, ShieldedMinionId, "shielded-attack", fixture.Shield);
+
+            Assert.That(result.Accepted, Is.True);
+            var standing = fixture.Authority.PendingRemovalPrevention;
+            Assert.That(standing, Is.Not.Null,
+                "A source offering to stop the removal stops rulebook p.14 where p.13 puts the " +
+                "decision: after the Defeat and its reward, and before the miniature leaves.");
+            Assert.That(standing.DecidingHeroId.Value,
+                Is.EqualTo(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
+                "p.10 gives the decision to the hero whose source is offering, which is the " +
+                "defender's - not the attacker who caused the Defeat.");
+            Assert.That(
+                result.Events.Any(value =>
+                    value.Kind == CardActionResolutionEventKind.RemovalPreventionRequested),
+                Is.True,
+                "The stream says where the page stopped rather than simply stopping.");
+            Assert.That(
+                fixture.Board.Minions.Any(minion => minion.MinionId.Value == ShieldedMinionId),
+                Is.True,
+                "The miniature is still on the board while the decision stands.");
+            Assert.That(CoinsOf(fixture), Is.Not.EqualTo(coinsBefore),
+                "p.13's Bolster example collects the coins in the same breath as preventing the " +
+                "removal, so the reward is already paid when the question is asked.");
+        }
+
+        [Test]
+        public void APaidPrevention_KeepsTheMiniatureDiscardsTheCardAndPublishesTheOutcome()
+        {
+            var fixture = CreateShieldedFixture();
+            AttackMinion(fixture, ShieldedMinionId, "shielded-attack", fixture.Shield);
+            var standing = fixture.Authority.PendingRemovalPrevention;
+            var option = fixture.Authority.DescribeRemovalPreventionOptions(
+                fixture.Configuration.CardDefinitions, fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants, fixture.Shield).Single();
+            var payment = option.PayableCards[0];
+
+            var answered = fixture.Authority.AnswerRemovalPrevention(
+                RemovalPreventionCommand.Accept(
+                    standing.RequestId, standing.DecidingHeroId, option.SourceId, payment),
+                fixture.Boundary(),
+                fixture.Shield);
+
+            Assert.That(answered.Accepted, Is.True);
+            Assert.That(fixture.Authority.PendingRemovalPrevention, Is.Null,
+                "One decision per outcome, closed by one answer.");
+            Assert.That(
+                fixture.Board.Minions.Any(minion => minion.MinionId.Value == ShieldedMinionId),
+                Is.True,
+                "The price bought exactly what the card says it buys: the miniature stays.");
+            Assert.That(
+                fixture.Configuration.CardInstances
+                    .Single(card => card.Id.Equals(payment)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "The typed cost is paid, not merely named.");
+            Assert.That(
+                answered.Events.Any(value =>
+                    value.Kind == CardActionResolutionEventKind.RemovalPreventionPaid),
+                Is.True);
+            Assert.That(
+                answered.Events.Any(value =>
+                    value.Kind == CardActionResolutionEventKind.MinionRemovalPrevented),
+                Is.True,
+                "The outcome published is p.13's own, which is what makes a paid prevention " +
+                "indistinguishable downstream from p.18's immunity stopping the same removal.");
+            Assert.That(
+                answered.Events.Any(value =>
+                    value.Kind == CardActionResolutionEventKind.MinionRewardAwarded),
+                Is.True,
+                "And the Defeat and its reward are retained rather than unwound.");
+            Assert.That(fixture.Authority.PendingImmediateLanePush, Is.Null,
+                "p.8's mid-turn push is owed for a side emptied out of the Battle Zone, and the " +
+                "shielded minion is still standing in it. Milestone 6.9 records the Defeat's own " +
+                "cause either way - the page's first sentence is answered by the Defeat - but the " +
+                "request is derived from the board, and the board still has both sides in the zone.");
+        }
+
+        [Test]
+        public void ADeclinedPrevention_LetsTheRemovalHappenAndFinishesThePage()
+        {
+            var fixture = CreateShieldedFixture();
+            AttackMinion(fixture, ShieldedMinionId, "shielded-attack", fixture.Shield);
+            var standing = fixture.Authority.PendingRemovalPrevention;
+
+            var answered = fixture.Authority.AnswerRemovalPrevention(
+                RemovalPreventionCommand.Decline(standing.RequestId, standing.DecidingHeroId),
+                fixture.Boundary(),
+                fixture.Shield);
+
+            Assert.That(answered.Accepted, Is.True);
+            Assert.That(
+                fixture.Board.Minions.Any(minion => minion.MinionId.Value == ShieldedMinionId),
+                Is.False,
+                "Declining is a legal answer, and the removal that was going to happen happens.");
+            Assert.That(
+                answered.Events.Any(value =>
+                    value.Kind == CardActionResolutionEventKind.MinionRemovalCompleted),
+                Is.True);
+            Assert.That(
+                answered.Events.Any(value =>
+                    value.Kind == CardActionResolutionEventKind.RemovalPreventionPaid),
+                Is.False,
+                "Nothing was paid, so nothing is reported as paid.");
+            Assert.That(fixture.Authority.PendingImmediateLanePush, Is.Not.Null,
+                "The declined removal emptied Blue's side out of the Battle Zone, so p.8's mid-turn " +
+                "push is owed - the immediate consequence a prevention would have stopped.");
+        }
+
+        [Test]
+        public void AStandingPreventionDecision_RefusesAStaleOrForeignAnswer()
+        {
+            var fixture = CreateShieldedFixture();
+            AttackMinion(fixture, ShieldedMinionId, "shielded-attack", fixture.Shield);
+            var standing = fixture.Authority.PendingRemovalPrevention;
+
+            Assert.That(
+                fixture.Authority.AnswerRemovalPrevention(
+                    RemovalPreventionCommand.Decline("not-this-decision", standing.DecidingHeroId),
+                    fixture.Boundary(), fixture.Shield).RejectionReason,
+                Is.EqualTo(CardActionResolutionRejectionReason.StaleChoice));
+
+            Assert.That(
+                fixture.Authority.AnswerRemovalPrevention(
+                    RemovalPreventionCommand.Decline(standing.RequestId, fixture.AttackerId),
+                    fixture.Boundary(), fixture.Shield).RejectionReason,
+                Is.EqualTo(CardActionResolutionRejectionReason.WrongChooser),
+                "The attacker does not answer for the source that is trying to keep its own minion.");
+
+            Assert.That(fixture.Authority.PendingRemovalPrevention, Is.Not.Null,
+                "A refused answer leaves the decision exactly as it was, so it is still there to be " +
+                "made.");
+        }
+
+        [Test]
+        public void AStandingPreventionDecision_SurvivesASnapshotRoundTripByteIdentically()
+        {
+            var fixture = CreateShieldedFixture();
+            AttackMinion(fixture, ShieldedMinionId, "shielded-attack", fixture.Shield);
+            var standing = fixture.Authority.PendingRemovalPrevention;
+            Assert.That(standing, Is.Not.Null);
+
+            var round = new RoundResolutionAuthority(
+                fixture.Configuration.CardDefinitions,
+                fixture.Configuration.CardInstances,
+                fixture.Configuration.Participants,
+                new TieBreakerState(TeamSide.Red),
+                1,
+                RoundResolutionComposition.ForCardActionsOnly(fixture.Authority));
+
+            // The card-action continuation is written inside the turn that owns the dispatcher, so a
+            // round with no turn at all has nowhere to put one - which is true of every continuation
+            // this engine persists, not of this decision. Committing both cards gives the round its
+            // turn, and the turn hands the same dispatcher to the writer.
+            foreach (var hero in fixture.Configuration.Participants.Heroes)
+            {
+                var card = fixture.Configuration.CardInstances.First(value =>
+                    value.OwnerId.Equals(hero.Id) && value.State.Location == CardLocation.Hand);
+                Assert.That(round.TryCommitCard(hero.Id, card.Id).Accepted, Is.True);
+            }
+
+            var payload = AuthoritativeSnapshotSerializer.Serialize(round, fixture.Board);
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
+                payload,
+                fixture.Configuration.CardDefinitions,
+                new[] { fixture.Map },
+                fixture.Minions);
+
+            var restoredDecision = restored.Round.PendingRemovalPrevention;
+            Assert.That(restoredDecision, Is.Not.Null,
+                "A stopped decision that vanished on restore would remove a miniature its " +
+                "controller had been offered the chance to keep - which is why v26 is rejected " +
+                "rather than migrated.");
+            Assert.That(restoredDecision.RequestId, Is.EqualTo(standing.RequestId));
+            Assert.That(restoredDecision.Origin, Is.EqualTo(standing.Origin));
+            Assert.That(restoredDecision.DecidingHeroId, Is.EqualTo(standing.DecidingHeroId));
+            Assert.That(
+                restoredDecision.RewardOperations.Select(value => value.BalanceAfter),
+                Is.EqualTo(standing.RewardOperations.Select(value => value.BalanceAfter)),
+                "The coin operations cross the wire because they record balances either side of a " +
+                "payment that has already happened, and re-running the award would be refused.");
+            Assert.That(
+                AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
+                Is.EqualTo(payload),
+                "Byte-identical, like every other continuation this engine persists.");
+        }
+
         [Test]
         public void ARemovalStage_RefusesToExistWithoutDeclaringWhichCauseItWouldRecord()
         {
@@ -265,7 +467,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(26),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(27),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
                 "own. The version has since moved fourteen times, none of them for it: milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +
@@ -352,23 +554,75 @@ namespace GuardsDigital.Tests.EditMode
         private static AttackActionResolutionResult AttackMinion(
             Fixture fixture,
             string minionId,
-            string resolutionId)
+            string resolutionId,
+            RuleModificationSet modifications = null)
         {
+            var rules = modifications ?? RuleModificationSet.Empty;
             var opened = fixture.Authority.StartAttackResolution(
                 new ActionResolutionId(resolutionId),
                 fixture.AttackOffer,
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants, RuleModificationSet.Empty);
+                fixture.Configuration.Participants, rules);
             var result = fixture.Authority.AnswerAttackTarget(
                 new AttackTargetChoiceCommand(opened.PendingTargetChoice.ResolutionId,
                     opened.PendingTargetChoice.ChoiceId, new MinionId(minionId)),
                 fixture.Configuration.CardDefinitions,
                 fixture.Configuration.CardInstances,
-                fixture.Configuration.Participants, RuleModificationSet.Empty);
+                fixture.Configuration.Participants, rules);
             Assert.That(result.Accepted, Is.True);
             return result;
         }
+
+        /// <summary>
+        /// Milestone 8.19c1. The minion the defender's own shield covers: adjacent to the attacker so
+        /// the Attack is legal, and inside the disk the shield draws around the defender so the source
+        /// reaches it. Both distances are the fixture's whole geometry.
+        /// </summary>
+        private const string ShieldedMinionId = "blue-shielded";
+
+        private static Fixture CreateShieldedFixture()
+        {
+            var fixture = CreateFixture(
+                CreateMinion(
+                    ShieldedMinionId, TeamSide.Blue, StandardMinionType.Melee,
+                    new HexCoordinate(-1, 0)),
+                // Red holds the Battle Zone too, so p.8's question has a real answer either way: with
+                // the shielded minion standing both sides hold and no push is owed, and with it removed
+                // Blue's side is empty and one is. A fixture with only Blue's minion would make both
+                // sides empty after the removal, which p.8 asks nothing about.
+                CreateMinion(
+                    "red-holder", TeamSide.Red, StandardMinionType.Melee, new HexCoordinate(2, 0)));
+            var defender = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var lifecycle = new GuardsDigital.Core.Timing.ActiveEffectLifecycle();
+            lifecycle.Create(
+                new GuardsDigital.Core.Timing.ActiveEffectId("shield-probe"),
+                GuardsDigital.Core.Effects.Synthetic.SyntheticPausingSourceCapabilities
+                    .ShieldFriendlyMinionsDefinition,
+                defender,
+                TeamSide.Blue,
+                default,
+                new CardInstanceId("shield-probe-card"),
+                new ActionDefinitionId("shield-probe-action"),
+                1,
+                1);
+            fixture.Shield = RuleModificationQuery.Build(
+                lifecycle,
+                fixture.Board,
+                fixture.Configuration.Participants,
+                new TieBreakerState(TeamSide.Red),
+                GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet.None,
+                RuleObject.ForHero(fixture.AttackerId),
+                null);
+            return fixture;
+        }
+
+        private static IReadOnlyList<string> CoinsOf(Fixture fixture) =>
+            (fixture.Authority.CoinLedger?.CoinBalances ??
+                Array.Empty<KeyValuePair<HeroId, int>>())
+            .OrderBy(entry => entry.Key.Value, StringComparer.Ordinal)
+            .Select(entry => entry.Key.Value + ":" + entry.Value)
+            .ToArray();
 
         private static Fixture CreateFixture(params QuickGameMinionSetupState[] minions)
         {
@@ -385,6 +639,7 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 Array.Empty<GuardsDigital.Core.Obstacles.ObstacleOccupancy>(),
                 minions);
+            var setupMinions = minions;
             var offer = ActionOfferQuery.GetAvailableOffers(
                     configuration.CardDefinitions,
                     configuration.CardInstances,
@@ -393,7 +648,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Single(value => value.SourceCardInstanceId.Value == "red-pursuit-card" &&
                     value.ActionDefinitionId.Equals(new ActionDefinitionId("primary-attack")));
             return new Fixture(configuration, attacker, map, board,
-                new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board), offer);
+                new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board), offer,
+                setupMinions);
         }
 
         private static BoardMapDefinition CreateBattleZoneMap()
@@ -438,10 +694,11 @@ namespace GuardsDigital.Tests.EditMode
         {
             public Fixture(PlaceholderOneVsOneTestConfiguration configuration, HeroId attackerId,
                 BoardMapDefinition map, AdjacentMoveAuthority board,
-                CardActionResolutionAuthority authority, ActionOffer attackOffer)
+                CardActionResolutionAuthority authority, ActionOffer attackOffer,
+                IReadOnlyList<QuickGameMinionSetupState> minions)
             {
                 Configuration = configuration; AttackerId = attackerId; Map = map;
-                Board = board; Authority = authority; AttackOffer = attackOffer;
+                Board = board; Authority = authority; AttackOffer = attackOffer; Minions = minions;
             }
 
             public PlaceholderOneVsOneTestConfiguration Configuration { get; }
@@ -450,6 +707,20 @@ namespace GuardsDigital.Tests.EditMode
             public AdjacentMoveAuthority Board { get; }
             public CardActionResolutionAuthority Authority { get; }
             public ActionOffer AttackOffer { get; }
+            public IReadOnlyList<QuickGameMinionSetupState> Minions { get; }
+
+            /// <summary>Milestone 8.19c1's live rules carrying the defender's own shield, or null.</summary>
+            public RuleModificationSet Shield { get; set; }
+
+            public ActionBoundaryContext Boundary() =>
+                new ActionBoundaryContext(
+                    Configuration.CardDefinitions,
+                    Configuration.CardInstances,
+                    Configuration.Participants,
+                    null,
+                    new TieBreakerState(TeamSide.Red),
+                    1,
+                    1);
         }
     }
 }

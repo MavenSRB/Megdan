@@ -298,8 +298,24 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<EffectOutcomeFact> outcomes,
             IEnumerable<TimingCheckpoint> checkpointsBefore,
             IEnumerable<TimingCheckpoint> checkpointsAfter,
-            EffectChoiceRequest choice)
+            EffectChoiceRequest choice,
+            IEnumerable<RuleObject> appliedPushes = null)
         {
+            var pushed = (appliedPushes ?? Enumerable.Empty<RuleObject>()).ToArray();
+            if (pushed.Any(subject => !subject.IsDefined))
+            {
+                throw new ArgumentException(
+                    "An applied Push names the object it displaced.", nameof(appliedPushes));
+            }
+
+            if (pushed.Length > 0 && kind != EffectExecutionResultKind.Applied)
+            {
+                throw new ArgumentException(
+                    "Only a handler that applied can report a displacement it performed.",
+                    nameof(appliedPushes));
+            }
+
+            AppliedPushes = new ReadOnlyCollection<RuleObject>(pushed);
             if (kind == EffectExecutionResultKind.None)
             {
                 throw new ArgumentException("An effect execution result requires a kind.", nameof(kind));
@@ -338,12 +354,27 @@ namespace GuardsDigital.Core.Effects
         public IReadOnlyList<TimingCheckpoint> CheckpointsAfter { get; }
         public EffectChoiceRequest Choice { get; }
 
+        /// <summary>
+        /// Milestone 8.19c1. The objects this handler actually displaced by one of rulebook p.18's
+        /// Pushes, in the order it committed them; empty for every handler that pushed nothing.
+        ///
+        /// <para>It is a typed report rather than an <see cref="EffectOutcomeFact"/> because it is not
+        /// something a later node binds to. p.18's own facts - how far, how many, which hero an obstacle
+        /// stopped - are published as outcomes because card text reads them; this list is read by the
+        /// resolver so it can hand the moment to whatever declared an <c>after-push-trigger@1</c>, and
+        /// it is uncapped, whereas an outcome name can only ever hold one value. It crosses no
+        /// snapshot: the pause a trigger creates names the one object it is running for.</para>
+        /// </summary>
+        public IReadOnlyList<RuleObject> AppliedPushes { get; }
+
         public static EffectExecutionResult Applied(
             IEnumerable<EffectOutcomeFact> outcomes = null,
             IEnumerable<TimingCheckpoint> checkpointsBefore = null,
-            IEnumerable<TimingCheckpoint> checkpointsAfter = null) =>
+            IEnumerable<TimingCheckpoint> checkpointsAfter = null,
+            IEnumerable<RuleObject> appliedPushes = null) =>
             new EffectExecutionResult(
-                EffectExecutionResultKind.Applied, outcomes, checkpointsBefore, checkpointsAfter, null);
+                EffectExecutionResultKind.Applied, outcomes, checkpointsBefore, checkpointsAfter, null,
+                appliedPushes);
 
         public static EffectExecutionResult NeedsChoice(EffectChoiceRequest choice) =>
             new EffectExecutionResult(

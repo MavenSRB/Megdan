@@ -82,7 +82,13 @@ namespace GuardsDigital.Core.Cards
                     // one catalog rather than forming a second, for the reason 8.9's verified effects
                     // did: a match registers one set and the snapshot compares one.
                     GuardsDigital.Core.Cards.Synthetic.SyntheticShowcaseHand
-                        .BeforeActionTriggeredEffect.Definition
+                        .BeforeActionTriggeredEffect.Definition,
+                    // Milestone 8.19c1. The effect milestone 8.19c1's two new trigger windows run -
+                    // p.8's moment before the Minion Battle, and the moment a Push applies. One
+                    // definition for both, because what each of them is proving is the window rather
+                    // than the text, and the text is the same two questions either way.
+                    GuardsDigital.Core.Effects.Synthetic.SyntheticPausingSourceCapabilities
+                        .PausingTriggeredEffect.Definition
                 }));
     }
 }

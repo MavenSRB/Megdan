@@ -862,6 +862,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // along its own file, so working outwards means a space is always vacated before
             // anything is asked to enter it, and the batch never refuses itself.
             var moved = 0;
+
+            // Milestone 8.19c1. What a Push applied to, in the order it was committed. p.18's "if you
+            // push" is the displacement rather than the attempt, so this list is built from accepted
+            // commits alone: a target the geometry left standing where it was is not in it, and a push
+            // that moved nothing produces an empty list and reaches no after-push trigger.
+            var displaced = new List<RuleObject>();
             foreach (var entry in resolved
                 .Where(entry => entry.Value.Moves)
                 .OrderByDescending(entry => entry.Value.ActualDistance)
@@ -872,10 +878,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (committed.Accepted)
                 {
                     moved++;
+                    var subject = entry.Key.AsRuleObject();
+                    if (subject.IsDefined)
+                    {
+                        displaced.Add(subject);
+                    }
                 }
             }
 
-            return EffectExecutionResult.Applied(StopCauseFacts(context, distance, moved, stopped));
+            return EffectExecutionResult.Applied(
+                StopCauseFacts(context, distance, moved, stopped), appliedPushes: displaced);
         }
 
         /// <summary>

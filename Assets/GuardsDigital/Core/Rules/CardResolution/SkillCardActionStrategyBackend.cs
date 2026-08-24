@@ -74,6 +74,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public bool HasPendingResolution => pendingResolution != null;
 
+        /// <summary>
+        /// Milestone 8.19c1. Whether any unlocked Ultimate in these cards declares an
+        /// `after-push-trigger@1`, which is what makes the resolver stop at a Push that applied.
+        ///
+        /// <para>It is deliberately the coarse question. Whether a particular source concerns a
+        /// particular displaced object is <c>AfterPushTriggerQuery</c>'s, asked by the authority that
+        /// holds the board and the participants; all this decides is whether the walk pauses so that
+        /// question can be asked at all. A match whose sources all turn out not to apply resumes
+        /// immediately and reaches exactly the same nodes in exactly the same order.</para>
+        /// </summary>
+        private static bool WatchesAppliedPushes(
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances) =>
+            GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, instances)
+                .Ultimates.Any(ultimate => ultimate.Rule.AfterPush.IsDeclared);
+
         internal SkillBackendRestoreState CaptureRestoreState() =>
             pendingResolution == null ? null : new SkillBackendRestoreState(pendingResolution);
 
@@ -98,10 +114,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int roundIndex,
             int turnIndex,
             out PendingRepeatedAction repeat,
-            out LanePushCauseKind lanePushCause)
+            out LanePushCauseKind lanePushCause,
+            out IReadOnlyList<RuleObject> appliedPushes)
         {
             repeat = null;
             lanePushCause = LanePushCauseKind.None;
+            appliedPushes = Array.Empty<RuleObject>();
             if (!resolutionId.IsDefined)
             {
                 throw new ArgumentException("A Skill requires a resolution ID.", nameof(resolutionId));
@@ -113,6 +131,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
             var action = ActionOfferQuery.FindActionDefinition(offer, materializedDefinitions);
             if (action == null || action.Kind != ActionKind.Skill || action.EffectRoot == null)
             {
@@ -121,8 +140,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
-                components: components, heroItems: heroItems, rosterState: rosterState);
+                EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
+                components: components, heroItems: heroItems, rosterState: rosterState,
+                watchesAppliedPushes: WatchesAppliedPushes(
+                    materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 offer.SourceCardInstanceId,
@@ -142,6 +163,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             lanePushCause = step.LanePushCause;
+            appliedPushes = step.AppliedPushes;
             return Complete(
                 step, resolutionId, offer.SourceCardInstanceId, offer.ActionDefinitionId,
                 offer.ActorId, true);
@@ -174,10 +196,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int roundIndex,
             int turnIndex,
             out PendingRepeatedAction furtherRepeat,
-            out LanePushCauseKind lanePushCause)
+            out LanePushCauseKind lanePushCause,
+            out IReadOnlyList<RuleObject> appliedPushes)
         {
             furtherRepeat = null;
             lanePushCause = LanePushCauseKind.None;
+            appliedPushes = Array.Empty<RuleObject>();
             if (repeat == null) throw new ArgumentNullException(nameof(repeat));
             if (!resolutionId.IsDefined)
             {
@@ -190,6 +214,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
             var action = FindRepeatableAction(materializedDefinitions, repeat);
             if (action == null)
             {
@@ -198,8 +223,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
-                components: components, heroItems: heroItems, rosterState: rosterState);
+                EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
+                components: components, heroItems: heroItems, rosterState: rosterState,
+                watchesAppliedPushes: WatchesAppliedPushes(
+                    materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 repeat.SourceCardInstanceId,
@@ -224,6 +251,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             lanePushCause = step.LanePushCause;
+            appliedPushes = step.AppliedPushes;
             return Complete(
                 step, resolutionId, repeat.SourceCardInstanceId, repeat.ActionDefinitionId,
                 repeat.ActorId, true);
@@ -319,10 +347,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int roundIndex,
             int turnIndex,
             out PendingRepeatedAction repeat,
-            out LanePushCauseKind lanePushCause)
+            out LanePushCauseKind lanePushCause,
+            out IReadOnlyList<RuleObject> appliedPushes)
         {
             repeat = null;
             lanePushCause = LanePushCauseKind.None;
+            appliedPushes = Array.Empty<RuleObject>();
             if (command == null) throw new ArgumentNullException(nameof(command));
             if (pendingResolution == null)
             {
@@ -330,6 +360,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
             var effectRoot = FindEffectRoot(materializedDefinitions, pendingResolution);
             if (effectRoot == null)
             {
@@ -338,8 +369,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var context = new EffectResolutionContext(
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
-                EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
-                components: components, heroItems: heroItems, rosterState: rosterState);
+                EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
+                components: components, heroItems: heroItems, rosterState: rosterState,
+                watchesAppliedPushes: WatchesAppliedPushes(
+                    materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
             {
@@ -368,6 +401,76 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             lanePushCause = step.LanePushCause;
+            appliedPushes = step.AppliedPushes;
+            return Complete(step, default, default, default, default, false);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Carries a Skill on from the node it stopped at when a Push it performed
+        /// was watched, once whatever watched it has finished.
+        ///
+        /// <para>It is not <see cref="AnswerEffectChoice"/> without a command: that method resumes a
+        /// frame holding a question and records the answer, and there is no question here. This resumes
+        /// the walk from exactly the position the frame already holds, which is what makes "returns the
+        /// enclosing effect to the exact node it left" a property of the frame rather than of a
+        /// reconstruction.</para>
+        /// </summary>
+        public CardActionResolutionResult ContinueAfterInterrupt(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            MatchComponents components,
+            int roundIndex,
+            int turnIndex,
+            out PendingRepeatedAction repeat,
+            out LanePushCauseKind lanePushCause,
+            out IReadOnlyList<RuleObject> appliedPushes)
+        {
+            repeat = null;
+            lanePushCause = LanePushCauseKind.None;
+            appliedPushes = Array.Empty<RuleObject>();
+            if (pendingResolution == null || pendingResolution.PendingChoice != null)
+            {
+                return Reject(CardActionResolutionRejectionReason.NoPendingResolution);
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
+            var effectRoot = FindEffectRoot(materializedDefinitions, pendingResolution);
+            if (effectRoot == null)
+            {
+                return Reject(CardActionResolutionRejectionReason.UnavailableOffer);
+            }
+
+            var context = new EffectResolutionContext(
+                effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
+                EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
+                components: components, heroItems: heroItems, rosterState: rosterState,
+                watchesAppliedPushes: WatchesAppliedPushes(
+                    materializedDefinitions, materializedInstances));
+            var step = EffectResolutionSession.Continue(pendingResolution, context);
+            if (!step.Accepted)
+            {
+                return Reject(CardActionResolutionRejectionReason.InvalidChoice);
+            }
+
+            if (step.RepeatRequested.IsRequested)
+            {
+                repeat = PendingRepeatedAction.Mint(
+                    new ActionResolutionId(pendingResolution.ResolutionId.Value),
+                    pendingResolution.SourceCardInstanceId,
+                    pendingResolution.SourceDefinitionReference,
+                    pendingResolution.ActionDefinitionId,
+                    pendingResolution.EffectDefinitionReference,
+                    pendingResolution.ActorId,
+                    pendingResolution.ControllerId,
+                    step.RepeatRequested.Continuation);
+            }
+
+            lanePushCause = step.LanePushCause;
+            appliedPushes = step.AppliedPushes;
             return Complete(step, default, default, default, default, false);
         }
 
@@ -470,12 +573,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     resolutionId, card, action, actor)));
                 steps.Add(ResolutionStep.AtActionEnded(card, action, actor, ActionKind.Skill));
             }
-            else
+            else if (step.Frame.PendingChoice != null)
             {
                 steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.SkillChoiceRequested(
                     resolutionId, card, action, actor, step.Frame.PendingChoice.ChoiceId.Value)));
             }
 
+            // Milestone 8.19c1. A frame that stopped with no question outstanding is a Push waiting for
+            // whatever watches it. Nothing is reported here: the moment belongs to the trigger, and the
+            // authority that runs it publishes the trigger's own facts. If nothing applies, the same
+            // authority carries this frame straight on and the stream reads as though it never stopped.
             return CardActionResolutionResult.Accept(step.IsComplete, null, null, steps);
         }
 

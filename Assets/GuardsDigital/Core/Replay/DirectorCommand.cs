@@ -61,7 +61,16 @@ namespace GuardsDigital.Core.Replay
         /// Lane-Push respawn and milestone 7.5's progression begin theirs from their own rules.
         /// </summary>
         BeginSystemTransition = 21,
-        AnswerSystemTransitionStep = 22
+        AnswerSystemTransitionStep = 22,
+
+        /// <summary>
+        /// Milestone 8.19c1. A Defeat standing at its removal stage is a new authority-level operation
+        /// with its own pending family and its own resume path, which is the Minion-Battle, correction
+        /// and system-transition precedent for giving one a command kind rather than riding another
+        /// family's. It is not an effect choice: no effect frame is paused, the answer names a source
+        /// and the card that pays for it, and what it resumes is rulebook p.13's removal stage.
+        /// </summary>
+        AnswerRemovalPrevention = 23
     }
 
     public sealed class DirectorCommand : IEquatable<DirectorCommand>
@@ -79,6 +88,7 @@ namespace GuardsDigital.Core.Replay
             EndOfRoundResolutionId endOfRoundResolutionId = default,
             EndOfRoundChoiceId endOfRoundChoiceId = default,
             EffectChoiceCommand effectChoice = null,
+            RemovalPreventionCommand removalPrevention = null,
             IEnumerable<TokenInstanceId> tokenInstanceIds = null,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId systemTransitionDefinitionId = default,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand systemTransitionChoice = default)
@@ -103,6 +113,7 @@ namespace GuardsDigital.Core.Replay
             EndOfRoundResolutionId = endOfRoundResolutionId;
             EndOfRoundChoiceId = endOfRoundChoiceId;
             EffectChoice = effectChoice;
+            RemovalPrevention = removalPrevention;
             SystemTransitionDefinitionId = systemTransitionDefinitionId;
             SystemTransitionChoice = systemTransitionChoice;
             TokenInstanceIds = Array.AsReadOnly(materializedTokenIds
@@ -125,6 +136,12 @@ namespace GuardsDigital.Core.Replay
 
         /// <summary>The projected typed invocation an effect choice is answered with.</summary>
         public EffectChoiceCommand EffectChoice { get; }
+
+        /// <summary>
+        /// Milestone 8.19c1: the typed answer a standing removal-prevention decision is closed with -
+        /// the source whose price is paid and the card that pays it, or a decline.
+        /// </summary>
+        public RemovalPreventionCommand RemovalPrevention { get; }
 
         /// <summary>Milestone 6.10a: which declared transition to begin.</summary>
         public GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId SystemTransitionDefinitionId { get; }
@@ -185,6 +202,23 @@ namespace GuardsDigital.Core.Replay
             }
 
             return new DirectorCommand(DirectorCommandKind.AnswerEffectChoice, effectChoice: invocation);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c1. Closes the standing removal-prevention decision, paying one source's
+        /// price or declining. The invocation is refused here rather than at the authority for the
+        /// reason every other typed invocation is: a command with no decision named could only ever be
+        /// rejected further in, with less to say about why.
+        /// </summary>
+        public static DirectorCommand AnswerRemovalPrevention(RemovalPreventionCommand invocation)
+        {
+            if (invocation == null)
+            {
+                throw new ArgumentNullException(nameof(invocation));
+            }
+
+            return new DirectorCommand(
+                DirectorCommandKind.AnswerRemovalPrevention, removalPrevention: invocation);
         }
 
         public static DirectorCommand CommitCard(HeroId heroId, CardInstanceId cardInstanceId) =>
@@ -432,6 +466,7 @@ namespace GuardsDigital.Core.Replay
                 EndOfRoundResolutionId.Equals(other.EndOfRoundResolutionId) &&
                 EndOfRoundChoiceId.Equals(other.EndOfRoundChoiceId) &&
                 Equals(EffectChoice, other.EffectChoice) &&
+                Equals(RemovalPrevention, other.RemovalPrevention) &&
                 SystemTransitionDefinitionId.Equals(other.SystemTransitionDefinitionId) &&
                 SystemTransitionChoice.Equals(other.SystemTransitionChoice) &&
                 TokenInstanceIds.SequenceEqual(other.TokenInstanceIds);
@@ -455,6 +490,7 @@ namespace GuardsDigital.Core.Replay
                 hash = (hash * 397) ^ EndOfRoundResolutionId.GetHashCode();
                 hash = (hash * 397) ^ EndOfRoundChoiceId.GetHashCode();
                 hash = (hash * 397) ^ (EffectChoice?.GetHashCode() ?? 0);
+                hash = (hash * 397) ^ (RemovalPrevention?.GetHashCode() ?? 0);
                 hash = (hash * 397) ^ SystemTransitionDefinitionId.GetHashCode();
                 hash = (hash * 397) ^ SystemTransitionChoice.GetHashCode();
                 foreach (var tokenId in TokenInstanceIds)
