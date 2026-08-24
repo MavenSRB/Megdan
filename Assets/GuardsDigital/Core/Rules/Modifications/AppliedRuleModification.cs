@@ -37,7 +37,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             ActiveEffectId sourceActiveEffectId,
             HeroId controllerHeroId,
             TeamSide controllerTeamSide,
-            long orderingSequence)
+            long orderingSequence,
+            HeroId boundActorHeroId)
         {
             if (!affectedObject.IsDefined)
             {
@@ -71,15 +72,24 @@ namespace GuardsDigital.Core.Rules.Modifications
             ControllerHeroId = controllerHeroId;
             ControllerTeamSide = controllerTeamSide;
             OrderingSequence = orderingSequence;
+            BoundActorHeroId = boundActorHeroId;
         }
 
+        /// <param name="boundActorHeroId">
+        /// Milestone 8.20. The hero the supplying occurrence bound, carried through so that a
+        /// declaration excepting "this attacker" can be answered where the question is asked. It
+        /// travels with the modification rather than being looked up from the effect id, for the reason
+        /// every other provenance field here travels with it: the query holds this value and not the
+        /// lifecycle, and a second lookup would be a second chance for the two to disagree.
+        /// </param>
         public static AppliedRuleModification FromActiveEffect(
             RuleModification modification,
             RuleObject affectedObject,
             ActiveEffectId sourceActiveEffectId,
             HeroId controllerHeroId,
             TeamSide controllerTeamSide,
-            long orderingSequence)
+            long orderingSequence,
+            HeroId boundActorHeroId = default)
         {
             if (!sourceActiveEffectId.IsDefined)
             {
@@ -95,7 +105,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                 sourceActiveEffectId,
                 controllerHeroId,
                 controllerTeamSide,
-                orderingSequence);
+                orderingSequence,
+                boundActorHeroId);
         }
 
         public static AppliedRuleModification FromContinuousSource(
@@ -118,7 +129,10 @@ namespace GuardsDigital.Core.Rules.Modifications
                 default,
                 source.ControllerHeroId,
                 controllerTeamSide,
-                orderingSequence);
+                orderingSequence,
+                // A continuous source is p.16's permanent Ultimate ability, which is not created inside
+                // anything and therefore points at nobody with "this".
+                default);
         }
 
         public RuleModification Modification { get; }
@@ -136,6 +150,13 @@ namespace GuardsDigital.Core.Rules.Modifications
         public HeroId ControllerHeroId { get; }
 
         public TeamSide ControllerTeamSide { get; }
+
+        /// <summary>
+        /// Milestone 8.20. The hero the supplying occurrence bound with "this", or the undefined hero
+        /// where it bound nobody - which is every modification declared before this milestone, and
+        /// every one from a continuous source.
+        /// </summary>
+        public HeroId BoundActorHeroId { get; }
 
         /// <summary>
         /// The source's creation order, used as the second ordering key. Rulebook p.17 resolves

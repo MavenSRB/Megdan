@@ -28,7 +28,8 @@ namespace GuardsDigital.Core.Timing
             ActiveEffectPhase phase = ActiveEffectPhase.Dormant,
             int? activatedRoundIndex = null,
             int? activatedTurnIndex = null,
-            TimingCheckpoint? endedAt = null)
+            TimingCheckpoint? endedAt = null,
+            HeroId boundActorHeroId = default)
         {
             if (!id.IsDefined) throw new ArgumentException("An Active-effect instance requires an ID.", nameof(id));
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
@@ -49,7 +50,22 @@ namespace GuardsDigital.Core.Timing
             if (phase == ActiveEffectPhase.Ended && !endedAt.HasValue)
                 throw new ArgumentException("An ended effect requires its exact ending checkpoint.");
 
+            // Milestone 8.20. A definition that points at nobody may not be handed somebody, and one
+            // that does may still find nobody there - Expert Duelist discarded to defend an attack
+            // that never happened is not a state this build can reach, but a payload claiming it is.
+            // The first is refused because it is a caller mistake; the second is admitted because it
+            // is the honest reading of an occurrence whose "this" found no referent, and
+            // RestrictedActorScope.ExceptsTheBoundActor then excepts nobody.
+            if (boundActorHeroId.IsDefined &&
+                definition.BoundActorSource == ActiveEffectBoundActorSource.None)
+            {
+                throw new ArgumentException(
+                    "An Active effect whose definition binds no actor cannot be given one.",
+                    nameof(boundActorHeroId));
+            }
+
             Id = id;
+            BoundActorHeroId = boundActorHeroId;
             ControllerHeroId = controllerHeroId;
             ControllerTeamSide = controllerTeamSide;
             AffectedHeroId = affectedHeroId;
@@ -79,6 +95,24 @@ namespace GuardsDigital.Core.Timing
         public TeamSide ControllerTeamSide { get; }
 
         public HeroId AffectedHeroId { get; }
+
+        /// <summary>
+        /// Milestone 8.20. The one hero this occurrence's declarations point at with "this" - Arien's
+        /// Expert and Master Duelist, "except this attacker" - or the undefined hero where the
+        /// definition points at nobody.
+        ///
+        /// <para>It is a third runtime binding beside the controller and the affected hero, and a
+        /// third for the same reason: which hero the word "this" turned out to name is a fact about
+        /// this occurrence, while <see cref="ActiveEffectDefinition.BoundActorSource"/> - where to look
+        /// - is what the effect is. Two Master Duelists discarded against two different attackers in
+        /// one round are one definition and two bindings.</para>
+        ///
+        /// <para>It is persisted, which is what made snapshot schema v28 necessary: the exception
+        /// cannot be re-derived after the Attack it was taken inside has ended, and an effect restored
+        /// without it would silently become immunity against the attacker too - a stronger card than
+        /// the one printed.</para>
+        /// </summary>
+        public HeroId BoundActorHeroId { get; }
 
         public CardInstanceId SourceCardInstanceId { get; }
         public ActionDefinitionId SourceActionDefinitionId { get; }

@@ -31,6 +31,20 @@ namespace GuardsDigital.Core.Rules.Modifications
             MatchParticipants participants)
         {
             var scope = applied.Modification.RestrictedActors;
+
+            // Milestone 8.20. The carve-out is read before the classes, because it is an exception to
+            // them rather than a class of its own: Arien's Expert Duelist names "all enemy heroes" and
+            // then takes one hero back out, so a reading that checked the classes first would answer
+            // yes for the very hero the sentence excepts. An occurrence that bound nobody excepts
+            // nobody, which is what an undefined bound actor means.
+            if (scope.ExceptsTheBoundActor &&
+                applied.BoundActorHeroId.IsDefined &&
+                actor.IsDefined &&
+                actor.Equals(RuleObject.ForHero(applied.BoundActorHeroId)))
+            {
+                return false;
+            }
+
             if (scope.Covers(RestrictedActorRelation.AnyActor))
             {
                 return true;

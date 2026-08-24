@@ -36,6 +36,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference PresenceCountV1 => Reference("presence-count", 1);
         public static EffectCapabilityReference PreConsequenceAdjacencyV1 =>
             Reference("pre-consequence-adjacency", 1);
+
+        /// <summary>
+        /// Milestone 8.20's `was-adjacent@1`, which the roster matrix names beside milestone 8.19b's
+        /// <see cref="PreConsequenceAdjacencyV1"/> and which is a different question.
+        ///
+        /// <para>That one asks about the target of an enclosing Attack before p.14's consequences ran,
+        /// which is what Sabina's Shootout prints. Arien's Ebb and Flow is a Skill and has no enclosing
+        /// Attack at all: "Swap with an enemy minion in range; <b>if it was adjacent to you</b>, may
+        /// repeat once." Its "was" is the moment before its own Swap, and p.19's Swap exchanges exactly
+        /// two spaces - so the two spaces the Swap traded <em>are</em> where the minion and the hero
+        /// were standing, and asking whether they are adjacent is asking the card's question rather
+        /// than a reconstruction of it.</para>
+        ///
+        /// <para>Stated as a question about two spaces rather than about a swap, because that is all it
+        /// reads: no board, no participants, no declaration. The past tense the face prints is what
+        /// makes the sentence readable at all - by the time it is asked, the swap has already moved the
+        /// minion into the hero's former space - and a predicate over the two exchanged spaces is
+        /// unaffected by that, which is why it can be asked afterwards.</para>
+        /// </summary>
+        public static EffectCapabilityReference SpacesAdjacentV1 => Reference("spaces-adjacent", 1);
         public static EffectCapabilityReference AdjacentTerrainPresenceV1 =>
             Reference("adjacent-terrain-presence", 1);
         public static EffectCapabilityReference RetrieveCardV1 => Reference("retrieve-card", 1);
@@ -43,29 +63,106 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference TransferResourceV1 => Reference("transfer-resource", 1);
 
         public const string OriginParameter = "origin";
-        public const string DistanceParameter = "distance";
+
+        /// <summary>
+        /// How far from its origin a selection reaches, as a number the definition writes down.
+        ///
+        /// <para>Milestone 8.20 renames the wire name from `distance` to `reach`, and the rename is the
+        /// point. `OptionalDistanceConformanceTests` requires every capability declaring a *distance*
+        /// to read how much of it is optional through the one statement of rulebook pages 10 and 11 -
+        /// because a displacement that decided for itself once let one capability move nothing where
+        /// another refused the same choice. A selection radius has no such question: p.9's disk is
+        /// inclusive and reaches everything within it, and there is nothing about it a player could
+        /// choose to do less of. Two different questions sharing one parameter name made this
+        /// vocabulary look like a subject of that rule the moment the build registered it.</para>
+        /// </summary>
+        public const string DistanceParameter = "reach";
         public const string UnitKindParameter = "unitKind";
         public const string RelationParameter = "relation";
         public const string ChosenHeroOutput = "chosenHero";
         public const string ChosenMinionOutput = "chosenMinion";
 
-        public static IEnumerable<IEffectCapabilityHandler> Handlers()
+        /// <summary>
+        /// Milestone 8.20. Whether the enclosing Attack's own target is one of the candidates.
+        ///
+        /// <para>Arien's Noble Blade is what needs it: "You may move <b>another</b> unit that is
+        /// adjacent to the target 1 space". A disk of radius one drawn on the target's space contains
+        /// the target, because p.9 measures inclusively - and the target is not adjacent to itself, so
+        /// offering it would let this card reposition the very unit the Attack is about to resolve
+        /// against.</para>
+        ///
+        /// <para>It is optional and defaults to false, so every declaration written at milestone 8.19b
+        /// keeps its exact candidate set. That is the same shape <c>presence-count@1</c> already gave
+        /// the question, stated once more here rather than answered a second way.</para>
+        /// </summary>
+        public const string ExcludeTargetParameter = "excludeTarget";
+
+        /// <summary>
+        /// Milestone 8.20. The chosen piece's current space, published beside its identity.
+        ///
+        /// <para>It exists because the operations that reposition a piece take a coordinate - p.18's
+        /// Push, Place and direct Move each name a space - while this capability names a unit, and
+        /// Noble Blade needs both: the sentence chooses a unit and then moves it. Wasp's radius
+        /// selections have published a coordinate since milestone 6.8, so this is the same output on a
+        /// second selection rather than a new idea.</para>
+        ///
+        /// <para>A node that does not declare it never sees it, which is why adding it leaves every
+        /// milestone 8.19b definition unchanged.</para>
+        /// </summary>
+        public const string ChosenSpaceOutput = "chosenSpace";
+
+        /// <summary>
+        /// Milestone 8.20. Whether an up-to-one selection named anybody at all.
+        ///
+        /// <para>Arien's Dangerous Current, Raging Stream and Violent Torrent each print "Up to 1 enemy
+        /// hero in any of the N spaces ... discards a card, or is defeated", and the two halves of that
+        /// sentence are a selection that may reach nobody followed by a step that is mandatory once it
+        /// does. A conditional reads a boolean, and this is that boolean: naming nobody is a legal and
+        /// complete outcome, which is exactly what a consumer must be able to tell apart from a
+        /// question that was never asked.</para>
+        /// </summary>
+        public const string NamedAHeroOutput = "namedAHero";
+
+        /// <summary>
+        /// The whole vocabulary, for the bounded fixture catalogs that exercise each contract over
+        /// hero-shaped consumers. It is deliberately not what the build registers: milestone 7.9's
+        /// deferral gate refuses a registration no printed card can start, and most of this set is
+        /// still waiting for the hero whose face names it.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
+            RegisteredHandlers().Concat(new IEffectCapabilityHandler[]
+            {
+                new ChooseTargetSetHandler(),
+                new ChooseTargetPairHandler(),
+                new ChargeLineHandler(),
+                new ThroughTargetLineHandler(),
+                new FormerTargetSpaceHandler(),
+                new PlayedAttackThisTurnHandler(),
+                new HeroDefeatedThisRoundHandler(),
+                new PresenceCountHandler(),
+                new PreConsequenceAdjacencyHandler(),
+                new AdjacentTerrainPresenceHandler(),
+                new RetrieveCardHandler(),
+                new GainResourceHandler(),
+                new TransferResourceHandler()
+            });
+
+        /// <summary>
+        /// The part of this vocabulary a verified hero's printed set actually reaches, which is what
+        /// <see cref="SyntheticEffectCapabilities.CreateCatalog"/> registers.
+        ///
+        /// <para>Milestone 8.20 is the first milestone with anything to put here. Arien's Noble Blade
+        /// names <c>choose-target@2</c>, his three Currents name <c>behind-target-line@1</c>, and Ebb
+        /// and Flow names <c>spaces-adjacent@1</c>. The remaining thirteen contracts belong to Brogan,
+        /// Sabina, Tigerclaw and Xargatha, and each joins this list at the milestone whose printed card
+        /// first names it - which is what keeps the registration list a statement about what this build
+        /// can do rather than about what it has written down.</para>
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers()
         {
             yield return new ChooseTargetHandler();
-            yield return new ChooseTargetSetHandler();
-            yield return new ChooseTargetPairHandler();
             yield return new BehindTargetLineHandler();
-            yield return new ChargeLineHandler();
-            yield return new ThroughTargetLineHandler();
-            yield return new FormerTargetSpaceHandler();
-            yield return new PlayedAttackThisTurnHandler();
-            yield return new HeroDefeatedThisRoundHandler();
-            yield return new PresenceCountHandler();
-            yield return new PreConsequenceAdjacencyHandler();
-            yield return new AdjacentTerrainPresenceHandler();
-            yield return new RetrieveCardHandler();
-            yield return new GainResourceHandler();
-            yield return new TransferResourceHandler();
+            yield return new SpacesAdjacentHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>
@@ -100,7 +197,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 int distance,
                 RosterUnitKind unitKind,
                 SourceTeamRelation relation,
-                RuleActivity activity)
+                RuleActivity activity,
+                bool excludeEnclosingTarget = false)
             {
                 if (!TryOrigin(context, origin, out var at) || distance < 0 ||
                     unitKind == RosterUnitKind.None ||
@@ -126,7 +224,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         board,
                         context.Participants,
                         context.Modifications,
-                        BoardObjectReference.ForHero(context.ActorId))
+                        BoardObjectReference.ForHero(context.ActorId),
+                        excludeEnclosingTarget ? EnclosingTarget(context) : default)
                     .Where(target => !ImmunityQuery.IsImmuneTo(
                         target.AsRuleObject(),
                         activity,
@@ -151,7 +250,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.Input(DistanceParameter).IntegerValue,
                     (RosterUnitKind)context.Input(UnitKindParameter).IntegerValue,
                     (SourceTeamRelation)context.Input(RelationParameter).IntegerValue,
-                    activity);
+                    activity,
+                    context.Input(ExcludeTargetParameter).BooleanValue);
             }
 
             protected static EffectValue AsValue(BoardObjectReference target) =>
@@ -182,7 +282,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public override IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
                 AllActivities;
             public EffectCapabilityReference Reference => ChooseTargetV2;
-            public EffectCapabilityParameterSchema Schema { get; } = TargetSchema();
+
+            public EffectCapabilityParameterSchema Schema { get; } = TargetSchema(
+                // Milestone 8.20. Carried by this selection alone, because it is the only one a
+                // verified card asks the question of - the same rule that keeps every other narrowing
+                // on the declaration that prints it. `presence-count@1` names its own, beside an
+                // actor exclusion this selection makes unconditionally.
+                new[]
+                {
+                    new EffectCapabilityParameter(
+                        ExcludeTargetParameter, EffectValueKind.Boolean, isRequired: false)
+                },
+                new[]
+                {
+                    new EffectOutputBinding(ChosenHeroOutput, EffectValueKind.Hero),
+                    new EffectOutputBinding(ChosenMinionOutput, EffectValueKind.Minion),
+                    new EffectOutputBinding(ChosenSpaceOutput, EffectValueKind.Coordinate)
+                });
+
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
 
@@ -199,9 +316,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
                 var chosen = selected?.Count == 1 ? FromValue(selected[0]) : default;
-                return chosen.IsDefined && DeclaredTargets(context).Contains(chosen)
-                    ? EffectExecutionResult.Applied(new[] { AsOutcome(chosen) })
-                    : EffectExecutionResult.ImpossibleMandatory();
+                if (!chosen.IsDefined || !DeclaredTargets(context).Contains(chosen))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Milestone 8.20 publishes where the chosen piece is standing beside who it is, for a
+                // node that asked - the space is read now rather than derived later by whatever
+                // consumes it, because that is the moment the answer is about and a later node may
+                // already have moved something. A node that did not ask never sees it, which is what
+                // keeps every milestone 8.19b definition publishing exactly what it declared.
+                var outcomes = new List<EffectOutcomeFact> { AsOutcome(chosen) };
+                if (context.Publishes(ChosenSpaceOutput) &&
+                    context.Components?.Board != null &&
+                    context.Components.Board.TryGetObjectCoordinate(chosen, out var at))
+                {
+                    outcomes.Add(new EffectOutcomeFact(ChosenSpaceOutput, EffectValue.Space(at)));
+                }
+
+                return EffectExecutionResult.Applied(outcomes);
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
@@ -363,7 +496,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectCapabilityParameterSchema Schema { get; } =
                 new EffectCapabilityParameterSchema(
                     new[] { new EffectCapabilityParameter("length", EffectValueKind.Integer) },
-                    new[] { new EffectOutputBinding(ChosenHeroOutput, EffectValueKind.Hero) });
+                    new[]
+                    {
+                        new EffectOutputBinding(ChosenHeroOutput, EffectValueKind.Hero),
+                        new EffectOutputBinding(NamedAHeroOutput, EffectValueKind.Boolean)
+                    });
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
 
@@ -403,7 +540,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             {
                 var candidates = Candidates(context);
                 return candidates.Count == 0
-                    ? EffectExecutionResult.Applied()
+                    ? EffectExecutionResult.Applied(NamedNobody)
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
                         EffectChooserRole.Actor, candidates.Select(EffectValue.Hero), 0, 1));
             }
@@ -411,15 +548,32 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
-                if (selected == null || selected.Count == 0) return EffectExecutionResult.Applied();
+                if (selected == null || selected.Count == 0)
+                {
+                    return EffectExecutionResult.Applied(NamedNobody);
+                }
+
                 return selected.Count == 1 && selected[0].Kind == EffectValueKind.Hero &&
                     Candidates(context).Contains(selected[0].HeroId)
                     ? EffectExecutionResult.Applied(new[]
                     {
-                        new EffectOutcomeFact(ChosenHeroOutput, selected[0])
+                        new EffectOutcomeFact(ChosenHeroOutput, selected[0]),
+                        new EffectOutcomeFact(NamedAHeroOutput, EffectValue.Boolean(true))
                     })
                     : EffectExecutionResult.ImpossibleMandatory();
             }
+
+            /// <summary>
+            /// The named absence, published rather than left out. Milestone 8.20: "Up to 1 enemy hero
+            /// ... discards a card, or is defeated" is a step that may reach nobody, and what follows
+            /// it has to be able to tell "nobody was named" from "the question has not been asked".
+            /// An outcome nothing published resolves to an undefined value at the consumer, which is
+            /// the same thing both cases would look like.
+            /// </summary>
+            private static readonly EffectOutcomeFact[] NamedNobody =
+            {
+                new EffectOutcomeFact(NamedAHeroOutput, EffectValue.Boolean(false))
+            };
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 Candidates(context).Count == 0
@@ -830,6 +984,58 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Read(context).HasValue
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+        }
+
+        /// <summary>
+        /// Milestone 8.20. Whether two named spaces are rulebook-adjacent, published as a boolean a
+        /// conditional can read. Nothing about the board is consulted: p.19's adjacency is a property
+        /// of two coordinates, and both arrive bound from earlier nodes.
+        /// </summary>
+        private sealed class SpacesAdjacentHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => SpacesAdjacentV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter("first", EffectValueKind.Coordinate),
+                        new EffectCapabilityParameter("second", EffectValueKind.Coordinate)
+                    },
+                    new[] { new EffectOutputBinding("adjacent", EffectValueKind.Boolean) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            private static bool? Read(EffectCapabilityContext context)
+            {
+                var first = context.Input("first");
+                var second = context.Input("second");
+                return first.Kind == EffectValueKind.Coordinate &&
+                    second.Kind == EffectValueKind.Coordinate
+                    ? (bool?)(HexDistanceQuery.Calculate(first.Coordinate, second.Coordinate) == 1)
+                    : null;
+            }
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var value = Read(context);
+                return value.HasValue
+                    ? EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact("adjacent", EffectValue.Boolean(value.Value))
+                    })
+                    : EffectExecutionResult.ImpossibleMandatory();
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 Read(context).HasValue
                     ? EffectExecutionResultKind.Applied

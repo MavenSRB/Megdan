@@ -191,7 +191,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                             effect.Id,
                             effect.ControllerHeroId,
                             effect.ControllerTeamSide,
-                            effect.CreationSequence);
+                            effect.CreationSequence,
+                            effect.BoundActorHeroId);
                     }
                 }
             }
@@ -233,7 +234,20 @@ namespace GuardsDigital.Core.Rules.Modifications
 
                     break;
                 case ActiveEffectAffectedScopeKind.UnitsInRadius:
-                    foreach (var unit in UnitsInRadius(effect, board, participants, heroItems))
+                    foreach (var unit in UnitsInRadius(
+                        effect, board, participants, heroItems, heroesOnly: false))
+                    {
+                        yield return unit;
+                    }
+
+                    break;
+                case ActiveEffectAffectedScopeKind.HeroesInRadius:
+                    // Milestone 8.20. The same disk with p.19's other unit kind left out of it -
+                    // Arien's "Enemy heroes in radius". The walk below is shared rather than copied,
+                    // because the disk, the anchor and the side are one reading whichever kinds it
+                    // admits, and two copies could disagree about any of the three.
+                    foreach (var unit in UnitsInRadius(
+                        effect, board, participants, heroItems, heroesOnly: true))
                     {
                         yield return unit;
                     }
@@ -270,11 +284,19 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// by naming the other side anyway, so the exclusion decides nothing today and states the
         /// page's reading for the declaration that names no side.</para>
         /// </summary>
+        /// <param name="heroesOnly">
+        /// Milestone 8.20. Whether the declaration admits p.19's heroes alone - Arien's "Enemy heroes
+        /// in radius" - or every unit, which is Wasp's "Enemy units in radius". It is intrinsic
+        /// membership on purpose and by necessity: the paragraph above says why this walk consults no
+        /// declaration, and which miniature is standing in the disk is the one question about a piece
+        /// that a <c>Counts As</c> does not answer.
+        /// </param>
         private static IEnumerable<RuleObject> UnitsInRadius(
             ActiveEffectInstance effect,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            bool heroesOnly)
         {
             if (board == null)
             {
@@ -310,6 +332,11 @@ namespace GuardsDigital.Core.Rules.Modifications
                 {
                     yield return RuleObject.ForHero(occupancy.HeroId);
                 }
+            }
+
+            if (heroesOnly)
+            {
+                yield break;
             }
 
             foreach (var minion in board.Minions)

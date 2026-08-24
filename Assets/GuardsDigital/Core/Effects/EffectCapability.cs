@@ -120,7 +120,8 @@ namespace GuardsDigital.Core.Effects
             IReadOnlyList<IReadOnlyList<EffectValue>> answersAlreadyGiven = null,
             EnclosingAttackFacts enclosingAttack = default,
             EffectRosterState rosterState = null,
-            IReadOnlyList<ImmunityOverrideDeclaration> immunityOverrides = null)
+            IReadOnlyList<ImmunityOverrideDeclaration> immunityOverrides = null,
+            IReadOnlyList<EffectOutputBinding> declaredOutputs = null)
         {
             EnclosingAttack = enclosingAttack;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
@@ -162,7 +163,34 @@ namespace GuardsDigital.Core.Effects
             RosterState = rosterState ?? EffectRosterState.Absent;
             ImmunityOverrides = new ReadOnlyCollection<ImmunityOverrideDeclaration>(
                 (immunityOverrides ?? Enumerable.Empty<ImmunityOverrideDeclaration>()).ToArray());
+            DeclaredOutputs = new ReadOnlyCollection<EffectOutputBinding>(
+                (declaredOutputs ?? Enumerable.Empty<EffectOutputBinding>()).ToArray());
         }
+
+        /// <summary>
+        /// The outputs this node asked for, which is the exact set a handler may publish.
+        ///
+        /// <para>Milestone 8.20. A restored payload's recorded outcomes are checked against the node's
+        /// declaration, so a handler publishing a fact the node did not ask for makes a snapshot the
+        /// build refuses to read back. That is not a new rule - it is why every capability's outputs
+        /// have always been declared per node - and until now no handler had an output some of its
+        /// nodes wanted and others did not.</para>
+        ///
+        /// <para>Two of milestone 8.20's do: the roster selection publishes the chosen piece's space
+        /// beside its identity, and the printed-icon minion selection publishes the chosen minion's.
+        /// Both are for cards whose next step repositions the piece, and neither is wanted by the
+        /// cards already using those capabilities - so asking the node is what lets the vocabulary grow
+        /// without every earlier definition growing with it.</para>
+        ///
+        /// <para>Use it through <see cref="Publishes"/> rather than by searching it, so the one reading
+        /// of "did this node ask for that" stays one reading.</para>
+        /// </summary>
+        public IReadOnlyList<EffectOutputBinding> DeclaredOutputs { get; }
+
+        /// <summary>Whether this node asked for the named output. Milestone 8.20.</summary>
+        public bool Publishes(string outputName) =>
+            DeclaredOutputs.Any(output =>
+                string.Equals(output.OutputName, outputName, StringComparison.Ordinal));
 
         public EffectNodeId NodeId { get; }
         public EffectFailurePolicy FailurePolicy { get; }

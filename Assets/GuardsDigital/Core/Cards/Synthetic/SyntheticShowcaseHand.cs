@@ -708,6 +708,48 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, BlueProfiles, BlueUltimateProfile, null,
                 pausingSourceSkillProfile: BluePausingSourceSkillProfile);
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.20: the roster selection vocabulary the build now registers, on content that is
+        // nobody's card
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.20's roster-selection Skill cards, sitting outside their team's ordinary
+        /// Initiative band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedRosterSelectionSkillProfile { get; } =
+            new SyntheticSkillProfile("red-tidewatcher", "Red Tidewatcher", 17);
+
+        private static SyntheticSkillProfile BlueRosterSelectionSkillProfile { get; } =
+            new SyntheticSkillProfile("blue-tidewatcher", "Blue Tidewatcher", 18);
+
+        /// <summary>The five ordinary cards plus milestone 8.20's roster-selection Skill alone.</summary>
+        public static ConfiguredHand CreateRedWithRosterSelectionSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                rosterSelectionSkillProfile: RedRosterSelectionSkillProfile);
+
+        public static ConfiguredHand CreateBlueWithRosterSelectionSkill(HeroId ownerId) =>
+            Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                rosterSelectionSkillProfile: BlueRosterSelectionSkillProfile);
+
+        /// <summary>Arien's Dangerous Current shape: a Before-Attack line drawn behind the target.</summary>
+        private static SyntheticAttackTextProfile RedLineBehindProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-undertow", "Red Undertow", 7, 4, 2, 2, CardTextTiming.BeforeTheAttack,
+                false, false, continuation: SyntheticContinuationShape.BeforeAttackLineBehind);
+
+        /// <summary>
+        /// The five ordinary cards with milestone 8.20's Before-Attack line card, which is how
+        /// `behind-target-line@1` becomes reachable from showcase content rather than waiting for the
+        /// hero whose three Red cards print it.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithLineBehindText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedLineBehindProfile });
+
         /// <summary>Sabina's Big Sodding Gun shape, as an Ultimate on the Red hand.</summary>
         private static SyntheticUltimateProfile AfterPushUltimateProfile { get; } =
             new SyntheticUltimateProfile(
@@ -761,6 +803,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile kinesisSkillProfile = null,
             SyntheticSkillProfile persistentSourceSkillProfile = null,
             SyntheticSkillProfile pausingSourceSkillProfile = null,
+            SyntheticSkillProfile rosterSelectionSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -894,6 +937,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreatePausingSourceSkillDefinition(pausingSourceSkillProfile),
                     pausingSourceSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (rosterSelectionSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateRosterSelectionSkillDefinition(rosterSelectionSkillProfile),
+                    rosterSelectionSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -2049,6 +2100,114 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 });
         }
 
+        /// <summary>
+        /// Milestone 8.20's roster-selection Skill: choose a unit within two spaces, then report
+        /// whether it was standing beside you.
+        ///
+        /// <para>It is nobody's card. What it exists for is the half of milestone 7.9's deferral gate
+        /// that is about implementations rather than declarations: <c>choose-target@2</c> was built at
+        /// milestone 8.19b and <c>spaces-adjacent@1</c> at this one, and both would otherwise be
+        /// reachable only from Arien's printed faces - which is precisely a reusable contract arriving
+        /// for the first time inside a verified hero's slice.</para>
+        ///
+        /// <para>The distance is a fixture number rather than a printed icon, and the selection admits
+        /// either team, so nothing here reproduces a card. What it does reproduce is the shape: a
+        /// selection that publishes where its answer is standing, and a predicate over two spaces.</para>
+        /// </summary>
+        private static CardDefinition CreateRosterSelectionSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("roster-selection-root");
+            var actorSpace = new EffectNodeId("roster-selection-actor-space");
+            var select = new EffectNodeId("roster-selection-target");
+            var adjacent = new EffectNodeId("roster-selection-adjacent");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-20-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { actorSpace, select, adjacent }),
+                    new EffectNodeDefinition(
+                        actorSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        select, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.ChooseTargetV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.OriginParameter,
+                                EffectValue.Integer((int)GuardsDigital.Core.Rules.CardResolution.RosterQueryOrigin.Actor)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.DistanceParameter,
+                                EffectValue.Integer(2)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.UnitKindParameter,
+                                EffectValue.Integer((int)GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                EffectValue.Integer((int)GuardsDigital.Core.Rules.Modifications.SourceTeamRelation.AnyTeam)),
+                            EffectInputBinding.FromLiteral(
+                                "activity",
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenMinionOutput,
+                                EffectValueKind.Minion),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenSpaceOutput,
+                                EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        adjacent, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.SpacesAdjacentV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "first", actorSpace, "space", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromNodeOutput(
+                                "second", select, SyntheticRosterCapabilities.ChosenSpaceOutput,
+                                EffectValueKind.Coordinate)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("adjacent", EffectValueKind.Boolean)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-20-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-roster-selection-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
         private static CardDefinition CreateKinesisSkillDefinition(SyntheticSkillProfile profile)
         {
             var root = new EffectNodeId("kinesis-root");
@@ -2180,7 +2339,17 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// Xargatha's Charm shape: a printed primary Movement whose text moves an enemy unit either
             /// before or after that Movement, with the side chosen by the actor.
             /// </summary>
-            AroundTheMovement = 4
+            AroundTheMovement = 4,
+
+            /// <summary>
+            /// Milestone 8.20. Arien's Dangerous Current shape: "Before the attack:" text that offers up
+            /// to one enemy hero standing in the straight line behind the target and takes a card off
+            /// whoever is named. It is showcase content rather than his card - the length is a fixture
+            /// number and the price is the ordinary `if able` discard - and it exists so
+            /// `behind-target-line@1` is proved on content that is nobody's before a printed face
+            /// names it.
+            /// </summary>
+            BeforeAttackLineBehind = 5
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -2451,6 +2620,72 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         }
                         .Concat(MayMoveAnotherUnitNodes("may-move", includeSelf: false))
                         .ToArray());
+
+                // Milestone 8.20. Up to one enemy hero in the straight line behind the target, and an
+                // `if able` discard off whoever is named. Naming nobody is a complete outcome, which is
+                // what the selection's own boolean lets the branch below tell apart from a question
+                // that was never asked.
+                case SyntheticContinuationShape.BeforeAttackLineBehind:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-20-rev-1",
+                        new EffectNodeId("line-root"),
+                        new[]
+                        {
+                            new EffectNodeDefinition(
+                                new EffectNodeId("line-root"), EffectNodeKind.Sequence,
+                                EffectFailurePolicy.Mandatory,
+                                childNodeIds: new[]
+                                {
+                                    new EffectNodeId("line-behind"), new EffectNodeId("line-branch")
+                                }),
+                            new EffectNodeDefinition(
+                                new EffectNodeId("line-behind"), EffectNodeKind.Capability,
+                                EffectFailurePolicy.Mandatory,
+                                SyntheticRosterCapabilities.BehindTargetLineV1,
+                                inputs: new[]
+                                {
+                                    EffectInputBinding.FromLiteral(
+                                        "length", EffectValue.Integer(2))
+                                },
+                                outputs: new[]
+                                {
+                                    new EffectOutputBinding(
+                                        SyntheticRosterCapabilities.ChosenHeroOutput,
+                                        EffectValueKind.Hero),
+                                    new EffectOutputBinding(
+                                        SyntheticRosterCapabilities.NamedAHeroOutput,
+                                        EffectValueKind.Boolean)
+                                }),
+                            new EffectNodeDefinition(
+                                new EffectNodeId("line-branch"), EffectNodeKind.Conditional,
+                                EffectFailurePolicy.Mandatory,
+                                SyntheticEffectCapabilities.IsFlaggedV1,
+                                childNodeIds: new[] { new EffectNodeId("line-discard") },
+                                inputs: new[]
+                                {
+                                    EffectInputBinding.FromNodeOutput(
+                                        "flag", new EffectNodeId("line-behind"),
+                                        SyntheticRosterCapabilities.NamedAHeroOutput,
+                                        EffectValueKind.Boolean)
+                                },
+                                outputs: new[]
+                                {
+                                    new EffectOutputBinding("value", EffectValueKind.Boolean)
+                                }),
+                            new EffectNodeDefinition(
+                                new EffectNodeId("line-discard"), EffectNodeKind.Capability,
+                                EffectFailurePolicy.IfAble,
+                                SyntheticCardStateCapabilities.DiscardChosenCardV1,
+                                inputs: new[]
+                                {
+                                    EffectInputBinding.FromNodeOutput(
+                                        SyntheticCardStateCapabilities.HeroParameter,
+                                        new EffectNodeId("line-behind"),
+                                        SyntheticRosterCapabilities.ChosenHeroOutput,
+                                        EffectValueKind.Hero)
+                                })
+                        });
 
                 default:
                     throw new ArgumentOutOfRangeException(

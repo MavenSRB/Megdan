@@ -161,6 +161,23 @@ namespace GuardsDigital.Core.Components
             ConfiguredSpawnPointReference spawnPoint, out HexCoordinate coordinate);
 
         /// <summary>
+        /// Every playable space the selected map puts a Spawn point on, in canonical axial order.
+        ///
+        /// <para>Milestone 8.20. Arien's Liquid Leap, Magical Current and Stranger Tide are the first
+        /// verified texts that ask where the Spawn points <em>are</em> rather than resolving one they
+        /// already name: "Place yourself into a space in range without a spawn point and not adjacent
+        /// to an empty spawn point". Both clauses are questions about the map, so this answers the map
+        /// and nothing else - which point, whose team, and what unit type are not asked, because the
+        /// sentence does not ask them.</para>
+        ///
+        /// <para>Derived on every call rather than stored, exactly as <see cref="FindUnitSupply"/> is
+        /// and for the same reason: there is nothing here a restore could carry stale. It still adds
+        /// no eligibility rule - whether a space with a Spawn point may be entered at all remains
+        /// p.18's business, and this only says where they stand.</para>
+        /// </summary>
+        IReadOnlyList<HexCoordinate> FindSpawnPointSpaces();
+
+        /// <summary>
         /// Puts a supply miniature onto its declared Spawn point as one transaction: p.19's token
         /// clearance first, then the occupant. Refusals are returned rather than thrown, because a
         /// Spawn point taken between derivation and commit is a real race an effect must report.

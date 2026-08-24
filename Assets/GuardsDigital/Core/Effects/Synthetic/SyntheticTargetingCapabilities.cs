@@ -155,6 +155,34 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference RadiusMinionTargetV1 =>
             new EffectCapabilityReference(RadiusMinionTarget, 1);
 
+        /// <summary>
+        /// Milestone 8.20. The printed-Range twin of <see cref="RadiusMinionTarget"/>, for card text
+        /// that names a minion "in range": Arien's Arcane Whirlpool and Ebb and Flow, "Swap with an
+        /// enemy minion in range".
+        ///
+        /// <para>A second capability ID rather than a parameter, by the rule the other three pairs
+        /// here already record: p.9 gives the two icons two meanings and p.16 two items, so a
+        /// definition that could name either through one parameter would let a Range card read a Radius
+        /// item. The handler beneath is the same one all five printed-icon declarations share.</para>
+        /// </summary>
+        public static EffectCapabilityId RangeMinionTarget { get; } =
+            new EffectCapabilityId("synthetic-range-minion-target");
+
+        public static EffectCapabilityReference RangeMinionTargetV1 =>
+            new EffectCapabilityReference(RangeMinionTarget, 1);
+
+        /// <summary>
+        /// Milestone 8.20. The chosen minion's current space, published beside its identity.
+        ///
+        /// <para>Rulebook p.19's Swap exchanges two <em>spaces</em>, and every repositioning operation
+        /// in this build names its subject by the space it stands on - which p.19's one-obstacle-per-
+        /// space rule makes unambiguous. So a selection whose consumer is a Swap has to publish both:
+        /// the minion, because the card's sentence names one, and where it is standing, because the
+        /// operation takes that. The board-object selection has published a space since milestone
+        /// 7.2b; this is the same output on the minion arm rather than a second idea.</para>
+        /// </summary>
+        public const string ChosenMinionSpaceOutputName = "chosenMinionSpace";
+
         public static EffectCapabilityId HeroAdjacentToMinion { get; } =
             new EffectCapabilityId("synthetic-hero-adjacent-to-minion");
 
@@ -212,6 +240,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     declaresStraightLineFilter: false, PrintedIconSelectionSubject.Hero),
                 new PrintedIconTargetHandler(
                     RadiusMinionTargetV1, PrintedValueChannel.Radius,
+                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Minion),
+                new PrintedIconTargetHandler(
+                    RangeMinionTargetV1, PrintedValueChannel.Range,
                     declaresStraightLineFilter: false, PrintedIconSelectionSubject.Minion),
                 new HeroAdjacentToMinionHandler()
             };
@@ -420,7 +451,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             : subject == PrintedIconSelectionSubject.Hero
                                 ? new EffectOutputBinding(ChosenHeroOutputName, EffectValueKind.Hero)
                                 : new EffectOutputBinding(ChosenMinionOutputName, EffectValueKind.Minion)
-                    });
+                    }
+                    .Concat(subject == PrintedIconSelectionSubject.Minion
+                        // Milestone 8.20. The minion arm publishes where its answer is standing as
+                        // well as who it is, because a Swap takes a space and the card's sentence
+                        // names a minion. A node that does not declare it never sees it.
+                        ? new[]
+                        {
+                            new EffectOutputBinding(
+                                ChosenMinionSpaceOutputName, EffectValueKind.Coordinate)
+                        }
+                        : Enumerable.Empty<EffectOutputBinding>()));
             }
 
             public EffectCapabilityReference Reference { get; }
@@ -473,11 +514,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         return EffectExecutionResult.ImpossibleMandatory();
                     }
 
-                    return EffectExecutionResult.Applied(new[]
+                    var chosenMinion = BoardObjectReference.ForMinion(selected[0].MinionId);
+                    var minionOutcomes = new List<EffectOutcomeFact>
                     {
                         new EffectOutcomeFact(
                             ChosenMinionOutputName, EffectValue.Minion(selected[0].MinionId))
-                    });
+                    };
+                    // Published for a node that asked, and only for one: Wasp's High Voltage names the
+                    // minion it defeats and wants no space, while Arien's Swap takes a space and wants
+                    // no name. See EffectCapabilityContext.DeclaredOutputs.
+                    if (context.Publishes(ChosenMinionSpaceOutputName) &&
+                        context.Components?.Board != null &&
+                        context.Components.Board.TryGetObjectCoordinate(chosenMinion, out var minionAt))
+                    {
+                        minionOutcomes.Add(new EffectOutcomeFact(
+                            ChosenMinionSpaceOutputName, EffectValue.Space(minionAt)));
+                    }
+
+                    return EffectExecutionResult.Applied(minionOutcomes);
                 }
 
                 if (selected == null || selected.Count != 1 ||

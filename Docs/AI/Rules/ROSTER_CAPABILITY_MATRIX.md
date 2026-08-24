@@ -32,11 +32,17 @@ revision: `synthetic-direct-move@1`, `synthetic-object-push@3`, `synthetic-place
 `repeat-action@1`. New or refined planned identities are named in the tables and are introduced only by
 the dependency slice assigned in [Phase 8](../Roadmap/PHASE_8.md).
 
-Implementation status through milestone 8.19c: dependency steps 1-4 below are complete. Steps 3 and 4's
-new handlers and declarations execute in bounded synthetic catalogs over hero-shaped consumers; they are
-not in the default production catalog because no verified additional-hero definition is authorized yet
-and the catalog rejects unreachable registration. Step 4a's three pausing sources completed at milestone
-8.19c1 in snapshot schema v27, and verified face composition remains step 5.
+Implementation status through milestone 8.20: dependency steps 1-4a below are complete, and step 5's
+first hero is composed. Arien's nineteen faces are verified content the staged match deals, so the three
+step-3 contracts his cards name - `choose-target@2`, `behind-target-line@1` and `was-adjacent@1` - are
+registered in the default production catalog for the first time; the remaining step-3 and step-4 handlers
+still execute in bounded synthetic catalogs over hero-shaped consumers, because the catalog rejects a
+registration no printed card can reach and each is waiting for the hero whose face names it. Snapshot
+schema is v28. **The block's own prerequisite claim needs qualifying:** three of Arien's printed sentences
+needed vocabulary no 8.19 slice built - a restriction carving out the cards it leaves alone, an immunity
+excepting the one hero its occurrence bound, and a cap on how far one Movement action may go - so a later
+hero milestone should read its own rows against what is registered rather than against step 4a's
+completion. Milestone 8.20a owes Arien the permanent player-path gate.
 
 ## Arien
 
@@ -170,7 +176,8 @@ from ordinary action/effect dispatch.
    continuation/refinement consumers first, the unique Minion-Battle interaction next, multi-target board
    composition third, markers/general action Repeat fourth, and additive effective types/end-of-round
    timing last. Each hero milestone defines, deals, source-tests, drives through the player projection, and
-   runs its complete printed progression; no later hero may retroactively supply a dependency.
+   runs its complete printed progression; no later hero may retroactively supply a dependency. Arien
+   completed at milestone 8.20, whose split leaves the permanent player-path gate to 8.20a.
 
 The five inventories contain no need for runtime printed-text parsing, a universal expression evaluator,
 hero/display-name branching, UI-owned resolution, or a second pending-choice protocol. All new choices

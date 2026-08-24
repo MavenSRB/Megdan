@@ -322,7 +322,16 @@ namespace GuardsDigital.Tests.EditMode
                     // reason. The milestone's third pause is an Ultimate declaration rather than a
                     // capability, so it has nothing to register and nothing to reach.
                     SyntheticShowcaseHand.CreateRedWithPausingSourceSkill(owner),
-                    SyntheticShowcaseHand.CreateBlueWithPausingSourceSkill(owner)
+                    SyntheticShowcaseHand.CreateBlueWithPausingSourceSkill(owner),
+                    // Milestone 8.20's three roster selection contracts. Two of them - `choose-target@2`
+                    // and `behind-target-line@1` - were implemented at 8.19b and reach the build's
+                    // catalog only now, because this is the milestone at which a printed card first
+                    // names one; `spaces-adjacent@1` is this milestone's own. All three are proved on
+                    // showcase content here so that none of them arrives for the first time inside a
+                    // verified hero's slice, which is what the second half of this gate is about.
+                    SyntheticShowcaseHand.CreateRedWithRosterSelectionSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithRosterSelectionSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithLineBehindText(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -330,6 +339,12 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
             var reachable = showcaseReachable
                 .Concat(WaspCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.20. Arien's printed set is the second verified hand this build can
+                // deal, so the same half of the rule that admitted Wasp's admits his: a capability on
+                // a card a match deals is not a deferral. The other half - that no *handler* arrives
+                // for the first time inside a hero slice - still binds, and his five Active effects
+                // and two printed-icon twins all run on handlers the showcase already reaches.
+                .Concat(ArienCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

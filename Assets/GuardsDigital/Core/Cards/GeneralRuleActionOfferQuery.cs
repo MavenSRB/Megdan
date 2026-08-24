@@ -52,7 +52,25 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardInstance> instances,
             RuleModificationSet modifications)
         {
-            if (ActionRestrictionQuery.IsRestrictedFrom(actorId, ActionKind.FastTravel, modifications))
+            // Materialized once: the restriction below reads the replaced card's colour out of the
+            // same two sequences the replacement query then walks, and a lazy caller enumerated twice
+            // could answer the two halves from different content.
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ??
+                throw new ArgumentNullException(nameof(instances));
+
+            if (ActionRestrictionQuery.IsRestrictedFrom(
+                actorId,
+                ActionKind.FastTravel,
+                modifications,
+                // Milestone 8.20. p.11's Fast Travel replaces an entire Movement action, and the card
+                // whose Movement it replaces is the card it is performed from - which is why this
+                // query has taken that instance since it was written. A colour-qualified restriction
+                // therefore reads the replaced card's colour, exactly as it would if the Movement
+                // itself had been taken.
+                ActionOfferQuery.SourceCardColor(
+                    sourceCardInstanceId, materializedDefinitions, materializedInstances)))
             {
                 return null;
             }
@@ -61,8 +79,8 @@ namespace GuardsDigital.Core.Cards
                 replacedMovementActionDefinitionId,
                 sourceCardInstanceId,
                 actorId,
-                definitions,
-                instances,
+                materializedDefinitions,
+                materializedInstances,
                 ActionKind.Movement,
                 FastTravelDefinition);
         }
@@ -82,7 +100,19 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardInstance> instances,
             RuleModificationSet modifications)
         {
-            if (ActionRestrictionQuery.IsRestrictedFrom(actorId, ActionKind.Clear, modifications))
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ??
+                throw new ArgumentNullException(nameof(instances));
+
+            // p.13's Clear replaces an entire Attack action, so it reads the replaced card's colour
+            // for the same reason Fast Travel above does.
+            if (ActionRestrictionQuery.IsRestrictedFrom(
+                actorId,
+                ActionKind.Clear,
+                modifications,
+                ActionOfferQuery.SourceCardColor(
+                    sourceCardInstanceId, materializedDefinitions, materializedInstances)))
             {
                 return null;
             }
@@ -91,8 +121,8 @@ namespace GuardsDigital.Core.Cards
                 replacedAttackActionDefinitionId,
                 sourceCardInstanceId,
                 actorId,
-                definitions,
-                instances,
+                materializedDefinitions,
+                materializedInstances,
                 ActionKind.Attack,
                 ClearDefinition);
         }
@@ -157,15 +187,6 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException("Hold offer query requires an actor ID.", nameof(actorId));
             }
 
-            // Milestone 8.7. p.12 makes Hold the thing a hero does instead of acting, which is why it
-            // is the one offer whose removal could strand a turn - and exactly why a rule that
-            // forbade it has to be obeyed rather than quietly dropped. No source declares one; the
-            // consumer exists so that none can be declared and ignored.
-            if (ActionRestrictionQuery.IsRestrictedFrom(actorId, ActionKind.Hold, modifications))
-            {
-                return null;
-            }
-
             var definitionsByReference = ActionOfferQuery.BuildDefinitionLookup(definitions);
             if (instances == null)
             {
@@ -179,6 +200,26 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException(
                     "Hold offer card instances must be non-null and have unique IDs.",
                     nameof(instances));
+            }
+
+            // Milestone 8.7. p.12 makes Hold the thing a hero does instead of acting, which is why it
+            // is the one offer whose removal could strand a turn - and exactly why a rule that
+            // forbade it has to be obeyed rather than quietly dropped. No source declares one; the
+            // consumer exists so that none can be declared and ignored.
+            //
+            // Milestone 8.20 reads the colour of the card being held, because p.12's Hold is taken on
+            // a card that has already been played into the turn slot - the same card the offer below
+            // is built from - so a colour-qualified restriction has one to judge.
+            if (ActionRestrictionQuery.IsRestrictedFrom(
+                actorId,
+                ActionKind.Hold,
+                modifications,
+                ActionOfferQuery.SourceCardColor(
+                    sourceCardInstanceId,
+                    definitionsByReference.Values.ToArray(),
+                    cards)))
+            {
+                return null;
             }
 
             var sourceCard = cards.SingleOrDefault(card => card.Id.Equals(sourceCardInstanceId));

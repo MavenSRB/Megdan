@@ -204,7 +204,19 @@ namespace GuardsDigital.Core.Snapshots
         // into a match that is waiting for its answer: the trigger would resume as the effect that
         // pushed, the Defeat would remove a miniature its controller had been offered the chance to
         // keep, and the round would fire its pre-battle cards a second time.
-        public const int CurrentSchemaVersion = 27;
+        // Milestone 8.20 moves it to 28 for one runtime binding v27 has no field for: the hero an
+        // Active-effect occurrence bound with the word "this". Arien's Expert and Master Duelist print
+        // "immune to attack actions of all enemy heroes, except this attacker", and which hero that is
+        // was decided at rulebook p.14's step 4 by an Attack that has ended by the time anything asks.
+        // The definition declares where to look (ActiveEffectBoundActorSource); the occurrence is the
+        // only thing that knows what it found.
+        //
+        // v27 is rejected rather than migrated, on the same ground as v25 before it: there is no
+        // reading of the absent field that is true of both builds. Absent means "bound nobody", which
+        // an occurrence of a definition that binds nobody genuinely is - but a v27 payload holding a
+        // live Master Duelist would restore as immunity against the attacker as well, which is a
+        // stronger card than the printed one and one no later state could detect.
+        public const int CurrentSchemaVersion = 28;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

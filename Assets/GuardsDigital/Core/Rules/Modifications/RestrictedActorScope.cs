@@ -54,15 +54,18 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// </summary>
     public sealed class RestrictedActorScope
     {
-        private RestrictedActorScope(IReadOnlyList<RestrictedActorRelation> relations)
+        private RestrictedActorScope(
+            IReadOnlyList<RestrictedActorRelation> relations, bool exceptsTheBoundActor)
         {
             Relations = relations;
+            ExceptsTheBoundActor = exceptsTheBoundActor;
         }
 
         /// <summary>The unqualified reading: every actor, which is what a bare restriction declares.</summary>
         public static RestrictedActorScope AnyActor { get; } = new RestrictedActorScope(
             new ReadOnlyCollection<RestrictedActorRelation>(
-                new[] { RestrictedActorRelation.AnyActor }));
+                new[] { RestrictedActorRelation.AnyActor }),
+            false);
 
         /// <summary>
         /// A restriction qualified to the named actor classes. Order is the declaration's own and is
@@ -98,13 +101,48 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
 
             return new RestrictedActorScope(
-                new ReadOnlyCollection<RestrictedActorRelation>(relations.ToArray()));
+                new ReadOnlyCollection<RestrictedActorRelation>(relations.ToArray()),
+                false);
+        }
+
+        /// <summary>
+        /// Milestone 8.20. The same classes, minus the one hero the occurrence was created against -
+        /// Arien's Expert and Master Duelist, "immune to attack actions of all enemy heroes,
+        /// <b>except this attacker</b>".
+        ///
+        /// <para><b>Why the exception is not a sixth <see cref="RestrictedActorRelation"/>.</b> The
+        /// five members are classes: an object, a side, everyone. "This attacker" is none of them - it
+        /// is a hero picked out by the moment the card was played, and two occurrences of the same
+        /// definition on the same hero in the same turn can except different heroes. So the definition
+        /// declares <em>that</em> it excepts the bound actor and
+        /// <see cref="Timing.ActiveEffectDefinition.BoundActorSource"/> declares <em>where the binding
+        /// comes from</em>; which hero it turned out to be is the occurrence's, and
+        /// <see cref="AppliedRuleModification.BoundActorHeroId"/> is what carries it to the query.</para>
+        ///
+        /// <para>An occurrence that bound nobody excepts nobody, which is the honest reading of a
+        /// declaration whose "this" never got a referent: the scope's named classes stand unchanged.
+        /// That is also what makes the exception safe on a restored payload that carried no bound
+        /// actor - it widens the immunity to what the classes already said rather than inventing a
+        /// hero.</para>
+        /// </summary>
+        public static RestrictedActorScope OfExceptingTheBoundActor(
+            params RestrictedActorRelation[] relations)
+        {
+            var named = Of(relations);
+            return new RestrictedActorScope(named.Relations, true);
         }
 
         public IReadOnlyList<RestrictedActorRelation> Relations { get; }
 
+        /// <summary>
+        /// Milestone 8.20. Whether this declaration carves out the hero its occurrence was bound to.
+        /// False on every scope declared before it, and on every scope that carves nobody out.
+        /// </summary>
+        public bool ExceptsTheBoundActor { get; }
+
         /// <summary>Whether this scope states no qualification at all.</summary>
         public bool IsUnqualified =>
+            !ExceptsTheBoundActor &&
             Relations.Count == 1 && Relations[0] == RestrictedActorRelation.AnyActor;
 
         /// <summary>
@@ -128,7 +166,13 @@ namespace GuardsDigital.Core.Rules.Modifications
                 Relations.Contains(RestrictedActorRelation.AnyActor);
         }
 
-        public override string ToString() =>
-            IsUnqualified ? "by anyone" : "by " + string.Join(" or ", Relations);
+        public override string ToString()
+        {
+            var named = IsUnqualified || (!ExceptsTheBoundActor &&
+                Relations.Count == 1 && Relations[0] == RestrictedActorRelation.AnyActor)
+                ? "by anyone"
+                : "by " + string.Join(" or ", Relations);
+            return ExceptsTheBoundActor ? named + ", except the bound actor" : named;
+        }
     }
 }

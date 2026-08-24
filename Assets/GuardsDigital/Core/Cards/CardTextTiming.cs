@@ -58,7 +58,25 @@ namespace GuardsDigital.Core.Cards
         /// another action kind widens <see cref="CardTextTimingQuery.OwningActionKind"/> rather than
         /// this reading being guessed at now.</para>
         /// </summary>
-        AroundTheAction = 4
+        AroundTheAction = 4,
+
+        /// <summary>
+        /// Milestone 8.20. Rulebook p.11's own default for a Movement card's primary action: "When you
+        /// perform the Primary action on a Movement card, apply the card text in addition to moving up
+        /// to the number of spaces on the icon ... <b>Unless it says otherwise, the card text comes
+        /// into effect before movement.</b>"
+        ///
+        /// <para>This is the "unless" that <see cref="AroundTheAction"/> is the exception to.
+        /// Milestone 8.19a read Xargatha's Charm, which does say otherwise - "before or after" - and
+        /// built the placement question for it; Arien's Slippery Ground and Deluge say nothing, which
+        /// the page answers for them. So the two are one sentence read twice, and the reason they are
+        /// separate members is that one is decided by the content and the other by the player.</para>
+        ///
+        /// <para>The page's second sentence is why this is a moment rather than a step inside the
+        /// Movement: "The card text is applied even if you choose to move zero spaces." A text that
+        /// ran as part of the walk would not run for a hero who never took one.</para>
+        /// </summary>
+        BeforeTheMovement = 5
     }
 
     public static class CardTextTimingQuery
@@ -83,7 +101,8 @@ namespace GuardsDigital.Core.Cards
                     throw new ArgumentOutOfRangeException(
                         nameof(timing), timing,
                         "Only rulebook p.14's three numbered moments correspond to an Attack " +
-                        "checkpoint; text applied around a primary action is placed by the actor.");
+                        "checkpoint; text applied around a primary action is placed by the actor, " +
+                        "and text applied before a Movement runs at that action's own start.");
             }
         }
 
@@ -98,6 +117,7 @@ namespace GuardsDigital.Core.Cards
                 case CardTextTiming.DefenseAction:
                     return ActionKind.Defense;
                 case CardTextTiming.AroundTheAction:
+                case CardTextTiming.BeforeTheMovement:
                     return ActionKind.Movement;
                 default:
                     throw new ArgumentOutOfRangeException(

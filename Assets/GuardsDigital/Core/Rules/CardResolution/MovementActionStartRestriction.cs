@@ -95,6 +95,34 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ? Math.Min(movementAllowance, MaximumDistance.Value)
                 : movementAllowance;
         }
+
+        /// <summary>
+        /// The one restriction that obeys both of two - milestone 8.20, where a Movement action-start
+        /// answer comes from two places for the first time.
+        ///
+        /// <para><b>Why one value and not two consultations.</b> The composed evaluator seam has always
+        /// answered this question, and milestone 8.20's Slippery Ground and Deluge declare a cap
+        /// through the ordinary modification set instead - so a backend that asked each in turn would
+        /// have two answers to the same question and a reader would have to know which won. Combining
+        /// them here means the backend still holds exactly one.</para>
+        ///
+        /// <para>A prevention wins over any cap, because a hero who may not take the action at all is
+        /// not a hero who may take a short one; and two caps take the smaller, which is the same
+        /// reading <see cref="Modifications.RuleModificationSet.TryGetActivityLimit"/> takes among
+        /// declarations, stated once more here because these two arrive from different families.</para>
+        /// </summary>
+        public static MovementActionStartRestriction Tightest(
+            MovementActionStartRestriction first, MovementActionStartRestriction second)
+        {
+            if (first.PreventsAction || second.PreventsAction)
+            {
+                return Prevent();
+            }
+
+            if (!first.MaximumDistance.HasValue) return second;
+            if (!second.MaximumDistance.HasValue) return first;
+            return LimitTo(Math.Min(first.MaximumDistance.Value, second.MaximumDistance.Value));
+        }
     }
 
     public interface IMovementActionStartRestrictionEvaluator

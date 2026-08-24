@@ -119,8 +119,24 @@ namespace GuardsDigital.Core.Participants
         public IReadOnlyList<CardInstance> CardInstances { get; }
 
         /// <summary>
-        /// The configured match: two mirrored Wasps, each dealt rulebook p.5's starting five with the
-        /// remaining thirteen in their deck. This is what the scene composes and what a player plays.
+        /// The configured match: Wasp on Red and Arien the Tidemaster on Blue, each dealt rulebook
+        /// p.6's starting five with the remaining thirteen in their deck. This is what the scene
+        /// composes and what a player plays.
+        ///
+        /// <para><b>Milestone 8.20 is where this stopped being a mirror.</b> Two Wasps were what the
+        /// build had: one verified printed set, dealt twice, because there was only one. Arien's set
+        /// is the second, so the staged match now deals two different heroes - which is what a match of
+        /// this game is, and what makes every cross-hero rule reachable at all. Spell Break shutting
+        /// down Static Barrier is the first of them and could not have existed in a mirror, where both
+        /// seats hold the same Basic Skill on the same colour.</para>
+        ///
+        /// <para>The mirror did not disappear: <see cref="CreateVerifiedMirrorForInternalTest"/> and
+        /// its two progressed twins still deal it, and every fixture that measures one seat against its
+        /// own reflection asks for it by name. What changed is what the default is.</para>
+        ///
+        /// <para><b>It is still one hero per team.</b> The development deviation p.6's setup would
+        /// otherwise forbid is unchanged, and milestone 8.25 still owns the official six-player
+        /// configuration and all six of its spawn assignments.</para>
         ///
         /// <para>Milestone 8.4 is where this stopped being synthetic. Until now it dealt the
         /// mechanics-showcase cards, whose values and text were invented to exercise machinery; it now
@@ -129,9 +145,10 @@ namespace GuardsDigital.Core.Participants
         /// still fills the fixture configurations below, which say so in their names - but nothing
         /// synthetic stands in for hero content on the path a match takes any more.</para>
         ///
-        /// <para>Both seats deal the same eighteen definitions, because a mirror is one printed set
-        /// dealt twice. Only the instance ids differ, and they are prefixed by the seat's team side so
-        /// that a card id says which Wasp holds it.</para>
+        /// <para>The two seats now deal thirty-six definitions between them - two printed sets, one
+        /// each - where the mirror dealt eighteen twice. Instance ids are still prefixed by the seat's
+        /// team side, and each definition id already carries its own hero's content-set prefix, so a
+        /// card id says both which set it belongs to and which seat holds it.</para>
         /// </summary>
         public static PlaceholderOneVsOneTestConfiguration Create()
         {
@@ -144,7 +161,72 @@ namespace GuardsDigital.Core.Participants
                 TieBreakerSetupAuthority.CreateNormalSetupState(setupSeed),
                 setupSeed,
                 CreateVerifiedWaspHand(TeamSide.Red),
-                CreateVerifiedWaspHand(TeamSide.Blue));
+                CreateVerifiedArienHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.20. The staged Wasp-versus-Arien match with p.6's coin flip replaced by an
+        /// explicitly selected side, so a fixture can play it without a draw deciding who acts first.
+        /// `DEV-005`, exactly as <see cref="CreateVerifiedMirrorForInternalTest"/> is for the mirror.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedArienForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedArienHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.20. The staged match at rulebook p.15's Tier II stage: Wasp holds her Red seat's
+        /// three Tier II cards and Arien holds one Tier II card of each colour, on the branch the
+        /// caller names.
+        ///
+        /// <para>The branch is a parameter because a single seat can only hold three of a Tier's six
+        /// cards - p.15 offers a pair and the player takes one - so reaching Arien's whole printed set
+        /// takes two stagings where the mirror reached Wasp's in one. `DEV-004` terms throughout, for
+        /// the reason <see cref="Verified.ArienProgressedHands"/> records.</para>
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedArienTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.ArienUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedArienHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.20. The staged match at rulebook p.15's Tier III stage with p.16's Ultimate
+        /// unlocked on both seats: High Voltage faceup in Red's Ultimate area and Living Tsunami in
+        /// Arien's.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedArienTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.ArienUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedArienHand(tierThree: true, branch));
+
+            // Both hands deal their Ultimate to the deck, exactly as the initial-setup validator
+            // requires, and each is unlocked here through the one p.16 transition allowed to put a
+            // card in the Ultimate area.
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.ArienCardContent.LivingTsunami)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
         }
 
         /// <summary>
@@ -265,6 +347,23 @@ namespace GuardsDigital.Core.Participants
         private static Func<HeroId, ConfiguredHand> CreateVerifiedWaspHand(TeamSide side) =>
             ownerId => WaspCardContent.CreateHand(
                 ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        /// <summary>
+        /// Milestone 8.20. One seat's verified Arien hand, prefixed by the seat's team side for the
+        /// reason Wasp's is. The two prefixes cannot collide even on a board that dealt both sets to
+        /// one side, because each definition id already carries its own hero's content-set name.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedArienHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.ArienCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedArienHand(
+            bool tierThree, Cards.Verified.ArienUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.ArienProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.ArienProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
 
         /// <summary>
         /// The ordinary configuration plus milestone 8.5's card-text cards: two printed Attacks in the

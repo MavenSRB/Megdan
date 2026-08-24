@@ -133,6 +133,14 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write((int)effect.ControllerTeamSide);
                 writer.Write(effect.AffectedHeroId.IsDefined);
                 if (effect.AffectedHeroId.IsDefined) writer.Write(effect.AffectedHeroId.Value);
+                // Milestone 8.20, schema v28. The third runtime binding: which hero this occurrence's
+                // "this" turned out to name. It is payload rather than catalog for the same reason the
+                // two above it are - the definition says where to look and the occurrence says what it
+                // found - and it cannot be re-derived, because the Attack it was read out of has ended
+                // by the time anything asks. An effect restored without it would except nobody and
+                // silently be a stronger card than the one printed.
+                writer.Write(effect.BoundActorHeroId.IsDefined);
+                if (effect.BoundActorHeroId.IsDefined) writer.Write(effect.BoundActorHeroId.Value);
                 writer.Write(effect.SourceCardInstanceId.Value);
                 writer.Write(effect.SourceActionDefinitionId.Value);
                 writer.Write(effect.CreatedRoundIndex);
@@ -171,6 +179,7 @@ namespace GuardsDigital.Core.Snapshots
                 var controller = new HeroId(reader.ReadString());
                 var side = SnapshotEnumReader.Read<TeamSide>(reader, "Active-effect controlling side");
                 var affectedHero = reader.ReadBoolean() ? new HeroId(reader.ReadString()) : default;
+                var boundActor = reader.ReadBoolean() ? new HeroId(reader.ReadString()) : default;
 
                 // The one line acceptance check 5 turns on: semantics are looked up, never rebuilt.
                 if (!capabilities.TryGetActiveEffectDefinition(definitionId, out var definition))
@@ -191,7 +200,7 @@ namespace GuardsDigital.Core.Snapshots
                 var endedAt = SnapshotEnumReader.ReadNullable<TimingCheckpoint>(reader, "Active-effect ended-at checkpoint");
                 return new ActiveEffectInstance(id, definition, controller, side, affectedHero,
                     sourceCard, sourceAction, createdRound,
-                    createdTurn, sequence, phase, activatedRound, activatedTurn, endedAt);
+                    createdTurn, sequence, phase, activatedRound, activatedTurn, endedAt, boundActor);
             });
             var continuous = ReadMany(reader, "continuous rule sources", () =>
             {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
@@ -52,11 +53,38 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference PlaceV2 =>
             new EffectCapabilityReference(Place, 2);
 
+        /// <summary>
+        /// Milestone 8.20. The printed-Range twin of <see cref="Place"/>, for card text that measures
+        /// its destinations by p.9's icon rather than by a number the definition writes down - Arien's
+        /// Liquid Leap, Magical Current and Stranger Tide, "Place yourself into a space in range".
+        ///
+        /// <para>A second capability ID rather than a parameter on the one above, by exactly the rule
+        /// <see cref="SyntheticTargetingCapabilities.RangeTarget"/> records for the selections: p.9
+        /// gives the two readings two meanings and p.16 two consequences, and a definition that could
+        /// name either through one parameter would let a card whose reach is printed be widened by an
+        /// item it does not carry, or the reverse. The handler beneath is nevertheless shared, so
+        /// p.18's Place, its immunity question and its destination query are written once.</para>
+        ///
+        /// <para>It declares one thing the written-radius arm does not, and only because a verified
+        /// card prints it: which Spawn-point spaces the destination refuses.</para>
+        /// </summary>
+        public static EffectCapabilityId PlaceInRange { get; } =
+            new EffectCapabilityId("synthetic-place-in-range");
+
+        public static EffectCapabilityReference PlaceInRangeV1 =>
+            new EffectCapabilityReference(PlaceInRange, 1);
+
         /// <summary>The eligible-piece parameter's name, spelled once for the reason the Push's is.</summary>
         public const string EligiblePieceParameterName = "eligiblePiece";
 
         /// <summary>The destination-anchor parameter's name, spelled once for the same reason.</summary>
         public const string DestinationAnchorParameterName = "destinationAnchor";
+
+        /// <summary>
+        /// The Spawn-point exclusion parameter's name, carrying a
+        /// <see cref="PlaceSpawnPointExclusion"/>. Milestone 8.20.
+        /// </summary>
+        public const string SpawnPointExclusionParameterName = "spawnPointExclusion";
 
         public static EffectCapabilityReference SpawnV1 =>
             new EffectCapabilityReference(Spawn, 1);
@@ -65,7 +93,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new IEffectCapabilityHandler[]
             {
                 new ActorSpaceHandler(),
-                new PlaceHandler(),
+                new PlaceHandler(PlaceV2, PrintedValueChannel.None),
+                new PlaceHandler(PlaceInRangeV1, PrintedValueChannel.Range),
                 new SpawnHandler()
             };
 
@@ -146,19 +175,49 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private sealed class PlaceHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => PlaceV2;
+            /// <summary>
+            /// Where this declaration's reach comes from: <see cref="PrintedValueChannel.None"/> for a
+            /// number the definition writes down, and <see cref="PrintedValueChannel.Range"/> for
+            /// p.9's printed icon. Milestone 8.20, and the same constructor argument
+            /// <see cref="SyntheticTargetingCapabilities"/>' shared selection handler takes.
+            /// </summary>
+            private readonly PrintedValueChannel boundChannel;
 
-            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                new[]
+            public PlaceHandler(EffectCapabilityReference reference, PrintedValueChannel boundChannel)
+            {
+                Reference = reference;
+                this.boundChannel = boundChannel;
+
+                var parameters = new List<EffectCapabilityParameter>
                 {
-                    new EffectCapabilityParameter("subject", EffectValueKind.Coordinate),
-                    new EffectCapabilityParameter("radius", EffectValueKind.Integer),
-                    new EffectCapabilityParameter(
-                        EligiblePieceParameterName, EffectValueKind.Integer),
-                    new EffectCapabilityParameter(
-                        DestinationAnchorParameterName, EffectValueKind.Integer)
-                },
-                new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) });
+                    new EffectCapabilityParameter("subject", EffectValueKind.Coordinate)
+                };
+                if (boundChannel == PrintedValueChannel.None)
+                {
+                    parameters.Add(new EffectCapabilityParameter("radius", EffectValueKind.Integer));
+                }
+
+                parameters.Add(new EffectCapabilityParameter(
+                    EligiblePieceParameterName, EffectValueKind.Integer));
+                parameters.Add(new EffectCapabilityParameter(
+                    DestinationAnchorParameterName, EffectValueKind.Integer));
+                if (boundChannel != PrintedValueChannel.None)
+                {
+                    // Carried only by the printed arm, because only a verified card printing this
+                    // reading prints the clause: a parameter nothing sets is the ambiguity the
+                    // Range/Radius split exists to refuse.
+                    parameters.Add(new EffectCapabilityParameter(
+                        SpawnPointExclusionParameterName, EffectValueKind.Integer));
+                }
+
+                Schema = new EffectCapabilityParameterSchema(
+                    parameters,
+                    new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) });
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; }
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -172,7 +231,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var destinations = PlaceDestinationQuery.FindDestinations(
                     policy, context.Components.Tokens, origin, Array.Empty<HexCoordinate>(),
-                    context.Modifications);
+                    context.Modifications, context.Components.Units);
                 if (destinations.Count == 0)
                 {
                     return policy.NoDestinationPolicy == PlaceNoDestinationPolicy.Decline
@@ -207,7 +266,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     measuredFrom,
                     selected[0].Coordinate,
                     Array.Empty<HexCoordinate>(),
-                    context.Modifications);
+                    context.Modifications,
+                    context.Components.Units);
                 return outcome.Accepted
                     ? EffectExecutionResult.Applied(new[]
                     {
@@ -231,7 +291,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var destinations = PlaceDestinationQuery.FindDestinations(
                     policy, context.Components.Tokens, origin, Array.Empty<HexCoordinate>(),
-                    context.Modifications);
+                    context.Modifications, context.Components.Units);
                 if (destinations.Count > 0)
                 {
                     return EffectExecutionResultKind.NeedsChoice;
@@ -255,7 +315,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// named absence for a token, which p.19 says is not a unit - so a token is placed without
             /// an immunity question rather than by one that silently answers no.
             /// </summary>
-            private static bool TryDeclare(
+            private bool TryDeclare(
                 EffectCapabilityContext context,
                 out PlacePolicy policy,
                 out BoardObjectReference subject,
@@ -271,7 +331,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return false;
                 }
 
-                var radius = context.Input("radius").IntegerValue;
+                // Milestone 8.20. The written arm reads the number the definition states; the printed
+                // arm reads p.9's icon with p.16's items already composed onto it, through the same
+                // RangeValueQuery every printed-Range selection goes through. A card printing no Range
+                // icon has no such reach at all and p.16 does not invent one, which the zero total
+                // below turns into an impossible Place rather than an adjacent-by-default one.
+                var radius = boundChannel == PrintedValueChannel.None
+                    ? context.Input("radius").IntegerValue
+                    : PrintedReach(context);
                 var named = context.Input("subject");
                 if (radius < 1 || named.Kind != EffectValueKind.Coordinate ||
                     !components.Board.TryGetObjectAt(named.Coordinate, out subject))
@@ -326,6 +393,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     measuredFrom = named.Coordinate;
                 }
 
+                var exclusion = boundChannel == PrintedValueChannel.None
+                    ? PlaceSpawnPointExclusion.None
+                    : (PlaceSpawnPointExclusion)context
+                        .Input(SpawnPointExclusionParameterName).IntegerValue;
+                if (!Enum.IsDefined(typeof(PlaceSpawnPointExclusion), exclusion))
+                {
+                    return false;
+                }
+
                 policy = new PlacePolicy(
                     PlaceSourceContainer.Board,
                     eligiblePiece,
@@ -335,9 +411,33 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.FailurePolicy == EffectFailurePolicy.Mandatory
                         ? PlaceNoDestinationPolicy.Impossible
                         : PlaceNoDestinationPolicy.Decline,
-                    anchor);
+                    anchor,
+                    exclusion);
                 return true;
             }
+
+            /// <summary>
+            /// This card's printed reach for the declared channel, with p.16's items composed on -
+            /// exactly the total <see cref="SyntheticTargetingCapabilities"/>' printed-icon selections
+            /// derive, asked here so a card's Place and a card's selection cannot come to measure
+            /// different disks. Re-derived on every ask and never captured, for the reason those
+            /// selections re-derive theirs.
+            /// </summary>
+            private static int PrintedReach(EffectCapabilityContext context) =>
+                context.CardState.IsAvailable
+                    ? GuardsDigital.Core.Rules.CardResolution.RangeValueQuery.Calculate(
+                        context.SourceCardInstanceId,
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions,
+                        context.ActorId,
+                        context.HeroItems,
+                        context.Modifications,
+                        ActionValueApplicabilityQuery.For(
+                            context.SourceDefinitionReference,
+                            context.ActionDefinitionId,
+                            context.CardState.Definitions)).Total
+                    : 0;
 
             /// <summary>
             /// p.18's immunity for the named piece, asked once per activity the question has: the

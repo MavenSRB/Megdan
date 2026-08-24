@@ -23,72 +23,118 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class ConfiguredVerifiedHandTests
     {
+        /// <summary>
+        /// Milestone 8.20 made this two heroes rather than one dealt twice, so the case asks each seat
+        /// about its own printed set. p.6's rule is the same for both, which is the point: a starting
+        /// hand is three Tier I cards and two untiered basics whoever is holding it.
+        /// </summary>
         [Test]
         public void BothConfiguredHands_HoldThePrintedStartingFiveWithTheRemainingThirteenInTheDeck()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.Create();
 
-            foreach (var hand in new[] { configuration.RedHand, configuration.BlueHand })
+            var seats = new[]
+            {
+                new
+                {
+                    Hand = configuration.RedHand,
+                    Starting = (System.Collections.Generic.IReadOnlyList<CardDefinitionId>)
+                        WaspCardContent.StartingHand,
+                    Deck = (System.Collections.Generic.IReadOnlyList<CardDefinitionId>)
+                        WaspCardContent.Deck,
+                    Revision = WaspCardContent.ContentRevision
+                },
+                new
+                {
+                    Hand = configuration.BlueHand,
+                    Starting = (System.Collections.Generic.IReadOnlyList<CardDefinitionId>)
+                        ArienCardContent.StartingHand,
+                    Deck = (System.Collections.Generic.IReadOnlyList<CardDefinitionId>)
+                        ArienCardContent.Deck,
+                    Revision = ArienCardContent.ContentRevision
+                }
+            };
+
+            foreach (var seat in seats)
             {
                 Assert.That(
-                    hand.Instances.Select(card => card.DefinitionReference.DefinitionId).ToArray(),
-                    Is.EquivalentTo(WaspCardContent.StartingHand),
-                    "p.5 deals the three Tier I cards and the two untiered basics.");
+                    seat.Hand.Instances.Select(card => card.DefinitionReference.DefinitionId).ToArray(),
+                    Is.EquivalentTo(seat.Starting),
+                    "p.6 deals the three Tier I cards and the two untiered basics.");
                 Assert.That(
-                    hand.DeckInstances.Select(card => card.DefinitionReference.DefinitionId).ToArray(),
-                    Is.EquivalentTo(WaspCardContent.Deck),
+                    seat.Hand.DeckInstances
+                        .Select(card => card.DefinitionReference.DefinitionId).ToArray(),
+                    Is.EquivalentTo(seat.Deck),
                     "and returns the remaining Tier II, Tier III and Tier IV cards to the deck.");
-                Assert.That(hand.AllInstances.Count, Is.EqualTo(18));
+                Assert.That(seat.Hand.AllInstances.Count, Is.EqualTo(18));
                 Assert.That(
-                    hand.AllInstances.All(card =>
+                    seat.Hand.AllInstances.All(card =>
                         card.State.IsInitialInHand || card.State.IsInitialInDeck),
                     Is.True);
                 Assert.That(
-                    hand.Definitions.All(definition =>
+                    seat.Hand.Definitions.All(definition =>
                         definition.ContentAuthority == CardContentAuthority.VerifiedOfficial &&
-                        definition.ContentRevision == WaspCardContent.ContentRevision),
+                        definition.ContentRevision == seat.Revision),
                     Is.True,
                     "Nothing synthetic stands in for hero content on the path a match takes.");
             }
         }
 
         [Test]
-        public void TheHandicapCard_IsNotInstantiatedAnywhereInTheConfiguredMatch()
+        public void NeitherHandicapCard_IsInstantiatedAnywhereInTheConfiguredMatch()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var boxed = WaspCardContent.ReturnedToBoxAtSetup
+                .Concat(ArienCardContent.ReturnedToBoxAtSetup)
+                .ToArray();
 
-            Assert.That(WaspCardContent.ReturnedToBoxAtSetup, Is.Not.Empty,
-                "or this holds over nothing.");
-            foreach (var boxed in WaspCardContent.ReturnedToBoxAtSetup)
+            Assert.That(boxed, Has.Length.EqualTo(2),
+                "Both dealt heroes print a p.20 Handicap card, or this holds over less than it says.");
+            foreach (var id in boxed)
             {
                 Assert.That(
                     configuration.CardInstances.Any(card =>
-                        card.DefinitionReference.DefinitionId.Equals(boxed)),
+                        card.DefinitionReference.DefinitionId.Equals(id)),
                     Is.False,
-                    "p.5 returns the Handicap card to the box, so no seat may hold an instance of it.");
+                    "p.6 returns the Handicap card to the box, so no seat may hold an instance of it.");
                 Assert.That(
-                    configuration.CardDefinitions.Any(definition => definition.Id.Equals(boxed)),
+                    configuration.CardDefinitions.Any(definition => definition.Id.Equals(id)),
                     Is.False,
                     "and a definition nothing can be dealt is not content this match resolves against.");
             }
         }
 
+        /// <summary>
+        /// Milestone 8.20. The staged match holds two printed sets where the mirror held one dealt
+        /// twice, and the same thirty-six instances either way - which is what keeps the player-build
+        /// smoke gate's pinned `cards=36` marker true across the change.
+        /// </summary>
         [Test]
-        public void TheMirroredSeats_ShareOnePrintedSetAndHoldThirtySixDistinctInstances()
+        public void TheTwoSeats_HoldTwoPrintedSetsAndThirtySixDistinctInstances()
         {
             var configuration = PlaceholderOneVsOneTestConfiguration.Create();
 
-            Assert.That(configuration.CardDefinitions.Count, Is.EqualTo(18),
-                "A mirror is one printed set dealt twice, not two sets.");
+            Assert.That(configuration.CardDefinitions.Count, Is.EqualTo(36),
+                "Two heroes are two printed sets of eighteen, not one dealt twice.");
             Assert.That(configuration.CardInstances.Count, Is.EqualTo(36),
-                "which is the player-build smoke gate's pinned cards=36 marker.");
+                "which is the player-build smoke gate's pinned cards=36 marker, unmoved: each seat " +
+                "still holds eighteen cards.");
             Assert.That(
                 configuration.CardInstances.Select(card => card.Id).Distinct().Count(),
                 Is.EqualTo(36),
-                "Instance identity is per seat even when the definition is shared.");
+                "Instance identity is per seat.");
             Assert.That(
                 configuration.CardInstances.Select(card => card.OwnerId).Distinct().Count(),
                 Is.EqualTo(2));
+            Assert.That(
+                configuration.CardDefinitions
+                    .Select(definition => definition.ContentRevision).Distinct()
+                    .OrderBy(value => value, StringComparer.Ordinal),
+                Is.EqualTo(new[]
+                {
+                    ArienCardContent.ContentRevision, WaspCardContent.ContentRevision
+                }),
+                "and each set moves as its own hero's revision.");
         }
 
         /// <summary>

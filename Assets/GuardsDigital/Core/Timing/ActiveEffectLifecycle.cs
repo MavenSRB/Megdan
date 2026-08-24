@@ -85,7 +85,8 @@ namespace GuardsDigital.Core.Timing
             CardInstanceId sourceCardId,
             ActionDefinitionId sourceActionId,
             int roundIndex,
-            int turnIndex)
+            int turnIndex,
+            HeroId boundActorHeroId = default)
         {
             if (effects.Any(effect => effect.Id.Equals(id)))
                 throw new ArgumentException("Active-effect instance IDs must be unique.", nameof(id));
@@ -100,7 +101,8 @@ namespace GuardsDigital.Core.Timing
                     turnIndex);
 
             var effect = new ActiveEffectInstance(id, definition, controllerHeroId, controllerTeamSide,
-                affectedHeroId, sourceCardId, sourceActionId, roundIndex, turnIndex, nextCreationSequence++);
+                affectedHeroId, sourceCardId, sourceActionId, roundIndex, turnIndex, nextCreationSequence++,
+                boundActorHeroId: boundActorHeroId);
             effects.Add(effect);
             if (definition.ActivationCheckpoint == definition.CreationCheckpoint &&
                 definition.DurationKind != ActiveEffectDurationKind.NextTurn &&
@@ -204,7 +206,8 @@ namespace GuardsDigital.Core.Timing
                 effect.Phase,
                 effect.ActivatedRoundIndex,
                 effect.ActivatedTurnIndex,
-                effect.EndedAt));
+                effect.EndedAt,
+                effect.BoundActorHeroId));
             return Restore(new ActiveEffectLifecycleRestoreState(
                 clonedEffects,
                 continuousSources.Select(source => new ContinuousRuleSource(
@@ -265,6 +268,7 @@ namespace GuardsDigital.Core.Timing
                 // other. Falling through to the global arm below would have let the first Wasp to
                 // resolve a Magnetic Dagger suppress the opposing Wasp's.
                 case ActiveEffectAffectedScopeKind.UnitsInRadius:
+                case ActiveEffectAffectedScopeKind.HeroesInRadius:
                 case ActiveEffectAffectedScopeKind.ControllerHero:
                     return existing.ControllerHeroId.Equals(candidateControllerHeroId);
                 case ActiveEffectAffectedScopeKind.Hero:

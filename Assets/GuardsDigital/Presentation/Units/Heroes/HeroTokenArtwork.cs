@@ -9,7 +9,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
     /// present.
     ///
     /// <para>The artwork is private. It is prepared out of the local Tabletopia corpus by
-    /// <c>Tools/Prepare-WaspHeroTokens.ps1</c> into ignored resources, so a clean checkout has no token
+    /// <c>Tools/Prepare-HeroTokens.ps1</c> into ignored resources, so a clean checkout has no token
     /// at all and <see cref="TryLoadTexture"/> simply answers false - which is what keeps the generated
     /// primitive prism as the tracked project's ordinary presentation.</para>
     ///

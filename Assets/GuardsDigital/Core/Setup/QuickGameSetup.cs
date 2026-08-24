@@ -176,7 +176,36 @@ namespace GuardsDigital.Core.Setup
         public IReadOnlyList<QuickGameHeroPlacementDefinition> Heroes => heroes;
         public IReadOnlyList<QuickGameMinionPlacementDefinition> Minions => minions;
 
-        public static QuickGameSetupConfiguration CreateMirroredWaspOneVsOne()
+        /// <summary>
+        /// The staged one-hero-per-team board with both seats dealing Wasp's printed set.
+        ///
+        /// It stays exactly what it was: every fixture that measures the mirror measures this, and
+        /// milestone 8.20's Arien integration is a second configuration beside it rather than a change
+        /// to it.
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateMirroredWaspOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("wasp"), "Wasp");
+
+        /// <summary>
+        /// Milestone 8.20. The same board with Arien on the Blue seat - the staged one-hero-per-team
+        /// match the scene composes and a player plays.
+        ///
+        /// <para>Only the Blue hero's content identity and display name differ, because only those two
+        /// are about which hero is standing there: the map, the spawn points, both hero placements and
+        /// all twelve minions are the same board either way, and duplicating them would be two boards
+        /// that could drift apart. The content identity is what
+        /// <c>Presentation.Units.Heroes.HeroTokenArtwork</c> addresses the prepared token by, so
+        /// binding it here is what puts Arien's face on the piece.</para>
+        ///
+        /// <para>This is not the six-player setup and does not pretend to be one. The
+        /// one-hero-per-team development deviation stands, both official teams still field one hero,
+        /// and milestone 8.25 owns the official configuration and all six spawn assignments.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusArienOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("arien"), "Arien");
+
+        private static QuickGameSetupConfiguration CreateOneVsOne(
+            HeroContentId blueContentId, string blueDisplayName)
         {
             var mapId = new MapId("official-single-lane");
             ConfiguredSpawnPointReference Spawn(string value) =>
@@ -201,8 +230,8 @@ namespace GuardsDigital.Core.Setup
                         Space("q-2_r-5")),
                     new QuickGameHeroPlacementDefinition(
                         new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
-                        new HeroContentId("wasp"),
-                        "Wasp",
+                        blueContentId,
+                        blueDisplayName,
                         Spawn("blue-hero-01"),
                         Space("q-3_r10"))
                 },

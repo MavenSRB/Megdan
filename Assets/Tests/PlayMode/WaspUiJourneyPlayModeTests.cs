@@ -52,9 +52,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(UiPlayer.HasButton(hud, "CONFIRM FACEDOWN"), Is.False,
                 "Before any card is picked up there is nothing to confirm.");
 
-            UiPlayer.EnsureVisible(TrayCard(hud, "SHOCK"));
+            UiPlayer.EnsureVisible(TrayCard(hud, InitiativeEightCardOf(runtime, firstHeroId)));
             yield return null;
-            UiPlayer.Click(TrayCard(hud, "SHOCK"));
+            UiPlayer.Click(TrayCard(hud, InitiativeEightCardOf(runtime, firstHeroId)));
             yield return null;
             Assert.That(UiPlayer.HasButton(hud, "CONFIRM FACEDOWN"), Is.True,
                 "Picking a card up is what makes the confirm control exist. Shown controls: " +
@@ -72,33 +72,39 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.ViewedHeroId, Is.EqualTo(secondHeroId),
                 "The tray follows the hero the match is now waiting on.");
 
-            UiPlayer.EnsureVisible(TrayCard(hud, "SHOCK"));
+            UiPlayer.EnsureVisible(TrayCard(hud, InitiativeEightCardOf(runtime, secondHeroId)));
             yield return null;
-            UiPlayer.Click(TrayCard(hud, "SHOCK"));
+            UiPlayer.Click(TrayCard(hud, InitiativeEightCardOf(runtime, secondHeroId)));
             yield return null;
             UiPlayer.Click(UiPlayer.Button(hud, "CONFIRM FACEDOWN"));
             yield return null;
 
-            // Both seats committed the same printed card, so p.7's joint reveal arrives tied across
-            // the teams. The Tie Breaker side wins the tie, and with exactly one candidate of its own
-            // there is no choice to pause on: the actor is selected at once and the flip is deferred
-            // to the turn's resolution. A pending choice here would be a question with one answer.
+            // Both seats committed a card printing Initiative 8, so p.7's joint reveal arrives tied
+            // across the teams. The Tie Breaker side wins the tie, and with exactly one candidate of
+            // its own there is no choice to pause on: the actor is selected at once and the flip is
+            // deferred to the turn's resolution. A pending choice here would be a question with one
+            // answer.
+            //
+            // Milestone 8.20 made the two cards different faces rather than the same one. The staged
+            // match is Wasp against Arien now, so a tie can no longer be produced by dealing one
+            // printed set twice - it is produced by two heroes who each print an 8, which is the
+            // ordinary way ties arise at a real table and a stronger subject than the mirror was.
             Assert.That(runtime.PendingInitiativeChoice, Is.Null,
-                "A cross-team tie with one candidate per side pauses nothing in the 1v1 mirror.");
+                "A cross-team tie with one candidate per side pauses nothing in the 1v1 staging.");
             Assert.That(runtime.IsTurnActive, Is.True);
             var tieSide = runtime.TieBreakerState.RevealedSide;
             var tieSideHeroId = runtime.Setup.Heroes
                 .Single(hero => hero.TeamSide == tieSide).HeroId;
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(tieSideHeroId),
-                "The Tie Breaker side's own Shock acts first.");
+                "The Tie Breaker side's own card acts first.");
             Assert.That(runtime.Setup.Heroes, Has.All.Matches<QuickGameHeroSetupState>(value =>
                 runtime.GetCommitmentStatus(value.HeroId) == TurnCardCommitmentStatus.Revealed));
 
-            // Nothing stands beside either spawn, so the revealed Shock offers no Attack: the primary
+            // Nothing stands beside either spawn, so the revealed card offers no Attack: the primary
             // is drawn as a real greyed control a player can read and cannot press.
             var unavailable = runtime.RoundView.Model.UnavailableActions;
             Assert.That(unavailable, Is.Not.Empty,
-                "Shock's printed Attack has nothing adjacent to target from the spawn.");
+                "The revealed printed Attack has nothing adjacent to target from the spawn.");
             foreach (var action in unavailable)
             {
                 var control = UiPlayer.Button(hud, action.Label);
@@ -138,11 +144,17 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var hud = root.Hud;
 
-            // The first-viewed hand plays Magnetic Dagger at Initiative 12 against the other hand's
-            // Stop Projectiles at 3, so the clicked hand acts first whichever seat it is.
+            // The first-viewed hand plays its highest-Initiative card that prints a secondary Movement,
+            // and the other hand plays its lowest-Initiative card, so the clicked hand acts first
+            // whichever seat it is and whichever hero is holding it. Milestone 8.20 made that a
+            // question worth asking of the hand rather than answering with a card name: the two seats
+            // deal different printed sets now, and the Tie Breaker's own coin flip decides which of
+            // them the tray opens on.
             var actingHeroId = runtime.ViewedHeroId;
-            yield return CommitThroughTray(root, "MAGNETIC DAGGER");
-            yield return CommitThroughTray(root, "STOP PROJECTILES");
+            var otherHeroId = runtime.Setup.Heroes
+                .Single(hero => !hero.HeroId.Equals(actingHeroId)).HeroId;
+            yield return CommitThroughTray(root, MovingCardOf(runtime, actingHeroId));
+            yield return CommitThroughTray(root, LowestInitiativeCardOf(runtime, otherHeroId));
             Assert.That(runtime.IsTurnActive, Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(actingHeroId));
 
@@ -196,7 +208,7 @@ namespace GuardsDigital.Tests.PlayMode
             var hud = root.Hud;
 
             var committedHeroId = runtime.ViewedHeroId;
-            yield return CommitThroughTray(root, "LIFT UP");
+            yield return CommitThroughTray(root, LowestInitiativeCardOf(runtime, committedHeroId));
             Assert.That(runtime.GetCommitmentStatus(committedHeroId),
                 Is.EqualTo(TurnCardCommitmentStatus.CardCommittedFacedown));
 
@@ -259,6 +271,76 @@ namespace GuardsDigital.Tests.PlayMode
             return runtime.Definitions.Single(value =>
                     value.Reference.Equals(offer.SourceDefinitionReference))
                 .ActionDefinitions.Single(value => value.Id.Equals(actionId)).Kind;
+        }
+
+        /// <summary>
+        /// The Initiative 8 card in this hero's starting hand, by the name a player reads on its face.
+        ///
+        /// <para>Milestone 8.20. The staged match deals two different heroes, so a journey about a
+        /// cross-team Initiative tie can no longer name one card for both seats. It is read off the
+        /// hero's own dealt hand rather than hard-coded per hero, so the journey states what it needs -
+        /// two cards printing the same Initiative - rather than which two cards happen to do it.</para>
+        /// </summary>
+        /// <summary>
+        /// The cards this hero is holding, as their printed definitions. Milestone 8.20: every card
+        /// these journeys reach for is now chosen off the hand rather than named, because the two seats
+        /// deal different printed sets and the coin flip decides which one the tray opens on.
+        /// </summary>
+        private static CardDefinition[] HandOf(
+            ConfiguredMatchSceneRuntime runtime, GuardsDigital.Core.Units.Heroes.HeroId heroId) =>
+            runtime.Cards
+                .Where(card => card.OwnerId.Equals(heroId) &&
+                    card.State.Location == CardLocation.Hand)
+                .Select(card => runtime.Definitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference)))
+                .ToArray();
+
+        /// <summary>
+        /// The name a player reads on this hero's highest-Initiative card that also prints a secondary
+        /// Movement - which is what a journey about moving by that secondary needs, and what naming a
+        /// card could not stay true to across two printed sets.
+        /// </summary>
+        private static string MovingCardOf(
+            ConfiguredMatchSceneRuntime runtime, GuardsDigital.Core.Units.Heroes.HeroId heroId)
+        {
+            var candidates = HandOf(runtime, heroId)
+                .Where(definition => definition.ActionDefinitions.Any(action =>
+                    action.Kind == GuardsDigital.Core.Cards.ActionKind.Movement &&
+                    action.Origin == ActionDefinitionOrigin.PrintedSecondary))
+                .OrderByDescending(definition => definition.Initiative.Value)
+                .ToArray();
+
+            Assert.That(candidates, Is.Not.Empty,
+                heroId.Value + " holds no card printing a secondary Movement, so this journey has " +
+                "nothing to move by.");
+            return candidates[0].DisplayName.ToUpperInvariant();
+        }
+
+        /// <summary>The name on this hero's lowest-Initiative card.</summary>
+        private static string LowestInitiativeCardOf(
+            ConfiguredMatchSceneRuntime runtime, GuardsDigital.Core.Units.Heroes.HeroId heroId) =>
+            HandOf(runtime, heroId)
+                .OrderBy(definition => definition.Initiative.Value)
+                .First()
+                .DisplayName
+                .ToUpperInvariant();
+
+        private static string InitiativeEightCardOf(
+            ConfiguredMatchSceneRuntime runtime, GuardsDigital.Core.Units.Heroes.HeroId heroId)
+        {
+            var candidates = runtime.Cards
+                .Where(card => card.OwnerId.Equals(heroId) &&
+                    card.State.Location == CardLocation.Hand)
+                .Select(card => runtime.Definitions.Single(definition =>
+                    definition.Reference.Equals(card.DefinitionReference)))
+                .Where(definition => definition.Initiative.IsDefined &&
+                    definition.Initiative.Value == 8)
+                .ToArray();
+
+            Assert.That(candidates, Has.Length.EqualTo(1),
+                "This journey needs exactly one Initiative 8 card in " + heroId.Value +
+                "'s starting hand to produce a cross-team tie; it has " + candidates.Length + ".");
+            return candidates[0].DisplayName.ToUpperInvariant();
         }
 
         /// <summary>

@@ -79,10 +79,37 @@ namespace GuardsDigital.Core.Effects
                     context.SourceCardInstanceId,
                     context.ActionDefinitionId,
                     Math.Max(context.RoundIndex, 1),
-                    Math.Max(context.TurnIndex, 1));
+                    Math.Max(context.TurnIndex, 1),
+                    BoundActor(context));
             }
 
             return EffectExecutionResult.Applied(affected);
+        }
+
+        /// <summary>
+        /// The hero this occurrence's declarations point at with "this", read from the moment the
+        /// definition names. Milestone 8.20.
+        ///
+        /// <para>Nothing is parsed and nothing is chosen: the definition states which already-recorded
+        /// fact is the referent, and this reads that fact. An undefined answer is legal and means the
+        /// occurrence bound nobody - which is what
+        /// <see cref="Rules.Modifications.RestrictedActorScope.ExceptsTheBoundActor"/> reads as
+        /// excepting nobody, so the card's named classes stand exactly as printed.</para>
+        /// </summary>
+        private GuardsDigital.Core.Units.Heroes.HeroId BoundActor(EffectCapabilityContext context)
+        {
+            switch (definition.BoundActorSource)
+            {
+                case ActiveEffectBoundActorSource.None:
+                    return default;
+                case ActiveEffectBoundActorSource.EnclosingAttacker:
+                    return context.EnclosingAttack.ActorId;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(context),
+                        definition.BoundActorSource,
+                        "Unknown Active-effect bound-actor source.");
+            }
         }
 
         public EffectExecutionResult Resume(

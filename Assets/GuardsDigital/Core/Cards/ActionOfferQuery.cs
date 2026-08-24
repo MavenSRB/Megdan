@@ -160,6 +160,58 @@ namespace GuardsDigital.Core.Cards
         }
 
         /// <summary>
+        /// The printed colour of the card this offer would be performed from, or
+        /// <see cref="CardColor.None"/> where the composition holds no definition the offer names.
+        ///
+        /// <para>Milestone 8.20. Arien's Spell Break is the first verified text whose prohibition
+        /// carves out a colour - "cannot perform Skill actions, except on the gold cards" - so an offer
+        /// query that asks whether a rule bars an action now has a second thing to say about it. The
+        /// answer is read off the card's own <see cref="CardProgressionProfile"/>, which
+        /// <see cref="CardDefinition"/> refuses to be constructed without, and never off an icon, a
+        /// tint, a hero or a hand position.</para>
+        ///
+        /// <para>An unresolvable offer answers <see cref="CardColor.None"/> rather than faulting, for
+        /// the reason <see cref="TryFindActionDefinition"/> exists: this is asked while an offer is
+        /// still being judged, and a forged offer must reach the typed rejection rather than fault
+        /// inside a probe on the way there. <see cref="CardColor.None"/> excepts nothing, so an
+        /// unreadable offer is judged by the restriction rather than let through by it.</para>
+        /// </summary>
+        public static CardColor SourceCardColor(
+            ActionOffer offer, IEnumerable<CardDefinition> definitions) =>
+            BuildDefinitionLookup(definitions)
+                .TryGetValue(offer.SourceDefinitionReference, out var definition)
+                ? definition.Progression.Color
+                : CardColor.None;
+
+        /// <summary>
+        /// The same answer for the general-rule offers, which name the card they replace or hold by
+        /// instance rather than by an offer that has already been built. Milestone 8.20.
+        /// </summary>
+        public static CardColor SourceCardColor(
+            CardInstanceId sourceCardInstanceId,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances)
+        {
+            if (instances == null)
+            {
+                throw new ArgumentNullException(nameof(instances));
+            }
+
+            var definitionsByReference = BuildDefinitionLookup(definitions);
+            if (!sourceCardInstanceId.IsDefined)
+            {
+                return CardColor.None;
+            }
+
+            var card = instances.FirstOrDefault(
+                instance => instance != null && instance.Id.Equals(sourceCardInstanceId));
+            return card != null &&
+                definitionsByReference.TryGetValue(card.DefinitionReference, out var definition)
+                ? definition.Progression.Color
+                : CardColor.None;
+        }
+
+        /// <summary>
         /// Resolves the action definition an offer was built from. This lives beside the lookup it
         /// depends on because the resolution backends all need the same answer, and three private
         /// copies of it could drift apart without anything noticing.
@@ -276,11 +328,24 @@ namespace GuardsDigital.Core.Cards
         private static bool IsAvailableInWindow(ActionDefinition action, ActionOfferWindow window)
         {
             var origin = action.Origin;
-            var isPrintedBlock = action.DefenseResolution == PrintedDefenseResolution.Block;
+
+            // Milestone 8.11 admitted p.14's Block - a Defense printed as its card's primary action -
+            // into the reaction it is the only legal moment for, and told it apart by its Block
+            // resolution. Milestone 8.20 tells it apart by its kind instead, because Arien's three Blue
+            // Duelist cards print a Defense <em>with a number</em> in the same primary slot: p.14 gives
+            // one rule for every Defense action - "It can only be performed in response to an attack
+            // targeting you" - and says nothing about whether it resolves by comparison or by
+            // condition. Keying the window on the resolution would have offered a valued one as a turn
+            // action and kept it out of the response it exists for.
+            //
+            // Every Block is a printed-primary Defense, so this is a strict generalisation and Wasp's
+            // three Green cards are placed exactly where 8.11 placed them.
+            var isPrintedPrimaryDefense = action.Kind == ActionKind.Defense &&
+                origin == ActionDefinitionOrigin.PrintedPrimary;
             switch (window)
             {
                 case ActionOfferWindow.NormalPlay:
-                    return !isPrintedBlock &&
+                    return !isPrintedPrimaryDefense &&
                         (origin == ActionDefinitionOrigin.PrintedPrimary ||
                         origin == ActionDefinitionOrigin.PrintedSecondary);
                 case ActionOfferWindow.GeneralRule:
@@ -288,7 +353,7 @@ namespace GuardsDigital.Core.Cards
                 case ActionOfferWindow.Replacement:
                     return origin == ActionDefinitionOrigin.Replacement;
                 case ActionOfferWindow.Reaction:
-                    return origin == ActionDefinitionOrigin.Reaction || isPrintedBlock;
+                    return origin == ActionDefinitionOrigin.Reaction || isPrintedPrimaryDefense;
                 case ActionOfferWindow.TextGranted:
                     return origin == ActionDefinitionOrigin.TextGranted;
                 default:

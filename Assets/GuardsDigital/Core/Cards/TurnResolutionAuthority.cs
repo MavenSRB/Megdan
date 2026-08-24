@@ -969,6 +969,30 @@ namespace GuardsDigital.Core.Cards
             List<TurnResolutionEvent> precedingEvents)
         {
             var events = precedingEvents ?? new List<TurnResolutionEvent>();
+
+            // Milestone 8.20. p.11's default for a Movement card's primary: "Unless it says otherwise,
+            // the card text comes into effect before movement." There is no question to ask - the page
+            // answered it - so the text simply runs, and the Movement starts underneath it exactly as
+            // it does when the actor places 8.19a's text on the same side.
+            if (DeclaresTextBeforeTheMovement(offer))
+            {
+                var before = cardActions.StartBeforeMovementText(
+                    resolutionId, offer, definitions, instances, participants, timing,
+                    CurrentModifications(), roundIndex, turnIndex);
+                if (!before.Accepted)
+                {
+                    return TurnResolutionResult.Reject(
+                        TurnResolutionRejectionReason.MovementActionRejected);
+                }
+
+                events.AddRange(MaterializeSteps(before.Steps, TurnResolutionEvent.FromCardAction));
+                if (cardActions.PendingPreActionResolution?.Frame != null)
+                {
+                    // The text stands on a question of its own. The Movement starts when it finishes.
+                    return TurnResolutionResult.Accept(events);
+                }
+            }
+
             if (DeclaresTextAroundTheAction(offer))
             {
                 var ordering = cardActions.StartAroundActionText(
@@ -1057,6 +1081,11 @@ namespace GuardsDigital.Core.Cards
         private bool DeclaresTextAroundTheAction(ActionOffer offer) =>
             ActionOfferQuery.TryFindActionDefinition(offer, definitions, out var action) &&
             action.CardTextTiming == CardTextTiming.AroundTheAction &&
+            action.EffectRoot != null;
+
+        private bool DeclaresTextBeforeTheMovement(ActionOffer offer) =>
+            ActionOfferQuery.TryFindActionDefinition(offer, definitions, out var action) &&
+            action.CardTextTiming == CardTextTiming.BeforeTheMovement &&
             action.EffectRoot != null;
 
         public TurnResolutionResult TryAnswerMovementChoice(MovementChoiceCommand command)
@@ -1416,7 +1445,14 @@ namespace GuardsDigital.Core.Cards
         private bool ActorMayPerform(ActionOffer offer) =>
             !ActionOfferQuery.TryFindActionDefinition(offer, definitions, out var action) ||
             !GuardsDigital.Core.Rules.Modifications.ActionRestrictionQuery.IsRestrictedFrom(
-                offer.ActorId, action.Kind, CurrentModifications());
+                offer.ActorId,
+                action.Kind,
+                CurrentModifications(),
+                // Milestone 8.20. The card this offer would be performed from, which Arien's Spell
+                // Break needs and every earlier declaration ignores: "cannot perform Skill actions,
+                // except on the gold cards" bars one of a hero's two basic Skills and leaves the
+                // other standing, so the offer is judged per card rather than per kind.
+                ActionOfferQuery.SourceCardColor(offer, definitions));
 
         /// <summary>
         /// Milestone 8.4: whether this offer's action can perform the whole of what its card prints.

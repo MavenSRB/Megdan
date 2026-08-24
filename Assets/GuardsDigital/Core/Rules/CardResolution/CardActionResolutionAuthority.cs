@@ -2031,6 +2031,65 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 8.20. Applies a Movement card's printed text at rulebook p.11's default moment -
+        /// "Unless it says otherwise, the card text comes into effect before movement" - holding the
+        /// Movement while the text runs.
+        ///
+        /// <para>It enters the definition at its own root rather than at an ordering node, because
+        /// there is nothing to order: the page decided the side, so the content declares no placement
+        /// question and carries none. What it shares with milestone 8.19a's placed work is everything
+        /// else - the held offer and resolution id, the pause the text may open, and the continuation
+        /// that starts the Movement once it finishes - which is why it enters through the same seam
+        /// rather than through a second one that could drift from it.</para>
+        ///
+        /// <para>The placement is stated as <see cref="PreActionPlacement.BeforeTheAction"/> and never
+        /// asked, so nothing owes work afterwards: a finished text leaves no continuation standing and
+        /// the Movement starts.</para>
+        /// </summary>
+        public CardActionResolutionResult StartBeforeMovementText(
+            ActionResolutionId heldResolutionId,
+            ActionOffer heldOffer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            if (pendingPreAction != null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.ResolutionAlreadyPending, null, null);
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var action = ActionOfferQuery.FindActionDefinition(heldOffer, materializedDefinitions);
+            if (action.CardTextTiming != CardTextTiming.BeforeTheMovement || action.EffectRoot == null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.UnsupportedInvocationContext, null, null);
+            }
+
+            return StartAroundActionEntry(
+                action.EffectRoot.RootNodeId,
+                isWorkEntry: true,
+                PreActionPlacement.BeforeTheAction,
+                heldResolutionId,
+                heldOffer,
+                action,
+                materializedDefinitions,
+                instances,
+                participants,
+                timing,
+                modifications,
+                roundIndex,
+                turnIndex,
+                heldActionHasStarted: false);
+        }
+
+        /// <summary>
         /// Milestone 8.19a. Enters the work the actor placed after the primary action, once that action
         /// has finished. The continuation carried the side and the identity; the work itself is read
         /// from the trusted definition the held offer names, never from anything the payload said.

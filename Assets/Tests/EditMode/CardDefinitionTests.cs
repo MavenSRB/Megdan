@@ -314,7 +314,10 @@ namespace GuardsDigital.Tests.EditMode
             // A Hold, a Fast Travel and a Clear are algorithms rather than effect content, and stay so.
             // Milestone 8.19a admitted the fourth kind, and only in the one shape that is text rather
             // than an algorithm: a Movement carrying a root without naming the moment it is applied
-            // around is still refused, exactly as an Attack carrying one without a moment is.
+            // at is still refused, exactly as an Attack carrying one without a moment is. Milestone
+            // 8.20 adds p.11's own default moment beside 8.19a's placed one - "Unless it says
+            // otherwise, the card text comes into effect before movement" - and a root naming neither
+            // is refused exactly as it was.
             Assert.That(
                 Assert.Throws<ArgumentException>(() => new ActionDefinition(
                     new ActionDefinitionId("movement-with-text"),
@@ -325,7 +328,7 @@ namespace GuardsDigital.Tests.EditMode
                     AttackRangeKind.None,
                     default,
                     SingleNodeText())).Message,
-                Does.Contain("Movement action applying text around itself"));
+                Does.Contain("Movement action applying text before or around itself"));
         }
 
         /// <summary>

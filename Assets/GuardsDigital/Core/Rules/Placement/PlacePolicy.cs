@@ -104,6 +104,44 @@ namespace GuardsDigital.Core.Rules.Placement
     }
 
     /// <summary>
+    /// Which Spawn-point spaces a Place refuses as destinations, as definition content.
+    ///
+    /// <para>Milestone 8.20. Arien's three Green Place cards print the two readings verified content
+    /// contains and nothing wider: Stranger Tide bars "a space ... without a spawn point", and Liquid
+    /// Leap and Magical Current bar the same spaces and also any "adjacent to an empty spawn point".
+    /// The two are one enum rather than two flags because a card prints one of them, and a
+    /// combination nothing prints would be a reading a reader would have to invent.</para>
+    ///
+    /// <para><b>What "empty" means.</b> The same thing p.18 means by it everywhere else - a playable
+    /// space holding no occupant of any kind - which is <see cref="Components.ITokenPlacementAuthority
+    /// .IsEmptyPlayableSpace"/>'s answer. A Spawn point with a minion standing on it is not empty, and
+    /// that is exactly the case the rulebook's own p.12 worked example illustrates: the longer clause
+    /// keeps a hero from stepping next to a Spawn point that is about to produce something.</para>
+    ///
+    /// <para><b>Milestone 8.19's matrix calls this `place-destination@2`.</b> It is a refinement of the
+    /// declared destination question rather than a new operation: nothing about how a Place commits
+    /// changes, and p.18's "does not count as movement" still holds.</para>
+    /// </summary>
+    public enum PlaceSpawnPointExclusion
+    {
+        /// <summary>
+        /// The Place refuses no space for having a Spawn point, which is what every Place declared
+        /// before milestone 8.20 means.
+        /// </summary>
+        None = 0,
+
+        /// <summary>`without a spawn point` - Arien's Stranger Tide.</summary>
+        SpacesWithASpawnPoint = 1,
+
+        /// <summary>
+        /// `without a spawn point and not adjacent to an empty spawn point` - Arien's Liquid Leap and
+        /// Magical Current. It is a strict narrowing of <see cref="SpacesWithASpawnPoint"/>, which is
+        /// what makes Stranger Tide the upgrade: the same reach, one clause fewer.
+        /// </summary>
+        SpacesWithASpawnPointOrAdjacentToAnEmptyOne = 2
+    }
+
+    /// <summary>
     /// Who decides among the legal destinations. Placement never picks for a player, so a Place states
     /// the chooser the way every other authoritative choice does. The two members are the two the
     /// rulebook actually names: the hero performing the action, and - for the correction - "the
@@ -152,7 +190,8 @@ namespace GuardsDigital.Core.Rules.Placement
             int destinationRadius,
             PlaceChooserKind chooser,
             PlaceNoDestinationPolicy noDestinationPolicy,
-            PlaceDestinationAnchor destinationAnchor)
+            PlaceDestinationAnchor destinationAnchor,
+            PlaceSpawnPointExclusion spawnPointExclusion = PlaceSpawnPointExclusion.None)
         {
             if (destinationAnchor == PlaceDestinationAnchor.None)
             {
@@ -201,6 +240,26 @@ namespace GuardsDigital.Core.Rules.Placement
                     "which p.18 excludes by requiring a different space.");
             }
 
+            if (!Enum.IsDefined(typeof(PlaceSpawnPointExclusion), spawnPointExclusion))
+            {
+                throw new ArgumentException(
+                    "A Place declares a defined Spawn-point exclusion, or None when it refuses none.",
+                    nameof(spawnPointExclusion));
+            }
+
+            // A Spawn-point exclusion narrows a set of candidate spaces, and p.18's own correction
+            // fallback does not have one to narrow: it places into "the nearest empty space of the
+            // Battle Zone", a set the rules hand it. A declaration that carved Spawn points out of
+            // that set would be changing what the page's correction does rather than what a card does.
+            if (spawnPointExclusion != PlaceSpawnPointExclusion.None &&
+                destinationScope != PlaceDestinationScope.EmptySpacesWithinRadius)
+            {
+                throw new ArgumentException(
+                    "Only a Place that derives its own candidate spaces can exclude Spawn points " +
+                    "from them.",
+                    nameof(spawnPointExclusion));
+            }
+
             SourceContainer = sourceContainer;
             EligiblePiece = eligiblePiece;
             DestinationScope = destinationScope;
@@ -208,6 +267,7 @@ namespace GuardsDigital.Core.Rules.Placement
             Chooser = chooser;
             NoDestinationPolicy = noDestinationPolicy;
             DestinationAnchor = destinationAnchor;
+            SpawnPointExclusion = spawnPointExclusion;
         }
 
         public PlaceSourceContainer SourceContainer { get; }
@@ -226,11 +286,20 @@ namespace GuardsDigital.Core.Rules.Placement
         public PlaceChooserKind Chooser { get; }
         public PlaceNoDestinationPolicy NoDestinationPolicy { get; }
 
+        /// <summary>
+        /// Milestone 8.20. Which Spawn-point spaces this Place refuses, or
+        /// <see cref="PlaceSpawnPointExclusion.None"/> when it refuses none.
+        /// </summary>
+        public PlaceSpawnPointExclusion SpawnPointExclusion { get; }
+
         public override string ToString() =>
             $"Place {EligiblePiece} from {SourceContainer} into {DestinationScope}" +
             (DestinationScope == PlaceDestinationScope.EmptySpacesWithinRadius
                 ? $"({DestinationRadius})"
                 : string.Empty) +
-            $" around {DestinationAnchor}, chosen by {Chooser}, {NoDestinationPolicy} without one";
+            $" around {DestinationAnchor}, chosen by {Chooser}, {NoDestinationPolicy} without one" +
+            (SpawnPointExclusion == PlaceSpawnPointExclusion.None
+                ? string.Empty
+                : $", excluding {SpawnPointExclusion}");
     }
 }

@@ -147,7 +147,8 @@ namespace GuardsDigital.Core.Rules.Placement
             HexCoordinate measuredFrom,
             HexCoordinate destination,
             IReadOnlyList<HexCoordinate> scopedCoordinates,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            IUnitSpawnAuthority spawnPoints = null)
         {
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             if (board == null) throw new ArgumentNullException(nameof(board));
@@ -177,7 +178,7 @@ namespace GuardsDigital.Core.Rules.Placement
             }
 
             var admitted = PlaceDestinationQuery.FindDestinations(
-                policy, spaces, measuredFrom, scopedCoordinates, modifications);
+                policy, spaces, measuredFrom, scopedCoordinates, modifications, spawnPoints);
             if (!admitted.Contains(destination))
             {
                 return PlaceOutcome.Reject(

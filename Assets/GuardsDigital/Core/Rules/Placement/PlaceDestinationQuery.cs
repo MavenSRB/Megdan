@@ -44,21 +44,40 @@ namespace GuardsDigital.Core.Rules.Placement
         /// measured over - for the after-action correction, the starting Battle Zone's own spaces.
         /// A radius scope derives its own candidates and ignores this.
         /// </param>
+        /// <param name="spawnPoints">
+        /// The board's Spawn port, required exactly when the policy declares a
+        /// <see cref="PlaceSpawnPointExclusion"/> and ignored otherwise. It is a required argument for
+        /// such a policy rather than an optional one that silently widens the offer: a Place that
+        /// carved out Spawn points and was asked without them would admit the very spaces Arien's
+        /// three Green cards refuse, and nothing downstream could tell.
+        /// </param>
         public static IReadOnlyList<HexCoordinate> FindDestinations(
             PlacePolicy policy,
             ITokenPlacementAuthority spaces,
             HexCoordinate origin,
             IReadOnlyList<HexCoordinate> scopedCoordinates,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            IUnitSpawnAuthority spawnPoints = null)
         {
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             if (spaces == null) throw new ArgumentNullException(nameof(spaces));
             if (modifications == null) throw new ArgumentNullException(nameof(modifications));
+            if (policy.SpawnPointExclusion != PlaceSpawnPointExclusion.None && spawnPoints == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(spawnPoints),
+                    "A Place that excludes Spawn-point spaces is asked with the port that knows " +
+                    "where they are.");
+            }
 
             switch (policy.DestinationScope)
             {
                 case PlaceDestinationScope.EmptySpacesWithinRadius:
-                    return WithinRadius(policy.DestinationRadius, spaces, origin, modifications);
+                    return ExcludingSpawnPoints(
+                        WithinRadius(policy.DestinationRadius, spaces, origin, modifications),
+                        policy.SpawnPointExclusion,
+                        spaces,
+                        spawnPoints);
 
                 case PlaceDestinationScope.NearestEmptySpacesInScope:
                     if (scopedCoordinates == null)
@@ -108,6 +127,40 @@ namespace GuardsDigital.Core.Rules.Placement
             return found
                 .OrderBy(coordinate => coordinate.Q)
                 .ThenBy(coordinate => coordinate.R)
+                .ToArray();
+        }
+
+        /// <summary>
+        /// The declared Spawn-point clauses applied to a derived candidate set. Milestone 8.20.
+        ///
+        /// <para>Both clauses are map questions and neither is a reachability one, so they filter the
+        /// disk rather than changing how it was drawn - which is what keeps p.18's "does not count as
+        /// movement" true of a card that names Spawn points. "Empty" is asked of the Spawn point's own
+        /// space through the same <see cref="ITokenPlacementAuthority.IsEmptyPlayableSpace"/> every
+        /// other emptiness question in this build goes through, so a Spawn point with a minion standing
+        /// on it stops excluding its neighbours the moment the minion leaves - which is the live
+        /// reading, the card naming no timing.</para>
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> ExcludingSpawnPoints(
+            IReadOnlyList<HexCoordinate> candidates,
+            PlaceSpawnPointExclusion exclusion,
+            ITokenPlacementAuthority spaces,
+            IUnitSpawnAuthority spawnPoints)
+        {
+            if (exclusion == PlaceSpawnPointExclusion.None)
+            {
+                return candidates;
+            }
+
+            var points = spawnPoints.FindSpawnPointSpaces();
+            var empty = exclusion == PlaceSpawnPointExclusion.SpacesWithASpawnPointOrAdjacentToAnEmptyOne
+                ? points.Where(spaces.IsEmptyPlayableSpace).ToArray()
+                : Array.Empty<HexCoordinate>();
+
+            return candidates
+                .Where(candidate => !points.Any(point => point.Equals(candidate)))
+                .Where(candidate => empty.Length == 0 ||
+                    !empty.Any(point => HexDistanceQuery.Calculate(point, candidate) == 1))
                 .ToArray();
         }
 

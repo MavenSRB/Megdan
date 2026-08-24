@@ -256,8 +256,16 @@ namespace GuardsDigital.Tests.EditMode
             var history = new RoundHeroDefeatHistory(participants);
             var roster = EffectRosterState.Of(
                 Array.Empty<RoundTurnSlot>(), history, ledger);
+            // Milestone 8.20 registered three of this vocabulary's handlers into the build's own
+            // catalog, because Arien's printed faces reach them. The rest are still unregistered, so
+            // this fixture adds only those - concatenating the whole set would now claim a capability
+            // revision twice, which the catalog refuses by construction.
+            var registered = new EffectCapabilityCatalog(
+                SyntheticRosterCapabilities.RegisteredHandlers());
             var catalog = new EffectCapabilityCatalog(DefaultHandlers()
-                .Concat(SyntheticRosterCapabilities.Handlers()));
+                .Concat(SyntheticRosterCapabilities.Handlers()
+                    .Where(handler => !registered.Registered.Any(value =>
+                        value.Equals(handler.Reference)))));
             var catalogs = new MatchContentCatalogs(
                 catalog, MatchContentCatalogs.ForThisBuild().Components);
             var effect = transferDefinition.ActionDefinitions.Single().EffectRoot;
@@ -327,7 +335,7 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<QuickGameMinionSetupState>());
             var restoredChoice = restored.Round.CurrentTurnAuthority.PendingEffectChoice;
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(27));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(28));
             Assert.That(restoredChoice.ChooserId, Is.EqualTo(Blue));
             Assert.That(restoredChoice.Candidates.Select(value => value.Value.IntegerValue),
                 Is.EqualTo(new[] { 1, 2 }),

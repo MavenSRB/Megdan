@@ -187,7 +187,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 ActionRestrictionQuery.IsRestrictedFrom(
-                    fixture.Blue, ActionKind.Movement, modifications),
+                    fixture.Blue, ActionKind.Movement, modifications, CardColor.None),
                 Is.True,
                 "The same sentence bars the Movement action, and both halves must end together.");
         }

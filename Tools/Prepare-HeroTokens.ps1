@@ -1,33 +1,45 @@
 <#
 .SYNOPSIS
-    Prepares the private official Wasp hero tokens as ignored Unity runtime resources.
+    Prepares a hero's private official circular tokens as ignored Unity runtime resources.
 
 .DESCRIPTION
-    Milestone 8.11b. The configured mirrored match draws each Wasp as the official circular token
-    rather than as a coloured prism. The artwork is private: it lives in the local Tabletopia corpus
-    under Docs/, which .gitignore keeps out of the repository, and it must stay there. This script is
-    the only route from that corpus to something Unity can load, and it writes exactly two files:
+    Milestone 8.11b, generalised at milestone 8.20. The configured match draws each hero as the
+    official circular token rather than as a coloured prism. The artwork is private: it lives in the
+    local Tabletopia corpus under Docs/, which .gitignore keeps out of the repository, and it must
+    stay there. This script is the only route from that corpus to something Unity can load, and for
+    the hero it is asked about it writes exactly two files:
 
-        Assets/Resources/Private/Heroes/wasp-red.png
-        Assets/Resources/Private/Heroes/wasp-blue.png
+        Assets/Resources/Private/Heroes/<content-id>-red.png
+        Assets/Resources/Private/Heroes/<content-id>-blue.png
 
     Both paths are ignored, so a clean checkout has no token art at all and the hero views keep the
     generated primitive prism. Nothing else is written, moved, or deleted - the source atlas and the
     extracted corpus are read-only to this script.
 
-    The crop is not guessed. The bundled manifest declares, for the element named Wasp
-    (elementId 8597310, elementType VerticalTokens), the atlas that holds its faces and the sprite
-    rectangles inside it; this script reads both and refuses to write anything if the atlas it finds
-    does not match the declared dimensions. The element declares two 302x302 faces, and which of them
-    is which team is measured rather than taken from their order: the reviewed milestone 4.4 mapping
-    - Steam/orange to project Red, Crystal/light-blue to project Blue - is applied to each face's own
-    ring colour, and the script stops unless exactly one face of each kind is found.
+    The content id is the addressing key, not a label: `HeroTokenArtwork.ResourcePath` composes it
+    with the authoritative team, so the two names written here are exactly the two the runtime asks
+    for and a hero whose content id changed would silently keep its prism.
+
+    The crop is not guessed. The bundled manifest declares, for the element named below, the atlas
+    that holds its faces and the sprite rectangles inside it; this script reads both and refuses to
+    write anything if the atlas it finds does not match the declared dimensions. Each element
+    declares two 302x302 faces, and which of them is which team is measured rather than taken from
+    their order: the reviewed milestone 4.4 mapping - Steam/orange to project Red, Crystal/light-blue
+    to project Blue - is applied to each face's own ring colour, and the script stops unless exactly
+    one face of each kind is found.
 
     The sprite is a circle inscribed in its square, on the atlas's own flat background. That was
     measured rather than assumed: the background runs from each corner to within a pixel of the
     inscribed circle, and the four edge midpoints are already ring. The alpha is therefore the
     inscribed disc, antialiased across one pixel, and the script verifies both ends of that claim
     before it writes - the corners must be background and the ring must not be.
+
+.PARAMETER Hero
+    Which hero's tokens to prepare, by the content identity the runtime addresses them with. The
+    manifest element each name maps to is declared in this script rather than searched for, because
+    the source set's element names are not the project's: Wasp's element is `Wasp` and Arien's is
+    `Arien2`, and a script that matched on the hero's own name would have found nothing for the
+    second hero this project added.
 
 .PARAMETER Check
     Verify only. Reports whether the prepared resources exist and match the declared sprite size,
@@ -38,6 +50,8 @@
 #>
 [CmdletBinding()]
 param(
+    [ValidateSet('wasp', 'arien')]
+    [string] $Hero = 'wasp',
     [switch] $Check,
     [switch] $Force
 )
@@ -45,8 +59,18 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$elementId = 8597310
-$elementName = 'Wasp'
+# The declared source element for each hero this project has prepared. Element identity is checked
+# against the manifest below, so a corpus whose ids or names have moved stops here rather than
+# cropping whatever now sits at those coordinates.
+$declaredHeroes = @{
+    wasp  = @{ ElementId = 8597310; ElementName = 'Wasp';   DisplayName = 'Wasp' }
+    arien = @{ ElementId = 8596244; ElementName = 'Arien2'; DisplayName = 'Arien' }
+}
+
+$declared = $declaredHeroes[$Hero]
+$elementId = $declared.ElementId
+$elementName = $declared.ElementName
+$heroLabel = $declared.DisplayName
 $elementType = 'VerticalTokens'
 $declaredFaceSize = 302
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -55,15 +79,24 @@ $corpusRoot = [System.IO.Path]::Combine(
 $resourceDirectory = [System.IO.Path]::Combine(
     $projectRoot, 'Assets', 'Resources', 'Private', 'Heroes')
 $resources = [ordered]@{
-    Red  = [System.IO.Path]::Combine($resourceDirectory, 'wasp-red.png')
-    Blue = [System.IO.Path]::Combine($resourceDirectory, 'wasp-blue.png')
+    Red  = [System.IO.Path]::Combine($resourceDirectory, "$Hero-red.png")
+    Blue = [System.IO.Path]::Combine($resourceDirectory, "$Hero-blue.png")
 }
 
+# The PNG IHDR's big-endian width and height, at bytes 16-23 of every PNG.
+#
+# Each byte is widened to [int] before it is shifted. Milestone 8.20 found this the first time
+# anything ran `-Check`: PowerShell's `-shl` yields the type of its left operand, so shifting a
+# [byte] by 24 truncates back into a byte and every 302x302 token measured 46x46 - the low byte of
+# 302 - which made the verify path refuse files it had just written correctly. Nothing that was
+# written was ever wrong; only the reading back of it was.
 function Get-PngSize([string] $path) {
     $bytes = [System.IO.File]::ReadAllBytes($path)
     if ($bytes.Length -lt 24) { return $null }
-    $width = ($bytes[16] -shl 24) -bor ($bytes[17] -shl 16) -bor ($bytes[18] -shl 8) -bor $bytes[19]
-    $height = ($bytes[20] -shl 24) -bor ($bytes[21] -shl 16) -bor ($bytes[22] -shl 8) -bor $bytes[23]
+    $width = ([int] $bytes[16] -shl 24) -bor ([int] $bytes[17] -shl 16) -bor
+        ([int] $bytes[18] -shl 8) -bor [int] $bytes[19]
+    $height = ([int] $bytes[20] -shl 24) -bor ([int] $bytes[21] -shl 16) -bor
+        ([int] $bytes[22] -shl 8) -bor [int] $bytes[23]
     return [pscustomobject]@{ Width = $width; Height = $height }
 }
 
@@ -110,19 +143,19 @@ Write-Output "Declared: element '$elementName' ($elementId) takes two ${declared
 if ($Check) {
     $missing = @($resources.Keys | Where-Object { -not (Test-Path -LiteralPath $resources[$_] -PathType Leaf) })
     if ($missing.Count -gt 0) {
-        Write-Error "Prepared Wasp hero tokens are absent: $($missing -join ', '). Run Tools/Prepare-WaspHeroTokens.ps1 to write them."
+        Write-Error "Prepared $heroLabel hero tokens are absent: $($missing -join ', '). Run Tools/Prepare-HeroTokens.ps1 -Hero $Hero to write them."
         exit 1
     }
 
     foreach ($team in $resources.Keys) {
         $size = Get-PngSize $resources[$team]
         if ($null -eq $size -or $size.Width -ne $declaredFaceSize -or $size.Height -ne $declaredFaceSize) {
-            Write-Error "The prepared $team Wasp token does not match the declared ${declaredFaceSize}x${declaredFaceSize}. Run Tools/Prepare-WaspHeroTokens.ps1 -Force to rewrite it."
+            Write-Error "The prepared $team $heroLabel token does not match the declared ${declaredFaceSize}x${declaredFaceSize}. Run Tools/Prepare-HeroTokens.ps1 -Hero $Hero -Force to rewrite it."
             exit 1
         }
     }
 
-    Write-Output "PASS: both prepared Wasp hero tokens present at the declared ${declaredFaceSize}x${declaredFaceSize}."
+    Write-Output "PASS: both prepared $heroLabel hero tokens present at the declared ${declaredFaceSize}x${declaredFaceSize}."
     exit 0
 }
 
@@ -133,7 +166,7 @@ $present = @($resources.Keys | Where-Object {
     $null -ne $size -and $size.Width -eq $declaredFaceSize -and $size.Height -eq $declaredFaceSize
 })
 if ($present.Count -eq $resources.Count -and -not $Force) {
-    Write-Output 'SKIP: both prepared Wasp hero tokens are already present at the declared size. Pass -Force to rewrite them.'
+    Write-Output "SKIP: both prepared $heroLabel hero tokens are already present at the declared size. Pass -Force to rewrite them."
     exit 0
 }
 

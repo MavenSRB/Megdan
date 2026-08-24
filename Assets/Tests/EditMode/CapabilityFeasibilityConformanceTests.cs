@@ -113,7 +113,17 @@ namespace GuardsDigital.Tests.EditMode
             // other two identities - `attack-target@2` and `before-action-trigger@1` - are typed
             // declarations on a card and on a rule source, so they register no handler and move nothing
             // here.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(33),
+            // Milestone 8.20 moves it by three, and it is worth saying which of its identities did and
+            // which did not. `choose-target@2`, `behind-target-line@1` and `spaces-adjacent@1` register
+            // handlers, and the first two of those were implemented at milestone 8.19b and only now
+            // reach the build's catalog, because that is the milestone at which a printed card first
+            // names them. The other two new identities register nothing here: `synthetic-place-in-range`
+            // and `synthetic-range-minion-target` are second declarations over the placement and
+            // printed-icon handlers that already existed, which is exactly what p.9's Range/Radius split
+            // asks a second declaration to be. Nor do the milestone's four typed declarations -
+            // `restrict-action@2`, `limit-activity@1`, `immunity@2`'s bound-actor carve-out and
+            // `place-destination@2` - which are content on a rule or a policy rather than handlers.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(36),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

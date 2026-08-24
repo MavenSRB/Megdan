@@ -19,8 +19,13 @@ namespace GuardsDigital.Presentation.Interaction
     public enum SceneCardContent
     {
         /// <summary>
-        /// The configured match: two mirrored Wasps dealt their verified printed set. This is what a
-        /// player - and the built player the smoke gate runs - always gets.
+        /// The configured match: Wasp on Red and Arien on Blue, each dealt their verified printed set.
+        /// This is what a player - and the built player the smoke gate runs - always gets.
+        ///
+        /// <para>Milestone 8.20 made it two heroes. It was two mirrored Wasps for as long as one
+        /// verified set was all this build had; the mirror is still composed by
+        /// <see cref="VerifiedEngagedMirror"/> and its two progressed stages, which the fixtures that
+        /// measure one seat against its own reflection ask for by name.</para>
         /// </summary>
         ConfiguredMatch = 0,
 
@@ -54,7 +59,53 @@ namespace GuardsDigital.Presentation.Interaction
         /// The engaged mirror at rulebook p.15's Tier III stage with p.16's Ultimate unlocked faceup
         /// on both seats. Milestone 8.15, on the same terms.
         /// </summary>
-        VerifiedTierThreeEngagedMirror = 4
+        VerifiedTierThreeEngagedMirror = 4,
+
+        /// <summary>
+        /// Milestone 8.20. The staged Wasp-versus-Arien hands with both heroes restaged already
+        /// engaged, exactly as <see cref="VerifiedEngagedMirror"/> stages its two - same spaces, same
+        /// minion, same fixed Tie Breaker side under `DEV-005` - so an Arien journey starts from a
+        /// played card rather than from the approach march.
+        /// </summary>
+        VerifiedEngagedStagedArien = 5,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Arien holding the first sibling
+        /// of each colour. `DEV-004` terms, for the reason the mirror's own progressed stages are on
+        /// them.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedArien = 6,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier III stage with p.16's Ultimate unlocked faceup
+        /// on both seats - High Voltage in Wasp's area and Living Tsunami in Arien's.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedArien = 7,
+
+        /// <summary>
+        /// The Tier II staging with Arien holding the <em>second</em> sibling of each colour - Rogue
+        /// Wave, Slippery Ground and Arcane Whirlpool - which is the other half of p.15's choice and
+        /// therefore the other half of his printed set.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedArien = 8,
+
+        /// <summary>
+        /// The Tier III staging with Arien holding the second sibling of each colour: Tidal Blast,
+        /// Deluge and Ebb and Flow.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedArien = 9,
+
+        /// <summary>
+        /// Milestone 8.20. The verified Wasp mirror at p.6's own spawn positions - the scene the
+        /// default arm composed before this milestone put Arien on the Blue seat.
+        ///
+        /// <para>It is named rather than gone because one fixture's subject genuinely is the mirror:
+        /// the pointer-driven Attack that ends on p.14's Block beside numeric Defense choices needs a
+        /// defender holding a Block, and Arien prints none - his three Duelist cards print p.14's other
+        /// Defense shape instead. That scenario also drives an eight-turn approach from the spawns, so
+        /// the engaged staging cannot stand in for it.</para>
+        /// </summary>
+        VerifiedMirror = 10
     }
 
     [ExecuteAlways]
@@ -146,7 +197,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 SceneCardContent.MechanicsShowcaseFixture =>
                     PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture(),
-                SceneCardContent.VerifiedEngagedMirror =>
+                SceneCardContent.VerifiedEngagedMirror or SceneCardContent.VerifiedMirror =>
                     PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedTierTwoEngagedMirror =>
@@ -155,16 +206,50 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedTierThreeEngagedMirror =>
                     PlaceholderOneVsOneTestConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
                         TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedArien =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedArienForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedArien =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedArienTierTwoForInternalTest(
+                        TeamSide.Red, GuardsDigital.Core.Cards.Verified.ArienUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedArien =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedArienTierTwoForInternalTest(
+                        TeamSide.Red, GuardsDigital.Core.Cards.Verified.ArienUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedArien =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedArienTierThreeForInternalTest(
+                        TeamSide.Red, GuardsDigital.Core.Cards.Verified.ArienUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedArien =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedArienTierThreeForInternalTest(
+                        TeamSide.Red, GuardsDigital.Core.Cards.Verified.ArienUpgradeBranch.SecondSibling),
                 _ => PlaceholderOneVsOneTestConfiguration.Create()
             };
+            // Milestone 8.20. The board's hero identities have to agree with the hands the
+            // configuration above dealt: the Blue seat's content identity is what addresses its
+            // prepared token and what the projection names it by, so a mirror board under an Arien
+            // hand would draw Wasp's face on a hero holding Arien's cards. The three mirror arms keep
+            // the mirror board; the default arm, which is what a player plays, takes the staged one.
             var setup = QuickGameSetupAuthority.Create(
-                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                content == SceneCardContent.VerifiedEngagedMirror ||
+                content == SceneCardContent.VerifiedTierTwoEngagedMirror ||
+                content == SceneCardContent.VerifiedTierThreeEngagedMirror ||
+                content == SceneCardContent.VerifiedMirror ||
+                content == SceneCardContent.MechanicsShowcaseFixture
+                    ? QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne()
+                    : QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne(),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
+            // Milestone 8.20 adds the staged Arien arms to the same restaging. The staging is about
+            // where the two heroes stand and what they stand beside, and it names neither of them - so
+            // one hero on each side is the same engagement whichever printed sets they are holding.
             if (content == SceneCardContent.VerifiedEngagedMirror ||
                 content == SceneCardContent.VerifiedTierTwoEngagedMirror ||
-                content == SceneCardContent.VerifiedTierThreeEngagedMirror)
+                content == SceneCardContent.VerifiedTierThreeEngagedMirror ||
+                content == SceneCardContent.VerifiedEngagedStagedArien ||
+                content == SceneCardContent.VerifiedTierTwoEngagedStagedArien ||
+                content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedArien ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedArien ||
+                content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedArien)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }

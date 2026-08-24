@@ -70,9 +70,13 @@ namespace GuardsDigital.Tests.PlayMode
         /// It also holds the one-shot property the showcase request depends on. The fixtures above ask
         /// for the mechanics-showcase hands and never clear the request, because the composition clears
         /// it; if it were a mode that stayed on, this case would find showcase cards here.
+        ///
+        /// <para>Milestone 8.20 made the two seats two heroes. What the case says is unchanged - the
+        /// scene deals verified content and nothing synthetic - and what it can no longer say is that
+        /// one revision covers both, because a hero's set moves as its own revision.</para>
         /// </summary>
         [UnityTest]
-        public IEnumerator Scene_DealsTheVerifiedWaspMirrorAndKeepsDealingItAfterAShowcaseRequest()
+        public IEnumerator Scene_DealsTheVerifiedStagedHeroesAndKeepsDealingThemAfterAShowcaseRequest()
         {
             yield return LoadShowcaseScene();
             Assert.That(
@@ -88,18 +92,26 @@ namespace GuardsDigital.Tests.PlayMode
                 "Two eighteen-card decks, which is the smoke gate's pinned cards=36 marker.");
             Assert.That(
                 runtime.Definitions.All(definition =>
-                    definition.ContentAuthority == CardContentAuthority.VerifiedOfficial &&
-                    definition.ContentRevision == WaspCardContent.ContentRevision),
+                    definition.ContentAuthority == CardContentAuthority.VerifiedOfficial),
                 Is.True,
-                "and every one of them is source-verified Wasp content at its stated revision.");
+                "and every one of them is source-verified official content.");
+            Assert.That(
+                runtime.Definitions.Select(definition => definition.ContentRevision).Distinct()
+                    .OrderBy(value => value, System.StringComparer.Ordinal),
+                Is.EqualTo(new[]
+                {
+                    ArienCardContent.ContentRevision, WaspCardContent.ContentRevision
+                }),
+                "at the two revisions the two dealt heroes state.");
             Assert.That(
                 runtime.Cards
                     .Where(card => card.State.Location == CardLocation.Hand)
                     .Select(card => card.DefinitionReference.DefinitionId)
                     .Distinct()
                     .ToArray(),
-                Is.EquivalentTo(WaspCardContent.StartingHand),
-                "Both seats hold rulebook p.5's starting five.");
+                Is.EquivalentTo(
+                    WaspCardContent.StartingHand.Concat(ArienCardContent.StartingHand).ToArray()),
+                "and each seat holds rulebook p.6's starting five off its own printed set.");
         }
 
         [UnityTest]
@@ -1455,7 +1467,11 @@ namespace GuardsDigital.Tests.PlayMode
         private static IEnumerator RunConfiguredRangedAttackPointerScenario(
             bool continueThroughHeroDefenseRegression)
         {
-            yield return continueThroughHeroDefenseRegression ? LoadScene() : LoadShowcaseScene();
+            // Milestone 8.20 named the mirror rather than taking whatever the default arm composes.
+            // The hero-Defense half of this scenario ends on p.14's Block beside numeric choices, and
+            // the defender has to be holding one; the default arm now deals Arien on Blue, whose three
+            // Duelist cards print p.14's other Defense shape and no Block at all.
+            yield return continueThroughHeroDefenseRegression ? LoadMirrorScene() : LoadShowcaseScene();
             var root = Root();
             var runtime = root.Runtime;
             var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
@@ -1781,8 +1797,19 @@ namespace GuardsDigital.Tests.PlayMode
                 $"attacker={redCoordinate}, defender={blueHero.Coordinate}, " +
                 $"distance={HexDistance(redCoordinate, blueHero.Coordinate)}.");
             var heroTargetId = runtime.PendingAttackTargetChoice.LegalTargetHeroIds.Single();
-            var hero = Object.FindObjectsByType<PrimitiveHeroView>()
-                .Single(value => value.Occupancy.HeroId.Equals(heroTargetId));
+
+            // Named rather than found by a bare Single, so a board this scenario has driven into an
+            // unexpected shape says which shape rather than throwing "no matching element". Milestone
+            // 8.20 needed that once and it stays: the approach turns are long and the two seats now
+            // deal different printed sets, so the position they reach is worth reporting.
+            var heroViews = Object.FindObjectsByType<PrimitiveHeroView>();
+            var hero = heroViews.FirstOrDefault(value => value.Occupancy.HeroId.Equals(heroTargetId));
+            Assert.That(hero, Is.Not.Null,
+                $"No hero view is bound to the projected target {heroTargetId.Value}. Views: " +
+                string.Join(", ", heroViews.Select(value =>
+                    $"{value.Occupancy.HeroId.Value}@{value.Occupancy.Coordinate}" +
+                    $" active={value.gameObject.activeSelf}")) +
+                $"; heroes on board: {string.Join(", ", runtime.Heroes.Select(value => value.HeroId.Value))}.");
             var heroRing = hero.TargetRing;
             Assert.That(hero.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
             var beforeHeroTarget = runtime.AcceptedCommands.Count;
@@ -2027,7 +2054,12 @@ namespace GuardsDigital.Tests.PlayMode
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
-            var hand = Hand(runtime, TeamSide.Blue);
+            // Milestone 8.20 moved this from the Blue hand to the Red one. The subject is a row of
+            // Defense faces that includes p.14's Block, and Arien - who deals Blue now - prints no
+            // Block card at all: his three Duelist cards print a Defense value in the primary slot
+            // instead, which is p.14's other shape. Wasp still holds the Block, so the row that proves
+            // both shapes side by side is hers.
+            var hand = Hand(runtime, TeamSide.Red);
 
             // Milestone 8.11b: every offer carries the card it is about, as the tray draws one, so the
             // runtime region draws whole faces here rather than abbreviated text - and the four are
@@ -2857,6 +2889,18 @@ namespace GuardsDigital.Tests.PlayMode
         private static IEnumerator LoadShowcaseScene()
         {
             MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.MechanicsShowcaseFixture;
+            return LoadScene();
+        }
+
+        /// <summary>
+        /// Milestone 8.20. The verified Wasp mirror at p.6's spawn positions, which is what the default
+        /// arm composed until this milestone put Arien on the Blue seat. One scenario here needs it by
+        /// name: its subject ends on p.14's Block drawn beside numeric Defense choices, and the Block is
+        /// a card Wasp prints and Arien does not.
+        /// </summary>
+        private static IEnumerator LoadMirrorScene()
+        {
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.VerifiedMirror;
             return LoadScene();
         }
         private static IEnumerator LoadScene()

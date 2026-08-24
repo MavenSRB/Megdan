@@ -263,7 +263,40 @@ namespace GuardsDigital.Core.Cards
         {
             if (Kind == ActionKind.Movement)
             {
-                ValidateSinglePrintedValue(PrintedValueChannel.Movement, baseValues);
+                // Milestone 8.20 widens this by p.9's own sentence, exactly as milestone 8.3 widened
+                // the non-Ranged Attack's shape: "Some primary actions have a Range or Radius icon and
+                // a value on the right side of the card". Arien's Deluge prints Movement 3 as its
+                // primary and a Radius 1 icon beside it, and the icon is the scope its "This turn"
+                // text asks about rather than a second Movement number. A secondary Movement icon
+                // prints no such thing, which is why the widening is bounded to the primary.
+                var admitsAnIcon = Origin == ActionDefinitionOrigin.PrintedPrimary;
+                var optionalChannels = admitsAnIcon
+                    ? new[] { PrintedValueChannel.Radius, PrintedValueChannel.Range }
+                    : Array.Empty<PrintedValueChannel>();
+                if (BaseValues.Count < 1 ||
+                    BaseValues.Count > 2 ||
+                    BaseValues.All(value => value.Channel != PrintedValueChannel.Movement) ||
+                    BaseValues.Any(value =>
+                        value.Channel != PrintedValueChannel.Movement &&
+                        !optionalChannels.Contains(value.Channel)))
+                {
+                    throw new ArgumentException(
+                        admitsAnIcon
+                            ? "A Movement action definition prints one Movement value and at most " +
+                              "rulebook p.9's one Range or Radius icon."
+                            : "Movement action definitions currently support exactly one Movement " +
+                              "printed value.",
+                        nameof(baseValues));
+                }
+
+                if (BaseValues.Any(value =>
+                        value.Channel != PrintedValueChannel.Movement && value.Amount < 1))
+                {
+                    throw new ArgumentException(
+                        "A printed Range or Radius icon states a positive value; p.9's smallest is 1, " +
+                        "which reaches adjacent spaces only.",
+                        nameof(baseValues));
+                }
             }
             else if (Kind == ActionKind.Attack)
             {
@@ -348,9 +381,24 @@ namespace GuardsDigital.Core.Cards
             else if (Kind == ActionKind.Defense)
             {
                 ValidateSinglePrintedValue(PrintedValueChannel.Defense, baseValues);
-                if (Origin != ActionDefinitionOrigin.Reaction)
+
+                // Milestone 8.20 admits the second place a Defense value is printed. Every Defense in
+                // this build until now was the small icon in a card's secondary strip, and Arien's
+                // three Blue Duelist cards print a Defense of 5, 6 and 6 in the <em>primary</em> slot
+                // with no secondary Defense icon at all - which is p.14's Block shape carrying a number
+                // instead of the shield-and-exclamation-mark.
+                //
+                // What does not change is the cost or the moment: p.14 gives one rule for both -
+                // "It can only be performed in response to an attack targeting you, by discarding
+                // exactly one card from your hand" - so the discard below is still required of either
+                // origin, and ActionOfferQuery keeps both out of the turn's own offers.
+                if (Origin != ActionDefinitionOrigin.Reaction &&
+                    Origin != ActionDefinitionOrigin.PrintedPrimary)
                 {
-                    throw new ArgumentException("Defense action definitions must be reactions.", nameof(Origin));
+                    throw new ArgumentException(
+                        "A Defense action definition is a card's printed primary or its secondary " +
+                        "reaction.",
+                        nameof(Origin));
                 }
 
                 if (!SourceCardStateTransition.Equals(new ActionCardStateTransition(
@@ -459,13 +507,20 @@ namespace GuardsDigital.Core.Cards
             // text applied around it - Xargatha's Charm moves an enemy minion before or after her own
             // Movement - so the root and the timing arrive together or not at all, which is what the
             // rule below already requires of an Attack's and a Defense's.
+            // Milestone 8.20 adds the Movement primary's other moment. p.11 states the default -
+            // "Unless it says otherwise, the card text comes into effect before movement" - so a card
+            // that says nothing carries BeforeTheMovement and a card that says otherwise carries
+            // 8.19a's AroundTheAction. Both are still text on a Movement, so both arrive with a timing
+            // or not at all.
             if (EffectRoot != null &&
                 Kind != ActionKind.Skill && Kind != ActionKind.Attack && Kind != ActionKind.Defense &&
-                !(Kind == ActionKind.Movement && CardTextTiming == CardTextTiming.AroundTheAction))
+                !(Kind == ActionKind.Movement &&
+                    (CardTextTiming == CardTextTiming.AroundTheAction ||
+                        CardTextTiming == CardTextTiming.BeforeTheMovement)))
             {
                 throw new ArgumentException(
-                    "Only a Skill, an Attack, a Defense, or a Movement action applying text around " +
-                    "itself executes through the typed effect frame.", nameof(EffectRoot));
+                    "Only a Skill, an Attack, a Defense, or a Movement action applying text before or " +
+                    "around itself executes through the typed effect frame.", nameof(EffectRoot));
             }
 
             if (CardTextTiming != CardTextTiming.None)

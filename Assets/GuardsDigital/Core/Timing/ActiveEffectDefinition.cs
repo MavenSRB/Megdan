@@ -41,7 +41,59 @@ namespace GuardsDigital.Core.Timing
         /// It names units rather than heroes because p.19 does: a pinned minion is as much an enemy
         /// unit as a pinned hero, and a scope that expanded to heroes alone would drop half the card.
         /// </summary>
-        UnitsInRadius = 5
+        UnitsInRadius = 5,
+
+        /// <summary>
+        /// Milestone 8.20. The same moving disk, admitting heroes only - Arien's Spell Break, Slippery
+        /// Ground and Deluge, each of which begins "Enemy heroes in radius" or "Enemy heroes adjacent
+        /// to you".
+        ///
+        /// <para>It is a sixth member rather than a filter on <see cref="UnitsInRadius"/> because the
+        /// two cards say different things and the difference is live. Magnetic Dagger pins enemy
+        /// <em>units</em>, and p.19 makes a minion one; Spell Break bars enemy <em>heroes</em> from
+        /// Skill actions, which is the word the face prints, and a scope that widened it to units would
+        /// attribute to Arien a sentence about minions his card does not have. That the widened reading
+        /// would be inert today - no minion performs a Skill - is exactly why it must not be taken: a
+        /// scope chosen because the difference cannot currently be seen is a scope that will be wrong
+        /// the first time it can.</para>
+        ///
+        /// <para>Membership is <em>intrinsic</em> - which miniature is standing there - and not p.17's
+        /// effective type, for the reason <see cref="UnitsInRadius"/> already gives: deriving the live
+        /// modification set is what walks this scope, so a scope that asked what an object counts as
+        /// would be asking the answer it is being used to produce. It is the same reading
+        /// <see cref="Rules.Modifications.RestrictedActorResolution"/> takes of who is acting, and for
+        /// the same reason - a hero taking a turn is still the hero taking the turn while it counts as
+        /// a minion. Nothing is stored, for the reason <see cref="UnitsInRadius"/> stores nothing.</para>
+        /// </summary>
+        HeroesInRadius = 6
+    }
+
+    /// <summary>
+    /// Where the one hero an occurrence is bound to comes from, as definition content.
+    ///
+    /// <para>Milestone 8.20. Arien's Expert and Master Duelist print "except <b>this</b> attacker",
+    /// and the word "this" is a referent the definition cannot hold: which hero it names is decided by
+    /// the moment the card was discarded to defend. The definition therefore declares where to look,
+    /// the occurrence carries whom it found, and
+    /// <see cref="Rules.Modifications.RestrictedActorScope.ExceptsTheBoundActor"/> declares what the
+    /// sentence then does with them - three statements, none of which guesses either of the others.</para>
+    /// </summary>
+    public enum ActiveEffectBoundActorSource
+    {
+        /// <summary>
+        /// This definition points at nobody, which is what every definition declared before milestone
+        /// 8.20 means. An occurrence of it binds no hero.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// The hero attacking at rulebook p.14's step 4, where the defender applies their Defense
+        /// action's text. It is the attacker rather than the actor performing the action, because at
+        /// step 4 those are opposite sides and the card's "this attacker" names the other one -
+        /// <see cref="Rules.EffectResolution.EnclosingAttackFacts.ActorId"/> is the fact, and it is
+        /// documented as defined at exactly this moment.
+        /// </summary>
+        EnclosingAttacker = 1
     }
 
     public enum ActiveEffectCancellationCondition
@@ -91,7 +143,8 @@ namespace GuardsDigital.Core.Timing
             IEnumerable<ConditionalObstacleOverlay> obstacleOverlays = null,
             DeclaredRadius radius = default,
             SourceTeamRelation affectedUnitRelation = SourceTeamRelation.None,
-            EffectDefinitionReference? triggeredEffect = null)
+            EffectDefinitionReference? triggeredEffect = null,
+            ActiveEffectBoundActorSource boundActorSource = ActiveEffectBoundActorSource.None)
         {
             if (string.IsNullOrWhiteSpace(definitionId))
                 throw new ArgumentException("An Active-effect definition requires a stable ID.", nameof(definitionId));
@@ -135,6 +188,8 @@ namespace GuardsDigital.Core.Timing
 
             ValidateDuration(durationKind, creationCheckpoint, activationCheckpoint, expirationCheckpoint, carriesAcrossRoundBoundary);
             ValidateDisk(affectedScope, radius, affectedUnitRelation, declaredOverlays.Length);
+            ValidateBoundActor(boundActorSource, creationCheckpoint, declaredModifications);
+            BoundActorSource = boundActorSource;
             Radius = radius;
             AffectedUnitRelation = affectedUnitRelation;
             DefinitionId = definitionId;
@@ -213,6 +268,64 @@ namespace GuardsDigital.Core.Timing
         public SourceTeamRelation AffectedUnitRelation { get; }
 
         /// <summary>
+        /// Milestone 8.20. Where an occurrence of this definition finds the one hero its declarations
+        /// point at with "this", or <see cref="ActiveEffectBoundActorSource.None"/> when none of them
+        /// does.
+        /// </summary>
+        public ActiveEffectBoundActorSource BoundActorSource { get; }
+
+        /// <summary>
+        /// The bound actor's own consistency, stated once: a definition that looks for a hero must
+        /// have a declaration that uses one, and a declaration that excepts one must say where to look.
+        /// Either half alone is a card whose sentence has lost its other half - an exception nothing
+        /// can meet, or a hero nothing asks about - and both are silent at the table.
+        ///
+        /// <para>The creation checkpoint is checked with them because
+        /// <see cref="ActiveEffectBoundActorSource.EnclosingAttacker"/> names a fact that exists at
+        /// exactly one moment. Rulebook p.14's step 4 is the defender applying their Defense action's
+        /// text, and <c>DefenseResponse</c> is that step's checkpoint; a definition that looked for the
+        /// attacker anywhere else would bind the undefined hero every time and except nobody, which is
+        /// a card that quietly does something other than what it prints.</para>
+        /// </summary>
+        private static void ValidateBoundActor(
+            ActiveEffectBoundActorSource boundActorSource,
+            TimingCheckpoint creationCheckpoint,
+            IReadOnlyList<RuleModification> declaredModifications)
+        {
+            if (!Enum.IsDefined(typeof(ActiveEffectBoundActorSource), boundActorSource))
+            {
+                throw new ArgumentException(
+                    "An Active-effect definition states a defined bound-actor source.",
+                    nameof(boundActorSource));
+            }
+
+            var usesTheBoundActor = declaredModifications.Any(
+                modification => modification.RestrictedActors.ExceptsTheBoundActor);
+            if (usesTheBoundActor && boundActorSource == ActiveEffectBoundActorSource.None)
+            {
+                throw new ArgumentException(
+                    "A declaration that excepts the bound actor states where its occurrence finds one.",
+                    nameof(boundActorSource));
+            }
+
+            if (!usesTheBoundActor && boundActorSource != ActiveEffectBoundActorSource.None)
+            {
+                throw new ArgumentException(
+                    "A definition that binds an actor has a declaration that reads one.",
+                    nameof(boundActorSource));
+            }
+
+            if (boundActorSource == ActiveEffectBoundActorSource.EnclosingAttacker &&
+                creationCheckpoint != TimingCheckpoint.DefenseResponse)
+            {
+                throw new ArgumentException(
+                    "The enclosing attacker is a fact of rulebook p.14's step 4, so a definition that " +
+                    "binds one is created there.",
+                    nameof(creationCheckpoint));
+            }
+        }
+
+        /// <summary>
         /// The disk's own consistency, stated once. A scope that selects by position needs a radius and
         /// a side to select by, and a declared overlay needs a radius to draw itself at; a definition
         /// that needs neither may not carry one, because a disk nothing measures is a number a reader
@@ -224,7 +337,8 @@ namespace GuardsDigital.Core.Timing
             SourceTeamRelation affectedUnitRelation,
             int declaredOverlayCount)
         {
-            var scopeDrawsADisk = affectedScope == ActiveEffectAffectedScopeKind.UnitsInRadius;
+            var scopeDrawsADisk = affectedScope == ActiveEffectAffectedScopeKind.UnitsInRadius ||
+                affectedScope == ActiveEffectAffectedScopeKind.HeroesInRadius;
             if (scopeDrawsADisk && affectedUnitRelation == SourceTeamRelation.None)
             {
                 throw new ArgumentException(

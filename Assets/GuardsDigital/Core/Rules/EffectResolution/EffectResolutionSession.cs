@@ -1183,7 +1183,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 AnswersAlreadyGiven(frame, node),
                 context.EnclosingAttack,
                 context.RosterState,
-                node.ImmunityOverrides);
+                node.ImmunityOverrides,
+                node.Outputs);
         }
 
         /// <summary>

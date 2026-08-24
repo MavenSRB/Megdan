@@ -104,7 +104,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticValueCapabilities.Handlers())
                 .Concat(SyntheticPersistentSourceCapabilities.Handlers())
                 .Concat(SyntheticPausingSourceCapabilities.Handlers())
-                .Concat(GuardsDigital.Core.Cards.Verified.WaspActiveEffectContent.Handlers()));
+                // Milestone 8.19b built this vocabulary and deliberately left it out of the build's
+                // catalog: no verified definition could reach it, and the reachability gate refuses a
+                // registration no card can start. Milestone 8.20 is the milestone that changes that -
+                // Arien's Noble Blade names `choose-target@2`, his three Currents name
+                // `behind-target-line@1`, and Ebb and Flow names `spaces-adjacent@1` - so those three
+                // join the one registration list a snapshot compares, and the rest keep waiting for
+                // the hero whose face names them.
+                .Concat(SyntheticRosterCapabilities.RegisteredHandlers())
+                .Concat(GuardsDigital.Core.Cards.Verified.WaspActiveEffectContent.Handlers())
+                // Milestone 8.20. Arien's five persistent texts join the one list for the reason
+                // Wasp's two did: a match registers one contract set and the snapshot records it as
+                // one. Every one of them runs on ActiveEffectCreationHandler, the shape milestone 6.8
+                // proved on synthetic content, so this slice registers a hero's declarations on an
+                // implementation the showcase already reaches rather than introducing one inside a
+                // verified hero's slice.
+                .Concat(GuardsDigital.Core.Cards.Verified.ArienActiveEffectContent.Handlers()));
 
         /// <summary>
         /// Creates one Active effect on the actor. This is the capability that gives acceptance check 5

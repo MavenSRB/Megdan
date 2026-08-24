@@ -174,6 +174,46 @@ namespace GuardsDigital.Core.Rules.Modifications
                 .ToArray());
         }
 
+        /// <summary>
+        /// Milestone 8.20. The tightest declared cap on how far this object may go with one action of
+        /// <paramref name="activity"/>, or <c>false</c> where nothing caps it.
+        ///
+        /// <para>The smallest wins, for the reason <see cref="RuleModificationKind.ActivityLimit"/>
+        /// records: two sources that each said "no more than N" are both obeyed only by the tighter
+        /// one, and letting the looser win would make one card cancel another's sentence without
+        /// naming it. That is a different composition rule from the value family's, which sums - and
+        /// it is different because a cap is not a contribution.</para>
+        ///
+        /// <para>Unlike a restriction this asks no actor question. Every verified cap is on the
+        /// affected hero's own action, which is what "with a movement action" means, and a cap whose
+        /// declaration named other actors would be capping an action they are not the ones taking.</para>
+        /// </summary>
+        public bool TryGetActivityLimit(
+            RuleObject affectedObject, RuleActivity activity, out int maximum)
+        {
+            if (activity == RuleActivity.None)
+            {
+                throw new ArgumentException("This query requires a named activity.", nameof(activity));
+            }
+
+            maximum = 0;
+            var found = false;
+            foreach (var applied in Modifications)
+            {
+                if (!applied.AffectedObject.Equals(affectedObject) ||
+                    applied.Modification.Kind != RuleModificationKind.ActivityLimit ||
+                    !applied.Modification.Covers(activity))
+                {
+                    continue;
+                }
+
+                maximum = found ? Math.Min(maximum, applied.Modification.Amount) : applied.Modification.Amount;
+                found = true;
+            }
+
+            return found;
+        }
+
         public bool HasPermission(RuleObject affectedObject, RulePermissionKind permission) =>
             TryGetPermission(affectedObject, permission, out _);
 

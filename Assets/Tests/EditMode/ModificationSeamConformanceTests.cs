@@ -960,7 +960,7 @@ namespace GuardsDigital.Tests.EditMode
                     .Count.ToString(CultureInfo.InvariantCulture);
 
             public string ReadActionRestriction(ActionKind actionKind, RuleModificationSet modifications) =>
-                ActionRestrictionQuery.IsRestrictedFrom(Red, actionKind, modifications)
+                ActionRestrictionQuery.IsRestrictedFrom(Red, actionKind, modifications, CardColor.None)
                     .ToString(CultureInfo.InvariantCulture);
 
             public string ReadLegalAttackTargets(RuleModificationSet modifications) =>

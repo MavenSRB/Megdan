@@ -1233,6 +1233,17 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                     minion.MinionId, minion.TeamSide, minion.MinionType, minion.SpawnPoint))
                 .ToArray();
 
+        public IReadOnlyList<HexCoordinate> FindSpawnPointSpaces() =>
+            MapDefinition.SpawnPoints
+                .Select(point => MapDefinition.Spaces.SingleOrDefault(space =>
+                    space.Id.Equals(point.SpaceId) && space.Kind == BoardMapSpaceKind.Playable))
+                .Where(space => space != null)
+                .Select(space => space.Coordinate)
+                .Distinct()
+                .OrderBy(coordinate => coordinate.Q)
+                .ThenBy(coordinate => coordinate.R)
+                .ToArray();
+
         public bool TryGetSpawnPointCoordinate(
             ConfiguredSpawnPointReference spawnPoint, out HexCoordinate coordinate)
         {

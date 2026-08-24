@@ -27,15 +27,40 @@ namespace GuardsDigital.Core.Rules.Modifications
     public static class ActionRestrictionQuery
     {
         /// <summary>
-        /// Whether <paramref name="actorId"/> may not perform <paramref name="actionKind"/> right now.
+        /// Whether <paramref name="actorId"/> may not perform <paramref name="actionKind"/> right now,
+        /// from a card of <paramref name="sourceCardColor"/>.
         ///
         /// An undefined hero is not restricted rather than faulting, because an offer query asks this
         /// while assembling a set that may have no actor yet, and "nobody is barred" is the honest
         /// answer to a question about nobody.
+        ///
+        /// <para>Milestone 8.20 makes the colour a required argument rather than an optional one, for
+        /// the reason milestone 8.7 required the actor scope on the declaration: Arien's Spell Break
+        /// bars an activity on some of a hero's cards and not on others, so a caller that omitted the
+        /// card would apply the prohibition to the very card the sentence carves out. Rulebook
+        /// p.11-p.13's Hold, Clear and Fast Travel are performed from no card and pass
+        /// <see cref="CardColor.None"/>, which is a statement rather than a default - and which excepts
+        /// nothing, because a carve-out naming a colour cannot be met by an action that has none.</para>
         /// </summary>
         public static bool IsRestrictedFrom(
-            HeroId actorId, ActionKind actionKind, RuleModificationSet modifications)
+            HeroId actorId,
+            ActionKind actionKind,
+            RuleModificationSet modifications,
+            CardColor sourceCardColor) =>
+            TryGetRestriction(actorId, actionKind, modifications, sourceCardColor, out _);
+
+        /// <summary>
+        /// The restriction that bars it, for a caller that wants to name the source rather than only
+        /// refuse.
+        /// </summary>
+        public static bool TryGetRestriction(
+            HeroId actorId,
+            ActionKind actionKind,
+            RuleModificationSet modifications,
+            CardColor sourceCardColor,
+            out AppliedRuleModification restriction)
         {
+            restriction = null;
             if (modifications == null)
             {
                 throw new ArgumentNullException(nameof(modifications));
@@ -46,28 +71,21 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return false;
             }
 
-            return modifications.IsRestricted(
-                RuleObject.ForHero(actorId), RuleActivityQuery.ForAction(actionKind));
-        }
-
-        /// <summary>
-        /// The restriction that bars it, for a caller that wants to name the source rather than only
-        /// refuse.
-        /// </summary>
-        public static bool TryGetRestriction(
-            HeroId actorId,
-            ActionKind actionKind,
-            RuleModificationSet modifications,
-            out AppliedRuleModification restriction)
-        {
-            restriction = null;
-            if (modifications == null)
+            // The undirected question - the actor and the restricted object are one hero - filtered by
+            // the two qualifications a declaration may carry. The actor half is
+            // RestrictedActorScope.CoversTheAffectedObject, which is what RuleModificationSet's own
+            // TryGetRestriction asks; the card half is milestone 8.20's, and it is applied here rather
+            // than inside the set because this is the only asker that holds a card.
+            foreach (var applied in modifications.CoveringRestrictions(
+                RuleObject.ForHero(actorId), RuleActivityQuery.ForAction(actionKind)))
             {
-                throw new ArgumentNullException(nameof(modifications));
+                if (!applied.Modification.RestrictedActors.CoversTheAffectedObject) continue;
+                if (applied.Modification.RestrictedSourceCards.Excepts(sourceCardColor)) continue;
+                restriction = applied;
+                return true;
             }
 
-            return actorId.IsDefined && modifications.TryGetRestriction(
-                RuleObject.ForHero(actorId), RuleActivityQuery.ForAction(actionKind), out restriction);
+            return false;
         }
     }
 }

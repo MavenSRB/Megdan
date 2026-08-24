@@ -62,7 +62,27 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// legal answer - so a declaration folded into immunity would have made the unit untargetable
         /// and deleted the Defeat the card is meant to keep.
         /// </summary>
-        RemovalPrevention = 7
+        RemovalPrevention = 7,
+
+        /// <summary>
+        /// Milestone 8.20. The affected object may still perform the named activity, but not beyond a
+        /// stated size - Arien's Slippery Ground and Deluge, "cannot ... move more than 1 space with a
+        /// movement action".
+        ///
+        /// <para>It is an eighth family rather than a <see cref="Restriction"/> or a negative
+        /// <see cref="ValueModifier"/>, because it is neither. A restriction takes the action away, and
+        /// the affected hero here still has one - the whole difference between Slippery Ground and a
+        /// card that said "cannot move" is that a pinned hero may still take one step. And a value
+        /// modifier is a delta the page composes into a total, so "-2 Movement" would bite a Movement 3
+        /// card and a Movement 6 card by different amounts while the sentence names one number for
+        /// both; p.16's items would then raise the very total the sentence caps.</para>
+        ///
+        /// <para>A cap is therefore applied after the total is composed, and several caps take the
+        /// smallest: two sources that each said "no more than N" are both obeyed only by the tighter,
+        /// and a reading that let the looser win would let one card cancel another's sentence without
+        /// naming it.</para>
+        /// </summary>
+        ActivityLimit = 8
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -200,7 +220,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             RestrictedActorScope restrictedActors,
             RuleValueApplicability valueApplicability,
             SourceValueQueryKind derivedQuery,
-            RemovalPreventionCost removalPreventionCost = default)
+            RemovalPreventionCost removalPreventionCost = default,
+            RestrictedSourceCardScope restrictedSourceCards = null)
         {
             Kind = kind;
             Activities = activities;
@@ -212,6 +233,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             ValueApplicability = valueApplicability;
             DerivedQuery = derivedQuery;
             RemovalPreventionCost = removalPreventionCost;
+            RestrictedSourceCards = restrictedSourceCards ?? RestrictedSourceCardScope.EveryCard;
         }
 
         /// <summary>A typed contribution of <paramref name="amount"/> to one value channel.</summary>
@@ -348,6 +370,71 @@ namespace GuardsDigital.Core.Rules.Modifications
                 0,
                 EffectiveUnitKind.None,
                 restrictedActors ?? throw new ArgumentNullException(nameof(restrictedActors)));
+
+        /// <summary>
+        /// Milestone 8.20's `restrict-action@2`. A restriction that also names the cards it leaves
+        /// alone - Arien's Spell Break, "cannot perform Skill actions, except on the gold cards".
+        ///
+        /// <para>The carve-out is required rather than defaulted, for the reason milestone 8.7 required
+        /// the actor scope: an exception dropped by omission silently widens the card into a blanket
+        /// prohibition, and <see cref="RestrictedSourceCardScope.EveryCard"/> is where a declaration
+        /// that excepts nothing says so. The two overloads above are that statement written once for
+        /// every restriction declared before this one.</para>
+        ///
+        /// <para>The two scopes are independent and both must be met for the activity to be barred:
+        /// Spell Break names every enemy hero in the disk and excepts each of their Gold cards, so a
+        /// hero it reaches may still perform the Basic Skill on Gold while their Silver one is shut
+        /// down. A consumer that holds no card asks with <see cref="PrintedValueChannel"/>'s own kind
+        /// of absence - see <see cref="RestrictedSourceCardScope.Excepts"/>.</para>
+        /// </summary>
+        public static RuleModification ForRestriction(
+            RuleActivity activity,
+            RestrictedActorScope restrictedActors,
+            RestrictedSourceCardScope restrictedSourceCards) =>
+            new RuleModification(
+                RuleModificationKind.Restriction,
+                new ReadOnlyCollection<RuleActivity>(
+                    new[] { RequireActivity(activity, "restriction") }),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                0,
+                EffectiveUnitKind.None,
+                restrictedActors ?? throw new ArgumentNullException(nameof(restrictedActors)),
+                RuleValueApplicability.Always,
+                SourceValueQueryKind.None,
+                default,
+                restrictedSourceCards ?? throw new ArgumentNullException(nameof(restrictedSourceCards)));
+
+        /// <summary>
+        /// Milestone 8.20's `limit-activity@1`. The affected object may perform
+        /// <paramref name="activity"/>, but no further than <paramref name="maximum"/> - Arien's
+        /// Slippery Ground and Deluge, "cannot ... move more than 1 space with a movement action".
+        ///
+        /// <para>A maximum of zero is refused. It would say "may act, but not at all", which is a
+        /// prohibition written in the wrong family - <see cref="ForRestriction(RuleActivity)"/> is
+        /// where a card that takes the action away says so, and the two must not have a value in
+        /// common or a reader could not tell which rule an effect declared.</para>
+        /// </summary>
+        public static RuleModification ForActivityLimit(RuleActivity activity, int maximum)
+        {
+            if (maximum < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maximum),
+                    maximum,
+                    "An activity limit leaves the activity available; a limit of zero is a " +
+                    "restriction and is declared as one.");
+            }
+
+            return new RuleModification(
+                RuleModificationKind.ActivityLimit,
+                RequireActivity(activity, "activity limit"),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                maximum,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor);
+        }
 
         public static RuleModification ForPermission(RulePermissionKind permission)
         {
@@ -612,6 +699,18 @@ namespace GuardsDigital.Core.Rules.Modifications
         public RestrictedActorScope RestrictedActors { get; }
 
         /// <summary>
+        /// Milestone 8.20. Which cards a restriction leaves alone -
+        /// <see cref="RestrictedSourceCardScope.EveryCard"/> on every other kind and on every
+        /// restriction that carves nothing out, because the question is not asked of them.
+        ///
+        /// It is read only by the consumers that hold the card an action would be performed from. One
+        /// that holds none - rulebook p.11-p.13's cardless Hold, Clear and Fast Travel - is answered by
+        /// the scope itself rather than by omitting the check, so a cardless action cannot slip a
+        /// prohibition that names a colour.
+        /// </summary>
+        public RestrictedSourceCardScope RestrictedSourceCards { get; }
+
+        /// <summary>
         /// Whether this declaration reaches <paramref name="activity"/>. An <see cref="RuleActivity.All"/>
         /// declaration reaches every activity; a specific one reaches only itself, which is p.18's "is
         /// affected by other effects and actions".
@@ -646,9 +745,12 @@ namespace GuardsDigital.Core.Rules.Modifications
                         ? amount
                         : $"{amount} on {ValueApplicability}";
                 case RuleModificationKind.Restriction:
-                    return RestrictedActors.IsUnqualified
+                    var barred = RestrictedActors.IsUnqualified
                         ? $"Cannot {named}"
                         : $"Cannot {named} {RestrictedActors}";
+                    return RestrictedSourceCards.IsUnqualified
+                        ? barred
+                        : $"{barred}, {RestrictedSourceCards}";
                 case RuleModificationKind.Permission:
                     return $"May {Permission}";
                 case RuleModificationKind.Immunity:
@@ -659,6 +761,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     return $"Counts as {EffectiveUnitKind}";
                 case RuleModificationKind.EffectiveTypeOverlay:
                     return $"Also counts as {EffectiveUnitKind}";
+                case RuleModificationKind.ActivityLimit:
+                    return $"No more than {Amount} with a {named} action";
                 default:
                     return "Undeclared modification";
             }

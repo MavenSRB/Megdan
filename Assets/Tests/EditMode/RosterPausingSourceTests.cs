@@ -523,11 +523,16 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaVersionMovesForThreeDecisionsV26CannotHold()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(27),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(28),
                 "Milestone 8.19c1 adds a trigger frame standing inside the effect it interrupted, a " +
                 "Defeat waiting at its removal stage with the coin operations that paid it, and a " +
                 "round-scoped record that p.8's pre-battle moment has already run. None of the three " +
-                "has a reading available for its absence in a v26 payload.");
+                "has a reading available for its absence in a v26 payload, which is why v27 exists. " +
+                "The version has since moved once more, at milestone 8.20, for the hero an " +
+                "Active-effect occurrence bound with the word `this` - Arien's Expert and Master " +
+                "Duelist, whose immunity excepts the attacker they were discarded against. This " +
+                "case pins the current version rather than its own, so a later move has to be " +
+                "accounted for here rather than passing unread.");
         }
 
         // -----------------------------------------------------------------------------------------

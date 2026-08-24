@@ -201,7 +201,7 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 
 ## First complete hero consumers
 
-### [ ] 8.20 Complete and verify additional pitch hero slot A - Arien
+### [x] 8.20 Complete and verify additional pitch hero slot A - Arien
 
 Prerequisites satisfied: Milestones 8.19a, 8.19a1, 8.19b-8.19c, and 8.19c1 completed the shared roster
 foundations.
@@ -229,6 +229,8 @@ Non-goals: No other new hero, six-player setup, networking, or production art. T
 not add a second Blue hero or retire the one-hero-per-team development deviation; milestone 8.25 still owns
 the official six-player configuration and all six official hero spawn assignments. The permanent hero
 player-path gate is milestone 8.20a's, not this one's.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820-complete-and-verify-additional-pitch-hero-slot-a---arien-completion-evidence).
 
 ### [!] 8.20a Pass the permanent hero player-path gate for Arien
 

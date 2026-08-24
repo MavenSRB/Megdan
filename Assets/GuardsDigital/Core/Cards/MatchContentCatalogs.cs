@@ -88,7 +88,11 @@ namespace GuardsDigital.Core.Cards
                     // definition for both, because what each of them is proving is the window rather
                     // than the text, and the text is the same two questions either way.
                     GuardsDigital.Core.Effects.Synthetic.SyntheticPausingSourceCapabilities
-                        .PausingTriggeredEffect.Definition
+                        .PausingTriggeredEffect.Definition,
+                    // Milestone 8.20. What Arien's Living Tsunami runs before an Attack action. It
+                    // joins this catalog rather than forming a second, for the reason High Voltage's
+                    // does: a match registers one set and the snapshot compares one.
+                    ArienEffectContent.LivingTsunamiTriggeredEffect(ArienCardContent.ContentRevision)
                 }));
     }
 }

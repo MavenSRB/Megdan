@@ -194,12 +194,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // unchanged.
             var movementValue = MovementValueQuery.Calculate(
                 offer, materializedDefinitions, heroItems, modifications);
-            var restriction = actionStartRestrictions.Evaluate(new MovementActionStartContext(
-                offer.ActorId,
-                offer.SourceCardInstanceId,
-                offer.ActionDefinitionId,
-                offer.InvocationContext,
-                movementValue.Total));
+            // Milestone 8.20. Two families can now answer this: the composed evaluator seam, and a
+            // declared `limit-activity@1` - Arien's Slippery Ground and Deluge, "cannot ... move more
+            // than 1 space with a movement action". They are combined into the one restriction the
+            // session is built from rather than consulted in turn, so nothing downstream has two
+            // answers to choose between. The cap is read after the Movement Total is composed, which
+            // is what makes it a cap rather than a contribution: p.16's item raises the total and the
+            // sentence still holds it to the number it names.
+            var restriction = MovementActionStartRestriction.Tightest(
+                actionStartRestrictions.Evaluate(new MovementActionStartContext(
+                    offer.ActorId,
+                    offer.SourceCardInstanceId,
+                    offer.ActionDefinitionId,
+                    offer.InvocationContext,
+                    movementValue.Total)),
+                modifications != null &&
+                modifications.TryGetActivityLimit(
+                    RuleObject.ForHero(offer.ActorId), RuleActivity.Movement, out var declaredMaximum)
+                    ? MovementActionStartRestriction.LimitTo(declaredMaximum)
+                    : MovementActionStartRestriction.None);
             if (restriction.PreventsAction)
             {
                 return CardActionResolutionResult.Reject(

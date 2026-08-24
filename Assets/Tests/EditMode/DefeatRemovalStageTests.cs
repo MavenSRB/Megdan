@@ -467,9 +467,9 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(27),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(28),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
-                "own. The version has since moved fourteen times, none of them for it: milestone 6.7 for " +
+                "own. The version has since moved sixteen times, none of them for it: milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +
                 "mid-turn Lane-Push request a completed action can leave behind, milestone 6.10 for " +
                 "p.8's Battle Zone itself, milestone 6.10a for a paused system transition, " +
@@ -482,7 +482,9 @@ namespace GuardsDigital.Tests.EditMode
                 "instance may not take, milestone 8.11 for what p.14's Block did, and milestone " +
                 "8.19a for the outer pre-action continuation, the before-action triggers a turn has " +
                 "spent, and the space an Attack's target stood on before p.14's consequences, and " +
-                "milestone 8.19a1 for current-round typed hero-Defeat history. " +
+                "milestone 8.19a1 for current-round typed hero-Defeat history, milestone 8.19c1 for " +
+                "three decisions a player has been asked and has not answered, and milestone 8.20 " +
+                "for the hero an Active-effect occurrence bound with the word `this`. " +
                 "The decision is still re-derived from the state as it then stands.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),

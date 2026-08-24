@@ -40,14 +40,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
             if (instances == null) throw new ArgumentNullException(nameof(instances));
 
-            // p.11's restriction, asked of the whole action kind before any card is looked at.
-            if (ActionRestrictionQuery.IsRestrictedFrom(defenderId, ActionKind.Defense, modifications))
-            {
-                return Array.Empty<ActionOffer>();
-            }
-
+            // p.11's restriction. Milestone 8.7 asked it of the whole action kind before any card was
+            // looked at; milestone 8.20 asks it of each candidate instead, because a restriction may
+            // now carve out the cards it leaves alone and one asked without a card would apply to the
+            // very card the sentence excepts. An unqualified restriction excepts nothing and therefore
+            // takes every candidate, which is the same empty answer the kind-level gate gave.
             return Array.AsReadOnly(ActionOfferQuery
                 .GetAvailableOffers(definitions, instances, defenderId, ActionOfferWindow.Reaction)
+                .Where(candidate => !ActionRestrictionQuery.IsRestrictedFrom(
+                    defenderId,
+                    ActionKind.Defense,
+                    modifications,
+                    ActionOfferQuery.SourceCardColor(candidate, definitions)))
                 .Where(candidate => IsPerformable(candidate, definitions))
                 .Where(candidate => !IsForbiddenByIncomingAttack(
                     candidate, definitions, incomingAttack))
