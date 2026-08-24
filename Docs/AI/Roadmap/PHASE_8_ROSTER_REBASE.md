@@ -208,8 +208,8 @@ foundations.
 
 Observable outcome: Arien the Tidemaster's complete verified set is defined, dealt, resolved through the
 ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested;
-the staged one-hero-per-team match replaces its Blue mirrored Wasp with Arien and presents him as a
-controllable hero on the map.
+the staged one-hero-per-team match replaces its Blue mirrored Wasp with Arien and stands him on the map as
+the official token at the configured Blue hero spawn.
 
 Acceptance checks:
 
@@ -219,27 +219,43 @@ Acceptance checks:
 - The four Active effects obey moving-radius applicability, attacker exception, action-start Movement
   limit, end-turn/end-round cancellation, restore, and p.17 order; Living Tsunami is a continuous Ultimate
   and remains separate from those cancellation rules.
-- The permanent hero player-path gate in `Testing/POLICY.md` has a complete guarded row for every Arien
-  face/component and distinct interaction shape. Its configured journeys use real panel-picked pointer events
-  or camera rays from card commit through the resulting visible HUD/board state; definitions, source metadata,
-  controller ownership, progression, snapshot, replay, Undo, restart, and all nineteen faces are covered
-  without an Arien-name branch or direct presenter/session submission standing in for player input.
 - The private-source preparation route produces Arien's official circular Blue hero token under the same
   ignored-resource, content-identity, team-rim, and generated-prism fallback contract as Wasp's token. The
-  staged configuration binds that content identity to the Blue participant, places Arien at the configured
-  Blue hero spawn, and presents the token there as the visible, selectable, movable, defeatable, respawnable
-  board piece; focused Edit Mode and Play Mode journeys prove initial spawn, pointer selection, Movement,
-  Defeat/respawn, snapshot restore, replay, Undo, restart, and presentation rebuild without stale or duplicate
-  hero views.
+  staged configuration binds that content identity to the Blue participant and places Arien at the
+  configured Blue hero spawn, so the scene a player loads composes him there.
 - Focused capability consumers and directly affected Wasp/core regressions pass at the applicable tier.
 
 Non-goals: No other new hero, six-player setup, networking, or production art. This staged Arien spawn does
 not add a second Blue hero or retire the one-hero-per-team development deviation; milestone 8.25 still owns
-the official six-player configuration and all six official hero spawn assignments.
+the official six-player configuration and all six official hero spawn assignments. The permanent hero
+player-path gate is milestone 8.20a's, not this one's.
+
+### [!] 8.20a Pass the permanent hero player-path gate for Arien
+
+Blocked by: Milestone 8.20 must define, deal, resolve and stand Arien on the map first.
+
+Observable outcome: Arien passes the permanent hero player-path completion gate in `Testing/POLICY.md`, so
+every printed face and the hero piece itself are proved through the input route a player actually uses.
+
+Acceptance checks:
+
+- The gate's mechanical completeness matrix has a guarded row for every Arien face/component and every
+  distinct interaction shape, and fails when one is absent. Its configured journeys use real panel-picked
+  pointer events or camera rays from card commit through the resulting visible HUD/board state, with no
+  Arien-name branch and no direct presenter or session submission standing in for player input.
+- The staged hero token is proved as the visible, selectable, movable, defeatable, respawnable board piece:
+  focused Edit Mode and Play Mode journeys cover initial spawn, pointer selection, Movement, Defeat/respawn,
+  snapshot restore, replay, Undo, restart, and presentation rebuild without stale or duplicate hero views.
+- At least one pausing path first made reachable by Arien continues after snapshot restore and retained-prefix
+  Undo through the same visible player surface, and one targeted non-batch Game View inspection covers the
+  visible additions at the validated viewport.
+
+Non-goals: No new Arien content, no other hero, no six-player setup, networking, or production art.
 
 ### [!] 8.21 Complete and verify additional pitch hero slot B - Brogan
 
-Blocked by: Milestone 8.20 must prove the shared continuation on one complete hero.
+Blocked by: Milestones 8.20 and 8.20a must prove the shared continuation and the player-path gate on one
+complete hero.
 
 Observable outcome: Brogan the Destroyer's complete verified set is defined, dealt, resolved through the
 ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested.
