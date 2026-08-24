@@ -232,9 +232,9 @@ player-path gate is milestone 8.20a's, not this one's.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820-complete-and-verify-additional-pitch-hero-slot-a---arien-completion-evidence).
 
-### [!] 8.20a Pass the permanent hero player-path gate for Arien
+### [ ] 8.20a Pass the permanent hero player-path gate for Arien
 
-Blocked by: Milestone 8.20 must define, deal, resolve and stand Arien on the map first.
+Prerequisite satisfied: Milestone 8.20 defined, dealt, resolved and stood Arien on the map.
 
 Observable outcome: Arien passes the permanent hero player-path completion gate in `Testing/POLICY.md`, so
 every printed face and the hero piece itself are proved through the input route a player actually uses.
@@ -254,10 +254,40 @@ Acceptance checks:
 
 Non-goals: No new Arien content, no other hero, no six-player setup, networking, or production art.
 
+### [!] 8.20b Pass the permanent hero player-path gate for Wasp
+
+Blocked by: Milestone 8.20a must first establish the permanent gate's guarded matrix and real-input evidence
+shape on the current staged Wasp-versus-Arien configuration.
+
+Observable outcome: Wasp passes the same permanent hero player-path completion gate as Arien, with no
+grandfathered exception for being the first verified hero; every printed face, hero-owned component and the
+hero piece itself are proved through the input route a player actually uses.
+
+Acceptance checks:
+
+- The gate's mechanical completeness matrix has a guarded row for every Wasp face/component and every
+  distinct interaction shape, and fails when one is absent. Existing Wasp player journeys count only where
+  they start from a configured saved scene, use real panel-picked pointer events or camera rays, and prove the
+  resulting visible HUD/board state; direct presenter or session submission cannot fill a missing row.
+- Source-backed engine scenarios and the retained real-input journeys together cover every offered Primary
+  and Secondary action shape, card/minion/hero/token/space/integer and confirm/decline choice as applicable,
+  progression/items/High Voltage, and the official token's initial spawn, selection, Movement, Defeat/
+  respawn, snapshot restore, replay, Undo, restart and presentation rebuild without stale or duplicate views.
+- At least one Wasp-specific pausing card-text or Ultimate path continues after snapshot restore and
+  retained-prefix Undo through the same visible player surface. Every submitted decision advances or clears
+  its old prompt/cues, accepts exactly one current invocation, renders the resulting projection, rejects a
+  stale repeat input, and emits no `EngineFault`.
+- One targeted non-batch Game View inspection covers the complete Wasp player surface at the validated
+  viewport. Any acceptance defect the gate demonstrates is corrected and its focused regression retained;
+  existing green journeys are reused rather than rewritten merely to give the milestone new code.
+
+Non-goals: No new Wasp face or component, rule reinterpretation, balance change, other hero, six-player
+setup, networking, or production art.
+
 ### [!] 8.21 Complete and verify additional pitch hero slot B - Brogan
 
-Blocked by: Milestones 8.20 and 8.20a must prove the shared continuation and the player-path gate on one
-complete hero.
+Blocked by: Milestones 8.20 and 8.20a must prove the shared continuation and the player-path gate on Arien,
+and milestone 8.20b must close the same permanent gate for Wasp without a grandfathered exception.
 
 Observable outcome: Brogan the Destroyer's complete verified set is defined, dealt, resolved through the
 ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested.
