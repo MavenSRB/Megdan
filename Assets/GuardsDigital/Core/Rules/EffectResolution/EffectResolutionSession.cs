@@ -961,7 +961,24 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     // would refuse. Every other capability's candidates come back exactly as offered.
                     var offered = EffectSelectionEligibilityQuery.EligibleCandidates(
                         node, result.Choice.Candidates, frame, outcomes, context);
-                    if (offered.Count == 0 || offered.Count < result.Choice.MinimumSelections)
+
+                    // Milestone 8.20a. A node the card marks `may` or `up to` may be answered having
+                    // taken nothing, whatever floor its handler declares for the selection itself -
+                    // the handler states how many the operation needs, and the printed word states
+                    // whether it has to happen. Living Tsunami's "you may move 1 space" is the case:
+                    // its direct move needs exactly one space, and the player may still decline.
+                    //
+                    // It reaches `may` alone, because `up to` is already answered where it belongs.
+                    // A handler that admits the printed "up to" sets its own floor to zero for it -
+                    // p.18's batch push does exactly that - and one node can ask more than one
+                    // question: milestone 8.8's kinetic push asks which units and then how far, the
+                    // `up to` is over the units, and the distance is exact. Widening this to `up to`
+                    // would have given that second question a floor it must not have, because a node
+                    // carries one policy and its two questions do not.
+                    var minimumSelections = node.FailurePolicy == EffectFailurePolicy.May
+                        ? 0
+                        : result.Choice.MinimumSelections;
+                    if (offered.Count == 0 || offered.Count < minimumSelections)
                     {
                         // Nothing left to name is the same position as nothing to name in the first
                         // place, which is what the handler itself reports as impossible. The refusal
@@ -974,7 +991,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
                         frame, node, context, EffectChoiceKind.SelectTarget,
                         offered.Select(EffectChoiceCandidate.Value_).ToArray(),
-                        result.Choice.MinimumSelections,
+                        minimumSelections,
                         Math.Min(result.Choice.MaximumSelections, offered.Count),
                         result.Choice.Chooser,
                         chooserHeroOverride: result.Choice.ChooserHeroId));

@@ -305,6 +305,47 @@ namespace GuardsDigital.Tests.EditMode
                 "The unit the first answer named travelled the distance the second one chose.");
         }
 
+        /// <summary>
+        /// Milestone 8.20a. The printed `up to` is over the units, and the distance is exact - so the
+        /// second question this one node asks keeps the floor its handler set, and cannot be closed or
+        /// refused with nothing named.
+        ///
+        /// <para>The milestone that added it needed the opposite for the node's <em>first</em>
+        /// question: a printed `may` had no way to be declined at all, and a card that says "you may"
+        /// must be refusable. Making that true node-wide would have reached here too, because a node
+        /// carries one failure policy and this is the one node in verified content that asks twice.
+        /// The floor is therefore keyed on the question rather than on the node, and this is the case
+        /// that says so.</para>
+        /// </summary>
+        [Test]
+        public void KineticBlastsDistance_KeepsItsOwnFloorAndCannotBeClosedWithNothingNamed()
+        {
+            var session = ConfiguredMatchFixtures.CreateKineticSession(
+                WaspCardContent.KineticBlast, stoppedShort: false);
+            CommitAgainstStopProjectiles(session, WaspCardContent.KineticBlast);
+
+            StartSkill(session);
+            var units = session.Projection.PendingEffectChoice;
+            Assert.That(units.MinimumSelections, Is.EqualTo(0),
+                "\"up to\" is over the units, so naming none of them is an answer.");
+            Assert.That(units.DeclineInvocation, Is.Not.Null,
+                "and refusing the whole optional node is another.");
+
+            Answer(session, units.SelectInvocations.Single());
+            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+
+            var distance = session.Projection.PendingEffectChoice;
+            Assert.That(distance, Is.Not.Null,
+                "p.18: with the units settled, the distance is the one decision left.");
+            Assert.That(distance.MinimumSelections, Is.EqualTo(1),
+                "The card names 3 or 4 and nothing between them and zero, so the follow-up question " +
+                "keeps its own floor rather than inheriting the node's printed optionality.");
+            Assert.That(distance.ConfirmInvocation, Is.Null,
+                "so it cannot be closed before a number is named,");
+            Assert.That(distance.DeclineInvocation, Is.Null,
+                "and it cannot be refused - the player took the option when they named the unit.");
+        }
+
         [Test]
         public void ThePauseBetweenTheTwoQuestions_SurvivesASnapshotUndoAndAReplay()
         {

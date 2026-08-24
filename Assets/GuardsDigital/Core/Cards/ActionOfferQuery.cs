@@ -307,7 +307,7 @@ namespace GuardsDigital.Core.Cards
         /// <para>Every Block is a printed-primary Defense, so reading it this way is a strict
         /// generalisation of the resolution test it replaced.</para>
         /// </summary>
-        private static bool IsPrintedPrimaryDefense(ActionDefinition action) =>
+        internal static bool IsPrintedPrimaryDefense(ActionDefinition action) =>
             action.Kind == ActionKind.Defense &&
             action.Origin == ActionDefinitionOrigin.PrintedPrimary;
 

@@ -299,13 +299,29 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 .Select(candidate => new EffectChoiceCommand(
                     resolutionId, choiceId, EffectChoiceCommandKind.Deselect, candidate, chooserId))
                 .ToArray());
+            // Milestone 8.20a, at the user's direction: "if it says may we need to be able to just
+            // decline it". A printed `may` or `up to` opens a choice that may legally be completed
+            // having taken nothing, and refusing it is then an answer the player must be able to
+            // give by name. Before this it was offered only for the confirm-or-decline shape, so
+            // Arien's Living Tsunami - "Once per turn, before performing an Attack action, you may
+            // move 1 space" - reached the table as four spaces and no way to stay put.
+            //
+            // It is derived from the minimum rather than carried as a flag so that a restored,
+            // replayed or undone pause offers exactly what the live one did: the minimum is already
+            // part of every payload, and a separately persisted flag could disagree with it.
+            DeclineInvocation = kind == EffectChoiceKind.ConfirmOrDecline || minimumSelections == 0
+                ? new EffectChoiceCommand(
+                    resolutionId, choiceId, EffectChoiceCommandKind.Decline, default, chooserId)
+                : null;
+
+            // Confirming and declining are not two names for one answer, even where nothing is
+            // named: closing an `up to` with nothing chosen runs the node having taken none, and
+            // declining records that it was refused. Milestone 6.5's own cases hold the first of
+            // those - "`up to 2` includes none, so the decision may be closed with nothing named" -
+            // so the confirm stays exactly as it was and the decline is added beside it.
             ConfirmInvocation = chosen.Length >= minimumSelections
                 ? new EffectChoiceCommand(
                     resolutionId, choiceId, EffectChoiceCommandKind.Confirm, default, chooserId)
-                : null;
-            DeclineInvocation = kind == EffectChoiceKind.ConfirmOrDecline
-                ? new EffectChoiceCommand(
-                    resolutionId, choiceId, EffectChoiceCommandKind.Decline, default, chooserId)
                 : null;
             StopInvocation = canStop
                 ? new EffectChoiceCommand(

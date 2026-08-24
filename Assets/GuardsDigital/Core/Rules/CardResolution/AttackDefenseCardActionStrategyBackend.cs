@@ -2445,8 +2445,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // cards here after accepting them everywhere earlier - the defender's own click was
                 // taken and the Attack could then not resume. What the origin actually records is which
                 // slot the face prints the Defense in, and p.14 has exactly two.
-                (action.Origin != ActionDefinitionOrigin.PrintedPrimary &&
-                    action.Origin != ActionDefinitionOrigin.Reaction) ||
+                //
+                // It asks the offer query's own predicate rather than restating it, because this is
+                // the site that failed to follow that predicate twice: milestone 8.11 taught it about
+                // the Block by hand and 8.20 widened the predicate without it. One statement, four
+                // askers, is the shape this codebase keeps a shared judgement in.
+                !(ActionOfferQuery.IsPrintedPrimaryDefense(action) ||
+                    action.Origin == ActionDefinitionOrigin.Reaction) ||
                 !offer.SourceCardStateTransition.Equals(action.SourceCardStateTransition) ||
                 offer.SourceCardStateTransition.RequiredLocation != CardLocation.Hand ||
                 offer.SourceCardStateTransition.DestinationLocation != CardLocation.DiscardPile)

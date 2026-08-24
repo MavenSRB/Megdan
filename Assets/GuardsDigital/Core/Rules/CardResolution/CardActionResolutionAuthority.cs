@@ -325,7 +325,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var materialized = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
-            var effectRoot = triggeredEffects.PendingResolution != null &&
+
+            // Milestone 8.20a. Which catalog holds the frame's effect is a question about the effect,
+            // not about which backend happens to be holding the pause. Keying it on the triggered
+            // backend left Arien's Living Tsunami - a p.16 Ultimate whose "before performing an Attack
+            // action" trigger stops the game as a PRE-ACTION frame while its effect lives in the
+            // triggered catalog - describing no candidates at all, so its one-space step reached the
+            // player as four anonymous `OPTION #n` controls instead of four lit spaces on the board.
+            var effectRoot =
                 ContentCatalogs.TriggeredEffects.TryGet(pending.EffectDefinitionReference, out var triggered)
                     ? triggered
                     : SkillCardActionStrategyBackend.FindEffectRoot(materialized, pending);

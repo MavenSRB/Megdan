@@ -232,7 +232,7 @@ player-path gate is milestone 8.20a's, not this one's.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820-complete-and-verify-additional-pitch-hero-slot-a---arien-completion-evidence).
 
-### [~] 8.20a Pass the permanent hero player-path gate for Arien
+### [x] 8.20a Pass the permanent hero player-path gate for Arien
 
 Prerequisite satisfied: Milestone 8.20 defined, dealt, resolved and stood Arien on the map.
 
@@ -254,10 +254,14 @@ Acceptance checks:
 
 Non-goals: No new Arien content, no other hero, no six-player setup, networking, or production art.
 
-### [!] 8.20b Pass the permanent hero player-path gate for Wasp
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820a-pass-the-permanent-hero-player-path-gate-for-arien-completion-evidence).
 
-Blocked by: Milestone 8.20a must first establish the permanent gate's guarded matrix and real-input evidence
-shape on the current staged Wasp-versus-Arien configuration.
+### [ ] 8.20b Pass the permanent hero player-path gate for Wasp
+
+Prerequisite satisfied: Milestone 8.20a established the permanent gate's guarded matrix and real-input
+evidence shape on the staged Wasp-versus-Arien configuration. `HeroPlayerPathMatrix` is hero-neutral
+machinery - the shape derivation, the required component shapes and the guard assertions - so Wasp's half is
+a declared table and a fixture calling it, not a second copy of the rules.
 
 Observable outcome: Wasp passes the same permanent hero player-path completion gate as Arien, with no
 grandfathered exception for being the first verified hero; every printed face, hero-owned component and the
