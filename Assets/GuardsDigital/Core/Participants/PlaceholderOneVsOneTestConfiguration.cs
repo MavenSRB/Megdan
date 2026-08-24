@@ -303,6 +303,23 @@ namespace GuardsDigital.Core.Participants
                 SyntheticShowcaseHand.CreateBlueWithContinuationText);
         }
 
+        /// <summary>
+        /// Milestone 8.19c. The ordinary configuration with one difference: Red's Ultimate declares
+        /// the isolated Minion-Battle rule instead of milestone 7.3's permanent permission.
+        ///
+        /// Its own configuration for the reason the continuation fixture has one: the rule changes how
+        /// p.8's battle counts and removes, and a fixture asserting over the ordinary hand would be
+        /// asserting about a battle nothing had entered.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateForMinionBattleRuleFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticShowcaseHand.CreateRedWithMinionBattleUltimate,
+                SyntheticShowcaseHand.CreateBlue);
+        }
+
         public static PlaceholderOneVsOneTestConfiguration CreateForInternalTest(
             TeamSide initialTieBreakerSide)
         {

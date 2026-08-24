@@ -615,7 +615,73 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// </summary>
         private static SyntheticUltimateProfile ContinuationUltimateProfile { get; } =
             new SyntheticUltimateProfile(
-                "red-tidal-ultimate", "Red Tidal Ultimate", declaresBeforeActionTrigger: true);
+                "red-tidal-ultimate", "Red Tidal Ultimate",
+                SyntheticUltimateShape.BeforeActionTrigger);
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.19c: the three persistent Ultimate shapes, on content that is nobody's card
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>Brogan's One Man Army shape, as an Ultimate on the Red hand.</summary>
+        private static SyntheticUltimateProfile MinionBattleUltimateProfile { get; } =
+            new SyntheticUltimateProfile(
+                "red-one-army-ultimate", "Red One-Army Ultimate",
+                SyntheticUltimateShape.MinionBattleRule);
+
+        /// <summary>Xargatha's Metamorphosis shape, as an Ultimate on the Red hand.</summary>
+        private static SyntheticUltimateProfile DynamicValueUltimateProfile { get; } =
+            new SyntheticUltimateProfile(
+                "red-shifting-ultimate", "Red Shifting Ultimate",
+                SyntheticUltimateShape.DynamicValue);
+
+        /// <summary>Tigerclaw's Cloak and Daggers shape, as an Ultimate on the Red hand.</summary>
+        private static SyntheticUltimateProfile AfterBasicActionUltimateProfile { get; } =
+            new SyntheticUltimateProfile(
+                "red-cloaked-ultimate", "Red Cloaked Ultimate",
+                SyntheticUltimateShape.AfterBasicActionTrigger);
+
+        /// <summary>The five ordinary cards with milestone 8.19c's Minion-Battle Ultimate.</summary>
+        public static ConfiguredHand CreateRedWithMinionBattleUltimate(HeroId ownerId) =>
+            Create(ownerId, RedProfiles, MinionBattleUltimateProfile, null);
+
+        /// <summary>The five ordinary cards with milestone 8.19c's counted-value Ultimate.</summary>
+        public static ConfiguredHand CreateRedWithDynamicValueUltimate(HeroId ownerId) =>
+            Create(ownerId, RedProfiles, DynamicValueUltimateProfile, null);
+
+        /// <summary>The five ordinary cards with milestone 8.19c's after-basic-action Ultimate.</summary>
+        public static ConfiguredHand CreateRedWithAfterBasicActionUltimate(HeroId ownerId) =>
+            Create(ownerId, RedProfiles, AfterBasicActionUltimateProfile, null);
+
+        /// <summary>Milestone 8.12's narrower basic-Skill condition, on the same synthetic hand.</summary>
+        private static SyntheticUltimateProfile AfterBasicSkillUltimateProfile { get; } =
+            new SyntheticUltimateProfile(
+                "red-charged-ultimate", "Red Charged Ultimate",
+                SyntheticUltimateShape.AfterBasicSkillTrigger);
+
+        public static ConfiguredHand CreateRedWithAfterBasicSkillUltimate(HeroId ownerId) =>
+            Create(ownerId, RedProfiles, AfterBasicSkillUltimateProfile, null);
+
+        /// <summary>
+        /// Milestone 8.19c's five-mode persistent-source Skill cards. They sit outside their team's
+        /// ordinary Initiative band for the reason every earlier fixture Skill pair does, so a fixture
+        /// can reach the Skill without steering Initiative.
+        /// </summary>
+        private static SyntheticSkillProfile RedPersistentSourceSkillProfile { get; } =
+            new SyntheticSkillProfile("red-warden", "Red Warden", 15);
+
+        private static SyntheticSkillProfile BluePersistentSourceSkillProfile { get; } =
+            new SyntheticSkillProfile("blue-warden", "Blue Warden", 2);
+
+        /// <summary>The five ordinary cards plus milestone 8.19c's persistent-source Skill alone.</summary>
+        public static ConfiguredHand CreateRedWithPersistentSourceSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                persistentSourceSkillProfile: RedPersistentSourceSkillProfile);
+
+        public static ConfiguredHand CreateBlueWithPersistentSourceSkill(HeroId ownerId) =>
+            Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                persistentSourceSkillProfile: BluePersistentSourceSkillProfile);
 
         public static ConfiguredHand CreateRedWithContinuationText(HeroId ownerId)
         {
@@ -652,6 +718,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile radiusSkillProfile = null,
             SyntheticSkillProfile orbitSkillProfile = null,
             SyntheticSkillProfile kinesisSkillProfile = null,
+            SyntheticSkillProfile persistentSourceSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -769,6 +836,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 AddCard(
                     definitions, instances, CreateKinesisSkillDefinition(kinesisSkillProfile),
                     kinesisSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (persistentSourceSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreatePersistentSourceSkillDefinition(persistentSourceSkillProfile),
+                    persistentSourceSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -1794,6 +1869,76 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// destinations are measured from. Not official content; the sentence mirrors Wasp's
         /// Telekinesis for the reason the orbit fixture mirrors her Move skills.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.19c's conversion, in the shape milestone 6.8a's already has: one five-mode Skill
+        /// whose modes are direct children of a `Choose`, each naming one capability this milestone
+        /// registered. The card supplies no rule of its own - it is the stable source, and every
+        /// declaration lives on the Active-effect definition the mode points at.
+        ///
+        /// The five modes are one family each, and they are the five persistent shapes the roster needs:
+        /// multi-activity immunity qualified by actor, a `Next Turn` immunity, an additive effective-type
+        /// overlay with its restriction, a counted value, and a value qualified to the basic Attack.
+        /// Both hands deal one, which is what makes each contract reachable from two hero-shaped
+        /// consumers rather than from one.
+        ///
+        /// Board-neutral: it names no hero, no card and no space, and carries no printed value, because
+        /// a Skill has no printed icon channel of its own. None of it is official content.
+        /// </summary>
+        private static CardDefinition CreatePersistentSourceSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("persistent-root");
+            var guard = new EffectNodeId("persistent-guard-allies");
+            var shadow = new EffectNodeId("persistent-shadowed");
+            var petrify = new EffectNodeId("persistent-petrify");
+            var scale = new EffectNodeId("persistent-scale");
+            var empower = new EffectNodeId("persistent-empower");
+
+            EffectNodeDefinition Mode(EffectNodeId id, EffectCapabilityReference capability) =>
+                new EffectNodeDefinition(
+                    id, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    capability,
+                    outputs: new[] { new EffectOutputBinding("affected", EffectValueKind.Hero) });
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-19c-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { guard, shadow, petrify, scale, empower },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    Mode(guard, SyntheticPersistentSourceCapabilities.GuardAlliesInRadiusV1),
+                    Mode(shadow, SyntheticPersistentSourceCapabilities.ShadowedNextTurnV1),
+                    Mode(petrify, SyntheticPersistentSourceCapabilities.PetrifyEnemiesInRadiusV1),
+                    Mode(scale, SyntheticPersistentSourceCapabilities.ScaleWithAdjacentEnemiesV1),
+                    Mode(empower, SyntheticPersistentSourceCapabilities.EmpowerBasicAttackV1)
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-19c-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-persistent-source-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
         private static CardDefinition CreateKinesisSkillDefinition(SyntheticSkillProfile profile)
         {
             var root = new EffectNodeId("kinesis-root");
@@ -3364,28 +3509,66 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// One hand's Ultimate, as the two things that vary between two heroes' Ultimates: which card
         /// it is, and what it is called. Everything else p.16 fixes for all of them.
         /// </summary>
+        /// <summary>
+        /// Which permanent ability one synthetic Ultimate prints.
+        ///
+        /// Milestone 8.19a discriminated the second shape with a boolean; milestone 8.19c added three
+        /// more and turned it into an enum, because a fourth boolean would have been four fields
+        /// describing one choice and nothing would have stopped two of them being true. p.16 gives an
+        /// Ultimate one ability, and this is that sentence.
+        /// </summary>
+        private enum SyntheticUltimateShape
+        {
+            /// <summary>Milestone 7.3: p.18's Move Through grant, permanently, to its own hero.</summary>
+            PermanentPermission = 0,
+
+            /// <summary>Milestone 8.19a: `before-action-trigger@1`, Arien's Living Tsunami shape.</summary>
+            BeforeActionTrigger = 1,
+
+            /// <summary>Milestone 8.19c: `one-man-army-minion-battle@1`, Brogan's One Man Army shape.</summary>
+            MinionBattleRule = 2,
+
+            /// <summary>
+            /// Milestone 8.19c: a value scaled by a live count, Xargatha's Metamorphosis shape. One
+            /// channel, because p.16's Ultimate prints one ability and this type carries one typed
+            /// rule; the two-channel form of the same declaration is the Active-effect shape in
+            /// <c>SyntheticPersistentSourceCapabilities</c>.
+            /// </summary>
+            DynamicValue = 3,
+
+            /// <summary>
+            /// Milestone 8.19c: `after-action-trigger@2`, Tigerclaw's Cloak and Daggers shape - the
+            /// trigger that reaches every basic action rather than only a basic Skill.
+            /// </summary>
+            AfterBasicActionTrigger = 4,
+
+            /// <summary>
+            /// Milestone 8.12's narrower condition, Wasp's High Voltage shape, on synthetic content.
+            /// It exists beside the one above so the widening can be shown to be a second reading
+            /// rather than a replacement: the same fixture asks both, and the narrow one must still
+            /// refuse a basic Movement.
+            /// </summary>
+            AfterBasicSkillTrigger = 5
+        }
+
         private sealed class SyntheticUltimateProfile
         {
             public SyntheticUltimateProfile(
                 string id,
                 string displayName,
-                bool declaresBeforeActionTrigger = false)
+                SyntheticUltimateShape shape = SyntheticUltimateShape.PermanentPermission)
             {
                 Id = id;
                 DisplayName = displayName;
-                DeclaresBeforeActionTrigger = declaresBeforeActionTrigger;
+                Shape = shape;
             }
 
             public string Id { get; }
 
             public string DisplayName { get; }
 
-            /// <summary>
-            /// Milestone 8.19a. Whether this Ultimate declares `before-action-trigger@1` rather than
-            /// milestone 7.3's permanent permission. A discriminator rather than a second card class,
-            /// for the reason every other one in this file is one.
-            /// </summary>
-            public bool DeclaresBeforeActionTrigger { get; }
+            /// <summary>The one ability this Ultimate prints.</summary>
+            public SyntheticUltimateShape Shape { get; }
         }
 
         /// <summary>
@@ -3426,34 +3609,117 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// </summary>
             public const string BeforeActionRevision = "phase-8-19a-rev-1";
 
+            /// <summary>
+            /// Milestone 8.19c's revision, carried by the three Ultimates that declare its persistent
+            /// shapes and by nothing else. New content rather than changed content, so neither
+            /// milestone 7.3's nor 8.19a's Ultimate moves and no existing payload does either.
+            /// </summary>
+            public const string PersistentSourceRevision = "phase-8-19c-rev-1";
+
             public static CardDefinition Definition(SyntheticUltimateProfile profile) =>
                 new CardDefinition(
                     DefinitionId(profile),
-                    profile.DeclaresBeforeActionTrigger ? BeforeActionRevision : UltimateRevision,
+                    RevisionFor(profile.Shape),
                     $"TEST - {profile.DisplayName}",
                     default,
                     CardContentAuthority.SyntheticTestFixture,
                     CardProgressionProfile.UltimateCard(),
                     Array.Empty<ActionDefinition>(),
-                    profile.DeclaresBeforeActionTrigger
+                    RuleFor(profile.Shape));
+
+            private static string RevisionFor(SyntheticUltimateShape shape)
+            {
+                switch (shape)
+                {
+                    case SyntheticUltimateShape.PermanentPermission:
+                        return UltimateRevision;
+                    case SyntheticUltimateShape.BeforeActionTrigger:
+                        return BeforeActionRevision;
+                    default:
+                        return PersistentSourceRevision;
+                }
+            }
+
+            private static UltimateRuleDefinition RuleFor(SyntheticUltimateShape shape)
+            {
+                switch (shape)
+                {
+                    case SyntheticUltimateShape.BeforeActionTrigger:
                         // Milestone 8.19a. Arien's Living Tsunami shape: "Once per turn, before
                         // performing an Attack action, you may move 1 space." What the effect does is
                         // the smallest thing that can be watched happening before an action starts;
                         // what is under test is that the action it precedes starts afterwards from the
                         // offer it was validated with.
-                        ? UltimateRuleDefinition.BeforeActionAbility(
+                        return UltimateRuleDefinition.BeforeActionAbility(
                             "before-attack-move",
                             "SyntheticBeforeAction",
                             BeforeActionTriggeredEffect.Reference,
                             new BeforeActionTrigger(
                                 ActionKind.Attack, BeforeActionTriggerFrequency.OncePerTurn),
-                            Array.Empty<PrintedValueDefinition>())
-                        : new UltimateRuleDefinition(
+                            Array.Empty<PrintedValueDefinition>());
+
+                    case SyntheticUltimateShape.MinionBattleRule:
+                        // Milestone 8.19c. Brogan's One Man Army shape: "During minion battle you count
+                        // as a heavy minion; if you would be removed, lose the push instead." The
+                        // declaration names the rule and nothing about the hero, and the registered
+                        // handler answers both of its sentences.
+                        return UltimateRuleDefinition.MinionBattleAbility(
+                            "minion-battle-heavy",
+                            "SyntheticMinionBattleRule",
+                            new GuardsDigital.Core.Rules.Consequences.MinionBattleRuleDeclaration(
+                                GuardsDigital.Core.Rules.Consequences.OneManArmyMinionBattleHandler
+                                    .RuleReference,
+                                GuardsDigital.Core.Rules.Consequences.MinionBattleStrength.HeavyMinion,
+                                GuardsDigital.Core.Rules.Consequences.MinionBattleRemovalSubstitution
+                                    .PushLost),
+                            Array.Empty<PrintedValueDefinition>());
+
+                    case SyntheticUltimateShape.DynamicValue:
+                        // Milestone 8.19c. Xargatha's Metamorphosis shape, on the source family p.16
+                        // gives it: the amount is per adjacent enemy unit, and the count is taken every
+                        // time the live set is derived rather than written into the card.
+                        return new UltimateRuleDefinition(
+                            "movement-per-adjacent-enemy",
+                            "SyntheticDynamicValue",
+                            GuardsDigital.Core.Rules.Modifications.RuleModification.ForDerivedValue(
+                                PrintedValueChannel.Movement,
+                                GuardsDigital.Core.Rules.Modifications.SourceValueQueryKind
+                                    .EnemyUnitsAdjacentToAffectedObject,
+                                1,
+                                GuardsDigital.Core.Rules.Modifications.RuleValueApplicability.Always));
+
+                    case SyntheticUltimateShape.AfterBasicActionTrigger:
+                        // Milestone 8.19c. Tigerclaw's Cloak and Daggers shape: "After you perform a
+                        // basic action you may repeat it once." The declaration differs from High
+                        // Voltage's in one member - the condition - and that member is the whole of
+                        // what widens "basic skill" to "basic action".
+                        return UltimateRuleDefinition.TriggeredAbility(
+                            "after-basic-action",
+                            "SyntheticAfterBasicAction",
+                            BeforeActionTriggeredEffect.Reference,
+                            UltimateTriggerCondition.AfterControllerPerformsBasicAction,
+                            new[] { GuardsDigital.Core.Timing.TimingCheckpoint.ActionEnded },
+                            Array.Empty<PrintedValueDefinition>());
+
+                    case SyntheticUltimateShape.AfterBasicSkillTrigger:
+                        // Milestone 8.12's condition, unchanged, on synthetic content.
+                        return UltimateRuleDefinition.TriggeredAbility(
+                            "after-basic-skill",
+                            "SyntheticAfterBasicSkill",
+                            BeforeActionTriggeredEffect.Reference,
+                            UltimateTriggerCondition.AfterControllerPerformsBasicSkill,
+                            new[] { GuardsDigital.Core.Timing.TimingCheckpoint.ActionEnded },
+                            Array.Empty<PrintedValueDefinition>());
+
+                    default:
+                        return new UltimateRuleDefinition(
                             "permanent-move-through",
                             "SyntheticPermission",
                             GuardsDigital.Core.Rules.Modifications.RuleModification.ForPermission(
                                 GuardsDigital.Core.Rules.Modifications.RulePermissionKind
-                                    .MoveThroughObstacles)));
+                                    .MoveThroughObstacles));
+                }
+            }
         }
 
         /// <summary>

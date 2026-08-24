@@ -192,7 +192,7 @@ namespace GuardsDigital.Tests.EditMode
             // Without an item the higher printed Initiative acts first, and it is Blue's.
             var withoutItem = new InitiativeResolutionAuthority(new TieBreakerState(TeamSide.Red));
             Assert.That(
-                withoutItem.TrySelectNextActor(definitions, cards, participants).Accepted, Is.True);
+                withoutItem.TrySelectNextActor(definitions, cards, participants, null, RuleModificationSet.Empty).Accepted, Is.True);
             Assert.That(withoutItem.SelectedActor.ActorId, Is.EqualTo(blue));
             Assert.That(withoutItem.SelectedActor.InitiativeTotal, Is.EqualTo(6));
 
@@ -204,7 +204,8 @@ namespace GuardsDigital.Tests.EditMode
                     definitions,
                     cards,
                     participants,
-                    ItemsFor(participants, red, PrintedValueChannel.Initiative, PrintedValueChannel.Initiative))
+                    ItemsFor(participants, red, PrintedValueChannel.Initiative, PrintedValueChannel.Initiative),
+                    RuleModificationSet.Empty)
                     .Accepted,
                 Is.True);
             Assert.That(withItems.SelectedActor.ActorId, Is.EqualTo(red));

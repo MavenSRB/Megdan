@@ -178,8 +178,15 @@ namespace GuardsDigital.Core.Rules.Modifications
                 {
                     foreach (var modification in effect.Definition.Modifications)
                     {
+                        var resolved = ResolveDerivedAmount(
+                            modification, affectedObject, effect.ControllerHeroId, board, participants);
+                        if (resolved == null)
+                        {
+                            continue;
+                        }
+
                         yield return AppliedRuleModification.FromActiveEffect(
-                            modification,
+                            resolved,
                             affectedObject,
                             effect.Id,
                             effect.ControllerHeroId,
@@ -331,6 +338,124 @@ namespace GuardsDigital.Core.Rules.Modifications
                 effect.SourceActionDefinitionId,
                 heroItems);
 
+        /// <summary>
+        /// Milestone 8.19c. One declaration with its derived count already taken, or <c>null</c> when
+        /// the count is zero and the declaration therefore supplies nothing.
+        ///
+        /// <para>Resolving it here rather than at the consumer is what makes "recalculated at each
+        /// owning query" true without any consumer knowing a count was involved: this derivation runs
+        /// again every time the live set is built, so Xargatha's Metamorphosis reports +2 Movement
+        /// while two enemies stand beside her and +1 the moment one walks away. A consumer that had to
+        /// re-count would be a second place the rule could be forgotten.</para>
+        ///
+        /// <para>A zero count yields no modification at all rather than a zero one, which is the same
+        /// statement <see cref="RuleModification.ForValue(PrintedValueChannel,int)"/> makes by refusing
+        /// a zero amount: "+1 for each enemy adjacent to you" with no enemy adjacent is not a rule
+        /// contributing nothing, it is a rule that has not applied.</para>
+        ///
+        /// <para>Nothing here consults a modification set, for the reason
+        /// <see cref="UnitsInRadius"/> consults none: this <em>is</em> its derivation. The count is
+        /// therefore geometry and team relation alone, exactly as that scope's membership is, and a
+        /// <c>Counts As</c> cannot move a unit in or out of "enemy units" because both types it could
+        /// name are units.</para>
+        /// </summary>
+        private static RuleModification ResolveDerivedAmount(
+            RuleModification modification,
+            RuleObject affectedObject,
+            HeroId sourceControllerHeroId,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants)
+        {
+            if (modification == null || !modification.IsDerived)
+            {
+                return modification;
+            }
+
+            if (board == null)
+            {
+                throw new InvalidOperationException(
+                    "A derived value modifier counts units on the board, which cannot be done " +
+                    "without one.");
+            }
+
+            var matches = CountDerivedMatches(
+                modification.DerivedQuery, affectedObject, sourceControllerHeroId, board, participants);
+            return matches == 0 ? null : modification.WithResolvedAmount(matches);
+        }
+
+        private static int CountDerivedMatches(
+            SourceValueQueryKind query,
+            RuleObject affectedObject,
+            HeroId sourceControllerHeroId,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants)
+        {
+            switch (query)
+            {
+                case SourceValueQueryKind.EnemyUnitsAdjacentToAffectedObject:
+                    return CountAdjacentEnemyUnits(
+                        affectedObject, sourceControllerHeroId, board, participants);
+                default:
+                    throw new InvalidOperationException(
+                        $"No derivation is declared for source value query '{query}'.");
+            }
+        }
+
+        /// <summary>
+        /// p.19's units on the team opposing the source's controller, standing one space from the
+        /// affected object. An affected object that is not on the board is beside nobody, which is the
+        /// same answer p.16 gives an Ultimate whose hero has left it.
+        /// </summary>
+        private static int CountAdjacentEnemyUnits(
+            RuleObject affectedObject,
+            HeroId sourceControllerHeroId,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants)
+        {
+            if (participants == null)
+            {
+                throw new InvalidOperationException(
+                    "A derived enemy-unit count needs the participants whose sides it compares.");
+            }
+
+            var anchorObject = affectedObject.Kind == RuleObjectKind.Hero
+                ? BoardObjectReference.ForHero(affectedObject.HeroId)
+                : BoardObjectReference.ForMinion(affectedObject.MinionId);
+            if (!board.TryGetObjectCoordinate(anchorObject, out var anchor))
+            {
+                return 0;
+            }
+
+            var count = 0;
+            foreach (var occupancy in board.Occupancies)
+            {
+                var hero = BoardObjectReference.ForHero(occupancy.HeroId);
+                if (!hero.Equals(anchorObject) &&
+                    HexDistanceQuery.Calculate(anchor, occupancy.Coordinate) == 1 &&
+                    TargetQuery.StandsInRelationTo(
+                        SourceTeamRelation.OpposingSource, hero, sourceControllerHeroId, participants,
+                        board))
+                {
+                    count++;
+                }
+            }
+
+            foreach (var minion in board.Minions)
+            {
+                var unit = BoardObjectReference.ForMinion(minion.MinionId);
+                if (!unit.Equals(anchorObject) &&
+                    HexDistanceQuery.Calculate(anchor, minion.Coordinate) == 1 &&
+                    TargetQuery.StandsInRelationTo(
+                        SourceTeamRelation.OpposingSource, unit, sourceControllerHeroId, participants,
+                        board))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         private static IEnumerable<HeroId> HeroesOnSide(
             MatchParticipants participants,
             TeamSide side,
@@ -384,8 +509,16 @@ namespace GuardsDigital.Core.Rules.Modifications
                         continue;
                     }
 
+                    var resolved = ResolveDerivedAmount(
+                        property.Modification, affectedObject, token.ControllerHeroId, board,
+                        participants);
+                    if (resolved == null)
+                    {
+                        continue;
+                    }
+
                     yield return AppliedRuleModification.FromContinuousSource(
-                        property.Modification,
+                        resolved,
                         affectedObject,
                         token.PropertySources[propertyIndex],
                         controllerSide,
@@ -433,9 +566,17 @@ namespace GuardsDigital.Core.Rules.Modifications
                     continue;
                 }
 
+                var affected = RuleObject.ForHero(ultimate.OwnerId);
+                var resolved = ResolveDerivedAmount(
+                    ultimate.Rule.Modification, affected, ultimate.OwnerId, board, participants);
+                if (resolved == null)
+                {
+                    continue;
+                }
+
                 yield return AppliedRuleModification.FromContinuousSource(
-                    ultimate.Rule.Modification,
-                    RuleObject.ForHero(ultimate.OwnerId),
+                    resolved,
+                    affected,
                     ultimate.Source,
                     participants.GetTeamForHero(ultimate.OwnerId).Side,
                     index);

@@ -844,13 +844,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     outputs: new[] { new EffectOutputBinding("present", EffectValueKind.Boolean) });
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
+            // Milestone 8.19c routed this through the one terrain question, so an effective-type
+            // overlay reaches it: a hero petrified into terrain is terrain to stand beside, exactly as
+            // the printed rock is. Reading the map alone was correct while the map was the only source
+            // and would silently have been half an answer once a card made a second one.
             private static bool? Read(EffectCapabilityContext context)
             {
                 var board = context.Components?.Board;
                 if (board == null || !board.TryGetObjectCoordinate(
                     BoardObjectReference.ForHero(context.ActorId), out var actorAt)) return null;
-                return actorAt.GetNeighbors().Any(neighbor => board.MapDefinition.Spaces.Any(space =>
-                    space.Kind == BoardMapSpaceKind.Terrain && space.Coordinate.Equals(neighbor)));
+                return TerrainPresenceQuery.IsAdjacentToTerrain(board, actorAt, context.Modifications);
             }
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {

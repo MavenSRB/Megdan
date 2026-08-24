@@ -211,6 +211,18 @@ namespace GuardsDigital.Core.Rules.Modifications
         public bool IsImmuneTo(RuleObject target, RuleActivity activity, RuleObject actor) =>
             TryGetImmunity(target, activity, actor, out _);
 
+        /// <summary>
+        /// The first immunity in canonical order that this set can decide on its own.
+        ///
+        /// Since milestone 8.19c an immunity may name the actors it protects against, and this value
+        /// holds no participants to resolve a team relation with - the same division restrictions have
+        /// had since milestone 8.7. So this answers for the declarations that need nobody resolved: an
+        /// unqualified one, and one naming the affected object itself when the actor is that object -
+        /// which p.18 then refuses anyway, above. <see cref="ImmunityQuery"/> is the asker that holds
+        /// the participants and therefore the one that can answer a qualified declaration; a caller
+        /// with a directed question must go through it or silently widen "by enemy heroes" into "by
+        /// anyone".
+        /// </summary>
         public bool TryGetImmunity(
             RuleObject target,
             RuleActivity activity,
@@ -223,8 +235,39 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return false;
             }
 
-            immunity = FirstCovering(target, RuleModificationKind.Immunity, activity);
-            return immunity != null;
+            var covering = CoveringImmunities(target, activity);
+            for (var index = 0; index < covering.Count; index++)
+            {
+                if (covering[index].Modification.RestrictedActors.IsUnqualified)
+                {
+                    immunity = covering[index];
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Every immunity on this object that reaches this activity, in canonical order, whatever
+        /// actors each names. <see cref="ImmunityQuery"/> is the consumer, for the reason
+        /// <see cref="RestrictionQuery"/> is the consumer of <see cref="CoveringRestrictions"/>: it
+        /// holds the participants a declared team relation is resolved against.
+        /// </summary>
+        public IReadOnlyList<AppliedRuleModification> CoveringImmunities(
+            RuleObject affectedObject, RuleActivity activity)
+        {
+            if (activity == RuleActivity.None)
+            {
+                throw new ArgumentException("This query requires a named activity.", nameof(activity));
+            }
+
+            return Array.AsReadOnly(Modifications
+                .Where(modification =>
+                    modification.AffectedObject.Equals(affectedObject) &&
+                    modification.Modification.Kind == RuleModificationKind.Immunity &&
+                    modification.Modification.Covers(activity))
+                .ToArray());
         }
 
         /// <summary>
@@ -260,42 +303,70 @@ namespace GuardsDigital.Core.Rules.Modifications
                 .ToArray());
 
         /// <summary>
+        /// Milestone 8.19c. Every type one object counts as <em>in addition to</em> what it already
+        /// counts as, in canonical order and without duplicates. Empty when nothing overlays it.
+        ///
+        /// Kept apart from <see cref="DeclaredEffectiveUnitKinds"/> because the two compose in one
+        /// direction only: a p.17 replacement decides what the intrinsic type becomes, and an overlay
+        /// then adds to whatever that answer was. <see cref="EffectiveUnitKindQuery"/> is where the two
+        /// meet, so no consumer has to know the order.
+        /// </summary>
+        public IReadOnlyList<EffectiveUnitKind> OverlaidEffectiveUnitKinds(RuleObject affectedObject) =>
+            Array.AsReadOnly(Modifications
+                .Where(modification =>
+                    modification.AffectedObject.Equals(affectedObject) &&
+                    modification.Modification.Kind == RuleModificationKind.EffectiveTypeOverlay)
+                .Select(modification => modification.Modification.EffectiveUnitKind)
+                .Distinct()
+                .ToArray());
+
+        /// <summary>
         /// The typed contributions this set adds to one value channel for one object, in canonical order.
         /// Each keeps its own source discriminator, so they compose with the printed, minion, item, and
         /// card-text contributions rather than replacing them.
         /// </summary>
         public IReadOnlyList<ValueContribution> ValueContributions(
             RuleObject affectedObject,
-            PrintedValueChannel channel)
+            PrintedValueChannel channel) =>
+            ValueContributions(affectedObject, channel, RuleValueApplicability.Always);
+
+        /// <summary>
+        /// Milestone 8.19c. The same contributions for a consumer that knows which action is being
+        /// performed, so `modify-value@2`'s qualified declarations can reach it.
+        ///
+        /// <paramref name="performedAction"/> is what the caller is composing a total <em>for</em>, and
+        /// it admits both the declarations qualified to it and the unqualified ones - a source that
+        /// says "+1 Defense" applies to the Defense being calculated whatever else is true. A caller
+        /// holding no action passes <see cref="RuleValueApplicability.Always"/> and sees only the
+        /// unqualified ones, which is the honest answer: a qualification nobody can evaluate has not
+        /// been met.
+        /// </summary>
+        public IReadOnlyList<ValueContribution> ValueContributions(
+            RuleObject affectedObject,
+            PrintedValueChannel channel,
+            RuleValueApplicability performedAction)
         {
             if (channel == PrintedValueChannel.None)
             {
                 throw new ArgumentException("A value query requires a channel.", nameof(channel));
             }
 
+            if (!Enum.IsDefined(typeof(RuleValueApplicability), performedAction))
+            {
+                throw new ArgumentException(
+                    "A value query states the action class it is composing a total for.",
+                    nameof(performedAction));
+            }
+
             return Array.AsReadOnly(Modifications
                 .Where(modification =>
                     modification.AffectedObject.Equals(affectedObject) &&
                     modification.Modification.Kind == RuleModificationKind.ValueModifier &&
-                    modification.Modification.Channel == channel)
+                    modification.Modification.Channel == channel &&
+                    (modification.Modification.ValueApplicability == RuleValueApplicability.Always ||
+                        modification.Modification.ValueApplicability == performedAction))
                 .Select(modification => modification.ToValueContribution())
                 .ToArray());
-        }
-
-        private AppliedRuleModification FirstCovering(
-            RuleObject affectedObject,
-            RuleModificationKind kind,
-            RuleActivity activity)
-        {
-            if (activity == RuleActivity.None)
-            {
-                throw new ArgumentException("This query requires a named activity.", nameof(activity));
-            }
-
-            return Modifications.FirstOrDefault(modification =>
-                modification.AffectedObject.Equals(affectedObject) &&
-                modification.Modification.Kind == kind &&
-                modification.Modification.Covers(activity));
         }
     }
 }

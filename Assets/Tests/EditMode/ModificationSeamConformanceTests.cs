@@ -400,6 +400,88 @@ namespace GuardsDigital.Tests.EditMode
                 typeof(GuardsDigital.Core.Rules.Placement.PlaceDestinationQuery), obstacleMembers,
                 "Place legality must ask the one obstacle query - the acceptance line that puts " +
                 "movement, push and place on one classification.");
+
+            // Milestone 8.19c. The four value totals whose probes read a query, and the engine paths
+            // that must ask those queries. Without these links a total could be composed correctly by
+            // a type nothing calls, which is the inert declaration this whole rule is about.
+            var attackTotal = ILConformanceScanner.Method(
+                typeof(AttackValueQuery), nameof(AttackValueQuery.Calculate));
+            var movementTotal = ILConformanceScanner.Method(
+                typeof(MovementValueQuery), nameof(MovementValueQuery.Calculate));
+            Assert.That(new MemberInfo[] { attackTotal, movementTotal }, Has.None.Null,
+                "A promoted value total no longer resolves; correct the rule rather than deleting it.");
+            // The two backends are internal to Core, so they are located through the assembly rather
+            // than named in source: this test assembly compiles against Core's public surface even
+            // though the single-assembly harness sees everything. Naming them here would build in one
+            // tier and not the other, which is exactly the trap milestone 8.12's closing check hit.
+            var attackBackend = CoreType(
+                "GuardsDigital.Core.Rules.CardResolution.AttackDefenseCardActionStrategyBackend");
+            var movementBackend = CoreType(
+                "GuardsDigital.Core.Rules.CardResolution.MovementCardActionStrategyBackend");
+            AssertReaches(
+                attackBackend,
+                attackTotal,
+                "p.14's attack must compose its total through the one Attack query, or a source's " +
+                "declared Attack reaches the query and not the attack.");
+            AssertReaches(
+                movementBackend,
+                movementTotal,
+                "p.11's Movement action must spend the allowance the one Movement query composes.");
+
+            // Range is asked through either of its two forms - the offer overload or the identity one -
+            // and both compose the same total, so the link is satisfied by whichever the caller took.
+            var rangeTotals = ILConformanceScanner
+                .Methods(typeof(RangeValueQuery), nameof(RangeValueQuery.Calculate))
+                .Cast<MemberInfo>()
+                .ToArray();
+            Assert.That(rangeTotals, Is.Not.Empty,
+                "The Range total no longer resolves; correct the rule rather than deleting it.");
+            AssertReachesAny(
+                attackBackend,
+                rangeTotals,
+                "A Ranged attack's reach must come from the one Range query.");
+
+            // The Initiative probe drives the authority itself, so its second link is the turn asking
+            // that authority - the path p.7's order actually runs through.
+            var selectActor = ILConformanceScanner.Method(
+                typeof(InitiativeResolutionAuthority),
+                nameof(InitiativeResolutionAuthority.TrySelectNextActor));
+            Assert.That(selectActor, Is.Not.Null,
+                "Initiative selection no longer resolves; correct the rule rather than deleting it.");
+            AssertReaches(
+                typeof(GuardsDigital.Core.Cards.TurnResolutionAuthority), selectActor,
+                "p.7's turn order must run through the Initiative authority, or a declared Initiative " +
+                "modifier changes a total nobody orders by.");
+
+            // Milestone 8.19c's overlay: one terrain question, and the roster capability that asks it.
+            var terrainRead = ILConformanceScanner.Method(
+                typeof(TerrainPresenceQuery), nameof(TerrainPresenceQuery.IsTerrain));
+            var adjacentTerrain = ILConformanceScanner.Method(
+                typeof(TerrainPresenceQuery), nameof(TerrainPresenceQuery.IsAdjacentToTerrain));
+            Assert.That(new MemberInfo[] { terrainRead, adjacentTerrain }, Has.None.Null,
+                "A terrain question no longer resolves; correct the rule rather than deleting it.");
+            AssertReaches(
+                typeof(TerrainPresenceQuery), terrainRead,
+                "The adjacency form must ask the space form, or the two sources of terrain are read " +
+                "in two places.");
+            AssertReaches(
+                typeof(SyntheticRosterCapabilities), adjacentTerrain,
+                "The roster's adjacent-terrain presence must ask the one terrain question, or a hero " +
+                "petrified into terrain is terrain to every rule but the one that looks for it.");
+        }
+
+        /// <summary>
+        /// One Core type located by name, including an internal one. Milestone 8.19c added it so a rule
+        /// can name a seam the Unity Edit Mode assembly cannot see at compile time; a name that stops
+        /// resolving fails here rather than narrowing the scan in silence.
+        /// </summary>
+        private static Type CoreType(string fullName)
+        {
+            var type = typeof(RuleModificationSet).Assembly.GetType(fullName, false);
+            Assert.That(type, Is.Not.Null,
+                $"'{fullName}' no longer resolves in the Core assembly. Correct the rule rather than " +
+                "deleting it; a rule that names nothing protects nothing.");
+            return type;
         }
 
         private static void AssertReaches(Type subject, MemberInfo member, string because)
@@ -444,6 +526,11 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(activities.Select(value => $"Immunity/{value}"))
                 .Concat(Defined<EffectiveUnitKind>(EffectiveUnitKind.None)
                     .Select(value => $"CountsAs/{value}"))
+                // Milestone 8.19c's sixth family. Enumerated from the same enum as p.17's replacement,
+                // because a type that can be replaced by is a type that can be added, and a member
+                // added to either family must be undecided in both until someone decides it.
+                .Concat(Defined<EffectiveUnitKind>(EffectiveUnitKind.None)
+                    .Select(value => $"EffectiveTypeOverlay/{value}"))
                 .Concat(Defined<ObstacleOverlayArm>(ObstacleOverlayArm.None)
                     .Select(value => $"ObstacleOverlay/{value}"))
                 .ToArray();
@@ -467,18 +554,11 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly IReadOnlyDictionary<string, string> ExcludedMembers =
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["ValueModifier/Initiative"] =
-                    "No source declares one. p.7's Initiative total is composed in " +
-                    "InitiativeResolutionAuthority, beside the item bonus, which is where the " +
-                    "contribution goes when a card first raises it.",
-                ["ValueModifier/Attack"] =
-                    "No source declares one. p.13's Attack Total is composed in " +
-                    "AttackDefenseCardActionStrategyBackend.CalculateAttackValue.",
-                ["ValueModifier/Movement"] =
-                    "No source declares one. p.11's Movement allowance is composed in " +
-                    "MovementCardActionStrategyBackend.",
-                ["ValueModifier/Range"] =
-                    "No source declares one. p.9's Range Total is composed in RangeValueQuery.",
+                // Milestone 8.19c consumed four of the five value channels this list used to carry.
+                // The roster's own sources are what raised them: Sabina's Big Sodding Gun declares
+                // Attack and Range, Xargatha's Metamorphosis declares Movement and Initiative, and
+                // Tigerclaw's poison marker declares Initiative, Attack and Defense. Each moved to a
+                // consumption case naming the query that now composes it.
                 ["ValueModifier/Radius"] =
                     "No source declares one. p.9's Radius Total is composed in RadiusValueQuery.",
                 ["Restriction/ObjectPush"] =
@@ -506,7 +586,19 @@ namespace GuardsDigital.Tests.EditMode
                     "p.17's replacement is declared toward minion by every verified and synthetic " +
                     "source. No rule asks whether an object counts as a hero: ownership, occupancy, " +
                     "the turn's actor and p.18's miniature exception all read intrinsic identity, " +
-                    "which IntrinsicKindQuery answers and a Counts As declaration cannot move."
+                    "which IntrinsicKindQuery answers and a Counts As declaration cannot move.",
+                ["CountsAs/Terrain"] =
+                    "Not declarable at all: RuleModification.ForCountsAs refuses it, because p.17 " +
+                    "replaces \"all rules and qualities\" and p.18's terrain has none a unit could be " +
+                    "run by. Milestone 8.19c's effective-type overlay is the only way a card adds it.",
+                ["EffectiveTypeOverlay/Hero"] =
+                    "No source adds one. The roster's one overlay is Xargatha's Stone Gaze, which " +
+                    "adds terrain to heroes that already are heroes; an overlay adding Hero would " +
+                    "answer a question no rule asks, for the reason CountsAs/Hero records.",
+                ["EffectiveTypeOverlay/Minion"] =
+                    "No source adds one. A card that makes something count as a minion says so as " +
+                    "p.17's replacement, which is CountsAs/Minion and is consumed; adding the type " +
+                    "beside an intrinsic hero would put one unit on both sides of the Minion Battle."
             };
 
         /// <summary>One member, the production seam that reads it, and the answer that moves.</summary>
@@ -558,7 +650,58 @@ namespace GuardsDigital.Tests.EditMode
                     "CountsAs/Minion",
                     "BattleZoneQuery.FindEffectiveMinionsInside",
                     Declaring(RuleModification.ForCountsAs(EffectiveUnitKind.Minion), blue, fixture),
-                    fixture.ReadEffectiveBattleZoneMinions)
+                    fixture.ReadEffectiveBattleZoneMinions),
+
+                // Milestone 8.19c. The four value channels the roster's own sources raised, each at
+                // the query that composes that channel's total. Every one is declared on the hero the
+                // probe's total belongs to, so a channel wired to the wrong object would read as an
+                // unmoved answer rather than passing by coincidence.
+                new ConsumptionCase(
+                    "ValueModifier/Attack",
+                    "AttackValueQuery.Calculate",
+                    Declaring(
+                        RuleModification.ForValue(PrintedValueChannel.Attack, 2),
+                        RuleObject.ForHero(fixture.Red),
+                        fixture),
+                    fixture.ReadAttackTotal),
+                new ConsumptionCase(
+                    "ValueModifier/Range",
+                    "RangeValueQuery.Calculate",
+                    Declaring(
+                        RuleModification.ForValue(PrintedValueChannel.Range, 2),
+                        RuleObject.ForHero(fixture.Red),
+                        fixture),
+                    fixture.ReadRangeTotal),
+                new ConsumptionCase(
+                    "ValueModifier/Movement",
+                    "MovementValueQuery.Calculate",
+                    Declaring(
+                        RuleModification.ForValue(PrintedValueChannel.Movement, 2),
+                        RuleObject.ForHero(fixture.Red),
+                        fixture),
+                    fixture.ReadMovementTotal),
+                new ConsumptionCase(
+                    "ValueModifier/Initiative",
+                    "InitiativeResolutionAuthority.TrySelectNextActor",
+                    Declaring(
+                        RuleModification.ForValue(PrintedValueChannel.Initiative, 3),
+                        RuleObject.ForHero(fixture.Red),
+                        fixture),
+                    fixture.ReadSelectedInitiativeTotal),
+
+                // Milestone 8.19c's overlay. The probe asks about the space the Blue hero is standing
+                // on rather than about the acting hero's neighbourhood, because the fixture's two
+                // spaces may already sit beside printed terrain and an answer that was true before the
+                // declaration would prove nothing. A playable space an ordinary hero occupies is not
+                // terrain; the overlay is the whole of what makes it one.
+                new ConsumptionCase(
+                    "EffectiveTypeOverlay/Terrain",
+                    "TerrainPresenceQuery.IsTerrain",
+                    Declaring(
+                        RuleModification.ForEffectiveTypeOverlay(EffectiveUnitKind.Terrain),
+                        blue,
+                        fixture),
+                    fixture.ReadTerrainUnderBlue)
             };
 
             // Every action kind reaches its activity through one mapping, so one predicate covers the
@@ -825,6 +968,59 @@ namespace GuardsDigital.Tests.EditMode
                         Red, AttackRangeKind.NonRanged, 1, Participants, Board, modifications)
                     .Count.ToString(CultureInfo.InvariantCulture);
 
+            /// <summary>
+            /// Milestone 8.19c. p.13's Attack Total for an Attack the Red hero could perform, read at
+            /// the query that composes the printed icon, p.16's items and the source declarations.
+            /// </summary>
+            public string ReadAttackTotal(RuleModificationSet modifications) =>
+                AttackValueQuery.Calculate(
+                        OfferOf(ActionKind.Attack), Configuration.CardDefinitions, null, modifications)
+                    .Total.ToString(CultureInfo.InvariantCulture);
+
+            public string ReadRangeTotal(RuleModificationSet modifications) =>
+                RangeValueQuery.Calculate(
+                        OfferOf(ActionKind.Attack), Configuration.CardDefinitions, null, modifications)
+                    .Total.ToString(CultureInfo.InvariantCulture);
+
+            public string ReadMovementTotal(RuleModificationSet modifications) =>
+                MovementValueQuery.Calculate(
+                        OfferOf(ActionKind.Movement), Configuration.CardDefinitions, null,
+                        modifications)
+                    .Total.ToString(CultureInfo.InvariantCulture);
+
+            /// <summary>
+            /// Milestone 8.19c. p.7's Initiative total, read where the turn order reads it: one
+            /// revealed card belonging to the Red hero, selected as the next actor. The card is built
+            /// here rather than taken from the configuration because the fixture's hand is unplayed,
+            /// and the total this reports is the one the selection ordered by.
+            /// </summary>
+            public string ReadSelectedInitiativeTotal(RuleModificationSet modifications)
+            {
+                var definition = Configuration.CardDefinitions
+                    .First(candidate => candidate.Initiative.Value > 0);
+                var card = CardInstance.CreateInHand(
+                    new CardInstanceId("modification-seam-probe-initiative"), definition.Reference, Red);
+                Assert.That(CardLifecycleAuthority.TryPlayFacedown(card), Is.True);
+                Assert.That(CardLifecycleAuthority.TryReveal(card), Is.True);
+                var authority = new InitiativeResolutionAuthority(new TieBreakerState(TeamSide.Red));
+                Assert.That(
+                    authority.TrySelectNextActor(
+                        Configuration.CardDefinitions, new[] { card }, Participants, null,
+                        modifications).Accepted,
+                    Is.True,
+                    "The Initiative probe must select an actor, or it reports about nothing.");
+                return authority.SelectedActor.InitiativeTotal.ToString(CultureInfo.InvariantCulture);
+            }
+
+            /// <summary>
+            /// Milestone 8.19c. Whether the space the Blue hero occupies counts as terrain. It is an
+            /// ordinary playable space, so only an effective-type overlay on the hero standing there
+            /// can make the answer true.
+            /// </summary>
+            public string ReadTerrainUnderBlue(RuleModificationSet modifications) =>
+                TerrainPresenceQuery.IsTerrain(Board, BlueAt, modifications)
+                    .ToString(CultureInfo.InvariantCulture);
+
             public string ReadObstacle(HexCoordinate space, RuleModificationSet modifications) =>
                 ObstacleQuery.IsObstacle(Board, space, modifications)
                     .ToString(CultureInfo.InvariantCulture);
@@ -914,6 +1110,26 @@ namespace GuardsDigital.Tests.EditMode
                             RedAt)
                     },
                     TieBreakerState.Unrevealed);
+            }
+
+            /// <summary>
+            /// Milestone 8.19c. One offer of the named kind the Red hero could perform, for the three
+            /// value totals composed from an offer. It asks the same offer query the turn asks, so a
+            /// card that stopped printing the action fails here rather than reporting about nothing.
+            /// </summary>
+            private ActionOffer OfferOf(ActionKind actionKind)
+            {
+                var offers = ActionOfferQuery.GetAvailableOffers(
+                        Configuration.CardDefinitions,
+                        Configuration.CardInstances,
+                        Red,
+                        ActionOfferWindow.NormalPlay)
+                    .Where(candidate => KindOf(candidate) == actionKind)
+                    .ToArray();
+                Assert.That(offers, Is.Not.Empty,
+                    $"The fixture hand no longer prints a {actionKind} action, so its value probe " +
+                    "would answer about nothing.");
+                return offers[0];
             }
 
             /// <summary>A Defense action the Blue hero could answer an attack with.</summary>

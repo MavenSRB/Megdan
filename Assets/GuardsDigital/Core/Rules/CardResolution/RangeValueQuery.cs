@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -29,18 +31,35 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// the Radius and Defense totals express. p.16's Item Bonus is decided by
         /// <see cref="ItemBonusQuery"/> and not here.
         /// </param>
+        /// <param name="modifications">
+        /// Milestone 8.19c. The live set, so a source-declared Range modifier reaches this total -
+        /// Sabina's Big Sodding Gun, "Your basic attack has +2 Range and +2 Attack". Required rather
+        /// than optional, by milestone 6.8f's rule: a caller that forgot it would compose a Range the
+        /// source has already changed. <see cref="RuleModificationSet.Empty"/> is the named none.
+        /// </param>
+        /// <param name="performedAction">
+        /// Which class of action this total is for, so a qualified declaration is admitted only by the
+        /// action it names. <see cref="ActionValueApplicabilityQuery"/> answers it from the offer.
+        /// </param>
         public static ValueResult Calculate(
             CardInstanceId sourceCardInstanceId,
             CardDefinitionReference sourceDefinitionReference,
             ActionDefinitionId actionDefinitionId,
             IEnumerable<CardDefinition> definitions,
             HeroId actorId,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleModificationSet modifications,
+            RuleValueApplicability performedAction)
         {
             if (!actorId.IsDefined)
             {
                 throw new ArgumentException(
                     "A Range total requires the hero whose action it is.", nameof(actorId));
+            }
+
+            if (modifications == null)
+            {
+                throw new ArgumentNullException(nameof(modifications));
             }
 
             var printed = PrintedValueQuery.CalculatePrintedValue(
@@ -49,22 +68,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 actionDefinitionId,
                 definitions,
                 PrintedValueChannel.Range);
-            return heroItems == null
+            var composed = heroItems == null
                 ? printed
                 : ItemBonusQuery.Apply(printed, heroItems, actorId);
+            var declared = modifications.ValueContributions(
+                RuleObject.ForHero(actorId), PrintedValueChannel.Range, performedAction);
+            return declared.Count == 0
+                ? composed
+                : new ValueResult(
+                    PrintedValueChannel.Range, composed.Contributions.Concat(declared));
         }
 
         /// <summary>The same total for a caller holding the offer, as the other totals take it.</summary>
         public static ValueResult Calculate(
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems) =>
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleModificationSet modifications) =>
             Calculate(
                 offer.SourceCardInstanceId,
                 offer.SourceDefinitionReference,
                 offer.ActionDefinitionId,
                 definitions,
                 offer.ActorId,
-                heroItems);
+                heroItems,
+                modifications,
+                ActionValueApplicabilityQuery.ForOffer(offer, definitions));
     }
 }

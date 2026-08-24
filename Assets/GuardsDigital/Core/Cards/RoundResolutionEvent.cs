@@ -60,7 +60,17 @@ namespace GuardsDigital.Core.Cards
         /// round. A kind of its own rather than a fifth <c>HeroLevelUpOutcomeKind</c>, because this is
         /// the step p.8 places *after* Level Up and its subject is a hero that did not level.
         /// </summary>
-        PityCoinCollected = 22
+        PityCoinCollected = 22,
+
+        /// <summary>
+        /// Milestone 8.19c: a declared Minion-Battle rule replaced its own unit's removal, and that
+        /// unit's team lost p.8's push instead - Brogan's One Man Army.
+        ///
+        /// A kind of its own rather than a removal reported with a flag, because the two are opposite
+        /// facts: <see cref="MinionBattleMinionRemoved"/> says a miniature left the board, and this
+        /// says one did not. A reader counting removals must not have to know which flag meant "no".
+        /// </summary>
+        MinionBattlePushLost = 23
     }
 
     public readonly struct RoundResolutionEvent
@@ -422,6 +432,29 @@ namespace GuardsDigital.Core.Cards
         {
             return new RoundResolutionEvent(
                 RoundResolutionEventKind.MinionBattleMinionRemoved,
+                roundIndex,
+                RoundResolutionAuthority.TurnsPerRound,
+                endOfRoundStage: global::GuardsDigital.Core.Cards.EndOfRoundStage.MinionBattle,
+                endOfRoundResolutionId: resolutionId,
+                teamId: losingTeamId,
+                teamSide: losingSide,
+                unit: unit);
+        }
+
+        /// <summary>
+        /// Milestone 8.19c. p.8's removal replaced by its team losing the push. The unit is named
+        /// because the rule is that unit's own - "if <em>you</em> would be removed" - and the losing
+        /// team is named because that is who the push goes against.
+        /// </summary>
+        public static RoundResolutionEvent MinionBattlePushLost(
+            int roundIndex,
+            EndOfRoundResolutionId resolutionId,
+            TeamId losingTeamId,
+            TeamSide losingSide,
+            RuleObject unit)
+        {
+            return new RoundResolutionEvent(
+                RoundResolutionEventKind.MinionBattlePushLost,
                 roundIndex,
                 RoundResolutionAuthority.TurnsPerRound,
                 endOfRoundStage: global::GuardsDigital.Core.Cards.EndOfRoundStage.MinionBattle,

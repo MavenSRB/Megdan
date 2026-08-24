@@ -189,13 +189,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // reads it, so the value the start restriction judges and the value the session spends are
             // the one Movement Total this card has. Composing after the restriction would let a
             // prevented action be re-enabled by an item, which is a different rule than the page states.
-            var printedMovement = PrintedValueQuery.CalculatePrintedValue(
-                offer,
-                materializedDefinitions,
-                PrintedValueChannel.Movement);
-            var movementValue = heroItems == null
-                ? printedMovement
-                : ItemBonusQuery.Apply(printedMovement, heroItems, offer.ActorId);
+            // Milestone 8.19c moved the composition into MovementValueQuery when a source became a
+            // second contributor to it; the ordering this comment describes is stated there and is
+            // unchanged.
+            var movementValue = MovementValueQuery.Calculate(
+                offer, materializedDefinitions, heroItems, modifications);
             var restriction = actionStartRestrictions.Evaluate(new MovementActionStartContext(
                 offer.ActorId,
                 offer.SourceCardInstanceId,

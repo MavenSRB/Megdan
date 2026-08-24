@@ -32,11 +32,11 @@ revision: `synthetic-direct-move@1`, `synthetic-object-push@3`, `synthetic-place
 `repeat-action@1`. New or refined planned identities are named in the tables and are introduced only by
 the dependency slice assigned in [Phase 8](../Roadmap/PHASE_8.md).
 
-Implementation status through milestone 8.19b: dependency steps 1-3 below are complete. Step 3's new
-handlers execute in bounded synthetic catalogs over at least two hero-shaped consumers; they are not in
-the default production catalog because no verified additional-hero definition is authorized yet and the
-catalog rejects unreachable registration. Persistent declarations remain step 4, the pausing sources step
-4a, and verified face composition remains step 5.
+Implementation status through milestone 8.19c: dependency steps 1-4 below are complete. Steps 3 and 4's
+new handlers and declarations execute in bounded synthetic catalogs over hero-shaped consumers; they are
+not in the default production catalog because no verified additional-hero definition is authorized yet
+and the catalog rejects unreachable registration. Step 4a's three pausing sources remain milestone
+8.19c1, and verified face composition remains step 5.
 
 ## Arien
 

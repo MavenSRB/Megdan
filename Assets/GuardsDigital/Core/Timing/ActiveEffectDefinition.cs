@@ -60,6 +60,21 @@ namespace GuardsDigital.Core.Timing
 
     public sealed class ActiveEffectDefinition
     {
+        /// <summary>
+        /// The trigger windows this build actually executes a declared effect at.
+        ///
+        /// It is a list rather than a single constant since milestone 8.19c, and it is still a list of
+        /// what has a producer rather than of what a card could say. Milestone 8.12 built the Action
+        /// Ended window for Wasp's High Voltage; 8.19c adds the end-of-round moment before the Minion
+        /// Battle for Xargatha's Constrict, whose reminder text prints exactly that position. A window
+        /// declared here with nothing visiting it would be a card that silently never fires.
+        /// </summary>
+        private static readonly TimingCheckpoint[] SupportedTriggerWindows =
+        {
+            TimingCheckpoint.ActionEnded,
+            TimingCheckpoint.EndOfRoundBeforeMinionBattle
+        };
+
         public ActiveEffectDefinition(
             string definitionId,
             ActiveEffectAffectedScopeKind affectedScope,
@@ -104,9 +119,11 @@ namespace GuardsDigital.Core.Timing
                 throw new ArgumentException("A triggered effect reference must be defined.", nameof(triggeredEffect));
             if (triggeredEffect.HasValue && triggers.Length == 0)
                 throw new ArgumentException("A declared triggered effect requires at least one trigger checkpoint.", nameof(triggerCheckpoints));
-            if (triggeredEffect.HasValue && triggers.Any(value => value != TimingCheckpoint.ActionEnded))
+            if (triggeredEffect.HasValue && triggers.Any(value => !SupportedTriggerWindows.Contains(value)))
                 throw new ArgumentException(
-                    "Milestone 8.12 implements only the Action Ended trigger window required by its synthetic proof.",
+                    "An Active effect triggers at a window this build executes: Action Ended " +
+                    "(milestone 8.12) or the end-of-round moment before the Minion Battle " +
+                    "(milestone 8.19c).",
                     nameof(triggerCheckpoints));
             var declaredModifications = (modifications ?? Enumerable.Empty<RuleModification>()).ToArray();
             if (declaredModifications.Any(modification => modification == null))

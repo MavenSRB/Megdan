@@ -207,7 +207,8 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications)
         {
             if (SelectedActor.IsDefined)
             {
@@ -220,7 +221,7 @@ namespace GuardsDigital.Core.Cards
                 return InitiativeResolutionResult.Reject(InitiativeResolutionRejectionReason.ChoicePending);
             }
 
-            var selection = QuerySelection(definitions, instances, participants, heroItems);
+            var selection = QuerySelection(definitions, instances, participants, heroItems, modifications);
             if (selection.Candidates.Count == 0)
             {
                 return InitiativeResolutionResult.Accept(new[]
@@ -255,7 +256,8 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications)
         {
             if (SelectedActor.IsDefined)
             {
@@ -280,7 +282,7 @@ namespace GuardsDigital.Core.Cards
                     InitiativeResolutionRejectionReason.CardNotInPendingChoice);
             }
 
-            var selection = QuerySelection(definitions, instances, participants, heroItems);
+            var selection = QuerySelection(definitions, instances, participants, heroItems, modifications);
             var queriedIds = selection.Candidates.Select(candidate => candidate.Card.Id).ToArray();
             if (selection.SelectedSide != PendingChoice.OwningSide ||
                 selection.InitiativeTotal != PendingChoice.InitiativeTotal ||
@@ -395,11 +397,17 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications)
         {
             if (participants == null)
             {
                 throw new ArgumentNullException(nameof(participants));
+            }
+
+            if (modifications == null)
+            {
+                throw new ArgumentNullException(nameof(modifications));
             }
 
             var cardArray = GetCardInstances(instances);
@@ -412,6 +420,21 @@ namespace GuardsDigital.Core.Cards
                 if (heroItems != null)
                 {
                     value = ItemBonusQuery.Apply(value, heroItems, card.OwnerId);
+                }
+
+                // Milestone 8.19c. A source-declared Initiative modifier is composed here, beside the
+                // item bonus and for the same reason 7.2a put that one here: p.7 orders the turn by the
+                // total, so a contribution added after the highest candidate was chosen would order the
+                // round by a number nobody has. Xargatha's Metamorphosis and Tigerclaw's poison marker
+                // are the two verified sources; the modifier follows the hero, not the card, which is
+                // why it is asked of the card's owner.
+                var declared = modifications.ValueContributions(
+                    GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(card.OwnerId),
+                    PrintedValueChannel.Initiative);
+                if (declared.Count > 0)
+                {
+                    value = new ValueResult(
+                        PrintedValueChannel.Initiative, value.Contributions.Concat(declared));
                 }
 
                 candidates.Add(new InitiativeCandidate(card, side, value.Total));

@@ -134,7 +134,7 @@ or schema change.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819b-add-the-rosters-reusable-derived-query-value-and-state-operation-vocabulary-completion-evidence).
 
-### [ ] 8.19c Add the roster's persistent rule sources and the Minion-Battle replacement
+### [x] 8.19c Add the roster's persistent rule sources and the Minion-Battle replacement
 
 Blocked by: Milestone 8.19b must supply the derived queries and operations these sources consume.
 
@@ -165,6 +165,7 @@ Acceptance checks:
 Non-goals: No verified hero definition, production art, player-facing presentation, snapshot revision,
 broad Minion-Battle rewrite, or the three pausing sources milestone 8.19c1 owns.
 
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819c-add-the-rosters-persistent-rule-sources-and-the-minion-battle-replacement-completion-evidence).
 
 ### [ ] 8.19c1 Add the roster's pausing rule sources in schema v27
 

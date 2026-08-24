@@ -520,7 +520,24 @@ namespace GuardsDigital.Core.Cards
             int roundIndex,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications) =>
+            Plan(
+                roundIndex, board, participants, modifications,
+                Array.Empty<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant>(),
+                GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook);
+
+        /// <param name="ruleParticipants">
+        /// Milestone 8.19c. The heroes taking part in this battle under a declared Minion-Battle rule,
+        /// already derived by <c>MinionBattleRuleSourceQuery</c>. Empty in every match whose roster
+        /// declares none, which is the state before Brogan's One Man Army.
+        /// </param>
+        public static MinionBattlePlan Plan(
+            int roundIndex,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            IReadOnlyList<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant> ruleParticipants,
+            GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog ruleCatalog)
         {
             if (roundIndex < 1)
             {
@@ -537,6 +554,16 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentNullException(nameof(participants));
             }
 
+            if (ruleParticipants == null)
+            {
+                throw new ArgumentNullException(nameof(ruleParticipants));
+            }
+
+            if (ruleCatalog == null)
+            {
+                throw new ArgumentNullException(nameof(ruleCatalog));
+            }
+
             // Milestone 6.4a: one authority-owned membership query, shared with Heavy immunity,
             // Lane Push, setup, and the displaced-minion correction. Milestone 6.6 moved the
             // effective reading of "the minions in the Battle Zone" there too, so p.8's last-minion
@@ -545,6 +572,11 @@ namespace GuardsDigital.Core.Cards
                 .GetCurrentBattleZone(board);
             var effective = BattleZoneQuery
                 .FindEffectiveMinionsInside(board, participants, modifications)
+                .Concat(RuleSuppliedStrength(ruleParticipants, ruleCatalog))
+                .GroupBy(value => value.Unit)
+                .Select(group => group.Aggregate((first, second) =>
+                    new EffectiveBattleZoneMinion(
+                        first.Unit, first.TeamSide, first.IsHeavy || second.IsHeavy)))
                 .ToArray();
             var red = effective.Where(value => value.TeamSide == TeamSide.Red).ToArray();
             var blue = effective.Where(value => value.TeamSide == TeamSide.Blue).ToArray();
@@ -631,5 +663,38 @@ namespace GuardsDigital.Core.Cards
                 choice);
         }
 
+        /// <summary>
+        /// Milestone 8.19c. The strength each declared Minion-Battle rule adds to its own side.
+        ///
+        /// It is composed into the effective set rather than derived inside
+        /// <see cref="BattleZoneQuery.FindEffectiveMinionsInside"/>, and that placement is the whole of
+        /// the rule's isolation. That query is shared with p.13's Heavy-immunity accompaniment and
+        /// p.8's last-minion Lane-Push cause, and Brogan's card scopes both its sentences to the Minion
+        /// Battle - "During minion battle you count as a heavy minion". A hero who counted as a Heavy
+        /// there would have picked up a Heavy minion's standing immunity and changed which side p.8
+        /// thinks has emptied out, neither of which the card says.
+        ///
+        /// A rule that adds no strength contributes nothing here and can still substitute its own
+        /// removal, because a hero already counting as a minion by p.17 can be selected by the battle
+        /// without this rule putting him there.
+        /// </summary>
+        private static IEnumerable<EffectiveBattleZoneMinion> RuleSuppliedStrength(
+            IReadOnlyList<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant> ruleParticipants,
+            GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog ruleCatalog)
+        {
+            for (var index = 0; index < ruleParticipants.Count; index++)
+            {
+                var participant = ruleParticipants[index];
+                var handler = ruleCatalog.Get(participant.Declaration.Reference);
+                if (handler.Contribute(participant) !=
+                    GuardsDigital.Core.Rules.Consequences.MinionBattleStrength.HeavyMinion)
+                {
+                    continue;
+                }
+
+                yield return new EffectiveBattleZoneMinion(
+                    participant.Unit, participant.TeamSide, true);
+            }
+        }
     }
 }

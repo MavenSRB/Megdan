@@ -102,6 +102,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticConsequenceCapabilities.Handlers())
                 .Concat(SyntheticContinuationCapabilities.Handlers())
                 .Concat(SyntheticValueCapabilities.Handlers())
+                .Concat(SyntheticPersistentSourceCapabilities.Handlers())
                 .Concat(GuardsDigital.Core.Cards.Verified.WaspActiveEffectContent.Handlers()));
 
         /// <summary>

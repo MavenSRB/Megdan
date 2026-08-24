@@ -325,6 +325,21 @@ namespace GuardsDigital.Core.Cards
             GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, instances);
 
         /// <summary>
+        /// Milestone 8.19c. The declared Minion-Battle rules applicable right now, derived from those
+        /// same unlocked Ultimates and the board - empty on a board-free round, which has no Battle
+        /// Zone for a rule to be in.
+        ///
+        /// Derived at every ask, like the Ultimates it reads, so a hero who left the board between the
+        /// battle being planned and being completed supplies nothing to either.
+        /// </summary>
+        internal IReadOnlyList<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant>
+            CurrentMinionBattleRules() =>
+            board == null
+                ? Array.Empty<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant>()
+                : GuardsDigital.Core.Rules.Progression.MinionBattleRuleSourceQuery.Derive(
+                    CurrentUltimates(), board, participants);
+
+        /// <summary>
         /// Milestone 7.7. Who won this match, and which of the rulebook's three victory sentences
         /// decided it - or <see cref="MatchOutcome.Unfinished"/> while it is still being played.
         ///
@@ -844,7 +859,9 @@ namespace GuardsDigital.Core.Cards
                     cardActions?.CurrentModifications(
                         timing, participants, tieBreakerState, authority.CurrentUltimates(),
                         GuardsDigital.Core.Rules.Modifications.RuleObject.None) ??
-                        GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
+                        GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
+                    authority.CurrentMinionBattleRules(),
+                    GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook);
                 if (expectedPlan.PendingChoice == null)
                 {
                     throw new ArgumentException("Restored Minion Battle choice is no longer required by authoritative state.");
@@ -1116,7 +1133,9 @@ namespace GuardsDigital.Core.Cards
                 cardActions?.CurrentModifications(
                         timing, participants, TieBreakerState, CurrentUltimates(),
                         GuardsDigital.Core.Rules.Modifications.RuleObject.None) ??
-                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
+                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
+                CurrentMinionBattleRules(),
+                GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook);
             if (plan.PendingChoice != null)
             {
                 PendingMinionBattleChoice = plan.PendingChoice;
@@ -1170,7 +1189,10 @@ namespace GuardsDigital.Core.Cards
                 timing, participants, TieBreakerState, CurrentUltimates(),
                 GuardsDigital.Core.Rules.Modifications.RuleObject.None) ??
                 GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty;
-            var candidates = units.Select(unit => ResolveBattleCandidate(unit, modifications)).ToArray();
+            var ruleParticipants = CurrentMinionBattleRules();
+            var candidates = units
+                .Select(unit => ResolveBattleCandidate(unit, modifications, ruleParticipants))
+                .ToArray();
             if (candidates.Any(value => !value.HasValue) || candidates.Any(value =>
                     losingTeam == null || value.Value.TeamSide != losingTeam.Side))
             {
@@ -1187,8 +1209,27 @@ namespace GuardsDigital.Core.Cards
                     : value.Unit.MinionId.Value, StringComparer.Ordinal)
                 .ToArray();
             var events = new List<RoundResolutionEvent>();
+            var pushLostBySubstitution = false;
             foreach (var candidate in ordered)
             {
+                // Milestone 8.19c. p.8's removal is what a declared Minion-Battle rule replaces, so the
+                // substitution is decided here, immediately before the miniature would come off the
+                // board, and by the registered handler rather than by this authority. A substituted
+                // removal is not a Defeat and never was one: no coins are awarded, no reward
+                // eligibility opens and no Team Life moves, exactly as the removal it replaces awards
+                // none of those.
+                if (SubstitutesRemoval(candidate.Unit, ruleParticipants))
+                {
+                    pushLostBySubstitution = true;
+                    events.Add(RoundResolutionEvent.MinionBattlePushLost(
+                        RoundIndex,
+                        resolutionId,
+                        losingTeam.Id,
+                        losingTeam.Side,
+                        candidate.Unit));
+                    continue;
+                }
+
                 if (GuardsDigital.Core.Rules.Modifications.IntrinsicKindQuery.Of(candidate.Unit) ==
                     GuardsDigital.Core.Rules.Modifications.RuleObjectKind.Hero)
                 {
@@ -1223,8 +1264,13 @@ namespace GuardsDigital.Core.Cards
                 timing, participants, TieBreakerState, CurrentUltimates(),
                 GuardsDigital.Core.Rules.Modifications.RuleObject.None) ??
                 GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty;
+            // Milestone 8.19c. A substituted removal loses p.8's push by itself - "lose the push
+            // instead" is the whole of the sentence - so the request stands whether or not the losing
+            // side has emptied out. The two causes reach one request, with one identity and one pair of
+            // teams, because p.8 pushes the Battle Zone once per battle however many reasons it had.
             if (losingTeam != null && ordered.Length > 0 &&
-                !HasEffectiveMinionInBattleZone(losingTeam.Side, postRoundModifications))
+                (pushLostBySubstitution ||
+                    !HasEffectiveMinionInBattleZone(losingTeam.Side, postRoundModifications)))
             {
                 PendingLanePushRequest = new PendingLanePushRequest(
                     new LanePushRequestId($"round-{RoundIndex}-minion-battle-lane-push"),
@@ -1251,8 +1297,30 @@ namespace GuardsDigital.Core.Cards
 
         private BattleRemovalCandidate? ResolveBattleCandidate(
             GuardsDigital.Core.Rules.Modifications.RuleObject unit,
-            GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications)
+            GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications,
+            IReadOnlyList<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant> ruleParticipants)
         {
+            // Milestone 8.19c. Two ways to be one of the minions this battle can remove: p.17's Counts
+            // As, which the modification set answers, and a declared Minion-Battle rule supplying
+            // strength, which only the rule answers. The rule's arm is asked second and reports the
+            // Heavy the card names, so a hero counting as a Heavy minion is ordered last exactly as a
+            // Heavy miniature is.
+            var suppliedStrength = RuleSuppliedStrengthFor(unit, ruleParticipants);
+            if (suppliedStrength == GuardsDigital.Core.Rules.Consequences.MinionBattleStrength.HeavyMinion &&
+                GuardsDigital.Core.Rules.Modifications.IntrinsicKindQuery.Of(unit) ==
+                    GuardsDigital.Core.Rules.Modifications.RuleObjectKind.Hero &&
+                board.TryGetHeroCoordinate(unit.HeroId, out var suppliedAt))
+            {
+                var suppliedSpace = board.MapDefinition.Spaces.Single(candidate =>
+                    candidate.Kind == GuardsDigital.Core.Board.BoardMapSpaceKind.Playable &&
+                    candidate.Coordinate.Equals(suppliedAt));
+                return GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
+                        board, suppliedSpace.Id)
+                    ? new BattleRemovalCandidate(
+                        unit, participants.GetTeamForHero(unit.HeroId).Side, true)
+                    : (BattleRemovalCandidate?)null;
+            }
+
             if (!GuardsDigital.Core.Rules.Modifications.EffectiveUnitKindQuery.Is(
                     unit,
                     GuardsDigital.Core.Rules.Modifications.EffectiveUnitKind.Minion,
@@ -1286,6 +1354,47 @@ namespace GuardsDigital.Core.Cards
                 ? new BattleRemovalCandidate(
                     unit, participants.GetTeamForHero(unit.HeroId).Side, false)
                 : (BattleRemovalCandidate?)null;
+        }
+
+        /// <summary>
+        /// Milestone 8.19c. What a declared Minion-Battle rule adds for this unit right now, asked of
+        /// the registered handler. <see cref="MinionBattleStrength.None"/> for a unit no rule names,
+        /// which is every unit in a match whose roster declares none.
+        /// </summary>
+        private static GuardsDigital.Core.Rules.Consequences.MinionBattleStrength RuleSuppliedStrengthFor(
+            GuardsDigital.Core.Rules.Modifications.RuleObject unit,
+            IReadOnlyList<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant> ruleParticipants)
+        {
+            for (var index = 0; index < ruleParticipants.Count; index++)
+            {
+                if (!ruleParticipants[index].Unit.Equals(unit)) continue;
+                return GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook
+                    .Get(ruleParticipants[index].Declaration.Reference)
+                    .Contribute(ruleParticipants[index]);
+            }
+
+            return GuardsDigital.Core.Rules.Consequences.MinionBattleStrength.None;
+        }
+
+        /// <summary>
+        /// Milestone 8.19c. Whether a declared Minion-Battle rule replaces this unit's own removal, and
+        /// with what. Asked immediately before the miniature would leave the board, which is the moment
+        /// the card's "if you would be removed" names.
+        /// </summary>
+        private static bool SubstitutesRemoval(
+            GuardsDigital.Core.Rules.Modifications.RuleObject unit,
+            IReadOnlyList<GuardsDigital.Core.Rules.Consequences.MinionBattleParticipant> ruleParticipants)
+        {
+            for (var index = 0; index < ruleParticipants.Count; index++)
+            {
+                if (!ruleParticipants[index].Unit.Equals(unit)) continue;
+                return GuardsDigital.Core.Rules.Consequences.MinionBattleRuleCatalog.Rulebook
+                    .Get(ruleParticipants[index].Declaration.Reference)
+                    .SubstituteRemoval(ruleParticipants[index]) ==
+                    GuardsDigital.Core.Rules.Consequences.MinionBattleRemovalSubstitution.PushLost;
+            }
+
+            return false;
         }
 
         private bool HasEffectiveMinionInBattleZone(

@@ -87,7 +87,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                     nameof(overrideActivity));
             }
 
-            if (modifications.IsImmuneTo(target, activity, actingUnit))
+            if (HasDeclaredImmunity(target, activity, actingUnit, participants, modifications))
             {
                 return true;
             }
@@ -102,6 +102,40 @@ namespace GuardsDigital.Core.Rules.Modifications
             return !(overrides ?? Array.Empty<ImmunityOverrideDeclaration>()).Any(value =>
                 value.Activity == overrideActivity &&
                 value.Reason == ImmunityOverrideReason.PrintedHeavyMinionImmunity);
+        }
+
+        /// <summary>
+        /// Whether a source has declared this target immune to this actor's activity.
+        ///
+        /// Milestone 8.19c's `immunity@2` lets that declaration name the actors it protects against -
+        /// Brogan's Bulwark protects against "enemy heroes" and against nobody else - so the answer
+        /// stopped being a property of the target alone. The actor classes are read by
+        /// <see cref="RestrictedActorResolution"/>, the same reading a restriction's actors get, and
+        /// p.18's fixed exception is applied first: an actor acting on itself is never immune to
+        /// itself, whatever any declaration says.
+        /// </summary>
+        private static bool HasDeclaredImmunity(
+            RuleObject target,
+            RuleActivity activity,
+            RuleObject actingUnit,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (actingUnit.IsDefined && actingUnit.Equals(target))
+            {
+                return false;
+            }
+
+            var covering = modifications.CoveringImmunities(target, activity);
+            for (var index = 0; index < covering.Count; index++)
+            {
+                if (RestrictedActorResolution.Names(covering[index], target, actingUnit, participants))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool HasStandingHeavyImmunity(

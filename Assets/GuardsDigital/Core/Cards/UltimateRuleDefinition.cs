@@ -11,7 +11,20 @@ namespace GuardsDigital.Core.Cards
     public enum UltimateTriggerCondition
     {
         None = 0,
-        AfterControllerPerformsBasicSkill = 1
+        AfterControllerPerformsBasicSkill = 1,
+
+        /// <summary>
+        /// Milestone 8.19c's `after-action-trigger@2`: any completed basic action of the controller's,
+        /// whatever kind it was - Tigerclaw's Cloak and Daggers, "After you perform a basic action you
+        /// may repeat it once".
+        ///
+        /// It is a second condition rather than a widening of
+        /// <see cref="AfterControllerPerformsBasicSkill"/> because the two are different sentences on
+        /// two different cards, and one of them is already printed and implemented. Wasp's High Voltage
+        /// says "basic skill" and means it; widening the member it reads would have made her Ultimate
+        /// fire after her Movements.
+        /// </summary>
+        AfterControllerPerformsBasicAction = 2
     }
 
     /// <summary>
@@ -67,9 +80,11 @@ namespace GuardsDigital.Core.Cards
             EffectDefinitionReference? triggeredEffect = null,
             IEnumerable<TimingCheckpoint> triggerCheckpoints = null,
             UltimateTriggerCondition triggerCondition = UltimateTriggerCondition.None,
-            BeforeActionTrigger beforeAction = default)
+            BeforeActionTrigger beforeAction = default,
+            GuardsDigital.Core.Rules.Consequences.MinionBattleRuleDeclaration minionBattleRule = null)
         {
             BeforeAction = beforeAction;
+            MinionBattleRule = minionBattleRule;
             if (string.IsNullOrWhiteSpace(ruleId) || string.IsNullOrWhiteSpace(ruleKind))
             {
                 throw new ArgumentException("An Ultimate's ability requires stable identity and a rule kind.");
@@ -95,6 +110,19 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException(
                     "An Ultimate declares one trigger: a checkpoint after an action, or a start " +
                     "before one.", nameof(beforeAction));
+            }
+
+            // Milestone 8.19c. p.16 gives an Ultimate one permanent ability, and a Minion-Battle rule
+            // is the whole of the one that declares it. An Ultimate that also modified a value or ran
+            // an effect would be two abilities on a card that prints one sentence, and the reader would
+            // have to decide which of them "the ability" meant.
+            if (minionBattleRule != null &&
+                (modification != null || triggeredEffect.HasValue || beforeAction.IsDeclared ||
+                    textComposition.IsAwaited))
+            {
+                throw new ArgumentException(
+                    "An Ultimate that declares a Minion-Battle rule declares nothing else.",
+                    nameof(minionBattleRule));
             }
 
             if (!Enum.IsDefined(typeof(UltimateTriggerCondition), triggerCondition) ||
@@ -191,6 +219,41 @@ namespace GuardsDigital.Core.Cards
         /// one names an action that has not started and must start unchanged afterwards, so what it
         /// declares is a kind and a frequency and nothing about checkpoints at all.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.19c. A permanent Ultimate ability whose whole content is a named rule changing
+        /// how rulebook p.8's Minion Battle counts or removes - Brogan's One Man Army, "During minion
+        /// battle you count as a heavy minion; if you would be removed, lose the push instead."
+        ///
+        /// <para>It is a fourth factory rather than a <see cref="RuleModification"/> because none of
+        /// that type's five families can say either half. The counting half is not p.17's Counts As:
+        /// that replaces the object's rules and qualities everywhere, which would hand this hero a
+        /// Heavy minion's p.13 immunity and take his own actions away, while the card scopes both
+        /// sentences to the Minion Battle. The removal half is not a modification at all - it replaces
+        /// one consequence with another, which is a transition rather than a rule about an object.</para>
+        ///
+        /// <para>The ability stays as derived as every other Ultimate's: nothing is stored, the rule
+        /// applies while the card is unlocked and its hero is on the board, and the reference is
+        /// resolved through <c>MinionBattleRuleCatalog</c> so the battle never names a card or a
+        /// hero.</para>
+        /// </summary>
+        public static UltimateRuleDefinition MinionBattleAbility(
+            string ruleId,
+            string ruleKind,
+            GuardsDigital.Core.Rules.Consequences.MinionBattleRuleDeclaration minionBattleRule,
+            IEnumerable<PrintedValueDefinition> printedValues)
+        {
+            if (minionBattleRule == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(minionBattleRule),
+                    "A Minion-Battle Ultimate's whole printed content is the rule it declares.");
+            }
+
+            return new UltimateRuleDefinition(
+                ruleId, ruleKind, null, PrintedTextComposition.None, printedValues,
+                null, null, UltimateTriggerCondition.None, default, minionBattleRule);
+        }
+
         public static UltimateRuleDefinition BeforeActionAbility(
             string ruleId,
             string ruleKind,
@@ -234,6 +297,12 @@ namespace GuardsDigital.Core.Cards
         public BeforeActionTrigger BeforeAction { get; }
 
         /// <summary>
+        /// Milestone 8.19c. The Minion-Battle rule this Ultimate declares, or <c>null</c> on every
+        /// Ultimate that declares none - which is every one in this build before Brogan's.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Consequences.MinionBattleRuleDeclaration MinionBattleRule { get; }
+
+        /// <summary>
         /// Stable effect-frame identity for a permanent ability. An Ultimate is not an action, but the
         /// shared frame addresses its source text through the same typed slot used by action text.
         /// </summary>
@@ -253,6 +322,13 @@ namespace GuardsDigital.Core.Cards
         public IReadOnlyList<PrintedValueDefinition> PrintedValues { get; }
 
         public override string ToString() =>
-            $"{RuleId} ({RuleKind}): {(Modification == null ? TextComposition.ToString() : Modification.ToString())}";
+            $"{RuleId} ({RuleKind}): {DescribeContent()}";
+
+        private string DescribeContent()
+        {
+            if (Modification != null) return Modification.ToString();
+            if (MinionBattleRule != null) return MinionBattleRule.ToString();
+            return TextComposition.ToString();
+        }
     }
 }

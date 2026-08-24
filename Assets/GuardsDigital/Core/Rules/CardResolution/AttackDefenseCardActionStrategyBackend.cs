@@ -1925,7 +1925,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications)
         {
-            var composed = ComposeItems(offer, definitions, PrintedValueChannel.Attack);
+            var composed = AttackValueQuery.Calculate(offer, definitions, heroItems, modifications);
             var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
             var current = FindCurrentTurnSlot(offer);
             var roster = RosterDynamicValueQuery.Contributions(
@@ -1941,6 +1941,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 rosterState,
                 current?.RoundIndex ?? 0,
                 current?.TurnIndex ?? 0);
+            // Milestone 8.19c moved the printed/item/source composition into AttackValueQuery, so what
+            // is left here is p.14's card-text contribution alone - the half that needs the bound
+            // target and this turn's own history. The composition still happens once, at every one of
+            // this method's callers, so the value the resolution stores and the values its
+            // re-derivations check remain one total.
             return roster.Count == 0
                 ? composed
                 : new ValueResult(
@@ -1960,7 +1965,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications)
         {
-            var composed = RangeValueQuery.Calculate(offer, definitions, heroItems);
+            var composed = RangeValueQuery.Calculate(offer, definitions, heroItems, modifications);
             var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
             var roster = RosterDynamicValueQuery.Contributions(
                 action,

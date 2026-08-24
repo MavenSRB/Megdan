@@ -18,6 +18,10 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// actors are declared content; and immunity is about being targeted while a restriction is about an
     /// activity happening. A card can print either, and a consumer that asked one query for both would
     /// have to guess which of the two exceptions applied.
+    ///
+    /// What the two families do share since milestone 8.19c is the reading of the actor scope itself,
+    /// which now lives in <see cref="RestrictedActorResolution"/>: `immunity@2` names actors the same
+    /// way a restriction does, and one sentence printed on either family must mean one thing.
     /// </summary>
     public static class RestrictionQuery
     {
@@ -69,7 +73,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             var covering = modifications.CoveringRestrictions(affectedObject, activity);
             for (var index = 0; index < covering.Count; index++)
             {
-                if (Bars(covering[index], affectedObject, actor, participants))
+                if (RestrictedActorResolution.Names(covering[index], affectedObject, actor, participants))
                 {
                     restriction = covering[index];
                     return true;
@@ -77,54 +81,6 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Whether one declaration's named actors include this one. The team relations are resolved
-        /// against the source's controlling side, which
-        /// <see cref="AppliedRuleModification.ControllerTeamSide"/> already carries for p.17's ordering
-        /// - so a restriction knows whose enemies it means without the declaration naming a team.
-        /// </summary>
-        private static bool Bars(
-            AppliedRuleModification applied,
-            RuleObject affectedObject,
-            RuleObject actor,
-            MatchParticipants participants)
-        {
-            var scope = applied.Modification.RestrictedActors;
-            if (scope.Covers(RestrictedActorRelation.AnyActor))
-            {
-                return true;
-            }
-
-            if (!actor.IsDefined)
-            {
-                return false;
-            }
-
-            if (scope.Covers(RestrictedActorRelation.AffectedObjectItself) && actor.Equals(affectedObject))
-            {
-                return true;
-            }
-
-            var opposing = scope.Covers(RestrictedActorRelation.HeroesOpposingSource);
-            var allied = scope.Covers(RestrictedActorRelation.HeroesAlliedWithSource);
-            if (!opposing && !allied)
-            {
-                return false;
-            }
-
-            // Both remaining classes name heroes, so a minion actor meets neither. The intrinsic
-            // question is the right one: p.17's Counts As replaces an object's rules and qualities,
-            // and which player is acting is identity rather than a quality - the hero taking the turn
-            // is still the hero taking the turn while it counts as a minion.
-            if (participants == null || IntrinsicKindQuery.IntrinsicUnitKind(actor) != EffectiveUnitKind.Hero)
-            {
-                return false;
-            }
-
-            var actingSide = participants.GetTeamForHero(actor.HeroId).Side;
-            return actingSide == applied.ControllerTeamSide ? allied : opposing;
         }
     }
 }

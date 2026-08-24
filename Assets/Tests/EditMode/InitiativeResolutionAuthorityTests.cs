@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
@@ -43,7 +44,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.TrySelectNextActor(
                 new[] { firstDefinition, changingDefinition, thirdDefinition },
                 cards,
-                participants).Accepted, Is.True);
+                participants, null, RuleModificationSet.Empty).Accepted, Is.True);
             Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(first.Id));
             ResolveAndAcknowledge(authority, first, cards);
 
@@ -51,7 +52,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.TrySelectNextActor(
                 new[] { firstDefinition, changedCurrentDefinition, thirdDefinition },
                 cards,
-                participants).Accepted, Is.True);
+                participants, null, RuleModificationSet.Empty).Accepted, Is.True);
             Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(changing.Id));
             Assert.That(authority.SelectedActor.InitiativeTotal, Is.EqualTo(9));
         }
@@ -74,7 +75,7 @@ namespace GuardsDigital.Tests.EditMode
             var selection = authority.TrySelectNextActor(
                 new[] { blueDefinition, redDefinition },
                 cards,
-                participants);
+                participants, null, RuleModificationSet.Empty);
 
             Assert.That(selection.Accepted, Is.True);
             Assert.That(selection.Events.Select(ruleEvent => ruleEvent.Kind), Is.EqualTo(new[]
@@ -117,7 +118,7 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
             var authority = new InitiativeResolutionAuthority(new TieBreakerState(TeamSide.Blue));
 
-            var selection = authority.TrySelectNextActor(definitions, cards, participants);
+            var selection = authority.TrySelectNextActor(definitions, cards, participants, null, RuleModificationSet.Empty);
 
             Assert.That(selection.Accepted, Is.True);
             Assert.That(selection.Events.Single().Kind,
@@ -135,7 +136,7 @@ namespace GuardsDigital.Tests.EditMode
                     cards[0].Id,
                     definitions,
                     cards,
-                    participants),
+                    participants, null, RuleModificationSet.Empty),
                 InitiativeResolutionRejectionReason.ChoiceOwnedByOtherTeam);
 
             var chosenCard = cards[1];
@@ -144,7 +145,7 @@ namespace GuardsDigital.Tests.EditMode
                 chosenCard.Id,
                 definitions,
                 cards,
-                participants);
+                participants, null, RuleModificationSet.Empty);
 
             Assert.That(choice.Accepted, Is.True);
             Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(chosenCard.Id));
@@ -167,7 +168,7 @@ namespace GuardsDigital.Tests.EditMode
             var cards = new[] { blue, redTwo, redOne };
             var authority = new InitiativeResolutionAuthority(new TieBreakerState(TeamSide.Red));
 
-            var selection = authority.TrySelectNextActor(definitions, cards, participants);
+            var selection = authority.TrySelectNextActor(definitions, cards, participants, null, RuleModificationSet.Empty);
 
             Assert.That(selection.Accepted, Is.True);
             Assert.That(authority.PendingChoice.OwningSide, Is.EqualTo(TeamSide.Red));
@@ -180,7 +181,7 @@ namespace GuardsDigital.Tests.EditMode
                 redTwo.Id,
                 definitions,
                 cards,
-                participants).Accepted, Is.True);
+                participants, null, RuleModificationSet.Empty).Accepted, Is.True);
             Assert.That(authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Red));
             ResolveAndAcknowledge(authority, redTwo, cards);
             Assert.That(authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue));
@@ -199,7 +200,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.TrySelectNextActor(
                 new[] { firstDefinition, secondDefinition },
                 cards,
-                participants).Accepted, Is.True);
+                participants, null, RuleModificationSet.Empty).Accepted, Is.True);
 
             var changedSecondDefinition = CreateDefinition("second", 6);
             AssertRejected(
@@ -208,7 +209,7 @@ namespace GuardsDigital.Tests.EditMode
                     first.Id,
                     new[] { firstDefinition, changedSecondDefinition },
                     cards,
-                    participants),
+                    participants, null, RuleModificationSet.Empty),
                 InitiativeResolutionRejectionReason.InitiativeStateChanged);
 
             Assert.That(authority.PendingChoice, Is.Not.Null);
@@ -230,7 +231,7 @@ namespace GuardsDigital.Tests.EditMode
             var result = authority.TrySelectNextActor(
                 new[] { definition },
                 new[] { handCard },
-                participants);
+                participants, null, RuleModificationSet.Empty);
 
             Assert.That(result.Accepted, Is.True);
             Assert.That(result.Events.Single().Kind,

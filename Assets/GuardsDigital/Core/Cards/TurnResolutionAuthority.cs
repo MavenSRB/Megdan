@@ -750,7 +750,8 @@ namespace GuardsDigital.Core.Cards
                 definitions,
                 instances,
                 participants,
-                heroItems);
+                heroItems,
+                CurrentModifications());
             return result.Accepted
                 ? TurnResolutionResult.Accept(result.Events.Select(TurnResolutionEvent.FromInitiative))
                 : TurnResolutionResult.Reject(TurnResolutionRejectionReason.InitiativeCommandRejected);
@@ -2099,7 +2100,8 @@ namespace GuardsDigital.Core.Cards
                 }
             }
 
-            var result = initiative.TrySelectNextActor(definitions, instances, participants, heroItems);
+            var result = initiative.TrySelectNextActor(
+                definitions, instances, participants, heroItems, CurrentModifications());
             if (!result.Accepted)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.InitiativeCommandRejected);

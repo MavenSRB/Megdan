@@ -313,7 +313,11 @@ namespace GuardsDigital.Tests.EditMode
                     // `set-attack-target@1` and `around-primary-action@1` become reachable from
                     // showcase content rather than waiting for a hero's card.
                     SyntheticShowcaseHand.CreateRedWithContinuationText(owner),
-                    SyntheticShowcaseHand.CreateBlueWithContinuationText(owner)
+                    SyntheticShowcaseHand.CreateBlueWithContinuationText(owner),
+                    // Milestone 8.19c's five persistent source shapes, dealt to both hands so each
+                    // contract is reachable from two hero-shaped consumers rather than from one.
+                    SyntheticShowcaseHand.CreateRedWithPersistentSourceSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithPersistentSourceSkill(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)

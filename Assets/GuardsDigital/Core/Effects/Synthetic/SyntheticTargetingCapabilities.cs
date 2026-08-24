@@ -284,7 +284,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.ActionDefinitionId,
                     context.CardState.Definitions,
                     context.ActorId,
-                    context.HeroItems);
+                    context.HeroItems,
+                    context.Modifications,
+                    // Milestone 8.19c. Card text resolving inside an action asks for the same Range
+                    // total that action's own targeting asked for, so the class is read from the card
+                    // and action this node is inside rather than assumed from the node.
+                    ActionValueApplicabilityQuery.For(
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions));
             if (printedTotal.Total <= 0)
             {
                 // A card printing no icon of this channel has no such bound at all, and p.16 does
