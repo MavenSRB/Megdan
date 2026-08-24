@@ -30,7 +30,9 @@ Milestones **8.1-8.11e** dealt all nineteen verified Wasp faces through ordinary
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1 through 7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed its 7.9a review's findings.
 
-The remaining **Phase 8** route continues with 8.19c's persistent, trigger, and Minion-Battle rule sources, then complete hero slices 8.20-8.24 before the retained 3v3/URP/online gates; 8.16b's corrections await scheduling. Each implementation requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
+The remaining **Phase 8** route continues with 8.19c's persistent and Minion-Battle rule sources and 8.19c1's pausing sources, then complete hero slices 8.20-8.24 before the retained 3v3/URP/online gates; 8.16b's corrections await scheduling. Each implementation requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
+
+**User-approved amendment, 2026-08-24:** milestone **8.19c** is narrowed to the persistent sources that add no persisted state, and inserted milestone **8.19c1** takes its three pausing sources - before-removal prevention, the pre-Minion-Battle end-of-round trigger, and the after-Push trigger - because each stops the game on a decision snapshot **v26** cannot hold, which the block's own non-goals forbade revising. The roadmap block and the roster matrix carry the reasoning.
 
 **User-approved amendments, 2026-08-23:** milestone **8.15a** is inserted from the user's direction on 8.15's result, and 8.14's `SetAside`-scoping check is withdrawn as unreachable and mis-scoped, a conformance rule fencing the single writer instead; both roadmap blocks carry the reasoning.
 

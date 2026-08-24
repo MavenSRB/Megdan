@@ -35,8 +35,8 @@ the dependency slice assigned in [Phase 8](../Roadmap/PHASE_8.md).
 Implementation status through milestone 8.19b: dependency steps 1-3 below are complete. Step 3's new
 handlers execute in bounded synthetic catalogs over at least two hero-shaped consumers; they are not in
 the default production catalog because no verified additional-hero definition is authorized yet and the
-catalog rejects unreachable registration. Persistent/system declarations remain step 4 and verified
-face composition remains step 5.
+catalog rejects unreachable registration. Persistent declarations remain step 4, the pausing sources step
+4a, and verified face composition remains step 5.
 
 ## Arien
 
@@ -155,10 +155,14 @@ from ordinary action/effect dispatch.
    gain/transfer-resource, contribution suppression, defense-offer restriction, and typed
    immunity-override contracts. These add no snapshot fields: their answers are derived from existing
    authority and their choices use the continuation above.
-4. **Persistent/system foundation:** multi-activity immunity, `NextTurn` and pre-Minion-Battle trigger
-   execution, before-removal prevention, dynamic value sources, additive effective-type overlays,
-   after-Push/after-action sources, and the isolated One Man Army transition rule. Trusted definition and
-   digest changes are explicit; no rule declaration is serialized as payload data.
+4. **Persistent/system foundation:** multi-activity immunity qualified by actor, `NextTurn`, dynamic and
+   action-qualified value sources, additive effective-type overlays, the after-action source, and the
+   isolated One Man Army transition rule. Trusted definition and digest changes are explicit; no rule
+   declaration is serialized as payload data and no snapshot field is added.
+4a. **Pausing sources:** before-removal prevention, pre-Minion-Battle end-of-round trigger execution, and
+   the after-Push source. Split out of step 4 by the 2026-08-24 amendment because each stops the game on a
+   player decision at an altitude the snapshot cannot hold, which is an explicit schema boundary rather
+   than more of the same vocabulary.
 5. **Hero composition:** Arien, Brogan, Sabina, Tigerclaw, then Xargatha. That order proves ordinary
    continuation/refinement consumers first, the unique Minion-Battle interaction next, multi-target board
    composition third, markers/general action Repeat fourth, and additive effective types/end-of-round

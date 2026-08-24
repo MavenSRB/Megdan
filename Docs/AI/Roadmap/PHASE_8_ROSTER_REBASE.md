@@ -1,7 +1,7 @@
 # Phase 8 - Six-Hero Roster Re-baseline and Shared Foundations
 
 Canonical Phase 8 shard for milestone 8.19's audit and shared foundation milestones 8.19a, inserted
-8.19a1, and 8.19b-8.19c. Return to [PHASE_8.md](PHASE_8.md).
+8.19a1, 8.19b-8.19c, and inserted 8.19c1. Return to [PHASE_8.md](PHASE_8.md).
 
 ## Milestone 8.19 audit outcome
 
@@ -11,9 +11,14 @@ milestone per hero. The roster map is
 [Rules/ROSTER_CAPABILITY_MATRIX.md](../Rules/ROSTER_CAPABILITY_MATRIX.md). It initially found one explicit
 schema change, no runtime-text parser, no hero-name branch, and one isolated typed system handler: One Man
 Army's Minion-Battle replacement. Preparing 8.19b then demonstrated that its current-round hero-Defeat
-condition needs a second explicit schema boundary; user-approved milestone 8.19a1 isolates it. The
-dependency-safe route is 8.19a, 8.19a1, 8.19b-8.19c, Arien, Brogan, Sabina, Tigerclaw, Xargatha, then the
-unchanged six-player setup and integration gates.
+condition needs a second explicit schema boundary; user-approved milestone 8.19a1 isolates it. Executing
+8.19c then demonstrated the same thing a third time: three of its persistent sources stop the game on a
+player decision at an altitude schema v26 cannot hold - before a Defeat's removal, at the end-of-round
+moment before the Minion Battle, and immediately after an applied Push - while the block's own non-goals
+forbid a second snapshot revision. User-approved milestone 8.19c1, inserted 2026-08-24, isolates those
+three; 8.19c keeps the sources that add no persisted state. The dependency-safe route is 8.19a, 8.19a1,
+8.19b-8.19c, 8.19c1, Arien, Brogan, Sabina, Tigerclaw, Xargatha, then the unchanged six-player setup and
+integration gates.
 
 Updated focused-engineering estimate, excluding approval latency, Unity/service outages, art procurement,
 external playtest scheduling, and corrective findings: shared roster foundations **10-18 days**; five hero
@@ -129,38 +134,74 @@ or schema change.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819b-add-the-rosters-reusable-derived-query-value-and-state-operation-vocabulary-completion-evidence).
 
-### [ ] 8.19c Add the roster's persistent, trigger, and Minion-Battle rule sources
+### [ ] 8.19c Add the roster's persistent rule sources and the Minion-Battle replacement
 
 Blocked by: Milestone 8.19b must supply the derived queries and operations these sources consume.
 
-Observable outcome: Trusted definitions can express every roster-wide persistent/triggered rule and the
-one isolated Minion-Battle replacement without hero-name control flow.
+Observable outcome: Trusted definitions can express every roster-wide persistent rule that adds no
+persisted state, and the one isolated Minion-Battle replacement, without hero-name control flow.
 
 Acceptance checks:
 
-- Active/continuous sources support multi-activity immunity, `NextTurn`, before-Minion-Battle
-  End-of-Round execution, dynamic values, additive effective-type overlays that preserve named intrinsic
-  effective types, and after-Push/after-action triggers through p.17 ordering.
-- A reusable before-removal-prevention source pauses after Defeat/reward and before removal, pays its typed
-  card cost if accepted, retains the Defeat/reward, and publishes `RemovalPrevented`; restore, simultaneous
-  sources, radius movement, cancellation, and immediate Lane-Push consequences are covered.
+- Active/continuous sources support multi-activity immunity qualified by the actors it protects against,
+  `NextTurn`, dynamic values recounted at every derivation of the live set, value modifiers qualified to
+  the action class they name, and additive effective-type overlays that preserve named intrinsic
+  effective types - all ordered by p.17 and ended by their own source's cancellation.
+- `after-action-trigger@2` reaches every completed basic action of its controller's, while the existing
+  basic-Skill condition keeps its narrower reading and no card's trigger widens by omission.
+- Every declarable value channel and effective type has a production consumer or a recorded reason, and
+  each value channel the roster's sources raise is composed by exactly one query that both the live
+  resolution and its re-derivations ask.
 - The isolated `one-man-army-minion-battle@1` handler consumes only typed Minion-Battle facts, supplies
   Heavy strength, replaces its own effective-unit removal with `PushLost`, emits the ordinary Lane-Push
   request against its team, and emits no Defeat/reward/Life consequence. The push still resolves through
   the shared transition; the handler is registered by rule identity and contains no Brogan/display-name switch.
-- Source declarations remain trusted catalog content; snapshot v26 stores only stable references and
-  runtime instances, and digest/registration changes are deliberately pinned and restoration-tested.
-- Synthetic scenarios prove every duration, trigger, cross-team ordering, cancellation, suppression/
-  restoration, stale choice, and game-ending boundary needed by the roster matrix.
+- Source declarations remain trusted catalog content; snapshot v26 gains no field, and any digest or
+  registration change is deliberately pinned and restoration-tested.
+- Synthetic scenarios prove every duration, cross-team ordering, cancellation, suppression/restoration
+  and applicability boundary these sources need, over at least two hero-shaped consumers where the
+  contract is genuinely shared.
 
-Non-goals: No verified hero definition, production art, player-facing presentation, second snapshot
-revision, or broad Minion-Battle rewrite.
+Non-goals: No verified hero definition, production art, player-facing presentation, snapshot revision,
+broad Minion-Battle rewrite, or the three pausing sources milestone 8.19c1 owns.
+
+
+### [ ] 8.19c1 Add the roster's pausing rule sources in schema v27
+
+Blocked by: Milestone 8.19c must supply the persistent-source vocabulary and the Minion-Battle
+replacement these three sources stand beside.
+
+Observable outcome: A rule source can stop the game for a decision at three altitudes the engine cannot
+currently hold - before a Defeat's removal, at the end-of-round moment before the Minion Battle, and
+immediately after an applied Push - and every one of them restores, replays, and resumes exactly.
+
+Acceptance checks:
+
+- A reusable before-removal-prevention source pauses after Defeat/reward and before removal, pays its typed
+  card cost if accepted, retains the Defeat/reward, and publishes `RemovalPrevented`; restore, simultaneous
+  sources, radius movement, cancellation, and immediate Lane-Push consequences are covered, and both the
+  ordinary p.14 Defeat and the effect-invoked one honour it or neither does.
+- An Active-effect source declaring `EndOfRoundBeforeMinionBattle` executes before the battle is planned,
+  may pause on its own chooser, and resumes into the same battle; the round's persisted cursor, its
+  stage outcomes and its completed-round record are unchanged in shape.
+- An `after-push-trigger@1` source runs after a Push has applied to a named object, may pause, and returns
+  the enclosing effect to the exact node it left; a Push that moved nothing reaches no trigger.
+- Snapshot schema v27 persists each pause explicitly; v26 is rejected clearly because a stopped decision
+  cannot be recovered from a payload that never held it. Positive, boundary, malformed, and tamper cases
+  are pinned, the compatibility corpus is renamed and re-measured, and the byte delta is measured at the
+  pre-change revision.
+- Restore, replay, Undo, restart, stale-choice rejection, projection rebuild, and event/checkpoint order
+  are deterministic at all three altitudes; rejection remains atomic.
+
+Non-goals: No verified hero definition, production art, player-facing presentation, general expression
+language, or new derived query, value, or state operation.
 
 ## First complete hero consumers
 
 ### [!] 8.20 Complete and verify additional pitch hero slot A - Arien
 
-Blocked by: Milestones 8.19a, 8.19a1, and 8.19b-8.19c must complete the shared roster foundations.
+Blocked by: Milestones 8.19a, 8.19a1, 8.19b-8.19c, and 8.19c1 must complete the shared roster
+foundations.
 
 Observable outcome: Arien the Tidemaster's complete verified set is defined, dealt, resolved through the
 ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested.
