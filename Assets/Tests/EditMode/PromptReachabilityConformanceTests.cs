@@ -424,6 +424,139 @@ namespace GuardsDigital.Tests.EditMode
             return labels.ToArray();
         }
 
+        /// <summary>
+        /// Milestone 8.20a, and the defect its player-path journeys walked into. Every target a
+        /// pending Attack lists as legal must be accepted when it is chosen - the same claim this
+        /// fixture makes about Defense offers, on the choice that comes one step earlier.
+        ///
+        /// <para>The board is a Blue melee minion beside the attacker and the Blue hero adjacent to
+        /// him, so one printed non-ranged Attack offers a hero and a minion at once. No fixture had
+        /// that combination: milestone 8.9's session puts the hero at distance 2, and the hero-Defense
+        /// fixtures reach their hero with a ranged Attack or across an empty space. Rulebook p.13's
+        /// own worked example is explicit that the combination is legal - "he can target either
+        /// Dodger to the north-east, or Wasp to the south-east" - so a hero the authority lists and
+        /// then refuses is the authority disagreeing with itself, whichever half is corrected.</para>
+        ///
+        /// <para>Each candidate is chosen on its own session, because choosing one answers the choice
+        /// and the next candidate would have nothing to be offered to.</para>
+        /// </summary>
+        [TestCase(false, TestName = "EveryLegalAttackTargetOffer_IsAcceptedWhenItIsChosen(mirror)")]
+        [TestCase(true, TestName = "EveryLegalAttackTargetOffer_IsAcceptedWhenItIsChosen(stagedArien)")]
+        public void EveryLegalAttackTargetOffer_IsAcceptedWhenItIsChosen(bool stagedArien)
+        {
+            var rejected = new List<string>();
+            foreach (var chooseHero in new[] { true, false })
+            {
+                var session = ConfiguredMatchFixtures.CreateAdjacentHeroAndMinionTargetSession(
+                    out _, stagedArien);
+                ConfiguredDefenseCardTests.CommitRedAgainst(
+                    session,
+                    WaspCardContent.MagneticDagger,
+                    stagedArien ? ArienCardContent.LiquidLeap : WaspCardContent.Shock);
+                var offer = session.Projection.AvailableTurnActions.Single(candidate =>
+                    ActionOf(session, candidate).Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                    ActionOf(session, candidate).Kind == ActionKind.Attack);
+                Assert.That(
+                    session.Execute(DirectorCommand.StartAction(offer.ActionDefinitionId)).Accepted,
+                    Is.True);
+
+                var choice = session.Projection.PendingAttackTargetChoice;
+                Assert.That(choice, Is.Not.Null, "The Attack must reach its target choice.");
+                Assert.That(choice.LegalTargetHeroIds, Is.Not.Empty,
+                    "The adjacent enemy hero must be offered, or this case holds over nothing.");
+                Assert.That(choice.LegalTargetMinionIds, Is.Not.Empty,
+                    "and so must the adjacent enemy minion.");
+
+                var command = chooseHero
+                    ? DirectorCommand.ChooseAttackTarget(
+                        choice.ResolutionId, choice.ChoiceId, choice.LegalTargetHeroIds[0])
+                    : DirectorCommand.ChooseAttackTarget(
+                        choice.ResolutionId, choice.ChoiceId, choice.LegalTargetMinionIds[0]);
+                var result = session.Execute(command);
+                if (!result.Accepted)
+                {
+                    rejected.Add(
+                        (chooseHero
+                            ? "hero " + choice.LegalTargetHeroIds[0].Value
+                            : "minion " + choice.LegalTargetMinionIds[0].Value) +
+                        $" was offered and refused: {result.RejectionReason}/{result.TurnRejectionReason} {result.Detail}");
+                }
+            }
+
+            Assert.That(rejected, Is.Empty,
+                "An Attack target the authority offers must be one the authority takes:" +
+                Environment.NewLine + string.Join(Environment.NewLine, rejected));
+        }
+
+        /// <summary>
+        /// Milestone 8.20a, and the sibling of the case above one step further into p.14: a Defense
+        /// the authority offers must be one it takes. The first case in this fixture proved every
+        /// offer produces a control; this proves the control's own invocation is honoured, which is
+        /// the half that was never asked and the half a player actually experiences.
+        ///
+        /// <para>Arien's three Duelist cards print p.14's Primary Defense Value, so the staged
+        /// configuration offers a valued primary Defense beside ordinary secondary icons in one
+        /// prompt - the combination no fixture had.</para>
+        /// </summary>
+        [TestCase(false, TestName = "EveryLegalDefenseOffer_IsAcceptedWhenItIsChosen(mirror)")]
+        [TestCase(true, TestName = "EveryLegalDefenseOffer_IsAcceptedWhenItIsChosen(stagedArien)")]
+        public void EveryLegalDefenseOffer_IsAcceptedWhenItIsChosen(bool stagedArien)
+        {
+            var offerCount = DefenseOfferCount(stagedArien);
+            Assert.That(offerCount, Is.GreaterThanOrEqualTo(2),
+                "The defender must be offered more than one Defense, or this proves one path.");
+
+            var rejected = new List<string>();
+            for (var index = 0; index < offerCount; index++)
+            {
+                var session = CreateDefenseResponseSession(stagedArien);
+                var choice = session.Projection.PendingDefenseChoice;
+                var offer = choice.LegalDefenseOffers[index];
+                var result = session.Execute(DirectorCommand.ChooseDefenseCard(
+                    choice.ResolutionId, choice.ChoiceId, offer.SourceCardInstanceId));
+                if (!result.Accepted)
+                {
+                    rejected.Add(
+                        $"{offer.SourceCardInstanceId.Value} ({offer.InvocationContext}) was " +
+                        $"offered and refused: {result.RejectionReason}/{result.TurnRejectionReason} " +
+                        result.Detail);
+                }
+            }
+
+            Assert.That(rejected, Is.Empty,
+                "A Defense the authority offers must be one the authority takes:" +
+                Environment.NewLine + string.Join(Environment.NewLine, rejected));
+        }
+
+        private static int DefenseOfferCount(bool stagedArien) =>
+            CreateDefenseResponseSession(stagedArien)
+                .Projection.PendingDefenseChoice.LegalDefenseOffers.Count;
+
+        /// <summary>
+        /// A session stopped on p.14's Defense response, with the defender holding every Defense shape
+        /// their printed set gives them.
+        /// </summary>
+        private static MatchSession CreateDefenseResponseSession(bool stagedArien)
+        {
+            var session = ConfiguredMatchFixtures.CreateAdjacentHeroAndMinionTargetSession(
+                out _, stagedArien);
+            ConfiguredDefenseCardTests.CommitRedAgainst(
+                session,
+                WaspCardContent.MagneticDagger,
+                stagedArien ? ArienCardContent.LiquidLeap : WaspCardContent.Shock);
+            ConfiguredDefenseCardTests.AttackTheHero(
+                session, ConfiguredDefenseCardTests.HeroOn(session, TeamSide.Blue));
+            Assert.That(session.Projection.PendingDefenseChoice, Is.Not.Null,
+                "The Attack must reach p.14's Defense response.");
+            return session;
+        }
+
+        private static ActionDefinition ActionOf(IMatchSession session, ActionOffer offer) =>
+            session.Projection.Definitions
+                .Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
+                .ActionDefinitions
+                .Single(action => action.Id.Equals(offer.ActionDefinitionId));
+
         private static bool IsBlock(IMatchSession session, ActionOffer offer) =>
             GuardsDigital.Core.Rules.CardResolution.DefenseBlockQuery.IsBlock(
                 offer, session.Projection.Definitions);

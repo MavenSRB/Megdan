@@ -44,7 +44,8 @@ namespace GuardsDigital.Application
             IEnumerable<ValueContributionProjection> defenseContributions,
             int? defenseTotal,
             DefenseBlockResult blockResult,
-            AttackResolutionOutcome outcome)
+            AttackResolutionOutcome outcome,
+            bool suppressesMinionContributions = false)
         {
             // Milestone 8.11a relaxed this by exactly one case. Declining still never has a Total - it
             // contributes nothing and there is nothing to total. A card usually has one, but rulebook
@@ -77,7 +78,22 @@ namespace GuardsDigital.Application
             DefenseTotal = defenseTotal;
             BlockResult = blockResult;
             Outcome = outcome;
+            SuppressesMinionContributions = suppressesMinionContributions;
         }
+
+        /// <summary>
+        /// Milestone 8.20a. Whether this offer's own printed text takes the nearby minions out of the
+        /// Defense Total - Arien's three Duelist cards' "Ignore all minion defense modifiers", which
+        /// <c>MinionDefenseContributionPolicy.SuppressAll</c> declares on the action.
+        ///
+        /// <para>It is stated rather than inferred because a numeric Defense with no minion
+        /// contributions has two possible meanings - a card that suppressed them and a preview that
+        /// dropped them - and only the card can tell them apart. Defaulting to <c>false</c> is the
+        /// safe half: a suppressing offer whose builder forgets this fails
+        /// <see cref="PendingDefensePreviewProjection"/>'s comparison loudly, which is what happened
+        /// before this existed.</para>
+        /// </summary>
+        public bool SuppressesMinionContributions { get; }
 
         public CardInstanceId? CardInstanceId { get; }
         public bool IsDecline => !CardInstanceId.HasValue;
@@ -147,9 +163,18 @@ namespace GuardsDigital.Application
                 // no Defense action was performed. Treating every non-decline card as numeric made a
                 // valid Block beside a contributing minion throw while projecting the accepted
                 // Attack-target command, leaving the live board looking as though its click failed.
+                //
+                // Milestone 8.20a adds p.14's third shape, and for the same reason the second was
+                // added: a numeric Defense whose own text reads "Ignore all minion defense modifiers"
+                // composes none of them, so measuring it against the shared set made every Attack on
+                // a hero holding one throw while projecting the accepted Attack-target command - the
+                // identical symptom, one card shape later. The card says which of the two it is;
+                // nothing here guesses from an empty list.
                 var usesNumericDefense = !choice.IsDecline &&
                     choice.BlockResult == DefenseBlockResult.None;
-                var hasExpectedMinionSemantics = usesNumericDefense
+                var composesMinionModifiers = usesNumericDefense &&
+                    !choice.SuppressesMinionContributions;
+                var hasExpectedMinionSemantics = composesMinionModifiers
                     ? choiceMinions.SequenceEqual(
                         projectedMinions.Select(value => value.Contribution))
                     : !choiceMinions.Any();

@@ -468,13 +468,17 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            var accepted = session.Execute(command).Accepted;
-            if (accepted)
+            // Milestone 8.20a: a refused command records why, exactly as a refused restore does. This
+            // is the Director's own surface and a refusal it cannot explain is the one thing it must
+            // never be - the property was already here and only the snapshot path was setting it.
+            var result = session.Execute(command);
+            LastOperationDetail = result.Detail;
+            if (result.Accepted)
             {
                 RefreshAll();
             }
 
-            return accepted;
+            return result.Accepted;
         }
 
         public IReadOnlyList<RuleEventLogEntry> DiagnosticEvents => session.Projection.DiagnosticEvents;

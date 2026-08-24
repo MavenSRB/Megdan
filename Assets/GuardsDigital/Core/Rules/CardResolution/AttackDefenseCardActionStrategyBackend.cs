@@ -2438,9 +2438,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // reaction, so the origin a Block carries is the one the face prints and the origin
                 // every other Defense carries is the reaction it is printed as. Both are Defense
                 // actions discarded from hand, which is what the rest of this check holds.
-                (isBlock
-                    ? action.Origin != ActionDefinitionOrigin.PrintedPrimary
-                    : action.Origin != ActionDefinitionOrigin.Reaction) ||
+                //
+                // Milestone 8.20a. The pair became a trio: p.14's Primary Defense Value is printed in
+                // the same primary slot as a Block and settles by the page's numeric comparison like a
+                // secondary, so keying the origin on the Block resolution refused Arien's three Duelist
+                // cards here after accepting them everywhere earlier - the defender's own click was
+                // taken and the Attack could then not resume. What the origin actually records is which
+                // slot the face prints the Defense in, and p.14 has exactly two.
+                (action.Origin != ActionDefinitionOrigin.PrintedPrimary &&
+                    action.Origin != ActionDefinitionOrigin.Reaction) ||
                 !offer.SourceCardStateTransition.Equals(action.SourceCardStateTransition) ||
                 offer.SourceCardStateTransition.RequiredLocation != CardLocation.Hand ||
                 offer.SourceCardStateTransition.DestinationLocation != CardLocation.DiscardPile)

@@ -942,6 +942,44 @@ namespace GuardsDigital.Tests.EditMode
             CreateMagneticDaggerSession(out adjacentMinionId);
 
         /// <summary>
+        /// Milestone 8.20a. A Blue melee minion beside the Red hero <em>and</em> the Blue hero
+        /// adjacent to him, so one printed non-ranged Attack offers a hero and a minion at once.
+        ///
+        /// <para>No fixture had that board before: milestone 8.9's Magnetic Dagger session puts the
+        /// Blue hero at distance 2, and the fixtures whose subject is a hero Defense reach the hero
+        /// with a ranged Attack or across an empty space. The combination is the one milestone
+        /// 8.20a's player-path journeys walked into, and
+        /// <c>PromptReachabilityConformanceTests.EveryLegalAttackTargetOffer_IsAcceptedWhenItIsChosen</c>
+        /// is what it is for.</para>
+        /// </summary>
+        public static MatchSession CreateAdjacentHeroAndMinionTargetSession(
+            out MinionId adjacentMinionId,
+            bool stagedArien = false)
+        {
+            var configuration = stagedArien
+                ? PlaceholderOneVsOneTestConfiguration.CreateStagedArienForInternalTest(TeamSide.Red)
+                : PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                    TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                stagedArien
+                    ? QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne()
+                    : QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var withMinion = WithAMeleeMinionBesideTheRedHero(map, setup, out adjacentMinionId);
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                withMinion.SelectedMap,
+                withMinion.WaveCount,
+                withMinion.TieBreakerState,
+                withMinion.Teams,
+                WithBlueHeroAtDistance(map, withMinion, 1),
+                withMinion.Minions));
+        }
+
+        /// <summary>
         /// The Blue hero moved to a free playable space exactly <paramref name="spaces"/> from the Red
         /// one, measured the way p.18's Near/Far counts - spaces, obstacles included.
         /// </summary>

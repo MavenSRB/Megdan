@@ -1049,7 +1049,10 @@ namespace GuardsDigital.Application
                     defense.Contributions.Select(ProjectContribution),
                     defense.Total,
                     comparison.BlockResult,
-                    comparison.Outcome));
+                    comparison.Outcome,
+                    // Milestone 8.20a: the offer's own declaration, so the preview says whether an
+                    // absent minion modifier is the card's text or a dropped contribution.
+                    SuppressesMinionDefenseModifiers(offer)));
             }
 
             if (choice.CanDecline)
@@ -1117,6 +1120,23 @@ namespace GuardsDigital.Application
 
             return new ValueContributionProjection(contribution, label);
         }
+
+        /// <summary>
+        /// Milestone 8.20a. Whether this Defense offer's printed action declares p.9's item I - "Ignore
+        /// all minion defense modifiers", which Arien's three Duelist cards print and
+        /// <c>MinionDefenseContributionPolicy.SuppressAll</c> states.
+        ///
+        /// <para>The preview needs it because an absent minion contribution has two meanings, and only
+        /// the card distinguishes them. The definition is found the way every other reading here finds
+        /// one - through the configuration's own definition list - rather than through Core's internal
+        /// offer helpers, which this assembly cannot see.</para>
+        /// </summary>
+        private bool SuppressesMinionDefenseModifiers(ActionOffer offer) =>
+            configuration.CardDefinitions
+                .Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
+                .ActionDefinitions
+                .Single(action => action.Id.Equals(offer.ActionDefinitionId))
+                .MinionDefenseContributions == MinionDefenseContributionPolicy.SuppressAll;
 
         private string GetCardDisplayName(CardInstanceId cardId)
         {

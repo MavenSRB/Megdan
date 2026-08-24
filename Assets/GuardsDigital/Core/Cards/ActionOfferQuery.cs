@@ -286,10 +286,34 @@ namespace GuardsDigital.Core.Cards
         /// <see cref="IsAvailableInWindow"/> has it: p.14's Block is printed as the card's primary and
         /// performed only in reaction, so where it is printed and how it is invoked are two different
         /// answers. Every other action's invocation follows straight from its origin.</para>
+        ///
+        /// <para><b>Milestone 8.20a.</b> This is keyed on the same question
+        /// <see cref="IsAvailableInWindow"/> asks, because the two answers have to agree: an action
+        /// the window offers only in reaction is an action invoked in reaction. Milestone 8.20
+        /// generalised the window from "resolves as a Block" to "is a Defense printed in the primary
+        /// slot" - which is what Arien's three Blue Duelist cards are - and left this half keyed on
+        /// the resolution. A valued Primary Defense Value was then offered in the reaction window and
+        /// stamped <see cref="ActionInvocationContext.PrintedPrimary"/>, and
+        /// <c>PendingDefenseResponseChoice</c> requires every offer it holds to be a reaction: so an
+        /// Attack on a hero whose only Defense is a valued primary threw rather than asking p.14's
+        /// question. Keeping one predicate for both is what stops the two from parting again.</para>
         /// </summary>
+        /// <summary>
+        /// p.14's Defense printed in a card's primary slot - the Block milestone 8.11 admitted and the
+        /// valued Primary Defense Value milestone 8.20 added beside it. It is the one question both
+        /// <see cref="IsAvailableInWindow"/> and <see cref="ToInvocationContext"/> ask, stated once so
+        /// that where the action may be offered and how it is then invoked cannot disagree.
+        ///
+        /// <para>Every Block is a printed-primary Defense, so reading it this way is a strict
+        /// generalisation of the resolution test it replaced.</para>
+        /// </summary>
+        private static bool IsPrintedPrimaryDefense(ActionDefinition action) =>
+            action.Kind == ActionKind.Defense &&
+            action.Origin == ActionDefinitionOrigin.PrintedPrimary;
+
         private static ActionInvocationContext ToInvocationContext(ActionDefinition action)
         {
-            if (action.DefenseResolution == PrintedDefenseResolution.Block)
+            if (IsPrintedPrimaryDefense(action))
             {
                 return ActionInvocationContext.Reaction;
             }
@@ -340,8 +364,7 @@ namespace GuardsDigital.Core.Cards
             //
             // Every Block is a printed-primary Defense, so this is a strict generalisation and Wasp's
             // three Green cards are placed exactly where 8.11 placed them.
-            var isPrintedPrimaryDefense = action.Kind == ActionKind.Defense &&
-                origin == ActionDefinitionOrigin.PrintedPrimary;
+            var isPrintedPrimaryDefense = IsPrintedPrimaryDefense(action);
             switch (window)
             {
                 case ActionOfferWindow.NormalPlay:
