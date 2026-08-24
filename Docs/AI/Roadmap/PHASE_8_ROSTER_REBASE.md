@@ -290,6 +290,40 @@ setup, networking, or production art.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820b-pass-the-permanent-hero-player-path-gate-for-wasp-completion-evidence).
 
+### [ ] 8.20c Standardize every hero card footprint
+
+Prerequisite satisfied: Milestone 8.20b completed the permanent player-path gate for both currently
+configured heroes, providing the real Wasp/Arien surfaces and journeys against which this shared
+presentation correction is proved.
+
+Observable outcome: Every complete hero-card face has one shared fixed outer width and height, independent
+of hero, printed content, current hand, interaction state, or the surface displaying it; Wasp and Arien no
+longer resize the tray or each other, and the permanent hero gate prevents every later hero from reintroducing
+content-sized cards.
+
+Acceptance checks:
+
+- One shared card-footprint contract supplies the exact width and height used by the ordinary tray, Defense
+  responses, card-valued effect and discard choices, Level Up/upgrade choices, complete-face previews, and
+  any later full-card surface. Padding around a face may differ by context, but its outer face dimensions do
+  not; title, values, action, rules text, and history wrap or fit inside that footprint without changing it.
+- A focused regression demonstrates the current failure before the correction and passes afterward: switching
+  between Wasp and Arien through the configured map pointer keeps every resolved card width and height exact,
+  does not resize or reflow the tray/board viewport, and selection, active, unavailable, hover, and focus
+  treatments do not alter the footprint.
+- Every complete Wasp and Arien face remains legible without clipped, overlapped, or truncated meaningful
+  content at the validated desktop viewport. At a short supported desktop viewport, the containing region's
+  bounded scrolling keeps every card/control reachable rather than resizing individual cards.
+- The permanent hero player-path completion gate mechanically checks the shared footprint and complete-face
+  fit for every verified face of every newly configured hero, including heroes outside the mapped pitch
+  roster, so content-driven resizing or overflow blocks that hero's completion.
+- T2 focused Edit Mode and real-input Play Mode coverage proves the shared layout and both configured heroes;
+  one targeted non-batch Game View inspection covers Wasp and Arien at the validated viewport and the bounded
+  short-viewport fallback.
+
+Non-goals: No card wording, rules, balance, hero content, production art, broad HUD redesign, responsive
+card scaling, six-player setup, or networking.
+
 ### [ ] 8.20d Name every standing decision in the status line
 
 Prerequisite satisfied: Milestones 8.20a and 8.20b drove both configured heroes through the real player
@@ -325,11 +359,11 @@ Acceptance checks:
 Non-goals: No new decision family, rules change, projection field beyond what naming requires, card
 footprint work, broad HUD redesign, hero content, six-player setup, networking, or production art.
 
-### [ ] 8.21 Complete and verify additional pitch hero slot B - Brogan
+### [!] 8.21 Complete and verify additional pitch hero slot B - Brogan
 
-Prerequisite satisfied: Milestones 8.20 and 8.20a proved the shared continuation and the player-path gate
-on Arien, and milestone 8.20b closed the same permanent gate for Wasp with no grandfathered exception, so
-both dealt heroes now stand on one guarded matrix.
+Blocked by: Milestone 8.20c must establish the standard card footprint before another hero face enters the
+configured player path. Milestones 8.20 and 8.20a proved the shared continuation and player-path gate on
+Arien, and milestone 8.20b closed the same permanent gate for Wasp with no grandfathered exception.
 
 Observable outcome: Brogan the Destroyer's complete verified set is defined, dealt, resolved through the
 ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested.

@@ -14,7 +14,7 @@ The project has completed roadmap milestones through **8.20b**. Both dealt heroe
 
 - Current completed milestone: **8.20b**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.21**.
+- Next proposed milestone: **8.20c**.
 
 Milestone **8.20b** completed on 2026-08-24, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). Wasp passes the same permanent gate Arien does, on nineteen face rows and three component rows derived from `WaspCardContent` and bound to twenty-five real-input journeys, twenty-two of them retained from 8.15 and 8.16c. **It found no defect in her shipped content and changed no production file**: what it found was coverage - the numeric secondary Defense fifteen faces print, her piece's own spawn and rebuild, a pause surviving Undo and restore, and two journeys proving whichever seat a coin flip opened. Three shared refinements followed, each leaving every Arien row unchanged.
 
@@ -30,17 +30,11 @@ Milestones **8.1-8.11e** dealt all nineteen verified Wasp faces through ordinary
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1 through 7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed its 7.9a review's findings.
 
-The remaining **Phase 8** route continues with the complete hero slices 8.21-8.24 and the retained 3v3/URP/online gates; 8.16b's corrections await scheduling. Each implementation requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
+The remaining **Phase 8** route continues with 8.20c standardizing every hero card's fixed footprint before complete hero slices 8.21-8.24 and the retained 3v3/URP/online gates; 8.16b's corrections await scheduling. Each implementation requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
 
-**User-approved amendment, 2026-08-24:** every hero first made configured/playable - the five mapped newcomers and every later roster addition - must pass the permanent hero player-path completion gate in `Testing/POLICY.md`. A guarded face/component and interaction-shape matrix binds source-backed engine scenarios to real configured UI-pointer or board-ray journeys and their resulting visible HUD/board state; direct authority/presenter submission cannot substitute, and at least one hero-specific pause must visibly survive restore and Undo.
+**User-approved amendment, 2026-08-24:** inserted milestone **8.20d** names every standing decision in the status line. Milestone 8.20b's Wasp journey found a discard chooser presented as though it were an action: the status derivation runs six pending-family branches and has no `PendingEffectChoice` one, so every effect choice since **8.15** falls through to "choose an action or End Turn" under a row headed `ACTIONS`. It is scheduled alone rather than folded into 8.21 because one derivation branch plus that heading corrects every effect choice at once, and a conformance rule keeps a seventh family from arriving unnamed. The roadmap block carries the reasoning.
 
-**User-approved amendment, 2026-08-24:** inserted milestone **8.20d** names every standing decision in the status line. 8.20b's Wasp journey found a discard chooser presented as an action: the derivation has no `PendingEffectChoice` branch, so every effect choice since **8.15** falls through to "choose an action or End Turn" under a row headed `ACTIONS`. Scheduled alone because one branch plus that heading corrects them all at once, with a conformance rule so no later family arrives unnamed.
-
-**User-approved amendment, 2026-08-24:** milestone **8.21** must reach the player as well as the rules. Brogan's Shield/Bolster/Fortify are the first content that can open 8.19c1's removal-prevention pause, left unprojected there under its presentation non-goal, so 8.21 owns the projected decision and its invocations, the prompt, the board cue, a prompt-reachability case, a pointer journey, and Undo across the answer.
-
-**User-approved amendments, 2026-08-23:** milestone **8.15a** is inserted from the user's direction on 8.15's result, and 8.14's `SetAside`-scoping check is withdrawn as unreachable and mis-scoped, a conformance rule fencing the single writer instead; both roadmap blocks carry the reasoning.
-
-**User-approved amendment, 2026-08-22:** Wasp question **W-05** is answered from source and generalised into [ledger question 13](RULES_LEDGER.md#open-source-and-rules-questions) - "discards a card, or is defeated" is one mandatory step with two ways to complete - unblocking 8.10; the cross-hero rule left the hero shard; the same day inserted **8.8b**.
+**User-approved amendment, 2026-08-24:** inserted milestone **8.20c** gives every complete card face one fixed shared footprint across all full-card surfaces and extends the permanent hero gate so Wasp, Arien, every mapped newcomer, and every later hero must fit it without content-driven resizing or meaningful clipping before completion.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes and its binding constraints.
 
