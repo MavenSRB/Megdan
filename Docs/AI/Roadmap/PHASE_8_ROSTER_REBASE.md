@@ -237,6 +237,22 @@ Acceptance checks:
   Active-effect paths have source-linked scenarios.
 - Shield/Bolster/Fortify prove paid optional removal prevention after reward and before removal across
   cancellation, restore, competing sources, minion immunity, and immediate/end-round Lane-Push order.
+- That decision reaches the player through the one immutable projection and the one contextual region,
+  because Brogan's cards are the first content that can open it. The standing decision and its currently
+  affordable options are projected fields, the pause mints the typed invocation each option is answered
+  with as every other pending family does, and presentation composes its words from those facts and
+  refuses an option it did not project. Each payable card is drawn as its whole printed face by the
+  tray's shared standalone builder at the one fixed width, per the user's milestone 8.15a direction, with
+  the card's name in hover and assistive reading; the minion the price would keep is cued on the board
+  rather than named in the prompt. Declining is always drawn. While it stands the tray is hidden, no End
+  Turn or end-of-round advance is drawn beside it, and the milestone 5.1c bound holds at the validated
+  and short viewports.
+- A prompt-reachability case pins that every offer the authority makes here produces exactly one control,
+  and a live journey answers the decision by pointer at both altitudes it can be reached from - rulebook
+  p.14's Attack and an effect-invoked Defeat. Milestone 8.19c1 left this deliberately unbuilt under its
+  presentation non-goal and recorded that no configured content could reach the pause; these two checks
+  are what keep that true, because `HasPendingResolution` refuses every other turn command while the
+  decision stands.
 - One Man Army proves ordinary and Heavy Minion-Battle strength, selected/not-selected removal, PushLost,
   round continuation, snapshot/replay/Undo, and no Defeat/reward/Life side effect through its isolated typed
   handler and no Brogan-name branch.
