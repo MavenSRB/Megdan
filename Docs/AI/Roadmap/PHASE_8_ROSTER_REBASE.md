@@ -1,17 +1,19 @@
 # Phase 8 - Six-Hero Roster Re-baseline and Shared Foundations
 
-Canonical Phase 8 shard for milestone 8.19's audit and shared foundation milestones 8.19a-8.19c. Return
-to [PHASE_8.md](PHASE_8.md).
+Canonical Phase 8 shard for milestone 8.19's audit and shared foundation milestones 8.19a, inserted
+8.19a1, and 8.19b-8.19c. Return to [PHASE_8.md](PHASE_8.md).
 
 ## Milestone 8.19 audit outcome
 
 Keep the deterministic 3v3, URP, private-online, and independent-review gates at 8.25-8.36a; split the
 hero work at the three genuinely shared risk boundaries below, then keep one complete composition
 milestone per hero. The roster map is
-[Rules/ROSTER_CAPABILITY_MATRIX.md](../Rules/ROSTER_CAPABILITY_MATRIX.md). It found one explicit schema
-change, no runtime-text parser, no hero-name branch, and one isolated typed system handler: One Man Army's
-Minion-Battle replacement. The dependency-safe route is 8.19a-8.19c, Arien, Brogan, Sabina, Tigerclaw,
-Xargatha, then the unchanged six-player setup and integration gates.
+[Rules/ROSTER_CAPABILITY_MATRIX.md](../Rules/ROSTER_CAPABILITY_MATRIX.md). It initially found one explicit
+schema change, no runtime-text parser, no hero-name branch, and one isolated typed system handler: One Man
+Army's Minion-Battle replacement. Preparing 8.19b then demonstrated that its current-round hero-Defeat
+condition needs a second explicit schema boundary; user-approved milestone 8.19a1 isolates it. The
+dependency-safe route is 8.19a, 8.19a1, 8.19b-8.19c, Arien, Brogan, Sabina, Tigerclaw, Xargatha, then the
+unchanged six-player setup and integration gates.
 
 Updated focused-engineering estimate, excluding approval latency, Unity/service outages, art procurement,
 external playtest scheduling, and corrective findings: shared roster foundations **10-18 days**; five hero
@@ -63,7 +65,42 @@ presentation, or general expression language.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819a-make-card-text-and-pre-action-continuations-fully-resumable-completion-evidence).
 
+### [x] 8.19a1 Persist the roster's typed turn/round rules history in schema v26
+
+Observable outcome: Rules authority can answer whether a named hero played a printed-primary Attack card
+in a named turn and whether any hero was defeated in the current round, with the latter surviving
+snapshot restore, replay, Undo, and restart under explicit schema v26 semantics.
+
+Acceptance checks:
+
+- `target-played-attack-this-turn@1`'s foundation derives from the exact round/turn slot's committed card
+  identity and that definition's `PrintedPrimary` Attack, not from which action the hero performed. It
+  remains true when that hero Held, performed a Secondary action, was defeated before acting, or has not
+  acted yet; a Pass, non-Attack primary, or different turn is false.
+- Every completed p.13 hero Defeat appends its opaque outcome ID and typed defeated `HeroId` exactly once
+  through the shared ordinary/effect-invoked consequence seam. A defended/refused/incomplete path appends
+  nothing, a prevented removal remains a completed Defeat, and the record clears only when the next round
+  begins.
+- Snapshot schema v26 persists the ordered current-round record; v25 is rejected because empty cannot be
+  recovered safely after a Defeat. Restore rejects unknown participants, duplicate outcomes, and outcomes
+  absent from the cumulative awarded-outcome ledger; the compatibility corpus pins both empty and
+  non-empty arms and round-trips byte-identically.
+- Live, restored, replayed, retained-prefix Undo, and restarted matches converge on the same answer. The
+  condition never queries diagnostic events, parses a resolution ID, or infers round scope from cumulative
+  coins, Team Life, or board occupancy.
+- Focused history/Defeat/round-boundary tests, both schema digest fixtures, enum decoding, aggregate
+  atomicity, direct restore/replay/Undo regressions, and standing snapshot-cost guards pass at T2. No
+  Unity-facing path changes, so Play Mode remains unaffected.
+
+Non-goals: No registered roster capability handler or synthetic consumer, resource/target/value operation,
+verified hero definition, removal-prevention source, presentation, scene, or general history language.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819a1-persist-the-rosters-typed-turnround-rules-history-in-schema-v26-completion-evidence).
+
 ### [ ] 8.19b Add the roster's reusable derived-query, value, and state-operation vocabulary
+
+Blocked by: Milestone 8.19a1 must supply the typed played-card and current-round hero-Defeat facts this
+vocabulary consumes.
 
 Observable outcome: The roster's shared target-set/pair, geometry, history, presence/count, value,
 card-retrieval, and resource operations exist as typed reusable contracts with pure feasibility answers.
@@ -71,8 +108,9 @@ card-retrieval, and resource operations exist as typed reusable contracts with p
 Acceptance checks:
 
 - Implement the matrix's `choose-target@2`, `choose-target-set@1`, `choose-target-pair@1`,
-  `behind-target-line@1`, charge/through-line candidates, former-target-space, action/round history,
-  presence/count, and pre-consequence adjacency facts from authoritative state with canonical ordering.
+  `behind-target-line@1`, charge/through-line candidates, former-target-space, the 8.19a1 played-card and
+  hero-Defeat history consumers, presence/count, and pre-consequence adjacency facts from authoritative
+  state with canonical ordering.
 - Implement `retrieve-card@1`, `gain-resource@1`, and atomic `transfer-resource@1`; candidate sets are
   rederived on answer/restore, debit/credit cannot mint or go negative, and another player's card/resource
   choice uses the exact recorded chooser.
@@ -108,7 +146,7 @@ Acceptance checks:
   Heavy strength, replaces its own effective-unit removal with `PushLost`, emits the ordinary Lane-Push
   request against its team, and emits no Defeat/reward/Life consequence. The push still resolves through
   the shared transition; the handler is registered by rule identity and contains no Brogan/display-name switch.
-- Source declarations remain trusted catalog content; snapshot v25 stores only stable references and
+- Source declarations remain trusted catalog content; snapshot v26 stores only stable references and
   runtime instances, and digest/registration changes are deliberately pinned and restoration-tested.
 - Synthetic scenarios prove every duration, trigger, cross-team ordering, cancellation, suppression/
   restoration, stale choice, and game-ending boundary needed by the roster matrix.
@@ -120,7 +158,7 @@ revision, or broad Minion-Battle rewrite.
 
 ### [!] 8.20 Complete and verify additional pitch hero slot A - Arien
 
-Blocked by: Milestones 8.19a-8.19c must complete the shared roster foundations.
+Blocked by: Milestones 8.19a, 8.19a1, and 8.19b-8.19c must complete the shared roster foundations.
 
 Observable outcome: Arien the Tidemaster's complete verified set is defined, dealt, resolved through the
 ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested.

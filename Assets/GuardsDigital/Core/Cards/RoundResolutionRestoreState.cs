@@ -39,27 +39,34 @@ namespace GuardsDigital.Core.Cards
         }
     }
 
-    /// <summary>The round's ordered turn slots and its completed-round history.</summary>
+    /// <summary>
+    /// The round's ordered turn slots, current hero-Defeat history, and completed-round history.
+    /// </summary>
     public sealed class RoundHistoryRestoreState
     {
         public RoundHistoryRestoreState(
             IEnumerable<RoundTurnSlot> turnSlots,
+            RoundHeroDefeatHistoryRestoreState heroDefeats,
             IEnumerable<CompletedRoundRecord> completedRounds)
         {
             TurnSlots = Array.AsReadOnly(
                 (turnSlots ?? throw new ArgumentNullException(nameof(turnSlots))).ToArray());
+            HeroDefeats = heroDefeats ?? throw new ArgumentNullException(nameof(heroDefeats));
             CompletedRounds = Array.AsReadOnly(
                 (completedRounds ?? throw new ArgumentNullException(nameof(completedRounds))).ToArray());
         }
 
         public IReadOnlyList<RoundTurnSlot> TurnSlots { get; }
+        public RoundHeroDefeatHistoryRestoreState HeroDefeats { get; }
         public IReadOnlyList<CompletedRoundRecord> CompletedRounds { get; }
 
         public void Deconstruct(
             out IReadOnlyList<RoundTurnSlot> turnSlots,
+            out RoundHeroDefeatHistoryRestoreState heroDefeats,
             out IReadOnlyList<CompletedRoundRecord> completedRounds)
         {
             turnSlots = TurnSlots;
+            heroDefeats = HeroDefeats;
             completedRounds = CompletedRounds;
         }
     }

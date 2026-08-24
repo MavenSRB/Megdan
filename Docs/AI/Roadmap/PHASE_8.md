@@ -385,7 +385,8 @@ Non-goals: No effect implementation or production art.
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819-map-the-five-heroes-to-capabilities-and-re-baseline-the-3v3-pitch-work-completion-evidence).
 
 The completed audit, effort range, retained-gate decisions, and dependency-ordered shared foundations
-8.19a-8.19c live in [PHASE_8_ROSTER_REBASE.md](PHASE_8_ROSTER_REBASE.md).
+8.19a, inserted 8.19a1, and 8.19b-8.19c live in
+[PHASE_8_ROSTER_REBASE.md](PHASE_8_ROSTER_REBASE.md).
 
 ### [!] 8.22 Complete and verify additional pitch hero slot C - Sabina
 

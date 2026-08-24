@@ -203,6 +203,16 @@ Milestone 8.3 adds the tree rule above, closing the 7.9a review's `F-CARD-06`. A
 
 Definition schema version and match-snapshot schema version are separate. A card instance references a stable definition ID and content revision so a restored snapshot cannot silently resolve against different card rules. The snapshot also carries the match's immutable selected `MapId` and map content revision; restore resolves that reference through supplied current map definitions and rejects a missing map or revision mismatch distinctly rather than serializing a supposedly global coordinate set. Round history serializes collection-backed `HeroId` assignments rather than fixed team positions or duplicated player/team facts, preserving stable hero ownership and committed-card-or-empty-hand-Pass facts for both the staged fixture and later six-hero configuration. Controlling `PlayerId` and team resolve through the snapshot's participant graph. Any incompatible change requires an explicit migration or a clear load rejection; it must never silently reinterpret saved state.
 
+Milestone 8.19a1 distinguishes two printed-history questions at that boundary. Whether a hero played an
+Attack card this turn is already stated by the current `RoundTurnSlot`: resolve its committed card and ask
+the trusted definition for `PrintedPrimary` Attack, regardless of the action later performed. Whether any
+hero was defeated this round is not recoverable from assignments, occupancy, cumulative coins/Life, or
+the diagnostic event log, so the round owns an ordered sparse record of completed p.13 outcomes. Snapshot
+schema v26 writes each opaque outcome ID beside the typed defeated `HeroId`, validates participant and
+awarded-outcome coherence on restore, and clears the live record only at the next-round boundary. Schema
+v25 is rejected rather than defaulted empty because a payload saved after a Defeat would then change its
+answer on restore.
+
 Milestone 5.4 advances the match snapshot to schema version 3 so serializable Active-effect definitions/instances and separate continuous sources survive restart, replay, and retained-prefix Undo without rebuilding lifecycle meaning from card text. Schema version 2 is rejected explicitly; no prototype-save migration is claimed.
 
 Milestone 5.6 advances the snapshot to schema version 4 for mutable remaining-minion identity plus Defeat-reward balances and awarded-outcome idempotency. Schema version 3 is explicitly rejected rather than silently treating every configured minion as still present or resetting earned coins; no prototype-save migration is claimed.

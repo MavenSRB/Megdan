@@ -182,7 +182,17 @@ namespace GuardsDigital.Core.Snapshots
         // - but the target space does not coincide, because every v24 Attack had one and simply did
         // not write it. Recovering it would mean reading a piece off the restored board, and the whole
         // reason the field exists is that p.14 may already have taken that piece off.
-        public const int CurrentSchemaVersion = 25;
+        // Milestone 8.19a1 moves it to 26 for one round-scoped rules fact v25 cannot state: which
+        // typed p.13 hero-Defeat outcomes have completed in the current round. The diagnostic event
+        // stream is not rules authority, while Team Life and the coin ledger are cumulative and cannot
+        // distinguish this round from an earlier one. The sparse ordered list carries an opaque outcome
+        // id plus the defeated HeroId and resets at the round boundary.
+        //
+        // v25 is rejected rather than migrated. Treating the absent section as empty would make a save
+        // taken after a hero Defeat answer Brogan's "if any hero was defeated this round" condition as
+        // false after restore, and neither the cumulative state nor an opaque resolution id can recover
+        // the lost round scope without inventing authority.
+        public const int CurrentSchemaVersion = 26;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

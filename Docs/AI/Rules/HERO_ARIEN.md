@@ -34,7 +34,7 @@ nineteen faces below is transcribed here, read twice - once from the whole face 
 icon-region and text-region enlargements built for the purpose. The roster-wide
 [capability matrix](ROSTER_CAPABILITY_MATRIX.md#arien) now assigns every face/component, typed binding,
 policy, checkpoint, and source-linked scenario family. No Arien definition, effect, or test exists in the
-build; milestones 8.19a-8.19c own the shared dependencies and 8.20 owns composition.
+build; milestones 8.19a, 8.19a1 and 8.19b-8.19c own the shared dependencies and 8.20 owns composition.
 
 ## Arien source faces
 

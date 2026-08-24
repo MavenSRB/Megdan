@@ -59,6 +59,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private TeamLifeState teamLives;
 
+        /// <summary>
+        /// Milestone 8.19a1: the round-owned typed history of completed hero Defeats. It is bound beside
+        /// the consequence state because this backend is composed before the round that owns all three.
+        /// Absent only for dispatcher-only fixtures with no round context.
+        /// </summary>
+        private RoundHeroDefeatHistory heroDefeatHistory;
+
         internal AttackDefenseCardActionStrategyBackend(AdjacentMoveAuthority adjacentMoveAuthority)
             : this(adjacentMoveAuthority, null, null)
         {
@@ -142,6 +149,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             heroLevels = levels;
             teamLives = lives;
+        }
+
+        internal void BindHeroDefeatHistory(RoundHeroDefeatHistory history)
+        {
+            heroDefeatHistory = history ?? throw new ArgumentNullException(nameof(history));
         }
 
         public AttackActionResolutionResult StartAttack(
@@ -1531,6 +1543,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     new DefeatRemovalResult(
                         outcome.Id, outcome.TargetId, DefeatRemovalResultKind.Removed),
                     removedHero, resolvedCardId, lifeSpend, hasLifeSpend, lanePush);
+
+            // This is the only completed hero-Defeat seam. Record after every p.13 mutation has
+            // succeeded and before publishing its facts, so a refused or incomplete Attack cannot
+            // trip a later round-history condition. A prevented removal still records the Defeat:
+            // HeroDefeatResolution explicitly treats that as a complete Defeat.
+            heroDefeatHistory?.Record(resolved.Defeat);
 
             // The stream, in p.13's printed order - the same order the mutations above ran in. The
             // cancellation checkpoint and the marker returns belong to the page's third line and are

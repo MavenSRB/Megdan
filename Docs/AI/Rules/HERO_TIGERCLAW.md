@@ -34,8 +34,8 @@ nineteen faces below is transcribed here, read twice - once from the whole face 
 icon-region and text-region enlargements. The Poison marker's own extracted atlas art and manifest entry
 were also inspected. The roster-wide [capability matrix](ROSTER_CAPABILITY_MATRIX.md#tigerclaw) now assigns
 every face/component, typed binding, policy, checkpoint, and source-linked scenario family. No Tigerclaw
-definition, effect, marker, or test exists in the build; milestones 8.19a-8.19c own the shared dependencies
-and 8.23 owns composition.
+definition, effect, marker, or test exists in the build; milestones 8.19a, 8.19a1 and 8.19b-8.19c own
+the shared dependencies and 8.23 owns composition.
 
 ## Tigerclaw source faces
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -15,6 +16,7 @@ using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -47,6 +49,12 @@ namespace GuardsDigital.Tests.EditMode
         {
             var fixture = new DefeatFixture();
             var defeat = fixture.DefeatTheDefender();
+
+            Assert.That(HeroDefeatedThisRoundQuery.IsSatisfied(
+                fixture.Round.HeroDefeatHistory), Is.True);
+            Assert.That(fixture.Round.HeroDefeatHistory.Entries.Single().OutcomeId,
+                Is.EqualTo(defeat.Defeat.Id),
+                "The completed p.13 outcome, not a parsed event or cumulative counter, is retained.");
 
             Assert.That(defeat.Facts, Is.EqualTo(new[]
             {
@@ -168,6 +176,51 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(lifeBefore));
             Assert.That(fixture.Coins(fixture.AttackerId), Is.Zero,
                 "p.13's rewards are the Defeat's, and there was no Defeat.");
+            Assert.That(HeroDefeatedThisRoundQuery.IsSatisfied(
+                fixture.Round.HeroDefeatHistory), Is.False);
+        }
+
+        [Test]
+        public void HeroDefeatRoundHistory_RoundTripsByteIdenticallyAndRejectsIncoherentEntries()
+        {
+            var fixture = new DefeatFixture();
+            fixture.DefeatTheDefenderThroughTheRound();
+            var entry = fixture.Round.HeroDefeatHistory.Entries.Single();
+            var payload = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
+                payload,
+                fixture.Definitions,
+                new[] { fixture.Board.MapDefinition });
+
+            Assert.That(HeroDefeatedThisRoundQuery.IsSatisfied(
+                restored.Round.HeroDefeatHistory), Is.True);
+            Assert.That(restored.Round.HeroDefeatHistory.Entries.Select(value =>
+                    (value.OutcomeId.Value, value.DefeatedHeroId.Value)),
+                Is.EqualTo(new[] { (entry.OutcomeId.Value, entry.DefeatedHeroId.Value) }));
+            Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
+                Is.EqualTo(payload), "An unchanged restored history must serialize byte-identically.");
+
+            var corrupted = RewriteHistoryHeroAsUnknown(
+                payload, entry.OutcomeId.Value, entry.DefeatedHeroId.Value);
+            var exception = Assert.Throws<SnapshotLoadException>(() =>
+                AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
+                    corrupted,
+                    fixture.Definitions,
+                    new[] { fixture.Board.MapDefinition }));
+            Assert.That(exception.Reason, Is.EqualTo(SnapshotLoadRejectionReason.MalformedPayload));
+
+            corrupted = RewriteHistoryOutcomeAsUnawarded(payload, entry.OutcomeId.Value);
+            exception = Assert.Throws<SnapshotLoadException>(() =>
+                AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
+                    corrupted,
+                    fixture.Definitions,
+                    new[] { fixture.Board.MapDefinition }));
+            Assert.That(exception.Reason, Is.EqualTo(SnapshotLoadRejectionReason.MalformedPayload),
+                "A current-round outcome cannot name a Defeat the cumulative p.13 ledger never " +
+                "awarded; otherwise payload tampering could invent a round-history fact in isolation.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -460,6 +513,7 @@ namespace GuardsDigital.Tests.EditMode
             var afterCommits = CommitTheAttackTurn(session);
             var beforeTheDefeat = session.CaptureSnapshot();
             var lifeBefore = LifeOf(session, TeamSide.Blue);
+            Assert.That(SnapshotHasHeroDefeatThisRound(beforeTheDefeat), Is.False);
 
             OpenTheDefenseThroughTheSession(session);
             var atTheDefenseChoice = session.CaptureSnapshot();
@@ -468,32 +522,38 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(LifeOf(session, TeamSide.Blue), Is.LessThan(lifeBefore),
                 "The case is only evidence if a counter was actually spent.");
             Assert.That(afterTheDefeat, Is.Not.EqualTo(atTheDefenseChoice));
+            Assert.That(SnapshotHasHeroDefeatThisRound(afterTheDefeat), Is.True);
 
             // Retained-prefix Undo truncated immediately after the new state transition, and re-executing
             // the same command reconstructs it: the counters, the coins and the removal all come back by
             // replay rather than by being kept.
             Assert.That(session.Undo().Accepted, Is.True);
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(atTheDefenseChoice));
+            Assert.That(SnapshotHasHeroDefeatThisRound(session.CaptureSnapshot()), Is.False);
             Assert.That(LifeOf(session, TeamSide.Blue), Is.EqualTo(lifeBefore),
                 "An undone Defeat gives the counter back, because the counter is state the replay " +
                 "rebuilds rather than a number written down once.");
             DeclineTheDefenseThroughTheSession(session);
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(afterTheDefeat));
+            Assert.That(SnapshotHasHeroDefeatThisRound(session.CaptureSnapshot()), Is.True);
 
             // And truncated immediately before it, back to the turn that had not started the Attack.
             Assert.That(session.Undo().Accepted, Is.True);
             Assert.That(session.Undo().Accepted, Is.True);
             Assert.That(session.Undo().Accepted, Is.True);
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(beforeTheDefeat));
+            Assert.That(SnapshotHasHeroDefeatThisRound(session.CaptureSnapshot()), Is.False);
             Assert.That(LifeOf(session, TeamSide.Blue), Is.EqualTo(lifeBefore));
             DefeatThroughTheSession(session);
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(afterTheDefeat));
+            Assert.That(SnapshotHasHeroDefeatThisRound(session.CaptureSnapshot()), Is.True);
 
             // Truncation on the other side of the transition: back to before the commitments, where no
             // Defeat has happened at all.
             Assert.That(session.Restart().Accepted, Is.True);
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(beforeAnyCommand));
             Assert.That(LifeOf(session, TeamSide.Blue), Is.EqualTo(4));
+            Assert.That(SnapshotHasHeroDefeatThisRound(session.CaptureSnapshot()), Is.False);
 
             // Restore-and-continue through the same public command path, from a payload written before
             // the Defeat, reproduces the payload the live match produced.
@@ -509,6 +569,7 @@ namespace GuardsDigital.Tests.EditMode
             var afterwards = CreateAdjacentSession();
             Assert.That(afterwards.RestoreSnapshot(afterTheDefeat).Accepted, Is.True);
             Assert.That(afterwards.CaptureSnapshot(), Is.EqualTo(afterTheDefeat));
+            Assert.That(SnapshotHasHeroDefeatThisRound(afterwards.CaptureSnapshot()), Is.True);
             Assert.That(LifeOf(afterwards, TeamSide.Blue), Is.EqualTo(lifeBefore - 1));
             Assert.That(
                 afterwards.Projection.Heroes.Any(hero => hero.HeroId.Equals(BlueHeroId)), Is.False,
@@ -606,6 +667,76 @@ namespace GuardsDigital.Tests.EditMode
             var teamId = session.Projection.Setup.Teams
                 .Single(team => team.TeamSide == side).TeamId;
             return session.Projection.TeamLifeCounters.Single(entry => entry.Key.Equals(teamId)).Value;
+        }
+
+        private static bool SnapshotHasHeroDefeatThisRound(string payload)
+        {
+            Assert.That(RuleEventLogSnapshotEnvelope.TryDeserialize(
+                payload, out var envelope, out var rejection), Is.True);
+            Assert.That(rejection, Is.EqualTo(RuleEventLogEnvelopeRejectionReason.None));
+            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
+                envelope.AuthoritativePayload,
+                configuration.CardDefinitions,
+                new[] { map },
+                setup.Minions);
+            return HeroDefeatedThisRoundQuery.IsSatisfied(restored.Round.HeroDefeatHistory);
+        }
+
+        private static string RewriteHistoryHeroAsUnknown(
+            string payload,
+            string outcomeId,
+            string heroId)
+        {
+            var bytes = Convert.FromBase64String(payload);
+            var outcomeBytes = Encoding.UTF8.GetBytes(outcomeId);
+            var heroBytes = Encoding.UTF8.GetBytes(heroId);
+            var outcomeIndex = FindBytes(bytes, outcomeBytes, 0);
+            Assert.That(outcomeIndex, Is.GreaterThanOrEqualTo(0));
+            var heroIndex = FindBytes(bytes, heroBytes, outcomeIndex + outcomeBytes.Length);
+            Assert.That(heroIndex, Is.GreaterThanOrEqualTo(0));
+
+            // Preserve the BinaryWriter string width and corrupt only the typed identity.
+            bytes[heroIndex] = bytes[heroIndex] == (byte)'x' ? (byte)'y' : (byte)'x';
+            return Convert.ToBase64String(bytes);
+        }
+
+        private static string RewriteHistoryOutcomeAsUnawarded(string payload, string outcomeId)
+        {
+            var bytes = Convert.FromBase64String(payload);
+            var outcomeBytes = Encoding.UTF8.GetBytes(outcomeId);
+            var outcomeIndex = FindBytes(bytes, outcomeBytes, 0);
+            Assert.That(outcomeIndex, Is.GreaterThanOrEqualTo(0));
+
+            // Round opening precedes the cumulative coin ledger in the wire format, so this is the
+            // history occurrence alone. Keep BinaryWriter's string width stable.
+            bytes[outcomeIndex] = bytes[outcomeIndex] == (byte)'x' ? (byte)'y' : (byte)'x';
+            return Convert.ToBase64String(bytes);
+        }
+
+        private static int FindBytes(byte[] source, byte[] value, int start)
+        {
+            for (var index = start; index <= source.Length - value.Length; index++)
+            {
+                var matches = true;
+                for (var offset = 0; offset < value.Length; offset++)
+                {
+                    if (source[index + offset] == value[offset]) continue;
+                    matches = false;
+                    break;
+                }
+
+                if (matches) return index;
+            }
+
+            return -1;
         }
 
         /// <summary>
@@ -842,6 +973,8 @@ namespace GuardsDigital.Tests.EditMode
             public MarkerAttachmentRegister Markers { get; } = new MarkerAttachmentRegister();
             public RoundResolutionAuthority Round { get; }
             public int StartingLifeCounters { get; }
+
+            public IReadOnlyList<CardDefinition> Definitions => configuration.CardDefinitions;
 
             public TeamId AttackerTeamId => configuration.Participants.GetTeamForHero(AttackerId).Id;
             public TeamId DefenderTeamId => configuration.Participants.GetTeamForHero(DefenderId).Id;

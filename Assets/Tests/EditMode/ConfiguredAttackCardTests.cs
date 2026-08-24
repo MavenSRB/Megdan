@@ -7,6 +7,7 @@ using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
@@ -298,6 +299,10 @@ namespace GuardsDigital.Tests.EditMode
                 session.Projection.Heroes.Any(occupancy => occupancy.HeroId.Equals(enemy)),
                 Is.False,
                 "p.13's first line: \"Remove the defeated hero from the board.\"");
+            Assert.That(HeroDefeatedThisRoundQuery.IsSatisfied(
+                Restore(session).Round.HeroDefeatHistory), Is.True,
+                "An effect-invoked Defeat reaches the same typed round-history seam as an Attack's " +
+                "ordinary outcome.");
         }
 
         /// <summary>
@@ -324,6 +329,9 @@ namespace GuardsDigital.Tests.EditMode
                 session.Projection.Heroes.Any(occupancy => occupancy.HeroId.Equals(enemy)),
                 Is.True,
                 "and is still standing afterwards.");
+            Assert.That(HeroDefeatedThisRoundQuery.IsSatisfied(
+                Restore(session).Round.HeroDefeatHistory), Is.False,
+                "Taking the printed discard arm is not a Defeat and records no round-history fact.");
         }
 
         // ---------------------------------------------------------------------------------------

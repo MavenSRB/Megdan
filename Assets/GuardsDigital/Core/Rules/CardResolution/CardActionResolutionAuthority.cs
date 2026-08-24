@@ -237,6 +237,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             attackDefenseBackend.BindDefeatConsequenceState(levels, lives);
         }
 
+        /// <summary>
+        /// Hands the Attack backend the round's typed hero-Defeat history. The round owns and persists
+        /// it; the backend is merely the one p.13 path that can append a completed outcome.
+        /// </summary>
+        internal void BindHeroDefeatHistory(
+            GuardsDigital.Core.Rules.Consequences.RoundHeroDefeatHistory history)
+        {
+            attackDefenseBackend.BindHeroDefeatHistory(history);
+        }
+
         internal AdjacentMoveAuthority Board => board;
 
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>

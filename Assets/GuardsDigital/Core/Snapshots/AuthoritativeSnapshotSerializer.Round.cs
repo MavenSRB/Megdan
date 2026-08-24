@@ -36,6 +36,7 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write((int)phase);
             writer.Write((int)tieBreakerState.RevealedSide);
             WriteSlots(writer, state.History.TurnSlots);
+            WriteHeroDefeatHistory(writer, state.History.HeroDefeats);
         }
 
         /// <summary>
@@ -103,6 +104,7 @@ namespace GuardsDigital.Core.Snapshots
             var tieBreaker = new TieBreakerState(
                 SnapshotEnumReader.Read<TeamSide>(reader, "round tie-breaker revealed side"));
             var slots = ReadSlots(reader, cards, participants);
+            var heroDefeats = ReadHeroDefeatHistory(reader);
             var completed = ReadMany(reader, "completed rounds", () =>
             {
                 var completedIndex = reader.ReadInt32();
@@ -233,7 +235,7 @@ namespace GuardsDigital.Core.Snapshots
                 participants,
                 new RoundResolutionRestoreState(
                     new RoundCursorRestoreState(roundIndex, turnIndex, phase, tieBreaker),
-                    new RoundHistoryRestoreState(slots, completed),
+                    new RoundHistoryRestoreState(slots, heroDefeats, completed),
                     new EndOfRoundRestoreState(
                         stage,
                         outcomes,
@@ -439,6 +441,34 @@ namespace GuardsDigital.Core.Snapshots
             BinaryReader reader) =>
             new GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState(
                 ReadMany(reader, "heroes that levelled this round", () => new HeroId(reader.ReadString())));
+
+        /// <summary>
+        /// Milestone 8.19a1. The p.13 hero-Defeat outcomes that have completed in the current round.
+        ///
+        /// The target is a typed hero id rather than a parsed suffix of the outcome id. Both are
+        /// written: the outcome makes repeated entries incoherent and the hero answers the rule without
+        /// consulting cumulative coin or Life state. The owning round supplies the scope, so no round
+        /// index is duplicated per entry.
+        /// </summary>
+        private static void WriteHeroDefeatHistory(
+            BinaryWriter writer,
+            RoundHeroDefeatHistoryRestoreState state)
+        {
+            state.Deconstruct(out var entries);
+            writer.Write(entries.Count);
+            foreach (var entry in entries)
+            {
+                writer.Write(entry.OutcomeId.Value);
+                writer.Write(entry.DefeatedHeroId.Value);
+            }
+        }
+
+        private static RoundHeroDefeatHistoryRestoreState ReadHeroDefeatHistory(BinaryReader reader) =>
+            new RoundHeroDefeatHistoryRestoreState(
+                ReadMany(reader, "hero Defeats this round", () =>
+                    new HeroDefeatHistoryEntry(
+                        new DefeatOutcomeId(reader.ReadString()),
+                        new HeroId(reader.ReadString()))));
 
         /// <summary>
         /// Milestone 6.11. Rulebook p.8's shared Wave counters, the victory sentence that ended the game

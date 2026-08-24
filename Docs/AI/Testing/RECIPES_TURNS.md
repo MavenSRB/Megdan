@@ -410,15 +410,15 @@ Two fixtures pin SHA-256 digests of serialized authoritative state, and a change
 `AuthoritativeSnapshotSerializer.CurrentSchemaVersion` invalidates every one of them by construction,
 because the version is a serialized field:
 
-- `SnapshotCompatibilityCorpusTests` - the five versioned compatibility fixtures.
+- `SnapshotCompatibilityCorpusTests` - the fifteen versioned compatibility fixtures.
 - `CardAggregateInvarianceTests` - nine scenario digest pairs covering accepted, rejected, stale,
   restored, replayed, undo-truncated, and the three defense-discard cases.
 
 Any milestone changing the schema version must run both. Neither is optional and neither can be
-inferred from a filter built by naming the types a change touches: `CardAggregateInvarianceTests`
-sits in the dotnet harness exclude list, so the cross-platform harness cannot reach it, and it
-names none of the types a schema change edits, so an enumerated focused filter will not select it;
-`SnapshotCompatibilityCorpusTests` runs in the harness but must still be selected deliberately.
+inferred from a filter built by naming the types a change touches: both now run in the cross-platform
+harness since milestone 7.9d removed the invariance fixture's last Unity dependency, but neither names
+the serializer types a schema change edits, so an enumerated focused filter still will not select them.
+Both must therefore also be named deliberately in the focused Windows filter.
 Milestone 6.1s hit exactly that gap - it re-pinned the corpus fixtures, closed as complete, and left
 the invariance fixture failing on `main` until 6.1x found it with the complete Edit Mode suite.
 
@@ -435,6 +435,27 @@ covers - the new member must read back, and the next value up must still be refu
 complementary half is not a test at all: code-truth check 6 in the living-document validator fails
 on any raw `(SomeEnum)reader.Read…` cast left under `Core/Snapshots/`, and it runs on a host where
 no Unity fixture can.
+
+### Milestone 8.19a1 typed turn/round rules-history T2
+
+Write the following request to `tmp/unity-validation-request.json`, then invoke the exact parameterless
+launcher from [POLICY.md](POLICY.md):
+
+```json
+{"platform":"EditMode","filter":"GuardsDigital.Tests.EditMode.RoundRuleHistoryTests;GuardsDigital.Tests.EditMode.HeroDefeatConsequenceTests;GuardsDigital.Tests.EditMode.ConfiguredAttackCardTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests;GuardsDigital.Tests.EditMode.SnapshotEnumReaderTests;GuardsDigital.Tests.EditMode.MatchAggregateAtomicityTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests;GuardsDigital.Tests.EditMode.UndoCheckpointReconstructionTests;GuardsDigital.Tests.EditMode.CompleteCoreMatchLoopTests;GuardsDigital.Tests.EditMode.CurrentBattleZoneTests;GuardsDigital.Tests.EditMode.SystemTransitionContinuationTests;GuardsDigital.Tests.EditMode.DefeatRemovalStageTests;GuardsDigital.Tests.EditMode.MinionAttackResolutionTests;GuardsDigital.Tests.EditMode.CompleteMatchRuntimeCaptureTests;GuardsDigital.Tests.EditMode.MatchSessionDiagnosticCostTests","results":"tmp/8-19a1-focused-edit-results.xml","log":"tmp/8-19a1-focused-edit.log"}
+```
+
+Expected result: the exact current-turn slot plus its definition's printed primary answers whether a
+hero played an Attack card, independently of the action later performed; Pass, a non-Attack primary and
+another turn answer false. Ordinary and effect-invoked completed hero Defeats append one typed
+current-round outcome, defended/discard-instead controls append none, and the next-round boundary clears
+the record. Schema v26 round-trips the non-empty arm byte-identically, rejects v25, unknown participants,
+duplicate or unawarded outcomes and malformed/tampered data, and preserves the answer across snapshot
+restore, fresh replay, retained-prefix Undo, and restart. Both digest fixtures move only for the explained
+schema bytes and retain all equality groups; enum, aggregate atomicity, complete-loop, transition and
+snapshot-cost guards remain green. This is T2 because it changes shared round state and snapshot schema.
+No production Presentation, scene, asset, assembly, or player-input path changes, so Play Mode is
+unaffected and not run.
 
 ## Deterministic command-replay Director Undo corrective tests
 

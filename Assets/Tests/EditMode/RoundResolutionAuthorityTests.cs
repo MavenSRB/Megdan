@@ -597,6 +597,33 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(second, Is.EqualTo(first));
         }
 
+        [Test]
+        public void NextRound_ClearsTheHeroDefeatHistoryBesideTheOtherRoundScopedFacts()
+        {
+            var fixture = CreateOneCardPerSideFixture();
+            var defeatedHero = fixture.Blue.OwnerId;
+            var participants = PlaceholderOneVsOneParticipants.Create();
+            fixture.Authority.HeroDefeatHistory.Record(new DefeatOutcome(
+                new DefeatOutcomeId("round-boundary-history-defeat"),
+                new DefeatTargetId(defeatedHero.Value),
+                participants.GetTeamForHero(defeatedHero).Id,
+                fixture.Red.OwnerId,
+                1,
+                1));
+            Assert.That(HeroDefeatedThisRoundQuery.IsSatisfied(
+                fixture.Authority.HeroDefeatHistory), Is.True);
+
+            CompleteOneCardRound(fixture);
+            while (fixture.Authority.Phase == RoundResolutionPhase.EndOfRound)
+            {
+                Assert.That(fixture.Authority.TryAdvanceEndOfRound().Accepted, Is.True);
+            }
+
+            Assert.That(fixture.Authority.RoundIndex, Is.EqualTo(2));
+            Assert.That(fixture.Authority.HeroDefeatHistory.Entries, Is.Empty,
+                "A Defeat from the completed round cannot trip a this-round condition in the next.");
+        }
+
         private static RoundResolutionAuthority CreateAuthority(
             PlaceholderOneVsOneTestConfiguration configuration)
         {

@@ -65,7 +65,7 @@ Source: [HERO_BROGAN.md](HERO_BROGAN.md). Brogan owns no token or marker.
 | Throwing Axe | N | `axe-mode -> choose@1 (C, adjacent-target branch or discard-for-range branch; M/One)`; adjacent arm uses `attack-target@2`; range arm uses `discard-owned-card@1 (A,May/One)` then `set-attack-target@1 (enemy unit in printed Range; only when discarded)` `[brogan/throwing-axe]`. |
 | Throwing Spear | N | Same modal target composition, but discard is optional and the range branch is enabled when A has any card in discard after the optional step `[brogan/throwing-spear]`. |
 | Brutal Jab / Mighty Punch / Savage Kick | R, F | Ordered `synthetic-direct-move@1 (A, distance exact optional 1 / up-to 1 / up-to 2; May/One)` then `synthetic-choose-target@1 (adjacent enemy unit or token)` then `synthetic-object-push@3 (distance 0..1 / 0..2 / 0..2; M/One; correction/Lane-Push facts)` `[brogan/jab-punch-kick]`. |
-| Shield Bash / Counterattack | R, N | `counter-target -> choose-target@2 (enemy hero adjacent to A with turn-history fact PlayedAttackCard; M/One)`; `counter-discard -> synthetic-discard-chosen-card@1/@2 (IfAble / escalation)`; Counterattack adds `synthetic-defeat-hero@1` on no-card outcome `[brogan/shield-counter]`. |
+| Shield Bash / Counterattack | R, N | `counter-target -> choose-target@2 (enemy hero adjacent to A whose exact current-turn slot names a card with PrintedPrimary Attack; M/One)`; `counter-discard -> synthetic-discard-chosen-card@1/@2 (IfAble / escalation)`; Counterattack adds `synthetic-defeat-hero@1` on no-card outcome `[brogan/shield-counter]`. |
 | Shield / Bolster / Fortify | N | `guard-create -> create-active-effect@1 (ThisRound, friendly minions in live radius; M/One)` declaring `before-removal-prevention@1 (trigger=Defeated, chooser=A, cost=discard owned Silver/Silver/Basic card, May; keep Defeat/reward, report RemovalPrevented; One per outcome; BeforeRemovalDecision)` `[brogan/shield-bolster-fortify]`. Candidate/card cost is rederived at the prevention pause. |
 | War Drummer / Master Skald | R, N | `skald-target -> synthetic-range-hero-target@1 (friendly hero excluding A, printed Range; M/One)`; `hero-defeated-this-round@1 (round outcome history -> bool)`; `gain-resource@1 (recipient=Out(target), coin=1/2 or 3/4, exact conditional amount; M/One; ResourceMutation)` `[brogan/war-master-skald]`. |
 | One Man Army | U | Ultimate continuous source declares isolated `one-man-army-minion-battle@1`: during Minion Battle Brogan supplies one Heavy strength to his team; if he would be removed, atomically keep Brogan on board and emit the ordinary Lane-Push request against his team instead, recording `PushLost` without Defeat/reward/Life effects. The push still resolves through the shared transition. It reads only typed Minion-Battle facts and emits typed transition facts; no hero-name branch `[brogan/one-man-army]`. |
@@ -80,7 +80,7 @@ uses `sabina` and no capability branches on either epithet.
 | --- | --- | --- |
 | Point Blank Shot / Bang | R, F | `shot-target -> attack-target@1/@2 (Range unit / adjacent hero)`; Point Blank uses `target-is-adjacent@1` at step 7 from current occupancy; `shot-push -> synthetic-object-push@3 (target=X.target,distance=1 exact; M/One; AfterAttack, only if condition true)` `[sabina/point-blank-bang]`. A removed Point Blank target is no longer adjacent, while Bang's unconditional Push is infeasible; neither resurrects it. |
 | Back to Back | R | `back-target -> synthetic-radius-target@1 (friendly minion)`; `back-swap -> synthetic-swap-actor@1 (A,Out(target); M/Batch)` `[sabina/back-to-back]`. |
-| Quickdraw / Gunslinger / Dead Shot | R, N | `target-played-attack-this-turn@1 (X.target, turn action history -> bool)` feeding `modify-attack-value@1 (+3/+3/+4, card-text contribution; AttackTotal)` `[sabina/quickdraw-gunslinger-dead-shot]`. |
+| Quickdraw / Gunslinger / Dead Shot | R, N | `target-played-attack-this-turn@1 (X.target, current-turn played-card identity -> bool)` feeding `modify-attack-value@1 (+3/+3/+4, card-text contribution; AttackTotal)` `[sabina/quickdraw-gunslinger-dead-shot]`. |
 | Shootout / Bullet Hell | R, N | `shootout-adjacent@1 (pre-consequence A/T -> bool)`; `shootout-targets -> choose-target-set@1 (enemy minions adjacent to A,count=0..1/0..2; UpTo/One choice)`; `shootout-remove -> synthetic-remove@1 (each chosen target, stable chosen order; Ordered; removal decision and immediate Lane Push after each, stop on game end)` `[sabina/shootout-bullet-hell]`. |
 | Listen Up / Roger Roger | R, N | `pair -> choose-target-pair@1 (two distinct minions in printed Radius, unordered canonical pair; M/One choice)`; `swap -> synthetic-swap@1 (Out(pair.a),Out(pair.b); M/Batch)` `[sabina/listen-roger]`. |
 | Ready and Waiting | F, N | Same pair/swap nodes with `immunity-override@1 (activity=Swap, reason=printed Heavy override)` applied in candidate derivation and immediately before commit `[sabina/ready-waiting]`. |
@@ -140,15 +140,20 @@ from ordinary action/effect dispatch.
    offer, action facts, node path, pre-consequence target facts, and any pre-action frame in explicit
    snapshot schema v25; add v24 rejection or a tested migration, tamper rejection, byte-identical
    round-trips, restore/Undo/replay, and projection rebuilding. This precedes every hero.
-2. **Reusable query/value/state foundation:** the target pair/set, source-oriented line, action/round
-   history, count/presence, former-space, retrieve, gain/transfer-resource, contribution suppression,
-   defense-offer restriction, and typed immunity-override contracts. These add no snapshot fields: their
-   answers are derived from existing authority and their choices use the continuation above.
-3. **Persistent/system foundation:** multi-activity immunity, `NextTurn` and pre-Minion-Battle trigger
+2. **Turn/round rules-history schema foundation:** derive `target-played-attack-this-turn@1` from the
+   exact current-turn assignment and printed-primary card identity, with no second state record; retain
+   completed p.13 hero-Defeat outcomes as typed current-round authority. Snapshot schema v26 persists the
+   latter and rejects v25 because cumulative coins/Life and diagnostic events cannot recover round scope.
+3. **Reusable query/value/state foundation:** the target pair/set, source-oriented line, consumers of
+   the played-card/hero-Defeat facts above, count/presence, former-space, retrieve,
+   gain/transfer-resource, contribution suppression, defense-offer restriction, and typed
+   immunity-override contracts. These add no snapshot fields: their answers are derived from existing
+   authority and their choices use the continuation above.
+4. **Persistent/system foundation:** multi-activity immunity, `NextTurn` and pre-Minion-Battle trigger
    execution, before-removal prevention, dynamic value sources, additive effective-type overlays,
    after-Push/after-action sources, and the isolated One Man Army transition rule. Trusted definition and
    digest changes are explicit; no rule declaration is serialized as payload data.
-4. **Hero composition:** Arien, Brogan, Sabina, Tigerclaw, then Xargatha. That order proves ordinary
+5. **Hero composition:** Arien, Brogan, Sabina, Tigerclaw, then Xargatha. That order proves ordinary
    continuation/refinement consumers first, the unique Minion-Battle interaction next, multi-target board
    composition third, markers/general action Repeat fourth, and additive effective types/end-of-round
    timing last. Each hero milestone defines, deals, source-tests, drives through the player projection, and

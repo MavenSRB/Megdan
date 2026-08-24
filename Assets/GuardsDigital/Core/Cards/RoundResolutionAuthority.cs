@@ -161,6 +161,11 @@ namespace GuardsDigital.Core.Cards
             // states otherwise.
             RoundLeveling = new GuardsDigital.Core.Rules.Progression.RoundLevelingRecord(participants);
 
+            // Milestone 8.19a1. Brogan's coin-granting cards ask whether any hero was defeated this
+            // round. Coins and Life are cumulative and the event stream is diagnostic, so the typed
+            // p.13 outcomes have one round-owned record of their own.
+            HeroDefeatHistory = new RoundHeroDefeatHistory(participants);
+
             // One state, shared with the dispatcher whose Defense total reads it - the same arrangement
             // the marker register has, and for the same reason.
             this.cardActions?.BindHeroItems(HeroItems);
@@ -168,6 +173,7 @@ namespace GuardsDigital.Core.Cards
             // Milestone 7.4: the same arrangement again, for the two states p.13's Defeat consequences
             // read and write inside the Attack that caused them.
             this.cardActions?.BindDefeatConsequenceState(HeroProgression, TeamLives);
+            this.cardActions?.BindHeroDefeatHistory(HeroDefeatHistory);
 
             // Milestone 7.5. p.15's level purchase spends from the same balances p.13's Defeat fills, so
             // the ledger is asked for here rather than left to be created by whichever rule reaches it
@@ -226,6 +232,12 @@ namespace GuardsDigital.Core.Cards
         public IReadOnlyList<RoundTurnSlot> TurnSlots => turnSlots.AsReadOnly();
 
         public IReadOnlyList<CompletedRoundRecord> CompletedRounds => completedRounds.AsReadOnly();
+
+        /// <summary>
+        /// Typed p.13 hero-Defeat outcomes in the current round. This is rules authority; the event log
+        /// remains diagnostic and is never queried to resolve card text.
+        /// </summary>
+        public RoundHeroDefeatHistory HeroDefeatHistory { get; private set; }
 
         public EndOfRoundStage? CurrentEndOfRoundStage { get; private set; }
 
@@ -652,7 +664,10 @@ namespace GuardsDigital.Core.Cards
                 : HeroCoinLedgerRestoreStateHolder.Present(CardActions.CoinLedger.CaptureRestoreState());
             return new RoundResolutionRestoreState(
                 new RoundCursorRestoreState(RoundIndex, TurnIndex, Phase, TieBreakerState),
-                new RoundHistoryRestoreState(TurnSlots, CompletedRounds),
+                new RoundHistoryRestoreState(
+                    TurnSlots,
+                    HeroDefeatHistory.CaptureRestoreState(),
+                    CompletedRounds),
                 new EndOfRoundRestoreState(
                     CurrentEndOfRoundStage,
                     EndOfRoundOutcomes,
@@ -717,8 +732,20 @@ namespace GuardsDigital.Core.Cards
             // above created - which would have paid a Pity Coin to a hero that had already levelled.
             authority.RoundLeveling = GuardsDigital.Core.Rules.Progression.RoundLevelingRecord.Restore(
                 participants, state.RoundLeveling);
+            authority.HeroDefeatHistory = RoundHeroDefeatHistory.Restore(
+                participants, state.History.HeroDefeats);
+            if (authority.HeroDefeatHistory.Entries.Count > 0 &&
+                (cardActions?.CoinLedger == null ||
+                    authority.HeroDefeatHistory.Entries.Any(entry =>
+                        !cardActions.CoinLedger.AwardedOutcomeIds.Contains(entry.OutcomeId))))
+            {
+                throw new ArgumentException(
+                    "Every current-round hero-Defeat outcome must exist in the authoritative coin " +
+                    "ledger that p.13 awarded for it.");
+            }
             cardActions?.BindHeroItems(authority.HeroItems);
             cardActions?.BindDefeatConsequenceState(authority.HeroProgression, authority.TeamLives);
+            cardActions?.BindHeroDefeatHistory(authority.HeroDefeatHistory);
 
             // Milestone 7.5. The constructor above bound the leveling rules the states it created; these
             // are the ones the payload recorded, so they are bound again over the top rather than
@@ -1667,6 +1694,7 @@ namespace GuardsDigital.Core.Cards
             // rule enforcing it: a coin collected a moment ago cannot buy a level until the next round's
             // Level Up stage, because the stage cursor only moves forward and this round's is behind it.
             RoundLeveling.BeginRound();
+            HeroDefeatHistory.BeginRound();
             CurrentEndOfRoundStage = null;
             CurrentTurnAuthority = null;
             CurrentCommitmentAuthority = new TurnCardCommitmentAuthority(instances, participants);
