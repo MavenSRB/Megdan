@@ -290,6 +290,41 @@ setup, networking, or production art.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820b-pass-the-permanent-hero-player-path-gate-for-wasp-completion-evidence).
 
+### [ ] 8.20d Name every standing decision in the status line
+
+Prerequisite satisfied: Milestones 8.20a and 8.20b drove both configured heroes through the real player
+path, which is what surfaced this: milestone 8.20b's Wasp journey observed a discard chooser presented as
+though it were an action.
+
+Observable outcome: Whatever the match is currently asking, the status line says which decision it is and
+the region holding its controls is labelled for that decision, so no pause is presented as though the
+player were choosing an action.
+
+Acceptance checks:
+
+- The status-line derivation names the standing effect choice. Today it runs two phase checks and six
+  pending-family branches - Initiative, Defense, Respawn, Attack target, Movement, displaced-minion
+  correction - and has no `PendingEffectChoice` branch at all, so every effect choice since milestone
+  8.15 falls through to "Initiative N: choose an action or End Turn" while its controls sit under a row
+  headed `ACTIONS`. The cause is a pending family the derivation never knew about, not a generic
+  heading, and the fix is that family plus the heading the controls land under.
+- The words come from the projected pause, as every other prompt's do: presentation composes them from
+  typed facts and never decodes an option identity or a resolution ID to decide what to say.
+- A conformance rule fails when a projected pending-decision family has no status derivation, so a
+  seventh family cannot arrive unnamed the way the sixth did. It is the rule rather than the fix that
+  keeps this closed: milestone 8.21's removal-prevention pause would otherwise inherit exactly this
+  defect as the next unnamed family, and its own acceptance checks specify that prompt's contents
+  without specifying its label.
+- Every effect-choice shape the configured content can reach is covered - p.10's discard chooser, the
+  printed-number choice, the card-valued option forms, and the confirm-or-decline `may` - at the
+  applicable tier, with one targeted non-batch inspection showing the corrected wording and heading.
+- No pause loses an affordance it had: the controls, their order, their invocations, and the refusal of
+  an option the prompt did not project are unchanged, and the milestone 5.1c bound still holds at the
+  validated and short viewports.
+
+Non-goals: No new decision family, rules change, projection field beyond what naming requires, card
+footprint work, broad HUD redesign, hero content, six-player setup, networking, or production art.
+
 ### [ ] 8.21 Complete and verify additional pitch hero slot B - Brogan
 
 Prerequisite satisfied: Milestones 8.20 and 8.20a proved the shared continuation and the player-path gate
