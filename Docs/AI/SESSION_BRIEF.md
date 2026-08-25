@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **8.23**. Five verified her
 ## Current authorization and next route
 
 - Current completed milestone: **8.23**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **8.23a**.
 - Next proposed milestone: **8.23a**.
 
 Milestone **8.23** completed on 2026-08-26, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). Tigerclaw the Cutpurse's nineteen faces are dealt at revision `tigerclaw-8-23-rev-1`, played through the ordinary pipeline at p.6's setup and both p.15 stages, and gated on the same guarded matrix - nineteen real-input journeys and eleven guards, needing one new interaction shape and no new rule. **Four shared foundations, not one hero slice**: p.14's Block condition as printed word, marker rule sources affecting the HOLDER, p.10's Repeat reached from outside the action it repeats, and card text at BOTH of p.14's attacker moments on one action. Schema moved twice, **v32** then **v33**, the second for two causes at once. **Closing him found seven defects in shipped code**, the most any hero slice has surfaced, each recorded at its own fix.
@@ -34,7 +34,7 @@ The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Road
 
 Roadmap amendment, 2026-08-25: heroes beyond this roster are taken **in batches of about five rather than one at a time**, and [Roadmap/POST_PITCH.md](Roadmap/POST_PITCH.md) owns why and what a batch owes first. It changes nothing before 8.25 - Xargatha stays her own slice, because the two changes a batch needs are not worth making for one hero.
 
-Roadmap amendment, 2026-08-25: **8.23a** is scheduled to draw a held marker, because this build draws none and Tigerclaw is the first hero to attach one - so a rule lowering three of a hero's values is invisible to the player it is applied to. 8.23 records that debt on its own gate row.
+Roadmap amendments, 2026-08-25 and 2026-08-26: **8.23a** draws a held marker - this build draws none, Tigerclaw is the first to attach one, and 8.23 records that debt on its gate row - and recomposes the rail carrying it, because 8.21a left that rail no free vertical space. Its recomposed height is measured against a third of the rail rect, for 8.25's three-per-side column.
 
 Standing route exceptions: none remain. Phase 6's exact sequencing lives in its three [Roadmap/](Roadmap/) shards and its per-milestone evidence is addressed by SHA from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md); scheduling is not authorization.
 

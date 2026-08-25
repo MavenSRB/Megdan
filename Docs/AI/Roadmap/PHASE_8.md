@@ -446,13 +446,14 @@ Non-goals: No other new hero, six-player setup, networking, or production art.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-823-complete-and-verify-additional-pitch-hero-slot-d---tigerclaw-completion-evidence).
 
-### [!] 8.23a Draw a held marker where its holder is read
+### [~] 8.23a Draw a held marker on a rail that has room for it
 
 Blocked by: Milestone 8.23 must attach the first verified marker.
 
 Observable outcome: A hero holding a rulebook p.19 marker is drawn as holding it, and what that
 marker does to that hero is readable from the same surface, so a rule that lowers three of a
-hero's values is one the player it is applied to can see.
+hero's values is one the player it is applied to can see - on a hero rail compact enough that the
+reading costs no other row its place.
 
 Acceptance checks:
 
@@ -463,12 +464,22 @@ Acceptance checks:
   is given, and p.13's holder Defeat and p.8's end-of-round return remove it.
 - Restore, replay, retained-prefix Undo, restart and a presentation rebuild reconstruct it from the
   projection they already preserve, with no stale reading left behind.
+- The hero rail is recomposed to hold the reading rather than grown by it: the discard pile shares
+  its caption's line as p.16's Ultimate row already does, the coin balance is drawn as its own
+  minted disc rather than as a word beside a number, and the rail's width and laid-out height are
+  measured before and after rather than asserted. Every existing rail reading - identity, Level,
+  items, the current-card marker, the four resolved turns, the pile and the Ultimate - survives the
+  recomposition, and the mirror rule and the pile's left-to-right exception are preserved.
+- The recomposed rail's measured height is recorded against a third of the hero-rail rect, so
+  whether milestone 8.25's three-per-side column fits is a measurement this milestone leaves behind
+  rather than a claim. This milestone deals no additional hero and lays out no second rail.
 - The permanent hero player-path gate gains its marker-reading component shape, and milestone 8.23's
   declared debt for it - recorded in Tigerclaw's matrix because this build drew no held marker
   anywhere - is closed rather than restated.
 
 Non-goals: No new marker content, no change to what a marker does, no six-player setup, and no
-production art.
+imported production art - a coin drawn from the panel's own vocabulary is composition rather than
+art, and an imported sprite is out of scope.
 
 ### [!] 8.24 Complete and verify additional pitch hero slot E - Xargatha
 
