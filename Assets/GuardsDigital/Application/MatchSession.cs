@@ -109,7 +109,12 @@ namespace GuardsDigital.Application
                 return Rejected(
                     command,
                     MatchSessionRejectionReason.AtomicityViolation,
-                    "A rejected command attempted to mutate authoritative state and was rolled back.");
+                    "A rejected command attempted to mutate authoritative state and was rolled back. " +
+                    "It was refused as " + outcome.Plan.RejectionReason +
+                    "/" + outcome.Plan.TurnRejectionReason +
+                    (string.IsNullOrEmpty(outcome.Plan.Detail)
+                        ? string.Empty
+                        : ": " + outcome.Plan.Detail));
             }
 
             var dispatch = outcome.Plan;

@@ -164,7 +164,23 @@ namespace GuardsDigital.Presentation.Interaction
         /// <para>Still not the six-player setup, which milestone 8.25 owns: Red fields one hero and
         /// <see cref="ConfiguredMatch"/> is untouched.</para>
         /// </summary>
-        VerifiedStagedBroganWithAlly = 16
+        VerifiedStagedBroganWithAlly = 16,
+
+        /// <summary>
+        /// The same three-hero staging with Brogan's own seat dealt at rulebook p.15's Tier II stage
+        /// on the second-sibling branch, which is the only position War Drummer is in his hand from.
+        ///
+        /// <para>It is a separate arm rather than a parameter of <see cref="VerifiedStagedBroganWithAlly"/>
+        /// because a scene request names one composition: p.6 leaves War Drummer in the deck, so the
+        /// starting-hand arm above cannot reach the card the ally seat exists for.</para>
+        /// </summary>
+        VerifiedStagedBroganWithAllyAtTierTwo = 17,
+
+        /// <summary>
+        /// The three-hero staging at rulebook p.15's Tier III stage on the second-sibling branch,
+        /// where Master Skald is in Brogan's hand - the Tier III half of the same pair.
+        /// </summary>
+        VerifiedStagedBroganWithAllyAtTierThree = 18
     }
 
     [ExecuteAlways]
@@ -302,6 +318,12 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedStagedBroganWithAlly =>
                     PlaceholderOneVsOneTestConfiguration.CreateStagedBroganWithAllyForInternalTest(
                         TeamSide.Red),
+                SceneCardContent.VerifiedStagedBroganWithAllyAtTierTwo =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganWithAllyForInternalTest(
+                        TeamSide.Red, BroganAllyStage.TierTwo),
+                SceneCardContent.VerifiedStagedBroganWithAllyAtTierThree =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganWithAllyForInternalTest(
+                        TeamSide.Red, BroganAllyStage.TierThree),
                 _ => PlaceholderOneVsOneTestConfiguration.Create()
             };
             // Milestone 8.20. The board's hero identities have to agree with the hands the
@@ -316,7 +338,7 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedMirror ||
                 content == SceneCardContent.MechanicsShowcaseFixture
                     ? QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne()
-                    : content == SceneCardContent.VerifiedStagedBroganWithAlly
+                    : IsBroganWithAlly(content)
                         ? QuickGameSetupConfiguration.CreateStagedWaspVersusArienAndBroganOneVsTwo()
                         : IsStagedBrogan(content)
                             ? QuickGameSetupConfiguration.CreateStagedWaspVersusBroganOneVsOne()
@@ -467,8 +489,13 @@ namespace GuardsDigital.Presentation.Interaction
                 host.transform.SetParent(mapView.transform, false);
                 var view = host.AddComponent<PrimitiveHeroView>();
                 // The identity has to be set before the rebuild, because that is what the board
-                // matches a configured seat to its view by.
-                view.Configure(new HeroOccupancy(seat.HeroId, seat.Coordinate), 0f);
+                // matches a configured seat to its view by - and it is set at the map's own outer
+                // radius rather than at zero, because configuring a view lays it out immediately and
+                // `HexWorldLayout.ToWorld` refuses a radius that is not a finite positive value. The
+                // rebuild below configures it again at the same number, so this is the seat's real
+                // geometry rather than a placeholder the rebuild has to correct.
+                view.Configure(
+                    new HeroOccupancy(seat.HeroId, seat.Coordinate), mapView.OuterRadius);
                 generated.Add(view);
                 selectors.Add(host.AddComponent<PrimitiveHeroPointerSelector>());
             }
@@ -496,6 +523,16 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBrogan ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedBrogan ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBrogan;
+
+        /// <summary>
+        /// Whether this content deals two heroes to the Blue team with Brogan beside Arien. Milestone
+        /// 8.21's three-hero arms, which take the two-hero setup and are deliberately <em>not</em>
+        /// restaged: what those cards need is an ally in range, and the two Blue spawns already are.
+        /// </summary>
+        private static bool IsBroganWithAlly(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedStagedBroganWithAlly ||
+            content == SceneCardContent.VerifiedStagedBroganWithAllyAtTierTwo ||
+            content == SceneCardContent.VerifiedStagedBroganWithAllyAtTierThree;
 
         private static SceneCardContent TakeRequestedCardContent()
         {

@@ -1777,7 +1777,22 @@ namespace GuardsDigital.Core.Cards
                 var triggerEvents = MaterializeSteps(
                     cardActions.ConsumeTriggeredResolutionSteps(),
                     TurnResolutionEvent.FromTriggeredEffect);
-                return cardActions.IsPendingTriggeredEffect
+                if (cardActions.IsPendingTriggeredEffect)
+                {
+                    return TurnResolutionResult.Accept(triggerEvents);
+                }
+
+                // Milestone 8.21. Initiative may already have moved on. A trigger of this shape runs
+                // after its own action has ended, so the actor's card was resolved and acknowledged and
+                // the next actor selected while this decision still stood - and an Initiative advance
+                // is owed only when nobody is selected. Advancing a second time is an Initiative
+                // command against an actor whose own card is unresolved, which is refused *after* this
+                // method has already taken the payment and kept the miniature; the aggregate reports
+                // that as an atomicity violation and rolls the whole answer back, which left a decision
+                // a player could be shown and could never answer. Milestone 8.19c1 could not have found
+                // it: no configured content reached this altitude until Brogan's Fortify met an enemy
+                // Ultimate that defeats a minion by effect.
+                return initiative.SelectedActor.IsDefined
                     ? TurnResolutionResult.Accept(triggerEvents)
                     : AdvanceInitiative(triggerEvents);
             }
@@ -2251,6 +2266,7 @@ namespace GuardsDigital.Core.Cards
             // existing frame withholds until its answer completes.
             if (cardActions?.IsPendingTriggeredEffect == true)
                 return TurnResolutionResult.Accept(events);
+
 
             // Milestone 6.9's immediate checkpoint, which milestone 6.11 turned from a stop into p.8's
             // transition. The page pushes the Lane in the middle of the turn and only then does "the

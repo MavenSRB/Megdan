@@ -614,10 +614,19 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <para><b>The push is one node because the sentence asks one question with three declared
         /// bounds.</b> p.18's Push already takes the objects standing beside the pusher; what the card
         /// adds is which pieces ("an enemy unit or a token"), how many ("an", which is one) and how far
-        /// ("up to N"). The distance floor is zero because the face writes "up to", and the push itself
-        /// is mandatory because the face prints no "may" over it - a Brogan with nobody beside him
-        /// stops the Skill at that step, which is p.10's own answer and costs nothing, because the step
-        /// before it has already happened.</para>
+        /// ("up to N").</para>
+        ///
+        /// <para><b>The push node carries <see cref="EffectFailurePolicy.UpTo"/>, and the printed word
+        /// it answers to is the distance's.</b> Milestone 8.21's player-path gate caught this: the node
+        /// declared a zero floor beside a mandatory policy, and
+        /// <see cref="GuardsDigital.Core.Rules.Displacement.AdmittedDistances.ForDeclared"/> reads a
+        /// printed floor only under <c>UpTo</c> - so all three faces silently admitted their declared
+        /// distance alone, and a player pushing with Mighty Punch was moved exactly two spaces where the
+        /// face offers nought, one or two. Arien's Rogue Wave prints the same "up to N spaces" over the
+        /// same capability with the same one-target maximum and declares <c>UpTo</c>; these three now
+        /// read the same way. What the policy also admits - confirming with no piece named - is not a
+        /// second meaning: "push this unit nought spaces" and "push nobody" leave the board identical,
+        /// and p.18 already treats a zero-space push as a legal result.</para>
         ///
         /// <para><b>"an enemy unit or a token" is one relation and it had to be minted.</b> p.19 makes
         /// a token not a unit and gives it no team, so the sentence qualifies its first noun and not
@@ -671,7 +680,7 @@ namespace GuardsDigital.Core.Cards.Verified
                             new EffectOutputBinding("moved", EffectValueKind.Coordinate)
                         }),
                     new EffectNodeDefinition(
-                        push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        push, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
                         SyntheticDisplacementCapabilities.ObjectPushV3,
                         inputs: new[]
                         {

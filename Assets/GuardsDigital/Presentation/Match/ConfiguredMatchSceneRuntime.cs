@@ -631,6 +631,25 @@ namespace GuardsDigital.Presentation.Match
         public PendingEffectChoice PendingEffectChoice => session.Projection.PendingEffectChoice;
 
         /// <summary>
+        /// Milestone 8.21. The standing removal-prevention decision, or <c>null</c> when none is. It is
+        /// forwarded here beside the other pending families for the same reason they are: a caller in
+        /// the Play Mode assembly reads the match through this runtime, which does not reference the
+        /// application assembly the whole projection lives in.
+        /// </summary>
+        public GuardsDigital.Core.Rules.CardResolution.RemovalPreventionPrompt
+            PendingRemovalPrevention => session.Projection.PendingRemovalPrevention;
+
+        /// <summary>
+        /// Milestone 8.21. One hero's projected coin balance, which is p.13's own reward ledger and the
+        /// only thing Brogan's two Skald faces change. Forwarded as the number rather than as the
+        /// progression record, on the same assembly-boundary terms as the pause above.
+        /// </summary>
+        public int CoinsOf(HeroId heroId) =>
+            session.Projection.HeroProgression
+                .Single(progression => progression.HeroId.Equals(heroId))
+                .Coins;
+
+        /// <summary>
         /// Forwards the projected invocation for one option of a paused effect frame, addressed by the
         /// option's node. The runtime looks the invocation up in the rendered model rather than building
         /// one, so a caller cannot reach a decision presentation is not currently showing.

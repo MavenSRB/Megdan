@@ -29,12 +29,21 @@ The pitch requires Brogan's complete progression. Before verified Brogan definit
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **source-verified at 8.18b and capability-mapped at 8.19 (2026-08-23)**. Every printed value, icon and word on the
+Current status: **source-verified at 8.18b, capability-mapped at 8.19, and composed, dealt and
+player-path gated at 8.21**. Every printed value, icon and word on the
 nineteen faces below is transcribed here, read twice - once from the whole face and again from
 icon-region and text-region enlargements built for the purpose. The roster-wide
-[capability matrix](ROSTER_CAPABILITY_MATRIX.md#brogan) now assigns every face/component, typed binding,
-policy, checkpoint, and source-linked scenario family. No Brogan definition, effect, or test exists in the
-build; milestones 8.19a, 8.19a1 and 8.19b-8.19c own the shared dependencies and 8.21 owns composition.
+[capability matrix](ROSTER_CAPABILITY_MATRIX.md#brogan) assigns every face/component, typed binding,
+policy, checkpoint, and source-linked scenario family.
+
+Milestone 8.21 turned that inventory into verified content at revision `brogan-8-21-rev-1` - four files
+beside Wasp's and Arien's - and into a staged match that deals him the Blue seat. Every face below is
+resolved through the ordinary player pipeline and carries a guarded row in
+`BroganPlayerPathGateTests`, except Leap Forward: p.6 returns the Handicap card to the box and p.20
+brings it back only for an odd player count, so its row records the absence rather than a journey. Two of
+his faces name a friendly hero, which rulebook p.10 keeps the actor out of, so the build gained one
+staged composition that deals two heroes to Blue - not the six-player setup, which milestone 8.25 still
+owns.
 
 ## Brogan source faces
 

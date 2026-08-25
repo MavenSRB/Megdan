@@ -2678,6 +2678,18 @@ namespace GuardsDigital.Presentation.Match
                 // reaches the authority, which would refuse it too and for the same reason.
                 current.SystemTransitionPrompt?.Options
                     .Any(value => value.Command.Equals(invocation.Command)) == true ||
+                // Milestone 8.21: the standing removal-prevention decision's own controls. Every one
+                // of them is a command the pause minted and this presenter projected, so they belong
+                // in the same legality decision as every other control here - and until they were in
+                // it, this method refused each of them, which drew a player a prompt whose faces did
+                // nothing when clicked. It was invisible to the projection and presenter tiers alike,
+                // because both compose the controls correctly; only a pointer on the live panel finds
+                // a control that forwards a command the presenter then declines to execute.
+                (current.RemovalPreventionPrompt != null &&
+                    (current.RemovalPreventionPrompt.Payments
+                            .Any(value => value.Command.Equals(invocation.Command)) ||
+                        current.RemovalPreventionPrompt.Decline.Command.Equals(
+                            invocation.Command))) ||
                 // Milestone 6.3a: the open Clear's confirm joins the same legality decision, because
                 // this presenter refuses anything it did not project and a Clear confirm is projected
                 // like every other control here. What it refuses in practice is a confirm left over

@@ -32,17 +32,24 @@ revision: `synthetic-direct-move@1`, `synthetic-object-push@3`, `synthetic-place
 `repeat-action@1`. New or refined planned identities are named in the tables and are introduced only by
 the dependency slice assigned in [Phase 8](../Roadmap/PHASE_8.md).
 
-Implementation status through milestone 8.20: dependency steps 1-4a below are complete, and step 5's
-first hero is composed. Arien's nineteen faces are verified content the staged match deals, so the three
-step-3 contracts his cards name - `choose-target@2`, `behind-target-line@1` and `was-adjacent@1` - are
-registered in the default production catalog for the first time; the remaining step-3 and step-4 handlers
-still execute in bounded synthetic catalogs over hero-shaped consumers, because the catalog rejects a
-registration no printed card can reach and each is waiting for the hero whose face names it. Snapshot
-schema is v28. **The block's own prerequisite claim needs qualifying:** three of Arien's printed sentences
-needed vocabulary no 8.19 slice built - a restriction carving out the cards it leaves alone, an immunity
-excepting the one hero its occurrence bound, and a cap on how far one Movement action may go - so a later
-hero milestone should read its own rows against what is registered rather than against step 4a's
-completion. Milestone 8.20a owes Arien the permanent player-path gate.
+Implementation status through milestone 8.21: dependency steps 1-4a below are complete, and step 5's
+first two heroes are composed, dealt and gated through the player path. Arien's nineteen faces landed at
+milestone 8.20 and Brogan's at 8.21, so the contracts their cards name are registered in the default
+production catalog: Arien brought `choose-target@2`, `behind-target-line@1` and `was-adjacent@1`, and
+Brogan brought twelve more - milestone 8.19b's remaining roster ones, the three his modal Ranged Attacks
+needed minted (`discard-owned-card@1`, `owned-card-present@1`, `synthetic-range-unit-target@1`), and his
+four Active effects. The step-3 and step-4 handlers no printed face has reached still execute in bounded
+synthetic catalogs over hero-shaped consumers, because the catalog rejects a registration no printed card
+can start and each is waiting for the hero whose face names it. Snapshot schema is v29, and its cause is
+that pinned registration list itself rather than any new field.
+
+**The block's own prerequisite claim needs qualifying, and this is now three heroes running:** each of
+8.20, 8.20a and 8.21 found printed sentences needing vocabulary no 8.19 slice built - a restriction
+carving out the cards it leaves alone, an immunity excepting the one hero its occurrence bound, a cap on
+how far one Movement action may go, an Active-effect scope covering the controller as well as the units
+around them, a direct Move that names its destination instead of narrowing a set, and a target relation
+admitting an enemy unit *or* a token. **A hero milestone should read its own rows against what is
+registered rather than against step 4a's completion**, and should budget for minting.
 
 ## Arien
 
