@@ -239,6 +239,25 @@ namespace GuardsDigital.Core.Setup
             CreateOneVsOne(new HeroContentId("sabina"), "Sabina the Gunslinger");
 
         /// <summary>
+        /// Milestone 8.23. The same board with Tigerclaw on the Blue seat, for the fixtures whose
+        /// subject is his printed set.
+        ///
+        /// <para><b>He is a Red hero on the pitch roster and takes the Blue seat here</b>, exactly as
+        /// Brogan and Sabina do and for the reason both record: milestone 8.25 owns the official
+        /// six-player configuration and all six spawn assignments, and this staging is one seat per
+        /// team. Which side of a one-versus-one board a printed set is dealt to is a fixture fact; the
+        /// roster slot p.5 prints for him is not changed by it.</para>
+        ///
+        /// <para><b>He needs no second Blue seat.</b> His two marker cards print "a hero in range"
+        /// rather than "an enemy hero", so a friendly hero would widen their candidate set - but Wasp
+        /// across the board already satisfies them, and his three thieving Greens name an enemy hero
+        /// explicitly. The friendly arm is therefore content this staging cannot reach rather than
+        /// content it gets wrong, which the fixtures record where it matters.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusTigerclawOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("tigerclaw"), "Tigerclaw the Cutpurse");
+
+        /// <summary>
         /// Milestone 8.21. Wasp on Red against Arien and Brogan on Blue, which is the smallest board
         /// on which "a friendly hero in range" is true of anybody - the clause War Drummer and Master
         /// Skald print and the reason two of Brogan's nineteen faces would otherwise be unreachable.

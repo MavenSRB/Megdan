@@ -215,7 +215,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 CardProgressionProfile.BasicCard(CardColor.Gold),
                 "Before the attack: Move 2 spaces in a straight line through an enemy unit; target " +
                 "that unit. ( If you cannot make this move, you cannot attack. )",
-                PrintedTextComposition.None),
+                PrintedTextComposition.None,
+                bindsTargetInCardText: true),
 
             // p.20's Handicap card, deferred exactly as Wasp's Crackling Dagger, Arien's Ceremonial
             // Blade, Brogan's Leap Forward and Sabina's Bang are, by the same 2026-08-21 user decision:
@@ -230,7 +231,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 "Before the attack: Move 2 spaces in a straight line through an enemy hero; target " +
                 "that hero.",
                 PrintedTextComposition.DeferredUntil("first odd-player-count configuration"),
-                targetableUnits: AttackTargetableUnits.HeroesOnly),
+                targetableUnits: AttackTargetableUnits.HeroesOnly,
+                bindsTargetInCardText: true),
 
             // His only basic Skill, and his only p.17 Active effect. The immunity starts the moment the
             // Place applies and applies on his next turn; p.8 cancels it at end-of-round card retrieval
@@ -631,14 +633,28 @@ namespace GuardsDigital.Core.Cards.Verified
         private static PrintedAttackTargetPolicy? TargetPolicy(
             TigerclawCardProfile profile, AttackRangeKind attackRange)
         {
-            if (profile.TargetableUnits == AttackTargetableUnits.HeroesAndMinions)
+            var classification = PrintedAttackTargetPolicy.ForClassification(attackRange);
+            if (profile.TargetableUnits != AttackTargetableUnits.HeroesAndMinions)
             {
-                return null;
+                classification = new PrintedAttackTargetPolicy(
+                    profile.TargetableUnits, classification.Reach, classification.Line);
             }
 
-            var classification = PrintedAttackTargetPolicy.ForClassification(attackRange);
-            return new PrintedAttackTargetPolicy(
-                profile.TargetableUnits, classification.Reach, classification.Line);
+            // Milestone 8.23. Blink Strike and Nimble Strike name their own target - "target that
+            // unit", the one their step-1 line crossed - so p.14 does not ask the ordinary target
+            // question first. That is `attack-target`, which milestone 8.19a minted for Brogan's
+            // charges and which these two reach for the same printed reason.
+            // Nimble Strike prints the same clause and is excluded, because p.6 returns it to the box
+            // and a deferred face composes no step-1 text for the binding to be about. Its target
+            // binding ships with its composition, exactly as its nodes do.
+            if (profile.BindsTargetInCardText && !profile.TextComposition.IsAwaited)
+            {
+                return classification.BoundByCardText();
+            }
+
+            return profile.TargetableUnits == AttackTargetableUnits.HeroesAndMinions
+                ? (PrintedAttackTargetPolicy?)null
+                : classification;
         }
 
         /// <summary>The p.9 Range or Radius icon a face prints, or nothing where it prints neither.</summary>
@@ -677,7 +693,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 AttackTargetableUnits targetableUnits = AttackTargetableUnits.HeroesAndMinions,
                 int raisedAttack = 0,
                 bool forbidsPrimaryDefense = false,
-                PrintedBlockCondition blockCondition = PrintedBlockCondition.None)
+                PrintedBlockCondition blockCondition = PrintedBlockCondition.None,
+                bool bindsTargetInCardText = false)
             {
                 Id = id;
                 DisplayName = displayName;
@@ -695,6 +712,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 RaisedAttack = raisedAttack;
                 ForbidsPrimaryDefense = forbidsPrimaryDefense;
                 BlockCondition = blockCondition;
+                BindsTargetInCardText = bindsTargetInCardText;
             }
 
             public CardDefinitionId Id { get; }
@@ -719,6 +737,9 @@ namespace GuardsDigital.Core.Cards.Verified
 
             /// <summary>The condition p.14 resolves this Block by, or None on every other face.</summary>
             public PrintedBlockCondition BlockCondition { get; }
+
+            /// <summary>Whether this Attack's own step-1 text names the unit it attacks.</summary>
+            public bool BindsTargetInCardText { get; }
         }
     }
 }

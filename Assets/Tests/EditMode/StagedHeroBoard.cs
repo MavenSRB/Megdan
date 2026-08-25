@@ -5,12 +5,16 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Progression;
+using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -597,6 +601,16 @@ namespace GuardsDigital.Tests.EditMode
                 .Distinct()
                 .ToArray();
 
+        /// <summary>
+        /// Whether one node applied at all. Milestone 8.23: rulebook p.10 stops an action at a
+        /// mandatory step it cannot complete and skips the rest, so "this node never ran" is an
+        /// ordinary printed outcome rather than a fault - and <see cref="SequenceOfAppliedNode"/>
+        /// asserts the opposite.
+        /// </summary>
+        internal bool NodeApplied(string nodeId) =>
+            Session.Projection.DiagnosticEvents
+                .Any(entry => entry.Detail.Contains(":" + nodeId + ":Applied"));
+
         internal int SequenceOfAppliedNode(string nodeId)
         {
             var sequence = Session.Projection.DiagnosticEvents
@@ -626,6 +640,72 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(candidate => candidate.Value.Kind == EffectValueKind.Hero)
                 .Select(candidate => candidate.Value.HeroId)
                 .ToArray();
+
+        /// <summary>
+        /// Answers standing questions until one offers a set of amounts rather than pieces or spaces -
+        /// which is what a transfer whose card names two amounts opens. Milestone 8.23.
+        /// </summary>
+        internal void AnswerUntilAmountChoice(int budget = 12)
+        {
+            for (var step = 0; step < budget; step++)
+            {
+                var choice = Choice;
+                if (choice == null || choice.Candidates.Any(candidate =>
+                        candidate.Value.Kind == EffectValueKind.Integer))
+                {
+                    return;
+                }
+
+                var invocation = choice.SelectInvocations.FirstOrDefault()
+                    ?? choice.ConfirmInvocation ?? choice.DeclineInvocation ?? choice.StopInvocation;
+                Assert.That(invocation, Is.Not.Null,
+                    "A pause with no answer would stop the match, which no printed face does.");
+                Accept(DirectorCommand.AnswerEffectChoice(invocation));
+            }
+
+            Assert.Fail("No amount question was reached inside the budget.");
+        }
+
+        /// <summary>
+        /// The markers one hero is holding, read back through a restore for the reason milestone 6.12's
+        /// cleanup cases read them that way: the attachment register is round-owned state rather than a
+        /// projection field, and a restored register is the one every rule sees. Milestone 8.23.
+        /// </summary>
+        internal IReadOnlyList<MarkerAttachment> MarkersHeldBy(HeroId heroId) =>
+            AuthoritativeSnapshotSerializer.Deserialize(
+                    MatchContentCatalogs.ForThisBuild(),
+                    Session.Projection.AuthoritativeSnapshot,
+                    Session.Projection.Definitions,
+                    new[] { Session.Projection.SelectedMap },
+                    Session.Projection.Setup.Minions)
+                .Round.Markers.HeldBy(heroId)
+                .ToArray();
+
+        /// <summary>
+        /// What one hero's value on a channel is currently modified by, summed over every live source.
+        /// Milestone 8.23, for the marker whose whole rule is three of these.
+        /// </summary>
+        internal int ValueModifierFor(HeroId heroId, PrintedValueChannel channel)
+        {
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
+                Session.Projection.AuthoritativeSnapshot,
+                Session.Projection.Definitions,
+                new[] { Session.Projection.SelectedMap },
+                Session.Projection.Setup.Minions);
+            return RuleModificationQuery.Build(
+                    null,
+                    restored.Board,
+                    restored.Participants,
+                    restored.Round.TieBreakerState,
+                    UltimateUnlockQuery.Derive(Session.Projection.Definitions, restored.Cards),
+                    RuleObject.None,
+                    null,
+                    restored.Round.Markers)
+                .ValueContributions(
+                    RuleObject.ForHero(heroId), channel, RuleValueApplicability.Always)
+                .Sum(contribution => contribution.Amount);
+        }
 
         internal void Accept(DirectorCommand command)
         {

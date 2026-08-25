@@ -492,11 +492,13 @@ namespace GuardsDigital.Core.Cards.Verified
         /// "If you are adjacent to terrain, place yourself into a space in radius; if you do, <b>Next
         /// turn:</b> You are immune to enemy attack actions." - Blend Into Shadows.
         ///
-        /// <para><b>Three clauses, three declarations, and the two conditions are different.</b> The
-        /// first is a presence question about terrain beside him, asked before anything happens. The
-        /// second - "if you do" - is about the Place having applied, which is not the same thing: a
-        /// hero standing beside terrain with no empty space in radius satisfies the first and fails the
-        /// second, and gets no immunity.</para>
+        /// <para><b>Two clauses, and only the first is a condition.</b> "If you are adjacent to
+        /// terrain" is a presence question asked before anything happens, and it gates the rest. "If
+        /// you do" is not a second question at all - it is rulebook p.10's own rule for a mandatory
+        /// step restated, exactly as Blink Strike's parenthesis restates it: the Place prints neither
+        /// "you may" nor "up to" nor "if able", so a hero with no empty space in radius stops the
+        /// action at that step and p.10 skips what follows, which is the immunity. Composing it as a
+        /// boolean gate would have been a second statement of a rule the engine already applies.</para>
         ///
         /// <para><b>The Place measures by the printed icon.</b> The face carries Radius 2 and the text
         /// says "in radius", so the reach is <c>synthetic-place-in-radius@1</c> rather than a number
@@ -551,7 +553,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         childNodeIds: new[] { actorSpace, place, shadow }),
                     ActorSpaceNode(actorSpace),
                     new EffectNodeDefinition(
-                        place, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        place, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticPlacementCapabilities.PlaceInRadiusV1,
                         inputs: new[]
                         {
@@ -572,17 +574,13 @@ namespace GuardsDigital.Core.Cards.Verified
                         {
                             new EffectOutputBinding(PlacedOutput, EffectValueKind.Coordinate)
                         }),
-                    // "if you do" - conditioned on the Place, and reached only inside the branch the
-                    // terrain question already opened. A Place that found no space leaves this node
-                    // nothing to be conditioned on and the Skill ends having done what it could.
+                    // "if you do" - the step after a mandatory Place, reached only when that Place
+                    // applied and only inside the branch the terrain question opened. It names no
+                    // input: what it creates is definition content on the Active effect itself, and
+                    // whose effect it is comes from the frame's own actor.
                     new EffectNodeDefinition(
-                        shadow, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        shadow, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         TigerclawActiveEffectContent.ShadowedNextTurnV1,
-                        inputs: new[]
-                        {
-                            EffectInputBinding.FromNodeOutput(
-                                "placed", place, PlacedOutput, EffectValueKind.Coordinate)
-                        },
                         outputs: new[]
                         {
                             new EffectOutputBinding(
@@ -604,9 +602,11 @@ namespace GuardsDigital.Core.Cards.Verified
         /// you" is who may be picked, so a hero with no coins is not offered and then refused - the
         /// same reading milestone 8.20b settled for a restriction naming its actors.</para>
         ///
-        /// <para><b>"if you do" is about the transfer, not about the selection.</b> A hero was chosen
-        /// and coins were moved, or nothing was, and only the first opens the step behind the
-        /// semicolon.</para>
+        /// <para><b>"if you do" is rulebook p.10's mandatory-step rule and not a second question.</b>
+        /// "Take 1 coin from an enemy hero adjacent to you" prints none of p.10's three non-mandatory
+        /// keywords, so it is mandatory - and a step that cannot be completed stops the action there
+        /// and skips what follows, which is exactly the movement behind the semicolon. The opening
+        /// step already taken stands, which is the same page's other half.</para>
         /// </summary>
         private static EffectDefinition CreateTheft(
             CardDefinitionId cardId,
@@ -623,8 +623,6 @@ namespace GuardsDigital.Core.Cards.Verified
             var opening = new EffectNodeId("theft-opening-move");
             var victim = new EffectNodeId("theft-victim");
             var take = new EffectNodeId("theft-take");
-            var gate = new EffectNodeId("theft-gate");
-            var followUpSequence = new EffectNodeId("theft-follow-up");
             var followUpSpace = new EffectNodeId("theft-follow-up-space");
             var followUp = new EffectNodeId("theft-follow-up-move");
 
@@ -636,13 +634,16 @@ namespace GuardsDigital.Core.Cards.Verified
                 {
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { openingSpace, opening, victim, take, gate }),
+                        childNodeIds: new[]
+                        {
+                            openingSpace, opening, victim, take, followUpSpace, followUp
+                        }),
                     ActorSpaceNode(openingSpace),
                     openingIsOptional
                         ? OptionalStepNode(opening, openingSpace, openingDistance)
                         : UpToStepNode(opening, openingSpace, openingDistance),
                     new EffectNodeDefinition(
-                        victim, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        victim, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticRosterCapabilities.ChooseTargetV2,
                         inputs: new[]
                         {
@@ -667,7 +668,7 @@ namespace GuardsDigital.Core.Cards.Verified
                                 SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero)
                         }),
                     new EffectNodeDefinition(
-                        take, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        take, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticRosterCapabilities.TransferResourceV1,
                         inputs: new[]
                         {
@@ -689,25 +690,6 @@ namespace GuardsDigital.Core.Cards.Verified
                             new EffectOutputBinding("recipient", EffectValueKind.Hero),
                             new EffectOutputBinding(TransferAmountOutput, EffectValueKind.Integer)
                         }),
-                    new EffectNodeDefinition(
-                        gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
-                        SyntheticEffectCapabilities.IsFlaggedV1,
-                        childNodeIds: new[] { followUpSequence },
-                        inputs: new[]
-                        {
-                            // "if you do" reads the transfer's own published recipient: a transfer that
-                            // ran names one, and one that did not publishes nothing, which the gate
-                            // reads as the same false.
-                            EffectInputBinding.FromNodeOutput(
-                                "flag", take, "recipient", EffectValueKind.Hero)
-                        },
-                        outputs: new[]
-                        {
-                            new EffectOutputBinding("value", EffectValueKind.Boolean)
-                        }),
-                    new EffectNodeDefinition(
-                        followUpSequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { followUpSpace, followUp }),
                     ActorSpaceNode(followUpSpace),
                     followUpIsOptional
                         ? OptionalStepNode(followUp, followUpSpace, followUpDistance)

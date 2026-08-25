@@ -332,6 +332,70 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// Milestone 8.23. The staged Wasp-versus-Tigerclaw match, on the same `DEV-005` terms the
+        /// staged Arien, Brogan and Sabina matches are on.
+        ///
+        /// <para>Tigerclaw takes the Blue seat though p.5 puts him on Red, for the reason
+        /// <see cref="CreateStagedBroganForInternalTest"/> records: milestone 8.25 owns the official
+        /// six-player configuration and every hero spawn it assigns. <see cref="Create"/> - the scene a
+        /// player loads - is untouched and still deals Wasp against Arien.</para>
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedTigerclawForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedTigerclawHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.23. The staged Wasp-versus-Tigerclaw match at rulebook p.15's Tier II stage,
+        /// with Tigerclaw holding one Tier II card of each colour on the branch the caller names - the
+        /// same pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
+        ///
+        /// <para>The branch matters more here than for any earlier hero: his Blue pair is one Ranged
+        /// Block against one non-Ranged Block, so which sibling a staged hand took decides which
+        /// attacks it can stop at all.</para>
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedTigerclawTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.TigerclawUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedTigerclawHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.23. The staged Wasp-versus-Tigerclaw match at rulebook p.15's Tier III stage
+        /// with p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and
+        /// Cloak and Daggers in Tigerclaw's.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedTigerclawTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.TigerclawUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedTigerclawHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.TigerclawCardContent.CloakAndDaggers)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+        /// <summary>
         /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
         /// Arien and Brogan matches are on.
         ///
@@ -606,6 +670,18 @@ namespace GuardsDigital.Core.Participants
         /// Milestone 8.22. One seat's verified Sabina hand, prefixed by the seat's team side for the
         /// reason the three earlier sets are.
         /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedTigerclawHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.TigerclawCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedTigerclawHand(
+            bool tierThree, Cards.Verified.TigerclawUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.TigerclawProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.TigerclawProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>
             ownerId => GuardsDigital.Core.Cards.Verified.SabinaCardContent.CreateHand(
                 ownerId, side == TeamSide.Red ? "red" : "blue");
