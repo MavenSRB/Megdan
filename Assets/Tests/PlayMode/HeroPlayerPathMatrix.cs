@@ -453,7 +453,26 @@ namespace GuardsDigital.Tests.PlayMode
                 ["hero-defeated-this-round"] = Array.Empty<PlayerInteractionShape>(),
                 ["owned-card-present"] = Array.Empty<PlayerInteractionShape>(),
                 ["gain-resource"] = Array.Empty<PlayerInteractionShape>(),
-                ["set-attack-target"] = Array.Empty<PlayerInteractionShape>()
+                ["set-attack-target"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.22. Sabina's contracts. The two multi-piece selections are the same
+                // board click the single-piece ones are, asked more than once: `choose-target-pair`
+                // takes two minions and `choose-target-set` takes up to N of them, and a player names
+                // each by clicking where it stands. What differs between them is how many, and that is
+                // the selection's own count rather than a different kind of input.
+                ["choose-target-set"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["choose-target-pair"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // Readings and consequences, which ask nobody anything. The first three answer a
+                // question about the board or the moment - how many friendly minions are in the disk,
+                // whether the Attack's target was adjacent when it landed, whether it is adjacent now
+                // - and the last three do work a selection already named the subject of.
+                ["presence-count"] = Array.Empty<PlayerInteractionShape>(),
+                ["pre-consequence-adjacency"] = Array.Empty<PlayerInteractionShape>(),
+                ["target-is-adjacent"] = Array.Empty<PlayerInteractionShape>(),
+                ["synthetic-remove"] = Array.Empty<PlayerInteractionShape>(),
+                ["synthetic-swap"] = Array.Empty<PlayerInteractionShape>(),
+                ["synthetic-push-target"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
