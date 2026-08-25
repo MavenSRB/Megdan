@@ -230,6 +230,97 @@ namespace GuardsDigital.Tests.EditMode
                 "every Backstab ever played.");
         }
 
+
+        // -----------------------------------------------------------------------------------------
+        // The Blocks that print a rider, answered as p.14's step 4
+        // -----------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Parry is offered as a whole face against the attack its printed condition names, its rider
+        /// takes a card off the attacker, and Tigerclaw is left standing.
+        ///
+        /// <para><b>The rider names somebody on the other side of the moment, which is the first time
+        /// verified content does.</b> "The attacker discards a card, if able" is the defender's own
+        /// card text at p.14's step 4, and the hero it names is the one taking the turn - so the
+        /// resolution the answer resumes through has to know who that was. It did not: the frame
+        /// opened its discard and then refused every answer to it, because the chooser resolved to
+        /// nobody. The question was askable and unanswerable.</para>
+        ///
+        /// <para>The round trip is here rather than in a fixture of its own for the same reason: the
+        /// snapshot reader rebuilds this frame's candidates on the way back and had no attacker to
+        /// rebuild them for, so the payload holding the standing question could not be read at
+        /// all - which surfaced as a failed rollback rather than as a failed restore.</para>
+        /// </summary>
+        [Test]
+        public void Parry_BlocksTheNonRangedAttack_AndItsRiderTakesTheAttackersCard()
+        {
+            var fixture = Create(
+                tier: 2,
+                branch: TigerclawUpgradeBranch.SecondSibling,
+                heroPlacements: At("blue-test-hero", FirstAdjacent));
+
+            fixture.TakeTheEnemysAttack(
+                WaspCardContent.Electrocute, TigerclawCardContent.BlendIntoShadows);
+            var attackersHand = fixture.Hand(fixture.Enemy).Count;
+            fixture.DefendWith(TigerclawCardContent.Parry);
+
+            Assert.That(fixture.Choice, Is.Not.Null,
+                "\"The attacker discards a card, if able\" is p.14's step 4, and which card is the " +
+                "attacker's own decision.");
+            fixture.RoundTripThroughASnapshot();
+            fixture.AnswerEveryStandingChoice();
+
+            Assert.That(fixture.Hand(fixture.Enemy), Has.Count.EqualTo(attackersHand - 1),
+                "The card leaves the attacker's hand, not the defender's.");
+            Assert.That(fixture.IsOnBoard(fixture.Hero), Is.True,
+                "and the Block succeeded, because Electrocute is not a ranged attack and Parry is " +
+                "printed against exactly that.");
+        }
+
+        /// <summary>
+        /// Sidestep's rider moves the defender out of contact, and p.14 still reaches its own step 6.
+        ///
+        /// <para><b>This is the case that found the outcome comparison re-deriving its target.</b> The
+        /// page names its target at step 2 and never names it again; step 4 is the defender's card
+        /// text, and this is the first verified face whose Defense text moves the defender. Asking
+        /// again whether the attacker could reach them refused the page its own comparison, and the
+        /// whole command was rolled back as an engine fault - so a printed step a player took made the
+        /// match unresolvable rather than making them harder to hit.</para>
+        ///
+        /// <para>He is defeated all the same, and that is the content rather than the defect: Sidestep
+        /// blocks a <em>ranged</em> attack, Electrocute is not one, and p.14 defeats a defender whose
+        /// Block condition is not met however far they stepped.</para>
+        /// </summary>
+        [Test]
+        public void Sidestep_StepsAwayOnItsOwnRider_AndPageFourteenStillCompares()
+        {
+            var fixture = Create(
+                tier: 2,
+                branch: TigerclawUpgradeBranch.FirstSibling,
+                heroPlacements: At("blue-test-hero", FirstAdjacent));
+
+            fixture.TakeTheEnemysAttack(
+                WaspCardContent.Electrocute, TigerclawCardContent.BlendIntoShadows);
+            fixture.DefendWith(TigerclawCardContent.Sidestep);
+
+            Assert.That(fixture.Choice, Is.Not.Null, "\"You may move 1 space.\"");
+            var offered = fixture.CandidateSpaces(fixture.Choice);
+            Assert.That(offered, Is.Not.Empty);
+            var away = offered.First(space =>
+                HexDistanceQuery.Calculate(space, fixture.HeroSpace(fixture.Enemy)) > 1);
+            fixture.Select(away);
+            fixture.AnswerEveryStandingChoice();
+
+            Assert.That(
+                fixture.RuleEventTypes().Any(value => value == "Action.AttackResolutionCompleted"),
+                Is.True,
+                "p.14 reaches its own end with the defender standing somewhere else, rather than " +
+                "refusing the comparison it already validated.");
+            Assert.That(fixture.IsOnBoard(fixture.Hero), Is.False,
+                "and the comparison it reaches is a Defeat: Sidestep is printed against a ranged " +
+                "attack and this one is not, so stepping away changes where he was standing rather " +
+                "than whether the Block succeeded.");
+        }
         // -----------------------------------------------------------------------------------------
         // "the target cannot perform a primary action to defend"
         // -----------------------------------------------------------------------------------------

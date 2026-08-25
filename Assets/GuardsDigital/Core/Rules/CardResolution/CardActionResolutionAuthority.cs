@@ -2201,6 +2201,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 EffectCardState.Of(materializedDefinitions, instances),
                 ActionKind.Attack,
+                // Milestone 8.23. The resume half of the same supply the start half makes: p.14's
+                // step 4 is the defender's card text and the hero on the other side of it is the
+                // attacker. Without it a rider naming "the attacker" resolved to nobody on the way
+                // back, so Parry and Riposte opened their discard and then refused every answer to
+                // it - the question was askable and unanswerable.
+                opposingHeroId: pendingCardText.Moment == CardTextTiming.DefenseAction
+                    ? EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions).ActorId
+                    : default,
                 components: components,
                 heroItems: skillBackend.HeroItems,
                 enclosingAttack: EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions),

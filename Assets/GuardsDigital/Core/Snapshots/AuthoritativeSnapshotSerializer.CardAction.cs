@@ -667,7 +667,8 @@ namespace GuardsDigital.Core.Snapshots
             TieBreakerState tieBreaker,
             int roundIndex,
             int turnIndex,
-            EffectRosterState rosterState)
+            EffectRosterState rosterState,
+            HeroId selectedActorId)
         {
             var kind = reader.ReadInt32();
             var coinLedger = ReadCoinLedger(reader);
@@ -715,11 +716,19 @@ namespace GuardsDigital.Core.Snapshots
                         correction, coinLedger, ReadRepeatedAction(reader, definitions), lanePush);
                     break;
                 case CardActionContinuationKind.AttackCardText:
+                    // Milestone 8.23. A frame whose actor is NOT the turn's actor is the defender's,
+                    // which is p.14's step 4 - and the hero it is bound to across that moment is the
+                    // attacker taking the turn. Tigerclaw's Parry and Riposte are the first Defense
+                    // texts to name them: without this the restored frame asked its discard about
+                    // nobody and the payload could not be read back at all.
                     var frame = ReadSkillResolution(
                         reader, definitions, cards, catalogs.Capabilities, participants,
                         CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
                         modifications, heroItems, null,
-                        roundIndex, turnIndex, rosterState);
+                        roundIndex, turnIndex, rosterState,
+                        opposingHeroFor: actor => selectedActorId.IsDefined && !actor.Equals(selectedActorId)
+                            ? selectedActorId
+                            : default);
                     var pausedAttack = ReadAttackResolution(reader);
                     var moment = SnapshotEnumReader.Read<CardTextTiming>(
                         reader, "paused card-text moment");
@@ -945,9 +954,17 @@ namespace GuardsDigital.Core.Snapshots
             int roundIndex,
             int turnIndex,
             EffectRosterState rosterState,
-            HeroId opposingHeroId = default)
+            HeroId opposingHeroId = default,
+            Func<HeroId, HeroId> opposingHeroFor = null)
         {
             var common = ReadCommonResolution(reader);
+
+            // Milestone 8.23. WHICH hero stands on the other side of this frame's moment can depend
+            // on whose frame it is, and the payload names that hero only AFTER the frame - so a
+            // caller that cannot answer yet supplies the rule instead of the answer. p.14's step 4 is
+            // the defender's own card text and the hero opposite them is the attacker, which is the
+            // turn's selected actor; the attacker's own two moments have no opposing hero at all.
+            var opposing = opposingHeroFor != null ? opposingHeroFor(common.ActorId) : opposingHeroId;
             var controllerId = new HeroId(reader.ReadString());
             var effectDefinitionId = new EffectDefinitionId(reader.ReadString());
             var effectContentRevision = reader.ReadString();
@@ -1061,7 +1078,7 @@ namespace GuardsDigital.Core.Snapshots
                 // to be rebuilt knowing who that was, or every input the frame reads by role answers
                 // nobody. It is the pushed hero for an after-push trigger, and the interrupt beside
                 // this frame is what names them - which is why it is passed in rather than persisted.
-                opposingHeroId: opposingHeroId,
+                opposingHeroId: opposing,
                 components: components, heroItems: heroItems, rosterState: rosterState);
 
             // Candidates are never written. A control node's options come from the trusted

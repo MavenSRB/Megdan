@@ -1571,12 +1571,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.UnavailableOffer);
             }
 
-            var legalTargets = FindLegalAttackTargets(
-                pendingAttackResolution.ActorId,
-                attackOffer.Value,
-                materializedDefinitions,
-                participants,
-                modifications);
             var expectedAttackValue = CalculateAttackValue(
                 attackOffer.Value,
                 pendingAttackResolution.Target,
@@ -1584,9 +1578,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedInstances,
                 participants,
                 modifications);
+            // Milestone 8.23. What p.14's comparison needs is a target still STANDING, not a target
+            // still reachable. The page names its target at step 2 and never names it again; step 4
+            // is the defender's own card text, and Tigerclaw's Sidestep and Evade are the first
+            // verified faces whose Defense text MOVES the defender - "Block a ranged attack. You may
+            // move 1 space." Re-deriving the attacker's reach afterwards refused the page its own
+            // step 6, because the defender had legitimately stepped out of contact between being
+            // named and being compared, and the whole command was rolled back as an engine fault.
+            //
+            // The narrowing is presence rather than legality for that reason, and it is narrow: the
+            // step id, the printed Attack value and the completed Defense are all still compared, so
+            // a resolution that is not the one that was validated is still refused here.
             if (!pendingAttackResolution.CurrentStepId.Equals(
                     new ActionResolutionStepId("attack-outcome-comparison")) ||
-                !legalTargets.Contains(AttackTarget.Hero(pendingAttackResolution.TargetHeroId)) ||
+                !adjacentMoveAuthority.Occupancies.Any(occupancy =>
+                    occupancy.HeroId.Equals(pendingAttackResolution.TargetHeroId)) ||
                 !PrintedValuesMatch(pendingAttackResolution.AttackValue, expectedAttackValue) ||
                 !CompletedDefenseMatches(
                     pendingAttackResolution,

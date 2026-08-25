@@ -719,6 +719,71 @@ namespace GuardsDigital.Tests.EditMode
                 .Sum(contribution => contribution.Amount);
         }
 
+
+        /// <summary>
+        /// Stops rulebook p.14 at the Defense response with the staged hero as its target: the enemy
+        /// commits the named Attack, the hero commits the named card, and whichever seat p.7 gives the
+        /// turn to first yields until the attacker is the one acting.
+        ///
+        /// <para><b>The card the hero commits is not the card they will answer with.</b> p.7 puts a
+        /// committed card in the turn area, so a Defense the hero committed cannot be offered back to
+        /// them - which is why a Block case commits something else and keeps the Block in hand.</para>
+        /// </summary>
+        internal void TakeTheEnemysAttack(CardDefinitionId enemyAttack, CardDefinitionId heroCommits)
+        {
+            Accept(DirectorCommand.CommitCard(Enemy, HandCard(Enemy, enemyAttack).Id));
+            Accept(DirectorCommand.CommitCard(Hero, HandCard(Hero, heroCommits).Id));
+
+            for (var budget = 0; budget < 4; budget++)
+            {
+                var selected = Session.Projection.SelectedActor;
+                Assert.That(selected.IsDefined, Is.True,
+                    "Nobody is acting, so the enemy's Attack cannot be reached.");
+                if (selected.ActorId.Equals(Enemy))
+                {
+                    break;
+                }
+
+                // p.12's Hold: the staged hero yields their own turn rather than spending it, so the
+                // card they are holding is still in hand when the Attack arrives.
+                Accept(DirectorCommand.PerformHold(selected.CardInstanceId));
+            }
+
+            var offer = Session.Projection.AvailableTurnActions.SingleOrDefault(candidate =>
+                candidate.IsAvailable &&
+                OriginOf(candidate) == ActionDefinitionOrigin.PrintedPrimary);
+            Assert.That(offer.ActionDefinitionId.IsDefined, Is.True,
+                $"'{enemyAttack.Value}' offers the enemy no available primary action on this board.");
+            Accept(DirectorCommand.StartAction(offer.ActionDefinitionId));
+
+            var choice = Session.Projection.PendingAttackTargetChoice;
+            Assert.That(choice, Is.Not.Null, "An Attack opens p.14's target question.");
+            Assert.That(choice.LegalTargetHeroIds, Has.Member(Hero),
+                "The staged hero has to be inside the enemy Attack's reach, or the case proves " +
+                "something about range instead.");
+            Accept(DirectorCommand.ChooseAttackTarget(choice.ResolutionId, choice.ChoiceId, Hero));
+        }
+
+        /// <summary>Answers p.14's Defense response with the named card out of the hero's own hand.</summary>
+        internal void DefendWith(CardDefinitionId cardId)
+        {
+            var choice = Session.Projection.PendingDefenseChoice;
+            Assert.That(choice, Is.Not.Null, "No Defense response is standing to answer.");
+            Accept(DirectorCommand.ChooseDefenseCard(HandCard(Hero, cardId).Id));
+        }
+
+        /// <summary>
+        /// Captures the whole match, reads it back into this same session, and captures again - so a
+        /// payload that cannot be read is a failure here rather than an exception at the next rollback.
+        /// </summary>
+        internal void RoundTripThroughASnapshot()
+        {
+            var captured = Session.CaptureSnapshot();
+            Assert.That(Session.RestoreSnapshot(captured).Accepted, Is.True,
+                "The captured payload has to be readable by the build that wrote it.");
+            Assert.That(Session.CaptureSnapshot(), Is.EqualTo(captured),
+                "and reading it back has to produce the same state it was written from.");
+        }
         internal void Accept(DirectorCommand command)
         {
             var result = Session.Execute(command);

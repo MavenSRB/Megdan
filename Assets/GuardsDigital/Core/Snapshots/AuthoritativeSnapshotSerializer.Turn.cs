@@ -98,7 +98,8 @@ namespace GuardsDigital.Core.Snapshots
                 tieBreaker,
                 roundIndex,
                 turnIndex,
-                rosterState);
+                rosterState,
+                selectedActor.IsDefined ? selectedActor.ActorId : default);
             return TurnResolutionAuthority.Restore(
                 definitions,
                 cards,
