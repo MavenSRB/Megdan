@@ -4,7 +4,8 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
 using NUnit.Framework;
-using static GuardsDigital.Tests.EditMode.SabinaBoardFixture;
+using static GuardsDigital.Tests.EditMode.SabinaBoard;
+using static GuardsDigital.Tests.EditMode.StagedHeroBoard;
 
 namespace GuardsDigital.Tests.EditMode
 {
@@ -25,7 +26,7 @@ namespace GuardsDigital.Tests.EditMode
     ///
     /// <para>Composition itself - which node carries which capability, what each declares - is
     /// <see cref="SabinaVerifiedContentTests"/>'s and is not repeated here. This file only asks what a
-    /// resolved Attack does on a board. <see cref="SabinaBoardFixture"/> owns the board.</para>
+    /// resolved Attack does on a board. <see cref="StagedHeroBoard"/> owns the board.</para>
     /// </summary>
     public sealed class SabinaAfterAttackRemovalTests
     {
@@ -57,7 +58,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.MinionIds(), Has.No.Member(target),
                 "p.14 step 6 defeats a targeted enemy minion outright, and this one had nothing " +
                 "keeping it on the board.");
-            Assert.That(fixture.HeroSpace(fixture.Sabina), Is.EqualTo(SabinaAt),
+            Assert.That(fixture.HeroSpace(fixture.Hero), Is.EqualTo(HeroAt),
                 "A push moves the target and never the pusher.");
         }
 
@@ -74,17 +75,17 @@ namespace GuardsDigital.Tests.EditMode
         {
             var fixture = Create(
                 heroPlacements: At("primitive-hero", FirstAdjacent));
-            var before = fixture.HeroSpace(fixture.Wasp);
-            Assert.That(HexDistanceQuery.Calculate(before, SabinaAt), Is.EqualTo(1),
+            var before = fixture.HeroSpace(fixture.Enemy);
+            Assert.That(HexDistanceQuery.Calculate(before, HeroAt), Is.EqualTo(1),
                 "The board under test is the one where the enemy hero is inside Range 1.");
 
-            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Wasp);
+            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Enemy);
 
-            var after = fixture.HeroSpace(fixture.Wasp);
+            var after = fixture.HeroSpace(fixture.Enemy);
             Assert.That(after, Is.Not.EqualTo(before),
                 "The target survived the Attack and is still adjacent, so the present-tense " +
                 "condition holds and the printed push applies.");
-            Assert.That(HexDistanceQuery.Calculate(after, SabinaAt), Is.EqualTo(2),
+            Assert.That(HexDistanceQuery.Calculate(after, HeroAt), Is.EqualTo(2),
                 "One space, directly away: p.19's push increases the distance from the pusher by " +
                 "exactly the pushed distance.");
         }
@@ -181,7 +182,7 @@ namespace GuardsDigital.Tests.EditMode
                 "friendly minion standing beside her is not offered.");
             Assert.That(
                 offered.All(minion =>
-                    HexDistanceQuery.Calculate(fixture.SpaceOf(minion), SabinaAt) == 1),
+                    HexDistanceQuery.Calculate(fixture.SpaceOf(minion), HeroAt) == 1),
                 Is.True,
                 "\"adjacent to you\" is one space from her own, which p.17 measures from wherever " +
                 "she is standing when the text runs.");
@@ -237,7 +238,7 @@ namespace GuardsDigital.Tests.EditMode
             var second = fixture.MinionAt(ThirdAdjacent);
 
             fixture.PlayAttackAt(SabinaCardContent.BulletHell, fixture.MinionAt(FirstAdjacent));
-            var afterTheAttack = fixture.Coins(fixture.Sabina);
+            var afterTheAttack = fixture.Coins(fixture.Hero);
             Assert.That(afterTheAttack, Is.EqualTo(2),
                 "p.13 pays 2 coins for defeating a Melee minion, and that Defeat is the Attack's " +
                 "own rather than the rider's.");
@@ -246,7 +247,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(fixture.MinionIds(), Has.No.Member(first));
             Assert.That(fixture.MinionIds(), Has.No.Member(second));
-            Assert.That(fixture.Coins(fixture.Sabina), Is.EqualTo(afterTheAttack),
+            Assert.That(fixture.Coins(fixture.Hero), Is.EqualTo(afterTheAttack),
                 "The printed reminder says so: removing pays nothing, and two removals pay nothing " +
                 "twice.");
             Assert.That(
@@ -323,7 +324,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.Session.Projection.PendingImmediateLanePush, Is.Null,
                 "Nothing has emptied a side yet.");
 
-            fixture.PlayAttackAt(SabinaCardContent.BulletHell, fixture.Wasp);
+            fixture.PlayAttackAt(SabinaCardContent.BulletHell, fixture.Enemy);
             fixture.SelectAndConfirm(fixture.MinionAt(FirstAdjacent));
 
             Assert.That(
@@ -343,7 +344,7 @@ namespace GuardsDigital.Tests.EditMode
         /// disk. <paramref name="exposeTheHeavy"/> takes the Red side's other non-Heavy minions out of
         /// the setup, which is what lets p.18's immunity lapse.
         /// </summary>
-        private static SabinaBoardFixture ThreeEnemiesAndAFriendBesideHer(bool exposeTheHeavy = false)
+        private static StagedHeroBoard ThreeEnemiesAndAFriendBesideHer(bool exposeTheHeavy = false)
         {
             var placements = new Dictionary<string, HexCoordinate>
             {
@@ -368,7 +369,7 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// Three Red Melee minions beside her: one to attack and two for the removal clause to name.
         /// </summary>
-        private static SabinaBoardFixture TwoEnemiesBesideHerAndOneToAttack() =>
+        private static StagedHeroBoard TwoEnemiesBesideHerAndOneToAttack() =>
             Create(
                 tier: 3, branch: SabinaUpgradeBranch.SecondSibling,
                 minionPlacements: new Dictionary<string, HexCoordinate>

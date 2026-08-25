@@ -8,7 +8,8 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
-using static GuardsDigital.Tests.EditMode.SabinaBoardFixture;
+using static GuardsDigital.Tests.EditMode.SabinaBoard;
+using static GuardsDigital.Tests.EditMode.StagedHeroBoard;
 
 namespace GuardsDigital.Tests.EditMode
 {
@@ -55,9 +56,9 @@ namespace GuardsDigital.Tests.EditMode
             var locked = BesideTheEnemyHero(unlocked: false);
 
             unlocked.PlayAttackAt(
-                SabinaCardContent.PointBlankShot, unlocked.Wasp, defendSuccessfully: false);
+                SabinaCardContent.PointBlankShot, unlocked.Enemy, defendSuccessfully: false);
             locked.PlayAttackAt(
-                SabinaCardContent.PointBlankShot, locked.Wasp, defendSuccessfully: false);
+                SabinaCardContent.PointBlankShot, locked.Enemy, defendSuccessfully: false);
 
             Assert.That(locked.AttackTotal(), Is.EqualTo(2),
                 "Point Blank Shot prints Attack 2, and p.6 deals the Ultimate to the deck where it " +
@@ -83,20 +84,20 @@ namespace GuardsDigital.Tests.EditMode
             var unlocked = ThreeSpacesFromTheEnemyHero(unlocked: true);
             Assert.That(
                 LegalHeroTargetsOf(unlocked, SabinaCardContent.PointBlankShot),
-                Has.Member(unlocked.Wasp),
+                Has.Member(unlocked.Enemy),
                 "Range 1 plus the printed 2 is 3, and the hero is standing on the third space.");
 
             var locked = ThreeSpacesFromTheEnemyHero(unlocked: false);
             Assert.That(
                 LegalHeroTargetsOf(locked, SabinaCardContent.PointBlankShot),
-                Has.No.Member(locked.Wasp),
+                Has.No.Member(locked.Enemy),
                 "Without the unlock the same face prints Range 1 and cannot see three spaces, so " +
                 "the reach above is the Ultimate's and not the board's.");
 
             var nonBasic = ThreeSpacesFromTheEnemyHero(unlocked: true);
             Assert.That(
                 LegalHeroTargetsOf(nonBasic, SabinaCardContent.Quickdraw),
-                Has.No.Member(nonBasic.Wasp),
+                Has.No.Member(nonBasic.Enemy),
                 "Quickdraw is a Red Tier I Attack rather than a basic one, so \"your basic attack\" " +
                 "does not name it: its printed Range 2 stays 2 with the Ultimate unlocked.");
         }
@@ -113,33 +114,33 @@ namespace GuardsDigital.Tests.EditMode
         public void APushOfTheEnemyHero_AsksThatHeroToDiscard_AfterTheyHaveMoved()
         {
             var fixture = BesideTheEnemyHero(unlocked: true);
-            var before = fixture.HeroSpace(fixture.Wasp);
+            var before = fixture.HeroSpace(fixture.Enemy);
 
-            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Wasp);
+            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Enemy);
 
             var choice = fixture.Choice;
             Assert.That(choice, Is.Not.Null,
                 "The push applied, so the declared trigger runs, and \"that hero discards a card\" " +
                 "is a decision its own hero makes.");
-            Assert.That(choice.ChooserId, Is.EqualTo(fixture.Wasp),
+            Assert.That(choice.ChooserId, Is.EqualTo(fixture.Enemy),
                 "p.10 gives a discard to the hero who pays it. The sentence names the pushed hero " +
                 "by the role the push already filled rather than by selecting one, which is what " +
                 "makes this chooser the pushed hero and not the acting one.");
-            Assert.That(fixture.HeroSpace(fixture.Wasp), Is.Not.EqualTo(before),
+            Assert.That(fixture.HeroSpace(fixture.Enemy), Is.Not.EqualTo(before),
                 "Ordering, stated as a board fact: the trigger fires after the displacement, so by " +
                 "the time this question stands the hero has already been moved.");
             Assert.That(
-                HexDistanceQuery.Calculate(fixture.HeroSpace(fixture.Wasp), SabinaAt), Is.EqualTo(2),
+                HexDistanceQuery.Calculate(fixture.HeroSpace(fixture.Enemy), HeroAt), Is.EqualTo(2),
                 "One space directly away, which is the push the basic Attack's own rider prints.");
 
-            var handBefore = fixture.Hand(fixture.Wasp).Count;
+            var handBefore = fixture.Hand(fixture.Enemy).Count;
             fixture.SelectFirst();
             fixture.Confirm();
 
-            Assert.That(fixture.Hand(fixture.Wasp).Count, Is.EqualTo(handBefore - 1),
+            Assert.That(fixture.Hand(fixture.Enemy).Count, Is.EqualTo(handBefore - 1),
                 "The card the hero named leaves their hand.");
-            Assert.That(fixture.DiscardPile(fixture.Wasp), Is.Not.Empty);
-            Assert.That(fixture.IsOnBoard(fixture.Wasp), Is.True,
+            Assert.That(fixture.DiscardPile(fixture.Enemy), Is.Not.Empty);
+            Assert.That(fixture.IsOnBoard(fixture.Enemy), Is.True,
                 "\"or is defeated\" is the escalation for a hero who could not pay, and this one " +
                 "paid.");
         }
@@ -162,13 +163,13 @@ namespace GuardsDigital.Tests.EditMode
                 enemyHandSize: 2);
             var livesBefore = fixture.Lives(TeamSide.Red);
 
-            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Wasp);
+            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Enemy);
 
-            Assert.That(fixture.Hand(fixture.Wasp), Is.Empty,
+            Assert.That(fixture.Hand(fixture.Enemy), Is.Empty,
                 "The hero was dealt two: p.7 spent one on the commitment and p.14's Defense spent " +
                 "the other, so there is nothing left to pay with - which is the board this case " +
                 "is about.");
-            Assert.That(fixture.IsOnBoard(fixture.Wasp), Is.False,
+            Assert.That(fixture.IsOnBoard(fixture.Enemy), Is.False,
                 "p.13's Defeat takes the hero off the board, and the escalation reached it because " +
                 "the discard could not be paid.");
             Assert.That(fixture.Lives(TeamSide.Red), Is.EqualTo(livesBefore - 1),
@@ -202,7 +203,7 @@ namespace GuardsDigital.Tests.EditMode
                 "p.14 step 6 defeats a targeted enemy minion outright.");
             Assert.That(fixture.Choice, Is.Null,
                 "No displacement of a hero, so the Ultimate's second sentence has nothing to run on.");
-            Assert.That(fixture.DiscardPile(fixture.Wasp), Is.Empty,
+            Assert.That(fixture.DiscardPile(fixture.Enemy), Is.Empty,
                 "and nobody was asked to pay for it.");
         }
 
@@ -245,11 +246,11 @@ namespace GuardsDigital.Tests.EditMode
             var fixture = Create(
                 heroPlacements: At("primitive-hero", AdjacentAgainstTerrain),
                 unlockUltimate: true);
-            var before = fixture.HeroSpace(fixture.Wasp);
+            var before = fixture.HeroSpace(fixture.Enemy);
 
-            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Wasp);
+            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Enemy);
 
-            Assert.That(fixture.HeroSpace(fixture.Wasp), Is.EqualTo(before),
+            Assert.That(fixture.HeroSpace(fixture.Enemy), Is.EqualTo(before),
                 "There is nowhere to go: the space directly behind them is terrain, so p.19 stops " +
                 "the pushed unit where it stands.");
             Assert.That(fixture.Choice, Is.Null,
@@ -265,11 +266,11 @@ namespace GuardsDigital.Tests.EditMode
         public void WithoutTheUnlock_TheSamePushAsksNothing()
         {
             var fixture = BesideTheEnemyHero(unlocked: false);
-            var before = fixture.HeroSpace(fixture.Wasp);
+            var before = fixture.HeroSpace(fixture.Enemy);
 
-            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Wasp);
+            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Enemy);
 
-            Assert.That(fixture.HeroSpace(fixture.Wasp), Is.Not.EqualTo(before),
+            Assert.That(fixture.HeroSpace(fixture.Enemy), Is.Not.EqualTo(before),
                 "The push is the basic Attack's own printed rider and does not need the Ultimate.");
             Assert.That(fixture.Choice, Is.Null,
                 "The escalation is the Ultimate's, and p.6 deals the Ultimate to the deck.");
@@ -284,23 +285,23 @@ namespace GuardsDigital.Tests.EditMode
         {
             var fixture = BesideTheEnemyHero(unlocked: true);
 
-            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Wasp);
+            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Enemy);
             fixture.SelectFirst();
             fixture.Confirm();
 
             PlayOnUntilSheHoldsHerBasicAgain(
-                fixture, AdjacentTo(fixture.HeroSpace(fixture.Wasp)));
-            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Wasp);
+                fixture, AdjacentTo(fixture.HeroSpace(fixture.Enemy)));
+            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Enemy);
 
             Assert.That(fixture.Choice, Is.Not.Null,
                 "Nothing about the ability is spent by using it: p.16 leaves the card beside the " +
                 "dashboard and the trigger is a standing declaration on it.");
-            Assert.That(fixture.Choice.ChooserId, Is.EqualTo(fixture.Wasp),
+            Assert.That(fixture.Choice.ChooserId, Is.EqualTo(fixture.Enemy),
                 "and the second firing asks the hero this push named.");
-            var handBeforeTheSecondPayment = fixture.Hand(fixture.Wasp).Count;
+            var handBeforeTheSecondPayment = fixture.Hand(fixture.Enemy).Count;
             fixture.SelectFirst();
             fixture.Confirm();
-            Assert.That(fixture.Hand(fixture.Wasp).Count,
+            Assert.That(fixture.Hand(fixture.Enemy).Count,
                 Is.EqualTo(handBeforeTheSecondPayment - 1),
                 "and it is paid a second time, out of the hand p.8 returned to them.");
         }
@@ -312,7 +313,7 @@ namespace GuardsDigital.Tests.EditMode
         public void ThePausedTrigger_SurvivesASnapshotRoundTrip()
         {
             var fixture = BesideTheEnemyHero(unlocked: true);
-            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Wasp);
+            fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Enemy);
             Assert.That(fixture.Choice, Is.Not.Null);
 
             var payload = fixture.Session.CaptureSnapshot();
@@ -323,7 +324,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var open = restored.Choice;
             Assert.That(open, Is.Not.Null);
-            Assert.That(open.ChooserId, Is.EqualTo(restored.Wasp),
+            Assert.That(open.ChooserId, Is.EqualTo(restored.Enemy),
                 "The rebuilt pause asks the same hero. The subject is bound from the rebuilt " +
                 "context rather than persisted, so this is the assertion that says the rebinding " +
                 "happened.");
@@ -345,11 +346,11 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static HexCoordinate AdjacentTo(HexCoordinate space) =>
             space.GetNeighbors()
-                .OrderBy(candidate => HexDistanceQuery.Calculate(candidate, SabinaAt))
+                .OrderBy(candidate => HexDistanceQuery.Calculate(candidate, HeroAt))
                 .First();
 
         /// <summary>The enemy hero beside Sabina, with a free playable space directly behind them.</summary>
-        private static SabinaBoardFixture BesideTheEnemyHero(bool unlocked) =>
+        private static StagedHeroBoard BesideTheEnemyHero(bool unlocked) =>
             Create(heroPlacements: At("primitive-hero", FirstAdjacent), unlockUltimate: unlocked);
 
         /// <summary>
@@ -361,7 +362,7 @@ namespace GuardsDigital.Tests.EditMode
         /// would be unavailable - which would answer the question about availability instead of the
         /// one about who is a legal target.</para>
         /// </summary>
-        private static SabinaBoardFixture ThreeSpacesFromTheEnemyHero(bool unlocked) =>
+        private static StagedHeroBoard ThreeSpacesFromTheEnemyHero(bool unlocked) =>
             Create(
                 minionPlacements: At("red-melee-01", FirstAdjacent),
                 heroPlacements: At("primitive-hero", ThreeAway),
@@ -372,7 +373,7 @@ namespace GuardsDigital.Tests.EditMode
         /// target question standing, which is the state a player reads before clicking.
         /// </summary>
         private static IReadOnlyList<HeroId> LegalHeroTargetsOf(
-            SabinaBoardFixture fixture, CardDefinitionId cardId)
+            StagedHeroBoard fixture, CardDefinitionId cardId)
         {
             fixture.StartPrimary(cardId);
             return fixture.Session.Projection.PendingAttackTargetChoice?.LegalTargetHeroIds
@@ -384,14 +385,14 @@ namespace GuardsDigital.Tests.EditMode
         /// basic can be played again. p.8 returns a spent hand at the end of the round.
         /// </summary>
         private static void PlayOnUntilSheHoldsHerBasicAgain(
-            SabinaBoardFixture fixture, HexCoordinate closeTo)
+            StagedHeroBoard fixture, HexCoordinate closeTo)
         {
             var walked = false;
             for (var budget = 0; budget < 80; budget++)
             {
                 var projection = fixture.Session.Projection;
                 if (projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
-                    fixture.Hand(fixture.Sabina).Contains(SabinaCardContent.PointBlankShot))
+                    fixture.Hand(fixture.Hero).Contains(SabinaCardContent.PointBlankShot))
                 {
                     return;
                 }
@@ -423,7 +424,7 @@ namespace GuardsDigital.Tests.EditMode
                 if (!walked &&
                     projection.IsTurnActive &&
                     projection.SelectedActor.IsDefined &&
-                    projection.SelectedActor.ActorId.Equals(fixture.Sabina))
+                    projection.SelectedActor.ActorId.Equals(fixture.Hero))
                 {
                     walked = true;
                     fixture.WalkTowards(closeTo);

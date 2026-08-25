@@ -19,12 +19,62 @@ using NUnit.Framework;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 8.22. One configured Wasp-versus-Sabina match, with the pieces put where the printed
-    /// clause under test can be asked a question, plus the handful of commands every Sabina fixture
-    /// submits.
+    /// Which hero a <see cref="StagedHeroBoard"/> is staging, and how to build the one-versus-one
+    /// match that stages them. Milestone 8.22.
+    ///
+    /// <para>Everything a hero brings to the fixture is here and everything else is shared, which is
+    /// the whole point of the split: the board geometry, the commands and the readings belong to
+    /// <see cref="EngagedMirrorStaging"/>'s position rather than to whoever is standing on it, so a
+    /// second hero costs a spec rather than a second copy of the fixture.</para>
+    ///
+    /// <para>The upgrade branch is an ordinary <c>bool</c> here because each hero spells its own -
+    /// <c>SabinaUpgradeBranch</c>, <c>BroganUpgradeBranch</c> - and a shared fixture cannot name all
+    /// of them. Each hero's own facade takes its own enum and hands the answer over as "the second
+    /// sibling or not", which is the only thing this needs to know.</para>
+    /// </summary>
+    internal sealed class StagedHeroSpec
+    {
+        internal StagedHeroSpec(
+            string contentId,
+            string enemyContentId,
+            Func<QuickGameSetupConfiguration> setup,
+            Func<int, bool, PlaceholderOneVsOneTestConfiguration> configuration,
+            CardDefinitionId ultimateCardId)
+        {
+            if (string.IsNullOrWhiteSpace(contentId) || string.IsNullOrWhiteSpace(enemyContentId))
+            {
+                throw new ArgumentException("A staged hero names both seats by content identity.");
+            }
+
+            ContentId = contentId;
+            EnemyContentId = enemyContentId;
+            Setup = setup ?? throw new ArgumentNullException(nameof(setup));
+            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            UltimateCardId = ultimateCardId;
+        }
+
+        /// <summary>The staged hero's content identity, which is what the seat is found by.</summary>
+        internal string ContentId { get; }
+
+        /// <summary>The other seat's, which every fixture attacks, is attacked by, or empties.</summary>
+        internal string EnemyContentId { get; }
+
+        internal Func<QuickGameSetupConfiguration> Setup { get; }
+
+        /// <summary>The configuration for a p.15 stage and an upgrade branch.</summary>
+        internal Func<int, bool, PlaceholderOneVsOneTestConfiguration> Configuration { get; }
+
+        /// <summary>The card p.16's unlock moves out of the deck.</summary>
+        internal CardDefinitionId UltimateCardId { get; }
+    }
+
+    /// <summary>
+    /// One configured one-versus-one match on the official map, with the pieces put where the printed
+    /// clause under test can be asked a question, plus the handful of commands every hero's focused
+    /// fixtures submit. Milestone 8.22, generalised from Sabina's before milestone 8.23.
     ///
     /// <para><b>Why the boards are built rather than staged.</b> The staged engaged position is one
-    /// position, and Sabina's set asks about several: one adjacent enemy minion, two of them, an
+    /// position, and a hero's set asks about several: one adjacent enemy minion, two of them, an
     /// immune Heavy, two friendly minions inside a Radius 2 disk, an enemy hero inside Range 1. On the
     /// staged board most of those are false, so a fixture that used it would have its questions
     /// answered by the staging instead of by the card. Each caller names the pieces it needs moved and
@@ -32,62 +82,65 @@ namespace GuardsDigital.Tests.EditMode
     /// <see cref="BroganOneManArmyTests"/> takes, on the same terms: a starting position is setup
     /// content, no rule sees it, and nothing here invents card state.</para>
     ///
-    /// <para>Sabina's staged space is <see cref="SabinaAt"/> on every board, and every coordinate a
-    /// caller names is relative to it - which <see cref="Create"/> asserts, so a staging that moved
-    /// her would fail loudly rather than quietly moving every fixture with her.</para>
+    /// <para><b>Why it is hero-neutral.</b> Every coordinate below is a fact about
+    /// <see cref="EngagedMirrorStaging"/>'s position rather than about Sabina: the staging names
+    /// neither hero, so one hero on each side is the same engagement whichever printed sets they hold.
+    /// The staged hero's space is <see cref="HeroAt"/> on every board and <see cref="Create"/> asserts
+    /// it, so a staging change fails loudly here instead of quietly moving every fixture built on
+    /// this.</para>
     /// </summary>
-    internal sealed class SabinaBoardFixture
+    internal sealed class StagedHeroBoard
     {
-        /// <summary>Sabina's space under <see cref="EngagedMirrorStaging"/>, on the official map.</summary>
-        internal static readonly HexCoordinate SabinaAt = new HexCoordinate(-3, 1);
+        /// <summary>The staged hero's space under <see cref="EngagedMirrorStaging"/>, on the official map.</summary>
+        internal static readonly HexCoordinate HeroAt = new HexCoordinate(-3, 1);
 
-        /// <summary>The three free playable Battle-Zone spaces adjacent to <see cref="SabinaAt"/>.</summary>
+        /// <summary>The three free playable Battle-Zone spaces adjacent to <see cref="HeroAt"/>.</summary>
         internal static readonly HexCoordinate FirstAdjacent = new HexCoordinate(-2, 1);
         internal static readonly HexCoordinate SecondAdjacent = new HexCoordinate(-3, 0);
         internal static readonly HexCoordinate ThirdAdjacent = new HexCoordinate(-4, 1);
 
-        /// <summary>The fourth free playable space adjacent to her, on the other side.</summary>
+        /// <summary>The fourth free playable space adjacent to the hero, on the other side.</summary>
         internal static readonly HexCoordinate FourthAdjacent = new HexCoordinate(-2, 0);
 
-        /// <summary>Two spaces from Sabina: inside a Range or Radius 2, outside every "adjacent".</summary>
+        /// <summary>Two spaces from the hero: inside a Range or Radius 2, outside every "adjacent".</summary>
         internal static readonly HexCoordinate TwoAway = new HexCoordinate(-1, 1);
         internal static readonly HexCoordinate SecondTwoAway = new HexCoordinate(-4, 0);
 
-        /// <summary>Three spaces from Sabina: inside a Radius 3, outside a Radius 2.</summary>
+        /// <summary>Three spaces from the hero: inside a Radius 3, outside a Radius 2.</summary>
         internal static readonly HexCoordinate ThreeAway = new HexCoordinate(-1, 2);
         internal static readonly HexCoordinate SecondThreeAway = new HexCoordinate(-6, 3);
 
         /// <summary>
-        /// Adjacent to Sabina with the terrain space (-3, 3) directly behind it, so a push away from
-        /// her has nowhere to put the pushed piece.
+        /// Adjacent to the hero with the terrain space (-3, 3) directly behind it, so a push away from
+        /// them has nowhere to put the pushed piece.
         /// </summary>
         internal static readonly HexCoordinate AdjacentAgainstTerrain = new HexCoordinate(-3, 2);
 
         /// <summary>
-        /// The two pieces the engaged staging leaves standing inside Sabina's own disks: a friendly
-        /// Melee minion on (-3, 2) and the enemy Ranged minion on (-4, 2), both adjacent to her.
+        /// The two pieces the engaged staging leaves standing inside the staged hero's own disks: a friendly
+        /// Melee minion on (-3, 2) and the enemy Ranged minion on (-4, 2), both adjacent to the hero.
         /// A fixture whose subject is <em>which</em> pieces a card offers has to say where these two
         /// are, or the answer includes them for a reason that has nothing to do with the card.
         /// </summary>
-        internal static readonly string[] StagedBesideHer = { "blue-melee-01", "red-ranged-01" };
+        internal static readonly string[] StagedBesideTheHero = { "blue-melee-01", "red-ranged-01" };
 
-        /// <summary>Two free playable spaces five from Sabina, outside every disk her set prints.</summary>
-        private static readonly HexCoordinate FarFromHer = new HexCoordinate(2, 0);
-        private static readonly HexCoordinate SecondFarFromHer = new HexCoordinate(2, 1);
+        /// <summary>Two free playable spaces five from the hero, outside every disk a printed set uses.</summary>
+        private static readonly HexCoordinate FarFromTheHero = new HexCoordinate(2, 0);
+        private static readonly HexCoordinate SecondFarFromTheHero = new HexCoordinate(2, 1);
 
         private readonly List<MinionId> standingBeforeTheAction = new List<MinionId>();
         private readonly List<MinionId> removedInOrder = new List<MinionId>();
 
-        private SabinaBoardFixture(MatchSession session, HeroId sabina, HeroId wasp)
+        private StagedHeroBoard(MatchSession session, HeroId hero, HeroId enemy)
         {
             Session = session;
-            Sabina = sabina;
-            Wasp = wasp;
+            Hero = hero;
+            Enemy = enemy;
         }
 
         internal MatchSession Session { get; }
-        internal HeroId Sabina { get; }
-        internal HeroId Wasp { get; }
+        internal HeroId Hero { get; }
+        internal HeroId Enemy { get; }
 
         /// <summary>
         /// The configured match at the named p.15 stage, with the pieces the caller names relocated.
@@ -108,56 +161,51 @@ namespace GuardsDigital.Tests.EditMode
         /// card asks them to discard: p.7 spends one card on the commitment and p.14's Defense spends
         /// another, so a seat that has to commit, defend and then be unable to pay is dealt two.
         /// </param>
-        /// <param name="clearHerNeighbourhood">
-        /// Whether to park <see cref="StagedBesideHer"/> five spaces away, which is the default. Every
+        /// <param name="clearTheNeighbourhood">
+        /// Whether to park <see cref="StagedBesideTheHero"/> five spaces away, which is the default. Every
         /// fixture here is about which pieces a printed clause names, and those two stand inside her
         /// disks for a reason that belongs to the staging rather than to any card. A caller placing
         /// either of them explicitly overrides the parking for that piece.
         /// </param>
-        internal static SabinaBoardFixture Create(
+        internal static StagedHeroBoard Create(
+            StagedHeroSpec spec,
             int tier = 1,
-            SabinaUpgradeBranch branch = SabinaUpgradeBranch.FirstSibling,
+            bool secondSibling = false,
             IReadOnlyDictionary<string, HexCoordinate> minionPlacements = null,
             IReadOnlyDictionary<string, HexCoordinate> heroPlacements = null,
             IReadOnlyCollection<string> banishedMinions = null,
             bool unlockUltimate = false,
             int? enemyHandSize = null,
-            IReadOnlyCollection<CardDefinitionId> sabinaDiscards = null,
-            bool clearHerNeighbourhood = true)
+            IReadOnlyCollection<CardDefinitionId> heroDiscards = null,
+            bool clearTheNeighbourhood = true)
         {
-            var configuration = tier == 3
-                ? PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierThreeForInternalTest(
-                    TeamSide.Red, branch)
-                : tier == 2
-                    ? PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierTwoForInternalTest(
-                        TeamSide.Red, branch)
-                    : PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaForInternalTest(
-                        TeamSide.Red);
+            if (spec == null) throw new ArgumentNullException(nameof(spec));
+            var configuration = spec.Configuration(tier, secondSibling);
 
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var staged = EngagedMirrorStaging.Restage(
                 map,
                 QuickGameSetupAuthority.Create(
-                    QuickGameSetupConfiguration.CreateStagedWaspVersusSabinaOneVsOne(),
+                    spec.Setup(),
                     configuration.Participants, map, configuration.TieBreakerState),
                 out _);
 
-            var sabina = staged.Heroes.Single(hero => hero.ContentId.Value == "sabina").HeroId;
-            var wasp = staged.Heroes.Single(hero => hero.ContentId.Value == "wasp").HeroId;
+            var heroSeat = staged.Heroes.Single(seat => seat.ContentId.Value == spec.ContentId);
+            var hero = heroSeat.HeroId;
+            var enemy = staged.Heroes
+                .Single(seat => seat.ContentId.Value == spec.EnemyContentId).HeroId;
             Assert.That(
-                staged.Heroes.Single(hero => hero.HeroId.Equals(sabina)).Coordinate,
-                Is.EqualTo(SabinaAt),
-                "Every space a caller names is relative to Sabina's staged one, so a staging that " +
-                "moved her would silently move every fixture built on this.");
+                heroSeat.Coordinate, Is.EqualTo(HeroAt),
+                $"Every space a caller names is relative to the staged hero's own, so a staging " +
+                $"that moved {spec.ContentId} would silently move every fixture built on this.");
 
             if (unlockUltimate)
             {
                 Assert.That(
                     CardLifecycleAuthority.TryUnlockUltimateFromDeck(
                         configuration.CardInstances.Single(card =>
-                            card.OwnerId.Equals(sabina) &&
-                            card.DefinitionReference.DefinitionId.Equals(
-                                SabinaCardContent.BigSoddingGun))),
+                            card.OwnerId.Equals(hero) &&
+                            card.DefinitionReference.DefinitionId.Equals(spec.UltimateCardId))),
                     Is.True,
                     "p.16 unlocks by moving the card out of the deck, and the card has to be there.");
             }
@@ -166,7 +214,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 foreach (var card in configuration.CardInstances
                     .Where(card =>
-                        card.OwnerId.Equals(wasp) && card.State.Location == CardLocation.Hand)
+                        card.OwnerId.Equals(enemy) && card.State.Location == CardLocation.Hand)
                     .OrderBy(card => configuration.CardDefinitions
                         .Single(definition => definition.Reference.Equals(card.DefinitionReference))
                         .Initiative.Value)
@@ -177,17 +225,17 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            if (sabinaDiscards != null)
+            if (heroDiscards != null)
             {
                 // A retrieve has nothing to name in a match's first turn, because nothing has been
                 // discarded yet. This is p.7's own discard pile reached in one step rather than by
                 // playing a round first, which would prove the round instead of the card.
-                foreach (var cardId in sabinaDiscards)
+                foreach (var cardId in heroDiscards)
                 {
                     Assert.That(
                         CardLifecycleAuthority.TryDiscardFromHand(
                             configuration.CardInstances.Single(card =>
-                                card.OwnerId.Equals(sabina) &&
+                                card.OwnerId.Equals(hero) &&
                                 card.State.Location == CardLocation.Hand &&
                                 card.DefinitionReference.DefinitionId.Equals(cardId))),
                         Is.True);
@@ -195,12 +243,12 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             var placements = minionPlacements;
-            if (clearHerNeighbourhood)
+            if (clearTheNeighbourhood)
             {
                 var cleared = new Dictionary<string, HexCoordinate>
                 {
-                    [StagedBesideHer[0]] = FarFromHer,
-                    [StagedBesideHer[1]] = SecondFarFromHer
+                    [StagedBesideTheHero[0]] = FarFromTheHero,
+                    [StagedBesideTheHero[1]] = SecondFarFromTheHero
                 };
                 foreach (var placement in
                     minionPlacements ?? (IReadOnlyDictionary<string, HexCoordinate>)
@@ -218,9 +266,9 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardInstances, configuration.TieBreakerState, map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
                 Array.Empty<ObstacleOccupancy>());
-            return new SabinaBoardFixture(
+            return new StagedHeroBoard(
                 new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map })),
-                sabina, wasp);
+                hero, enemy);
         }
 
         /// <summary>A one-entry placement map, for the common case of moving a single piece.</summary>
@@ -233,12 +281,12 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Commits every seat so Sabina's named card is the one that acts, then starts its printed
+        /// Commits every seat so the hero's named card is the one that acts, then starts its printed
         /// primary action.
         ///
         /// <para>The other seats yield with their lowest-Initiative card, which p.7 resolves last.
-        /// Sabina's Green cards print Initiative 3 and 4 and can lose that race, so this drains the
-        /// enemy turn rather than asserting she went first: what the fixture needs is her turn, not a
+        /// A hero's lowest-Initiative faces can lose that race - Sabina's Green cards print 3 and 4, so this drains the
+        /// enemy turn rather than asserting they went first: what the fixture needs is their turn, not a
         /// particular turn order.</para>
         /// </summary>
         /// <param name="enemyCard">
@@ -251,7 +299,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             foreach (var hero in Session.Projection.Participants.Heroes.Select(value => value.Id))
             {
-                var card = hero.Equals(Sabina)
+                var card = hero.Equals(Hero)
                     ? HandCard(hero, cardId)
                     : enemyCard.IsDefined
                         ? HandCard(hero, enemyCard)
@@ -259,7 +307,7 @@ namespace GuardsDigital.Tests.EditMode
                 Accept(DirectorCommand.CommitCard(hero, card.Id));
             }
 
-            DrainUntilSabinaActs();
+            DrainUntilTheHeroActs();
             var offer = Session.Projection.AvailableTurnActions.SingleOrDefault(candidate =>
                 candidate.IsAvailable &&
                 OriginOf(candidate) == ActionDefinitionOrigin.PrintedPrimary);
@@ -272,20 +320,20 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// Whether the named card's printed primary action is offered as available once it is the one
-        /// Sabina committed. Milestone 7.8a1's rule greys an action with nothing to act on, so a face
+        /// Hero committed. Milestone 7.8a1's rule greys an action with nothing to act on, so a face
         /// whose text names nobody on this board is unavailable rather than startable-and-empty.
         /// </summary>
         internal bool IsPrimaryAvailable(CardDefinitionId cardId)
         {
             foreach (var hero in Session.Projection.Participants.Heroes.Select(value => value.Id))
             {
-                var card = hero.Equals(Sabina)
+                var card = hero.Equals(Hero)
                     ? HandCard(hero, cardId)
                     : LowestInitiativeHandCard(hero);
                 Accept(DirectorCommand.CommitCard(hero, card.Id));
             }
 
-            DrainUntilSabinaActs();
+            DrainUntilTheHeroActs();
             return Session.Projection.AvailableTurnActions.Any(candidate =>
                 candidate.IsAvailable &&
                 OriginOf(candidate) == ActionDefinitionOrigin.PrintedPrimary);
@@ -493,8 +541,8 @@ namespace GuardsDigital.Tests.EditMode
         /// selection's first and second published spaces are what carry the order.
         /// </summary>
         /// <summary>
-        /// Spends Sabina's printed secondary Movement walking her as close to the named space as the
-        /// allowance reaches. p.7 gives a turn one action, so a fixture that needs her somewhere else
+        /// Spends the hero's printed secondary Movement walking them as close to the named space as the
+        /// allowance reaches. p.7 gives a turn one action, so a fixture that needs them somewhere else
         /// spends a whole turn getting there - which is what a player does.
         /// </summary>
         internal void WalkTowards(HexCoordinate destination)
@@ -515,7 +563,7 @@ namespace GuardsDigital.Tests.EditMode
                     return;
                 }
 
-                var here = HeroSpace(Sabina);
+                var here = HeroSpace(Hero);
                 var step = movement.LegalDestinations
                     .OrderBy(value => HexDistanceQuery.Calculate(value.Destination, destination))
                     .FirstOrDefault();
@@ -591,16 +639,16 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Plays out any earlier seat's turn until Sabina's own starts. Her Green cards print the
+        /// Plays out any earlier seat's turn until the staged hero's own starts. The lowest-Initiative faces print the
         /// lowest Initiative in the match, so they can act second.
         /// </summary>
-        private void DrainUntilSabinaActs()
+        private void DrainUntilTheHeroActs()
         {
             for (var budget = 0; budget < 16; budget++)
             {
                 var projection = Session.Projection;
                 if (projection.SelectedActor.IsDefined &&
-                    projection.SelectedActor.ActorId.Equals(Sabina))
+                    projection.SelectedActor.ActorId.Equals(Hero))
                 {
                     return;
                 }
@@ -622,8 +670,8 @@ namespace GuardsDigital.Tests.EditMode
 
                 if (projection.PendingDefenseChoice != null)
                 {
-                    // Sabina has to survive the earlier seat's turn for her own to be worth
-                    // reaching, so this pays for a Defense whenever one of her cards answers.
+                    // The staged hero has to survive the earlier seat's turn for their own to be worth
+                    // reaching, so this pays for a Defense whenever one of their cards answers.
                     var preview = projection.PendingDefensePreview;
                     var survives = preview?.Choices.FirstOrDefault(choice =>
                         !choice.IsDecline &&
@@ -644,7 +692,7 @@ namespace GuardsDigital.Tests.EditMode
                 Accept(DirectorCommand.PerformHold(projection.SelectedActor.CardInstanceId));
             }
 
-            Assert.Fail("Sabina's turn never started.");
+            Assert.Fail("The staged hero's turn never started.");
         }
 
         private void RecordRemovals()

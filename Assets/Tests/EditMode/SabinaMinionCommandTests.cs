@@ -5,7 +5,8 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
 using NUnit.Framework;
-using static GuardsDigital.Tests.EditMode.SabinaBoardFixture;
+using static GuardsDigital.Tests.EditMode.SabinaBoard;
+using static GuardsDigital.Tests.EditMode.StagedHeroBoard;
 
 namespace GuardsDigital.Tests.EditMode
 {
@@ -21,7 +22,7 @@ namespace GuardsDigital.Tests.EditMode
     ///
     /// <para>What each card composes - which node, which capability, which literal - is
     /// <see cref="SabinaVerifiedContentTests"/>'s and is not repeated. This file asks what a player is
-    /// offered and what the board looks like afterwards. <see cref="SabinaBoardFixture"/> owns the
+    /// offered and what the board looks like afterwards. <see cref="StagedHeroBoard"/> owns the
     /// board.</para>
     /// </summary>
     public sealed class SabinaMinionCommandTests
@@ -55,9 +56,9 @@ namespace GuardsDigital.Tests.EditMode
 
             fixture.SelectAndConfirm(partner);
 
-            Assert.That(fixture.HeroSpace(fixture.Sabina), Is.EqualTo(FirstAdjacent),
+            Assert.That(fixture.HeroSpace(fixture.Hero), Is.EqualTo(FirstAdjacent),
                 "A Swap is an exchange rather than a move: she ends on the space the minion held.");
-            Assert.That(fixture.SpaceOf(partner), Is.EqualTo(SabinaAt),
+            Assert.That(fixture.SpaceOf(partner), Is.EqualTo(HeroAt),
                 "and the minion ends on hers.");
         }
 
@@ -120,7 +121,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(fixture.SpaceOf(friendly), Is.EqualTo(SecondAdjacent));
             Assert.That(fixture.SpaceOf(enemy), Is.EqualTo(FirstAdjacent));
-            Assert.That(fixture.HeroSpace(fixture.Sabina), Is.EqualTo(SabinaAt),
+            Assert.That(fixture.HeroSpace(fixture.Hero), Is.EqualTo(HeroAt),
                 "She is not one of the two pieces the text names.");
         }
 
@@ -197,7 +198,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True,
                 "\"1 space\" is one step from where the minion is standing.");
             Assert.That(
-                destinations.All(space => HexDistanceQuery.Calculate(space, SabinaAt) <= 2),
+                destinations.All(space => HexDistanceQuery.Calculate(space, HeroAt) <= 2),
                 Is.True,
                 "\"to a space in radius\" is the second bound, measured from her rather than from " +
                 "the minion - so a lateral step out of her disk is not offered even though it is " +
@@ -279,7 +280,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var fixture = TwoFriendlyMinionsInRadius(
                 tier: 2, branch: SabinaUpgradeBranch.SecondSibling);
-            Assert.That(fixture.DiscardPile(fixture.Sabina),
+            Assert.That(fixture.DiscardPile(fixture.Hero),
                 Is.EqualTo(new[] { SabinaCardContent.BackToBack }),
                 "The board this case needs is one where something has been discarded, because a " +
                 "retrieve with nothing to name would prove the empty pile rather than the card.");
@@ -294,10 +295,10 @@ namespace GuardsDigital.Tests.EditMode
                 "\"then move up to 1 space\" runs whether or not the retrieve was taken: the two " +
                 "are steps of one sentence rather than two halves of one choice.");
             Assert.That(
-                destinations.All(space => HexDistanceQuery.Calculate(space, SabinaAt) <= 1),
+                destinations.All(space => HexDistanceQuery.Calculate(space, HeroAt) <= 1),
                 Is.True,
                 "\"up to 1 space\" is the Tier II printed allowance.");
-            Assert.That(fixture.Hand(fixture.Sabina),
+            Assert.That(fixture.Hand(fixture.Hero),
                 Has.No.Member(SabinaCardContent.BackToBack),
                 "The declined retrieve left the card in the discard pile.");
         }
@@ -315,13 +316,13 @@ namespace GuardsDigital.Tests.EditMode
             fixture.SelectFirst();
             fixture.Confirm();
 
-            Assert.That(fixture.Hand(fixture.Sabina), Has.Member(SabinaCardContent.BackToBack),
+            Assert.That(fixture.Hand(fixture.Hero), Has.Member(SabinaCardContent.BackToBack),
                 "p.10's retrieve puts a discarded card back into its owner's hand.");
-            Assert.That(fixture.DiscardPile(fixture.Sabina), Is.Empty,
+            Assert.That(fixture.DiscardPile(fixture.Hero), Is.Empty,
                 "and takes it out of the pile it came from.");
             Assert.That(
                 fixture.CandidateSpaces(fixture.Choice)
-                    .Any(space => HexDistanceQuery.Calculate(space, SabinaAt) == 2),
+                    .Any(space => HexDistanceQuery.Calculate(space, HeroAt) == 2),
                 Is.True,
                 "\"then move up to 2 spaces\" is what the Tier III face prints where its Tier II " +
                 "sibling prints one.");
@@ -343,7 +344,7 @@ namespace GuardsDigital.Tests.EditMode
                 minionPlacements: At("blue-melee-01", AdjacentAgainstTerrain));
             supported.StartPrimary(SabinaCardContent.CloseSupport);
             Assert.That(supported.CandidateHeroes(supported.Choice),
-                Is.EqualTo(new[] { supported.Wasp }),
+                Is.EqualTo(new[] { supported.Enemy }),
                 "The enemy hero is inside her Radius 3 and one of her minions is standing beside " +
                 "them, which is both halves of the sentence.");
 
@@ -373,15 +374,15 @@ namespace GuardsDigital.Tests.EditMode
 
             var choice = fixture.Choice;
             Assert.That(choice, Is.Not.Null);
-            Assert.That(choice.ChooserId, Is.EqualTo(fixture.Wasp),
+            Assert.That(choice.ChooserId, Is.EqualTo(fixture.Enemy),
                 "p.10 gives a discard to the hero who pays it, and the sentence named that hero " +
                 "rather than the acting one.");
-            var before = fixture.Hand(fixture.Wasp).Count;
+            var before = fixture.Hand(fixture.Enemy).Count;
             fixture.SelectFirst();
             fixture.Confirm();
 
-            Assert.That(fixture.Hand(fixture.Wasp).Count, Is.EqualTo(before - 1));
-            Assert.That(fixture.DiscardPile(fixture.Wasp), Is.Not.Empty);
+            Assert.That(fixture.Hand(fixture.Enemy).Count, Is.EqualTo(before - 1));
+            Assert.That(fixture.DiscardPile(fixture.Enemy), Is.Not.Empty);
         }
 
         /// <summary>
@@ -399,7 +400,7 @@ namespace GuardsDigital.Tests.EditMode
                 tier: 2, branch: SabinaUpgradeBranch.SecondSibling);
             ifAble.StartPrimary(SabinaCardContent.CloseSupport);
             ifAble.AnswerEveryStandingChoice();
-            Assert.That(ifAble.IsOnBoard(ifAble.Wasp), Is.True,
+            Assert.That(ifAble.IsOnBoard(ifAble.Enemy), Is.True,
                 "\"if able\" is the whole of Close Support's answer for a hero with nothing to " +
                 "discard: the step could not be paid and the card stops there.");
 
@@ -409,7 +410,7 @@ namespace GuardsDigital.Tests.EditMode
             orDefeated.StartPrimary(SabinaCardContent.CoveringFire);
             orDefeated.AnswerEveryStandingChoice();
 
-            Assert.That(orDefeated.IsOnBoard(orDefeated.Wasp), Is.False,
+            Assert.That(orDefeated.IsOnBoard(orDefeated.Enemy), Is.False,
                 "\"or is defeated\" is the escalation, and an empty hand is what reaches it.");
             Assert.That(orDefeated.Lives(TeamSide.Red), Is.EqualTo(livesBefore - 1),
                 "p.13 charges the defeated hero's team a Life counter.");
@@ -456,7 +457,7 @@ namespace GuardsDigital.Tests.EditMode
         /// Two friendly minions inside her Radius 2 and one card of hers already in the discard pile,
         /// which is the board both retrieve-and-move faces need.
         /// </summary>
-        private static SabinaBoardFixture TwoFriendlyMinionsInRadius(
+        private static StagedHeroBoard TwoFriendlyMinionsInRadius(
             int tier, SabinaUpgradeBranch branch) =>
             Create(
                 tier: tier, branch: branch,
@@ -471,7 +472,7 @@ namespace GuardsDigital.Tests.EditMode
         /// The enemy hero beside one of her minions, holding nothing but the card they commit - so the
         /// discard both Green Tier II/III faces ask for cannot be paid.
         /// </summary>
-        private static SabinaBoardFixture EmptyHandedEnemyBesideHerMinion(
+        private static StagedHeroBoard EmptyHandedEnemyBesideHerMinion(
             int tier, SabinaUpgradeBranch branch) =>
             Create(
                 tier: tier, branch: branch,
@@ -531,7 +532,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var fixture = Create(tier: tier);
             fixture.PlayAttackAt(
-                cardId, fixture.Wasp, defendSuccessfully: false, enemyCard: enemyCard);
+                cardId, fixture.Enemy, defendSuccessfully: false, enemyCard: enemyCard);
             return fixture.AttackTotal();
         }
     }
