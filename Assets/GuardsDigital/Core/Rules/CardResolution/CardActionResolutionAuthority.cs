@@ -108,6 +108,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingRepeatedAction pendingRepeat;
         private PendingImmediateLanePushRequest pendingLanePush;
         private PendingAttackCardTextResolution pendingCardText;
+
+        /// <summary>
+        /// Milestone 8.22. The rest of rulebook p.14, owed while an after-push trigger that the card
+        /// text set off is standing. Null whenever the page is not stopped that way.
+        /// </summary>
+        private PendingAttackCardTextRemainder pendingCardTextAwaitingInterrupt;
         private PendingAttackResolution owedAttackRepeat;
         private AttackTarget owedAttackRepeatExclusion;
 
@@ -378,6 +384,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         public PendingAttackCardTextResolution PendingCardTextResolution => pendingCardText;
 
+        /// <summary>
+        /// Whether rulebook p.14 is stopped part-way through - because its own text asked a question,
+        /// or because milestone 8.22 let a Push inside that text set off a trigger that did. Either
+        /// way the steps below the one being applied are not carried anywhere: they are regenerated
+        /// from the continuation.s own identity when the answer arrives.
+        /// </summary>
+        public bool IsCardTextPageStopped =>
+            pendingCardText != null || pendingCardTextAwaitingInterrupt != null;
+
+        /// <summary>The remainder owed while a card-text push trigger stands, or null.</summary>
+        public PendingAttackCardTextRemainder PendingCardTextRemainder =>
+            pendingCardTextAwaitingInterrupt;
+
         internal IReadOnlyList<ActiveEffectLifecycleEvent> ApplyTriggeredActionEnded(
             ActiveEffectLifecycle timing,
             ActiveEffectCheckpointContext checkpoint,
@@ -558,7 +577,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var result = skillBackend.StartTurnSkill(
                 resolutionId, offer, prepared.Definitions, prepared.Instances, participants,
                 timing, modifications, components, roundIndex, turnIndex, out var repeat,
-                out var lanePushCause, out var appliedPushes);
+                out var lanePushCause, out var appliedPushes, out var requestedDefeats);
+            result = WithSkillRequestedHeroDefeats(
+                result, requestedDefeats, resolutionId, offer.SourceCardInstanceId,
+                offer.ActionDefinitionId, offer.ActorId, boundary);
             result = RunAppliedPushTriggers(
                 result, appliedPushes, boundary, ref repeat, ref lanePushCause);
             return CloseActionBoundary(
@@ -617,7 +639,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var result = skillBackend.AnswerEffectChoice(
                 command, materializedDefinitions, materializedInstances, participants, timing,
                 modifications, components, roundIndex, turnIndex, out var repeat, out var lanePushCause,
-                out var appliedPushes);
+                out var appliedPushes, out var requestedDefeats);
             if (frame == null)
             {
                 return result;
@@ -626,6 +648,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var boundary = new ActionBoundaryContext(
                 materializedDefinitions, materializedInstances, participants, timing, tieBreaker,
                 roundIndex, turnIndex);
+            result = WithSkillRequestedHeroDefeats(
+                result, requestedDefeats, new ActionResolutionId(frame.ResolutionId.Value),
+                frame.SourceCardInstanceId, frame.ActionDefinitionId, frame.ActorId, boundary);
             result = RunAppliedPushTriggers(
                 result, appliedPushes, boundary, ref repeat, ref lanePushCause);
             return CloseActionBoundary(
@@ -841,7 +866,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 boundary.TurnIndex,
                 out var furtherRepeat,
                 out var repeatedLanePushCause,
-                out var repeatedPushes);
+                out var repeatedPushes,
+                out var repeatedDefeats);
             if (!repeated.Accepted)
             {
                 throw new InvalidOperationException(
@@ -849,6 +875,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "just resolved from; the trusted definitions and the recorded repeat disagree.");
             }
 
+            repeated = WithSkillRequestedHeroDefeats(
+                repeated, repeatedDefeats, repeat.ResolutionId, repeat.SourceCardInstanceId,
+                repeat.ActionDefinitionId, repeat.ActorId, boundary);
             repeated = RunAppliedPushTriggers(
                 repeated, repeatedPushes, boundary, ref furtherRepeat, ref repeatedLanePushCause);
             steps.AddRange(repeated.Steps);
@@ -1014,7 +1043,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CaptureContinuation()
                 .WithPreAction(pendingPreAction)
                 .WithInterruptions(
-                    pendingEffectInterrupt, attackDefenseBackend.PendingRemovalPrevention);
+                    pendingEffectInterrupt, attackDefenseBackend.PendingRemovalPrevention)
+                // Milestone 8.22. The rest of p.14, owed while a Push inside its card text has set off
+                // a trigger that is standing. It rides whatever continuation the capture found, for
+                // the reason the Lane-Push request does.
+                .WithCardTextRemainder(pendingCardTextAwaitingInterrupt);
 
         private CardActionResolutionRestoreState CaptureContinuation()
         {
@@ -1108,6 +1141,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             restoredAuthority.pendingEffectInterrupt = state.PendingEffectInterrupt;
             restoredAuthority.attackDefenseBackend.RestorePendingRemovalPrevention(
                 state.PendingRemovalPrevention);
+
+            // Milestone 8.22, same line of reasoning again: the rest of p.14 owed while a card-text
+            // Push has set off a trigger is not a continuation either, and the continuation it stands
+            // beside is usually none at all.
+            restoredAuthority.pendingCardTextAwaitingInterrupt = state.PendingCardTextRemainder;
 
             // Every continuation, not only the Attack one that needed the items to verify itself: the
             // restored dispatcher answers the next command, and that command may be the Defense whose
@@ -1515,6 +1553,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
+            TieBreakerState tieBreaker,
             int roundIndex,
             int turnIndex)
         {
@@ -1549,7 +1588,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // printed inside: who is attacking, what the Attack took, and p.13.s subtype. Every
                 // field is undefined at p.14.s step 1, because the page has not chosen a target yet.
                 enclosingAttack: EnclosingAttackOf(step.CardTextRemainderResolution, materializedDefinitions),
-                rosterState: rosterState);
+                rosterState: rosterState,
+                // Milestone 8.22, finding `F-ATK-02`. p.14's card text can displace a unit - Sabina's
+                // Point Blank Shot pushes what its Attack targeted - and a source watching p.18's
+                // Pushes is entitled to that moment wherever the Push happened. The Skill altitude has
+                // watched since 8.19c1; this one did not, so an after-push trigger could never fire
+                // from an Attack's own rider, which is the only push her set prints.
+                watchesAppliedPushes: WatchesAppliedPushes(materializedDefinitions, instances));
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"card-text-{card.Id.Value}-{action.Id.Value}-{step.CardTextTiming}"),
@@ -1598,6 +1643,27 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 result, step.CardTextRemainderResolution, materializedDefinitions, instances,
                 participants, modifications, steps);
             RecordOwedAttackRepeat(result, step.CardTextRemainderResolution);
+
+            // Milestone 8.22, finding `F-ATK-02`. The two things this altitude used to drop, both of
+            // which the Skill altitude has carried since 6.9 and 8.19c1: rulebook p.8's recorded cause,
+            // and the sources watching the Pushes this text applied. Shootout and Bullet Hell remove
+            // minions from inside an Attack's text and can take a side's last one out of the Battle
+            // Zone; Point Blank Shot pushes from there and Big Sodding Gun is watching.
+            if (step.CardTextRemainderResolution != null)
+            {
+                RecordImmediateLanePush(
+                    result.LanePushCause,
+                    step.CardTextRemainderResolution.ResolutionId,
+                    participants,
+                    modifications);
+            }
+
+            RunCardTextPushTriggers(
+                result, step.CardTextActorId, step.CheckpointSourceCardInstanceId,
+                step.CardTextActionDefinitionId, step.CardTextTiming,
+                step.CardTextRemainderResolution, step.CardTextRemainderOutcome,
+                materializedDefinitions, instances, participants, timing, tieBreaker,
+                roundIndex, turnIndex, steps);
 
             // Milestone 8.19a. Rulebook p.14's step 1 is the one moment whose remainder is the rest of
             // the page rather than a list of facts, so when the text finishes without asking anything
@@ -1771,6 +1837,28 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             RuleModificationSet modifications,
+            ICollection<ResolutionStep> steps) =>
+            AppendRequestedHeroDefeats(
+                result,
+                EffectInvokedDefeatSource.FromAttack(
+                    attack ?? throw new ArgumentNullException(nameof(attack))),
+                definitions, instances, participants, modifications, steps);
+
+        /// <summary>
+        /// Milestone 8.22. The same list, run about whichever action asked for it.
+        ///
+        /// <para>It was the Attack's until now because every printed text that could escalate into
+        /// p.13 was Attack text. Sabina's Covering Fire prints "discards a card, or is defeated" on a
+        /// <em>Skill</em>, and a Skill that asked for a Defeat previously changed nothing at all: this
+        /// method was reachable only from the two card-text paths.</para>
+        /// </summary>
+        private void AppendRequestedHeroDefeats(
+            EffectResolutionStepResult result,
+            EffectInvokedDefeatSource source,
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
             ICollection<ResolutionStep> steps)
         {
             if (!result.IsComplete || result.RequestedHeroDefeats.Count == 0)
@@ -1782,7 +1870,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             foreach (var heroId in result.RequestedHeroDefeats)
             {
                 var defeat = attackDefenseBackend.ResolveEffectInvokedHeroDefeat(
-                    attack, heroId, definitions, materializedInstances, participants, modifications,
+                    source, heroId, definitions, materializedInstances, participants, modifications,
                     steps);
                 if (defeat == null)
                 {
@@ -1815,6 +1903,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
+            TieBreakerState tieBreaker,
             int roundIndex,
             int turnIndex)
         {
@@ -1889,6 +1978,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 step, paused.Attack, materializedDefinitions, instances, participants, modifications,
                 facts);
             RecordOwedAttackRepeat(step, paused.Attack);
+
+            // Milestone 8.22, finding `F-ATK-02`, the resume half. A card text that asked a question
+            // does its work here rather than where it started, so p.8's recorded cause and the Pushes
+            // it applied are both produced on this pass - Bullet Hell removes the minions it named
+            // only once the player has named them. Recording them where the text began would have
+            // caught the faces that ask nothing and missed every face that asks.
+            RecordImmediateLanePush(
+                step.LanePushCause, paused.Attack.ResolutionId, participants, modifications);
+            if (RunCardTextPushTriggers(
+                    step, paused.Frame.ActorId, paused.Frame.SourceCardInstanceId,
+                    paused.Frame.ActionDefinitionId, paused.Moment, paused.Attack, paused.Outcome,
+                    materializedDefinitions, instances, participants, timing, tieBreaker,
+                    roundIndex, turnIndex, facts))
+            {
+                return CardActionResolutionResult.Accept(false, null, null, facts);
+            }
 
             // Milestone 8.19a. Step 1's remainder is the rest of rulebook p.14 rather than a list of
             // facts, so it is produced against live state - including the unit this text named, if it
@@ -2377,13 +2482,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         boundary.Definitions, boundary.Instances, boundary.Participants,
                         boundary.Timing, CurrentModificationsFor(boundary, interrupted.ActorId),
                         components, boundary.RoundIndex, boundary.TurnIndex,
-                        out var furtherRepeat, out var furtherCause, out var furtherPushes);
+                        out var furtherRepeat, out var furtherCause, out var furtherPushes,
+                        out var furtherDefeats);
                     if (!continued.Accepted)
                     {
                         return continued;
                     }
 
                     steps.AddRange(continued.Steps);
+                    AppendSkillRequestedHeroDefeats(
+                        furtherDefeats, new ActionResolutionId(interrupted.ResolutionId.Value),
+                        interrupted.SourceCardInstanceId, interrupted.ActionDefinitionId,
+                        interrupted.ActorId, boundary, steps);
                     complete = continued.IsComplete;
                     if (furtherRepeat != null) repeat = furtherRepeat;
                     if (furtherCause != LanePushCauseKind.None) lanePushCause = furtherCause;
@@ -2406,6 +2516,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
             GuardsDigital.Core.Rules.EffectResolution.PendingResolution interrupted,
             IReadOnlyList<RuleObject> pushes,
             ActionBoundaryContext boundary,
+            List<ResolutionStep> steps) =>
+            TryStartAfterPushTrigger(
+                interrupted.ActorId, interrupted.ResolutionId, pushes, boundary, steps);
+
+        /// <summary>
+        /// The same, named by the hero whose Pushes these were and by the resolution a standing
+        /// trigger would be interrupting. Milestone 8.22 states both, because an Attack.s card text
+        /// pushes with no Skill resolution behind it.
+        /// </summary>
+        private bool TryStartAfterPushTrigger(
+            HeroId pushingHeroId,
+            GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId interruptedResolutionId,
+            IReadOnlyList<RuleObject> pushes,
+            ActionBoundaryContext boundary,
             List<ResolutionStep> steps)
         {
             var sources = GuardsDigital.Core.Rules.Progression.AfterPushTriggerQuery.Derive(
@@ -2413,13 +2537,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     boundary.Definitions, boundary.Instances),
                 board,
                 boundary.Participants,
-                interrupted.ActorId,
+                pushingHeroId,
                 pushes);
             for (var index = 0; index < sources.Count; index++)
             {
                 var owed = sources.Skip(index + 1).Select(source => source.PushedObject).ToArray();
                 if (RunOneAfterPushTrigger(
-                        sources[index], interrupted, owed, boundary, steps))
+                        sources[index], interruptedResolutionId, owed, boundary, steps))
                 {
                     return true;
                 }
@@ -2434,7 +2558,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private bool RunOneAfterPushTrigger(
             GuardsDigital.Core.Rules.Progression.AfterPushTriggerSource source,
-            GuardsDigital.Core.Rules.EffectResolution.PendingResolution interrupted,
+            GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId interruptedResolutionId,
             IReadOnlyList<RuleObject> remainingSubjects,
             ActionBoundaryContext boundary,
             List<ResolutionStep> steps)
@@ -2466,6 +2590,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 source.ControllerId, CardTextTiming.None));
             if (step.Frame?.PendingChoice == null)
             {
+                // Milestone 8.22. A trigger that finished in one pass has published its request here
+                // and nowhere else: the answer path honours the ones that paused, and until this a
+                // trigger whose subject had nothing to give simply escalated into nothing. Sabina's
+                // Big Sodding Gun reaches it whenever the pushed hero is holding no cards.
+                AppendSkillRequestedHeroDefeats(
+                    step.RequestedHeroDefeats,
+                    new ActionResolutionId(source.ResolutionIdValue),
+                    source.SourceCardInstanceId,
+                    source.SourceActionDefinitionId,
+                    source.ControllerId,
+                    boundary,
+                    steps);
                 return false;
             }
 
@@ -2474,7 +2610,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     step.Frame,
                     GuardsDigital.Core.Rules.EffectResolution.EffectInterruptKind.AfterPushTrigger,
                     source.PushedObject,
-                    interrupted.ResolutionId,
+                    interruptedResolutionId,
                     remainingSubjects);
             return true;
         }
@@ -2587,7 +2723,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             pendingEffectInterrupt = null;
-            AppendRequestedHeroDefeatsFromInterrupt(step, boundary, steps);
+            AppendRequestedHeroDefeatsFromInterrupt(step, standing.Frame, boundary, steps);
+
+            // Milestone 8.22, finding `F-ATK-02`. The trigger was set off by a Push inside rulebook
+            // p.14's card text, so what it interrupted is the rest of the page. It is handed back
+            // through the same generator that emits it when nothing paused at all, which is what keeps
+            // a page stopped by a trigger and a page never stopped producing the one same order.
+            var owedRemainder = pendingCardTextAwaitingInterrupt;
+            if (owedRemainder != null)
+            {
+                pendingCardTextAwaitingInterrupt = null;
+                steps.AddRange(
+                    owedRemainder.Moment == CardTextTiming.BeforeTheAttack
+                        ? ResumeAttackAfterBeforeText(
+                            default, boundary.Definitions, boundary.Instances, boundary.Participants,
+                            CurrentModificationsFor(boundary, owedRemainder.Attack.ActorId))
+                        : AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
+                            owedRemainder.Moment, owedRemainder.Attack, owedRemainder.Outcome));
+                return CardActionResolutionResult.Accept(true, null, null, steps);
+            }
+
             var interrupted = skillBackend.PendingResolution;
             if (interrupted == null ||
                 !interrupted.ResolutionId.Equals(standing.InterruptedResolutionId))
@@ -2610,13 +2765,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 boundary.Definitions, boundary.Instances, boundary.Participants, boundary.Timing,
                 CurrentModificationsFor(boundary, interrupted.ActorId), components,
                 boundary.RoundIndex, boundary.TurnIndex,
-                out repeat, out lanePushCause, out var furtherPushes);
+                out repeat, out lanePushCause, out var furtherPushes, out var furtherDefeats);
             if (!continued.Accepted)
             {
                 return continued;
             }
 
             steps.AddRange(continued.Steps);
+            AppendSkillRequestedHeroDefeats(
+                furtherDefeats, new ActionResolutionId(interrupted.ResolutionId.Value),
+                interrupted.SourceCardInstanceId, interrupted.ActionDefinitionId,
+                interrupted.ActorId, boundary, steps);
             var afterPushes = RunAppliedPushTriggers(
                 CardActionResolutionResult.Accept(
                     continued.IsComplete, null, null, Array.Empty<ResolutionStep>()),
@@ -2638,39 +2797,177 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// It is the same request every other effect frame publishes, honoured through the same backend
         /// - Sabina's rider escalates to a Defeat when the pushed hero has no card to give.
         /// </summary>
-        private void AppendRequestedHeroDefeatsFromInterrupt(
-            EffectResolutionStepResult step,
-            ActionBoundaryContext boundary,
+        /// <summary>
+        /// Milestone 8.22. Rulebook p.13's list, run for any hero a finished <em>Skill</em> asked
+        /// about.
+        ///
+        /// <para>Sabina's Covering Fire prints "An enemy hero in radius adjacent to your friendly
+        /// minion discards a card, or is defeated" - the same construction Wasp's Electroblast and
+        /// Brogan's Counterattack print, and the first printing of it on a Skill. Until this, the
+        /// request a Skill's frame published was collected by the effect session and honoured by
+        /// nobody: p.13 was reachable only from the two card-text paths and from an interrupt with a
+        /// Skill standing behind it.</para>
+        /// </summary>
+        /// <summary>
+        /// The same list, spliced into a Skill's own result so p.13's facts land in the stream the
+        /// action produced rather than beside it.
+        /// </summary>
+        private CardActionResolutionResult WithSkillRequestedHeroDefeats(
+            CardActionResolutionResult result,
+            IReadOnlyList<HeroId> requestedHeroDefeats,
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            ActionBoundaryContext boundary)
+        {
+            if (!result.Accepted || requestedHeroDefeats == null || requestedHeroDefeats.Count == 0)
+            {
+                return result;
+            }
+
+            var steps = new List<ResolutionStep>(result.Steps);
+            AppendSkillRequestedHeroDefeats(
+                requestedHeroDefeats, resolutionId, sourceCardInstanceId, actionDefinitionId, actorId,
+                boundary, steps);
+            return CardActionResolutionResult.Accept(result.IsComplete, null, null, steps);
+        }
+
+        /// <summary>
+        /// Milestone 8.22, finding `F-ATK-02`. Runs the after-push triggers owed for the Pushes an
+        /// Attack's card text applied.
+        ///
+        /// <para><b>Why it is not <see cref="RunAppliedPushTriggers"/>.</b> That one interrupts a
+        /// standing Skill and carries it on from the node it left; there is no Skill here and the text
+        /// that pushed has already finished, so what a trigger interrupts at this altitude is the rest
+        /// of rulebook p.14 rather than an effect. The trigger's own machinery is otherwise the same
+        /// one - the same query, the same frame, the same
+        /// <see cref="GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt"/> - because a
+        /// second copy is how the two altitudes would come to disagree about when a Push is a Push.
+        /// </para>
+        ///
+        /// <para>A trigger that pauses stops the page: <see cref="pendingCardTextAwaitingInterrupt"/>
+        /// holds the remainder, the executor sees that the page is stopped, and the remainder is
+        /// regenerated by the same generator that emits it when nothing paused at all.</para>
+        /// </summary>
+        /// <returns>Whether a trigger is standing, which stops the page.</returns>
+        private bool RunCardTextPushTriggers(
+            EffectResolutionStepResult result,
+            HeroId actorId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            CardTextTiming moment,
+            PendingAttackResolution remainderAttack,
+            AttackResolutionOutcome remainderOutcome,
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            TieBreakerState tieBreaker,
+            int roundIndex,
+            int turnIndex,
             List<ResolutionStep> steps)
         {
-            if (step.RequestedHeroDefeats.Count == 0)
+            if (pendingCardText != null || board == null ||
+                result.AppliedPushes == null || result.AppliedPushes.Count == 0)
+            {
+                return false;
+            }
+
+            var boundary = new ActionBoundaryContext(
+                definitions, instances, participants, timing, tieBreaker, roundIndex, turnIndex);
+            if (!TryStartAfterPushTrigger(
+                    actorId,
+                    new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                        $"card-text-{sourceCardInstanceId.Value}-" +
+                        $"{actionDefinitionId.Value}-{moment}"),
+                    result.AppliedPushes,
+                    boundary,
+                    steps))
+            {
+                return false;
+            }
+
+            // The trigger is standing. p.14 stops here and the rest of the page is regenerated when it
+            // finishes - which is exactly what milestone 8.10 does when the text itself pauses.
+            pendingCardTextAwaitingInterrupt = remainderAttack == null
+                ? null
+                : new PendingAttackCardTextRemainder(moment, remainderAttack, remainderOutcome);
+            return pendingCardTextAwaitingInterrupt != null;
+        }
+
+        /// <summary>
+        /// Whether any unlocked Ultimate is watching rulebook p.18's Pushes. The effect session only
+        /// reports the objects a step displaced when something is listening, so this is asked wherever
+        /// an effect is started - the same derivation the Skill altitude makes.
+        /// </summary>
+        private static bool WatchesAppliedPushes(
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances) =>
+            GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, instances)
+                .Ultimates.Any(ultimate => ultimate.Rule.AfterPush.IsDeclared);
+
+        private void AppendSkillRequestedHeroDefeats(
+            IReadOnlyList<HeroId> requestedHeroDefeats,
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            ActionBoundaryContext boundary,
+            ICollection<ResolutionStep> steps)
+        {
+            if (requestedHeroDefeats == null || requestedHeroDefeats.Count == 0)
             {
                 return;
             }
 
-            var interrupted = skillBackend.PendingResolution;
-            if (interrupted == null)
+            var source = EffectInvokedDefeatSource.FromSkill(
+                resolutionId, sourceCardInstanceId, actionDefinitionId, actorId);
+            var modifications = CurrentModificationsFor(boundary, actorId);
+            foreach (var heroId in requestedHeroDefeats)
+            {
+                var defeat = attackDefenseBackend.ResolveEffectInvokedHeroDefeat(
+                    source, heroId, boundary.Definitions, boundary.Instances, boundary.Participants,
+                    modifications, steps);
+                if (defeat == null)
+                {
+                    throw new InvalidOperationException(
+                        $"A Skill asked for hero '{heroId.Value}' to be defeated, and this " +
+                        "composition cannot price a Defeat. A card that can reach p.13's list is " +
+                        "dealt only into a match that binds the Levels and Life counters it spends.");
+                }
+            }
+        }
+
+        /// <remarks>
+        /// Milestone 8.22 identifies the Defeat by the <em>trigger's</em> own frame rather than by the
+        /// effect it interrupted. Two things were wrong with reading the interrupted one: it made the
+        /// events name a card that had asked for nothing, and it returned without running p.13 at all
+        /// when nothing was standing to interrupt - which is every trigger fired from an Attack's card
+        /// text, because that altitude has no Skill resolution behind it.
+        /// </remarks>
+        private void AppendRequestedHeroDefeatsFromInterrupt(
+            EffectResolutionStepResult step,
+            GuardsDigital.Core.Rules.EffectResolution.PendingResolution trigger,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (step.RequestedHeroDefeats.Count == 0 || trigger == null)
             {
                 return;
             }
 
             AppendRequestedHeroDefeats(
                 step,
-                new PendingAttackResolution(
-                    new ActionResolutionId(interrupted.ResolutionId.Value),
-                    interrupted.SourceCardInstanceId,
-                    interrupted.SourceDefinitionReference,
-                    interrupted.ActionDefinitionId,
-                    interrupted.ActorId,
-                    ActionInvocationContext.PrintedPrimary,
-                    new ActionResolutionStepId("after-push-trigger"),
-                    AttackResolutionPhase.ResolveMinionDefeat,
-                    default(AttackTarget),
-                    null),
+                EffectInvokedDefeatSource.FromSkill(
+                    new ActionResolutionId(trigger.ResolutionId.Value),
+                    trigger.SourceCardInstanceId,
+                    trigger.ActionDefinitionId,
+                    trigger.ActorId),
                 boundary.Definitions,
                 boundary.Instances,
                 boundary.Participants,
-                CurrentModificationsFor(boundary, interrupted.ActorId),
+                CurrentModificationsFor(boundary, trigger.ActorId),
                 steps);
         }
 

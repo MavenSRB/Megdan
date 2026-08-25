@@ -115,11 +115,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int turnIndex,
             out PendingRepeatedAction repeat,
             out LanePushCauseKind lanePushCause,
-            out IReadOnlyList<RuleObject> appliedPushes)
+            out IReadOnlyList<RuleObject> appliedPushes,
+            out IReadOnlyList<HeroId> requestedHeroDefeats)
         {
             repeat = null;
             lanePushCause = LanePushCauseKind.None;
             appliedPushes = Array.Empty<RuleObject>();
+            requestedHeroDefeats = Array.Empty<HeroId>();
             if (!resolutionId.IsDefined)
             {
                 throw new ArgumentException("A Skill requires a resolution ID.", nameof(resolutionId));
@@ -164,6 +166,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             lanePushCause = step.LanePushCause;
             appliedPushes = step.AppliedPushes;
+            requestedHeroDefeats = step.RequestedHeroDefeats;
             return Complete(
                 step, resolutionId, offer.SourceCardInstanceId, offer.ActionDefinitionId,
                 offer.ActorId, true);
@@ -197,11 +200,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int turnIndex,
             out PendingRepeatedAction furtherRepeat,
             out LanePushCauseKind lanePushCause,
-            out IReadOnlyList<RuleObject> appliedPushes)
+            out IReadOnlyList<RuleObject> appliedPushes,
+            out IReadOnlyList<HeroId> requestedHeroDefeats)
         {
             furtherRepeat = null;
             lanePushCause = LanePushCauseKind.None;
             appliedPushes = Array.Empty<RuleObject>();
+            requestedHeroDefeats = Array.Empty<HeroId>();
             if (repeat == null) throw new ArgumentNullException(nameof(repeat));
             if (!resolutionId.IsDefined)
             {
@@ -252,6 +257,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             lanePushCause = step.LanePushCause;
             appliedPushes = step.AppliedPushes;
+            requestedHeroDefeats = step.RequestedHeroDefeats;
             return Complete(
                 step, resolutionId, repeat.SourceCardInstanceId, repeat.ActionDefinitionId,
                 repeat.ActorId, true);
@@ -348,11 +354,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int turnIndex,
             out PendingRepeatedAction repeat,
             out LanePushCauseKind lanePushCause,
-            out IReadOnlyList<RuleObject> appliedPushes)
+            out IReadOnlyList<RuleObject> appliedPushes,
+            out IReadOnlyList<HeroId> requestedHeroDefeats)
         {
             repeat = null;
             lanePushCause = LanePushCauseKind.None;
             appliedPushes = Array.Empty<RuleObject>();
+            requestedHeroDefeats = Array.Empty<HeroId>();
             if (command == null) throw new ArgumentNullException(nameof(command));
             if (pendingResolution == null)
             {
@@ -402,6 +410,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             lanePushCause = step.LanePushCause;
             appliedPushes = step.AppliedPushes;
+            requestedHeroDefeats = step.RequestedHeroDefeats;
             return Complete(step, default, default, default, default, false);
         }
 
@@ -426,11 +435,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int turnIndex,
             out PendingRepeatedAction repeat,
             out LanePushCauseKind lanePushCause,
-            out IReadOnlyList<RuleObject> appliedPushes)
+            out IReadOnlyList<RuleObject> appliedPushes,
+            out IReadOnlyList<HeroId> requestedHeroDefeats)
         {
             repeat = null;
             lanePushCause = LanePushCauseKind.None;
             appliedPushes = Array.Empty<RuleObject>();
+            requestedHeroDefeats = Array.Empty<HeroId>();
             if (pendingResolution == null || pendingResolution.PendingChoice != null)
             {
                 return Reject(CardActionResolutionRejectionReason.NoPendingResolution);
@@ -471,6 +482,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             lanePushCause = step.LanePushCause;
             appliedPushes = step.AppliedPushes;
+            requestedHeroDefeats = step.RequestedHeroDefeats;
             return Complete(step, default, default, default, default, false);
         }
 

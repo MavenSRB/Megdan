@@ -243,7 +243,7 @@ namespace GuardsDigital.Core.Snapshots
         // remaining roster heroes is the first printed content to name some of milestone 8.19b's
         // vocabulary, so each of them lengthens this list and each of them costs a version. That is the
         // list doing its job rather than churn.
-        public const int CurrentSchemaVersion = 30;
+        public const int CurrentSchemaVersion = 31;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

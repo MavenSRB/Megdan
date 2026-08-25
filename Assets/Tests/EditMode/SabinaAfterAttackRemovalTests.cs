@@ -320,15 +320,18 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     "red-melee-02", "red-melee-03", "red-melee-04", "red-ranged-01", "red-heavy-01"
                 });
-            Assert.That(fixture.Session.Projection.PendingLanePushRequest, Is.Null,
+            Assert.That(fixture.Session.Projection.PendingImmediateLanePush, Is.Null,
                 "Nothing has emptied a side yet.");
 
             fixture.PlayAttackAt(SabinaCardContent.BulletHell, fixture.Wasp);
             fixture.SelectAndConfirm(fixture.MinionAt(FirstAdjacent));
 
-            Assert.That(fixture.Session.Projection.PendingLanePushRequest, Is.Not.Null,
+            Assert.That(
+                fixture.RuleEventTypes().Any(type => type.Contains("LanePush")), Is.True,
                 "The removal took the last Red minion out of the current starting Battle Zone, " +
-                "which is p.8's own sentence, and a mid-turn cause becomes a mid-turn request.");
+                "which is p.8's own sentence, so a mid-turn cause becomes a mid-turn request and " +
+                "the same turn advance spends it: the Lane pushes here rather than at the end of " +
+                "the round. Types logged: " + string.Join(", ", fixture.RuleEventTypes()));
         }
 
         // -----------------------------------------------------------------------------------------

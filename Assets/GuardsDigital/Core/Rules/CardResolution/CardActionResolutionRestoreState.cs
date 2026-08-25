@@ -63,8 +63,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackCardTextResolution pendingCardText = null,
             PendingPreActionResolution pendingPreAction = null,
             PendingEffectInterrupt pendingEffectInterrupt = null,
-            PendingRemovalPreventionDecision pendingRemovalPrevention = null)
+            PendingRemovalPreventionDecision pendingRemovalPrevention = null,
+            PendingAttackCardTextRemainder pendingCardTextRemainder = null)
         {
+            PendingCardTextRemainder = pendingCardTextRemainder;
             PendingEffectInterrupt = pendingEffectInterrupt;
             PendingRemovalPrevention = pendingRemovalPrevention;
             PendingPreAction = pendingPreAction;
@@ -78,6 +80,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingRepeat = pendingRepeat;
             PendingImmediateLanePush = pendingLanePush;
         }
+
+        /// <summary>
+        /// Milestone 8.22. The rest of rulebook p.14, owed while an after-push trigger a Push inside
+        /// its card text set off is standing, or <c>null</c>. It rides every continuation kind for the
+        /// reason the Lane-Push request does: it is not a kind of pause but a fact about the page the
+        /// trigger stopped, and the pause itself is the interrupt beside it.
+        /// </summary>
+        public PendingAttackCardTextRemainder PendingCardTextRemainder { get; }
 
         public CardActionContinuationKind ContinuationKind { get; }
 
@@ -230,7 +240,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 PendingCardText,
                 pendingPreAction,
                 PendingEffectInterrupt,
-                PendingRemovalPrevention);
+                PendingRemovalPrevention,
+                PendingCardTextRemainder);
 
         /// <summary>The same state carrying milestone 8.19c1's two pauses beside whatever it holds.</summary>
         public CardActionResolutionRestoreState WithInterruptions(
@@ -248,7 +259,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 PendingCardText,
                 PendingPreAction,
                 pendingEffectInterrupt,
-                pendingRemovalPrevention);
+                pendingRemovalPrevention,
+                PendingCardTextRemainder);
+
+        /// <summary>The same state carrying milestone 8.22's owed card-text remainder.</summary>
+        public CardActionResolutionRestoreState WithCardTextRemainder(
+            PendingAttackCardTextRemainder pendingCardTextRemainder) =>
+            new CardActionResolutionRestoreState(
+                ContinuationKind,
+                PendingMovementResolution,
+                PendingAttackResolution,
+                PendingSkillResolution,
+                CoinLedger,
+                PendingCorrection,
+                PendingRepeat,
+                PendingImmediateLanePush,
+                PendingCardText,
+                PendingPreAction,
+                PendingEffectInterrupt,
+                PendingRemovalPrevention,
+                pendingCardTextRemainder);
 
         public static CardActionResolutionRestoreState WithPendingCardText(
             PendingAttackCardTextResolution pendingCardText,

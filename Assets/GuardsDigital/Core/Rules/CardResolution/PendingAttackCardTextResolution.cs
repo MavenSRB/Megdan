@@ -92,4 +92,55 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <summary>The outcome that remainder reports; <c>None</c> at step 4, where it has none.</summary>
         public AttackResolutionOutcome Outcome { get; }
     }
+
+    /// <summary>
+    /// Milestone 8.22. The rest of rulebook p.14, owed while something other than the card text itself
+    /// is standing.
+    ///
+    /// <para>It is <see cref="PendingAttackCardTextResolution"/> without the frame, and it exists
+    /// because finding `F-ATK-02` added a second way for the page to stop at one of its card-text
+    /// moments: the text finished, applied a Push, and a source watching p.18's Pushes is now asking
+    /// its own question. The frame standing then belongs to the trigger and is held where every other
+    /// trigger's frame is held, so what is left over here is only the remainder - the same three
+    /// values, regenerated through the same generator.</para>
+    /// </summary>
+    public sealed class PendingAttackCardTextRemainder
+    {
+        public PendingAttackCardTextRemainder(
+            CardTextTiming moment,
+            PendingAttackResolution attack,
+            AttackResolutionOutcome outcome)
+        {
+            if (attack == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(attack),
+                    "An owed card-text remainder names the attack whose remaining steps it owes.");
+            }
+
+            if (moment != CardTextTiming.AfterTheAttack &&
+                moment != CardTextTiming.DefenseAction &&
+                moment != CardTextTiming.BeforeTheAttack)
+            {
+                throw new ArgumentException(
+                    "Only rulebook p.14's three numbered card-text moments leave a remainder that " +
+                    "can be rebuilt from the attack's identity.",
+                    nameof(moment));
+            }
+
+            if (!Enum.IsDefined(typeof(AttackResolutionOutcome), outcome))
+            {
+                throw new ArgumentException(
+                    "An owed card-text remainder states the outcome it reports.", nameof(outcome));
+            }
+
+            Moment = moment;
+            Attack = attack;
+            Outcome = outcome;
+        }
+
+        public CardTextTiming Moment { get; }
+        public PendingAttackResolution Attack { get; }
+        public AttackResolutionOutcome Outcome { get; }
+    }
 }

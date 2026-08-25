@@ -1592,7 +1592,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (outcome == AttackResolutionOutcome.AttackSuccessful)
             {
                 heroDefeat = ResolveHeroDefeat(
-                    completedResolution,
+                    EffectInvokedDefeatSource.FromAttack(completedResolution),
                     completedResolution.TargetHeroId,
                     materializedDefinitions,
                     materializedInstances,
@@ -1652,7 +1652,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// card is still unresolved, its team still has its counters, and the command is refused whole.
         /// </summary>
         private HeroDefeatResolution ResolveHeroDefeat(
-            PendingAttackResolution completedResolution,
+            EffectInvokedDefeatSource completedResolution,
             HeroId defeatedHeroId,
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
@@ -1698,7 +1698,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // disagreement 6.6b closed. p.8's cause is asked from where the miniature still stands.
             var subject = BoardObjectReference.ForHero(defeatedHeroId);
             var removalStage = new RemovalStageDecision(
-                RuleActivity.Attack,
+                completedResolution.Activity,
                 RuleObject.ForHero(completedResolution.ActorId),
                 adjacentMoveAuthority,
                 adjacentMoveAuthority,
@@ -1840,7 +1840,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// the same answer the Attack path gets, for the same reason.</para>
         /// </summary>
         internal HeroDefeatResolution ResolveEffectInvokedHeroDefeat(
-            PendingAttackResolution attack,
+            EffectInvokedDefeatSource source,
             HeroId defeatedHeroId,
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
@@ -1848,7 +1848,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             ICollection<ResolutionStep> events) =>
             ResolveHeroDefeat(
-                attack ?? throw new ArgumentNullException(nameof(attack)),
+                source,
                 defeatedHeroId,
                 definitions,
                 instances,

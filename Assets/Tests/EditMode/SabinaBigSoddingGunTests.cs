@@ -287,9 +287,9 @@ namespace GuardsDigital.Tests.EditMode
             fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Wasp);
             fixture.SelectFirst();
             fixture.Confirm();
-            var firstDiscard = fixture.DiscardPile(fixture.Wasp).Count;
 
-            PlayOnUntilSheHoldsHerBasicAgain(fixture);
+            PlayOnUntilSheHoldsHerBasicAgain(
+                fixture, AdjacentTo(fixture.HeroSpace(fixture.Wasp)));
             fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Wasp);
 
             Assert.That(fixture.Choice, Is.Not.Null,
@@ -297,10 +297,12 @@ namespace GuardsDigital.Tests.EditMode
                 "dashboard and the trigger is a standing declaration on it.");
             Assert.That(fixture.Choice.ChooserId, Is.EqualTo(fixture.Wasp),
                 "and the second firing asks the hero this push named.");
+            var handBeforeTheSecondPayment = fixture.Hand(fixture.Wasp).Count;
             fixture.SelectFirst();
             fixture.Confirm();
-            Assert.That(fixture.DiscardPile(fixture.Wasp).Count, Is.GreaterThan(firstDiscard),
-                "and it is paid a second time.");
+            Assert.That(fixture.Hand(fixture.Wasp).Count,
+                Is.EqualTo(handBeforeTheSecondPayment - 1),
+                "and it is paid a second time, out of the hand p.8 returned to them.");
         }
 
         /// <summary>
@@ -335,6 +337,16 @@ namespace GuardsDigital.Tests.EditMode
         // -----------------------------------------------------------------------------------------
         // Boards and steps
         // -----------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// A free playable space beside the one named, preferring the one Sabina can reach: after the
+        /// push the hero is two spaces away, and closing to any of their neighbours restores the
+        /// adjacency the present-tense rider asks about.
+        /// </summary>
+        private static HexCoordinate AdjacentTo(HexCoordinate space) =>
+            space.GetNeighbors()
+                .OrderBy(candidate => HexDistanceQuery.Calculate(candidate, SabinaAt))
+                .First();
 
         /// <summary>The enemy hero beside Sabina, with a free playable space directly behind them.</summary>
         private static SabinaBoardFixture BesideTheEnemyHero(bool unlocked) =>
@@ -371,9 +383,11 @@ namespace GuardsDigital.Tests.EditMode
         /// Plays the rest of the round out and stops at the next commitment step, so the same Gold
         /// basic can be played again. p.8 returns a spent hand at the end of the round.
         /// </summary>
-        private static void PlayOnUntilSheHoldsHerBasicAgain(SabinaBoardFixture fixture)
+        private static void PlayOnUntilSheHoldsHerBasicAgain(
+            SabinaBoardFixture fixture, HexCoordinate closeTo)
         {
-            for (var budget = 0; budget < 60; budget++)
+            var walked = false;
+            for (var budget = 0; budget < 80; budget++)
             {
                 var projection = fixture.Session.Projection;
                 if (projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
@@ -402,6 +416,20 @@ namespace GuardsDigital.Tests.EditMode
                     continue;
                 }
 
+                // The push moved the enemy hero out of Range 1's adjacency, and the rider asks about
+                // adjacency in the present tense - so a second firing needs her to close again, which
+                // costs a turn. That is the position a player would be in too. One turn is spent on
+                // it; a card of hers printing no secondary Movement simply ends its turn instead.
+                if (!walked &&
+                    projection.IsTurnActive &&
+                    projection.SelectedActor.IsDefined &&
+                    projection.SelectedActor.ActorId.Equals(fixture.Sabina))
+                {
+                    walked = true;
+                    fixture.WalkTowards(closeTo);
+                    continue;
+                }
+
                 if (projection.Phase == RoundResolutionPhase.EndOfRound)
                 {
                     fixture.Accept(DirectorCommand.AdvanceEndOfRound());
@@ -420,8 +448,13 @@ namespace GuardsDigital.Tests.EditMode
                                 .Single(definition =>
                                     definition.Reference.Equals(value.DefinitionReference))
                                 .Initiative.Value)
-                            .First();
-                        fixture.Accept(DirectorCommand.CommitCard(hero, card.Id));
+                            .FirstOrDefault();
+                        // A hero the trigger has emptied has nothing to commit, and p.7 lets them
+                        // pass rather than stopping the round - which is exactly the position this
+                        // case has to play through to reach a second Push.
+                        fixture.Accept(card == null
+                            ? DirectorCommand.Pass(hero)
+                            : DirectorCommand.CommitCard(hero, card.Id));
                     }
 
                     continue;

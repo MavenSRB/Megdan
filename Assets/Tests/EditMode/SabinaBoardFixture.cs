@@ -492,6 +492,63 @@ namespace GuardsDigital.Tests.EditMode
         /// can read - the removals themselves name no piece in the log, so the nodes that read the
         /// selection's first and second published spaces are what carry the order.
         /// </summary>
+        /// <summary>
+        /// Spends Sabina's printed secondary Movement walking her as close to the named space as the
+        /// allowance reaches. p.7 gives a turn one action, so a fixture that needs her somewhere else
+        /// spends a whole turn getting there - which is what a player does.
+        /// </summary>
+        internal void WalkTowards(HexCoordinate destination)
+        {
+            var offer = Session.Projection.AvailableTurnActions.FirstOrDefault(candidate =>
+                candidate.IsAvailable && KindOf(candidate) == ActionKind.Movement);
+            if (!offer.ActionDefinitionId.IsDefined)
+            {
+                return;
+            }
+
+            Accept(DirectorCommand.StartAction(offer.ActionDefinitionId));
+            for (var budget = 0; budget < 8; budget++)
+            {
+                var movement = Session.Projection.PendingMovementChoice;
+                if (movement == null)
+                {
+                    return;
+                }
+
+                var here = HeroSpace(Sabina);
+                var step = movement.LegalDestinations
+                    .OrderBy(value => HexDistanceQuery.Calculate(value.Destination, destination))
+                    .FirstOrDefault();
+                if (here.Equals(destination) ||
+                    step.Destination.Equals(default(HexCoordinate)) ||
+                    HexDistanceQuery.Calculate(step.Destination, destination) >=
+                        HexDistanceQuery.Calculate(here, destination))
+                {
+                    if (movement.CanStop)
+                    {
+                        Accept(DirectorCommand.StopMovement(movement.ResolutionId, movement.ChoiceId));
+                    }
+
+                    return;
+                }
+
+                Accept(DirectorCommand.ChooseMovementDestination(
+                    movement.ResolutionId, movement.ChoiceId, step.Destination));
+            }
+        }
+
+        private ActionKind KindOf(ActionOffer offer) =>
+            Session.Projection.Definitions
+                .Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
+                .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId)).Kind;
+
+        /// <summary>The distinct rule-event types this match has logged, oldest first.</summary>
+        internal IReadOnlyList<string> RuleEventTypes() =>
+            Session.Projection.DiagnosticEvents
+                .Select(entry => entry.EventType)
+                .Distinct()
+                .ToArray();
+
         internal int SequenceOfAppliedNode(string nodeId)
         {
             var sequence = Session.Projection.DiagnosticEvents

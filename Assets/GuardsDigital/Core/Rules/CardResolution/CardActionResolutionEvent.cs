@@ -441,9 +441,28 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public static CardActionResolutionEvent MarkerReturnedOnHeroDefeat(
             PendingAttackResolution resolution,
             HeroId defeatedHeroId,
+            MarkerAttachment attachment) =>
+            MarkerReturnedOnHeroDefeat(
+                EffectInvokedDefeatSource.FromAttack(
+                    resolution ?? throw new ArgumentNullException(nameof(resolution))),
+                defeatedHeroId,
+                attachment);
+
+        /// <summary>
+        /// Milestone 8.22. The same return, reported about whichever action asked for the Defeat -
+        /// which is a Skill for Sabina's Covering Fire and an Attack for every earlier printing.
+        /// </summary>
+        public static CardActionResolutionEvent MarkerReturnedOnHeroDefeat(
+            EffectInvokedDefeatSource resolution,
+            HeroId defeatedHeroId,
             MarkerAttachment attachment)
         {
-            if (resolution == null) throw new ArgumentNullException(nameof(resolution));
+            if (!resolution.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A p.13 defeat return names the action it is being run about.", nameof(resolution));
+            }
+
             if (attachment == null) throw new ArgumentNullException(nameof(attachment));
             if (!defeatedHeroId.IsDefined ||
                 !attachment.HolderHeroId.Equals(defeatedHeroId))
@@ -482,9 +501,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public static CardActionResolutionEvent HeroDefeatRecorded(
             PendingAttackResolution resolution,
             HeroId defeatedHeroId,
+            HeroDefeatResolution defeat) =>
+            HeroDefeatRecorded(
+                EffectInvokedDefeatSource.FromAttack(
+                    resolution ?? throw new ArgumentNullException(nameof(resolution))),
+                defeatedHeroId,
+                defeat);
+
+        /// <summary>
+        /// Milestone 8.22. The same record, about whichever action asked for the Defeat. An Attack
+        /// carries its total, its Defense card and its outcome; a Skill carries their named absence,
+        /// because no Attack happened and a zero would read as one that did.
+        /// </summary>
+        public static CardActionResolutionEvent HeroDefeatRecorded(
+            EffectInvokedDefeatSource resolution,
+            HeroId defeatedHeroId,
             HeroDefeatResolution defeat)
         {
-            if (resolution == null || defeat == null ||
+            if (!resolution.IsDefined || defeat == null ||
                 !defeatedHeroId.IsDefined ||
                 !string.Equals(defeat.Defeat.TargetId.Value, defeatedHeroId.Value, StringComparison.Ordinal))
             {
@@ -502,11 +536,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.CurrentStepId,
                 0,
                 resolution.AttackTotal,
-                resolution.DefenseOffer.HasValue
-                    ? resolution.DefenseOffer.Value.SourceCardInstanceId
-                    : default,
-                resolution.DefenseTotal ?? 0,
-                AttackResolutionOutcome.AttackSuccessful,
+                resolution.DefenseCardInstanceId,
+                resolution.DefenseTotal,
+                resolution.Outcome,
                 default,
                 default,
                 MinionDefeatFactKind.None,
@@ -556,9 +588,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackResolution resolution,
             HeroId defeatedHeroId,
             HeroDefeatResolution defeat,
+            HeroDefeatFactKind factKind) =>
+            HeroDefeatFact(
+                EffectInvokedDefeatSource.FromAttack(
+                    resolution ?? throw new ArgumentNullException(nameof(resolution))),
+                defeatedHeroId,
+                defeat,
+                factKind);
+
+        /// <summary>
+        /// Milestone 8.22. The same line of the list, about whichever action asked for the Defeat.
+        /// </summary>
+        public static CardActionResolutionEvent HeroDefeatFact(
+            EffectInvokedDefeatSource resolution,
+            HeroId defeatedHeroId,
+            HeroDefeatResolution defeat,
             HeroDefeatFactKind factKind)
         {
-            if (resolution == null || defeat == null ||
+            if (!resolution.IsDefined || defeat == null ||
                 !defeat.Facts.Contains(factKind) || !defeatedHeroId.IsDefined)
             {
                 throw new ArgumentException("Hero Defeat event requires one recorded typed fact.");
@@ -596,11 +643,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.AttackTotal,
                 // The comparison that produced the Defeat, carried on every line of its list exactly as
                 // HeroDefeatRecorded carries it, so a reader of any one fact can see what caused it.
-                resolution.DefenseOffer.HasValue
-                    ? resolution.DefenseOffer.Value.SourceCardInstanceId
-                    : default,
-                resolution.DefenseTotal ?? 0,
-                AttackResolutionOutcome.AttackSuccessful,
+                resolution.DefenseCardInstanceId,
+                resolution.DefenseTotal,
+                resolution.Outcome,
                 default,
                 default,
                 MinionDefeatFactKind.None,

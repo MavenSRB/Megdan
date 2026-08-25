@@ -523,7 +523,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaVersionMovesForThreeDecisionsV26CannotHold()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(30),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(31),
                 "Milestone 8.19c1 adds a trigger frame standing inside the effect it interrupted, a " +
                 "Defeat waiting at its removal stage with the coin operations that paid it, and a " +
                 "round-scoped record that p.8's pre-battle moment has already run. None of the three " +
@@ -534,7 +534,9 @@ namespace GuardsDigital.Tests.EditMode
                 "milestone 8.21, whose Brogan faces reach eleven capability contracts no v28 payload " +
                 "pins, so every one of them is refused rather than reinterpreted - and once more at " +
                 "milestone 8.22, whose Sabina faces reach five more that no v29 payload pins, which " +
-                "makes the pinned list the second cause to have moved this version twice. This " +
+                "makes the pinned list the second cause to have moved this version twice - and once more " +
+                "again at 8.22, for the rest of p.14 owed while a trigger a card-text Push set off " +
+                "is standing, which is a fourth stopped decision of exactly this kind. This " +
                 "case pins the current version rather than its own, so a later move has to be " +
                 "accounted for here rather than passing unread.");
         }

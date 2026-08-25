@@ -1604,7 +1604,7 @@ namespace GuardsDigital.Core.Cards
 
             var answered = cardActions.AnswerCardTextChoice(
                 command, definitions, instances, participants, timing, CurrentModifications(),
-                roundIndex, turnIndex);
+                TieBreakerState, roundIndex, turnIndex);
             if (!answered.Accepted)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
@@ -1626,7 +1626,7 @@ namespace GuardsDigital.Core.Cards
             {
                 return cardActions.HasPendingResolution ||
                     cardActions.PendingDefenseChoice != null ||
-                    cardActions.PendingCardTextResolution != null
+                    cardActions.IsCardTextPageStopped
                         ? TurnResolutionResult.Accept(events)
                         : CompleteAttackOrStartItsRepeat(events);
             }
@@ -1646,7 +1646,7 @@ namespace GuardsDigital.Core.Cards
                 }
 
                 events.AddRange(MaterializeSteps(outcome.Steps, TurnResolutionEvent.FromAttackAction));
-                if (cardActions.PendingCardTextResolution != null)
+                if (cardActions.IsCardTextPageStopped)
                 {
                     // The attacker's own step 7 text is inside that outcome and has now stopped too.
                     return TurnResolutionResult.Accept(events);
@@ -1798,7 +1798,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromAttackAction);
-            return cardActions.PendingCardTextResolution == null && !cardActions.HasPendingResolution
+            return !cardActions.IsCardTextPageStopped && !cardActions.HasPendingResolution
                 ? CompleteAttackOrStartItsRepeat(events)
                 : TurnResolutionResult.Accept(events);
         }
@@ -2055,7 +2055,7 @@ namespace GuardsDigital.Core.Cards
             // An Attack whose own text names its target and whose text stopped on a question has not
             // reached p.14's step 2 yet; one that finished may already have run the whole page over a
             // minion and be complete.
-            return cardActions.PendingCardTextResolution == null && !cardActions.HasPendingResolution
+            return !cardActions.IsCardTextPageStopped && !cardActions.HasPendingResolution
                 ? CompleteAttackOrStartItsRepeat(events)
                 : TurnResolutionResult.Accept(events);
         }
@@ -2127,7 +2127,7 @@ namespace GuardsDigital.Core.Cards
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
             var targetEvents = MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction);
-            return result.MinionDefeat != null && cardActions.PendingCardTextResolution == null
+            return result.MinionDefeat != null && !cardActions.IsCardTextPageStopped
                 ? CompleteAttackOrStartItsRepeat(targetEvents)
                 : TurnResolutionResult.Accept(targetEvents);
         }
@@ -2163,7 +2163,7 @@ namespace GuardsDigital.Core.Cards
             // Milestone 8.10. p.14's step 4 is the defender's own text, and a question standing in it
             // stops the page before step 5's total - so the comparison this method would run next is
             // not owed yet. It is resumed by the answer, through the same generator.
-            if (cardActions.PendingCardTextResolution != null)
+            if (cardActions.IsCardTextPageStopped)
             {
                 return TurnResolutionResult.Accept(events);
             }
@@ -2177,7 +2177,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.AddRange(MaterializeSteps(outcome.Steps, TurnResolutionEvent.FromAttackAction));
-            return cardActions.PendingCardTextResolution != null
+            return cardActions.IsCardTextPageStopped
                 ? TurnResolutionResult.Accept(events)
                 : CompleteAttackOrStartItsRepeat(events);
         }
@@ -2391,7 +2391,7 @@ namespace GuardsDigital.Core.Cards
                     // raises. It cannot produce a card-text step of its own, so this does not recurse.
                     foreach (var produced in cardActions.ApplyCardText(
                         step, definitions, instances, participants, timing, CurrentModifications(),
-                        roundIndex, turnIndex))
+                        TieBreakerState, roundIndex, turnIndex))
                     {
                         if (produced.Kind == ResolutionStepKind.Checkpoint)
                         {
@@ -2410,7 +2410,7 @@ namespace GuardsDigital.Core.Cards
                     // here. The steps below this one are not carried anywhere - they are regenerated
                     // from the continuation's own identity when the answer arrives - which is what
                     // keeps a paused attack and an unpaused one producing the one same order.
-                    if (cardActions.PendingCardTextResolution != null)
+                    if (cardActions.IsCardTextPageStopped)
                     {
                         break;
                     }
