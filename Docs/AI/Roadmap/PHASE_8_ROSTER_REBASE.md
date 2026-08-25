@@ -414,10 +414,11 @@ Acceptance checks:
 
 Non-goals: No other new hero, general Minion-Battle redesign, six-player setup, networking, or art.
 
-### [ ] 8.21a Show every hero's public coin balance on the fixed side rails
+### [~] 8.21a Show every hero's public coin balance on the fixed side rails
 
-Blocked by: Milestone 8.21 must finish without taking on a second presentation change while its Brogan
-content, removal-prevention prompt and player-path gate are already in progress.
+Prerequisite satisfied: Milestone 8.21 completed - Brogan's content, the removal-prevention prompt and his
+player-path gate all landed under that heading - so this rail change is the only presentation work in
+flight.
 
 Observable outcome: Each side hero rail continuously shows that hero's current coin balance in otherwise
 unused space, without increasing the rail's outer dimensions or changing the board framing.

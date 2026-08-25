@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **8.21**. Three verified he
 ## Current authorization and next route
 
 - Current completed milestone: **8.21**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **8.21a**, in progress.
 - Next proposed milestone: **8.21a**.
 
 Milestone **8.21** completed on 2026-08-25, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). Brogan the Destroyer's nineteen printed faces are verified content at revision `brogan-8-21-rev-1`, dealt in staged matches and driven through the ordinary player pipeline, and milestone 8.19c1's removal-prevention decision reaches a player for the first time: his three guards are the only content that can open it, so it is projected, drawn as the whole printed face of each card that could pay, and answerable at both altitudes a Defeat reaches its removal stage from. Schema **v29** rejects v28 for a cause new in kind - the pinned registration list itself, which twelve new contracts lengthen. The permanent player-path gate found three defects in shipped code that only a pointer could reach: a printed "up to N spaces" push that never offered its distance, a prompt whose faces the presenter declined to execute, and a decision that could be opened at the effect-invoked altitude and never answered.
