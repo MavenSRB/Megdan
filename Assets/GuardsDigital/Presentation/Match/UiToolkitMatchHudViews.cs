@@ -1758,6 +1758,7 @@ namespace GuardsDigital.Presentation.Match
         public bool HasExclusiveDecision =>
             Model != null &&
             (Model.SystemTransitionPrompt != null ||
+             Model.RemovalPreventionPrompt != null ||
              Model.DefenseChoices.Count > 0 ||
              Model.InitiativeChoices.Count > 0 ||
              Model.EffectChoices.Count > 0 ||
@@ -1889,8 +1890,53 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            // Milestone 8.21: a standing removal prevention is the whole of the region while it
+            // stands, for the reason a paused system transition is. The Defeat it stopped has already
+            // recorded its outcome and paid its reward; nothing else the model carries can be acted on
+            // until the removal stage is answered, so drawing anything beside it would be drawing
+            // refusals - and rulebook p.13's own ordering is why the tray is hidden with it.
+            if (Model.RemovalPreventionPrompt != null)
+            {
+                BuildRemovalPrevention(Model.RemovalPreventionPrompt);
+                HideEmptySections();
+                return;
+            }
+
             BuildActionRow();
             HideEmptySections();
+        }
+
+        /// <summary>
+        /// The standing removal-prevention decision, under a gutter that names what the price buys.
+        ///
+        /// <para>Milestone 8.21, and it is milestone 8.15a's direction applied to a second family:
+        /// each payment is the whole printed face of the card that would pay, drawn by the tray's own
+        /// standalone builder at the one fixed width, with the card's name kept as the control's hover
+        /// and assistive reading. The decline is about no card and keeps its labelled control.</para>
+        ///
+        /// <para>The minion is not named here. It is cued on the board where it is standing, which is
+        /// the one place a player can see which miniature the price would keep.</para>
+        /// </summary>
+        private void BuildRemovalPrevention(RemovalPreventionPromptViewModel prompt)
+        {
+            var section = Section(prompt.SectionLabel);
+            foreach (var payment in prompt.Payments)
+            {
+                // The same branch the effect-choice section takes, and for the same reason: a choice
+                // that is about a card is drawn as the card, and one carrying no face keeps its
+                // labelled control rather than being drawn as an empty frame. A projection always
+                // supplies the face, so the second arm is what a surface composed without one gets.
+                if (payment.Card != null)
+                {
+                    section.Add(BuildEffectCardChoice(payment));
+                }
+                else
+                {
+                    AddInvocation(section, payment);
+                }
+            }
+
+            AddInvocation(section, prompt.Decline);
         }
 
         /// <summary>

@@ -28,7 +28,11 @@ namespace GuardsDigital.Tests.EditMode
             nameof(MatchSessionProjection.PendingDisplacedMinionCorrection),
             nameof(MatchSessionProjection.PendingMinionBattleChoice),
             nameof(MatchSessionProjection.PendingHeroRespawnChoice),
-            nameof(MatchSessionProjection.PendingSystemTransitionStep)
+            nameof(MatchSessionProjection.PendingSystemTransitionStep),
+            // Milestone 8.21. A player answers it by paying one of the projected prices or declining,
+            // so it is a choice rather than a companion envelope - the same classification every other
+            // family whose answer is a typed invocation has.
+            nameof(MatchSessionProjection.PendingRemovalPrevention)
         };
 
         private static readonly string[] CompanionProjectionMembers =

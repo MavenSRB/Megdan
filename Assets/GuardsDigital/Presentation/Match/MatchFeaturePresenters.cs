@@ -377,6 +377,89 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
+    /// Milestone 8.21: the one place a standing removal-prevention decision says what it is.
+    ///
+    /// <para>Every word is composed from the projected pause's own typed facts - how many payments it
+    /// offers, how many sources are offering them, and the price each one names. Nothing decodes a
+    /// source id, a card id or a printed sentence, which is the rule
+    /// <see cref="EffectChoicePromptLabels"/> follows and the reason this is a second composer rather
+    /// than a branch inside that one: the two pauses carry different facts.</para>
+    ///
+    /// <para>The minion is not named here. It is standing on the board and it is cued there, which is
+    /// milestone 8.11a's reading of every candidate that has a board surface - a prompt that named it
+    /// as well would be two ways of saying one thing.</para>
+    /// </summary>
+    public static class RemovalPreventionPromptLabels
+    {
+        /// <summary>
+        /// What the status line says while the decision stands. It states what is being bought, what
+        /// it costs, and that declining is an answer - which it always is, because the removal was
+        /// going to happen anyway.
+        /// </summary>
+        public static string StatusLine(RemovalPreventionPrompt prompt)
+        {
+            if (prompt == null)
+            {
+                throw new ArgumentNullException(nameof(prompt));
+            }
+
+            var count = prompt.Payments.Count;
+            if (count == 0)
+            {
+                // The rules keep offering the decision while any source covers the subject, and the
+                // query drops an option nobody can afford - so a prompt with no payment left is a
+                // decision whose only answer is the one that was always there.
+                return "A friendly minion would be removed: no card can pay to keep it, so decline.";
+            }
+
+            var price = PriceOf(prompt);
+            return $"A friendly minion would be removed: discard {price} to keep it, or decline. " +
+                $"{count} {(count == 1 ? "card" : "cards")} can pay.";
+        }
+
+        /// <summary>
+        /// The gutter label of the region holding the payments, naming the family the way
+        /// <c>DEFENSE</c> and <c>CARD CHOICE</c> name theirs.
+        /// </summary>
+        public const string SectionLabel = "KEEP THE MINION";
+
+        /// <summary>The control that lets the removal happen.</summary>
+        public const string DeclineLabel = "DECLINE - LET IT BE REMOVED";
+
+        /// <summary>
+        /// The price the offering sources charge, in the words the declaration states it in: the
+        /// colours it admits, or p.15's supertype where it names one instead.
+        ///
+        /// <para>Where two sources charge differently the prompt says so rather than picking one, and
+        /// each payment still carries its own source, so the answer names which price is being
+        /// paid.</para>
+        /// </summary>
+        private static string PriceOf(RemovalPreventionPrompt prompt)
+        {
+            var prices = prompt.Payments
+                .Select(payment => PriceOf(payment.Cost))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+            return prices.Length == 1 ? prices[0] : "a card one of them accepts";
+        }
+
+        private static string PriceOf(RemovalPreventionCost cost)
+        {
+            if (cost.AdmittedColors.Count > 0)
+            {
+                return "a " + string.Join(
+                    " or ",
+                    cost.AdmittedColors.Select(color => color.ToString().ToLowerInvariant())) +
+                    " card";
+            }
+
+            return cost.AdmittedClassification == CardClassification.None
+                ? "a card"
+                : $"a {cost.AdmittedClassification.ToString().ToLowerInvariant()} card";
+        }
+    }
+
+    /// <summary>
     /// Milestone 6.3a: the one place the Clear surface names its controls.
     ///
     /// A candidate is named by <see cref="EffectChoiceLabels.TokenTargetLabel"/> rather than by a
@@ -1016,6 +1099,20 @@ namespace GuardsDigital.Presentation.Match
                         isSelected ? BoardTargetCueState.Selected : BoardTargetCueState.Eligible,
                         BoardTargetConsequenceIntent.Removal);
                 }
+            }
+
+            // Milestone 8.21. The minion a standing removal prevention is about, cued where it stands
+            // rather than named in the prompt - milestone 8.11a's reading of every candidate with a
+            // board surface. It is not a candidate: nothing is chosen by clicking it, and the cue says
+            // which piece the question is about. The consequence is the removal that is waiting on the
+            // answer, which is what the price would buy it out of.
+            var removalPrevention = projection.PendingRemovalPrevention;
+            if (removalPrevention != null)
+            {
+                Add(
+                    BoardObjectReference.ForMinion(removalPrevention.SubjectMinionId),
+                    BoardTargetCueState.Eligible,
+                    BoardTargetConsequenceIntent.Removal);
             }
 
             var correction = projection.PendingDisplacedMinionCorrection;
@@ -2099,6 +2196,51 @@ namespace GuardsDigital.Presentation.Match
         public string SectionLabel { get; }
     }
 
+    /// <summary>
+    /// Milestone 8.21. The standing removal-prevention decision as the region draws it: the heading it
+    /// arrives under, one control per affordable payment - each the whole printed face of the card that
+    /// would pay - the decline that is always offered, and the minion the price would keep.
+    ///
+    /// <para>The payments are the projection's own minted commands, carried through unchanged. This
+    /// model composes no option of its own, which is what makes an answer the pause did not project
+    /// unsubmittable from this surface rather than merely absent from it.</para>
+    /// </summary>
+    public sealed class RemovalPreventionPromptViewModel
+    {
+        public RemovalPreventionPromptViewModel(
+            MinionId subjectMinionId,
+            IEnumerable<TypedInvocationViewModel> payments,
+            TypedInvocationViewModel decline)
+        {
+            if (!subjectMinionId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A removal-prevention prompt names the miniature it is about, so the board can " +
+                    "cue it.",
+                    nameof(subjectMinionId));
+            }
+
+            SubjectMinionId = subjectMinionId;
+            Payments = Array.AsReadOnly((payments ??
+                throw new ArgumentNullException(nameof(payments))).ToArray());
+            Decline = decline ?? throw new ArgumentNullException(
+                nameof(decline),
+                "Declining is always offered: the removal was going to happen anyway, and a decision " +
+                "that could not be refused would stop the match.");
+            SectionLabel = RemovalPreventionPromptLabels.SectionLabel;
+        }
+
+        /// <summary>The minion the price would keep on the board, cued there rather than named here.</summary>
+        public MinionId SubjectMinionId { get; }
+
+        /// <summary>One control per affordable payment, each carrying the face of the card that pays.</summary>
+        public IReadOnlyList<TypedInvocationViewModel> Payments { get; }
+
+        public TypedInvocationViewModel Decline { get; }
+
+        public string SectionLabel { get; }
+    }
+
     public sealed class RoundActionViewModel
     {
         public RoundActionViewModel(
@@ -2123,10 +2265,12 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<ClearOfferViewModel> clearOffers = null,
             ClearSelectionViewModel clearSelection = null,
             SystemTransitionPromptViewModel systemTransitionPrompt = null,
-            EffectChoicePromptViewModel effectChoicePrompt = null)
+            EffectChoicePromptViewModel effectChoicePrompt = null,
+            RemovalPreventionPromptViewModel removalPreventionPrompt = null)
         {
             SystemTransitionPrompt = systemTransitionPrompt;
             EffectChoicePrompt = effectChoicePrompt;
+            RemovalPreventionPrompt = removalPreventionPrompt;
             Version = version;
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
@@ -2259,6 +2403,13 @@ namespace GuardsDigital.Presentation.Match
         /// its controls to the row of actions the player is not being asked for.
         /// </summary>
         public EffectChoicePromptViewModel EffectChoicePrompt { get; }
+
+        /// <summary>
+        /// Milestone 8.21: the standing removal-prevention decision, or <c>null</c> when none is
+        /// pending. It is the whole of the contextual region while it stands, for the reason a paused
+        /// system transition is: the authority refuses every other command until it is answered.
+        /// </summary>
+        public RemovalPreventionPromptViewModel RemovalPreventionPrompt { get; }
 
         public string HudHeader { get; }
     }
@@ -2767,7 +2918,8 @@ namespace GuardsDigital.Presentation.Match
             projection.PendingHeroRespawnChoice != null ||
             projection.PendingAttackTargetChoice != null ||
             projection.PendingMovementChoice != null ||
-            projection.PendingDisplacedMinionCorrection != null;
+            projection.PendingDisplacedMinionCorrection != null ||
+            projection.PendingRemovalPrevention != null;
 
         /// <summary>
         /// A resolution that has started and not finished. It suppresses the offers a second action
@@ -2903,7 +3055,43 @@ namespace GuardsDigital.Presentation.Match
                 projection.PendingEffectChoice == null
                     ? null
                     : new EffectChoicePromptViewModel(EffectChoicePromptLabels.SubjectOf(
-                        projection.PendingEffectChoice, projection.PendingEffectChoicePreview)));
+                        projection.PendingEffectChoice, projection.PendingEffectChoicePreview)),
+                CreateRemovalPreventionPrompt(projection));
+        }
+
+        /// <summary>
+        /// Milestone 8.21. The standing removal-prevention decision as controls, or <c>null</c> when
+        /// none is pending.
+        ///
+        /// <para>Each payment is drawn as the whole printed face of the card that would pay it, on the
+        /// terms milestone 8.15a set for every card-valued choice and milestone 8.11b set for a Defense
+        /// offer: the tray's own standalone builder, with the card's name kept as the control's hover
+        /// and assistive reading. The decline carries no card, which is what keeps it a distinct
+        /// control rather than another face.</para>
+        ///
+        /// <para>Every command here is the pause's own minted invocation, forwarded unchanged. Nothing
+        /// composes an answer, so a source or a card the prompt did not project cannot be submitted
+        /// from this surface at all.</para>
+        /// </summary>
+        private static RemovalPreventionPromptViewModel CreateRemovalPreventionPrompt(
+            MatchSessionProjection projection)
+        {
+            var prompt = projection.PendingRemovalPrevention;
+            if (prompt == null)
+            {
+                return null;
+            }
+
+            return new RemovalPreventionPromptViewModel(
+                prompt.SubjectMinionId,
+                prompt.Payments.Select(payment => new TypedInvocationViewModel(
+                    FindCardName(projection, payment.PaymentCardInstanceId) ??
+                        payment.PaymentCardInstanceId.Value,
+                    DirectorCommand.AnswerRemovalPrevention(payment.Invocation),
+                    card: CreateCardFace(projection, payment.PaymentCardInstanceId))),
+                new TypedInvocationViewModel(
+                    RemovalPreventionPromptLabels.DeclineLabel,
+                    DirectorCommand.AnswerRemovalPrevention(prompt.DeclineInvocation)));
         }
 
         /// <summary>
@@ -3646,6 +3834,17 @@ namespace GuardsDigital.Presentation.Match
             // returns before any effect control is built, so the status must say Defense there; below
             // it the decision has its own labelled section, and the four families under this branch
             // share the action row with it.
+            // Milestone 8.21: the eighth pending family, read here for the reason the seventh is read
+            // where it is - this is the order the region draws in. A standing removal prevention is
+            // the whole of the contextual region: the Defeat it stands inside has stopped, so no
+            // effect question of its own can be open beneath it, and everything below this branch
+            // belongs to a turn that is currently accepting nothing.
+            var removalPrevention = projection.PendingRemovalPrevention;
+            if (removalPrevention != null)
+            {
+                return RemovalPreventionPromptLabels.StatusLine(removalPrevention);
+            }
+
             var effectChoice = projection.PendingEffectChoice;
             if (effectChoice != null)
             {

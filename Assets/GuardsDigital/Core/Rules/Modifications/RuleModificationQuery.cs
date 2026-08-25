@@ -234,20 +234,16 @@ namespace GuardsDigital.Core.Rules.Modifications
 
                     break;
                 case ActiveEffectAffectedScopeKind.UnitsInRadius:
-                    foreach (var unit in UnitsInRadius(
-                        effect, board, participants, heroItems, heroesOnly: false))
-                    {
-                        yield return unit;
-                    }
-
-                    break;
                 case ActiveEffectAffectedScopeKind.HeroesInRadius:
-                    // Milestone 8.20. The same disk with p.19's other unit kind left out of it -
-                    // Arien's "Enemy heroes in radius". The walk below is shared rather than copied,
+                case ActiveEffectAffectedScopeKind.MinionsInRadius:
+                case ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius:
+                    // Milestone 8.20 added the second of these and milestone 8.21 the third and
+                    // fourth - p.19's heroes alone, p.19's minions alone, and the units beside the
+                    // hero the disk is drawn around. The walk below is shared rather than copied,
                     // because the disk, the anchor and the side are one reading whichever kinds it
-                    // admits, and two copies could disagree about any of the three.
+                    // admits, and four copies could disagree about any of the three.
                     foreach (var unit in UnitsInRadius(
-                        effect, board, participants, heroItems, heroesOnly: true))
+                        effect, board, participants, heroItems, effect.Definition.AffectedScope))
                     {
                         yield return unit;
                     }
@@ -284,20 +280,26 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// by naming the other side anyway, so the exclusion decides nothing today and states the
         /// page's reading for the declaration that names no side.</para>
         /// </summary>
-        /// <param name="heroesOnly">
-        /// Milestone 8.20. Whether the declaration admits p.19's heroes alone - Arien's "Enemy heroes
-        /// in radius" - or every unit, which is Wasp's "Enemy units in radius". It is intrinsic
-        /// membership on purpose and by necessity: the paragraph above says why this walk consults no
-        /// declaration, and which miniature is standing in the disk is the one question about a piece
-        /// that a <c>Counts As</c> does not answer.
+        /// <param name="scope">
+        /// Which of the four disk scopes is being walked, which decides two things and nothing else:
+        /// the unit kinds it admits - every unit for Wasp's "Enemy units in radius", p.19's heroes
+        /// alone for Arien's "Enemy heroes in radius", p.19's minions alone for Brogan's "any friendly
+        /// minion in radius" - and whether the hero the disk is drawn around is one of them, which only
+        /// Brogan's Bulwark says. It is intrinsic membership on purpose and by necessity: the paragraph
+        /// above says why this walk consults no declaration, and which miniature is standing in the
+        /// disk is the one question about a piece that a <c>Counts As</c> does not answer.
         /// </param>
         private static IEnumerable<RuleObject> UnitsInRadius(
             ActiveEffectInstance effect,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
-            bool heroesOnly)
+            ActiveEffectAffectedScopeKind scope)
         {
+            var admitsHeroes = scope != ActiveEffectAffectedScopeKind.MinionsInRadius;
+            var admitsMinions = scope != ActiveEffectAffectedScopeKind.HeroesInRadius;
+            var admitsController = scope == ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius;
+
             if (board == null)
             {
                 throw new InvalidOperationException(
@@ -322,19 +324,31 @@ namespace GuardsDigital.Core.Rules.Modifications
                         ResolveRadius(effect, heroItems))
                 });
             var relation = effect.Definition.AffectedUnitRelation;
-            foreach (var occupancy in board.Occupancies)
+
+            // Milestone 8.21. Bulwark's own "You", admitted before the walk and without asking the
+            // relation: the hero anchoring the disk is standing at its centre, which p.9 measures
+            // inclusively, and he is trivially on his own side.
+            if (admitsController)
             {
-                var hero = BoardObjectReference.ForHero(occupancy.HeroId);
-                if (!occupancy.HeroId.Equals(effect.ControllerHeroId) &&
-                    RadiusQuery.Contains(anchor, radius, occupancy.Coordinate) &&
-                    TargetQuery.StandsInRelationTo(
-                        relation, hero, effect.ControllerHeroId, participants, board))
+                yield return RuleObject.ForHero(effect.ControllerHeroId);
+            }
+
+            if (admitsHeroes)
+            {
+                foreach (var occupancy in board.Occupancies)
                 {
-                    yield return RuleObject.ForHero(occupancy.HeroId);
+                    var hero = BoardObjectReference.ForHero(occupancy.HeroId);
+                    if (!occupancy.HeroId.Equals(effect.ControllerHeroId) &&
+                        RadiusQuery.Contains(anchor, radius, occupancy.Coordinate) &&
+                        TargetQuery.StandsInRelationTo(
+                            relation, hero, effect.ControllerHeroId, participants, board))
+                    {
+                        yield return RuleObject.ForHero(occupancy.HeroId);
+                    }
                 }
             }
 
-            if (heroesOnly)
+            if (!admitsMinions)
             {
                 yield break;
             }

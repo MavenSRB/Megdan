@@ -361,7 +361,27 @@ namespace GuardsDigital.Presentation.Board
                         $"No primitive hero view is bound to configured hero '{setupHero.HeroId}'.");
                 }
 
+                view.gameObject.SetActive(true);
                 view.ConfigureFromSetup(setupHero, definition, outerRadius);
+            }
+
+            // Milestone 8.21. A seat this configuration did not deal is not on the board, so its view
+            // is not drawn. The scene authors one view per seat it can compose, and a configuration
+            // chooses how many of them play - which is what lets the same scene stage a Brogan fixture
+            // with an ally beside him and still compose the one-hero-per-team match a player loads,
+            // with nothing standing where the second Blue seat would be.
+            //
+            // It is deactivation rather than destruction for the reason the tiles are rebuilt rather
+            // than rebuilt from nothing: the view is authored content the next composition may claim,
+            // and a destroyed one could not be. Minion and token views are generated, which is why
+            // they are retired instead.
+            foreach (var view in views)
+            {
+                if (view != null &&
+                    setupState.Heroes.All(hero => !hero.HeroId.Equals(view.Occupancy.HeroId)))
+                {
+                    view.gameObject.SetActive(false);
+                }
             }
         }
 

@@ -331,7 +331,15 @@ namespace GuardsDigital.Tests.EditMode
                     // verified hero's slice, which is what the second half of this gate is about.
                     SyntheticShowcaseHand.CreateRedWithRosterSelectionSkill(owner),
                     SyntheticShowcaseHand.CreateBlueWithRosterSelectionSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithLineBehindText(owner)
+                    SyntheticShowcaseHand.CreateRedWithLineBehindText(owner),
+                    // Milestone 8.21's seven. Five were implemented at 8.19b and reach the build's
+                    // catalog only now, because this is the milestone at which a printed card first
+                    // names one; `discard-owned-card@1` and `owned-card-present@1` are this
+                    // milestone's own. All seven are proved on showcase content here so that none of
+                    // them arrives for the first time inside a verified hero's slice.
+                    SyntheticShowcaseHand.CreateRedWithRosterPaymentSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithRosterPaymentSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithChargeAndVacatedSpaceText(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -345,6 +353,13 @@ namespace GuardsDigital.Tests.EditMode
                 // for the first time inside a hero slice - still binds, and his five Active effects
                 // and two printed-icon twins all run on handlers the showcase already reaches.
                 .Concat(ArienCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.21. Brogan's printed set is the third, and it is admitted on the same
+                // half of the rule: a capability named by a card a configured match deals is not a
+                // deferral, whichever staged configuration deals it. The other half still binds - no
+                // *handler* may arrive for the first time inside a hero slice - and his two new ones
+                // are proved on showcase content above before this concat admits the cards that name
+                // them.
+                .Concat(BroganCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

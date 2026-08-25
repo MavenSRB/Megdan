@@ -85,6 +85,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string DestinationPolicyParameterName = "destinationPolicy";
 
         /// <summary>
+        /// Milestone 8.21. The one space
+        /// <see cref="DirectMoveDestinationPolicy.NamedSpace"/> moves into, bound from the node that
+        /// published it.
+        ///
+        /// <para>Optional, and defaulting to nothing, so every declaration written before this
+        /// milestone keeps its exact candidate set - the same shape milestone 8.20 gave
+        /// <c>excludeTarget</c>. A policy that names a space and binds none admits nothing, which is
+        /// what an unresolved binding means everywhere else in this catalog.</para>
+        /// </summary>
+        public const string NamedDestinationParameterName = "destination";
+
+        /// <summary>
         /// Revision 3, minted at milestone 8.8: revision 2's declaration plus the two things Wasp's
         /// kinetic Skills print that a node's failure policy could not say - the fewest spaces the card
         /// names, and how many units it may push.
@@ -213,7 +225,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter("mover", EffectValueKind.Coordinate),
                     new EffectCapabilityParameter("distance", EffectValueKind.Integer),
                     new EffectCapabilityParameter(
-                        DestinationPolicyParameterName, EffectValueKind.Integer)
+                        DestinationPolicyParameterName, EffectValueKind.Integer),
+                    new EffectCapabilityParameter(
+                        NamedDestinationParameterName, EffectValueKind.Coordinate, isRequired: false)
                 },
                 new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) });
 
@@ -230,6 +244,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // skip rather than a stop, which is why the handler reports the same thing either
                     // way and the node decides what it means.
                     return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Milestone 8.21. A declaration that names its destination has nothing to ask, so it
+                // moves rather than opening a prompt with one answer in it - milestone 6.5a's reading
+                // of "yourself", applied to where rather than to who. The commit below is the same one
+                // the answered path reaches; only the question is missing, because the card asks none.
+                if ((DirectMoveDestinationPolicy)context.Input(DestinationPolicyParameterName)
+                        .IntegerValue == DirectMoveDestinationPolicy.NamedSpace)
+                {
+                    return Resume(context, new[] { EffectValue.Space(candidates[0]) });
                 }
 
                 return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
@@ -280,7 +304,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 Candidates(context).Count == 0
                     ? EffectExecutionResultKind.ImpossibleMandatory
-                    : EffectExecutionResultKind.NeedsChoice;
+                    : (DirectMoveDestinationPolicy)context.Input(DestinationPolicyParameterName)
+                        .IntegerValue == DirectMoveDestinationPolicy.NamedSpace
+                        ? EffectExecutionResultKind.Applied
+                        : EffectExecutionResultKind.NeedsChoice;
 
             /// <summary>
             /// The destinations this move may use, from the Movement action's own reachability plus the
@@ -325,7 +352,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HexCoordinate>();
                 }
 
-                var admitted = AdmittedDistances.ForDeclared(context.FailurePolicy, distance);
+                // Milestone 8.21. A named destination is what the sentence pins, so the declared
+                // number stops being the exact count the mover walks and becomes the budget it may
+                // spend reaching that one space. Brogan's charges are why: the charge line has already
+                // chosen a destination two, three or four spaces away under one declaration, and a
+                // reading that admitted only the largest of those would refuse the shorter charges the
+                // same card offers.
+                var namesASpace = destinationPolicy == DirectMoveDestinationPolicy.NamedSpace;
+                var admitted = AdmittedDistances.ForDeclared(
+                    namesASpace ? EffectFailurePolicy.UpTo : context.FailurePolicy, distance);
+                var namedDestination = context.Input(NamedDestinationParameterName);
                 IEnumerable<HexCoordinate> travelled = DirectMoveDestinations.Admit(
                     destinationPolicy,
                     actorAt,
@@ -333,7 +369,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     components.Board
                         .FindDirectMoveDestinations(mover, distance, context.Modifications)
                         .Where(destination => admitted.Admits(destination.Cost))
-                        .Select(destination => destination.Destination));
+                        .Select(destination => destination.Destination),
+                    namedDestination.Kind == EffectValueKind.Coordinate
+                        ? namedDestination.Coordinate
+                        : (HexCoordinate?)null);
+
+                // Standing still is p.10's decision not to move, and a sentence that names where to
+                // move offers no such decision: the named space is the only thing that satisfies it.
+                if (namesASpace)
+                {
+                    return travelled
+                        .OrderBy(coordinate => coordinate.Q)
+                        .ThenBy(coordinate => coordinate.R)
+                        .ToArray();
+                }
+
 
                 // Standing still is admitted by the wording, not by the geometry, so it is added to
                 // whatever the geometry admits rather than filtered through it. The reachability walk

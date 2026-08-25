@@ -172,6 +172,27 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new EffectCapabilityReference(RangeMinionTarget, 1);
 
         /// <summary>
+        /// Milestone 8.21. The printed-Range selection that admits rulebook p.19's units - a hero or a
+        /// minion - for card text that says "a unit in range": Brogan's Throwing Axe and Throwing
+        /// Spear, whose second bullet names the target this Attack takes.
+        ///
+        /// <para>A sixth declaration over the same handler rather than a parameter on one of the
+        /// others, by the rule that made the hero and minion selections two: p.9 gives the two icons
+        /// two meanings and p.16 two items, and the kinds a card admits is a statement its own text
+        /// makes. It publishes both identities and fills in whichever was named, which is what
+        /// <c>set-attack-target@1</c> takes either of.</para>
+        ///
+        /// <para>No card before these two chose a unit through card text at all - every earlier
+        /// printed-Range Attack takes its target through the action's own targeting, where p.13
+        /// already admits both kinds without anything being written down.</para>
+        /// </summary>
+        public static EffectCapabilityId RangeUnitTarget { get; } =
+            new EffectCapabilityId("synthetic-range-unit-target");
+
+        public static EffectCapabilityReference RangeUnitTargetV1 =>
+            new EffectCapabilityReference(RangeUnitTarget, 1);
+
+        /// <summary>
         /// Milestone 8.20. The chosen minion's current space, published beside its identity.
         ///
         /// <para>Rulebook p.19's Swap exchanges two <em>spaces</em>, and every repositioning operation
@@ -244,6 +265,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new PrintedIconTargetHandler(
                     RangeMinionTargetV1, PrintedValueChannel.Range,
                     declaresStraightLineFilter: false, PrintedIconSelectionSubject.Minion),
+                new PrintedIconTargetHandler(
+                    RangeUnitTargetV1, PrintedValueChannel.Range,
+                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Unit),
                 new HeroAdjacentToMinionHandler()
             };
 
@@ -259,7 +283,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// <summary>The heroes on a declared side of it, published as the hero.</summary>
             Hero = 1
             ,
-            Minion = 2
+            Minion = 2,
+
+            /// <summary>
+            /// Milestone 8.21. Rulebook p.19's units - a hero or a minion - published as whichever one
+            /// was named. Brogan's Throwing Axe and Throwing Spear print "target a unit in range", and
+            /// no card before them chose a unit through card text: every earlier printed-Range Attack
+            /// takes its target through the action's own targeting, where p.13 already admits both.
+            /// </summary>
+            Unit = 3
         }
 
         /// <summary>
@@ -452,6 +484,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                                 ? new EffectOutputBinding(ChosenHeroOutputName, EffectValueKind.Hero)
                                 : new EffectOutputBinding(ChosenMinionOutputName, EffectValueKind.Minion)
                     }
+                    // Milestone 8.21. A unit selection publishes both identities, because which kind
+                    // was named is the answer rather than something the node decided in advance - the
+                    // same pair `choose-target@2` publishes for the same reason.
+                    .Concat(subject == PrintedIconSelectionSubject.Unit
+                        ? new[] { new EffectOutputBinding(ChosenHeroOutputName, EffectValueKind.Hero) }
+                        : Enumerable.Empty<EffectOutputBinding>())
                     .Concat(subject == PrintedIconSelectionSubject.Minion
                         // Milestone 8.20. The minion arm publishes where its answer is standing as
                         // well as who it is, because a Swap takes a space and the card's sentence
@@ -489,6 +527,39 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
+                // Milestone 8.21. A unit selection is answered with whichever kind was named, and
+                // publishes that kind alone - a node consuming it binds both outputs and one of them
+                // resolves, which is exactly how `set-attack-target@1` takes either.
+                if (subject == PrintedIconSelectionSubject.Unit)
+                {
+                    if (selected == null || selected.Count != 1)
+                    {
+                        return EffectExecutionResult.ImpossibleMandatory();
+                    }
+
+                    if (selected[0].Kind == EffectValueKind.Hero &&
+                        HeroCandidates(context).Contains(selected[0].HeroId))
+                    {
+                        return EffectExecutionResult.Applied(new[]
+                        {
+                            new EffectOutcomeFact(
+                                ChosenHeroOutputName, EffectValue.Hero(selected[0].HeroId))
+                        });
+                    }
+
+                    if (selected[0].Kind == EffectValueKind.Minion &&
+                        MinionCandidates(context).Contains(selected[0].MinionId))
+                    {
+                        return EffectExecutionResult.Applied(new[]
+                        {
+                            new EffectOutcomeFact(
+                                ChosenMinionOutputName, EffectValue.Minion(selected[0].MinionId))
+                        });
+                    }
+
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
                 if (subject == PrintedIconSelectionSubject.Hero)
                 {
                     if (selected == null || selected.Count != 1 ||
@@ -562,6 +633,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     ? HeroCandidates(context).Select(EffectValue.Hero).ToArray()
                     : subject == PrintedIconSelectionSubject.Minion
                         ? MinionCandidates(context).Select(EffectValue.Minion).ToArray()
+                    : subject == PrintedIconSelectionSubject.Unit
+                        // p.19's two unit kinds in one offer, heroes first and each kind in its own
+                        // stable order, because a card that says "a unit" says both and says nothing
+                        // about which it prefers.
+                        ? HeroCandidates(context).Select(EffectValue.Hero)
+                            .Concat(MinionCandidates(context).Select(EffectValue.Minion))
+                            .ToArray()
                     : Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
 
             private IReadOnlyList<MinionId> MinionCandidates(EffectCapabilityContext context)

@@ -131,7 +131,10 @@ namespace GuardsDigital.Core.Rules.Modifications
         ///
         /// <para>A token is on nobody's side. p.19 states that tokens are not units, so a relation that
         /// names a team excludes one, while <see cref="SourceTeamRelation.AnyTeam"/> - the declaration
-        /// that names no side at all - admits it along with everything else. A hero the match does not
+        /// that names no side at all - admits it along with everything else. Milestone 8.21 adds the
+        /// third answer a printed sentence needed:
+        /// <see cref="SourceTeamRelation.OpposingSourceOrUnaligned"/> is "an enemy unit or a token",
+        /// which admits the side-less object without also admitting the source's own units. A hero the match does not
         /// list, or a source the match does not list, is on no known side either: this answers false
         /// rather than asking <see cref="MatchParticipants.GetTeamForHero"/> a question it throws on.</para>
         /// </summary>
@@ -156,15 +159,32 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
 
             if (!sourceHero.IsDefined ||
-                !TryFindTeam(BoardObjectReference.ForHero(sourceHero), participants, board, out var source) ||
-                !TryFindTeam(target, participants, board, out var side))
+                !TryFindTeam(BoardObjectReference.ForHero(sourceHero), participants, board, out var source))
             {
                 return false;
             }
 
-            return relation == SourceTeamRelation.OpposingSource
-                ? !side.Equals(source)
-                : side.Equals(source);
+            if (!TryFindTeam(target, participants, board, out var side))
+            {
+                // Milestone 8.21. An object on no side satisfies exactly one relation - the one whose
+                // card names it beside an enemy, which is Brogan's "an enemy unit or a token". Every
+                // other relation compares two sides and this object has none, which is the false the
+                // paragraph above describes.
+                return relation == SourceTeamRelation.OpposingSourceOrUnaligned;
+            }
+
+            switch (relation)
+            {
+                case SourceTeamRelation.OpposingSource:
+                case SourceTeamRelation.OpposingSourceOrUnaligned:
+                    return !side.Equals(source);
+                case SourceTeamRelation.AlliedWithSource:
+                    return side.Equals(source);
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(relation), relation,
+                        "A targeting relation names how the target stands to the source.");
+            }
         }
 
         /// <summary>

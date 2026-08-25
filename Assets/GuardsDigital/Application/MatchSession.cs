@@ -908,7 +908,10 @@ namespace GuardsDigital.Application
                 // Milestone 7.8a. The pause and what it means are read in the same breath, from the same
                 // authority, so a reader can never hold a description of one pause beside another one.
                 round.SystemTransitions.DescribePendingStep(),
-                CreateActiveEffectSourceCards(round));
+                CreateActiveEffectSourceCards(round),
+                // Milestone 8.21. The same pairing the effect choice has above: the pause and the
+                // affordable answers to it are read in one breath, from the authority that holds both.
+                turn?.DescribeRemovalPrevention(turnModifications));
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

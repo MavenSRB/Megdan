@@ -43,7 +43,27 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// acting hero as the subject's own starting space - the orbit Wasp's three telekinetic Move
         /// skills print.
         /// </summary>
-        EquidistantFromActor = 3
+        EquidistantFromActor = 3,
+
+        /// <summary>
+        /// Milestone 8.21. One space the text itself names, rather than a set the mover chooses from -
+        /// Brogan's Onslaught, "After the attack: Move into the space it occupied", and the destination
+        /// his three charges have already picked out by the time the move runs.
+        ///
+        /// <para>It is a fourth member rather than a distance of one because the other three narrow a
+        /// set and this one replaces it. The named space is a value an earlier node published - a
+        /// vacated target's space, a chosen charge destination - so the reachability walk is still the
+        /// Movement action's own and the declared distance is still the budget it may spend; what this
+        /// policy says is that only that one space satisfies the sentence. A declaration that moved one
+        /// space in any direction would be a different card: "into the space it occupied" is not "one
+        /// space away".</para>
+        ///
+        /// <para>It is also the only policy that opens no choice. Every other one hands the actor a set
+        /// to pick from; this one names the destination, so the capability applies it rather than
+        /// asking a question with one answer - the same reason milestone 6.5a routes "yourself" through
+        /// the actor's own space instead of a one-candidate prompt.</para>
+        /// </summary>
+        NamedSpace = 4
     }
 
     /// <summary>
@@ -68,11 +88,18 @@ namespace GuardsDigital.Core.Rules.Displacement
 
         /// <param name="actorAt">Where the acting hero stands, for a policy that measures from them.</param>
         /// <param name="moverAt">The subject's own starting space, which every comparison is against.</param>
+        /// <param name="namedDestination">
+        /// The one space <see cref="DirectMoveDestinationPolicy.NamedSpace"/> admits, and nothing to
+        /// any other policy. A named policy without one admits nothing rather than everything: the
+        /// space is bound from another node's output, and an unbound binding is a move whose
+        /// destination has not happened yet.
+        /// </param>
         public static IReadOnlyList<HexCoordinate> Admit(
             DirectMoveDestinationPolicy policy,
             HexCoordinate actorAt,
             HexCoordinate moverAt,
-            IEnumerable<HexCoordinate> reachable)
+            IEnumerable<HexCoordinate> reachable,
+            HexCoordinate? namedDestination = null)
         {
             if (reachable == null)
             {
@@ -89,6 +116,11 @@ namespace GuardsDigital.Core.Rules.Displacement
 
                 case DirectMoveDestinationPolicy.EquidistantFromActor:
                     return EquidistantQuery.FilterEquidistantTo(actorAt, moverAt, reachable);
+
+                case DirectMoveDestinationPolicy.NamedSpace:
+                    return namedDestination.HasValue
+                        ? AsList(reachable, namedDestination.Value)
+                        : Array.Empty<HexCoordinate>();
 
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -107,6 +139,25 @@ namespace GuardsDigital.Core.Rules.Displacement
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// The named space, if the walk reached it. It is an intersection rather than a bare return of
+        /// the name: the space has to be somewhere the mover could actually walk to, which is what
+        /// keeps "move into the space it occupied" a Movement and not a Place.
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> AsList(
+            IEnumerable<HexCoordinate> reachable, HexCoordinate named)
+        {
+            foreach (var coordinate in reachable)
+            {
+                if (coordinate.Equals(named))
+                {
+                    return new[] { named };
+                }
+            }
+
+            return Array.Empty<HexCoordinate>();
         }
     }
 }

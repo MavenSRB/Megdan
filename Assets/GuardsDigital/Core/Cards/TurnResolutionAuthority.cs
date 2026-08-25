@@ -1706,6 +1706,34 @@ namespace GuardsDigital.Core.Cards
             IsResolutionStoppedByGameEnd ? null : cardActions?.PendingRemovalPrevention;
 
         /// <summary>
+        /// Milestone 8.21. The standing removal-prevention decision as a projection carries it - what
+        /// is being asked, which payments its hero can currently afford, and the command each of them
+        /// is answered with - or <c>null</c> when none is standing.
+        ///
+        /// <para>It is asked here rather than assembled by a reader for the reason milestone 8.19c1
+        /// derived the options here: the affordable set is a function of live cards, and a reader that
+        /// composed it from anything else would offer a card the hand no longer holds. This is the same
+        /// pairing <c>DescribePendingEffectChoice</c> has with its own pause - the pause and what it
+        /// means are read in one breath, from one authority.</para>
+        /// </summary>
+        public GuardsDigital.Core.Rules.CardResolution.RemovalPreventionPrompt
+            DescribeRemovalPrevention(
+                GuardsDigital.Core.Rules.Modifications.RuleModificationSet modifications)
+        {
+            var standing = PendingRemovalPrevention;
+            return standing == null
+                ? null
+                : GuardsDigital.Core.Rules.CardResolution.RemovalPreventionPrompt.Create(
+                    standing,
+                    cardActions.DescribeRemovalPreventionOptions(
+                        definitions,
+                        instances,
+                        participants,
+                        modifications ??
+                            GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty));
+        }
+
+        /// <summary>
         /// Milestone 8.19c1. Answers a standing removal-prevention decision, then finishes whatever the
         /// Defeat still owed.
         ///

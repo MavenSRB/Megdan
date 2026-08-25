@@ -204,6 +204,50 @@ namespace GuardsDigital.Core.Setup
         public static QuickGameSetupConfiguration CreateStagedWaspVersusArienOneVsOne() =>
             CreateOneVsOne(new HeroContentId("arien"), "Arien");
 
+        /// <summary>
+        /// Milestone 8.21. The same board with Brogan on the Blue seat, for the fixtures whose subject
+        /// is his printed set.
+        ///
+        /// <para>It is a third one-hero-per-team staging rather than a wider match, for the reason the
+        /// second one records: milestone 8.25 owns the official six-player configuration and all six
+        /// spawn assignments. The scene a player loads is unchanged and still deals Wasp against
+        /// Arien; this arm exists so a fixture can put Brogan where a player's input can reach
+        /// him.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusBroganOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("brogan"), "Brogan");
+
+        /// <summary>
+        /// Milestone 8.21. Wasp on Red against Arien and Brogan on Blue, which is the smallest board
+        /// on which "a friendly hero in range" is true of anybody - the clause War Drummer and Master
+        /// Skald print and the reason two of Brogan's nineteen faces would otherwise be unreachable.
+        ///
+        /// <para>Brogan takes <c>blue-hero-02</c>, a Blue hero spawn the official map has declared
+        /// since it was reviewed, at a space two away from the first - inside both cards' printed
+        /// Range 4. Nothing about the map, the minions, the Wave counters or the Life counters differs,
+        /// and the Red team still fields one hero: this is one extra seat, not the six-player
+        /// configuration milestone 8.25 owns.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusArienAndBroganOneVsTwo()
+        {
+            var mapId = new MapId("official-single-lane");
+            var ordinary = CreateOneVsOne(new HeroContentId("arien"), "Arien");
+            return new QuickGameSetupConfiguration(
+                ordinary.RequiredMap,
+                ordinary.WaveCount,
+                ordinary.LifeCountPerTeam,
+                ordinary.Heroes.Concat(new[]
+                {
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue),
+                        new HeroContentId("brogan"),
+                        "Brogan",
+                        new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-hero-02")),
+                        new ConfiguredSpaceReference(mapId, new SpaceId("q-1_r10")))
+                }),
+                ordinary.Minions);
+        }
+
         private static QuickGameSetupConfiguration CreateOneVsOne(
             HeroContentId blueContentId, string blueDisplayName)
         {

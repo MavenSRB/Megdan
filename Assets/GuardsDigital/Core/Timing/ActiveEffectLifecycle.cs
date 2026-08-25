@@ -269,6 +269,8 @@ namespace GuardsDigital.Core.Timing
                 // resolve a Magnetic Dagger suppress the opposing Wasp's.
                 case ActiveEffectAffectedScopeKind.UnitsInRadius:
                 case ActiveEffectAffectedScopeKind.HeroesInRadius:
+                case ActiveEffectAffectedScopeKind.MinionsInRadius:
+                case ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius:
                 case ActiveEffectAffectedScopeKind.ControllerHero:
                     return existing.ControllerHeroId.Equals(candidateControllerHeroId);
                 case ActiveEffectAffectedScopeKind.Hero:

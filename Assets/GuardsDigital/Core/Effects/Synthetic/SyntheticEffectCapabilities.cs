@@ -119,7 +119,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // proved on synthetic content, so this slice registers a hero's declarations on an
                 // implementation the showcase already reaches rather than introducing one inside a
                 // verified hero's slice.
-                .Concat(GuardsDigital.Core.Cards.Verified.ArienActiveEffectContent.Handlers()));
+                .Concat(GuardsDigital.Core.Cards.Verified.ArienActiveEffectContent.Handlers())
+                // Milestone 8.21. Brogan's four persistent texts join the same list, and three of them
+                // are the first configured content to reach milestone 8.19c1's removal prevention -
+                // the rule that milestone recorded as built and unreachable.
+                .Concat(GuardsDigital.Core.Cards.Verified.BroganActiveEffectContent.Handlers()));
 
         /// <summary>
         /// Creates one Active effect on the actor. This is the capability that gives acceptance check 5

@@ -734,6 +734,54 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, BlueProfiles, BlueUltimateProfile, null,
                 rosterSelectionSkillProfile: BlueRosterSelectionSkillProfile);
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.21: the roster vocabulary Brogan's set is the first printed content to name,
+        // proved here on cards that are nobody's
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.21's roster-payment Skill cards, sitting outside their team's ordinary
+        /// Initiative band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedRosterPaymentSkillProfile { get; } =
+            new SyntheticSkillProfile("red-quartermaster", "Red Quartermaster", 19);
+
+        private static SyntheticSkillProfile BlueRosterPaymentSkillProfile { get; } =
+            new SyntheticSkillProfile("blue-quartermaster", "Blue Quartermaster", 20);
+
+        /// <summary>The five ordinary cards plus milestone 8.21's roster-payment Skill alone.</summary>
+        public static ConfiguredHand CreateRedWithRosterPaymentSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                rosterPaymentSkillProfile: RedRosterPaymentSkillProfile);
+
+        public static ConfiguredHand CreateBlueWithRosterPaymentSkill(HeroId ownerId) =>
+            Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                rosterPaymentSkillProfile: BlueRosterPaymentSkillProfile);
+
+        /// <summary>Brogan's Mad Dash shape as his cards compose it: a chosen straight-line charge.</summary>
+        private static SyntheticAttackTextProfile RedChargeLineProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-lancer", "Red Lancer", 8, 4, 2, 2, CardTextTiming.BeforeTheAttack,
+                false, false, continuation: SyntheticContinuationShape.BeforeAttackChargeLine);
+
+        /// <summary>Brogan's Onslaught shape: step 7 walking into the space step 6 emptied.</summary>
+        private static SyntheticAttackTextProfile RedVacatedSpaceProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-occupier", "Red Occupier", 9, 4, 2, 2, CardTextTiming.AfterTheAttack,
+                false, false, continuation: SyntheticContinuationShape.AfterAttackStepIntoVacatedSpace);
+
+        /// <summary>
+        /// The five ordinary cards with milestone 8.21's two Attack-text cards, which is how
+        /// <c>choose-charge-line@1</c> and <c>attacked-target-space@1</c> become reachable from
+        /// showcase content rather than waiting for the hero whose faces print them.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithChargeAndVacatedSpaceText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedChargeLineProfile, RedVacatedSpaceProfile });
+
         /// <summary>Arien's Dangerous Current shape: a Before-Attack line drawn behind the target.</summary>
         private static SyntheticAttackTextProfile RedLineBehindProfile { get; } =
             new SyntheticAttackTextProfile(
@@ -804,6 +852,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile persistentSourceSkillProfile = null,
             SyntheticSkillProfile pausingSourceSkillProfile = null,
             SyntheticSkillProfile rosterSelectionSkillProfile = null,
+            SyntheticSkillProfile rosterPaymentSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -945,6 +994,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateRosterSelectionSkillDefinition(rosterSelectionSkillProfile),
                     rosterSelectionSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (rosterPaymentSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateRosterPaymentSkillDefinition(rosterPaymentSkillProfile),
+                    rosterPaymentSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -2208,6 +2265,152 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 });
         }
 
+        /// <summary>
+        /// Milestone 8.21. A Skill that spends and earns, naming the five roster contracts Brogan's
+        /// printed set is the first to reach: taking a discarded card back, paying one out of hand,
+        /// asking whether the pile holds one, reading whether a hero was defeated this round, and
+        /// granting coins.
+        ///
+        /// <para>Every number here is a fixture number and the sentence is nobody's card. What it
+        /// proves is that each contract composes and runs, so none of them arrives for the first time
+        /// inside a verified hero's slice - which is the second half of the rule
+        /// <c>ConfiguredCardMatrixTests</c> asks.</para>
+        /// </summary>
+        private static CardDefinition CreateRosterPaymentSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("roster-payment-root");
+            var retrieve = new EffectNodeId("roster-payment-retrieve");
+            var discard = new EffectNodeId("roster-payment-discard");
+            var present = new EffectNodeId("roster-payment-present");
+            var history = new EffectNodeId("roster-payment-history");
+            var branch = new EffectNodeId("roster-payment-branch");
+            var raised = new EffectNodeId("roster-payment-raised");
+            var ordinary = new EffectNodeId("roster-payment-ordinary");
+
+            EffectNodeDefinition Grant(EffectNodeId nodeId, int amount) =>
+                new EffectNodeDefinition(
+                    nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.GainResourceV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromRole(
+                            "recipient", EffectRoleKind.Actor, EffectValueKind.Hero),
+                        EffectInputBinding.FromLiteral("amount", EffectValue.Integer(amount))
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("recipient", EffectValueKind.Hero),
+                        new EffectOutputBinding("amount", EffectValueKind.Integer)
+                    });
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-21-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { retrieve, discard, present, history, branch }),
+                    new EffectNodeDefinition(
+                        retrieve, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                        SyntheticRosterCapabilities.RetrieveCardV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                "owner", EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromRole(
+                                "chooser", EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromLiteral(
+                                "kind",
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.CardResolution
+                                        .RosterCardRetrievalKind.OwnedDiscardedCard))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("retrieved", EffectValueKind.CardInstance)
+                        }),
+                    new EffectNodeDefinition(
+                        discard, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                        SyntheticRosterCapabilities.DiscardOwnedCardV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                SyntheticRosterCapabilities.HeroParameter,
+                                EffectRoleKind.Actor, EffectValueKind.Hero)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.DiscardedOutput,
+                                EffectValueKind.CardInstance),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.DidDiscardOutput,
+                                EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        present, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.OwnedCardPresentV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                SyntheticRosterCapabilities.HeroParameter,
+                                EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.LocationParameter,
+                                EffectValue.Integer((int)CardLocation.DiscardPile))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.PresentOutput, EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        history, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.HeroDefeatedThisRoundV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("defeated", EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        branch, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.IsFlaggedV1,
+                        childNodeIds: new[] { raised, ordinary },
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "flag", history, "defeated", EffectValueKind.Boolean)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("value", EffectValueKind.Boolean)
+                        }),
+                    Grant(raised, 3),
+                    Grant(ordinary, 1)
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-21-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-roster-payment-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
         private static CardDefinition CreateKinesisSkillDefinition(SyntheticSkillProfile profile)
         {
             var root = new EffectNodeId("kinesis-root");
@@ -2349,7 +2552,27 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// `behind-target-line@1` is proved on content that is nobody's before a printed face
             /// names it.
             /// </summary>
-            BeforeAttackLineBehind = 5
+            BeforeAttackLineBehind = 5,
+
+            /// <summary>
+            /// Milestone 8.21. Brogan's Mad Dash shape as his cards actually compose it: a straight-line
+            /// charge chosen through <c>choose-charge-line@1</c>, walked to the named destination, and
+            /// only then naming the unit it ends beside.
+            ///
+            /// <para>It is a second bind-target shape rather than a replacement for
+            /// <see cref="BeforeAttackBindTarget"/>, which stands in a p.9 disk for the geometry
+            /// because what that fixture proves is the binding. This one proves the geometry
+            /// capability itself, so it is on content that is nobody's card before a printed face
+            /// names it.</para>
+            /// </summary>
+            BeforeAttackChargeLine = 6,
+
+            /// <summary>
+            /// Milestone 8.21. Brogan's Onslaught shape: "After the attack:" text that walks the
+            /// attacker into the space rulebook p.14's step 6 has just emptied, through
+            /// <c>attacked-target-space@1</c> and a destination the definition names.
+            /// </summary>
+            AfterAttackStepIntoVacatedSpace = 7
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -2587,6 +2810,20 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             })
                             .ToArray());
 
+                case SyntheticContinuationShape.BeforeAttackChargeLine:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-21-rev-1",
+                        new EffectNodeId("charge-line-root"),
+                        ChargeLineNodes());
+
+                case SyntheticContinuationShape.AfterAttackStepIntoVacatedSpace:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-21-rev-1",
+                        new EffectNodeId("vacated-root"),
+                        VacatedSpaceNodes());
+
                 case SyntheticContinuationShape.AroundTheMovement:
                     return new EffectDefinition(
                         new EffectDefinitionId($"placeholder-{id}-text"),
@@ -2716,6 +2953,155 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// "You may move one unit one space." The smallest text that asks two questions - the offer and
         /// the selection - which is what makes it the right shape for proving a pause altitude.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.21. A straight-line charge and the target it ends beside: the geometry
+        /// capability chooses a destination two or three spaces away with an enemy unit next to it,
+        /// the Move walks to exactly that destination, and the Attack's target is bound to the unit
+        /// the same answer named.
+        ///
+        /// <para>The distances are fixture numbers rather than any card's; what this proves is that
+        /// <c>choose-charge-line@1</c> and a destination-named direct Move compose, on content that is
+        /// nobody's card.</para>
+        /// </summary>
+        private static EffectNodeDefinition[] ChargeLineNodes()
+        {
+            var root = new EffectNodeId("charge-line-root");
+            var line = new EffectNodeId("charge-line-choice");
+            var actorSpace = new EffectNodeId("charge-line-actor-space");
+            var move = new EffectNodeId("charge-line-move");
+            var bind = new EffectNodeId("charge-line-bind");
+
+            return new[]
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { line, actorSpace, move, bind }),
+                new EffectNodeDefinition(
+                    line, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.ChooseChargeLineV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromLiteral("minimumDistance", EffectValue.Integer(2)),
+                        EffectInputBinding.FromLiteral("maximumDistance", EffectValue.Integer(3)),
+                        EffectInputBinding.FromLiteral(
+                            SyntheticRosterCapabilities.UnitKindParameter,
+                            EffectValue.Integer(
+                                (int)GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit))
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("destination", EffectValueKind.Coordinate),
+                        new EffectOutputBinding(
+                            SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                        new EffectOutputBinding(
+                            SyntheticRosterCapabilities.ChosenMinionOutput, EffectValueKind.Minion)
+                    }),
+                ActorSpaceNode(actorSpace),
+                new EffectNodeDefinition(
+                    move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticDisplacementCapabilities.DirectMoveV3,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "mover", actorSpace, "space", EffectValueKind.Coordinate),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
+                        EffectInputBinding.FromLiteral(
+                            SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                            EffectValue.Integer(
+                                (int)GuardsDigital.Core.Rules.Displacement
+                                    .DirectMoveDestinationPolicy.NamedSpace)),
+                        EffectInputBinding.FromNodeOutput(
+                            SyntheticDisplacementCapabilities.NamedDestinationParameterName,
+                            line, "destination", EffectValueKind.Coordinate)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("moved", EffectValueKind.Coordinate)
+                    }),
+                new EffectNodeDefinition(
+                    bind, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticContinuationCapabilities.SetAttackTargetV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            SyntheticContinuationCapabilities.HeroParameter, line,
+                            SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                        EffectInputBinding.FromNodeOutput(
+                            SyntheticContinuationCapabilities.MinionParameter, line,
+                            SyntheticRosterCapabilities.ChosenMinionOutput, EffectValueKind.Minion)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticContinuationCapabilities.BoundHeroTargetOutput,
+                            EffectValueKind.Hero),
+                        new EffectOutputBinding(
+                            SyntheticContinuationCapabilities.BoundMinionTargetOutput,
+                            EffectValueKind.Minion)
+                    })
+            };
+        }
+
+        /// <summary>
+        /// Milestone 8.21. Rulebook p.14's step 7 walking the attacker into the space step 6 emptied:
+        /// the space is the one <c>attacked-target-space@1</c> captured before the consequences ran,
+        /// and the Move names it as its destination rather than choosing among the spaces one step
+        /// away.
+        /// </summary>
+        private static EffectNodeDefinition[] VacatedSpaceNodes()
+        {
+            var root = new EffectNodeId("vacated-root");
+            var formerSpace = new EffectNodeId("vacated-former-space");
+            var actorSpace = new EffectNodeId("vacated-actor-space");
+            var move = new EffectNodeId("vacated-move");
+
+            return new[]
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { formerSpace, actorSpace, move }),
+                new EffectNodeDefinition(
+                    formerSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.FormerTargetSpaceV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                    }),
+                ActorSpaceNode(actorSpace),
+                new EffectNodeDefinition(
+                    move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticDisplacementCapabilities.DirectMoveV3,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "mover", actorSpace, "space", EffectValueKind.Coordinate),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                        EffectInputBinding.FromLiteral(
+                            SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                            EffectValue.Integer(
+                                (int)GuardsDigital.Core.Rules.Displacement
+                                    .DirectMoveDestinationPolicy.NamedSpace)),
+                        EffectInputBinding.FromNodeOutput(
+                            SyntheticDisplacementCapabilities.NamedDestinationParameterName,
+                            formerSpace, "space", EffectValueKind.Coordinate)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("moved", EffectValueKind.Coordinate)
+                    })
+            };
+        }
+
+        /// <summary>The acting hero's own space, published for a node that names a piece by where it stands.</summary>
+        private static EffectNodeDefinition ActorSpaceNode(EffectNodeId nodeId) =>
+            new EffectNodeDefinition(
+                nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                SyntheticPlacementCapabilities.ActorSpaceV1,
+                outputs: new[]
+                {
+                    new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                });
+
         private static EffectNodeDefinition[] MayMoveAnotherUnitNodes(string rootId, bool includeSelf) =>
             new[]
             {

@@ -5,6 +5,7 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
@@ -105,7 +106,65 @@ namespace GuardsDigital.Presentation.Interaction
         /// Defense shape instead. That scenario also drives an eight-turn approach from the spawns, so
         /// the engaged staging cannot stand in for it.</para>
         /// </summary>
-        VerifiedMirror = 10
+        VerifiedMirror = 10,
+
+        /// <summary>
+        /// Milestone 8.21. The staged Wasp-versus-Brogan hands with both heroes restaged already
+        /// engaged, exactly as <see cref="VerifiedEngagedStagedArien"/> stages its two - same spaces,
+        /// same minion, same fixed Tie Breaker side under `DEV-005`.
+        ///
+        /// <para>Brogan takes the Blue seat rather than joining it. Milestone 8.25 owns the official
+        /// six-player configuration, so a third dealt hero is a fixture's choice of which two play
+        /// rather than a wider match, and <see cref="ConfiguredMatch"/> still deals Wasp against
+        /// Arien.</para>
+        /// </summary>
+        VerifiedEngagedStagedBrogan = 11,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Brogan holding the first sibling
+        /// of each colour - Bullrush, Mighty Punch and Bolster. `DEV-004` terms.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedBrogan = 12,
+
+        /// <summary>
+        /// The Tier II staging with Brogan holding the <em>second</em> sibling of each colour -
+        /// Throwing Axe, Shield Bash and War Drummer - which is the other half of p.15's choice and
+        /// therefore the other half of his printed set.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedBrogan = 13,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier III stage with p.16's Ultimate unlocked faceup
+        /// on both seats - High Voltage in Wasp's area and One Man Army in Brogan's - and Brogan
+        /// holding the first sibling of each colour.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedBrogan = 14,
+
+        /// <summary>
+        /// The Tier III staging with Brogan holding the second sibling of each colour: Throwing Spear,
+        /// Counterattack and Master Skald.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedBrogan = 15,
+
+        /// <summary>
+        /// Milestone 8.21. Wasp on Red against Arien <em>and</em> Brogan on Blue - the one composition
+        /// in this build that deals two heroes to a team.
+        ///
+        /// <para>It exists for two of Brogan's nineteen faces. War Drummer and Master Skald print "A
+        /// friendly hero in range gains N coins", and rulebook p.10 keeps the acting hero out of what
+        /// an action affects unless the text says so; with one hero per team that selection has no
+        /// candidate at all, so those two cards could not be driven through the player pipeline in any
+        /// other composition this build has.</para>
+        ///
+        /// <para>The three heroes stand at their own spawn points rather than restaged into an
+        /// engagement. The staging exists to put a hero next to an enemy minion, and neither of these
+        /// cards names an enemy: what they need is an ally in range, and the second Blue spawn is two
+        /// spaces from the first - well inside their printed Range 4.</para>
+        ///
+        /// <para>Still not the six-player setup, which milestone 8.25 owns: Red fields one hero and
+        /// <see cref="ConfiguredMatch"/> is untouched.</para>
+        /// </summary>
+        VerifiedStagedBroganWithAlly = 16
     }
 
     [ExecuteAlways]
@@ -221,6 +280,28 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedTierThreeAlternateEngagedStagedArien =>
                     PlaceholderOneVsOneTestConfiguration.CreateStagedArienTierThreeForInternalTest(
                         TeamSide.Red, GuardsDigital.Core.Cards.Verified.ArienUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedBrogan =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedBrogan =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BroganUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBrogan =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BroganUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedBrogan =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BroganUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBrogan =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BroganUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedStagedBroganWithAlly =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganWithAllyForInternalTest(
+                        TeamSide.Red),
                 _ => PlaceholderOneVsOneTestConfiguration.Create()
             };
             // Milestone 8.20. The board's hero identities have to agree with the hands the
@@ -235,7 +316,11 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedMirror ||
                 content == SceneCardContent.MechanicsShowcaseFixture
                     ? QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne()
-                    : QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne(),
+                    : content == SceneCardContent.VerifiedStagedBroganWithAlly
+                        ? QuickGameSetupConfiguration.CreateStagedWaspVersusArienAndBroganOneVsTwo()
+                        : IsStagedBrogan(content)
+                            ? QuickGameSetupConfiguration.CreateStagedWaspVersusBroganOneVsOne()
+                            : QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne(),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
@@ -249,10 +334,17 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedTierTwoEngagedStagedArien ||
                 content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedArien ||
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedArien ||
-                content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedArien)
+                content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedArien ||
+                IsStagedBrogan(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
+            // Milestone 8.21. A configuration may deal a seat the scene authors no view for - the
+            // staged Brogan-with-an-ally match deals three - so any such seat gets a generated view
+            // and a generated pointer selector before the board is rebuilt. It is the same answer the
+            // board already gives a placed token: authored content where there is some, generated
+            // where a configuration asks for more, and no fixture reaching into the scene to add one.
+            EnsureViewsForConfiguredSeats(setup);
             mapView.ConfiguredMinionViewsChanged -= RebindConfiguredMinionViews;
             mapView.ConfiguredMinionViewsChanged += RebindConfiguredMinionViews;
             mapView.ConfigureSceneBindings(eventCamera, heroViews);
@@ -345,6 +437,66 @@ namespace GuardsDigital.Presentation.Interaction
         /// Reads <see cref="NextComposedCardContent"/> and puts it back to the configured match, so the
         /// request applies to exactly the composition that consumed it.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.21. Gives every configured seat a hero view and a pointer selector, generating
+        /// one for any seat the scene does not author.
+        ///
+        /// <para>The scene authors one view per team, which is what every configuration before this
+        /// milestone dealt. The staged match whose subject is a card naming a friendly hero deals a
+        /// second Blue seat, and that seat needs the same two things every other has: a piece on the
+        /// board and something a pointer ray can hit, or the journeys that prove those cards would be
+        /// driving a hero nobody can click.</para>
+        ///
+        /// <para>The generated object carries no artwork of its own. <see cref="PrimitiveHeroView"/>
+        /// builds its own mesh and materials from the team and the prepared token, exactly as an
+        /// authored one does, so a generated seat and an authored seat are the same piece drawn the
+        /// same way.</para>
+        /// </summary>
+        private void EnsureViewsForConfiguredSeats(QuickGameSetupState setup)
+        {
+            var generated = new List<PrimitiveHeroView>();
+            var selectors = new List<PrimitiveHeroPointerSelector>();
+            foreach (var seat in setup.Heroes)
+            {
+                if (heroViews.Any(view => view != null && view.Occupancy.HeroId.Equals(seat.HeroId)))
+                {
+                    continue;
+                }
+
+                var host = new GameObject($"generated-seat ({seat.HeroId.Value})");
+                host.transform.SetParent(mapView.transform, false);
+                var view = host.AddComponent<PrimitiveHeroView>();
+                // The identity has to be set before the rebuild, because that is what the board
+                // matches a configured seat to its view by.
+                view.Configure(new HeroOccupancy(seat.HeroId, seat.Coordinate), 0f);
+                generated.Add(view);
+                selectors.Add(host.AddComponent<PrimitiveHeroPointerSelector>());
+            }
+
+            if (generated.Count == 0)
+            {
+                return;
+            }
+
+            heroViews = heroViews.Concat(generated).ToArray();
+            pointerSelectors = (pointerSelectors ?? Array.Empty<PrimitiveHeroPointerSelector>())
+                .Concat(selectors)
+                .ToArray();
+        }
+
+        /// <summary>
+        /// Whether this content deals Brogan on the Blue seat. Milestone 8.21, and it decides two
+        /// things that have to agree: which hero identity the board binds - the content identity is
+        /// what addresses the prepared token and what the projection names the piece by - and that the
+        /// two heroes are restaged already engaged, which every staged arm is.
+        /// </summary>
+        private static bool IsStagedBrogan(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedBrogan ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedBrogan ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBrogan ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedBrogan ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBrogan;
+
         private static SceneCardContent TakeRequestedCardContent()
         {
             var requested = NextComposedCardContent;

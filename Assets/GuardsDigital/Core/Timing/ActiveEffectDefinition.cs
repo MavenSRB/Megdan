@@ -65,7 +65,45 @@ namespace GuardsDigital.Core.Timing
         /// the same reason - a hero taking a turn is still the hero taking the turn while it counts as
         /// a minion. Nothing is stored, for the reason <see cref="UnitsInRadius"/> stores nothing.</para>
         /// </summary>
-        HeroesInRadius = 6
+        HeroesInRadius = 6,
+
+        /// <summary>
+        /// Milestone 8.21. The same moving disk, admitting p.19's other unit kind only - Brogan's
+        /// Shield, Bolster and Fortify, each of which begins "When any friendly <b>minion</b> in radius
+        /// is defeated".
+        ///
+        /// <para>It is a seventh member for the reason <see cref="HeroesInRadius"/> is a sixth, and the
+        /// case is the mirror image of that one. Those three cards buy a minion out of its removal at a
+        /// printed price; a scope widened to units would offer the same purchase for a friendly
+        /// <em>hero</em>, which is a sentence Brogan's faces do not print. That the widened reading
+        /// would be nearly inert today - p.13 defeats a hero and respawns them rather than removing
+        /// them - is the same argument milestone 8.20 declined to accept for the sixth member.</para>
+        ///
+        /// <para>Membership is intrinsic here too, and this is the scope where that matters most
+        /// visibly: One Man Army makes its own hero count as a heavy minion during rulebook p.8's
+        /// Minion Battle, and this walk still does not find him, because the miniature standing in the
+        /// disk is a hero. The counts-as is scoped to the battle's counting by its own first word, and
+        /// the card that substitutes his removal says what happens to him instead.</para>
+        /// </summary>
+        MinionsInRadius = 7,
+
+        /// <summary>
+        /// Milestone 8.21. The disk plus the hero it is drawn around - Brogan's Bulwark, "<b>You</b>
+        /// and friendly units in radius cannot be moved, pushed, swapped or placed by enemy heroes".
+        ///
+        /// <para>It is a member rather than a flag because it is a different printed sentence, and it
+        /// exists because <see cref="UnitsInRadius"/> deliberately excludes the source: p.19 keeps self
+        /// and another distinct, so "units in radius" is read as the units other than the hero the disk
+        /// follows. Every scope before this one named a side its controller could not be on, so the
+        /// exclusion decided nothing; Bulwark is the first face that protects its own hero and says so
+        /// in the first word of the clause.</para>
+        ///
+        /// <para>The controller is admitted unconditionally rather than through the declared relation.
+        /// A hero is trivially allied with himself, and asking the relation about him would let a
+        /// declaration that named the opposing side quietly drop the "You" the sentence opens
+        /// with.</para>
+        /// </summary>
+        ControllerAndUnitsInRadius = 8
     }
 
     /// <summary>
@@ -261,9 +299,9 @@ namespace GuardsDigital.Core.Timing
         public DeclaredRadius Radius { get; }
 
         /// <summary>
-        /// Which side of the source the units inside that disk stand on, for
-        /// <see cref="ActiveEffectAffectedScopeKind.UnitsInRadius"/>; <c>None</c> for every other
-        /// scope, because none of them selects by position at all.
+        /// Which side of the source the units inside that disk stand on, for every scope
+        /// <see cref="DrawsADisk"/> admits; <c>None</c> for every other scope, because none of them
+        /// selects by position at all.
         /// </summary>
         public SourceTeamRelation AffectedUnitRelation { get; }
 
@@ -331,14 +369,26 @@ namespace GuardsDigital.Core.Timing
         /// that needs neither may not carry one, because a disk nothing measures is a number a reader
         /// would have to decide the meaning of.
         /// </summary>
+        /// <summary>
+        /// Whether a scope's membership is decided by the disk its definition draws. Stated once
+        /// because four of the eight kinds are now radius-scoped and every reader of that fact - this
+        /// validation, the modification walk and the lifecycle's uniqueness rule - must agree about
+        /// which; milestone 8.21's two new kinds are what turned a pair of comparisons into a question
+        /// worth naming.
+        /// </summary>
+        public static bool DrawsADisk(ActiveEffectAffectedScopeKind affectedScope) =>
+            affectedScope == ActiveEffectAffectedScopeKind.UnitsInRadius ||
+            affectedScope == ActiveEffectAffectedScopeKind.HeroesInRadius ||
+            affectedScope == ActiveEffectAffectedScopeKind.MinionsInRadius ||
+            affectedScope == ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius;
+
         private static void ValidateDisk(
             ActiveEffectAffectedScopeKind affectedScope,
             DeclaredRadius radius,
             SourceTeamRelation affectedUnitRelation,
             int declaredOverlayCount)
         {
-            var scopeDrawsADisk = affectedScope == ActiveEffectAffectedScopeKind.UnitsInRadius ||
-                affectedScope == ActiveEffectAffectedScopeKind.HeroesInRadius;
+            var scopeDrawsADisk = DrawsADisk(affectedScope);
             if (scopeDrawsADisk && affectedUnitRelation == SourceTeamRelation.None)
             {
                 throw new ArgumentException(

@@ -7,6 +7,9 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Setup;
@@ -2866,6 +2869,115 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 public SystemTransitionAuthority Transitions { get; }
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.21. A standing removal-prevention decision, as the projection carries it and as
+        /// the region draws it.
+        ///
+        /// <para>The decision is composed from the typed pieces rather than driven out of a live
+        /// match, for the reason the Lane-Push pause beside it is: what these surfaces are checked
+        /// against is the authority's own offer set, and reaching this pause through a played card
+        /// would make the case about the card. Brogan's Bolster supplies the price so the shape is a
+        /// printed one - <see cref="BroganRemovalPreventionTests"/> is what proves his faces reach it
+        /// in a real match.</para>
+        /// </summary>
+        internal static class RemovalPreventionPause
+        {
+            private const string SourceId = "brogan-bolster-effect:probe";
+
+            public static RemovalPreventionPrompt CreatePrompt()
+            {
+                var deciding = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                var hand = BroganCardContent.CreateHand(deciding, "blue");
+                var payable = hand.Instances
+                    .Where(card => BroganCardContent
+                        .Definition(card.DefinitionReference.DefinitionId)
+                        .Progression.IsBasic)
+                    .Select(card => card.Id)
+                    .ToArray();
+                Assert.That(payable, Is.Not.Empty,
+                    "p.6 deals Brogan two Basic cards, and a pause nobody can pay would check " +
+                    "nothing about the controls a payment produces.");
+
+                return RemovalPreventionPrompt.Create(
+                    Decision(deciding),
+                    new[]
+                    {
+                        new RemovalPreventionOption(
+                            SourceId,
+                            deciding,
+                            RemovalPreventionCost.DiscardOwnedCard(
+                                CardLocation.Hand,
+                                admittedClassification: CardClassification.Basic),
+                            payable)
+                    });
+            }
+
+            /// <summary>
+            /// The prompt as the contextual region draws it. Each payment carries no tray face here,
+            /// because this fixture composes the pause rather than playing a match and the card faces
+            /// belong to a projection: what the reachability case measures is one control per offer,
+            /// and <see cref="RoundActionUnityView"/> draws a card-valued invocation the same way
+            /// whether the face is present or not.
+            /// </summary>
+            public static RemovalPreventionPromptViewModel CreateViewModel(
+                RemovalPreventionPrompt prompt) =>
+                new RemovalPreventionPromptViewModel(
+                    prompt.SubjectMinionId,
+                    prompt.Payments.Select(payment => new TypedInvocationViewModel(
+                        payment.PaymentCardInstanceId.Value,
+                        DirectorCommand.AnswerRemovalPrevention(payment.Invocation))),
+                    new TypedInvocationViewModel(
+                        RemovalPreventionPromptLabels.DeclineLabel,
+                        DirectorCommand.AnswerRemovalPrevention(prompt.DeclineInvocation)));
+
+            private static readonly MinionId Subject = new MinionId("brogan-guard-probe-minion");
+
+            private static PendingRemovalPreventionDecision Decision(HeroId deciding)
+            {
+                // p.13's Defeat has already been recorded and its reward already paid by the time this
+                // decision stands, which is why the outcome carries amounts and the operations are the
+                // ones the ledger performed.
+                var outcome = new DefeatOutcome(
+                    new DefeatOutcomeId("brogan-guard-probe:minion-defeat"),
+                    new DefeatTargetId(Subject.Value),
+                    new TeamId("brogan-guard-probe-team"),
+                    deciding,
+                    2,
+                    0);
+
+                return new PendingRemovalPreventionDecision(
+                    RemovalPreventionOrigin.AttackMinionDefeat,
+                    new PendingAttackResolution(
+                        new ActionResolutionId("brogan-guard-probe-resolution"),
+                        new CardInstanceId("brogan-guard-probe-card"),
+                        new CardDefinitionReference(
+                            new CardDefinitionId("brogan-guard-probe-definition"), "probe-rev"),
+                        new ActionDefinitionId("brogan-guard-probe-action"),
+                        deciding,
+                        ActionInvocationContext.PrintedPrimary,
+                        new ActionResolutionStepId("minion-defeat"),
+                        AttackResolutionPhase.ResolveMinionDefeat,
+                        AttackTarget.Minion(Subject),
+                        null),
+                    Subject,
+                    outcome,
+                    new[]
+                    {
+                        new CoinResourceOperation(
+                            outcome.Id,
+                            new DefeatTargetId(Subject.Value),
+                            deciding,
+                            new TeamId("brogan-guard-probe-team"),
+                            CoinAwardKind.Defeat,
+                            2,
+                            0,
+                            2)
+                    },
+                    deciding,
+                    GuardsDigital.Core.Rules.Modifications.RuleActivity.Attack);
             }
         }
     }

@@ -216,7 +216,20 @@ namespace GuardsDigital.Core.Snapshots
         // an occurrence of a definition that binds nobody genuinely is - but a v27 payload holding a
         // live Master Duelist would restore as immunity against the attacker as well, which is a
         // stronger card than the printed one and one no later state could detect.
-        public const int CurrentSchemaVersion = 28;
+        // Milestone 8.21 moves it to 29, and this one is not about a field at all. A payload pins the
+        // registered capability contract set and a restore refuses a build whose set differs, because
+        // the set is the identity a snapshot is read back against. Brogan's printed faces are the first
+        // content to reach twelve contracts this build had registered nowhere - milestone 8.19b's five
+        // roster ones, the three his modal Ranged Attacks needed minted, and his four Active effects - so
+        // every v28 payload names a strictly shorter list than an 8.21 build registers and is refused
+        // on sight.
+        //
+        // v28 is rejected rather than migrated for the reason the list exists: `RISK-COMPAT-001` is
+        // about a payload being reinterpreted rather than refused, and "the build registers more than
+        // this payload knew about" is exactly the case where a silent acceptance would let a restored
+        // match resolve a card against contracts its own capture never had. The refusal is already
+        // correct; the version is what tells a reader why.
+        public const int CurrentSchemaVersion = 29;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

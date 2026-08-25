@@ -41,12 +41,17 @@ namespace GuardsDigital.Tests.EditMode
         private const string InsideAnUnfinishedResolution = "IsInsideAnUnfinishedResolution";
 
         /// <summary>
-        /// The seven families the presenter knows about today, and the three unfinished resolutions
+        /// The eight families the presenter knows about today, and the three unfinished resolutions
         /// beside them. Both are floors rather than the sets themselves, so a rule scanning a
         /// derivation that has quietly lost its branches fails instead of passing, and neither has to
-        /// be re-listed when an eighth family arrives.
+        /// be re-listed when a ninth family arrives.
+        ///
+        /// <para>Milestone 8.21 raised the first from seven: its removal-prevention pause is the
+        /// eighth family, and it arrived named because this rule required it to. The floor moves with
+        /// each family for the reason it exists at all - a floor that lagged behind would stop
+        /// noticing branches going missing.</para>
         /// </summary>
-        private const int KnownDecisionFamilies = 7;
+        private const int KnownDecisionFamilies = 8;
 
         private const int KnownUnfinishedResolutions = 3;
 

@@ -9,6 +9,22 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Participants
 {
+    /// <summary>
+    /// Milestone 8.21. Which of rulebook p.15's stages the second Blue seat is dealt at.
+    ///
+    /// <para>It exists because the two faces that seat is there to prove are not in Brogan's starting
+    /// hand: p.6 leaves every Tier II and Tier III card in the deck, and War Drummer and Master Skald
+    /// are one of each. A fixture therefore names the stage that holds the card it is about, exactly as
+    /// the staged progressed configurations do.</para>
+    /// </summary>
+    public enum BroganAllyStage
+    {
+        /// <summary>p.6's own five, which is what a match deals before any Level Up.</summary>
+        StartingHand = 0,
+        TierTwo = 1,
+        TierThree = 2
+    }
+
     public sealed class PlaceholderOneVsOneTestConfiguration
     {
         private PlaceholderOneVsOneTestConfiguration(
@@ -17,7 +33,8 @@ namespace GuardsDigital.Core.Participants
             ConfiguredHand blueHand,
             TieBreakerState tieBreakerState,
             SetupRandomnessSeed setupSeed,
-            bool validateInitialCardState = true)
+            bool validateInitialCardState = true,
+            ConfiguredHand allyHand = null)
         {
             SetupSeed = setupSeed;
 
@@ -30,6 +47,7 @@ namespace GuardsDigital.Core.Participants
             Participants = participants ?? throw new ArgumentNullException(nameof(participants));
             RedHand = redHand ?? throw new ArgumentNullException(nameof(redHand));
             BlueHand = blueHand ?? throw new ArgumentNullException(nameof(blueHand));
+            AllyHand = allyHand;
             if (!tieBreakerState.IsDefined)
             {
                 throw new ArgumentException(
@@ -42,7 +60,10 @@ namespace GuardsDigital.Core.Participants
             // Milestone 7.5. Every card each hand supplies, hand and deck alike: p.15's Upgrade a Card
             // step searches the deck, so a match composed from the dealt five alone would have had a
             // mandatory level nobody could complete.
-            var cardInstances = redHand.AllInstances.Concat(blueHand.AllInstances).ToArray();
+            var cardInstances = redHand.AllInstances
+                .Concat(blueHand.AllInstances)
+                .Concat(allyHand?.AllInstances ?? Enumerable.Empty<CardInstance>())
+                .ToArray();
             foreach (var instance in cardInstances)
             {
                 participants.GetHero(instance.OwnerId);
@@ -56,6 +77,7 @@ namespace GuardsDigital.Core.Participants
             // is what refuses it.
             var cardDefinitions = redHand.Definitions
                 .Concat(blueHand.Definitions)
+                .Concat(allyHand?.Definitions ?? Enumerable.Empty<CardDefinition>())
                 .GroupBy(definition => definition.Reference)
                 .Select(group => group.First())
                 .ToArray();
@@ -104,6 +126,13 @@ namespace GuardsDigital.Core.Participants
         public ConfiguredHand RedHand { get; }
 
         public ConfiguredHand BlueHand { get; }
+
+        /// <summary>
+        /// Milestone 8.21. The second Blue seat's hand, or <c>null</c> in every configuration that
+        /// deals one hero per team - which is all of them but the one whose subject is a card naming a
+        /// friendly hero.
+        /// </summary>
+        public ConfiguredHand AllyHand { get; }
 
         public TieBreakerState TieBreakerState { get; }
 
@@ -176,6 +205,130 @@ namespace GuardsDigital.Core.Participants
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red),
                 CreateVerifiedArienHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.21. The staged Wasp-versus-Brogan match, on the same `DEV-005` terms the staged
+        /// Arien match is on.
+        ///
+        /// <para>Brogan takes the Blue seat rather than joining it, and that is deliberate: milestone
+        /// 8.25 owns the official six-player configuration and every hero spawn it assigns, so until
+        /// then this build stages one hero per team and a third dealt hero is a fixture's choice of
+        /// which two play rather than a wider match. <see cref="Create"/> - the scene a player loads -
+        /// is untouched and still deals Wasp against Arien.</para>
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedBroganForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedBroganHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.21. Wasp on Red against Arien <em>and</em> Brogan on Blue - the one staged
+        /// configuration in this build that deals two heroes to a team.
+        ///
+        /// <para><b>Why it exists.</b> Two of Brogan's faces name a friendly hero: War Drummer and
+        /// Master Skald print "A friendly hero in range gains N coins", and rulebook p.10 keeps the
+        /// acting hero out of what an action affects unless the text says so. In every other
+        /// configuration this build has, Brogan is the only hero on his side, so that selection has no
+        /// candidate at all and the Skill stops at its first step - which would leave two of nineteen
+        /// faces unreachable through the ordinary player pipeline rather than merely untested.</para>
+        ///
+        /// <para><b>What it is not.</b> Not the six-player setup, which milestone 8.25 still owns
+        /// along with all six official spawn assignments: Red fields one hero, the board is the same
+        /// official map, and Brogan takes the second Blue hero spawn the map has always declared. Not
+        /// what a player loads either - <see cref="Create"/> is untouched. `DEV-004`/`DEV-005` terms,
+        /// as every staged configuration here is on.</para>
+        ///
+        /// <para>Arien holds the Blue seat beside him rather than a second Wasp, because he is the
+        /// hero this build already deals there and a fixture that invented a third printed set would
+        /// be proving something no match has.</para>
+        /// </summary>
+        /// <param name="stage">
+        /// Which of rulebook p.15's stages Brogan's seat is dealt at. It is a parameter because the two
+        /// cards this configuration exists for are not in his starting hand: War Drummer is a Tier II
+        /// card and Master Skald a Tier III one, so p.6 leaves both in the deck and only a progressed
+        /// hand holds either. The branch is the second sibling of each colour, which is the half of
+        /// p.15's choice those two cards are on.
+        /// </param>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedBroganWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide,
+            BroganAllyStage stage = BroganAllyStage.StartingHand)
+        {
+            var broganId = new HeroId(PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue);
+            return new PlaceholderOneVsOneTestConfiguration(
+                PlaceholderOneVsOneParticipants.CreateWithBlueAlly(),
+                CreateVerifiedWaspHand(TeamSide.Red)(
+                    new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue)),
+                CreateVerifiedArienHand(TeamSide.Blue)(
+                    new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue)),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: CreateAllyBroganHand(broganId, stage));
+        }
+
+        private static ConfiguredHand CreateAllyBroganHand(HeroId ownerId, BroganAllyStage stage)
+        {
+            switch (stage)
+            {
+                case BroganAllyStage.TierTwo:
+                    return GuardsDigital.Core.Cards.Verified.BroganProgressedHands.CreateTierTwoHand(
+                        ownerId, "blue-ally",
+                        GuardsDigital.Core.Cards.Verified.BroganUpgradeBranch.SecondSibling);
+                case BroganAllyStage.TierThree:
+                    return GuardsDigital.Core.Cards.Verified.BroganProgressedHands.CreateTierThreeHand(
+                        ownerId, "blue-ally",
+                        GuardsDigital.Core.Cards.Verified.BroganUpgradeBranch.SecondSibling);
+                default:
+                    return GuardsDigital.Core.Cards.Verified.BroganCardContent.CreateHand(
+                        ownerId, "blue-ally");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.21. The staged Wasp-versus-Brogan match at rulebook p.15's Tier II stage, with
+        /// Brogan holding one Tier II card of each colour on the branch the caller names - the same
+        /// pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedBroganTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.BroganUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedBroganHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.21. The staged Wasp-versus-Brogan match at rulebook p.15's Tier III stage with
+        /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and One
+        /// Man Army in Brogan's.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedBroganTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.BroganUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedBroganHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.BroganCardContent.OneManArmy)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
         }
 
         /// <summary>
@@ -366,6 +519,22 @@ namespace GuardsDigital.Core.Participants
                     ownerId, "blue", branch);
 
         /// <summary>
+        /// Milestone 8.21. One seat's verified Brogan hand, prefixed by the seat's team side for the
+        /// reason the two earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedBroganHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.BroganCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedBroganHand(
+            bool tierThree, Cards.Verified.BroganUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.BroganProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.BroganProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
         /// The ordinary configuration plus milestone 8.5's card-text cards: two printed Attacks in the
         /// Red hand applying their text at rulebook p.14's steps 1 and 7, and one card in the Blue hand
         /// whose printed secondary Defense applies its text at step 4.
@@ -475,8 +644,19 @@ namespace GuardsDigital.Core.Participants
             var instanceArray = state.Instances;
             var redHero = participants.Heroes.Single(hero =>
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
-            var blueHero = participants.Heroes.Single(hero =>
-                participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue).Id;
+
+            // Milestone 8.21. A restore used to identify each side by its one hero, which was true of
+            // every configuration this type composed until the staged match that deals a second Blue
+            // seat - the one board on which "a friendly hero in range" can be true of anybody. The
+            // extra seat is named rather than ordered, because which hand belongs to which hero is a
+            // fact about the seat and not about where it happens to sort.
+            var allyHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue);
+            var blueHeroes = participants.Heroes
+                .Where(hero => participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue)
+                .Select(hero => hero.Id)
+                .ToArray();
+            var blueHero = blueHeroes.Single(heroId => !heroId.Equals(allyHeroId));
+            var hasAlly = blueHeroes.Any(heroId => heroId.Equals(allyHeroId));
             ConfiguredHand BuildHand(HeroId ownerId)
             {
                 var ownedInstances = instanceArray.Where(instance => instance.OwnerId.Equals(ownerId)).ToArray();
@@ -555,16 +735,18 @@ namespace GuardsDigital.Core.Participants
                 return reached;
             }
 
-            // The two hands are rebuilt from the flat definition and instance lists a snapshot
-            // restores, using only relationships the content itself states; the sides are already
-            // re-identified from the restored teams two statements above, so nothing new is decided.
+            // The hands are rebuilt from the flat definition and instance lists a snapshot restores,
+            // using only relationships the content itself states; the sides are already re-identified
+            // from the restored teams above, so nothing new is decided. A second Blue seat is rebuilt
+            // the same way and from the same lists - it is another owner, not another rule.
             return new PlaceholderOneVsOneTestConfiguration(
                 participants,
                 BuildHand(redHero),
                 BuildHand(blueHero),
                 state.TieBreakerState,
                 state.SetupSeed,
-                false);
+                false,
+                hasAlly ? BuildHand(allyHeroId) : null);
         }
 
         /// <summary>

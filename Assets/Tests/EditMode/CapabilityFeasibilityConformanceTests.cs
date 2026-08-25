@@ -123,7 +123,18 @@ namespace GuardsDigital.Tests.EditMode
             // asks a second declaration to be. Nor do the milestone's four typed declarations -
             // `restrict-action@2`, `limit-activity@1`, `immunity@2`'s bound-actor carve-out and
             // `place-destination@2` - which are content on a rule or a policy rather than handlers.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(36),
+            // Milestone 8.21 moves it by seven, and the split is the same one. Five - milestone
+            // 8.19b's `attacked-target-space@1`, `choose-charge-line@1`, `hero-defeated-this-round@1`,
+            // `retrieve-card@1` and `gain-resource@1` - were implemented then and reach the catalog
+            // only now, because Brogan's faces are the first printed cards that name them. Two are this
+            // milestone's own: `discard-owned-card@1`, which is the actor spending a card as a price
+            // and reporting that they did, and `owned-card-present@1`, which asks whether a hero owns a
+            // card in a named place. His four Active effects register nothing new here - all four run
+            // on the creation handler milestone 6.8 proved - and neither do this milestone's typed
+            // declarations: `MinionsInRadius`, `ControllerAndUnitsInRadius`, `NamedSpace`,
+            // `OpposingSourceOrUnaligned` and `choose-target@2`'s played-an-Attack narrowing are
+            // content on a scope, a policy or a parameter rather than handlers.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(43),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

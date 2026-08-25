@@ -58,6 +58,42 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference SpacesAdjacentV1 => Reference("spaces-adjacent", 1);
         public static EffectCapabilityReference AdjacentTerrainPresenceV1 =>
             Reference("adjacent-terrain-presence", 1);
+        /// <summary>
+        /// Milestone 8.21. `discard-owned-card@1` - the acting hero pays a card of their own choosing,
+        /// and says whether they paid.
+        ///
+        /// <para>It is a second discard capability rather than a revision of
+        /// <c>synthetic-discard-chosen-card</c> for the reason that one has two live revisions: they
+        /// are different contracts. That capability makes <em>another</em> hero give a card up, which
+        /// is why its chooser is the hero its input names and why milestone 8.10's revision reports
+        /// inability - the sentence it serves has a second arm for a hero who cannot pay. This one is
+        /// the actor spending their own card as a price, printed on Brogan's Throwing Axe as "You may
+        /// discard a card; if you do, target a unit in range", and what its sentence needs to know is
+        /// the opposite fact: whether the price <em>was</em> paid, so the clause after the semicolon
+        /// can be conditioned on it.</para>
+        ///
+        /// <para>Publishing that as a positive fact is deliberate. A gate written on the inability
+        /// would read true both for a hero who declined and for one who had nothing, and would need
+        /// inverting to say what the card says; <c>didDiscard</c> is the "if you do" itself. Declining
+        /// publishes nothing at all, which the conditional reads as the same false - so a declined
+        /// step and an unpayable one reach the identical outcome the printed text gives them, which is
+        /// that no target is named and p.10 stops the Attack at that step.</para>
+        /// </summary>
+        public static EffectCapabilityReference DiscardOwnedCardV1 =>
+            Reference("discard-owned-card", 1);
+
+        /// <summary>
+        /// Milestone 8.21. `owned-card-present@1` - whether one hero owns a card in a named place.
+        ///
+        /// <para>Brogan's Throwing Spear is the sentence that needs it: "You may discard a card. If you
+        /// have a card in the discard, target a unit in range." The Tier III card is paid for by a card
+        /// <em>already</em> in the discard, which is what makes its own discard optional where the Tier
+        /// II card's is the price - so the question is about the pile rather than about the step that
+        /// just ran, and it is asked after that step so a card discarded to it counts.</para>
+        /// </summary>
+        public static EffectCapabilityReference OwnedCardPresentV1 =>
+            Reference("owned-card-present", 1);
+
         public static EffectCapabilityReference RetrieveCardV1 => Reference("retrieve-card", 1);
         public static EffectCapabilityReference GainResourceV1 => Reference("gain-resource", 1);
         public static EffectCapabilityReference TransferResourceV1 => Reference("transfer-resource", 1);
@@ -98,6 +134,58 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string ExcludeTargetParameter = "excludeTarget";
 
         /// <summary>
+        /// Milestone 8.21. Whether the selection admits only heroes who have played an Attack card
+        /// this turn - Brogan's Shield Bash and Counterattack, "An enemy hero adjacent to you who has
+        /// played an attack card this turn".
+        ///
+        /// <para>It narrows the candidates rather than gating what happens to the chosen one, and that
+        /// is the whole point: the clause is part of who may be picked, so a hero who has played
+        /// nothing is not one to offer and then refuse. It is the same reading milestone 8.20b settled
+        /// for a restriction that names its actors.</para>
+        ///
+        /// <para>The question itself is <c>target-played-attack-this-turn@1</c>'s -
+        /// <see cref="PlayedAttackCardThisTurnQuery"/> - asked here rather than answered a second way,
+        /// so a card that conditions on the fact and a card that selects by it cannot come to disagree
+        /// about what it means. p.9 makes a card with an Attack primary an Attack card and p.10 makes
+        /// a card played the moment it is placed facedown, which is why neither reading asks whether
+        /// the Attack was performed.</para>
+        ///
+        /// <para>Optional and defaulting to false, so every declaration written before this milestone
+        /// keeps its exact candidate set.</para>
+        /// </summary>
+        public const string PlayedAttackThisTurnParameter = "playedAttackThisTurn";
+
+        /// <summary>The hero whose own cards a card-state capability reads. Milestone 8.21.</summary>
+        public const string HeroParameter = "hero";
+
+        /// <summary>Which of rulebook p.10's places a card question is asked about. Milestone 8.21.</summary>
+        public const string LocationParameter = "location";
+
+        /// <summary>The card `discard-owned-card@1` spent, published only when one was spent.</summary>
+        public const string DiscardedOutput = "discarded";
+
+        /// <summary>
+        /// Throwing Axe's "if you do", as the positive fact a conditional can read. False where the
+        /// hero held nothing; absent where they declined, which reads as the same false.
+        /// </summary>
+        public const string DidDiscardOutput = "didDiscard";
+
+        /// <summary>Whether `owned-card-present@1` found a card where it looked.</summary>
+        public const string PresentOutput = "present";
+
+        /// <summary>
+        /// One statement of what a hero may spend: an unplayed card in their own hand, which is the
+        /// state rulebook p.15's discard starts from and the state the in-hand mutation accepts. It is
+        /// the same criteria milestone 7.1a's discard states, restated against this capability's own
+        /// chooser rather than shared across an assembly boundary that does not exist yet.
+        /// </summary>
+        private static CardCharacteristicCriteria HandCriteria(HeroId owner) =>
+            new CardCharacteristicCriteria(
+                ownerId: owner,
+                locations: new[] { CardLocation.Hand },
+                hasBeenPlayed: false);
+
+        /// <summary>
         /// Milestone 8.20. The chosen piece's current space, published beside its identity.
         ///
         /// <para>It exists because the operations that reposition a piece take a coordinate - p.18's
@@ -134,16 +222,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             {
                 new ChooseTargetSetHandler(),
                 new ChooseTargetPairHandler(),
-                new ChargeLineHandler(),
                 new ThroughTargetLineHandler(),
-                new FormerTargetSpaceHandler(),
                 new PlayedAttackThisTurnHandler(),
-                new HeroDefeatedThisRoundHandler(),
                 new PresenceCountHandler(),
                 new PreConsequenceAdjacencyHandler(),
                 new AdjacentTerrainPresenceHandler(),
-                new RetrieveCardHandler(),
-                new GainResourceHandler(),
                 new TransferResourceHandler()
             });
 
@@ -153,16 +236,36 @@ namespace GuardsDigital.Core.Effects.Synthetic
         ///
         /// <para>Milestone 8.20 is the first milestone with anything to put here. Arien's Noble Blade
         /// names <c>choose-target@2</c>, his three Currents name <c>behind-target-line@1</c>, and Ebb
-        /// and Flow names <c>spaces-adjacent@1</c>. The remaining thirteen contracts belong to Brogan,
-        /// Sabina, Tigerclaw and Xargatha, and each joins this list at the milestone whose printed card
-        /// first names it - which is what keeps the registration list a statement about what this build
-        /// can do rather than about what it has written down.</para>
+        /// and Flow names <c>spaces-adjacent@1</c>. The remaining contracts belong to Brogan, Sabina,
+        /// Tigerclaw and Xargatha, and each joins this list at the milestone whose printed card first
+        /// names it - which is what keeps the registration list a statement about what this build can
+        /// do rather than about what it has written down.</para>
+        ///
+        /// <para>Milestone 8.21 adds Brogan's five and the two it had to mint here, beside a third it
+        /// minted in the printed-icon family: `synthetic-range-unit-target@1`, the unit-valued
+        /// printed-Range selection his modal Ranged Attacks name, which registers there because it is a
+        /// sixth declaration over the handler p.9's two icons already share. His three charges name
+        /// <c>choose-charge-line@1</c>; Onslaught names <c>attacked-target-space@1</c>; Bulwark names
+        /// <c>retrieve-card@1</c>; War Drummer and Master Skald name <c>gain-resource@1</c> and
+        /// <c>hero-defeated-this-round@1</c>; and his two modal Ranged Attacks name
+        /// <c>discard-owned-card@1</c> and <c>owned-card-present@1</c>. His Shield Bash and
+        /// Counterattack name no contract of their own: "who has played an attack card this turn" is
+        /// a narrowing on <c>choose-target@2</c>'s candidates, so
+        /// <c>target-played-attack-this-turn@1</c> keeps waiting for Sabina, whose Quickdraw asks the
+        /// same question of a target it already has.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers()
         {
             yield return new ChooseTargetHandler();
             yield return new BehindTargetLineHandler();
             yield return new SpacesAdjacentHandler();
+            yield return new ChargeLineHandler();
+            yield return new FormerTargetSpaceHandler();
+            yield return new HeroDefeatedThisRoundHandler();
+            yield return new RetrieveCardHandler();
+            yield return new GainResourceHandler();
+            yield return new DiscardOwnedCardHandler();
+            yield return new OwnedCardPresentHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>
@@ -291,7 +394,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new[]
                 {
                     new EffectCapabilityParameter(
-                        ExcludeTargetParameter, EffectValueKind.Boolean, isRequired: false)
+                        ExcludeTargetParameter, EffectValueKind.Boolean, isRequired: false),
+                    new EffectCapabilityParameter(
+                        PlayedAttackThisTurnParameter, EffectValueKind.Boolean, isRequired: false)
                 },
                 new[]
                 {
@@ -303,9 +408,41 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
 
+            /// <summary>
+            /// The declared targets, narrowed by the one clause this selection can carry about the
+            /// card a candidate has already played. Derived on every ask - the offer, the answer and a
+            /// restored pause - because a hero's turn slot is state and a set remembered from the
+            /// moment the question opened could name a card that is no longer there.
+            /// </summary>
+            private static IReadOnlyList<BoardObjectReference> Candidates(
+                EffectCapabilityContext context)
+            {
+                var declared = DeclaredTargets(context);
+                if (!context.Input(PlayedAttackThisTurnParameter).BooleanValue)
+                {
+                    return declared;
+                }
+
+                if (!context.RosterState.IsAvailable || !context.CardState.IsAvailable)
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                return declared
+                    .Where(target => target.Kind == BoardObjectKind.Hero &&
+                        PlayedAttackCardThisTurnQuery.HasPlayed(
+                            target.HeroId,
+                            context.RoundIndex,
+                            context.TurnIndex,
+                            context.RosterState.TurnSlots,
+                            context.CardState.Definitions,
+                            context.CardState.Instances))
+                    .ToArray();
+            }
+
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
-                var candidates = DeclaredTargets(context);
+                var candidates = Candidates(context);
                 return candidates.Count == 0
                     ? EffectExecutionResult.ImpossibleMandatory()
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
@@ -316,7 +453,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
                 var chosen = selected?.Count == 1 ? FromValue(selected[0]) : default;
-                if (!chosen.IsDefined || !DeclaredTargets(context).Contains(chosen))
+                if (!chosen.IsDefined || !Candidates(context).Contains(chosen))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -338,7 +475,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                DeclaredTargets(context).Count == 0
+                Candidates(context).Count == 0
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.NeedsChoice;
         }
@@ -1164,6 +1301,167 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     (card.State.Location == CardLocation.TurnArea && card.State.HasBeenPlayed &&
                      card.State.ResolutionStatus == CardResolutionStatus.Resolved);
             }
+        }
+
+        /// <summary>
+        /// `discard-owned-card@1`. The hero its input names spends one card of their own choosing out
+        /// of their hand, and publishes whether they spent it.
+        ///
+        /// <para>Everything about which cards are eligible, how the offer is built and how the answer
+        /// is committed is <see cref="ColorRestrictedDiscard"/>'s, reached through the same criteria
+        /// milestone 7.1a's discard uses. Two capabilities that read a hand differently would be two
+        /// answers to one question, and the price a card charges is not the place to have two.</para>
+        ///
+        /// <para>A hero holding nothing applies rather than declining, publishing <c>didDiscard</c>
+        /// false. That is the difference from <c>synthetic-discard-chosen-card@1</c>'s `if able`
+        /// reading and it is the whole reason this exists: the sentence after the semicolon has to be
+        /// told, and a decline publishes nothing to tell it with.</para>
+        /// </summary>
+        private sealed class DiscardOwnedCardHandler
+            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => DiscardOwnedCardV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[] { new EffectCapabilityParameter(HeroParameter, EffectValueKind.Hero) },
+                    new[]
+                    {
+                        new EffectOutputBinding(DiscardedOutput, EffectValueKind.CardInstance),
+                        new EffectOutputBinding(DidDiscardOutput, EffectValueKind.Boolean)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var chooser = Chooser(context);
+                var offer = ColorRestrictedDiscard.Offer(
+                    HandCriteria(chooser),
+                    EffectChooserRole.None,
+                    context.CardState.Definitions,
+                    context.CardState.Instances,
+                    chooser);
+
+                return offer != null
+                    ? EffectExecutionResult.NeedsChoice(offer)
+                    : EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(DidDiscardOutput, EffectValue.Boolean(false))
+                    });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.CardInstance)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Re-derived rather than trusted, exactly as its sibling re-derives: a card played or
+                // discarded between the offer and the answer is refused instead of spent twice.
+                var result = ColorRestrictedDiscard.Resolve(
+                    HandCriteria(Chooser(context)),
+                    selected[0].CardInstanceId,
+                    context.CardState.Definitions,
+                    context.CardState.Instances);
+
+                return result.Accepted
+                    ? EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(
+                            DiscardedOutput, EffectValue.Card(result.DiscardedCardId)),
+                        new EffectOutcomeFact(DidDiscardOutput, EffectValue.Boolean(true))
+                    })
+                    : EffectExecutionResult.ImpossibleMandatory();
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                AnticipateCandidates(context).Count == 0
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context)
+            {
+                var chooser = Chooser(context);
+                return chooser.IsDefined
+                    ? CardCharacteristicQuery
+                        .FindCandidates(
+                            HandCriteria(chooser),
+                            context.CardState.Definitions,
+                            context.CardState.Instances)
+                        .Select(EffectValue.Card)
+                        .ToArray()
+                    : Array.Empty<EffectValue>();
+            }
+
+            private static HeroId Chooser(EffectCapabilityContext context)
+            {
+                var named = context.Input(HeroParameter);
+                return named.Kind == EffectValueKind.Hero ? named.HeroId : default;
+            }
+        }
+
+        /// <summary>
+        /// `owned-card-present@1`. Whether the hero its input names owns at least one card in the
+        /// place its input names - Brogan's Throwing Spear, "If you have a card in the discard".
+        ///
+        /// <para>A pure predicate: it reads the card state and publishes a boolean, mutating nothing
+        /// and asking nobody. The location is a parameter rather than a second capability because the
+        /// question is the same one wherever it is asked, and the card is what says where.</para>
+        /// </summary>
+        private sealed class OwnedCardPresentHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => OwnedCardPresentV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter(HeroParameter, EffectValueKind.Hero),
+                        new EffectCapabilityParameter(LocationParameter, EffectValueKind.Integer)
+                    },
+                    new[] { new EffectOutputBinding(PresentOutput, EffectValueKind.Boolean) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            private static bool CanRead(EffectCapabilityContext context)
+            {
+                var location = (CardLocation)context.Input(LocationParameter).IntegerValue;
+                return context.CardState.IsAvailable &&
+                    context.Input(HeroParameter).HeroId.IsDefined &&
+                    location != CardLocation.None && Enum.IsDefined(typeof(CardLocation), location);
+            }
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                if (!CanRead(context))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var owner = context.Input(HeroParameter).HeroId;
+                var location = (CardLocation)context.Input(LocationParameter).IntegerValue;
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(PresentOutput, EffectValue.Boolean(
+                        context.CardState.Instances.Any(card =>
+                            card.OwnerId.Equals(owner) && card.State.Location == location)))
+                });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                CanRead(context)
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
         }
 
         private sealed class GainResourceHandler : IEffectCapabilityHandler

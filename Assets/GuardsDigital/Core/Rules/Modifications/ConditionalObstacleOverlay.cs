@@ -15,7 +15,22 @@ namespace GuardsDigital.Core.Rules.Modifications
         None = 0,
         OpposingSource = 1,
         AlliedWithSource = 2,
-        AnyTeam = 3
+        AnyTeam = 3,
+
+        /// <summary>
+        /// Milestone 8.21. The opposing side, plus every object that stands on no side at all -
+        /// Brogan's Brutal Jab, Mighty Punch and Savage Kick, each of which pushes "an enemy unit or a
+        /// token".
+        ///
+        /// <para>It is a fourth reading rather than <see cref="AnyTeam"/> with a kind filter because
+        /// the sentence qualifies one noun and not the other. p.19 makes a token not a unit and gives
+        /// it no team, so "an enemy unit or a token" admits the enemy's heroes and minions and every
+        /// token on the board, and admits none of the pusher's own units. <see cref="AnyTeam"/> would
+        /// hand these three cards the friendly units their words exclude, and
+        /// <see cref="OpposingSource"/> drops the token half of the sentence entirely, because a
+        /// teamless object stands in no relation to anybody.</para>
+        /// </summary>
+        OpposingSourceOrUnaligned = 4
     }
 
     /// <summary>

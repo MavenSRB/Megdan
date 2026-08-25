@@ -39,7 +39,9 @@
     manifest element each name maps to is declared in this script rather than searched for, because
     the source set's element names are not the project's: Wasp's element is `Wasp` and Arien's is
     `Arien2`, and a script that matched on the hero's own name would have found nothing for the
-    second hero this project added.
+    second hero this project added. Brogan's happens to be `Brogan`, which is exactly why the
+    declaration stays a table rather than becoming a rule - two of the three names agree with the
+    project's and the third does not.
 
 .PARAMETER Check
     Verify only. Reports whether the prepared resources exist and match the declared sprite size,
@@ -50,7 +52,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('wasp', 'arien')]
+    [ValidateSet('wasp', 'arien', 'brogan')]
     [string] $Hero = 'wasp',
     [switch] $Check,
     [switch] $Force
@@ -63,8 +65,9 @@ $ErrorActionPreference = 'Stop'
 # against the manifest below, so a corpus whose ids or names have moved stops here rather than
 # cropping whatever now sits at those coordinates.
 $declaredHeroes = @{
-    wasp  = @{ ElementId = 8597310; ElementName = 'Wasp';   DisplayName = 'Wasp' }
-    arien = @{ ElementId = 8596244; ElementName = 'Arien2'; DisplayName = 'Arien' }
+    wasp   = @{ ElementId = 8597310; ElementName = 'Wasp';   DisplayName = 'Wasp' }
+    arien  = @{ ElementId = 8596244; ElementName = 'Arien2'; DisplayName = 'Arien' }
+    brogan = @{ ElementId = 8596274; ElementName = 'Brogan'; DisplayName = 'Brogan' }
 }
 
 $declared = $declaredHeroes[$Hero]

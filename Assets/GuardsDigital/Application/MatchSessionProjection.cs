@@ -504,7 +504,9 @@ namespace GuardsDigital.Application
             IEnumerable<HeroProgressionProjection> heroProgression = null,
             GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
                 pendingSystemTransitionDescription = null,
-            IEnumerable<CardInstanceId> activeEffectSourceCardInstanceIds = null)
+            IEnumerable<CardInstanceId> activeEffectSourceCardInstanceIds = null,
+            GuardsDigital.Core.Rules.CardResolution.RemovalPreventionPrompt
+                pendingRemovalPrevention = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -536,6 +538,7 @@ namespace GuardsDigital.Application
             PendingDefenseChoice = pendingDefenseChoice;
             PendingSkillResolution = pendingSkillResolution;
             PendingEffectChoice = pendingEffectChoice;
+            PendingRemovalPrevention = pendingRemovalPrevention;
             AvailableTurnActions = Array.AsReadOnly((availableTurnActions ?? throw new ArgumentNullException(nameof(availableTurnActions))).ToArray());
             // These three are the growing sequences a refresh hands over: the accepted-command
             // history and the whole accumulated rule-event log grow for the match, and the current
@@ -672,6 +675,24 @@ namespace GuardsDigital.Application
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution { get; }
 
         public PendingEffectChoice PendingEffectChoice { get; }
+
+        /// <summary>
+        /// Milestone 8.21. The standing removal-prevention decision, or <c>null</c> - rulebook p.13's
+        /// removal stage stopped while the hero whose source is offering decides whether to pay for it.
+        ///
+        /// <para>Milestone 8.19c1 built that decision as rules only and recorded that no configured
+        /// card could open it; Brogan's Shield, Bolster and Fortify are the first that can. It has to
+        /// be here rather than reachable only through the session, because <c>HasPendingResolution</c>
+        /// refuses every other turn command while it stands: a client confined to this projection would
+        /// otherwise see a board that had stopped accepting input with nothing on it to explain
+        /// why.</para>
+        ///
+        /// <para>Presentation reads the projected payments and the decline off the prompt and submits
+        /// one of them; it never asks which cards could pay, and an option the prompt did not project
+        /// cannot be submitted at all.</para>
+        /// </summary>
+        public GuardsDigital.Core.Rules.CardResolution.RemovalPreventionPrompt
+            PendingRemovalPrevention { get; }
 
         /// <summary>
         /// Milestone 6.5c: what each space-valued candidate of that choice means on the board right

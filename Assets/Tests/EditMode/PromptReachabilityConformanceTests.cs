@@ -391,6 +391,56 @@ namespace GuardsDigital.Tests.EditMode
                 "Withdrawing destination controls must not withdraw who is deciding or why.");
         }
 
+        /// <summary>
+        /// Milestone 8.21. Every payment the removal-prevention authority offers produces exactly one
+        /// control, and the decline it always projects produces one more.
+        ///
+        /// <para>This is the case milestone 8.19c1 could not write. It built the decision as rules only
+        /// and recorded that no configured card could open it, so there was nothing to draw and nothing
+        /// to check; Brogan's Shield, Bolster and Fortify are the first content that can open it, and
+        /// <c>HasPendingResolution</c> refuses every other turn command while it stands. A payment the
+        /// authority offered and the screen could not draw would therefore be a match that has stopped
+        /// accepting input, which is exactly the shape milestone 8.11a wrote these cases for.</para>
+        ///
+        /// <para>It asserts reachability rather than appearance: one control per projected payment, in
+        /// the projected order, each forwarding that payment's own minted command - never one this
+        /// surface reconstructed from a source id or a card id.</para>
+        /// </summary>
+        [Test]
+        public void EveryProjectedRemovalPreventionPayment_ProducesExactlyOneControl()
+        {
+            var prompt = MatchHudPresentationTests.RemovalPreventionPause.CreatePrompt();
+            Assert.That(prompt, Is.Not.Null);
+            Assert.That(prompt.Payments, Is.Not.Empty,
+                "The pause under test has to be one somebody can pay, or this checks an empty set.");
+
+            var view = new RoundActionUnityView();
+            view.Render(new RoundActionViewModel(
+                1,
+                1,
+                1,
+                RoundResolutionPhase.ResolvingTurn,
+                RemovalPreventionPromptLabels.StatusLine(prompt),
+                Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>(),
+                removalPreventionPrompt: MatchHudPresentationTests.RemovalPreventionPause
+                    .CreateViewModel(prompt)));
+
+            var buttons = Descendants(view.Root).OfType<Button>().ToArray();
+            Assert.That(buttons, Has.Length.EqualTo(prompt.Payments.Count + 1),
+                "One control per affordable payment, plus the decline the rules always allow. A " +
+                "payment with no control is an answer the authority accepts and the screen cannot " +
+                "give, and the decision refuses every other command while it stands.");
+            Assert.That(
+                Descendants(view.Root).OfType<Label>().Select(label => label.text),
+                Has.Some.Contains(RemovalPreventionPromptLabels.SectionLabel),
+                "and they arrive under a heading that names the decision rather than the actions the " +
+                "player is not being asked for.");
+        }
+
         private static IEnumerable<VisualElement> Descendants(VisualElement root)
         {
             foreach (var child in root.Children())

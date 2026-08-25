@@ -102,6 +102,17 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>A printed distance range answered by its own numeric controls.</summary>
         PushDistanceChoice,
 
+        /// <summary>
+        /// Milestone 8.21. Rulebook p.10's modal form - "Choose one —" followed by bullets, of which
+        /// the chosen one applies and the rest are ignored.
+        ///
+        /// <para>It is its own shape rather than one of the two decisions above because it is neither.
+        /// A confirm-or-decline offers one thing and takes an answer of yes or no; this offers two
+        /// printed sentences and the one chosen goes on to ask its own questions - Brogan's Throwing
+        /// Axe takes a target beside him on one bullet and spends a card for range on the other.</para>
+        /// </summary>
+        ModalBulletChoice,
+
         /// <summary>An Active effect the hero raised, readable on the tray or the rail while it runs.</summary>
         ActiveEffectReading,
 
@@ -395,12 +406,38 @@ namespace GuardsDigital.Tests.PlayMode
 
                 ["synthetic-discard-chosen-card"] = new[] { PlayerInteractionShape.HandCardSelection },
 
+                // Milestone 8.21. Brogan's contracts, split by what each one asks a player for.
+                //
+                // The charge line asks two questions in one node and they are two different clicks:
+                // which space to end on, and which of the units beside it this Attack then takes. The
+                // unit-valued printed-Range selection is a third printed-icon sibling of the six above
+                // and asks what they ask. And a card the actor spends out of their own hand is the
+                // same hand-card question milestone 7.1a's discard asks, put to the actor instead of
+                // to somebody the card named.
+                ["choose-charge-line"] = new[]
+                {
+                    PlayerInteractionShape.BoardSpaceSelection,
+                    PlayerInteractionShape.BoardUnitSelection
+                },
+                ["synthetic-range-unit-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["discard-owned-card"] = new[] { PlayerInteractionShape.HandCardSelection },
+                ["retrieve-card"] = new[] { PlayerInteractionShape.HandCardSelection },
+
                 // Consequences, predicates and readings: real work, no player input of their own.
                 ["synthetic-defeat-hero"] = Array.Empty<PlayerInteractionShape>(),
                 ["synthetic-defeat-minion"] = Array.Empty<PlayerInteractionShape>(),
                 ["synthetic-is-flagged"] = Array.Empty<PlayerInteractionShape>(),
                 ["synthetic-actor-space"] = Array.Empty<PlayerInteractionShape>(),
-                ["spaces-adjacent"] = Array.Empty<PlayerInteractionShape>()
+                ["spaces-adjacent"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.21's readings and its one silent write. `attacked-target-space` captures
+                // where the target stood, `hero-defeated-this-round` and `owned-card-present` are
+                // predicates, and `gain-resource` moves coins without asking anybody anything.
+                ["attacked-target-space"] = Array.Empty<PlayerInteractionShape>(),
+                ["hero-defeated-this-round"] = Array.Empty<PlayerInteractionShape>(),
+                ["owned-card-present"] = Array.Empty<PlayerInteractionShape>(),
+                ["gain-resource"] = Array.Empty<PlayerInteractionShape>(),
+                ["set-attack-target"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
@@ -589,6 +626,16 @@ namespace GuardsDigital.Tests.PlayMode
                 shapes.Add(PlayerInteractionShape.RepeatDecision);
             }
 
+            // Milestone 8.21. Rulebook p.10's modal form: "choose a bullet point and apply its text,
+            // ignoring the rest". Brogan's Throwing Axe and Throwing Spear are the first printed faces
+            // to use it, and picking a bullet is not any of the shapes above - it is neither a
+            // confirm-or-decline nor a piece on the board, and the two bullets go on to ask different
+            // questions of the player who chose one.
+            if (node.Kind == EffectNodeKind.Choose)
+            {
+                shapes.Add(PlayerInteractionShape.ModalBulletChoice);
+            }
+
             if (node.Kind != EffectNodeKind.Capability)
             {
                 return;
@@ -609,6 +656,18 @@ namespace GuardsDigital.Tests.PlayMode
 
             foreach (var shape in CapabilityShapes[capabilityId])
             {
+                // Milestone 8.21, and the same correction milestone 8.20b made for the Push distance:
+                // a direct Move whose node names its destination asks nobody anything. Brogan's
+                // Onslaught walks into the space p.14's step 6 emptied and his charges walk to the
+                // space the charge line already chose, so the capability's ordinary board click is not
+                // a click those cards produce - and a row claiming one would name a journey for an
+                // input no player is ever offered.
+                if (shape == PlayerInteractionShape.BoardSpaceSelection &&
+                    NamesItsOwnDestination(node))
+                {
+                    continue;
+                }
+
                 shapes.Add(shape);
             }
 
@@ -634,6 +693,31 @@ namespace GuardsDigital.Tests.PlayMode
         /// milestone 8.15. Classifying the shape on the capability alone would have made that row
         /// claim a control no player is ever shown.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.21. Whether this node's declaration names the space it moves into, which is the
+        /// one direct-Move policy that opens no choice: the destination is a value an earlier node
+        /// published, so the capability applies it rather than offering a set to pick from.
+        ///
+        /// <para>It is read off the node for the reason
+        /// <see cref="NamesMoreThanOnePushDistance"/> is: the capability is the same one either way,
+        /// and what decides whether a player is asked anything is the declaration the card made. A
+        /// classification keyed on the capability alone would give Brogan's Onslaught a board click it
+        /// never produces.</para>
+        /// </summary>
+        private static bool NamesItsOwnDestination(EffectNodeDefinition node) =>
+            string.Equals(
+                node.Capability.CapabilityId.Value,
+                SyntheticDisplacementCapabilities.DirectMove.Value,
+                StringComparison.Ordinal) &&
+            node.Inputs.Any(input =>
+                string.Equals(
+                    input.ParameterName,
+                    SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                    StringComparison.Ordinal) &&
+                input.Literal.IsDefined &&
+                input.Literal.IntegerValue ==
+                    (int)GuardsDigital.Core.Rules.Displacement.DirectMoveDestinationPolicy.NamedSpace);
+
         private static bool NamesMoreThanOnePushDistance(EffectNodeDefinition node) =>
             DeclaredInteger(node, PushDistanceParameterName) >
             DeclaredInteger(node, SyntheticDisplacementCapabilities.LeastDistanceParameterName);
