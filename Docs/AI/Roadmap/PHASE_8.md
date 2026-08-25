@@ -443,6 +443,30 @@ Acceptance checks:
 
 Non-goals: No other new hero, six-player setup, networking, or production art.
 
+### [!] 8.23a Draw a held marker where its holder is read
+
+Blocked by: Milestone 8.23 must attach the first verified marker.
+
+Observable outcome: A hero holding a rulebook p.19 marker is drawn as holding it, and what that
+marker does to that hero is readable from the same surface, so a rule that lowers three of a
+hero's values is one the player it is applied to can see.
+
+Acceptance checks:
+
+- Every marker a configured hero holds is drawn from the authoritative projection alone - the supply
+  it came from, its printed strength, and the value channels it changes - with no hero-name branch,
+  no presentation-owned accounting, and no schema change.
+- The reading follows the attachment's own lifetime rather than a card's: it appears when the marker
+  is given, and p.13's holder Defeat and p.8's end-of-round return remove it.
+- Restore, replay, retained-prefix Undo, restart and a presentation rebuild reconstruct it from the
+  projection they already preserve, with no stale reading left behind.
+- The permanent hero player-path gate gains its marker-reading component shape, and milestone 8.23's
+  declared debt for it - recorded in Tigerclaw's matrix because this build drew no held marker
+  anywhere - is closed rather than restated.
+
+Non-goals: No new marker content, no change to what a marker does, no six-player setup, and no
+production art.
+
 ### [!] 8.24 Complete and verify additional pitch hero slot E - Xargatha
 
 Blocked by: Milestone 8.23 must complete the marker/general-action Repeat consumer.
