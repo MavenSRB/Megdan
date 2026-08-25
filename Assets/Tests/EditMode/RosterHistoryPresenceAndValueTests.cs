@@ -501,7 +501,8 @@ namespace GuardsDigital.Tests.EditMode
                 new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile),
                 effect,
                 defenseResolution: PrintedDefenseResolution.Block,
-                cardTextTiming: CardTextTiming.DefenseAction);
+                cardTextTiming: CardTextTiming.DefenseAction,
+                blockCondition: PrintedBlockCondition.AttackIsRanged);
         }
 
         private static CardDefinition Definition(string id, params ActionDefinition[] actions) =>

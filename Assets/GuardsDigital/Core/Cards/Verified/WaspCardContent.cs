@@ -562,7 +562,13 @@ namespace GuardsDigital.Core.Cards.Verified
                         WaspEffectContent.DefenseTextFor(profile.Id, ContentRevision),
                         profile.TextComposition,
                         PrintedDefenseResolution.Block,
-                        WaspEffectContent.DefenseTextTimingFor(profile.Id));
+                        WaspEffectContent.DefenseTextTimingFor(profile.Id),
+                        // Milestone 8.23. All three of her Blocks print "Block a ranged attack", which
+                        // milestone 8.11 read off the attack directly because nothing else existed to
+                        // contradict it. Stating it here changes no answer of hers - the query asked
+                        // the same question - and is what lets Tigerclaw's Parry and Riposte print the
+                        // other arm without either card's condition becoming the general rule.
+                        blockCondition: PrintedBlockCondition.AttackIsRanged);
 
                 default:
                     throw new ArgumentOutOfRangeException(

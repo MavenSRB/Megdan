@@ -41,7 +41,8 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<RosterValueContributionDefinition> rosterValueContributions = null,
             MinionDefenseContributionPolicy minionDefenseContributions =
                 MinionDefenseContributionPolicy.IncludeAll,
-            DefenseOfferOriginRestriction defenseOfferRestriction = default)
+            DefenseOfferOriginRestriction defenseOfferRestriction = default,
+            PrintedBlockCondition blockCondition = PrintedBlockCondition.None)
         {
             if (!id.IsDefined)
             {
@@ -80,6 +81,13 @@ namespace GuardsDigital.Core.Cards
                     "Action definition requires a valid card-text timing.", nameof(cardTextTiming));
             }
 
+            if (!Enum.IsDefined(typeof(PrintedBlockCondition), blockCondition))
+            {
+                throw new ArgumentException(
+                    "Action definition requires a valid printed Block condition.",
+                    nameof(blockCondition));
+            }
+
             ValidatePolicy(origin, defaultPolicy);
 
             Id = id;
@@ -98,6 +106,7 @@ namespace GuardsDigital.Core.Cards
                     Enumerable.Empty<RosterValueContributionDefinition>()).ToArray());
             MinionDefenseContributions = minionDefenseContributions;
             DefenseOfferRestriction = defenseOfferRestriction;
+            BlockCondition = blockCondition;
 
             // Milestone 8.5. p.13 states an Attack's reach as a rule about the card - adjacent for a
             // non-Ranged one "even if the card has a radius icon", the printed Range for a Ranged one -
@@ -130,6 +139,26 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException(
                     "Only a Defense action definition states how a Defense resolves.",
                     nameof(defenseResolution));
+            }
+
+            // Milestone 8.23. p.14 resolves a Block by "the Block condition" and never says what one
+            // is, so the card has to. The requirement runs both ways: a Block that names no condition
+            // would be resolved by whatever a reader assumed, and anything else naming one would be
+            // stating a rule its printed face does not carry.
+            if (DefenseResolution == PrintedDefenseResolution.Block &&
+                BlockCondition == PrintedBlockCondition.None)
+            {
+                throw new ArgumentException(
+                    "p.14's Block resolves by the condition its card prints, so a Block action " +
+                    "definition names that condition.",
+                    nameof(blockCondition));
+            }
+
+            if (DefenseResolution != PrintedDefenseResolution.Block &&
+                BlockCondition != PrintedBlockCondition.None)
+            {
+                throw new ArgumentException(
+                    "Only a printed Block states a Block condition.", nameof(blockCondition));
             }
 
             if (BaseValues.Select(value => value.Channel).Distinct().Count() != BaseValues.Count)
@@ -258,6 +287,12 @@ namespace GuardsDigital.Core.Cards
         /// The exact Defense-origin restriction this incoming Attack applies, or the typed absence.
         /// </summary>
         public DefenseOfferOriginRestriction DefenseOfferRestriction { get; }
+
+        /// <summary>
+        /// The condition p.14 resolves this Block by, and <see cref="PrintedBlockCondition.None"/> for
+        /// every action that is not one. Milestone 8.23.
+        /// </summary>
+        public PrintedBlockCondition BlockCondition { get; }
 
         private void ValidateActionShape(IEnumerable<PrintedValueDefinition> baseValues)
         {

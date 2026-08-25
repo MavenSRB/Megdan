@@ -41,16 +41,40 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return DefenseBlockResult.None;
             }
 
-            // p.14's printed condition on all three of Wasp's Blocks is that the attack is Ranged. It is
-            // read off the attacking action's own printed range rather than off anything the defender
-            // holds, which is why the attack has to be named to answer this at all.
+            // p.14's condition is read off the attacking action's own printed classification rather
+            // than off anything the defender holds, which is why the attack has to be named to answer
+            // this at all. Which classification fulfils it is the defending card's own printed word:
+            // milestone 8.11 could assume "ranged" because all three of Wasp's Blocks print it, and
+            // milestone 8.23 cannot, because Tigerclaw's Parry and Riposte print the other arm.
             var attack = definitions
                 .FirstOrDefault(definition => definition.Reference.Equals(attackDefinitionReference))
                 ?.ActionDefinitions
                 .FirstOrDefault(candidate => candidate.Id.Equals(attackActionDefinitionId));
-            return attack != null && attack.AttackRange == AttackRangeKind.Ranged
+            return attack != null && Fulfils(action.BlockCondition, attack.AttackRange)
                 ? DefenseBlockResult.Blocked
                 : DefenseBlockResult.ConditionUnfulfilled;
+        }
+
+        /// <summary>
+        /// Whether one printed Block condition is fulfilled by one attack's printed classification.
+        ///
+        /// <para>Both arms are stated rather than one tested and the other left to fall through, for
+        /// the reason <c>UltimateTriggeredEffectSourceQuery.Matches</c> states both of its: p.13
+        /// classifies every printed Attack as Ranged or non-Ranged, so an action carrying neither is
+        /// not an Attack at all and fulfils neither condition. A negation would have made such an
+        /// action fulfil the non-Ranged arm, which is a rule no card prints.</para>
+        /// </summary>
+        private static bool Fulfils(PrintedBlockCondition condition, AttackRangeKind attackRange)
+        {
+            switch (condition)
+            {
+                case PrintedBlockCondition.AttackIsRanged:
+                    return attackRange == AttackRangeKind.Ranged;
+                case PrintedBlockCondition.AttackIsNotRanged:
+                    return attackRange == AttackRangeKind.NonRanged;
+                default:
+                    return false;
+            }
         }
 
         /// <summary>
