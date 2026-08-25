@@ -2069,6 +2069,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution.SourceDefinitionReference,
                 pendingAttackResolution.ActionDefinitionId);
 
+        /// <summary>
+        /// Milestone 8.22, finding `F-ATK-01`: the pre-consequence target space is carried across
+        /// p.14's outcome comparison.
+        ///
+        /// <para>Milestone 8.19a records where the target was standing before steps 6 and 7 could take
+        /// the piece off the board, and every other rebuild of the resolution passes it along. This
+        /// one - the hero arm's rebuild, once the Defense has been answered - did not, and the
+        /// parameter defaults to "no space recorded". Everything downstream of it therefore believed
+        /// the attack had no target space: <c>attacked-target-space@1</c> reported
+        /// <c>ImpossibleMandatory</c> and <c>pre-consequence-adjacency@1</c> answered no, so on a
+        /// <em>hero</em> target Point Blank Shot pushed nobody and Shootout and Bullet Hell removed
+        /// nothing - all three silently, because a mandatory step that cannot run simply ends the
+        /// text.</para>
+        ///
+        /// <para>It was invisible until Sabina, because she is the first printed content to read
+        /// either capability, and invisible on a minion target either way, because the minion arm
+        /// never comes through here.</para>
+        /// </summary>
         private PendingAttackResolution CreateOutcomeComparisonResolution(
             ActionOffer? defenseOffer,
             ValueResult defenseValue,
@@ -2088,7 +2106,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 defenseOffer,
                 defenseValue,
                 pendingAttackResolution.ExcludedTarget,
-                blockResult);
+                blockResult,
+                pendingAttackResolution.TargetSpaceBeforeConsequences);
         }
 
         private PendingAttackTargetChoice CreateAttackTargetChoice(
