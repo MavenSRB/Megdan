@@ -270,7 +270,7 @@ namespace GuardsDigital.Tests.EditMode
             fixture.RoundTripThroughASnapshot();
             fixture.AnswerEveryStandingChoice();
 
-            Assert.That(fixture.Hand(fixture.Enemy), Has.Count.EqualTo(attackersHand - 1),
+            Assert.That(fixture.Hand(fixture.Enemy).Count, Is.EqualTo(attackersHand - 1),
                 "The card leaves the attacker's hand, not the defender's.");
             Assert.That(fixture.IsOnBoard(fixture.Hero), Is.True,
                 "and the Block succeeded, because Electrocute is not a ranged attack and Parry is " +
@@ -455,7 +455,8 @@ namespace GuardsDigital.Tests.EditMode
             fixture.SelectFirst();
             fixture.AnswerEveryStandingChoice();
 
-            Assert.That(fixture.MarkersHeldBy(fixture.Enemy), Has.Count.EqualTo(1));
+            Assert.That(fixture.MarkersHeldBy(fixture.Enemy).Count, Is.EqualTo(1),
+                "One marker, from the one supply his face names.");
             Assert.That(
                 fixture.ValueModifierFor(fixture.Enemy, PrintedValueChannel.Attack), Is.EqualTo(-1));
             Assert.That(
@@ -557,6 +558,66 @@ namespace GuardsDigital.Tests.EditMode
                 "and the immunity behind the semicolon runs, because the Place it depends on did.");
         }
 
+
+        // -----------------------------------------------------------------------------------------
+        // "After you perform a basic action you may repeat it once"
+        // -----------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// p.16's unlocked Ultimate stops the game after a basic action, and BOTH answers to it are
+        /// accepted.
+        ///
+        /// <para><b>Neither was.</b> Cloak and Daggers fires after the action it repeats has ended -
+        /// which is what makes p.10's Repeat reachable from outside that action at all - so the
+        /// actor's card is already resolved and the next actor already selected while its decision
+        /// stands. The answer advanced Initiative a second time, that advance was refused, and the
+        /// aggregate rolled the whole answer back as an atomicity violation: the decision was drawn on
+        /// the surface and no answer to it could be given. Milestone 8.21 met the identical shape on
+        /// Brogan's removal-prevention prompt and guarded that command; this is the other command that
+        /// finishes a trigger of this shape.</para>
+        ///
+        /// <para>What the repeat then does is not this case's subject. Blink Strike's own line names
+        /// the unit it crossed and the card forbids repeating onto the same one, so a board with one
+        /// crossable enemy leaves the repeated Attack nothing to take - which milestone 8.23's
+        /// `RepeatIsUnavailable` skips in silence rather than stopping on.</para>
+        /// </summary>
+        [Test]
+        public void CloakAndDaggers_OffersItsRepeatAfterABasicAction_AndBothAnswersAreAccepted()
+        {
+            foreach (var takeIt in new[] { true, false })
+            {
+                var fixture = Create(
+                    tier: 3,
+                    branch: TigerclawUpgradeBranch.FirstSibling,
+                    minionPlacements: At("red-melee-01", FirstAdjacent),
+                    heroPlacements: new Dictionary<string, HexCoordinate>());
+
+                fixture.StartPrimary(TigerclawCardContent.BlinkStrike);
+                fixture.SelectFirst();
+                fixture.Confirm();
+
+                Assert.That(fixture.Choice, Is.Not.Null,
+                    "The unlocked Ultimate stops the game after the basic action it watched.");
+                Assert.That(fixture.Choice.NodeId.Value, Is.EqualTo("cloak-and-daggers-repeat"));
+                Assert.That(fixture.Choice.ConfirmInvocation, Is.Not.Null);
+                Assert.That(fixture.Choice.DeclineInvocation, Is.Not.Null,
+                    "\"you may repeat it once\" - p.17's `you may` is an offer, so the decline is an " +
+                    "answer a player has to be able to give by name.");
+
+                if (takeIt)
+                {
+                    fixture.Confirm();
+                }
+                else
+                {
+                    fixture.Decline();
+                }
+
+                Assert.That(fixture.Choice, Is.Null,
+                    (takeIt ? "Taking" : "Declining") + " the repeat closes the decision rather than " +
+                    "being rolled back under it.");
+            }
+        }
         // -----------------------------------------------------------------------------------------
         // Absences recorded rather than tested around
         // -----------------------------------------------------------------------------------------

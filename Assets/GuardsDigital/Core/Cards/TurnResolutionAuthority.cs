@@ -1577,7 +1577,14 @@ namespace GuardsDigital.Core.Cards
                 var triggerEvents = MaterializeSteps(
                     cardActions.ConsumeTriggeredResolutionSteps(),
                     TurnResolutionEvent.FromTriggeredEffect);
-                return cardActions.IsPendingTriggeredEffect
+                // Milestone 8.23. The same guard milestone 8.21 put on the removal-prevention answer,
+                // on the other command that finishes a trigger of this shape. Tigerclaw's Cloak and
+                // Daggers fires AFTER a basic action has ended - p.10's Repeat reached from outside
+                // the action it repeats - so the actor's card is already resolved and the next actor
+                // already selected while its decision stands. Advancing a second time is refused, and
+                // the aggregate reports the refusal as an atomicity violation and rolls the whole
+                // answer back: the decision was drawn, and NEITHER answer to it could be given.
+                return cardActions.IsPendingTriggeredEffect || initiative.SelectedActor.IsDefined
                     ? TurnResolutionResult.Accept(triggerEvents)
                     : AdvanceInitiative(triggerEvents);
             }
