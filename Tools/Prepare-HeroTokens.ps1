@@ -52,7 +52,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('wasp', 'arien', 'brogan', 'sabina')]
+    [ValidateSet('wasp', 'arien', 'brogan', 'sabina', 'tigerclaw')]
     [string] $Hero = 'wasp',
     [switch] $Check,
     [switch] $Force
@@ -71,6 +71,9 @@ $declaredHeroes = @{
     # Milestone 8.22. Hers agrees with the project's name too, which is the second of four; the
     # declaration stays a table because Arien's does not.
     sabina = @{ ElementId = 8596284; ElementName = 'Sabina'; DisplayName = 'Sabina' }
+    # Milestone 8.23. His element sits next to Wasp's in the corpus rather than beside the other
+    # heroes' - 8597311 to her 8597310 - which is why the id is declared and never searched for.
+    tigerclaw = @{ ElementId = 8597311; ElementName = 'Tigerclaw'; DisplayName = 'Tigerclaw' }
 }
 
 $declared = $declaredHeroes[$Hero]
