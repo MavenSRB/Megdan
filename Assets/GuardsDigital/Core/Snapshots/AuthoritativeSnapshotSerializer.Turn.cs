@@ -91,7 +91,9 @@ namespace GuardsDigital.Core.Snapshots
                         : GuardsDigital.Core.Rules.Modifications.RuleObject.None,
                     // Milestone 8.9: and from the same items, so a disk an item widened is the same
                     // width after a restore as before it.
-                    heroItems),
+                    heroItems,
+                    // Milestone 8.23: and from the same markers, for the same reason.
+                    markers),
                 heroItems,
                 tieBreaker,
                 roundIndex,

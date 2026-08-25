@@ -621,6 +621,7 @@ namespace GuardsDigital.Tests.EditMode
                 new TieBreakerState(TeamSide.Red),
                 GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet.None,
                 RuleObject.ForHero(fixture.AttackerId),
+                null,
                 null);
             return fixture;
         }

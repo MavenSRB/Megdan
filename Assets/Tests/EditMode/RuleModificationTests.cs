@@ -510,7 +510,8 @@ namespace GuardsDigital.Tests.EditMode
             RuleObject actingObject) =>
             RuleModificationQuery.Build(
                 timing, board, participants, new TieBreakerState(TeamSide.Red),
-                UnlockedUltimateSet.None, actingObject, null);
+                UnlockedUltimateSet.None, actingObject, null,
+                null);
 
         /// <summary>
         /// Static Barrier's shape as definition content: `This Turn`, both arms, radius 1, conditioned
@@ -575,7 +576,8 @@ namespace GuardsDigital.Tests.EditMode
             var hero = RuleObject.ForHero(RedHero);
 
             var beforeActivation = RuleModificationQuery.Build(
-                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null);
+                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null,
+                null);
             Assert.That(
                 beforeActivation.HasPermission(hero, RulePermissionKind.MoveThroughObstacles), Is.False);
             Assert.That(beforeActivation.ValueContributions(hero, PrintedValueChannel.Defense).Count, Is.EqualTo(1));
@@ -584,7 +586,8 @@ namespace GuardsDigital.Tests.EditMode
                 new ActiveEffectCheckpointContext(TimingCheckpoint.TurnStarted, 1, 2, RedHero),
                 new TieBreakerState(TeamSide.Red));
             var afterActivation = RuleModificationQuery.Build(
-                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null);
+                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null,
+                null);
             Assert.That(
                 afterActivation.HasPermission(hero, RulePermissionKind.MoveThroughObstacles), Is.True);
 
@@ -594,7 +597,8 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 CreateToken("hazard-1", new HexCoordinate(1, 0)));
             var tokenModifications = RuleModificationQuery.Build(
-                timing, withToken, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null);
+                timing, withToken, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null,
+                null);
             var tokenContribution = tokenModifications
                 .ValueContributions(hero, PrintedValueChannel.Defense)
                 .Single(value => value.Kind == ValueContributionKind.ContinuousSourceModifier);
@@ -606,7 +610,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 RuleModificationQuery.Build(
                         timing, board, participants, TieBreakerState.Unrevealed,
-                        UnlockedUltimateSet.None, RuleObject.None, null)
+                        UnlockedUltimateSet.None, RuleObject.None, null,
+                        null)
                     .ValueContributions(hero, PrintedValueChannel.Defense)
                     .Any(value => value.Kind == ValueContributionKind.ContinuousSourceModifier),
                 Is.False);
@@ -639,7 +644,8 @@ namespace GuardsDigital.Tests.EditMode
                 1);
 
             var modifications = RuleModificationQuery.Build(
-                timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null);
+                timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null,
+                null);
 
             Assert.That(
                 modifications.For(RuleObject.ForHero(RedHero)).Select(value => value.SourceId),
@@ -678,7 +684,8 @@ namespace GuardsDigital.Tests.EditMode
                 1,
                 1);
             var modifications = RuleModificationQuery.Build(
-                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null);
+                timing, board, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null,
+                null);
             var authority = new CardActionResolutionAuthority(MatchContentCatalogs.ForThisBuild(), board);
             var attackOffer = ActionOfferQuery.GetAvailableOffers(
                     configuration.CardDefinitions,
@@ -879,12 +886,14 @@ namespace GuardsDigital.Tests.EditMode
                 payload, configuration.CardDefinitions, new[] { board.MapDefinition });
             var original = RuleModificationQuery.Build(
                 timing, board, configuration.Participants, configuration.TieBreakerState,
-                UnlockedUltimateSet.None, RuleObject.None, null);
+                UnlockedUltimateSet.None, RuleObject.None, null,
+                null);
             var reconstructed = RuleModificationQuery.Build(
                 restored.Round.Timing,
                 restored.Board,
                 restored.Participants,
-                configuration.TieBreakerState, UnlockedUltimateSet.None, RuleObject.None, null);
+                configuration.TieBreakerState, UnlockedUltimateSet.None, RuleObject.None, null,
+                null);
 
             Assert.That(Facts(reconstructed), Is.EqualTo(Facts(original)));
             Assert.That(

@@ -526,7 +526,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates,
             RuleObject actingObject) =>
             RuleModificationQuery.Build(
-                timing, board, participants, tieBreaker, ultimates, actingObject, skillBackend.HeroItems);
+                timing, board, participants, tieBreaker, ultimates, actingObject, skillBackend.HeroItems,
+                // Milestone 8.23. The marker register goes the same way milestone 8.9's items do and
+                // for the same reason: this authority already holds the one register a live match
+                // gives markers into, so taking it from a caller would be the second copy
+                // CreateComponents exists to prevent.
+                components.Markers);
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||

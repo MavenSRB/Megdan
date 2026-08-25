@@ -226,7 +226,10 @@ namespace GuardsDigital.Core.Snapshots
                         // Milestone 8.9: the same items the cross-check below reads, because an
                         // Active effect's declared Radius icon is raised by them exactly as a
                         // performed card's is.
-                        verifyingHeroItems),
+                        verifyingHeroItems,
+                        // Milestone 8.23: and from the same markers, so a value a held Poison
+                        // marker lowered is the same value after a restore as before it.
+                        markers),
                     verifyingHeroItems,
                     rosterState: verifyingRosterState);
             }

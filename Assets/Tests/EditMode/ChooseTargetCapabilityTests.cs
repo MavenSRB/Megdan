@@ -249,7 +249,8 @@ namespace GuardsDigital.Tests.EditMode
 
             var set = RuleModificationQuery.Build(
                 timing, null, PlaceholderOneVsOneParticipants.Create(),
-                new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null);
+                new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null,
+                null);
             Assert.That(
                 set.IsImmuneTo(RuleObject.ForHero(heroId), RuleActivity.Skill, RuleObject.ForHero(Actor)),
                 Is.True,

@@ -544,7 +544,8 @@ namespace GuardsDigital.Tests.EditMode
                 restored.Board,
                 restored.Participants,
                 restored.Round.TieBreakerState,
-                unlocked, RuleObject.None, null);
+                unlocked, RuleObject.None, null,
+                null);
             foreach (var hero in restored.Participants.Heroes)
             {
                 Assert.That(
@@ -616,7 +617,8 @@ namespace GuardsDigital.Tests.EditMode
                 restored.Board,
                 restored.Participants,
                 restored.Round.TieBreakerState,
-                UltimateUnlockQuery.Derive(session.Projection.Definitions, restored.Cards), RuleObject.None, null);
+                UltimateUnlockQuery.Derive(session.Projection.Definitions, restored.Cards), RuleObject.None, null,
+                null);
         }
 
         private static void AssertRestoreRefuses(
@@ -838,7 +840,8 @@ namespace GuardsDigital.Tests.EditMode
 
             public RuleModificationSet Modifications(AdjacentMoveAuthority board) =>
                 RuleModificationQuery.Build(
-                    null, board, configuration.Participants, Tie, Unlocked(), RuleObject.None, null);
+                    null, board, configuration.Participants, Tie, Unlocked(), RuleObject.None, null,
+                    null);
 
             public RuleModificationSet Modifications(ActiveEffectLifecycle timing) =>
                 RuleModificationQuery.Build(
@@ -846,7 +849,8 @@ namespace GuardsDigital.Tests.EditMode
                     CreateBoard(RedHeroId, BlueHeroId),
                     configuration.Participants,
                     Tie,
-                    Unlocked(), RuleObject.None, null);
+                    Unlocked(), RuleObject.None, null,
+                    null);
         }
     }
 }

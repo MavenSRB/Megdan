@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Components
@@ -43,6 +47,21 @@ namespace GuardsDigital.Core.Components
             HolderHeroId = holderHeroId;
             SourceCardInstanceId = sourceCardInstanceId;
             SourceActionDefinitionId = sourceActionDefinitionId;
+
+            // Milestone 8.23, the exact shape PlacedToken derives its own from - one source per
+            // declared property, in declaration order, so the two collections address the same
+            // property at the same index. The controller is the HOLDER and not the owner: p.18 gives
+            // markers to other heroes, and Tigerclaw's two Green cards say whose values change - "The
+            // hero with a poison marker has -1 Initiative, -1 Attack and -1 Defense".
+            PropertySources = new ReadOnlyCollection<ContinuousRuleSource>(definition.Properties
+                .Select(property => new ContinuousRuleSource(
+                    $"marker:{id.Value}:property:{property.PropertyId}",
+                    ContinuousRuleSourceKind.MarkerProperty,
+                    holderHeroId,
+                    property.RuleKind,
+                    property.ApplicabilityKind,
+                    sourceCardInstanceId))
+                .ToArray());
         }
 
         public MarkerInstanceId Id { get; }
@@ -69,6 +88,15 @@ namespace GuardsDigital.Core.Components
         /// trusted definition rather than recorded per attachment.
         /// </summary>
         public MarkerReturnCondition ReturnCondition => Definition.ReturnCondition;
+
+        /// <summary>
+        /// Continuous rules whose lifetime is this attachment's own: they apply while this hero holds
+        /// this marker and stop the moment p.8's end of round or p.13's Defeat returns it, because
+        /// returning it removes the attachment these are derived from. Milestone 8.23, and the twin of
+        /// <see cref="PlacedToken.PropertySources"/> - derived from trusted definition content, and
+        /// deliberately outside the Active-effect lifecycle.
+        /// </summary>
+        public IReadOnlyList<ContinuousRuleSource> PropertySources { get; }
 
         public override string ToString() =>
             $"{Id} ({Definition.Reference}) held by {HolderHeroId}";

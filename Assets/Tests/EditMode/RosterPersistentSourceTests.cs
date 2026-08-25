@@ -561,6 +561,7 @@ namespace GuardsDigital.Tests.EditMode
                     tieBreaker ?? new TieBreakerState(TeamSide.Red),
                     UnlockedUltimateSet.None,
                     RuleObject.None,
+                    null,
                     null);
 
             public RuleModificationSet BuildWithUltimates(UnlockedUltimateSet ultimates) =>
@@ -571,6 +572,7 @@ namespace GuardsDigital.Tests.EditMode
                     new TieBreakerState(TeamSide.Red),
                     ultimates,
                     RuleObject.None,
+                    null,
                     null);
 
             /// <summary>Moves the Blue hero out of every disk and adjacency this fixture measures.</summary>

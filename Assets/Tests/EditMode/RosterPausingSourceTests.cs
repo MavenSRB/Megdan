@@ -878,6 +878,7 @@ namespace GuardsDigital.Tests.EditMode
                     new TieBreakerState(TeamSide.Red),
                     UnlockedUltimateSet.None,
                     RuleObject.None,
+                    null,
                     null);
 
             /// <summary>Moves the shielded ally out of the disk this fixture measures.</summary>

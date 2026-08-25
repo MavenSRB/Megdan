@@ -54,7 +54,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             TieBreakerState tieBreaker,
             GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates,
             RuleObject actingObject,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            MarkerAttachmentRegister markers)
         {
             if (board != null && participants == null)
             {
@@ -92,6 +93,11 @@ namespace GuardsDigital.Core.Rules.Modifications
             {
                 applied.AddRange(FromPlacedTokens(board, participants));
                 applied.AddRange(FromUnlockedUltimates(ultimates, board, participants));
+            }
+
+            if (markers != null && participants != null)
+            {
+                applied.AddRange(FromHeldMarkers(markers, participants));
             }
 
             var overlays = timing == null || board == null
@@ -564,6 +570,66 @@ namespace GuardsDigital.Core.Rules.Modifications
                         token.PropertySources[propertyIndex],
                         controllerSide,
                         tokenIndex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.23. Marker-owned properties, affecting the hero holding each marker.
+        ///
+        /// <para>The twin of <see cref="FromPlacedTokens"/> in every respect but one: the affected
+        /// object is the marker's <em>holder</em>. p.18 gives markers to other heroes, and Tigerclaw's
+        /// Poisoned Dagger and Poisoned Dart name whose values move - "The hero with a poison marker
+        /// has -1 Initiative, -1 Attack and -1 Defense". Nothing here consults the owner, so a marker
+        /// Tigerclaw gives to a friendly hero weakens that hero exactly as it would weaken an enemy,
+        /// which is what the face says and why it says "a hero" rather than "an enemy hero".</para>
+        ///
+        /// <para><b>No board condition, and that is deliberate.</b> p.16's Ultimate is suppressed
+        /// while its hero is off the board, and a token's property ends when the token leaves it;
+        /// neither applies to a marker, whose whole lifetime is the attachment. p.13 returns a
+        /// defeated hero's markers and p.8 returns all of them at end of round, so a holder who has
+        /// left the board is holding nothing by the time anything asks. Adding an occupancy check here
+        /// would be a second, weaker statement of a rule the register already enforces exactly.</para>
+        ///
+        /// <para>Ordered by the marker instance's stable identity, so p.17's simultaneous ordering does
+        /// not depend on the order attachments happen to sit in a list.</para>
+        /// </summary>
+        private static IEnumerable<AppliedRuleModification> FromHeldMarkers(
+            MarkerAttachmentRegister markers,
+            MatchParticipants participants)
+        {
+            var orderedMarkers = markers.Attachments
+                .OrderBy(marker => marker.Id.Value, StringComparer.Ordinal)
+                .ToArray();
+            for (var markerIndex = 0; markerIndex < orderedMarkers.Length; markerIndex++)
+            {
+                var marker = orderedMarkers[markerIndex];
+                if (!marker.HolderHeroId.IsDefined || marker.Definition.Properties.Count == 0)
+                {
+                    continue;
+                }
+
+                var holderSide = participants.GetTeamForHero(marker.HolderHeroId).Side;
+                var affectedObject = RuleObject.ForHero(marker.HolderHeroId);
+
+                // MarkerAttachment builds one property source per declared property, in declaration
+                // order, so the two collections address the same property at the same index.
+                for (var propertyIndex = 0;
+                    propertyIndex < marker.Definition.Properties.Count;
+                    propertyIndex++)
+                {
+                    var property = marker.Definition.Properties[propertyIndex];
+                    if (property.Modification == null)
+                    {
+                        continue;
+                    }
+
+                    yield return AppliedRuleModification.FromContinuousSource(
+                        property.Modification,
+                        affectedObject,
+                        marker.PropertySources[propertyIndex],
+                        holderSide,
+                        markerIndex);
                 }
             }
         }

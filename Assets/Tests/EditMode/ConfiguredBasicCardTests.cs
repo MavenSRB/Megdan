@@ -624,7 +624,8 @@ namespace GuardsDigital.Tests.EditMode
                 restored.Round.TieBreakerState,
                 UnlockedUltimateSet.None,
                 actingObject,
-                items);
+                items,
+                null);
 
         private static RestoredAuthoritativeMatch Restore(MatchSession session) =>
             AuthoritativeSnapshotSerializer.Deserialize(

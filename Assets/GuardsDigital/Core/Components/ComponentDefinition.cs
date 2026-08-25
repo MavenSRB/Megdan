@@ -52,6 +52,55 @@ namespace GuardsDigital.Core.Components
     }
 
     /// <summary>
+    /// One immutable rule supplied by a marker for exactly as long as a hero holds it. Milestone 8.23.
+    ///
+    /// <para><b>The twin of <see cref="TokenPropertyDefinition"/>, and the one difference is the whole
+    /// reason it is a separate type.</b> A token property affects the token's <em>controller</em>: p.19
+    /// puts the token on the board and the hero who placed it keeps it, so "you" in its text is that
+    /// hero. A marker property affects its <em>holder</em>: p.18 describes markers as components
+    /// "usually given to other heroes", and Tigerclaw's Poisoned Dagger says so in as many words - "The
+    /// hero with a poison marker has -1 Initiative, -1 Attack and -1 Defense". The affected object is
+    /// the hero the marker was given to, who is normally the opponent of the hero who owns it.</para>
+    ///
+    /// <para>Sharing the token type and reinterpreting its affected object per call site would have made
+    /// one declaration mean two things depending on where it was read, which is exactly the ambiguity
+    /// <c>PrintedBlockCondition</c> was minted to remove elsewhere in this milestone.</para>
+    /// </summary>
+    public sealed class MarkerPropertyDefinition
+    {
+        public MarkerPropertyDefinition(
+            string propertyId,
+            string ruleKind,
+            string applicabilityKind,
+            RuleModification modification = null)
+        {
+            if (string.IsNullOrWhiteSpace(propertyId) || string.IsNullOrWhiteSpace(ruleKind) ||
+                string.IsNullOrWhiteSpace(applicabilityKind))
+            {
+                throw new ArgumentException(
+                    "A marker property requires stable identity, rule, and applicability.");
+            }
+
+            PropertyId = propertyId;
+            RuleKind = ruleKind;
+            ApplicabilityKind = applicabilityKind;
+            Modification = modification;
+        }
+
+        public string PropertyId { get; }
+
+        public string RuleKind { get; }
+
+        public string ApplicabilityKind { get; }
+
+        /// <summary>
+        /// The typed rule this property supplies to the marker's holder, or <c>null</c> for a property
+        /// that only declares its source and lifetime.
+        /// </summary>
+        public RuleModification Modification { get; }
+    }
+
+    /// <summary>
     /// When a marker leaves its holder and goes back to the supply.
     ///
     /// <see cref="GeneralCleanup"/> is the rulebook's baseline and currently the only member: markers
@@ -193,7 +242,8 @@ namespace GuardsDigital.Core.Components
             int revision,
             string displayName,
             int supplyCount,
-            MarkerReturnCondition returnCondition)
+            MarkerReturnCondition returnCondition,
+            IEnumerable<MarkerPropertyDefinition> properties = null)
         {
             Reference = new MarkerDefinitionReference(definitionId, revision);
 
@@ -217,9 +267,21 @@ namespace GuardsDigital.Core.Components
                     nameof(returnCondition));
             }
 
+            var materializedProperties =
+                (properties ?? Enumerable.Empty<MarkerPropertyDefinition>()).ToArray();
+            if (materializedProperties.Any(property => property == null) ||
+                materializedProperties.Select(property => property.PropertyId)
+                    .Distinct(StringComparer.Ordinal).Count() != materializedProperties.Length)
+            {
+                throw new ArgumentException(
+                    "A marker definition's properties are non-null and uniquely identified.",
+                    nameof(properties));
+            }
+
             DisplayName = displayName;
             SupplyCount = supplyCount;
             ReturnCondition = returnCondition;
+            Properties = new ReadOnlyCollection<MarkerPropertyDefinition>(materializedProperties);
         }
 
         public MarkerDefinitionReference Reference { get; }
@@ -234,6 +296,12 @@ namespace GuardsDigital.Core.Components
         public int SupplyCount { get; }
 
         public MarkerReturnCondition ReturnCondition { get; }
+
+        /// <summary>
+        /// The rules this marker supplies to whichever hero holds it, for as long as they hold it.
+        /// Empty for a marker that carries no rule of its own. Milestone 8.23.
+        /// </summary>
+        public IReadOnlyList<MarkerPropertyDefinition> Properties { get; }
 
         public override string ToString() => $"{Reference} x{SupplyCount}";
     }

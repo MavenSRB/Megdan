@@ -364,6 +364,7 @@ namespace GuardsDigital.Tests.EditMode
                     new TieBreakerState(TeamSide.Red),
                     UnlockedUltimateSet.None,
                     RuleObject.None,
+                    null,
                     null);
 
             /// <summary>Moves one of a side's minions to an empty space exactly this far from the anchor.</summary>
