@@ -524,6 +524,7 @@ namespace GuardsDigital.Presentation.Match
             TeamSide teamSide,
             string heroDisplayName,
             int level,
+            int coins,
             IEnumerable<HeroItemBonusViewModel> itemBonuses,
             IEnumerable<HeroTurnSlotViewModel> turnSlots,
             IEnumerable<TrayCardViewModel> discardCards,
@@ -536,10 +537,17 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentException("An overview names its hero.", nameof(heroId));
             }
 
+            if (coins < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(coins), coins, "A projected coin balance is never negative.");
+            }
+
             HeroId = heroId;
             TeamSide = teamSide;
             HeroDisplayName = heroDisplayName ?? throw new ArgumentNullException(nameof(heroDisplayName));
             Level = level;
+            Coins = coins;
             ItemBonuses = Array.AsReadOnly((itemBonuses ??
                 Enumerable.Empty<HeroItemBonusViewModel>()).ToArray());
             TurnSlots = Array.AsReadOnly((turnSlots ??
@@ -551,6 +559,9 @@ namespace GuardsDigital.Presentation.Match
             UltimateCard = ultimateCard;
             TeamLabel = teamSide == TeamSide.Red ? "RED HERO" : "BLUE HERO";
             LevelLabel = "LVL " + level.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            CoinsLabel = "COINS";
+            CoinAmountLabel = coins.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            CoinAssistiveLabel = coins == 1 ? "1 coin" : CoinAmountLabel + " coins";
             DiscardLabel = "DISCARD";
             UltimateLabel = "ULTIMATE";
 
@@ -579,6 +590,36 @@ namespace GuardsDigital.Presentation.Match
         public int Level { get; }
 
         public string LevelLabel { get; }
+
+        /// <summary>
+        /// What this hero has to spend right now, from the one ledger rulebook p.13's Defeat reward,
+        /// p.8's Pity Coin, a card effect's grant and p.15's Level Up all move.
+        ///
+        /// <para>Milestone 8.21a. It is <c>HeroProgressionProjection.Coins</c> read straight through -
+        /// never a running total this presenter keeps, never a sum of coin events it watched - which is
+        /// the whole reason the count survives a snapshot restore, a deterministic replay and a
+        /// retained-prefix Undo without a presentation-owned lifetime and without a new serialized
+        /// field: every one of those paths rebuilds the ledger it already preserved, and the same
+        /// number falls out.</para>
+        ///
+        /// <para>It is public match information and is drawn unconditionally, whether or not p.15's
+        /// Upgrade a Card or any other coin-related decision currently stands. A balance a player can
+        /// see only while they are being asked to spend it is visible at the one moment it is too late
+        /// to plan with.</para>
+        /// </summary>
+        public int Coins { get; }
+
+        /// <summary>`COINS` - the fixed word beside the amount, on the `LVL n` idiom.</summary>
+        public string CoinsLabel { get; }
+
+        /// <summary>The balance itself, which is the only part of the readout that changes.</summary>
+        public string CoinAmountLabel { get; }
+
+        /// <summary>
+        /// `3 coins`, or `1 coin` - the same fact in words, for the hover and assistive reading.
+        /// </summary>
+        public string CoinAssistiveLabel { get; }
+
         public IReadOnlyList<HeroItemBonusViewModel> ItemBonuses { get; }
         public IReadOnlyList<HeroTurnSlotViewModel> TurnSlots { get; }
         public string DiscardLabel { get; }
@@ -695,6 +736,7 @@ namespace GuardsDigital.Presentation.Match
                 teamSide,
                 displayName,
                 progression?.Level ?? 0,
+                progression?.Coins ?? 0,
                 (progression?.ItemBonuses ?? Array.Empty<KeyValuePair<PrintedValueChannel, int>>())
                     .OrderBy(entry => MatchHudTheme.ChannelOrder.ToList().IndexOf(entry.Key))
                     .Select(entry => new HeroItemBonusViewModel(entry.Key, entry.Value)),

@@ -1356,6 +1356,262 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(blue.ItemBonuses, Is.Empty, "The hero that did not level gained no item.");
         }
 
+        // -------------------------------------------------------------------------------------------
+        // The rail's coin balance (milestone 8.21a)
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void EveryRail_ShowsItsOwnHerosProjectedCoinBalanceAsACompactLabelledCount()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+
+            Assert.That(view.Model.Heroes, Is.Not.Empty);
+            AssertEveryRailReadsTheProjectedBalance(session, view, "the opening position");
+            Assert.That(view.Model.Heroes.All(hero => hero.Coins == 0), Is.True,
+                "Nobody has defeated anything, so every hero starts the match with an empty purse - " +
+                "and the rail says so with a nought rather than by drawing nothing.");
+
+            foreach (var readout in Descendants(view.Root)
+                .Where(element => element.name == "gd-hero-coins"))
+            {
+                var parts = Descendants(readout).OfType<Label>().Select(label => label.text).ToArray();
+                Assert.That(parts, Is.EqualTo(new[] { "COINS", "0" }),
+                    "The readout is the word and the amount, in that order, and nothing else.");
+                Assert.That(readout.tooltip, Is.EqualTo("0 coins"),
+                    "The same fact in words is one pointer rest away, as every other compact rail " +
+                    "reading is.");
+            }
+        }
+
+        /// <summary>
+        /// The reading is the ledger's, at every position: a Defeat reward, p.15's purchase and p.8's
+        /// Pity Coin all reach the rail because the rail asks the projection rather than counting coin
+        /// events it watched.
+        /// </summary>
+        [Test]
+        public void TheCoinCount_FollowsEveryAuthoritativeGrantAndSpendWithoutAccountingForItHere()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithACoinEarningRound(out var redHeroId);
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            presenter.Refresh();
+
+            var earned = view.Model.Heroes.Single(hero => hero.HeroId.Equals(redHeroId)).Coins;
+            Assert.That(earned, Is.GreaterThan(0),
+                "p.13's Defeat reward is the source this fixture earns from, and a zero here would " +
+                "make every later comparison vacuous.");
+            AssertEveryRailReadsTheProjectedBalance(session, view, "the round that earned the coins");
+
+            // p.15 charges for the level it forces, and p.8 pays the Pity Coin to the hero that
+            // bought none - a spend and a grant in the same end of round, on two different rails.
+            ConfiguredMatchFixtures.AdvanceToStage(session, EndOfRoundStage.LevelUpAndUpgrade);
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AdvanceEndOfRound());
+            var pending = session.Projection.PendingSystemTransitionStep;
+            Assert.That(pending, Is.Not.Null, "p.15 stops the round on the upgrade the level forces.");
+            presenter.Refresh();
+            AssertEveryRailReadsTheProjectedBalance(session, view, "the standing Upgrade a Card pause");
+            Assert.That(
+                Descendants(view.Root).Count(element => element.name == "gd-hero-coins"),
+                Is.EqualTo(view.Model.Heroes.Count),
+                "The balance is public match information and is drawn whether or not the decision " +
+                "that would spend it is standing. A number a player can see only while they are " +
+                "being asked to spend it arrives at the one moment it is too late to plan with.");
+
+            ConfiguredMatchFixtures.Accept(
+                session, DirectorCommand.AnswerSystemTransitionStep(pending.Invocations[0]));
+            ConfiguredMatchFixtures.FinishEndOfRound(session);
+            presenter.Refresh();
+
+            var red = view.Model.Heroes.Single(hero => hero.HeroId.Equals(redHeroId));
+            var blue = view.Model.Heroes.Single(hero => !hero.HeroId.Equals(redHeroId));
+            Assert.That(red.Coins, Is.LessThan(earned), "The level was bought with the coins earned.");
+            Assert.That(blue.Coins, Is.GreaterThan(0),
+                "and p.8 paid its Pity Coin to the hero that levelled nothing.");
+            AssertEveryRailReadsTheProjectedBalance(session, view, "the finished end of round");
+        }
+
+        /// <summary>
+        /// The count is rebuilt by each reconstruction path rather than remembered, which is what
+        /// reading the projected balance straight through buys: no presentation-owned lifetime, no new
+        /// serialized answer, and nothing for a restore to disagree with.
+        /// </summary>
+        [Test]
+        public void TheCoinCount_IsRebuiltByRestoreReplayAndUndoRatherThanRemembered()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithACoinEarningRound(out var redHeroId);
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            presenter.Refresh();
+            var earned = Describe(view);
+            var snapshot = session.CaptureSnapshot();
+            Assert.That(
+                view.Model.Heroes.Single(hero => hero.HeroId.Equals(redHeroId)).Coins,
+                Is.GreaterThan(0),
+                "The captured position really is one holding p.13's reward, so the descriptions " +
+                "compared below are about a balance rather than about two noughts.");
+
+            // The same commands reach the same reading, which is the deterministic half.
+            var replayed = ConfiguredMatchFixtures.CreateSessionWithACoinEarningRound(out _);
+            var replayedView = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(replayed, replayedView).Refresh();
+            Assert.That(Describe(replayedView), Is.EqualTo(earned));
+
+            // Spend it, on the live history - a snapshot restore clears the history Undo walks back
+            // through, so the Undo half has to be proven before anything is restored.
+            SpendTheEarnedLevel(session);
+            presenter.Refresh();
+            var spent = Describe(view);
+            Assert.That(spent, Is.Not.EqualTo(earned), "The purchase moved the reading.");
+
+            while (session.Projection.IsHistoryAvailable && Describe(view) != earned)
+            {
+                var undone = session.Undo();
+                Assert.That(undone.Accepted, Is.True, undone.Detail);
+                presenter.Refresh();
+            }
+
+            Assert.That(Describe(view), Is.EqualTo(earned),
+                "Undo redraws the balance from the truncated history rather than from anything the " +
+                "rail kept.");
+
+            // and the same position again from bytes, which is the other reconstruction path.
+            SpendTheEarnedLevel(session);
+            presenter.Refresh();
+            Assert.That(Describe(view), Is.EqualTo(spent));
+            Assert.That(session.RestoreSnapshot(snapshot).Accepted, Is.True);
+            presenter.Refresh();
+            Assert.That(Describe(view), Is.EqualTo(earned),
+                "and a restored position redraws it from current authority.");
+        }
+
+        /// <summary>
+        /// The readout stands on the one row in the rail whose content cannot grow, so the space it
+        /// takes is provably unused: the caption is a literal at a fixed size, both halves of the count
+        /// are drawn at that size, and the line it shares is therefore exactly as tall as it was.
+        /// </summary>
+        [Test]
+        public void TheCoinReadout_SharesTheCaptionsOwnLineAndAddsNoRowToTheRail()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+
+            var rails = Descendants(view.Root)
+                .Where(element => element.name == "gd-hero-rail")
+                .ToArray();
+            Assert.That(rails, Has.Length.EqualTo(view.Model.Heroes.Count));
+
+            foreach (var rail in rails)
+            {
+                Assert.That(rail.childCount, Is.EqualTo(5),
+                    "The rail's rows are the header, the item strip, the captioned turn row, the " +
+                    "four slots and the discard pile - the same five it drew before the count " +
+                    "joined one of them. A sixth would be the rail growing, which this milestone " +
+                    "may not do.");
+
+                var row = rail.Children().Single(child => child.name == "gd-turn-slots-caption-row");
+                Assert.That(row.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap),
+                    "A wrapping row would put the count on a second line and make the rail taller.");
+                Assert.That(row.childCount, Is.EqualTo(2),
+                    "The line carries the caption and the count and nothing else.");
+
+                var caption = (Label)row.Children()
+                    .Single(child => child.name == "gd-turn-slots-caption");
+                var coins = row.Children().Single(child => child.name == "gd-hero-coins");
+                Assert.That(caption.style.marginTop.value.value, Is.EqualTo(8f).Within(0.01f),
+                    "The caption keeps its own spacing above the turn row rather than handing it to " +
+                    "the row: what the rail spends on this line is then the caption's own margin " +
+                    "box, which is exactly what it spent before the count joined it.");
+                Assert.That(coins.style.marginTop.value.value, Is.EqualTo(8f).Within(0.01f),
+                    "and the count takes the same 8, so the two readings sit on one baseline.");
+                var captionSize = caption.style.fontSize.value.value;
+                Assert.That(caption.style.whiteSpace.value, Is.EqualTo(WhiteSpace.NoWrap));
+                foreach (var part in Descendants(coins).OfType<Label>())
+                {
+                    Assert.That(part.style.fontSize.value.value, Is.EqualTo(captionSize).Within(0.01f),
+                        "Both halves are drawn at the caption's own size: a larger amount would " +
+                        "raise this line and push every row under it down.");
+                    Assert.That(part.style.whiteSpace.value, Is.EqualTo(WhiteSpace.NoWrap),
+                        "and a wrapped word would do the same.");
+                    Assert.That(part.style.marginTop.value.value, Is.EqualTo(0f).Within(0.01f),
+                        "and the runtime theme's own three pixels above and below a label would " +
+                        "do it a third time, so the count's halves give them up.");
+                    Assert.That(part.style.marginBottom.value.value, Is.EqualTo(0f).Within(0.01f));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.7a's mirror, kept: the caption still reads against the screen edge on either
+        /// rail and the count sits inward of it, so the two rails still read outward from the board.
+        /// </summary>
+        [Test]
+        public void TheCoinReadout_SitsInwardOfTheCaptionOnBothRailsRatherThanRepeatingOneOrder()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+
+            var columns = view.BlockingRegions.ToArray();
+            Assert.That(columns, Has.Length.EqualTo(2), "One column per screen edge.");
+            Assert.That(CaptionRowOrder(columns[0]),
+                Is.EqualTo(new[] { "gd-turn-slots-caption", "gd-hero-coins" }),
+                "On the left rail the caption keeps the screen edge and the count sits inward.");
+            Assert.That(CaptionRowOrder(columns[1]),
+                Is.EqualTo(new[] { "gd-hero-coins", "gd-turn-slots-caption" }),
+                "and the mirrored rail is that reflected, which is what every other row on it is.");
+        }
+
+        /// <summary>Crosses p.8's stages and buys the level the earned coins force.</summary>
+        private static void SpendTheEarnedLevel(MatchSession session)
+        {
+            ConfiguredMatchFixtures.AdvanceToStage(session, EndOfRoundStage.LevelUpAndUpgrade);
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AdvanceEndOfRound());
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerSystemTransitionStep(
+                session.Projection.PendingSystemTransitionStep.Invocations[0]));
+        }
+
+        private static string[] CaptionRowOrder(VisualElement column) =>
+            Descendants(column)
+                .Single(element => element.name == "gd-turn-slots-caption-row")
+                .Children()
+                .Select(child => child.name)
+                .ToArray();
+
+        /// <summary>
+        /// Every rail's count is the projection's own, in every form it is drawn in. It is a helper
+        /// rather than one assertion because "no presentation-owned accounting" is a claim about every
+        /// position rather than about one.
+        /// </summary>
+        private static void AssertEveryRailReadsTheProjectedBalance(
+            MatchSession session, HeroOverviewsUnityView view, string where)
+        {
+            foreach (var hero in view.Model.Heroes)
+            {
+                var projected = session.Projection.HeroProgression
+                    .Single(entry => entry.HeroId.Equals(hero.HeroId));
+                Assert.That(hero.Coins, Is.EqualTo(projected.Coins),
+                    "The rail counted its own coins at " + where + ".");
+                Assert.That(hero.CoinsLabel, Is.EqualTo("COINS"));
+                Assert.That(hero.CoinAmountLabel, Is.EqualTo(
+                    projected.Coins.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                Assert.That(
+                    hero.CoinAssistiveLabel,
+                    Is.EqualTo(projected.Coins == 1 ? "1 coin" : hero.CoinAmountLabel + " coins"),
+                    "p.13 pays coins, and one of them is a coin.");
+            }
+
+            var drawn = Descendants(view.Root)
+                .Where(element => element.name == "gd-hero-coins-amount")
+                .OfType<Label>()
+                .Select(label => label.text)
+                .ToArray();
+            Assert.That(drawn, Is.EquivalentTo(view.Model.Heroes.Select(hero => hero.CoinAmountLabel)),
+                "and the drawn amounts are the model's own at " + where + ".");
+        }
+
         [Test]
         public void TheDiscardSlot_ReportsTheProjectedPileRatherThanCardMovementSeen()
         {
@@ -2773,6 +3029,10 @@ namespace GuardsDigital.Tests.EditMode
         private static string Describe(HeroOverviewsUnityView view) =>
             string.Join("|", view.Model.Heroes.Select(hero =>
                 $"{hero.HeroId}:{hero.Level}:{hero.DiscardCount}:" +
+                // Milestone 8.21a: the coin balance joins it for milestone 8.7a's own reason - a
+                // reconstruction path is then compared on the reading this milestone introduced
+                // rather than only on the facts the earlier ones already agreed about.
+                $"{hero.Coins}:" +
                 // Milestone 8.7a: occupancy and the current-card marker join the description, so the
                 // reconstruction paths are compared on the split this milestone introduced rather than
                 // only on the four colours they always agreed about.

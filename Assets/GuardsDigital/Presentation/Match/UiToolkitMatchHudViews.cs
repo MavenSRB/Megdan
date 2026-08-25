@@ -702,9 +702,78 @@ namespace GuardsDigital.Presentation.Match
             // that the ordinals are off the slots and the row's own order is what states the sequence.
             var caption = HudElements.Text("RESOLVED TURNS", 9f, MatchHudTheme.MutedText, FontStyle.Bold);
             caption.name = "gd-turn-slots-caption";
+            // The caption keeps its own margins, including the 8 above it, rather than handing them to
+            // the row it now shares. That is what makes this milestone's addition provably free of
+            // height: the row is as tall as the caption's own margin box was, and the caption's margin
+            // box is exactly what it contributed to the rail before the row existed.
             caption.style.marginTop = 8f;
             caption.style.unityTextAlign = outward;
-            rail.Add(caption);
+            caption.style.whiteSpace = WhiteSpace.NoWrap;
+
+            // Milestone 8.21a: this hero's public coin balance, on the inner end of the caption's own
+            // line.
+            //
+            // The caption's line is the one row in the rail whose content cannot grow. `RESOLVED
+            // TURNS` is a literal at a fixed size, so the space beside it is provably unused rather
+            // than unused until some position fills it, and every emptier-looking row is not: the item
+            // strip is as wide as p.16 has made it, the discard row is as wide as the pile, the header
+            // is as tall as the hero's own name and the current-card marker between them, and each of
+            // those grows on a real position. Sharing this line therefore adds no row, no height and
+            // no width - the rail's outer box, the standing HUD regions and the board's framing are
+            // exactly what they were - which is the constraint this milestone is under.
+            //
+            // Both halves are drawn at the caption's own size for the same reason: a larger amount
+            // would raise the line and push every row under it down. The word carries the muted ink
+            // because it never changes, and the amount carries the primary ink because it is the fact.
+            var captionRow = HudElements.Row(0f);
+            captionRow.name = "gd-turn-slots-caption-row";
+            captionRow.style.flexWrap = Wrap.NoWrap;
+            captionRow.style.justifyContent = Justify.SpaceBetween;
+            captionRow.style.alignItems = Align.Center;
+
+            var coins = HudElements.Row(0f);
+            coins.name = "gd-hero-coins";
+            coins.style.flexWrap = Wrap.NoWrap;
+            coins.style.alignItems = Align.Center;
+            coins.style.flexShrink = 0f;
+            // The same 8 the caption takes above it, so the two readings sit on one baseline; the
+            // labels inside give up the runtime theme's own three pixels, which is what keeps the
+            // count's margin box inside the caption's rather than beside it.
+            coins.style.marginTop = 8f;
+            // The words for the same fact, on the terms every other compact rail reading is named by:
+            // the pointer and an assistive reader get `3 coins`, and nothing here means a number by
+            // its position alone.
+            coins.tooltip = hero.CoinAssistiveLabel;
+            var coinWord = HudElements.Text(
+                hero.CoinsLabel, 9f, MatchHudTheme.MutedText, FontStyle.Bold);
+            coinWord.name = "gd-hero-coins-word";
+            coinWord.style.whiteSpace = WhiteSpace.NoWrap;
+            coinWord.style.marginTop = 0f;
+            coinWord.style.marginBottom = 0f;
+            var coinAmount = HudElements.Text(
+                hero.CoinAmountLabel, 9f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            coinAmount.name = "gd-hero-coins-amount";
+            coinAmount.style.whiteSpace = WhiteSpace.NoWrap;
+            coinAmount.style.marginTop = 0f;
+            coinAmount.style.marginBottom = 0f;
+            coinAmount.style.marginLeft = 4f;
+            coins.Add(coinWord);
+            coins.Add(coinAmount);
+
+            // Mirrored with the rest of the rail: the caption keeps the screen edge on either side and
+            // the count sits inward, so the two rails still read outward from the board.
+            if (mirrored)
+            {
+                captionRow.Add(coins);
+                captionRow.Add(caption);
+            }
+            else
+            {
+                captionRow.Add(caption);
+                captionRow.Add(coins);
+            }
+
+            rail.Add(captionRow);
 
             var slots = HudElements.Row(0f);
             slots.name = "gd-turn-slots";

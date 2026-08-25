@@ -11,6 +11,7 @@ using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -94,6 +95,64 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(CoinsOf(session, ally), Is.EqualTo(before + 2),
                 "The Tier III card prints 2 where its Tier II sibling prints 1, and the two " +
                 "compositions differ in nothing else.");
+        }
+
+        /// <summary>
+        /// Milestone 8.21a. The grant reaches the rails, and only the rail of the hero it named.
+        ///
+        /// <para>This staging is the one place three rails are drawn at once and the one place a coin
+        /// moves for a reason that is neither a Defeat nor an end of round, so it is where "every side
+        /// hero rail shows that hero's balance" is worth more than it is on a two-seat board: a rail
+        /// that showed the acting hero's coins, or the viewed hero's, or one team's, would pass on two
+        /// seats and be wrong here.</para>
+        /// </summary>
+        [Test]
+        public void EveryRail_ShowsItsOwnHerosBalanceAndOnlyTheRecipientsMovesOnTheGrant()
+        {
+            var session = CreateAlliedSession(out var brogan, out var ally, BroganAllyStage.TierTwo);
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            presenter.Refresh();
+
+            Assert.That(view.Model.Heroes, Has.Count.EqualTo(3),
+                "Three seats are three rails; the rail is a repeated component rather than a pair.");
+            AssertEveryRailReadsTheProjectedBalance(session, view);
+            var before = view.Model.Heroes
+                .ToDictionary(hero => hero.HeroId, hero => hero.Coins);
+
+            PlayBroganSkill(session, brogan, BroganCardContent.WarDrummer);
+            AnswerAndConfirm(session, session.Projection.PendingEffectChoice);
+            presenter.Refresh();
+
+            AssertEveryRailReadsTheProjectedBalance(session, view);
+            foreach (var hero in view.Model.Heroes)
+            {
+                var moved = hero.Coins - before[hero.HeroId];
+                Assert.That(
+                    moved,
+                    hero.HeroId.Equals(ally) ? Is.EqualTo(1) : Is.EqualTo(0),
+                    "War Drummer grants its printed coin to the friendly hero it named, so exactly " +
+                    "one rail may move - and the actor's own is not it.");
+            }
+
+            Assert.That(
+                view.Model.Heroes.Single(hero => hero.HeroId.Equals(ally)).CoinAssistiveLabel,
+                Is.EqualTo("1 coin"),
+                "One coin is a coin, which is what the hover and the assistive reading say.");
+            Assert.That(
+                view.Model.Heroes.Single(hero => hero.HeroId.Equals(brogan)).CoinAssistiveLabel,
+                Is.EqualTo("0 coins"));
+        }
+
+        /// <summary>Every rail's count is the projection's own, and no rail counts for itself.</summary>
+        private static void AssertEveryRailReadsTheProjectedBalance(
+            MatchSession session, HeroOverviewsUnityView view)
+        {
+            foreach (var hero in view.Model.Heroes)
+            {
+                Assert.That(hero.Coins, Is.EqualTo(CoinsOf(session, hero.HeroId)),
+                    "The rail for '" + hero.HeroId + "' is not reading the projected ledger.");
+            }
         }
 
         /// <summary>

@@ -152,6 +152,20 @@ namespace GuardsDigital.Tests.PlayMode
         private const string FootprintAtAShortViewport =
             "Scene_KeepsTheCardFootprintAtAShortViewportAndScrollsTheRegion";
 
+        /// <summary>
+        /// Milestone 8.21a: rulebook p.13's Defeat reward, paid to the acting hero through a real
+        /// Attack and read off that hero's own rail while the other hero's stays where it was.
+        /// </summary>
+        private const string CoinBalanceOnTheRail =
+            "TheCoinBalance_MovesOnTheRailOfTheHeroTheDefeatPaidAndOnNoOther";
+
+        /// <summary>
+        /// Milestone 8.21a's other half: the count inside its rail and clear of every other row on
+        /// it, at the viewport this session runs at and at the short supported desktop one.
+        /// </summary>
+        private const string CoinBalanceAtBothViewports =
+            "Scene_KeepsEveryRailsCoinCountInsideItsRailAtBothValidatedViewports";
+
         // -----------------------------------------------------------------------------------------
         // The matrix. One row per printed face in the shard's table order, then the hero-owned
         // components. Read it beside Docs/AI/Rules/HERO_WASP.md's inventory table, which is in the
@@ -469,6 +483,26 @@ namespace GuardsDigital.Tests.PlayMode
                     {
                         "MatchHudPresentationTests.EveryFullCardSurface_DrawsItsFaceAtTheStandardFootprint",
                         "MatchHudPresentationTests.NoCardStateOrContent_ChangesTheStandardFootprint"
+                    }),
+
+                // Milestone 8.21a. The coin balance on the hero's own rail. It is a component rather
+                // than a face row for the reason the footprint one is: no card of any hero puts the
+                // number there, and "every rail shows its own hero's balance" is not a claim one face
+                // can make. The two journeys are the two halves the milestone's acceptance names - a
+                // live change on one rail and no other, and the count standing clear of every other
+                // row at both validated viewports.
+                Component("wasp-coin-balance", "the hero's public coin balance on the side rail",
+                    new[]
+                    {
+                        Prove(HeroCoinBalanceReading, CoinBalanceOnTheRail),
+                        Prove(HeroCoinBalanceReading, CoinBalanceAtBothViewports)
+                    },
+                    new[]
+                    {
+                        "MatchHudPresentationTests." +
+                            "TheCoinCount_FollowsEveryAuthoritativeGrantAndSpendWithoutAccountingForItHere",
+                        "MatchHudPresentationTests." +
+                            "TheCoinCount_IsRebuiltByRestoreReplayAndUndoRatherThanRemembered"
                     }),
 
                 // Milestone 8.16c's live regression lives in Wasp's own engaged fixture because her

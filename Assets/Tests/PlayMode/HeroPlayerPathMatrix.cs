@@ -193,7 +193,23 @@ namespace GuardsDigital.Tests.PlayMode
         /// fail. The check is <c>StandardCardFootprintCheck</c>, which enumerates the hero's own
         /// content, so the coverage cannot be narrowed by the row that names it.</para>
         /// </summary>
-        StandardCardFootprintConformance
+        StandardCardFootprintConformance,
+
+        /// <summary>
+        /// Milestone 8.21a: this hero's coin balance, drawn on their own side rail, following every
+        /// authoritative grant and spend and standing clear of every other row on that rail.
+        ///
+        /// <para>A reading rather than an input, on the terms the two above are. It is a component
+        /// shape because its subject is the rail rather than any printed face - no card of any hero
+        /// puts the balance there - and it is deliberately <em>not</em> in
+        /// <see cref="HeroPlayerPathMatrix.RequiredComponentShapes"/>, which every hero owes. One
+        /// shared builder draws every rail from one repeated view model, so a second hero's coin
+        /// count is the same code drawing the same row with a different number in it, and the gate's
+        /// own sentence permits exactly that: Play Mode need not duplicate permutations that change
+        /// no input, presentation, or transition shape. What is hero-specific about a rail - the
+        /// piece, the identity, the items - already has its own shapes above.</para>
+        /// </summary>
+        HeroCoinBalanceReading
     }
 
     /// <summary>

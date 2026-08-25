@@ -360,6 +360,69 @@ namespace GuardsDigital.Tests.PlayMode
                 "p.17's This turn ends with the turn, and the outline's source with it.");
         }
 
+        /// <summary>
+        /// Milestone 8.21a. Rulebook p.13's Defeat reward reaches the rail of the hero it paid, and no
+        /// other rail and no rail's own box moves with it.
+        ///
+        /// <para>The coins are earned the only way this build earns them - Magnetic Dagger's printed
+        /// Attack resolves against p.13's minion arm inside one command - and every step of it is a
+        /// real click: both cards are committed through the tray, the Attack is started by its own
+        /// control, and the target is chosen by clicking the minion on the board. What the journey then
+        /// reads is the number a player reads, off the live element, rather than the projection the
+        /// presenter was built from.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator TheCoinBalance_MovesOnTheRailOfTheHeroTheDefeatPaidAndOnNoOther()
+        {
+            yield return LoadEngagedScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var redHeroId = HeroOf(runtime, TeamSide.Red);
+            var blueHeroId = HeroOf(runtime, TeamSide.Blue);
+
+            Assert.That(HeroRailCoinCheck.CoinAmountOn(hud, TeamSide.Red), Is.EqualTo("0"),
+                "Nobody has defeated anything yet, and an empty purse is drawn as a nought rather " +
+                "than by drawing nothing.");
+            Assert.That(HeroRailCoinCheck.CoinAmountOn(hud, TeamSide.Blue), Is.EqualTo("0"));
+            Assert.That(runtime.CoinsOf(redHeroId), Is.EqualTo(0));
+            var redRailBefore = HeroRailCoinCheck.BoxOf(hud, TeamSide.Red);
+            var blueRailBefore = HeroRailCoinCheck.BoxOf(hud, TeamSide.Blue);
+            HeroRailCoinCheck.AssertTheCountStandsClear(hud, "the opening position");
+
+            yield return CommitThroughTray(root, "MAGNETIC DAGGER");
+            yield return CommitThroughTray(root, "LIFT UP");
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId),
+                "Magnetic Dagger's printed Initiative 12 acts before Lift Up's 10.");
+
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
+            var minionView = Object.FindObjectsByType<StandardMinionView>()
+                .Single(view => view.Occupancy != null && view.Occupancy.MinionId.Equals(targetId));
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, minionView.transform.position), Is.True);
+            yield return null;
+
+            Assert.That(runtime.CoinsOf(redHeroId), Is.GreaterThan(0),
+                "The clicked Attack has to defeat the minion, or there is no reward to draw.");
+            Assert.That(HeroRailCoinCheck.CoinAmountOn(hud, TeamSide.Red),
+                Is.EqualTo(runtime.CoinsOf(redHeroId).ToString()),
+                "The acting hero's rail shows what p.13 just paid them.");
+            Assert.That(HeroRailCoinCheck.CoinAmountOn(hud, TeamSide.Blue), Is.EqualTo("0"),
+                "and the other hero's rail is untouched, because the reward was not theirs.");
+            Assert.That(runtime.CoinsOf(blueHeroId), Is.EqualTo(0));
+
+            Assert.That(HeroRailCoinCheck.BoxOf(hud, TeamSide.Red), Is.EqualTo(redRailBefore),
+                "The rail's own box is exactly what it was, net of the marker the tray moved: a " +
+                "balance that resized the rail would move the board framing this milestone may " +
+                "not touch.");
+            Assert.That(HeroRailCoinCheck.BoxOf(hud, TeamSide.Blue), Is.EqualTo(blueRailBefore));
+            HeroRailCoinCheck.AssertTheCountStandsClear(hud, "the paid Defeat reward");
+
+            yield return UiPlayer.CaptureGameView("8-21a", "the-defeat-reward-on-the-red-rail");
+        }
+
         [UnityTest]
         public IEnumerator StaticBarrier_IsPerformedByItsControlAndItsFieldReadsActiveOnTheTray()
         {

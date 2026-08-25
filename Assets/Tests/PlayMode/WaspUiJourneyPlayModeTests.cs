@@ -586,6 +586,76 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 8.21a. Every rail's coin balance stands inside its own rail and clear of every
+        /// other surface on it, at the viewport this session is running at and at the short supported
+        /// desktop one.
+        ///
+        /// <para>Both sizes are measured because the rail's width is the same 172 pixels on either -
+        /// the region arithmetic caps it rather than scaling it - so a count that fits on a wide screen
+        /// and not on a short one could only come from something else on the rail moving, and that is
+        /// exactly the failure this rule is about.</para>
+        ///
+        /// <para>The facts are collected before the viewport is restored and judged afterwards, for the
+        /// reason <see cref="Scene_KeepsTheCardFootprintAtAShortViewportAndScrollsTheRegion"/> gives:
+        /// every other journey reads its geometry from whatever size this one leaves behind.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_KeepsEveryRailsCoinCountInsideItsRailAtBothValidatedViewports()
+        {
+            yield return LoadScene();
+            var root = Root();
+            var hud = root.Hud;
+
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+
+            HeroRailCoinCheck.AssertTheCountStandsClear(
+                hud, $"the {Screen.width}x{Screen.height} viewport");
+            var wideRed = HeroRailCoinCheck.BoxOf(hud, TeamSide.Red);
+            var wideBlue = HeroRailCoinCheck.BoxOf(hud, TeamSide.Blue);
+
+            UiPlayer.SetPlayerViewport(ShortViewportWidth, ShortViewportHeight, "8.21a short viewport");
+            yield return null;
+            root.Runtime.RefreshAll();
+            yield return null;
+            yield return null;
+
+            var shortWidth = Screen.width;
+            var shortHeight = Screen.height;
+            var shortRed = HeroRailCoinCheck.BoxOf(hud, TeamSide.Red);
+            var shortBlue = HeroRailCoinCheck.BoxOf(hud, TeamSide.Blue);
+            var shortAmounts = new[]
+            {
+                HeroRailCoinCheck.CoinAmountOn(hud, TeamSide.Red),
+                HeroRailCoinCheck.CoinAmountOn(hud, TeamSide.Blue)
+            };
+            HeroRailCoinCheck.AssertTheCountStandsClear(hud, "the short viewport");
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.21a restore the viewport this session was running at");
+            yield return null;
+            root.Runtime.RefreshAll();
+            yield return null;
+            yield return null;
+
+            Assert.That(shortWidth, Is.EqualTo((int)ShortViewportWidth),
+                "The journey must actually have run at the short viewport.");
+            Assert.That(shortHeight, Is.EqualTo((int)ShortViewportHeight));
+            Assert.That(shortAmounts, Is.All.EqualTo("0"),
+                "The opening position's empty purses are drawn on a short screen too.");
+            Assert.That(shortRed.width, Is.EqualTo(wideRed.width).Within(0.5f),
+                "The rail is the same width on a short screen as on a tall one, which is what makes " +
+                "one measurement of what fits inside it hold at both.");
+            Assert.That(shortBlue.width, Is.EqualTo(wideBlue.width).Within(0.5f));
+            Assert.That(shortRed.height, Is.EqualTo(wideRed.height).Within(0.5f),
+                "and the same height, because nothing in the rail is sized from the viewport.");
+            Assert.That(shortBlue.height, Is.EqualTo(wideBlue.height).Within(0.5f));
+            Assert.That((uint)Screen.width, Is.EqualTo(restoreWidth),
+                "The viewport this session was running at is restored before this journey ends.");
+            Assert.That((uint)Screen.height, Is.EqualTo(restoreHeight));
+        }
+
+        /// <summary>
         /// The short supported desktop viewport milestone 8.20c states the bounded-scroll fallback at.
         /// 1280x720 is the smallest screen this project's own HUD arithmetic is written against.
         /// </summary>
