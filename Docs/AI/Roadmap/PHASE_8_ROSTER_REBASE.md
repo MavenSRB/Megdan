@@ -411,3 +411,30 @@ Acceptance checks:
   at the applicable tier.
 
 Non-goals: No other new hero, general Minion-Battle redesign, six-player setup, networking, or art.
+
+### [ ] 8.21a Show every hero's public coin balance on the fixed side rails
+
+Blocked by: Milestone 8.21 must finish without taking on a second presentation change while its Brogan
+content, removal-prevention prompt and player-path gate are already in progress.
+
+Observable outcome: Each side hero rail continuously shows that hero's current coin balance in otherwise
+unused space, without increasing the rail's outer dimensions or changing the board framing.
+
+Acceptance checks:
+
+- Every side hero rail draws a compact coin-labelled count from that hero's existing immutable
+  `HeroProgressionProjection.Coins`; the balance is public match information and is present whether or not
+  Level Up or another coin-related decision currently stands.
+- The displayed count updates after every authoritative grant, transfer and spend and redraws correctly
+  after snapshot restore, replay and retained-prefix Undo, without presentation-owned accounting, a new
+  projection field or a schema change.
+- The count occupies otherwise unused rail space. The left and right rails keep their exact current outer
+  dimensions, the standing HUD regions and board framing do not move, and the mirrored rail remains a mirror
+  except for the deliberately unmirrored sequential rows already recorded in `Project/MATCH_HUD.md`.
+- Focused presenter and UI Toolkit layout coverage proves the count neither overlaps nor clips the hero
+  name, Level, items, current card, resolved turns, Ultimate or discard surfaces at the validated and short
+  viewports; a live presentation journey visibly changes one hero's count while leaving every other hero's
+  reading and both rail bounds unchanged.
+
+Non-goals: No rail enlargement, broader HUD reflow or redesign, new coin rule, economy change, new hero,
+six-player setup, networking, animation, production VFX or art.

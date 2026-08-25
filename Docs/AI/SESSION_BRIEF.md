@@ -34,6 +34,8 @@ The remaining **Phase 8** route continues with complete hero slices 8.21-8.24 an
 
 **User-approved amendment, 2026-08-24:** milestone **8.21** must reach the player as well as the rules. Brogan's Shield/Bolster/Fortify are the first content that can open 8.19c1's removal-prevention pause, left unprojected there under its presentation non-goal, so 8.21 owns the projected decision and its typed invocations, the contextual-region prompt, the board cue, a prompt-reachability case, and a pointer journey. The roadmap block carries the reasoning.
 
+**User-approved scheduling amendment, 2026-08-25:** inserted milestone **8.21a** shows every hero's public current coin balance in otherwise unused space on that hero's side rail. It is separate from already-active 8.21; neither rail nor the board framing may grow or reflow, and the roadmap block owns the exact update, persistence and no-overlap checks.
+
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes and its binding constraints.
 
 Standing route exceptions: none remain. Phase 6's exact sequencing lives in its three [Roadmap/](Roadmap/) shards and its per-milestone evidence is addressed by SHA from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md); scheduling is not authorization.
