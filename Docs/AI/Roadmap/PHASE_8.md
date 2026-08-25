@@ -388,7 +388,7 @@ The completed audit, effort range, retained-gate decisions, and dependency-order
 8.19a, inserted 8.19a1, and 8.19b-8.19c live in
 [PHASE_8_ROSTER_REBASE.md](PHASE_8_ROSTER_REBASE.md).
 
-### [~] 8.22 Complete and verify additional pitch hero slot C - Sabina
+### [x] 8.22 Complete and verify additional pitch hero slot C - Sabina
 
 Prerequisites satisfied: Milestone 8.21 proved the unique roster system interaction and milestone 8.21a
 closed the public-coin presentation gap without enlarging the side rails, so both named blocks are
@@ -414,6 +414,8 @@ Acceptance checks:
   affected earlier-hero/Wasp/core regressions pass at the applicable tier, and no epithet string drives rules.
 
 Non-goals: No other new hero, six-player setup, networking, or production art.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-822-complete-and-verify-additional-pitch-hero-slot-c---sabina-completion-evidence).
 
 ### [!] 8.23 Complete and verify additional pitch hero slot D - Tigerclaw
 
