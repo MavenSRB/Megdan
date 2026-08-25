@@ -348,7 +348,18 @@ namespace GuardsDigital.Tests.EditMode
                     // adjacency questions, which need an enclosing Attack to be about.
                     SyntheticShowcaseHand.CreateRedWithRosterCommandSkill(owner),
                     SyntheticShowcaseHand.CreateBlueWithRosterCommandSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithAdjacencyRiderText(owner)
+                    SyntheticShowcaseHand.CreateRedWithAdjacencyRiderText(owner),
+                    // Milestone 8.23's four. Three were implemented at 8.19b and reach the build's
+                    // catalog only now, because this is the milestone at which a printed card first
+                    // names one; `actor-moved-this-action` is this milestone's own, minted because
+                    // Combat Reflexes is the first face to ask at one of p.14's moments about what
+                    // happened at another. The thieving Skill carries the two a Skill can ask - the
+                    // terrain presence and the coin transfer - and the two-moment Attack card carries
+                    // the two that need an enclosing Attack, on the first fixture action to print card
+                    // text at both of p.14's attacker moments.
+                    SyntheticShowcaseHand.CreateRedWithRosterTheftSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithRosterTheftSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithTwoMomentAttackText(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -375,6 +386,12 @@ namespace GuardsDigital.Tests.EditMode
                 // slice - and her one new one is proved on showcase content above before this concat
                 // admits the cards that name it.
                 .Concat(SabinaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.23. Tigerclaw's printed set is the fifth, admitted on the same half of
+                // the rule: a capability named by a card a configured match deals is not a deferral.
+                // The other half still binds - no *handler* may arrive for the first time inside a
+                // hero slice - and the check below is what holds it, on his four new contracts and on
+                // the printed-Radius Place twin beside them.
+                .Concat(TigerclawCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
@@ -465,10 +482,19 @@ namespace GuardsDigital.Tests.EditMode
         };
 
         /// <summary>Every capability one card definition's printed effects name.</summary>
+        /// <summary>
+        /// Every capability a printed card names, from both bodies of card text an action may declare.
+        ///
+        /// <para>Milestone 8.23 added the second: Combat Reflexes and Leaping Strike print text at two
+        /// of rulebook p.14's moments, and a reader that walked only the first would report the second's
+        /// contracts as unreachable - which is exactly what this gate would then refuse for the wrong
+        /// reason.</para>
+        /// </summary>
         private static IEnumerable<EffectCapabilityReference> NamedCapabilities(CardDefinition definition) =>
             definition.ActionDefinitions
-                .Where(action => action.EffectRoot != null)
-                .SelectMany(action => action.EffectRoot.Nodes)
+                .SelectMany(action => new[] { action.EffectRoot, action.SecondCardTextRoot })
+                .Where(root => root != null)
+                .SelectMany(root => root.Nodes)
                 .Where(node => node.Capability.IsDefined)
                 .Select(node => node.Capability);
 

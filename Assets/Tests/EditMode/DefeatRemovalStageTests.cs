@@ -467,9 +467,9 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(32),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(33),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
-                "own. The version has since moved twenty times, none of them for it: milestone 6.7 for " +
+                "own. The version has since moved twenty-one times, none of them for it: milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +
                 "mid-turn Lane-Push request a completed action can leave behind, milestone 6.10 for " +
                 "p.8's Battle Zone itself, milestone 6.10a for a paused system transition, " +
@@ -493,7 +493,9 @@ namespace GuardsDigital.Tests.EditMode
                 "no v30 payload can describe because that altitude could not set one off, and " +
                 "milestone 8.23 for the completed basic action a permanent after-action ability may " +
                 "still be asked to repeat, which no v31 payload can describe because no ability in " +
-                "an 8.22 build stands outside the action it repeats. " +
+                "an 8.22 build stands outside the action it repeats, and milestone 8.23 again for where " +
+                "the attacker stood when an Attack started, which no v32 payload records because no " +
+                "earlier face asks at one of p.14's moments about what happened at another. " +
                 "The decision is still re-derived from the state as it then stands.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),

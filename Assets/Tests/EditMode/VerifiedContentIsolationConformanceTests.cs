@@ -5,6 +5,7 @@ using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
@@ -55,6 +56,11 @@ namespace GuardsDigital.Tests.EditMode
             (typeof(SyntheticEffectCapabilities),
                 "is that catalog's single construction site, so every hero's Active-effect handlers " +
                 "are concatenated here or nowhere"),
+            (typeof(SyntheticComponentDefinitions),
+                "is the component catalog's single construction site, which milestone 8.23 made the " +
+                "same kind of site the capability catalog already was: Tigerclaw's Poison marker is " +
+                "the first hero-owned rules component, and a registered marker definition joins the " +
+                "one list a snapshot compares here or nowhere"),
             (typeof(PlaceholderOneVsOneTestConfiguration),
                 "composes the staged match and therefore states which printed set each seat is dealt"),
             (typeof(QuickGameSetupConfiguration),

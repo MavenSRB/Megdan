@@ -258,7 +258,19 @@ namespace GuardsDigital.Core.Snapshots
         // restore as a match with the question standing and nothing to answer it about, and confirming
         // would then do nothing at all. A `may` that can be confirmed to no effect is the one outcome
         // p.10's repeat must never produce.
-        public const int CurrentSchemaVersion = 32;
+        // Milestone 8.23 moves it to 33, its second field and the same milestone's second cause: where
+        // the attacking hero stood when an Attack started. Tigerclaw's Combat Reflexes offers a move
+        // at p.14's step 1 and asks at step 7 whether it was taken - "If you did not move before the
+        // attack" - and the frame that offered it has completed and been discarded by then, with the
+        // defender's whole response and every pause inside it in between. It is the space rather than
+        // a flag because that is what the printed question is about.
+        //
+        // v32 is rejected rather than migrated for the reason v25 was: there is no reading of the
+        // absent field true of both builds. Absent means "nothing recorded where he was", which is the
+        // honest answer for every Attack whose card never asks - but a v32 payload holding a paused
+        // Combat Reflexes would restore reporting that he had not moved whether or not he had, and the
+        // page would then hand him a second move the card does not give.
+        public const int CurrentSchemaVersion = 33;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

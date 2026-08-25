@@ -42,7 +42,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroId heroTargetId,
             MinionId minionTargetId,
             AttackRangeKind range,
-            HexCoordinate? targetSpaceBeforeConsequences)
+            HexCoordinate? targetSpaceBeforeConsequences,
+            HexCoordinate? actorSpaceAtActionStart = null)
         {
             if (!Enum.IsDefined(typeof(AttackRangeKind), range))
             {
@@ -64,6 +65,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             MinionTargetId = minionTargetId;
             Range = range;
             TargetSpaceBeforeConsequences = targetSpaceBeforeConsequences;
+            ActorSpaceAtActionStart = actorSpaceAtActionStart;
         }
 
         /// <summary>No enclosing Attack: every effect that is not card text inside one.</summary>
@@ -110,6 +112,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// stand between the two.</para>
         /// </summary>
         public HexCoordinate? TargetSpaceBeforeConsequences { get; }
+
+        /// <summary>
+        /// Milestone 8.23. Where the attacking hero stood when this Attack started, or nothing outside
+        /// an Attack. It is what Tigerclaw's Combat Reflexes asks about at p.14's step 7 - "If you did
+        /// not move before the attack" - and the reasoning is on
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.PendingAttackResolution.ActorSpaceAtActionStart"/>.
+        /// </summary>
+        public HexCoordinate? ActorSpaceAtActionStart { get; }
 
         /// <summary>Whether there is an enclosing Attack to ask about at all.</summary>
         public bool IsDefined => ActorId.IsDefined;

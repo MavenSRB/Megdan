@@ -275,7 +275,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AttackResolutionPhase.ChooseTarget,
                 default(AttackTarget),
                 null,
-                excludedTarget: excludedTarget);
+                excludedTarget: excludedTarget,
+                actorSpaceAtActionStart: ActorSpaceOf(completed.ActorId));
             var offer = FindPendingAttackOffer(
                 repeated, materializedDefinitions, materializedInstances);
             if (!offer.HasValue)
@@ -309,7 +310,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     AttackResolutionPhase.ApplyBeforeAttackText,
                     default(AttackTarget),
                     null,
-                    excludedTarget: excludedTarget);
+                    excludedTarget: excludedTarget,
+                    actorSpaceAtActionStart: ActorSpaceOf(completed.ActorId));
                 pendingAttackResolution = applying;
                 pendingAttackTargetChoice = null;
                 pendingDefenseChoice = null;
@@ -433,7 +435,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     new ActionResolutionStepId("before-attack-text"),
                     AttackResolutionPhase.ApplyBeforeAttackText,
                     default(AttackTarget),
-                    null);
+                    null,
+                    actorSpaceAtActionStart: ActorSpaceOf(offer.ActorId));
                 pendingAttackResolution = applying;
                 pendingAttackTargetChoice = null;
                 pendingDefenseChoice = null;
@@ -462,7 +465,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 new ActionResolutionStepId("attack-target"),
                 AttackResolutionPhase.ChooseTarget,
                 default(AttackTarget),
-                null);
+                null,
+                actorSpaceAtActionStart: ActorSpaceOf(offer.ActorId));
             pendingAttackTargetChoice = CreateAttackTargetChoice(
                 pendingAttackResolution,
                 offer,
@@ -557,7 +561,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 command.Target,
                 null,
                 excludedTarget: pendingAttackResolution.ExcludedTarget,
-                targetSpaceBeforeConsequences: TargetSpaceOf(command.Target));
+                targetSpaceBeforeConsequences: TargetSpaceOf(command.Target),
+                actorSpaceAtActionStart: pendingAttackResolution.ActorSpaceAtActionStart);
 
             pendingAttackResolution = applying;
             pendingAttackTargetChoice = null;
@@ -665,7 +670,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     boundTarget,
                     null,
                     excludedTarget: resolution.ExcludedTarget,
-                    targetSpaceBeforeConsequences: TargetSpaceOf(boundTarget));
+                    targetSpaceBeforeConsequences: TargetSpaceOf(boundTarget),
+                    actorSpaceAtActionStart: resolution.ActorSpaceAtActionStart);
                 pendingAttackResolution = resolution;
                 steps.Add(ResolutionStep.FromFact(
                     CardActionResolutionEvent.AttackTargetValidated(resolution)));
@@ -703,7 +709,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.Target,
                 attackValue,
                 excludedTarget: resolution.ExcludedTarget,
-                targetSpaceBeforeConsequences: resolution.TargetSpaceBeforeConsequences);
+                targetSpaceBeforeConsequences: resolution.TargetSpaceBeforeConsequences,
+                actorSpaceAtActionStart: resolution.ActorSpaceAtActionStart);
             var defenseOffers = FindDefenseOffers(
                 materializedDefinitions, materializedInstances, defenseResolution.TargetHeroId,
                 modifications, offer.Value);
@@ -762,6 +769,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Milestone 8.19a: the one fact about a target that the board stops answering once p.14's
         /// consequences have run.
         /// </summary>
+        /// <summary>
+        /// Where the attacking hero is standing right now, captured when an Attack instance starts.
+        /// Milestone 8.23: Tigerclaw's Combat Reflexes asks at p.14's step 7 whether he moved before
+        /// the attack, and the only way to answer it at step 7 is to have recorded where he was.
+        /// </summary>
+        private HexCoordinate? ActorSpaceOf(HeroId actorId) =>
+            adjacentMoveAuthority.Occupancies
+                .Where(occupancy => occupancy.HeroId.Equals(actorId))
+                .Select(occupancy => (HexCoordinate?)occupancy.Coordinate)
+                .FirstOrDefault();
+
         private HexCoordinate? TargetSpaceOf(AttackTarget target)
         {
             if (target.Kind == AttackTargetKind.Hero)
@@ -827,7 +845,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackResolutionOutcome remainderOutcome = AttackResolutionOutcome.None)
         {
             var action = FindCardTextAction(sourceDefinitionReference, actionDefinitionId, definitions);
-            if (action == null || action.CardTextTiming != timing)
+            // Milestone 8.23. An Attack may print text at both of p.14's attacker moments, so the
+            // question is whether this action has text for THIS moment rather than whether its one
+            // declared moment happens to be this one.
+            if (action == null || action.CardTextAt(timing) == null)
             {
                 return Array.Empty<ResolutionStep>();
             }
@@ -967,7 +988,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 excludedTarget: pendingAttackResolution.ExcludedTarget,
                 targetSpaceBeforeConsequences:
                     pendingAttackResolution.TargetSpaceBeforeConsequences ??
-                    TargetSpaceOf(AttackTarget.Minion(targetMinionId)));
+                    TargetSpaceOf(AttackTarget.Minion(targetMinionId)),
+                actorSpaceAtActionStart: pendingAttackResolution.ActorSpaceAtActionStart);
             // Finding `F-ER2-09`: p.13's coin values are read from the declared standard-minion content
             // rather than restated here as a Heavy-versus-other literal. The number is unchanged.
             var coins = StandardMinionProfileCatalog.Rulebook.Get(target.MinionType).DefeatCoins;
@@ -2111,7 +2133,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 defenseValue,
                 pendingAttackResolution.ExcludedTarget,
                 blockResult,
-                pendingAttackResolution.TargetSpaceBeforeConsequences);
+                pendingAttackResolution.TargetSpaceBeforeConsequences,
+                actorSpaceAtActionStart: pendingAttackResolution.ActorSpaceAtActionStart);
         }
 
         private PendingAttackTargetChoice CreateAttackTargetChoice(

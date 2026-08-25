@@ -103,12 +103,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ValueResult defenseValue = null,
             AttackTarget excludedTarget = default,
             DefenseBlockResult blockResult = DefenseBlockResult.None,
-            HexCoordinate? targetSpaceBeforeConsequences = null)
+            HexCoordinate? targetSpaceBeforeConsequences = null,
+            HexCoordinate? actorSpaceAtActionStart = null)
             : this(resolutionId, sourceCardInstanceId, sourceDefinitionReference, actionDefinitionId,
                 actorId, invocationContext, currentStepId, phase,
                 targetHeroId.IsDefined ? AttackTarget.Hero(targetHeroId) : default,
                 attackValue, defenseOffer, defenseValue, excludedTarget, blockResult,
-                targetSpaceBeforeConsequences)
+                targetSpaceBeforeConsequences, actorSpaceAtActionStart)
         {
         }
 
@@ -127,11 +128,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ValueResult defenseValue = null,
             AttackTarget excludedTarget = default,
             DefenseBlockResult blockResult = DefenseBlockResult.None,
-            HexCoordinate? targetSpaceBeforeConsequences = null)
+            HexCoordinate? targetSpaceBeforeConsequences = null,
+            HexCoordinate? actorSpaceAtActionStart = null)
         {
             ExcludedTarget = excludedTarget;
             BlockResult = blockResult;
             TargetSpaceBeforeConsequences = targetSpaceBeforeConsequences;
+            ActorSpaceAtActionStart = actorSpaceAtActionStart;
             if (targetSpaceBeforeConsequences.HasValue && !target.IsDefined)
             {
                 throw new ArgumentException(
@@ -276,6 +279,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// consequences - and, since either rider may pause, a snapshot as well.</para>
         /// </summary>
         public HexCoordinate? TargetSpaceBeforeConsequences { get; }
+
+        /// <summary>
+        /// Milestone 8.23. Where the attacking hero stood when this Attack started, or nothing for an
+        /// Attack whose card asks nothing about it.
+        ///
+        /// <para>Tigerclaw's Combat Reflexes is what needs it: "Before the attack: You may move 1
+        /// space. ... After the attack: <b>If you did not move before the attack</b>, you may move 1
+        /// space." The two clauses are p.14's step 1 and step 7, six numbered steps and the whole of
+        /// the defender's response apart, and the frame that offered the first move is long gone by
+        /// the time the second clause asks about it - so the fact has to be a property of the Attack
+        /// rather than of either text, and has to survive every pause between them.</para>
+        ///
+        /// <para>It is the space rather than a "did the step apply" flag because that is what the
+        /// printed question is about, and because a flag would have to be set by whichever node
+        /// happened to move the hero. Nothing else in verified content relocates an attacker between
+        /// those two steps - a Block's rider moves the <em>defender</em> - so the space and the
+        /// clause answer the same question, and a later face that changes that would be read against
+        /// this comment rather than silently inheriting it.</para>
+        /// </summary>
+        public HexCoordinate? ActorSpaceAtActionStart { get; }
 
         public ValueResult AttackValue { get; }
         public int AttackTotal => AttackValue?.Total ?? 0;

@@ -96,7 +96,12 @@ namespace GuardsDigital.Core.Cards
                     // Milestone 8.22. What Sabina's Big Sodding Gun runs after one of her Pushes has
                     // moved an enemy hero. It is the first verified content to reach milestone
                     // 8.19c1's after-push window, which until now only the synthetic shape visited.
-                    SabinaEffectContent.BigSoddingGunTriggeredEffect(SabinaCardContent.ContentRevision)
+                    SabinaEffectContent.BigSoddingGunTriggeredEffect(SabinaCardContent.ContentRevision),
+                    // Milestone 8.23. What Tigerclaw's Cloak and Daggers runs after any basic action of
+                    // his ends. It is the first verified content whose triggered effect asks to repeat
+                    // the action it fired for rather than doing something of its own.
+                    TigerclawEffectContent.CloakAndDaggersTriggeredEffect(
+                        TigerclawCardContent.ContentRevision)
                 }));
     }
 }

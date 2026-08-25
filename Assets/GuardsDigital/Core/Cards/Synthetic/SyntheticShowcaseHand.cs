@@ -824,6 +824,59 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 attackTextProfiles: new[] { RedAdjacencyRidersProfile });
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.23: the roster vocabulary Tigerclaw's set is the first printed content to name,
+        // proved here on cards that are nobody's
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.23's thieving Skill cards, sitting outside their team's ordinary Initiative band
+        /// for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedRosterTheftSkillProfile { get; } =
+            new SyntheticSkillProfile("red-cutpurse", "Red Cutpurse", 23);
+
+        private static SyntheticSkillProfile BlueRosterTheftSkillProfile { get; } =
+            new SyntheticSkillProfile("blue-cutpurse", "Blue Cutpurse", 24);
+
+        /// <summary>The five ordinary cards plus milestone 8.23's thieving Skill alone.</summary>
+        public static ConfiguredHand CreateRedWithRosterTheftSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                rosterTheftSkillProfile: RedRosterTheftSkillProfile);
+
+        public static ConfiguredHand CreateBlueWithRosterTheftSkill(HeroId ownerId) =>
+            Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                rosterTheftSkillProfile: BlueRosterTheftSkillProfile);
+
+        /// <summary>
+        /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
+        /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
+        ///
+        /// <para>It is the first fixture card to declare two bodies, which is what proves
+        /// <see cref="ActionDefinition.SecondCardTextRoot"/> on content that is nobody's. Its step 1 is
+        /// the move-through-and-target shape rather than the plain optional step, so one card reaches
+        /// both of this milestone's new targeting contracts.</para>
+        /// </summary>
+        private static SyntheticAttackTextProfile RedTwoMomentProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-shadowblade", "Red Shadowblade", 11, 4, 2, 2,
+                CardTextTiming.BeforeTheAttack, false, false,
+                continuation: SyntheticContinuationShape.BeforeAttackMoveThrough,
+                secondContinuation: SyntheticContinuationShape.AfterAttackUnmovedStep,
+                secondTiming: CardTextTiming.AfterTheAttack);
+
+        /// <summary>
+        /// The five ordinary cards with milestone 8.23's two-moment Attack-text card, which is how
+        /// <c>choose-through-target-line@1</c> and <c>actor-moved-this-action@1</c> become reachable
+        /// from showcase content rather than waiting for the hero whose faces print them.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithTwoMomentAttackText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedTwoMomentProfile });
+
         /// <summary>Arien's Dangerous Current shape: a Before-Attack line drawn behind the target.</summary>
         private static SyntheticAttackTextProfile RedLineBehindProfile { get; } =
             new SyntheticAttackTextProfile(
@@ -896,6 +949,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile rosterSelectionSkillProfile = null,
             SyntheticSkillProfile rosterPaymentSkillProfile = null,
             SyntheticSkillProfile rosterCommandSkillProfile = null,
+            SyntheticSkillProfile rosterTheftSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1045,6 +1099,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateRosterPaymentSkillDefinition(rosterPaymentSkillProfile),
                     rosterPaymentSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (rosterTheftSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateRosterTheftSkillDefinition(rosterTheftSkillProfile),
+                    rosterTheftSkillProfile.Id, instancePrefix, ownerId);
             }
 
             if (rosterCommandSkillProfile != null)
@@ -2333,6 +2395,122 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// reached. Each selection carries its own <c>if able</c>, which is the honest reading of a
         /// fixture that has no printed words to be faithful to.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.23. A Skill that asks the two roster contracts Tigerclaw's set is the first
+        /// printed content to reach through a Skill: whether the actor stands beside terrain, and a
+        /// coin transfer out of another hero's pile.
+        ///
+        /// <para>Every number here is a fixture number and the sentence is nobody's card. What it
+        /// proves is that each contract composes and runs, so neither arrives for the first time inside
+        /// a verified hero's slice - which is the second half of the rule
+        /// <c>ConfiguredCardMatrixTests</c> asks. His own faces put the terrain question on a Silver
+        /// Place card and the transfer on three Greens; this one asks both on one card, because what is
+        /// under test is the contract rather than the sentence.</para>
+        ///
+        /// <para>The terrain question gates nothing, for the reason the command Skill's count gates
+        /// nothing: a conditional would make the transfer unreachable on a board with no terrain beside
+        /// the actor, and this card exists to be reached.</para>
+        /// </summary>
+        private static CardDefinition CreateRosterTheftSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("roster-theft-root");
+            var terrain = new EffectNodeId("roster-theft-terrain");
+            var victim = new EffectNodeId("roster-theft-victim");
+            var take = new EffectNodeId("roster-theft-take");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-23-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { terrain, victim, take }),
+                    new EffectNodeDefinition(
+                        terrain, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.AdjacentTerrainPresenceV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("present", EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        victim, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticRosterCapabilities.ChooseTargetV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.OriginParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.CardResolution
+                                        .RosterQueryOrigin.Actor)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.DistanceParameter,
+                                EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.UnitKindParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.CardResolution
+                                        .RosterUnitKind.Hero)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.Modifications
+                                        .SourceTeamRelation.OpposingSource)),
+                            EffectInputBinding.FromLiteral(
+                                "activity",
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero)
+                        }),
+                    new EffectNodeDefinition(
+                        take, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticRosterCapabilities.TransferResourceV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "source", victim, SyntheticRosterCapabilities.ChosenHeroOutput,
+                                EffectValueKind.Hero),
+                            EffectInputBinding.FromRole(
+                                "recipient", EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromRole(
+                                "chooser", EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromLiteral("minimum", EffectValue.Integer(1)),
+                            EffectInputBinding.FromLiteral("maximum", EffectValue.Integer(2))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("source", EffectValueKind.Hero),
+                            new EffectOutputBinding("recipient", EffectValueKind.Hero),
+                            new EffectOutputBinding("amount", EffectValueKind.Integer)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-23-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-roster-theft-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
         private static CardDefinition CreateRosterCommandSkillDefinition(SyntheticSkillProfile profile)
         {
             var root = new EffectNodeId("roster-command-root");
@@ -2798,7 +2976,30 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// could not show the difference is real. Her own faces print one each - Shootout the past
             /// tense, Point Blank Shot the present - so neither is a card and this is neither.</para>
             /// </summary>
-            AfterAttackAdjacencyRiders = 8
+            AfterAttackAdjacencyRiders = 8,
+
+            /// <summary>
+            /// Milestone 8.23. Tigerclaw's Blink Strike shape: a straight two-space line whose middle
+            /// space holds an enemy unit and whose end space is empty, walked to that end space, and
+            /// naming the unit it crossed as the Attack's target.
+            ///
+            /// <para>It is a third bind-target shape and not a variation on the two before it, because
+            /// what it chooses is different: the charge line names where to stop and then asks who is
+            /// beside it, and this one names the crossed unit and the destination in one answer. It
+            /// exists so `choose-through-target-line@1` is proved on content that is nobody's before a
+            /// printed face names it.</para>
+            /// </summary>
+            BeforeAttackMoveThrough = 9,
+
+            /// <summary>
+            /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: "After the attack:" text conditioned
+            /// on whether the actor moved before it.
+            ///
+            /// <para>It is the first showcase shape that is only meaningful as the <em>second</em> body
+            /// of card text on one action, which is why the profile that carries it names a second
+            /// moment. `actor-moved-this-action@1` is proved here on nobody's card.</para>
+            /// </summary>
+            AfterAttackUnmovedStep = 10
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -2814,9 +3015,13 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 bool defenseCarriesText,
                 bool narrowedToHeroes,
                 bool readsTheAttacksTarget = false,
-                SyntheticContinuationShape continuation = SyntheticContinuationShape.None)
+                SyntheticContinuationShape continuation = SyntheticContinuationShape.None,
+                SyntheticContinuationShape secondContinuation = SyntheticContinuationShape.None,
+                CardTextTiming secondTiming = CardTextTiming.None)
             {
                 Continuation = continuation;
+                SecondContinuation = secondContinuation;
+                SecondTiming = secondTiming;
                 ReadsTheAttacksTarget = readsTheAttacksTarget;
                 Id = id;
                 DisplayName = displayName;
@@ -2842,6 +3047,15 @@ namespace GuardsDigital.Core.Cards.Synthetic
 
             /// <summary>Milestone 8.19a: which resumable continuation shape this card stands for.</summary>
             public SyntheticContinuationShape Continuation { get; }
+
+            /// <summary>
+            /// Milestone 8.23. A second body of card text this fixture Attack prints, applied at
+            /// <see cref="SecondTiming"/> - or None, which is every profile before this milestone.
+            /// </summary>
+            public SyntheticContinuationShape SecondContinuation { get; }
+
+            /// <summary>Which of p.14 s moments the second body is applied at.</summary>
+            public CardTextTiming SecondTiming { get; }
             public bool DefenseCarriesText { get; }
             public bool NarrowedToHeroes { get; }
         }
@@ -2942,12 +3156,164 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// is nobody's, which is what milestone 7.9's deferral gate requires of every hero slice: the
         /// verified faces at 8.20-8.24 then name capabilities that already work.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.23. The move-through-and-target shape, on content that is nobody's card: a
+        /// straight two-space line through an enemy unit, a direct Move to the space it published, and
+        /// the crossed unit named as the Attack's target.
+        ///
+        /// <para>Every step is mandatory, because that is what the shape is for -
+        /// <c>choose-through-target-line@1</c> reports itself impossible where no such line exists, and
+        /// rulebook p.10 then stops the action at that step.</para>
+        /// </summary>
+        private static EffectDefinition MoveThroughEffect(string id)
+        {
+            var root = new EffectNodeId("through-root");
+            var line = new EffectNodeId("through-line");
+            var actorSpace = new EffectNodeId("through-actor-space");
+            var move = new EffectNodeId("through-move");
+            var bind = new EffectNodeId("through-bind");
+
+            return new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{id}-text"),
+                "phase-8-23-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { line, actorSpace, move, bind }),
+                    new EffectNodeDefinition(
+                        line, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.ChooseThroughTargetLineV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.UnitKindParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("destination", EffectValueKind.Coordinate),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenMinionOutput, EffectValueKind.Minion)
+                        }),
+                    new EffectNodeDefinition(
+                        actorSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.DirectMoveV3,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "mover", actorSpace, "space", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.Displacement
+                                        .DirectMoveDestinationPolicy.NamedSpace)),
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticDisplacementCapabilities.NamedDestinationParameterName,
+                                line, "destination", EffectValueKind.Coordinate)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("moved", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        bind, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticContinuationCapabilities.SetAttackTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticContinuationCapabilities.HeroParameter,
+                                line, SyntheticRosterCapabilities.ChosenHeroOutput,
+                                EffectValueKind.Hero),
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticContinuationCapabilities.MinionParameter,
+                                line, SyntheticRosterCapabilities.ChosenMinionOutput,
+                                EffectValueKind.Minion)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticContinuationCapabilities.BoundHeroTargetOutput,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticContinuationCapabilities.BoundMinionTargetOutput,
+                                EffectValueKind.Minion)
+                        })
+                });
+        }
+
+        /// <summary>
+        /// Milestone 8.23. An "After the attack:" body conditioned on whether the actor moved earlier
+        /// in the same Attack, which is what <c>actor-moved-this-action@1</c> answers.
+        ///
+        /// <para>It is only meaningful as the second body on an action whose first body could have
+        /// moved the actor, which is exactly how the profile carrying it is declared.</para>
+        /// </summary>
+        private static EffectDefinition UnmovedFollowUpEffect(string id)
+        {
+            var root = new EffectNodeId("unmoved-root");
+            var moved = new EffectNodeId("unmoved-query");
+            var gate = new EffectNodeId("unmoved-gate");
+
+            return new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{id}-after-text"),
+                "phase-8-23-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { moved, gate }),
+                    new EffectNodeDefinition(
+                        moved, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.ActorMovedThisActionV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("moved", EffectValueKind.Boolean),
+                            new EffectOutputBinding("didNotMove", EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.IsFlaggedV1,
+                        childNodeIds: new[] { new EffectNodeId("may-move") },
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "flag", moved, "didNotMove", EffectValueKind.Boolean)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("value", EffectValueKind.Boolean)
+                        })
+                }
+                .Concat(MayMoveAnotherUnitNodes("may-move", includeSelf: true))
+                .ToArray());
+        }
+
         private static EffectDefinition ContinuationEffect(
             string id,
             SyntheticContinuationShape shape)
         {
             switch (shape)
             {
+                case SyntheticContinuationShape.BeforeAttackMoveThrough:
+                    return MoveThroughEffect(id);
+
+                case SyntheticContinuationShape.AfterAttackUnmovedStep:
+                    return UnmovedFollowUpEffect(id);
+
                 case SyntheticContinuationShape.BeforeAttackMove:
                     return new EffectDefinition(
                         new EffectDefinitionId($"placeholder-{id}-text"),
@@ -3561,7 +3927,16 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         : profile.NarrowedToHeroes
                             ? PrintedAttackTargetPolicy
                                 .ForClassification(AttackRangeKind.NonRanged).NarrowedToHeroes()
-                            : (PrintedAttackTargetPolicy?)null),
+                            : (PrintedAttackTargetPolicy?)null,
+                    null,
+                    GuardsDigital.Core.Rules.CardResolution.MinionDefenseContributionPolicy.IncludeAll,
+                    default,
+                    PrintedBlockCondition.None,
+                    // Milestone 8.23. The second body, where the fixture prints one.
+                    profile.SecondContinuation == SyntheticContinuationShape.None
+                        ? null
+                        : ContinuationEffect(profile.Id, profile.SecondContinuation),
+                    profile.SecondTiming),
                 CreateMovementAction(profile.MovementValue)
             };
 

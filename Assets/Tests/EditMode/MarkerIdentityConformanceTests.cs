@@ -83,7 +83,11 @@ namespace GuardsDigital.Tests.EditMode
         {
             var subjects = CapabilityHandlerScopes();
 
-            Assert.That(subjects.Any(type => type.Name == "GiveMarkerHandler"), Is.True,
+            // Milestone 8.23 renamed it. The handler became shared and parameterised by the marker it
+            // gives - Tigerclaw's two Poison strengths construct one each, exactly as every hero's
+            // Active effects construct an ActiveEffectCreationHandler - so what discovery must still
+            // reach is that one type rather than the synthetic-only class it replaced.
+            Assert.That(subjects.Any(type => type.Name == "MarkerGivingHandler"), Is.True,
                 "Subject discovery no longer reaches the give-marker handler, so the rule could pass " +
                 "vacuously over an empty scope.");
 

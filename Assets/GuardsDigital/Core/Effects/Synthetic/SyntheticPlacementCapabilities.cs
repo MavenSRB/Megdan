@@ -74,6 +74,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference PlaceInRangeV1 =>
             new EffectCapabilityReference(PlaceInRange, 1);
 
+        /// <summary>
+        /// Milestone 8.23. The printed-Radius twin, for Tigerclaw's Blend Into Shadows: "place yourself
+        /// into a space <b>in radius</b>", on a card printing a Radius 2 icon.
+        ///
+        /// <para>A third capability ID rather than a parameter, by the rule
+        /// <see cref="PlaceInRange"/> states and for the reason it states it: the card's reach is
+        /// printed, so p.16's +1 Radius item raises it - the shard records that item as covering this
+        /// exact card - and a written-down number could not be raised by anything. The handler beneath
+        /// is the same one, so p.18's Place, its immunity question and its destination query stay
+        /// written once.</para>
+        /// </summary>
+        public static EffectCapabilityId PlaceInRadius { get; } =
+            new EffectCapabilityId("synthetic-place-in-radius");
+
+        public static EffectCapabilityReference PlaceInRadiusV1 =>
+            new EffectCapabilityReference(PlaceInRadius, 1);
+
         /// <summary>The eligible-piece parameter's name, spelled once for the reason the Push's is.</summary>
         public const string EligiblePieceParameterName = "eligiblePiece";
 
@@ -95,6 +112,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new ActorSpaceHandler(),
                 new PlaceHandler(PlaceV2, PrintedValueChannel.None),
                 new PlaceHandler(PlaceInRangeV1, PrintedValueChannel.Range),
+                new PlaceHandler(PlaceInRadiusV1, PrintedValueChannel.Radius),
                 new SpawnHandler()
             };
 

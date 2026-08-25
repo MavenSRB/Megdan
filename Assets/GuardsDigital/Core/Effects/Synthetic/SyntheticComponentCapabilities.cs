@@ -55,7 +55,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             {
                 new ReclaimTokenHandler(),
                 new PlaceTokenHandler(),
-                new GiveMarkerHandler(),
+                new MarkerGivingHandler(
+                    GiveMarkerV1, SyntheticComponentDefinitions.FocusDefinition),
                 new ReturnMarkerHandler()
             };
 
@@ -321,18 +322,55 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// The attachment's identity comes from <see cref="MarkerInstanceIdentity"/> since milestone
         /// 6.8h, so two activations of one card give two attachments that can be told apart.
         /// </summary>
-        private sealed class GiveMarkerHandler : IEffectCapabilityHandler
+        public sealed class MarkerGivingHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => GiveMarkerV1;
+            /// <summary>The hero a card that already chose one binds here. Milestone 8.23.</summary>
+            public const string HolderParameterName = "holder";
 
+            private readonly MarkerDefinition definition;
+
+            public MarkerGivingHandler(
+                EffectCapabilityReference reference, MarkerDefinition definition)
+            {
+                if (!reference.IsDefined)
+                {
+                    throw new ArgumentException(
+                        "A marker-giving capability requires a defined reference.", nameof(reference));
+                }
+
+                Reference = reference;
+                this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            /// <summary>
+            /// Milestone 8.23 adds the optional holder, and it defaults to what milestone 6.2's
+            /// consumer already meant by declaring nothing: this node asks who receives the marker.
+            /// A card whose own sentence bounds the recipient - Tigerclaw's "Give a hero <b>in
+            /// range</b> a Poison marker" - binds the hero its selection chose, and this node then
+            /// asks nothing, because asking again would let a player name a hero the card cannot
+            /// reach.
+            /// </summary>
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                outputs: new[] { new EffectOutputBinding("holder", EffectValueKind.Hero) });
+                new[]
+                {
+                    new EffectCapabilityParameter(
+                        HolderParameterName, EffectValueKind.Hero, isRequired: false)
+                },
+                new[] { new EffectOutputBinding("holder", EffectValueKind.Hero) });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
+                var named = context.Input(HolderParameterName);
+                if (named.Kind == EffectValueKind.Hero && named.HeroId.IsDefined)
+                {
+                    return Resume(context, new[] { named });
+                }
+
                 if (!CanGive(context, out var candidates))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
@@ -369,7 +407,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.Applied(given);
                 }
 
-                var reference = SyntheticComponentDefinitions.FocusV1;
+                var reference = definition.Reference;
                 if (components.Catalog.CountAvailableMarkers(
                         reference, components.Markers.Attachments) < 1)
                 {
@@ -397,7 +435,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// supply and the hero set exactly as the execution does; neither reading mints an
             /// attachment identity, which is what the give itself does on resume.
             /// </summary>
-            private static bool CanGive(EffectCapabilityContext context, out EffectValue[] candidates)
+            private bool CanGive(EffectCapabilityContext context, out EffectValue[] candidates)
             {
                 candidates = Array.Empty<EffectValue>();
                 var components = context.Components;
@@ -407,7 +445,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 if (components.Catalog.CountAvailableMarkers(
-                        SyntheticComponentDefinitions.FocusV1, components.Markers.Attachments) < 1)
+                        definition.Reference, components.Markers.Attachments) < 1)
                 {
                     return false;
                 }

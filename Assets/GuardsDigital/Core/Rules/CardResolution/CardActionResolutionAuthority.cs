@@ -1666,8 +1666,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var action = definition.ActionDefinitions.Single(candidate =>
                 candidate.Id.Equals(step.CardTextActionDefinitionId));
 
+            // Milestone 8.23. The body applied here is the one this action prints for THIS moment; an
+            // Attack may print two, six numbered steps apart.
             var context = new EffectResolutionContext(
-                action.EffectRoot,
+                action.CardTextAt(step.CardTextTiming),
                 ContentCatalogs.Capabilities,
                 participants,
                 timing,
@@ -1676,6 +1678,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 EffectCardState.Of(materializedDefinitions, instances),
                 action.Kind,
+                // Milestone 8.23. The defender's own card text at rulebook p.14's step 4 is the one
+                // card-text moment with a hero on the other side of it, and that hero is the attacker.
+                // `EffectRoleKind.OpposingHero` has named exactly this since milestone 8.22 - its
+                // validator says so in as many words - and nothing supplied it here, so a Block's
+                // rider naming "the attacker" resolved to nobody and reported itself impossible.
+                // Tigerclaw's Parry and Riposte are the first content to print one.
+                //
+                // The attacker's own two moments supply none. At step 1 the Attack has no target yet,
+                // and at step 7 what it took may be a minion - so there is no opposing *hero* to name,
+                // and a text about the target reaches it through the enclosing facts instead.
+                opposingHeroId: step.CardTextTiming == CardTextTiming.DefenseAction
+                    ? EnclosingAttackOf(
+                        step.CardTextRemainderResolution, materializedDefinitions).ActorId
+                    : default,
                 components: components,
                 heroItems: skillBackend.HeroItems,
                 // Milestone 8.10, widened at 8.11. What this text may ask about the Attack it is
@@ -1872,7 +1888,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 attack.TargetHeroId,
                 attack.TargetMinionId,
                 action?.AttackRange ?? AttackRangeKind.None,
-                attack.TargetSpaceBeforeConsequences);
+                attack.TargetSpaceBeforeConsequences,
+                attack.ActorSpaceAtActionStart);
         }
 
         private void RecordOwedAttackRepeat(

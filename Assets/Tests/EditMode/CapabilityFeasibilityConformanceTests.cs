@@ -148,7 +148,18 @@ namespace GuardsDigital.Tests.EditMode
             // than handlers. `target-played-attack-this-turn@1` is still not registered even though
             // Sabina is the hero it was minted for - her three `+` Attacks reach the same question
             // through the value pipeline, so no effect node names it.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(48),
+            // Milestone 8.23 adds five. Four are Tigerclaw's printed faces reaching contracts this
+            // build had registered nowhere - `choose-through-target-line` for Blink Strike,
+            // `adjacent-terrain-presence` for Blend Into Shadows, `transfer-resource` for his
+            // three thieving Greens, and `actor-moved-this-action`, which this milestone minted
+            // because Combat Reflexes is the first face to ask at one of p.14's moments about what
+            // happened at another. The fifth is `synthetic-place-in-radius`, the printed-Radius twin
+            // of a Place, so Blend Into Shadows' reach is raised by p.16's item as its icon says.
+            // His Active effect and his two marker gives are three more registrations on top of these,
+            // each a definition bound to its own capability the way every hero's Active effects are -
+            // and each on a handler *type* the showcase already reaches, which is why they add
+            // registrations here without adding implementations.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(52),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

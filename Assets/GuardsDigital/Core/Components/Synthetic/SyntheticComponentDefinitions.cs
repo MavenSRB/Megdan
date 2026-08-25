@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.Modifications;
 
@@ -95,6 +96,10 @@ namespace GuardsDigital.Core.Components.Synthetic
         public static ComponentDefinitionCatalog CreateCatalog() =>
             new ComponentDefinitionCatalog(
                 new[] { HazardDefinition, WardDefinition },
-                new[] { FocusDefinition });
+                // Milestone 8.23. Tigerclaw's Poison marker joins the one registered set for the
+                // reason every verified capability joins the capability catalog: a match registers one
+                // list of what it can put on a dashboard and the snapshot pins that list.
+                new[] { FocusDefinition }.Concat(
+                    GuardsDigital.Core.Cards.Verified.TigerclawComponentContent.Markers()));
     }
 }

@@ -1403,6 +1403,17 @@ namespace GuardsDigital.Core.Snapshots
             {
                 WriteCoordinate(writer, pending.TargetSpaceBeforeConsequences.Value);
             }
+
+            // Milestone 8.23, schema v33. Where the attacker stood when this Attack started. It
+            // crosses the wire for the reason the target space above does, at the one moment that is
+            // even further apart: Tigerclaw's Combat Reflexes offers a move at p.14's step 1 and asks
+            // at step 7 whether it was taken, so the whole of the defender's response - and every
+            // save and reload inside it - stands between the fact and the question.
+            writer.Write(pending.ActorSpaceAtActionStart.HasValue);
+            if (pending.ActorSpaceAtActionStart.HasValue)
+            {
+                WriteCoordinate(writer, pending.ActorSpaceAtActionStart.Value);
+            }
         }
 
         private static PendingAttackResolution ReadAttackResolution(BinaryReader reader)
@@ -1455,6 +1466,7 @@ namespace GuardsDigital.Core.Snapshots
             var blockResult = SnapshotEnumReader.Read<DefenseBlockResult>(
                 reader, "pending attack Block result");
             var targetSpace = reader.ReadBoolean() ? (HexCoordinate?)ReadCoordinate(reader) : null;
+            var actorSpace = reader.ReadBoolean() ? (HexCoordinate?)ReadCoordinate(reader) : null;
             if (targetSpace.HasValue && !target.IsDefined)
             {
                 throw Malformed(
@@ -1464,7 +1476,8 @@ namespace GuardsDigital.Core.Snapshots
             return new PendingAttackResolution(
                 common.ResolutionId, common.CardId, common.DefinitionReference, common.ActionId,
                 common.ActorId, common.InvocationContext, common.StepId, phase, target,
-                attackValue, defenseOffer, defenseValue, excludedTarget, blockResult, targetSpace);
+                attackValue, defenseOffer, defenseValue, excludedTarget, blockResult, targetSpace,
+                actorSpace);
         }
 
         private static void WriteCoinLedger(BinaryWriter writer, HeroCoinLedgerRestoreStateHolder holder)

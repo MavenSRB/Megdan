@@ -42,7 +42,9 @@ namespace GuardsDigital.Core.Cards
             MinionDefenseContributionPolicy minionDefenseContributions =
                 MinionDefenseContributionPolicy.IncludeAll,
             DefenseOfferOriginRestriction defenseOfferRestriction = default,
-            PrintedBlockCondition blockCondition = PrintedBlockCondition.None)
+            PrintedBlockCondition blockCondition = PrintedBlockCondition.None,
+            EffectDefinition secondCardTextRoot = null,
+            CardTextTiming secondCardTextTiming = CardTextTiming.None)
         {
             if (!id.IsDefined)
             {
@@ -107,6 +109,8 @@ namespace GuardsDigital.Core.Cards
             MinionDefenseContributions = minionDefenseContributions;
             DefenseOfferRestriction = defenseOfferRestriction;
             BlockCondition = blockCondition;
+            SecondCardTextRoot = secondCardTextRoot;
+            SecondCardTextTiming = secondCardTextTiming;
 
             // Milestone 8.5. p.13 states an Attack's reach as a rule about the card - adjacent for a
             // non-Ranged one "even if the card has a radius icon", the printed Range for a Ranged one -
@@ -160,6 +164,8 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentException(
                     "Only a printed Block states a Block condition.", nameof(blockCondition));
             }
+
+            ValidateSecondCardText();
 
             if (BaseValues.Select(value => value.Channel).Distinct().Count() != BaseValues.Count)
             {
@@ -293,6 +299,117 @@ namespace GuardsDigital.Core.Cards
         /// every action that is not one. Milestone 8.23.
         /// </summary>
         public PrintedBlockCondition BlockCondition { get; }
+
+        /// <summary>
+        /// A second body of card text this action prints, applied at a different one of rulebook
+        /// p.14's moments - or <c>null</c>, which is every action built before milestone 8.23.
+        ///
+        /// <para><b>Why a second root rather than one root with two entry points.</b>
+        /// <see cref="CardTextTiming"/> recorded the reason this was left open: "One action declares
+        /// one timing. No verified face in Wasp's set prints two attack-text keywords ... so a card
+        /// printing both would widen this to a list at the slice that first transcribes one, rather
+        /// than being guessed at here." Tigerclaw's Combat Reflexes and Leaping Strike are that slice.
+        /// Each prints "Before the attack:" and "After the attack:" on the same face, and p.14 runs
+        /// them six numbered steps apart with the defender's whole response in between - so they are
+        /// two applications of card text and not one effect with a gap in it. Each one pauses,
+        /// persists and resumes on its own, exactly as a single body does.</para>
+        ///
+        /// <para>Two is the whole of what verified content prints, and the pair is stated as two
+        /// members rather than a list for that reason: p.14 gives an attacker exactly two moments -
+        /// step 1 and step 7 - and step 4 belongs to the defender's own card. A face printing a third
+        /// would have nowhere to put it.</para>
+        /// </summary>
+        public EffectDefinition SecondCardTextRoot { get; }
+
+        /// <summary>Which of p.14's moments <see cref="SecondCardTextRoot"/> is applied at.</summary>
+        public CardTextTiming SecondCardTextTiming { get; }
+
+        /// <summary>
+        /// The card text this action applies at one of p.14's moments, or <c>null</c> where it prints
+        /// none for that moment. Milestone 8.23, and the one place the two declared bodies are chosen
+        /// between - so nothing downstream has to know there can be two.
+        /// </summary>
+        public EffectDefinition CardTextAt(CardTextTiming timing)
+        {
+            if (timing == CardTextTiming.None)
+            {
+                return null;
+            }
+
+            if (CardTextTiming == timing)
+            {
+                return EffectRoot;
+            }
+
+            return SecondCardTextTiming == timing ? SecondCardTextRoot : null;
+        }
+
+        /// <summary>
+        /// Milestone 8.23. What a second printed body of card text has to be true of.
+        ///
+        /// <para>It requires a first, because "second" is meaningless without one and an action whose
+        /// only text sat here would be invisible to every reader that asks about
+        /// <see cref="CardTextTiming"/>. It requires a different moment, because two bodies at the
+        /// same moment are one body. Both moments must be the attacker's own two, because those are
+        /// the only two p.14 gives one card - the third is the defender's Defense action text, printed
+        /// on the defender's card. And only an Attack may carry one, because p.14's numbered order is
+        /// the Attack's alone.</para>
+        /// </summary>
+        private void ValidateSecondCardText()
+        {
+            if (!Enum.IsDefined(typeof(CardTextTiming), SecondCardTextTiming))
+            {
+                throw new ArgumentException(
+                    "Action definition requires a valid second card-text timing.",
+                    nameof(SecondCardTextTiming));
+            }
+
+            if (SecondCardTextRoot == null && SecondCardTextTiming == CardTextTiming.None)
+            {
+                return;
+            }
+
+            if (SecondCardTextRoot == null || SecondCardTextTiming == CardTextTiming.None)
+            {
+                throw new ArgumentException(
+                    "A second body of card text names both the text and the moment it is applied at.",
+                    nameof(SecondCardTextRoot));
+            }
+
+            if (EffectRoot == null || CardTextTiming == CardTextTiming.None)
+            {
+                throw new ArgumentException(
+                    "A second body of card text requires a first; an action whose only text were " +
+                    "declared here would be invisible to every reader that asks about CardTextTiming.",
+                    nameof(SecondCardTextRoot));
+            }
+
+            if (SecondCardTextTiming == CardTextTiming)
+            {
+                throw new ArgumentException(
+                    "Two bodies of card text applied at the same moment are one body.",
+                    nameof(SecondCardTextTiming));
+            }
+
+            if (Kind != ActionKind.Attack)
+            {
+                throw new ArgumentException(
+                    "Only an Attack prints text at two moments; p.14's numbered order is the " +
+                    "Attack's alone.",
+                    nameof(SecondCardTextRoot));
+            }
+
+            if (!IsAttackerMoment(CardTextTiming) || !IsAttackerMoment(SecondCardTextTiming))
+            {
+                throw new ArgumentException(
+                    "p.14 gives the attacker two moments - step 1 and step 7 - and its third belongs " +
+                    "to the defender's own card.",
+                    nameof(SecondCardTextTiming));
+            }
+        }
+
+        private static bool IsAttackerMoment(CardTextTiming timing) =>
+            timing == CardTextTiming.BeforeTheAttack || timing == CardTextTiming.AfterTheAttack;
 
         private void ValidateActionShape(IEnumerable<PrintedValueDefinition> baseValues)
         {

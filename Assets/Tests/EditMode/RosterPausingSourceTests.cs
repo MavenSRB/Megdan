@@ -523,7 +523,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaVersionMovesForThreeDecisionsV26CannotHold()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(32),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(33),
                 "Milestone 8.19c1 adds a trigger frame standing inside the effect it interrupted, a " +
                 "Defeat waiting at its removal stage with the coin operations that paid it, and a " +
                 "round-scoped record that p.8's pre-battle moment has already run. None of the three " +
@@ -539,7 +539,9 @@ namespace GuardsDigital.Tests.EditMode
                 "is standing, which is a fourth stopped decision of exactly this kind - and once " +
                 "more at milestone 8.23, for the completed basic action Tigerclaw's Cloak and " +
                 "Daggers may still be asked to repeat, which is a fifth, and the first that stands " +
-                "outside the action it is about rather than inside it. This " +
+                "outside the action it is about rather than inside it - and once more again at 8.23, for " +
+                "where the attacker stood when an Attack started, which Combat Reflexes asks about " +
+                "six numbered steps later and is a sixth. This " +
                 "case pins the current version rather than its own, so a later move has to be " +
                 "accounted for here rather than passing unread.");
         }

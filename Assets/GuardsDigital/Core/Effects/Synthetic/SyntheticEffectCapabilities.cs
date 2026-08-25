@@ -123,7 +123,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // Milestone 8.21. Brogan's four persistent texts join the same list, and three of them
                 // are the first configured content to reach milestone 8.19c1's removal prevention -
                 // the rule that milestone recorded as built and unreachable.
-                .Concat(GuardsDigital.Core.Cards.Verified.BroganActiveEffectContent.Handlers()));
+                .Concat(GuardsDigital.Core.Cards.Verified.BroganActiveEffectContent.Handlers())
+                // Milestone 8.23. Tigerclaw's Blend Into Shadows declares the one Active effect his
+                // set prints, and his two Green marker cards declare the two capabilities that give
+                // the Poison marker - the first hero-owned rules component in this project.
+                .Concat(GuardsDigital.Core.Cards.Verified.TigerclawActiveEffectContent.Handlers())
+                .Concat(GuardsDigital.Core.Cards.Verified.TigerclawComponentContent.Handlers()));
 
         /// <summary>
         /// Creates one Active effect on the actor. This is the capability that gives acceptance check 5

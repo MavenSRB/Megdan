@@ -83,6 +83,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// unaffected by that, which is why it can be asked afterwards.</para>
         /// </summary>
         public static EffectCapabilityReference SpacesAdjacentV1 => Reference("spaces-adjacent", 1);
+
+        /// <summary>
+        /// Milestone 8.23. `actor-moved-this-action` - whether the attacking hero is standing
+        /// somewhere other than where this Attack started.
+        ///
+        /// <para>Tigerclaw's Combat Reflexes is the only face that asks: "Before the attack: You may
+        /// move 1 space. Target a unit adjacent to you. After the attack: <b>If you did not move
+        /// before the attack</b>, you may move 1 space." The two clauses are p.14's step 1 and step 7,
+        /// and the frame that offered the first move has completed and been discarded long before the
+        /// second clause is reached - so the question cannot be asked of that frame and is asked of
+        /// the Attack instead.</para>
+        ///
+        /// <para>It reports a plain boolean and reads two spaces: the one
+        /// <c>ActorSpaceAtActionStart</c> recorded and the one the hero occupies now. An Attack whose
+        /// facts carry no starting space - every Attack outside this milestone's content - answers
+        /// false, which is the honest reading of "nothing recorded a move".</para>
+        /// </summary>
+        public static EffectCapabilityReference ActorMovedThisActionV1 =>
+            Reference("actor-moved-this-action", 1);
         public static EffectCapabilityReference AdjacentTerrainPresenceV1 =>
             Reference("adjacent-terrain-presence", 1);
         /// <summary>
@@ -277,10 +296,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             RegisteredHandlers().Concat(new IEffectCapabilityHandler[]
             {
-                new ThroughTargetLineHandler(),
-                new PlayedAttackThisTurnHandler(),
-                new AdjacentTerrainPresenceHandler(),
-                new TransferResourceHandler()
+                new PlayedAttackThisTurnHandler()
             });
 
         /// <summary>
@@ -340,6 +356,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
             yield return new PresenceCountHandler();
             yield return new PreConsequenceAdjacencyHandler();
             yield return new TargetIsAdjacentHandler();
+
+            // Milestone 8.23 adds Tigerclaw's four. Blink Strike and Nimble Strike name
+            // `choose-through-target-line`; Blend Into Shadows names `adjacent-terrain-presence`;
+            // his three Green thieving cards name `transfer-resource`; and Combat Reflexes names
+            // `actor-moved-this-action`, which this milestone had to mint because no earlier face
+            // asks at one of p.14's moments about what happened at another.
+            yield return new ThroughTargetLineHandler();
+            yield return new AdjacentTerrainPresenceHandler();
+            yield return new TransferResourceHandler();
+            yield return new ActorMovedThisActionHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>
@@ -1193,6 +1219,59 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 context.RosterState.IsAvailable
                     ? EffectExecutionResultKind.Applied
                     : EffectExecutionResultKind.ImpossibleMandatory;
+        }
+
+        /// <summary>
+        /// Milestone 8.23. Whether the acting hero has left the space this Attack started from.
+        ///
+        /// <para>Two coordinates and nothing else: the one the Attack recorded and the one the board
+        /// reports now. It is a reading rather than a step, so it asks nobody anything and applies
+        /// immediately - and an Attack that recorded no starting space, which is every Attack whose
+        /// card never asks, answers false.</para>
+        /// </summary>
+        private sealed class ActorMovedThisActionHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => ActorMovedThisActionV1;
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("moved", EffectValueKind.Boolean),
+
+                        // The card prints the negative - "If you did NOT move before the attack" -
+                        // and a boolean gate reads the fact it is handed rather than inverting one.
+                        // Both views of one answer are published for the reason `presence-count`
+                        // publishes a count and a `present` beside it.
+                        new EffectOutputBinding("didNotMove", EffectValueKind.Boolean)
+                    });
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var moved = HasMoved(context);
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact("moved", EffectValue.Boolean(moved)),
+                    new EffectOutcomeFact("didNotMove", EffectValue.Boolean(!moved))
+                });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
+
+            private static bool HasMoved(EffectCapabilityContext context)
+            {
+                var started = context.EnclosingAttack.ActorSpaceAtActionStart;
+                if (!started.HasValue || context.Components?.Board == null) return false;
+                return context.Components.Board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var now)
+                    && !now.Equals(started.Value);
+            }
         }
 
         private sealed class PresenceCountHandler : IEffectCapabilityHandler
