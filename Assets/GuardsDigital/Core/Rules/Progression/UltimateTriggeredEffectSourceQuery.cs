@@ -32,7 +32,7 @@ namespace GuardsDigital.Core.Rules.Progression
                     Matches(ultimate.Rule.TriggerCondition, basicAction.Kind) &&
                     ultimate.OwnerId.Equals(basicAction.ActorId) &&
                     board.TryGetHeroCoordinate(ultimate.OwnerId, out _))
-                .Select((ultimate, index) => ultimate.TriggeredSource(participants, index))
+                .Select((ultimate, index) => ultimate.TriggeredSource(participants, index, basicAction))
                 .Where(source => source != null)
                 .ToArray();
         }

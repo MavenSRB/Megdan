@@ -41,6 +41,7 @@ namespace GuardsDigital.Core.Snapshots
             WriteEffectInterrupt(writer, state.PendingEffectInterrupt);
             WriteRemovalPrevention(writer, state.PendingRemovalPrevention);
             WriteCardTextRemainder(writer, state.PendingCardTextRemainder);
+            WriteAfterActionRepeatSubject(writer, state.AfterActionRepeatSubject);
             if (continuationKind == CardActionContinuationKind.Movement)
             {
                 WriteMovementResolution(writer, pendingMovement);
@@ -105,6 +106,66 @@ namespace GuardsDigital.Core.Snapshots
             WriteAttackResolution(writer, remainder.Attack);
             writer.Write((int)remainder.Moment);
             writer.Write((int)remainder.Outcome);
+        }
+
+        /// <summary>
+        /// Milestone 8.23, schema v32. The completed basic action a standing permanent ability may be
+        /// asked to repeat.
+        ///
+        /// <para>It is written outside the continuation discriminator for the reason milestone 8.22's
+        /// card-text remainder is: the pause itself is the triggered frame, written as the Skill
+        /// continuation a few bytes earlier, and what is left over here is the subject that frame is
+        /// about. Identity alone crosses - the card, the action, the hero, the kind, and the unit an
+        /// Attack took - because the second instance takes its meaning from the trusted card
+        /// definitions when it starts.</para>
+        /// </summary>
+        private static void WriteAfterActionRepeatSubject(
+            BinaryWriter writer,
+            PendingAfterActionRepeat subject)
+        {
+            writer.Write(subject != null);
+            if (subject == null)
+            {
+                return;
+            }
+
+            writer.Write(subject.ResolutionId.Value);
+            writer.Write(subject.SourceCardInstanceId.Value);
+            writer.Write(subject.ActionDefinitionId.Value);
+            writer.Write(subject.ActorId.Value);
+            writer.Write((int)subject.Kind);
+            writer.Write((int)subject.CompletedAttackTarget.Kind);
+            if (subject.CompletedAttackTarget.Kind == AttackTargetKind.Hero)
+                writer.Write(subject.CompletedAttackTarget.HeroId.Value);
+            if (subject.CompletedAttackTarget.Kind == AttackTargetKind.Minion)
+                writer.Write(subject.CompletedAttackTarget.MinionId.Value);
+        }
+
+        private static PendingAfterActionRepeat ReadAfterActionRepeatSubject(BinaryReader reader)
+        {
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            var resolutionId = new ActionResolutionId(reader.ReadString());
+            var card = new CardInstanceId(reader.ReadString());
+            var action = new ActionDefinitionId(reader.ReadString());
+            var actor = new HeroId(reader.ReadString());
+            var kind = SnapshotEnumReader.Read<ActionKind>(reader, "after-action repeat kind");
+            var targetKind = SnapshotEnumReader.Read<AttackTargetKind>(
+                reader, "after-action repeat target kind");
+            var target = default(AttackTarget);
+            switch (targetKind)
+            {
+                case AttackTargetKind.Hero:
+                    target = AttackTarget.Hero(new HeroId(reader.ReadString()));
+                    break;
+                case AttackTargetKind.Minion:
+                    target = AttackTarget.Minion(new MinionId(reader.ReadString()));
+                    break;
+            }
+            return new PendingAfterActionRepeat(resolutionId, card, action, actor, kind, target);
         }
 
         private static PendingAttackCardTextRemainder ReadCardTextRemainder(BinaryReader reader)
@@ -622,6 +683,7 @@ namespace GuardsDigital.Core.Snapshots
                 modifications, heroItems, roundIndex, turnIndex, rosterState);
             var removalPrevention = ReadRemovalPrevention(reader);
             var cardTextRemainder = ReadCardTextRemainder(reader);
+            var afterActionRepeatSubject = ReadAfterActionRepeatSubject(reader);
 
             CardActionResolutionRestoreState state;
             switch ((CardActionContinuationKind)kind)
@@ -679,7 +741,8 @@ namespace GuardsDigital.Core.Snapshots
                 board,
                 state.WithPreAction(preAction)
                     .WithInterruptions(effectInterrupt, removalPrevention)
-                    .WithCardTextRemainder(cardTextRemainder),
+                    .WithCardTextRemainder(cardTextRemainder)
+                    .WithAfterActionRepeatSubject(afterActionRepeatSubject),
                 null, null, null, definitions, cards,
                 participants, markers, modifications, heroItems,
                 rosterState: rosterState);

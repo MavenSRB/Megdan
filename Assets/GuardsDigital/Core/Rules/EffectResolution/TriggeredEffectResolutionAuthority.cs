@@ -48,6 +48,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         public PendingResolution LastCompletedResolution { get; private set; }
 
+        /// <summary>
+        /// What the last triggered frame to finish asked for, or <c>null</c> when none has finished
+        /// since the question was asked. Milestone 8.23: a permanent ability may ask to repeat the
+        /// action it fired after, and the request is an ordinary node outcome that the authority
+        /// holding the subject reads once the frame is done.
+        /// </summary>
+        public RepeatRequest? LastRepeatRequested { get; private set; }
+
         internal void BindRosterState(EffectRosterState state)
         {
             rosterState = state ?? throw new ArgumentNullException(nameof(state));
@@ -72,6 +80,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         {
             if (PendingResolution != null)
                 throw new InvalidOperationException("A paused triggered effect must be answered before another checkpoint is visited.");
+
+            LastRepeatRequested = null;
 
             var definitions = (cardDefinitions ?? throw new ArgumentNullException(nameof(cardDefinitions))).ToArray();
             var instances = (cardInstances ?? throw new ArgumentNullException(nameof(cardInstances))).ToArray();
@@ -118,7 +128,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     candidate.EnclosingActionKind,
                     components: components,
                     heroItems: heroItems,
-                    rosterState: rosterState);
+                    rosterState: rosterState,
+                    repeatIsUnavailable: candidate.RepeatIsUnavailable);
                 var step = EffectResolutionSession.Start(
                     new EffectResolutionId(
                         $"trigger-{candidate.SourceId}-{checkpoint.Checkpoint}-{checkpoint.RoundIndex}-{checkpoint.TurnIndex}"),
@@ -132,6 +143,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 if (!step.Accepted)
                     throw new InvalidOperationException("A configured triggered effect was refused by its effect frame.");
                 PendingResolution = step.Frame;
+                if (step.IsComplete && step.RepeatRequested.IsRequested)
+                {
+                    // One checkpoint can visit several abilities. A request already made stands:
+                    // a later ability finishing quietly is not a decline of an earlier one.
+                    LastRepeatRequested = step.RepeatRequested;
+                }
                 if (PendingResolution != null)
                     break;
             }
@@ -150,7 +167,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 ActionDefinitionId sourceActionDefinitionId,
                 ActionKind enclosingActionKind,
                 EffectDefinitionReference triggeredEffect,
-                long orderingSequence)
+                long orderingSequence,
+                PerformedBasicAction triggeringBasicAction)
             {
                 SourceId = sourceId;
                 ControllerHeroId = controllerHeroId;
@@ -161,6 +179,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 EnclosingActionKind = enclosingActionKind;
                 TriggeredEffect = triggeredEffect;
                 OrderingSequence = orderingSequence;
+                TriggeringBasicAction = triggeringBasicAction;
             }
 
             public string SourceId { get; }
@@ -172,6 +191,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             public ActionKind EnclosingActionKind { get; }
             public EffectDefinitionReference TriggeredEffect { get; }
             public long OrderingSequence { get; }
+
+            /// <summary>
+            /// The completed basic action this occurrence fired for, when it was derived from one.
+            /// Milestone 8.23; <see cref="PerformedBasicAction.None"/> for every Active-effect
+            /// trigger, which fires inside a lifecycle rather than after an action.
+            /// </summary>
+            public PerformedBasicAction TriggeringBasicAction { get; }
+
+            /// <summary>
+            /// Whether a repeat node in this occurrence has something to repeat. Rulebook p.10 forbids
+            /// repeating a repeated action, and an occurrence derived from no completed action has no
+            /// subject at all.
+            /// </summary>
+            public bool RepeatIsUnavailable =>
+                !TriggeringBasicAction.IsDefined || TriggeringBasicAction.WasRepeatedInstance;
 
             public static TriggerCandidate FromActive(
                 ActiveEffectInstance source,
@@ -186,7 +220,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     source.SourceActionDefinitionId,
                     actionKind,
                     source.Definition.TriggeredEffect.Value,
-                    source.CreationSequence);
+                    source.CreationSequence,
+                    PerformedBasicAction.None);
 
             public static TriggerCandidate FromContinuous(ContinuousTriggeredEffectSource source) =>
                 new TriggerCandidate(
@@ -198,7 +233,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     source.SourceActionDefinitionId,
                     source.EnclosingActionKind,
                     source.TriggeredEffect,
-                    source.OrderingSequence);
+                    source.OrderingSequence,
+                    source.TriggeringBasicAction);
         }
 
         public EffectResolutionStepResult Answer(
@@ -249,6 +285,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             {
                 PendingResolution = step.Frame;
                 LastCompletedResolution = step.IsComplete ? resolving : null;
+
+                // Milestone 8.23. The answer that finished the frame is where a `may` repeat is
+                // actually decided, so it is where the request is published. A decline finishes the
+                // frame with no request at all, which is the same null a trigger that never mentioned
+                // a repeat leaves behind - and the two are the same outcome for the holder.
+                if (step.IsComplete && step.RepeatRequested.IsRequested)
+                {
+                    LastRepeatRequested = step.RepeatRequested;
+                }
             }
             return step;
         }

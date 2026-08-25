@@ -228,9 +228,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
             EnclosingAttackFacts enclosingAttack = default,
             EffectRosterState rosterState = null,
-            bool watchesAppliedPushes = false)
+            bool watchesAppliedPushes = false,
+            bool repeatIsUnavailable = false)
         {
             WatchesAppliedPushes = watchesAppliedPushes;
+            RepeatIsUnavailable = repeatIsUnavailable;
             EnclosingAttack = enclosingAttack;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
                 enclosingActionKind == ActionKind.None)
@@ -257,6 +259,23 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroItems = heroItems;
             RosterState = rosterState ?? EffectRosterState.Absent;
         }
+
+        /// <summary>
+        /// Whether a <see cref="EffectNodeKind.RepeatAction"/> node in this frame has nothing to
+        /// repeat. Milestone 8.23, and false for every frame that runs inside the action it repeats.
+        ///
+        /// <para>It exists for the one family that does not: a permanent ability triggered after an
+        /// action ends - Tigerclaw's Cloak and Daggers - stands outside the action it offers to repeat
+        /// and therefore can be reached at a moment when there is nothing repeatable. Rulebook p.10's
+        /// "You cannot repeat a repeated action!" is exactly such a moment, and so is a completed
+        /// action this build has no repeated instance for.</para>
+        ///
+        /// <para>An ineligible node is skipped in silence rather than refused, which is the behaviour a
+        /// bounded chain's last instance already has: the node kind cannot be mandatory, so nothing is
+        /// owed and no decision is opened. The alternative - asking, and then doing nothing when the
+        /// player confirms - is the one outcome a `may` must never produce.</para>
+        /// </summary>
+        public bool RepeatIsUnavailable { get; }
 
         /// <summary>
         /// Milestone 8.19c1. Whether any live rule source has declared that it runs after one of
@@ -884,7 +903,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         // confirm-or-decline; an eligible `if able` requests without asking; and an
                         // instance whose chain has run the node's declared maximum skips in silence,
                         // which is the whole bound and is why this node kind refuses to be mandatory.
-                        if (!RepeatedActionQuery.CanRepeat(frame, node))
+                        // Milestone 8.23 added the second half of this gate. A node that stands
+                        // outside the action it repeats can be reached with nothing repeatable -
+                        // p.10 forbids repeating a repeat - and skipping in silence is what that
+                        // costs, exactly as running out of declared repeats does.
+                        if (!RepeatedActionQuery.CanRepeat(frame, node) || context.RepeatIsUnavailable)
                         {
                             Pop(continuation);
                             Record(outcomes, events, node.Id,

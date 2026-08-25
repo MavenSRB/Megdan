@@ -64,8 +64,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingPreActionResolution pendingPreAction = null,
             PendingEffectInterrupt pendingEffectInterrupt = null,
             PendingRemovalPreventionDecision pendingRemovalPrevention = null,
-            PendingAttackCardTextRemainder pendingCardTextRemainder = null)
+            PendingAttackCardTextRemainder pendingCardTextRemainder = null,
+            PendingAfterActionRepeat afterActionRepeatSubject = null)
         {
+            AfterActionRepeatSubject = afterActionRepeatSubject;
             PendingCardTextRemainder = pendingCardTextRemainder;
             PendingEffectInterrupt = pendingEffectInterrupt;
             PendingRemovalPrevention = pendingRemovalPrevention;
@@ -88,6 +90,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// trigger stopped, and the pause itself is the interrupt beside it.
         /// </summary>
         public PendingAttackCardTextRemainder PendingCardTextRemainder { get; }
+
+        /// <summary>
+        /// Milestone 8.23. The completed basic action a standing after-action ability may still be
+        /// asked to repeat, or <c>null</c>. It rides every continuation kind for the reason the
+        /// remainder above does: it is a fact about the action that ended rather than a kind of pause,
+        /// and the pause itself is the triggered frame written as the Skill continuation beside it.
+        /// </summary>
+        public PendingAfterActionRepeat AfterActionRepeatSubject { get; }
 
         public CardActionContinuationKind ContinuationKind { get; }
 
@@ -278,7 +288,27 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 PendingPreAction,
                 PendingEffectInterrupt,
                 PendingRemovalPrevention,
-                pendingCardTextRemainder);
+                pendingCardTextRemainder,
+                AfterActionRepeatSubject);
+
+        /// <summary>The same state carrying milestone 8.23's held after-action repeat subject.</summary>
+        public CardActionResolutionRestoreState WithAfterActionRepeatSubject(
+            PendingAfterActionRepeat afterActionRepeatSubject) =>
+            new CardActionResolutionRestoreState(
+                ContinuationKind,
+                PendingMovementResolution,
+                PendingAttackResolution,
+                PendingSkillResolution,
+                CoinLedger,
+                PendingCorrection,
+                PendingRepeat,
+                PendingImmediateLanePush,
+                PendingCardText,
+                PendingPreAction,
+                PendingEffectInterrupt,
+                PendingRemovalPrevention,
+                PendingCardTextRemainder,
+                afterActionRepeatSubject);
 
         public static CardActionResolutionRestoreState WithPendingCardText(
             PendingAttackCardTextResolution pendingCardText,

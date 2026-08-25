@@ -130,6 +130,40 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications);
         }
 
+        /// <summary>
+        /// Milestone 8.23. Starts the second instance of a Movement a permanent after-action ability
+        /// asked to repeat - Tigerclaw's Cloak and Daggers over a Movement performed on a basic card.
+        ///
+        /// <para>It takes the identities rather than an offer for the reason
+        /// <see cref="SkillCardActionStrategyBackend.StartRepeatedSkill"/> does: a repeated action is
+        /// created by a rule and is never offered, so the offer gate that admits only the two printed
+        /// invocation contexts cannot be the way in. Everything past that gate is the ordinary start -
+        /// the same Movement Total composed from the same card, the same item bonus, the same declared
+        /// caps and the same start restrictions, read from the board as it now stands, which is
+        /// rulebook p.10's "the entire action again (with the same range, restrictions etc.)".</para>
+        /// </summary>
+        public CardActionResolutionResult StartRepeatedMovement(
+            ActionResolutionId resolutionId,
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications)
+        {
+            if (offer.InvocationContext != ActionInvocationContext.Repeated)
+            {
+                throw new ArgumentException(
+                    "A repeated Movement runs under the repeated invocation context.", nameof(offer));
+            }
+
+            return StartMovementResolution(
+                resolutionId,
+                offer,
+                definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions)),
+                instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances)),
+                authoritativeOffers: null,
+                modifications);
+        }
+
         private CardActionResolutionResult StartMovementResolution(
             ActionResolutionId resolutionId,
             ActionOffer offer,
@@ -151,7 +185,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
-            if (offer.InvocationContext != ActionInvocationContext.PrintedPrimary &&
+            // Milestone 8.23. A null offer list is a repeated instance, which p.10 creates by rule and
+            // never offers; the two printed contexts still come through the offers that produced them.
+            var isRepeatedInstance = authoritativeOffers == null;
+            if (!isRepeatedInstance &&
+                offer.InvocationContext != ActionInvocationContext.PrintedPrimary &&
                 offer.InvocationContext != ActionInvocationContext.PrintedSecondary)
             {
                 return CardActionResolutionResult.Reject(
@@ -160,7 +198,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
-            if (!offer.IsAvailable || !authoritativeOffers.Contains(offer))
+            if (!offer.IsAvailable || (!isRepeatedInstance && !authoritativeOffers.Contains(offer)))
             {
                 return CardActionResolutionResult.Reject(
                     CardActionResolutionRejectionReason.UnavailableOffer,

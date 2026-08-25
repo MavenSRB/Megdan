@@ -243,7 +243,22 @@ namespace GuardsDigital.Core.Snapshots
         // remaining roster heroes is the first printed content to name some of milestone 8.19b's
         // vocabulary, so each of them lengthens this list and each of them costs a version. That is the
         // list doing its job rather than churn.
-        public const int CurrentSchemaVersion = 31;
+        // Milestone 8.23 moves it to 32, and this one is a field again: the completed basic action a
+        // permanent after-action ability may still be asked to repeat. Tigerclaw's Cloak and Daggers -
+        // "After you perform a basic action you may repeat it once" - opens its decision at p.8's
+        // ActionEnded checkpoint, which is after the action it is about has finished. Every other
+        // repeat in this build is asked from inside the action it repeats and therefore needs nothing
+        // written down; this one stands outside it, and PerformedBasicAction is deliberately a fact
+        // the checkpoint produces rather than state anything keeps, so the subject has to cross the
+        // pause on the wire.
+        //
+        // v31 is rejected rather than migrated, and the reading that is missing is the reason. Absent
+        // means "no ability is standing", which is true of every payload written before this
+        // milestone - but a v31 payload captured while Cloak and Daggers held its question would
+        // restore as a match with the question standing and nothing to answer it about, and confirming
+        // would then do nothing at all. A `may` that can be confirmed to no effect is the one outcome
+        // p.10's repeat must never produce.
+        public const int CurrentSchemaVersion = 32;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

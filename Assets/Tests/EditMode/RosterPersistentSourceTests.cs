@@ -400,6 +400,80 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -----------------------------------------------------------------------------------------
+        // Milestone 8.23: what the trigger's occurrence carries, and what p.10 lets it repeat
+        // -----------------------------------------------------------------------------------------
+
+        [Test]
+        public void EachOccurrence_NamesTheCompletedActionItFiredFor()
+        {
+            var fixture = SourceFixture.Create();
+            var completed = fixture.BasicActionBy(fixture.Red, ActionKind.Attack);
+
+            var source = UltimateTriggeredEffectSourceQuery.Derive(
+                fixture.AfterBasicActionUltimates(), fixture.Board, fixture.Participants,
+                completed).Single();
+
+            Assert.That(source.TriggeringBasicAction, Is.EqualTo(completed),
+                "Cloak and Daggers offers to repeat what just ended, and PerformedBasicAction is a " +
+                "fact the checkpoint produces rather than state anything keeps - so the occurrence " +
+                "has to carry it or nothing downstream can name the subject.");
+        }
+
+        [Test]
+        public void ARepeatedInstance_StillTriggersButOffersNothingToRepeat()
+        {
+            var fixture = SourceFixture.Create();
+            var repeated = fixture.BasicActionBy(
+                fixture.Red, ActionKind.Attack, wasRepeatedInstance: true);
+
+            var source = UltimateTriggeredEffectSourceQuery.Derive(
+                fixture.AfterBasicActionUltimates(), fixture.Board, fixture.Participants,
+                repeated).Single();
+
+            Assert.That(source.TriggeringBasicAction.WasRepeatedInstance, Is.True,
+                "A repeated basic action is still a basic action being performed, so the ability " +
+                "fires. Wasp's High Voltage depends on exactly that reading.");
+            Assert.That(
+                PendingAfterActionRepeat.For(
+                    repeated, new ActionResolutionId("probe")),
+                Is.Null,
+                "p.10: \"You cannot repeat a repeated action!\" - so there is no subject to hold, " +
+                "and the ability's repeat node finds nothing to offer and skips in silence rather " +
+                "than asking a question that could be confirmed to no effect.");
+        }
+
+        [Test]
+        public void APrintedInstance_ProducesASubjectNamingWhatItRepeats()
+        {
+            var fixture = SourceFixture.Create();
+            var completed = fixture.BasicActionBy(fixture.Red, ActionKind.Movement);
+
+            var subject = PendingAfterActionRepeat.For(
+                completed, new ActionResolutionId("probe"));
+
+            Assert.That(subject, Is.Not.Null);
+            Assert.That(subject.Kind, Is.EqualTo(ActionKind.Movement),
+                "p.9 makes every action on a basic card basic, so the set is wider than the printed " +
+                "icons and the kind is what decides which resolver starts the second instance.");
+            Assert.That(subject.ActorId, Is.EqualTo(fixture.Red));
+            Assert.That(subject.SourceCardInstanceId, Is.EqualTo(completed.SourceCardInstanceId));
+            Assert.That(subject.ActionDefinitionId, Is.EqualTo(completed.ActionDefinitionId));
+        }
+
+        [Test]
+        public void AnOccurrenceDerivedFromNoCompletedAction_CarriesNoSubject()
+        {
+            var fixture = SourceFixture.Create();
+
+            Assert.That(
+                PendingAfterActionRepeat.For(
+                    PerformedBasicAction.None, new ActionResolutionId("probe")),
+                Is.Null,
+                "An Active-effect trigger fires inside a lifecycle rather than after an action, so " +
+                "a repeat node reached from one has nothing to repeat and is skipped.");
+        }
+
+        // -----------------------------------------------------------------------------------------
         // Fixture
         // -----------------------------------------------------------------------------------------
 
@@ -584,11 +658,13 @@ namespace GuardsDigital.Tests.EditMode
                 blueAt = DistantSpace;
             }
 
-            public PerformedBasicAction BasicActionBy(HeroId actor, ActionKind kind)
+            public PerformedBasicAction BasicActionBy(
+                HeroId actor, ActionKind kind, bool wasRepeatedInstance = false)
             {
                 var offer = OfferOf(kind, CardClassification.Basic, actor);
                 return PerformedBasicAction.Of(
-                    actor, offer.SourceCardInstanceId, offer.ActionDefinitionId, kind);
+                    actor, offer.SourceCardInstanceId, offer.ActionDefinitionId, kind,
+                    wasRepeatedInstance);
             }
 
             public ActionOffer OfferOf(

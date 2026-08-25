@@ -26,7 +26,8 @@ namespace GuardsDigital.Core.Timing
             ActionKind enclosingActionKind,
             EffectDefinitionReference triggeredEffect,
             IEnumerable<TimingCheckpoint> triggerCheckpoints,
-            long orderingSequence = 0)
+            long orderingSequence = 0,
+            PerformedBasicAction triggeringBasicAction = default)
         {
             if (string.IsNullOrWhiteSpace(sourceId)) throw new ArgumentException("A continuous trigger requires stable identity.", nameof(sourceId));
             if (!controllerHeroId.IsDefined || !sourceCardInstanceId.IsDefined ||
@@ -56,6 +57,7 @@ namespace GuardsDigital.Core.Timing
             TriggeredEffect = triggeredEffect;
             TriggerCheckpoints = new ReadOnlyCollection<TimingCheckpoint>(checkpoints);
             OrderingSequence = orderingSequence;
+            TriggeringBasicAction = triggeringBasicAction;
         }
 
         public string SourceId { get; }
@@ -68,5 +70,14 @@ namespace GuardsDigital.Core.Timing
         public EffectDefinitionReference TriggeredEffect { get; }
         public IReadOnlyList<TimingCheckpoint> TriggerCheckpoints { get; }
         public long OrderingSequence { get; }
+
+        /// <summary>
+        /// The completed basic action this occurrence fired for, or
+        /// <see cref="PerformedBasicAction.None"/> for a source that is not derived from one.
+        /// Milestone 8.23: Tigerclaw's Cloak and Daggers offers to repeat what just ended, so its
+        /// occurrence has to name what that was - the fact is produced by the checkpoint and is gone
+        /// by the time the effect runs.
+        /// </summary>
+        public PerformedBasicAction TriggeringBasicAction { get; }
     }
 }

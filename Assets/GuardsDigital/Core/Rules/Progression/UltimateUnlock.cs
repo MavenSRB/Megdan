@@ -68,7 +68,8 @@ namespace GuardsDigital.Core.Rules.Progression
 
         public ContinuousTriggeredEffectSource TriggeredSource(
             MatchParticipants participants,
-            long orderingSequence = 0)
+            long orderingSequence = 0,
+            GuardsDigital.Core.Cards.PerformedBasicAction triggeringBasicAction = default)
         {
             if (!Rule.TriggeredEffect.HasValue) return null;
             if (participants == null) throw new ArgumentNullException(nameof(participants));
@@ -83,7 +84,8 @@ namespace GuardsDigital.Core.Rules.Progression
                 ActionKind.Skill,
                 Rule.TriggeredEffect.Value,
                 Rule.TriggerCheckpoints,
-                orderingSequence);
+                orderingSequence,
+                triggeringBasicAction);
         }
 
         /// <summary>

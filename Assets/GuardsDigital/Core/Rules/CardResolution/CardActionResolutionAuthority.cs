@@ -106,6 +106,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         private PendingDisplacedMinionCorrection pendingCorrection;
         private PendingRepeatedAction pendingRepeat;
+
+        /// <summary>
+        /// Milestone 8.23. The completed basic action a standing after-action ability may repeat, and
+        /// the repeat it has already asked for. They are two fields rather than one with a flag
+        /// because they are two states of the match: a decision that has not been answered, and an
+        /// instance that is owed and has not started.
+        /// </summary>
+        private PendingAfterActionRepeat repeatSubject;
+
+        private PendingAfterActionRepeat owedAfterActionRepeat;
+
+        /// <summary>
+        /// The unit a repeated Attack may not take again, when the ability that asked printed the
+        /// exclusion. Milestone 8.23; Tigerclaw's Cloak and Daggers is what prints it.
+        /// </summary>
+        private AttackTarget owedAfterActionRepeatExclusion;
         private PendingImmediateLanePushRequest pendingLanePush;
         private PendingAttackCardTextResolution pendingCardText;
 
@@ -405,10 +421,76 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             RuleModificationSet modifications,
-            IEnumerable<ContinuousTriggeredEffectSource> continuousSources = null) =>
-            triggeredEffects.ApplyCheckpoint(
+            IEnumerable<ContinuousTriggeredEffectSource> continuousSources = null,
+            PerformedBasicAction basicAction = default,
+            AttackTarget completedAttackTarget = default)
+        {
+            // Milestone 8.23. The subject is held before the trigger runs, because the trigger may open
+            // a decision and the action it is about has already finished by then. It is cleared again
+            // the moment the trigger's frame completes without asking for it, which is the ordinary
+            // case and every case before this milestone.
+            repeatSubject = PendingAfterActionRepeat.For(
+                basicAction, RepeatResolutionIdFor(basicAction), completedAttackTarget);
+            var events = triggeredEffects.ApplyCheckpoint(
                 timing, checkpoint, tieBreaker, definitions, instances, participants, modifications,
                 skillBackend.HeroItems, continuousSources);
+            SettleAfterActionRepeat(triggeredEffects.LastRepeatRequested);
+            return events;
+        }
+
+        /// <summary>
+        /// The identity the repeated instance runs under, derived from the action it repeats rather
+        /// than minted from a counter, so a replay of the same accepted commands produces the same one.
+        /// </summary>
+        private static ActionResolutionId RepeatResolutionIdFor(PerformedBasicAction basicAction) =>
+            basicAction.IsDefined
+                ? new ActionResolutionId(
+                    $"after-action-repeat:{basicAction.SourceCardInstanceId.Value}:" +
+                    $"{basicAction.ActionDefinitionId.Value}")
+                : default;
+
+        /// <summary>
+        /// Milestone 8.23. Keeps the held subject exactly while the ability that may repeat it is
+        /// standing, and turns it into an owed repeat when the ability asked for one.
+        ///
+        /// <para>A trigger still holding a question keeps the subject: the decision is what the subject
+        /// exists for. A trigger that finished without requesting drops it, which is both a decline and
+        /// the case of an ability that never mentioned a repeat at all.</para>
+        /// </summary>
+        private void SettleAfterActionRepeat(RepeatRequest? requested)
+        {
+            if (triggeredEffects.PendingResolution != null)
+            {
+                return;
+            }
+
+            if (requested.HasValue && requested.Value.IsRequested && repeatSubject != null)
+            {
+                owedAfterActionRepeat = repeatSubject;
+
+                // Tigerclaw's Cloak and Daggers prints "if you repeat an attack action, you cannot
+                // target the same unit", which arrives as the requesting node's own declared binding.
+                // It is read off the ability rather than assumed, so an ability printing no such clause
+                // repeats freely - and it applies to an Attack alone, because no other action kind the
+                // page repeats has a target to exclude.
+                owedAfterActionRepeatExclusion =
+                    requested.Value.Binding == RepeatTargetBinding.DifferentTarget &&
+                    repeatSubject.Kind == ActionKind.Attack
+                        ? repeatSubject.CompletedAttackTarget
+                        : default;
+            }
+
+            repeatSubject = null;
+        }
+
+        /// <summary>Whether a permanent after-action ability has asked for a repeat that has not started.</summary>
+        public bool HasOwedAfterActionRepeat => owedAfterActionRepeat != null;
+
+        /// <summary>The owed repeat, or null. Milestone 8.23.</summary>
+        public PendingAfterActionRepeat OwedAfterActionRepeat => owedAfterActionRepeat;
+
+        /// <summary>The subject a standing after-action ability may still ask to repeat, or null.</summary>
+        public PendingAfterActionRepeat AfterActionRepeatSubject => repeatSubject;
 
         internal EffectResolutionStepResult AnswerTriggeredEffectChoice(
             EffectChoiceCommand command,
@@ -424,7 +506,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ??
                 throw new ArgumentNullException(nameof(instances));
-            return CompleteTriggeredConsequences(
+            var answered = CompleteTriggeredConsequences(
                 triggeredEffects.Answer(
                     command, timing, materializedDefinitions, materializedInstances, participants,
                     modifications, roundIndex, turnIndex, skillBackend.HeroItems),
@@ -432,6 +514,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 materializedDefinitions,
                 materializedInstances);
+
+            // Milestone 8.23. The answer is where a `may` repeat is decided, so it is where the held
+            // subject becomes an owed instance or is dropped.
+            SettleAfterActionRepeat(triggeredEffects.LastRepeatRequested);
+            return answered;
         }
 
         internal IReadOnlyList<ResolutionStep> ConsumeTriggeredResolutionSteps()
@@ -1052,7 +1139,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // Milestone 8.22. The rest of p.14, owed while a Push inside its card text has set off
                 // a trigger that is standing. It rides whatever continuation the capture found, for
                 // the reason the Lane-Push request does.
-                .WithCardTextRemainder(pendingCardTextAwaitingInterrupt);
+                .WithCardTextRemainder(pendingCardTextAwaitingInterrupt)
+                .WithAfterActionRepeatSubject(repeatSubject);
 
         private CardActionResolutionRestoreState CaptureContinuation()
         {
@@ -1139,6 +1227,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 heroItems, rosterState);
             restoredAuthority.pendingLanePush = state.PendingImmediateLanePush;
             restoredAuthority.pendingPreAction = state.PendingPreAction;
+            restoredAuthority.repeatSubject = state.AfterActionRepeatSubject;
 
             // Milestone 8.19c1. Restored outside the continuation switch for the reason the Lane-Push
             // request is: neither is a continuation, and both stand beside whichever one the action
@@ -1833,6 +1922,156 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return repeated.Accepted
                 ? CardActionResolutionResult.Accept(false, null, null, repeated.Steps)
                 : CardActionResolutionResult.Accept(true, null, null, Array.Empty<ResolutionStep>());
+        }
+
+        /// <summary>
+        /// Milestone 8.23. Starts the instance a permanent after-action ability asked for.
+        ///
+        /// <para>Rulebook p.10: "After you perform this action, you may perform the entire action again
+        /// (with the same range, restrictions etc.)". So this does not reconstruct anything the first
+        /// instance did - it starts the same action from the same card, under
+        /// <see cref="ActionInvocationContext.Repeated"/>, and every rule that applied to the first
+        /// applies again from the board as it now stands.</para>
+        ///
+        /// <para>Which resolver starts it is decided by the kind, and by nothing else. p.9 makes every
+        /// action on a basic card basic, so the set is wider than the printed icons: a Movement, a
+        /// Hold, a Fast Travel and a Clear performed on a basic card are all repeatable, and each is
+        /// started by the same backend that started the first instance. Nothing here reads a card name
+        /// or an ability.</para>
+        ///
+        /// <para>A repeat that cannot start - the actor has left the board, the card no longer offers
+        /// the action, no unit the Attack admits is left - simply does not happen, which is p.10
+        /// offering a repeat rather than owing one. It is reported as a completed action rather than as
+        /// a rejected command, exactly as milestone 8.10's Attack repeat is.</para>
+        /// </summary>
+        public CardActionResolutionResult StartOwedAfterActionRepeat(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            var owed = owedAfterActionRepeat;
+            owedAfterActionRepeat = null;
+            var nothingHappened = CardActionResolutionResult.Accept(
+                true, null, null, Array.Empty<ResolutionStep>());
+            if (owed == null)
+            {
+                return nothingHappened;
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ??
+                throw new ArgumentNullException(nameof(instances));
+            var card = materializedInstances.FirstOrDefault(
+                candidate => candidate.Id.Equals(owed.SourceCardInstanceId));
+            var definition = card == null
+                ? null
+                : materializedDefinitions.FirstOrDefault(
+                    candidate => candidate.Reference.Equals(card.DefinitionReference));
+            var action = definition?.ActionDefinitions
+                .FirstOrDefault(candidate => candidate.Id.Equals(owed.ActionDefinitionId));
+            if (action == null)
+            {
+                // A payload naming a card or an action this build does not supply produces no repeat
+                // rather than a reconstructed one, which is the same refusal every other continuation
+                // here makes against a tampered or stale record.
+                return nothingHappened;
+            }
+
+            var repeatedOffer = new ActionOffer(
+                owed.SourceCardInstanceId,
+                definition.Reference,
+                owed.ActionDefinitionId,
+                owed.ActorId,
+                ActionInvocationContext.Repeated,
+                true,
+                action.AttackRange,
+                action.SourceCardStateTransition);
+
+            switch (owed.Kind)
+            {
+                case ActionKind.Attack:
+                    var repeatedAttack = attackDefenseBackend.StartRepeatedAttack(
+                        new PendingAttackResolution(
+                            owed.ResolutionId,
+                            owed.SourceCardInstanceId,
+                            definition.Reference,
+                            owed.ActionDefinitionId,
+                            owed.ActorId,
+                            ActionInvocationContext.Repeated,
+                            new ActionResolutionStepId("attack-target"),
+                            AttackResolutionPhase.ChooseTarget,
+                            default(AttackTarget),
+                            null),
+                        // p.10's exclusion belongs to card text that names it. Cloak and Daggers prints
+                        // its own - "if you repeat an attack action, you cannot target the same unit" -
+                        // and that arrives as the request's binding rather than as a rule of this
+                        // dispatcher, which is why it is read off the ability and not assumed here.
+                        owedAfterActionRepeatExclusion,
+                        materializedDefinitions,
+                        materializedInstances,
+                        participants,
+                        modifications);
+                    owedAfterActionRepeatExclusion = default;
+                    return repeatedAttack.Accepted
+                        ? CardActionResolutionResult.Accept(false, null, null, repeatedAttack.Steps)
+                        : nothingHappened;
+
+                case ActionKind.Skill:
+                    if (action.EffectRoot == null)
+                    {
+                        return nothingHappened;
+                    }
+
+                    var repeatedSkill = skillBackend.StartRepeatedSkill(
+                        owed.ResolutionId,
+                        PendingRepeatedAction.Mint(
+                            owed.ResolutionId,
+                            owed.SourceCardInstanceId,
+                            definition.Reference,
+                            owed.ActionDefinitionId,
+                            action.EffectRoot.Reference,
+                            owed.ActorId,
+                            owed.ActorId,
+                            RepeatContinuation.Next(1)),
+                        materializedDefinitions,
+                        materializedInstances,
+                        participants,
+                        timing,
+                        modifications,
+                        components,
+                        roundIndex,
+                        turnIndex,
+                        out _,
+                        out _,
+                        out _,
+                        out _);
+                    return repeatedSkill.Accepted && !repeatedSkill.IsComplete
+                        ? CardActionResolutionResult.Accept(false, null, null, repeatedSkill.Steps)
+                        : repeatedSkill.Accepted
+                            ? CardActionResolutionResult.Accept(true, null, null, repeatedSkill.Steps)
+                            : nothingHappened;
+
+                case ActionKind.Movement:
+                    var repeatedMovement = movementBackend.StartRepeatedMovement(
+                        owed.ResolutionId, repeatedOffer, materializedDefinitions,
+                        materializedInstances, modifications);
+                    return repeatedMovement.Accepted
+                        ? CardActionResolutionResult.Accept(
+                            repeatedMovement.IsComplete, null, null, repeatedMovement.Steps)
+                        : nothingHappened;
+
+                default:
+                    // p.11's Fast Travel, p.12's Hold and p.13's Clear complete inside the command that
+                    // starts them and are driven by the turn authority rather than by a resolver this
+                    // dispatcher holds, so their second instance is started there. Reporting "nothing
+                    // happened" here would lose it; the caller asks this only for the kinds above.
+                    return nothingHappened;
+            }
         }
 
         private void AppendRequestedHeroDefeats(

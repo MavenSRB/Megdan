@@ -51,6 +51,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionDefinitionId completedActionDefinitionId = default,
             HeroId completedActorId = default,
             ActionKind completedActionKind = ActionKind.None,
+            ActionInvocationContext completedInvocationContext = ActionInvocationContext.None,
+            AttackTarget completedAttackTarget = default,
             PendingAttackResolution cardTextRemainderResolution = null,
             AttackResolutionOutcome cardTextRemainderOutcome = AttackResolutionOutcome.None)
         {
@@ -67,6 +69,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CompletedActionDefinitionId = completedActionDefinitionId;
             CompletedActorId = completedActorId;
             CompletedActionKind = completedActionKind;
+            CompletedInvocationContext = completedInvocationContext;
+            CompletedAttackTarget = completedAttackTarget;
         }
 
         public ResolutionStepKind Kind { get; }
@@ -133,7 +137,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
             HeroId actorId,
-            ActionKind kind)
+            ActionKind kind,
+            ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary,
+            AttackTarget completedAttackTarget = default)
         {
             if (!sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined || !actorId.IsDefined)
             {
@@ -156,7 +162,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 sourceCardInstanceId,
                 completedActionDefinitionId: actionDefinitionId,
                 completedActorId: actorId,
-                completedActionKind: kind);
+                completedActionKind: kind,
+                completedInvocationContext: invocationContext,
+                completedAttackTarget: completedAttackTarget);
         }
 
         /// <summary>
@@ -240,5 +248,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Which action it was; defined only on a completion step.</summary>
         public ActionKind CompletedActionKind { get; }
+
+        /// <summary>
+        /// Which invocation the instance that ended was running under; defined only on a completion
+        /// step. Milestone 8.23, and rulebook p.10 is the whole of why it is carried: "You cannot
+        /// repeat a repeated action!" A trigger that offers to repeat what just ended has to be able
+        /// to tell a printed instance from the instance it already produced, and by the time the
+        /// action has ended its resolution is gone.
+        /// </summary>
+        public ActionInvocationContext CompletedInvocationContext { get; }
+
+        /// <summary>
+        /// The unit an Attack that ended took, defined only on an Attack completion step. Milestone
+        /// 8.23: a permanent ability that repeats the action may print an exclusion - Tigerclaw's Cloak
+        /// and Daggers prints "if you repeat an attack action, you cannot target the same unit" - and
+        /// by the time it is answered the resolution that knew the target has been cleared.
+        /// </summary>
+        public AttackTarget CompletedAttackTarget { get; }
     }
 }

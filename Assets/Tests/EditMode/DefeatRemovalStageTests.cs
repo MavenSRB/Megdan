@@ -467,9 +467,9 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(31),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(32),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
-                "own. The version has since moved nineteen times, none of them for it: milestone 6.7 for " +
+                "own. The version has since moved twenty times, none of them for it: milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +
                 "mid-turn Lane-Push request a completed action can leave behind, milestone 6.10 for " +
                 "p.8's Battle Zone itself, milestone 6.10a for a paused system transition, " +
@@ -490,7 +490,10 @@ namespace GuardsDigital.Tests.EditMode
                 "Sabina's printed faces are the first to reach, which every v29 payload names a " +
                 "shorter list than in turn, and milestone 8.22 again for the rest of p.14 owed " +
                 "while a trigger set off by a Push inside an Attack's card text is standing, which " +
-                "no v30 payload can describe because that altitude could not set one off. " +
+                "no v30 payload can describe because that altitude could not set one off, and " +
+                "milestone 8.23 for the completed basic action a permanent after-action ability may " +
+                "still be asked to repeat, which no v31 payload can describe because no ability in " +
+                "an 8.22 build stands outside the action it repeats. " +
                 "The decision is still re-derived from the state as it then stands.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),

@@ -747,7 +747,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.SourceCardInstanceId,
                 resolution.ActionDefinitionId,
                 resolution.ActorId,
-                ActionKind.Attack));
+                ActionKind.Attack,
+                resolution.InvocationContext,
+                resolution.Target));
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;
             pendingDefenseChoice = null;
@@ -888,7 +890,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             resolution.SourceCardInstanceId,
                             resolution.ActionDefinitionId,
                             resolution.ActorId,
-                            ActionKind.Attack)
+                            ActionKind.Attack,
+                            resolution.InvocationContext,
+                            resolution.Target)
                     });
 
                 // p.14 step 4 sits inside the defender's response, so what stands after it is step 5's

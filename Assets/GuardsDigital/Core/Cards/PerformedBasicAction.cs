@@ -34,12 +34,14 @@ namespace GuardsDigital.Core.Cards
             HeroId actorId,
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
-            ActionKind kind)
+            ActionKind kind,
+            bool wasRepeatedInstance)
         {
             ActorId = actorId;
             SourceCardInstanceId = sourceCardInstanceId;
             ActionDefinitionId = actionDefinitionId;
             Kind = kind;
+            WasRepeatedInstance = wasRepeatedInstance;
         }
 
         /// <summary>
@@ -53,7 +55,8 @@ namespace GuardsDigital.Core.Cards
             HeroId actorId,
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
-            ActionKind kind)
+            ActionKind kind,
+            bool wasRepeatedInstance = false)
         {
             if (!actorId.IsDefined || !sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined)
             {
@@ -71,7 +74,8 @@ namespace GuardsDigital.Core.Cards
                     nameof(kind));
             }
 
-            return new PerformedBasicAction(actorId, sourceCardInstanceId, actionDefinitionId, kind);
+            return new PerformedBasicAction(
+                actorId, sourceCardInstanceId, actionDefinitionId, kind, wasRepeatedInstance);
         }
 
         public HeroId ActorId { get; }
@@ -83,13 +87,26 @@ namespace GuardsDigital.Core.Cards
         /// <summary>Which action was performed - the half "a basic skill" narrows.</summary>
         public ActionKind Kind { get; }
 
+        /// <summary>
+        /// Whether the instance that ended was itself produced by a repeat. Milestone 8.23.
+        ///
+        /// <para>Rulebook p.10: "You cannot repeat a repeated action!" It is carried on the fact
+        /// rather than asked of the resolution because by the time this is recorded the resolution has
+        /// finished and been cleared, and it is carried <em>beside</em> the trigger rather than
+        /// suppressing it: a repeated basic Skill is still a basic Skill being performed, so a card
+        /// that fires on one - Wasp's High Voltage - still fires. What the page forbids is the second
+        /// repeat, not the second trigger.</para>
+        /// </summary>
+        public bool WasRepeatedInstance { get; }
+
         public bool IsDefined => Kind != ActionKind.None;
 
         public bool Equals(PerformedBasicAction other) =>
             ActorId.Equals(other.ActorId) &&
             SourceCardInstanceId.Equals(other.SourceCardInstanceId) &&
             ActionDefinitionId.Equals(other.ActionDefinitionId) &&
-            Kind == other.Kind;
+            Kind == other.Kind &&
+            WasRepeatedInstance == other.WasRepeatedInstance;
 
         public override bool Equals(object obj) => obj is PerformedBasicAction other && Equals(other);
 
@@ -131,7 +148,8 @@ namespace GuardsDigital.Core.Cards
             ActionDefinitionId actionDefinitionId,
             ActionKind kind,
             System.Collections.Generic.IEnumerable<CardDefinition> definitions,
-            System.Collections.Generic.IEnumerable<CardInstance> instances)
+            System.Collections.Generic.IEnumerable<CardInstance> instances,
+            bool wasRepeatedInstance = false)
         {
             if (!actorId.IsDefined || !sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined ||
                 kind == ActionKind.None || definitions == null || instances == null)
@@ -160,7 +178,8 @@ namespace GuardsDigital.Core.Cards
                 {
                     return definition.Progression.Classification == CardClassification.Basic
                         ? PerformedBasicAction.Of(
-                            actorId, sourceCardInstanceId, actionDefinitionId, kind)
+                            actorId, sourceCardInstanceId, actionDefinitionId, kind,
+                            wasRepeatedInstance)
                         : PerformedBasicAction.None;
                 }
             }

@@ -260,7 +260,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             requestedHeroDefeats = step.RequestedHeroDefeats;
             return Complete(
                 step, resolutionId, repeat.SourceCardInstanceId, repeat.ActionDefinitionId,
-                repeat.ActorId, true);
+                repeat.ActorId, true, ActionInvocationContext.Repeated);
         }
 
         /// <summary>
@@ -522,7 +522,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardInstanceId startedCard,
             ActionDefinitionId startedAction,
             HeroId startedActor,
-            bool isStart)
+            bool isStart,
+            ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary)
         {
             // Read the identity before overwriting the field: on the final step the frame is gone, so
             // the completing facts would otherwise have nothing to name.
@@ -550,6 +551,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 card = source.SourceCardInstanceId;
                 action = source.ActionDefinitionId;
                 actor = source.ActorId;
+
+                // Milestone 8.23. A repeated Skill that paused finishes here rather than at its start,
+                // so the completion the caller named is not the one that reports the invocation. The
+                // frame carries it and is the only thing that still does, which is why it is read
+                // rather than passed down a second time.
+                invocationContext = source.InvocationContext;
             }
 
             pendingResolution = step.Frame;
@@ -583,7 +590,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.SkillActionCompleted(
                     resolutionId, card, action, actor)));
-                steps.Add(ResolutionStep.AtActionEnded(card, action, actor, ActionKind.Skill));
+                steps.Add(ResolutionStep.AtActionEnded(
+                    card, action, actor, ActionKind.Skill, invocationContext));
             }
             else if (step.Frame.PendingChoice != null)
             {

@@ -1146,10 +1146,44 @@ namespace GuardsDigital.Core.Cards
             return CompleteMovementAndAdvance(card, events);
         }
 
+        /// <summary>
+        /// Milestone 8.23. Starts the instance a permanent after-action ability asked for, before the
+        /// card that carried the first one resolves and Initiative moves on.
+        ///
+        /// <para>Rulebook p.10 makes each instance of a repeat a separate action performed on the same
+        /// card, so the card is still the turn's selected card while the second one runs - exactly the
+        /// position milestone 8.10's Attack repeat already holds, and the reason this is asked here
+        /// rather than after the card is resolved.</para>
+        ///
+        /// <para>Returns <c>null</c> when nothing is owed or when the owed instance could not start, in
+        /// which case the caller finishes the action as it always did. A repeat that finished inside
+        /// this call - one that opened no question - also returns <c>null</c>, because the turn is then
+        /// exactly where it would have been.</para>
+        /// </summary>
+        private TurnResolutionResult? TryStartOwedAfterActionRepeat(List<TurnResolutionEvent> events)
+        {
+            if (cardActions == null || !cardActions.HasOwedAfterActionRepeat)
+            {
+                return null;
+            }
+
+            var repeated = cardActions.StartOwedAfterActionRepeat(
+                definitions, instances, participants, timing, CurrentModifications(),
+                roundIndex, turnIndex);
+            events.AddRange(MaterializeSteps(repeated.Steps, TurnResolutionEvent.FromSkillAction));
+            return repeated.IsComplete ? (TurnResolutionResult?)null : TurnResolutionResult.Accept(events);
+        }
+
         private TurnResolutionResult CompleteMovementAndAdvance(
             CardInstance card,
             List<TurnResolutionEvent> events)
         {
+            var repeated = TryStartOwedAfterActionRepeat(events);
+            if (repeated.HasValue)
+            {
+                return repeated.Value;
+            }
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -1958,6 +1992,12 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Accept(events);
             }
 
+            var repeatedInstance = TryStartOwedAfterActionRepeat(events);
+            if (repeatedInstance.HasValue)
+            {
+                return repeatedInstance.Value;
+            }
+
             var card = instances.Single(candidate =>
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
@@ -2208,6 +2248,12 @@ namespace GuardsDigital.Core.Cards
 
         private TurnResolutionResult CompleteAttackAndAdvance(List<TurnResolutionEvent> events)
         {
+            var repeatedInstance = TryStartOwedAfterActionRepeat(events);
+            if (repeatedInstance.HasValue)
+            {
+                return repeatedInstance.Value;
+            }
+
             var card = instances.Single(candidate =>
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
@@ -2366,7 +2412,9 @@ namespace GuardsDigital.Core.Cards
                             step.CheckpointSourceCardInstanceId,
                             step.CompletedActionDefinitionId,
                             step.CompletedActorId,
-                            step.CompletedActionKind);
+                            step.CompletedActionKind,
+                            step.CompletedInvocationContext,
+                            step.CompletedAttackTarget);
                         continue;
                     }
 
@@ -2443,17 +2491,21 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
             HeroId actorId,
-            ActionKind kind)
+            ActionKind kind,
+            ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary,
+            GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default)
         {
             var basicAction = BasicActionQuery.ForCompletedAction(
-                actorId, sourceCardInstanceId, actionDefinitionId, kind, definitions, instances);
+                actorId, sourceCardInstanceId, actionDefinitionId, kind, definitions, instances,
+                invocationContext == ActionInvocationContext.Repeated);
             if (basicAction.IsDefined)
             {
                 events.Add(TurnResolutionEvent.BasicActionPerformed(basicAction));
             }
 
             AddTiming(
-                events, TimingCheckpoint.ActionEnded, default, sourceCardInstanceId, basicAction);
+                events, TimingCheckpoint.ActionEnded, default, sourceCardInstanceId, basicAction,
+                completedAttackTarget);
         }
 
         private void AddTiming(
@@ -2461,7 +2513,8 @@ namespace GuardsDigital.Core.Cards
             TimingCheckpoint checkpoint,
             HeroId affectedHeroId = default,
             CardInstanceId sourceCardInstanceId = default,
-            PerformedBasicAction basicAction = default)
+            PerformedBasicAction basicAction = default,
+            GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default)
         {
             if (!affectedHeroId.IsDefined && initiative.SelectedActor.IsDefined)
                 affectedHeroId = initiative.SelectedActor.ActorId;
@@ -2475,7 +2528,9 @@ namespace GuardsDigital.Core.Cards
                 ? cardActions.ApplyTriggeredActionEnded(
                     timing, context, initiative.TieBreakerState, definitions, instances,
                     participants, CurrentModifications(),
-                    ContinuousTriggersFor(basicAction))
+                    ContinuousTriggersFor(basicAction),
+                    basicAction,
+                    completedAttackTarget)
                 : timing.ApplyCheckpoint(context, initiative.TieBreakerState);
             foreach (var timingEvent in timingEvents) events.Add(TurnResolutionEvent.FromTiming(timingEvent));
         }
