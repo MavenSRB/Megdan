@@ -116,7 +116,9 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(card.ColorName, Is.EqualTo(MatchHudTheme.ColorName(card.Color)),
                     "and the colour is never the only thing that says which colour it is.");
                 Assert.That(card.DisplayName, Is.EqualTo(definition.DisplayName));
-                Assert.That(card.ValueLine, Does.Contain("INIT"),
+                Assert.That(
+                    card.ValueLine,
+                    Does.Contain(MatchHudTheme.ChannelToken(PrintedValueChannel.Initiative)),
                     "The card's own printed values stay readable beside its name.");
             }
         }
@@ -252,11 +254,11 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(card => $"{card.DisplayName}|{card.Face.ValueLine}"),
                 Is.EqualTo(new[]
                 {
-                    "Lift Up|INIT 10 · SKILL · RAD 2 · DEF 5 · MOV 3",
-                    "Magnetic Dagger|INIT 12 · BASIC ATTACK · ATK 3 · RAD 3 · DEF 2 · MOV 1",
-                    "Shock|INIT 8 · ATTACK · ATK 5 · RAD 2 · DEF 6 · MOV 4",
-                    "Static Barrier|INIT 13 · BASIC SKILL · RAD 2 · DEF 2",
-                    "Stop Projectiles|INIT 3 · DEFENSE · BLOCK · MOV 2"
+                    "Lift Up|INI 10 · SKILL · RAD 2 · DEF 5 · MOV 3",
+                    "Magnetic Dagger|INI 12 · BASIC ATTACK · ATK 3 · RAD 3 · DEF 2 · MOV 1",
+                    "Shock|INI 8 · ATTACK · ATK 5 · RAD 2 · DEF 6 · MOV 4",
+                    "Static Barrier|INI 13 · BASIC SKILL · RAD 2 · DEF 2",
+                    "Stop Projectiles|INI 3 · DEFENSE · BLOCK · MOV 2"
                 }));
         }
 
@@ -1360,8 +1362,14 @@ namespace GuardsDigital.Tests.EditMode
         // The rail's coin balance (milestone 8.21a)
         // -------------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// Milestone 8.23a redrew the balance as the coin it counts, so what the readout carries is the
+        /// amount and nothing else - the word `COINS` explained a number that no longer needs
+        /// explaining, on the same ground milestone 8.11b took the count off the discard row and the
+        /// ordinals off the turn slots.
+        /// </summary>
         [Test]
-        public void EveryRail_ShowsItsOwnHerosProjectedCoinBalanceAsACompactLabelledCount()
+        public void EveryRail_ShowsItsOwnHerosProjectedCoinBalanceOnAStruckCoin()
         {
             var session = ConfiguredMatchFixtures.CreateConfiguredSession();
             var view = new HeroOverviewsUnityView();
@@ -1377,11 +1385,16 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(element => element.name == "gd-hero-coins"))
             {
                 var parts = Descendants(readout).OfType<Label>().Select(label => label.text).ToArray();
-                Assert.That(parts, Is.EqualTo(new[] { "COINS", "0" }),
-                    "The readout is the word and the amount, in that order, and nothing else.");
+                Assert.That(parts, Is.EqualTo(new[] { "0" }),
+                    "The readout is the amount and nothing else; the coin says what the amount is of.");
+                var disc = Descendants(readout)
+                    .Single(element => element.name == "gd-hero-coin-disc");
+                Assert.That(disc.style.width.value.value,
+                    Is.EqualTo(disc.style.height.value.value).Within(0.01f),
+                    "A coin is round, so the disc's two axes are one number.");
                 Assert.That(readout.tooltip, Is.EqualTo("0 coins"),
-                    "The same fact in words is one pointer rest away, as every other compact rail " +
-                    "reading is.");
+                    "and the word is where this HUD puts every name it draws as a shape: one " +
+                    "pointer rest away, and spoken in full to a reader with no pointer.");
             }
         }
 
@@ -1485,14 +1498,18 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Describe(view), Is.EqualTo(earned),
                 "and a restored position redraws it from current authority.");
         }
-
         /// <summary>
-        /// The readout stands on the one row in the rail whose content cannot grow, so the space it
-        /// takes is provably unused: the caption is a literal at a fixed size, both halves of the count
-        /// are drawn at that size, and the line it shares is therefore exactly as tall as it was.
+        /// Milestone 8.23a: the readout stands in the item strip and the rail lost the caption row it
+        /// used to share.
+        ///
+        /// <para>Milestone 8.21a's claim was that the count cost the rail nothing, proved by putting it
+        /// on the one line whose content could not grow. This milestone makes the stronger claim the
+        /// recomposition is for: the line is gone, so what the count cost is now negative. What the
+        /// test still guards is the same property under a new position - the strip does not wrap, the
+        /// disc does not stretch it, and the rail's row count is exactly the rows it draws.</para>
         /// </summary>
         [Test]
-        public void TheCoinReadout_SharesTheCaptionsOwnLineAndAddsNoRowToTheRail()
+        public void TheCoinReadout_StandsInTheItemStripAndTheRailNoLongerDrawsACaptionRow()
         {
             var session = ConfiguredMatchFixtures.CreateConfiguredSession();
             var view = new HeroOverviewsUnityView();
@@ -1503,52 +1520,55 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
             Assert.That(rails, Has.Length.EqualTo(view.Model.Heroes.Count));
 
+            Assert.That(
+                Descendants(view.Root).Any(element =>
+                    element.name == "gd-turn-slots-caption-row" ||
+                    element.name == "gd-turn-slots-caption"),
+                Is.False,
+                "The caption and the row it stood on are gone from every rail, which is the line " +
+                "this milestone gives back. What the four slots mean is on their own tooltips.");
+
             foreach (var rail in rails)
             {
-                Assert.That(rail.childCount, Is.EqualTo(5),
-                    "The rail's rows are the header, the item strip, the captioned turn row, the " +
-                    "four slots and the discard pile - the same five it drew before the count " +
-                    "joined one of them. A sixth would be the rail growing, which this milestone " +
-                    "may not do.");
+                Assert.That(rail.childCount, Is.EqualTo(4),
+                    "This staged position draws the header, the item strip, the four slots and the " +
+                    "discard pile. It was five rows before the caption row went, and the two " +
+                    "conditional rows - the Ultimate and a held marker - are absent here because " +
+                    "nothing is unlocked and nobody is holding anything.");
 
-                var row = rail.Children().Single(child => child.name == "gd-turn-slots-caption-row");
-                Assert.That(row.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap),
-                    "A wrapping row would put the count on a second line and make the rail taller.");
-                Assert.That(row.childCount, Is.EqualTo(2),
-                    "The line carries the caption and the count and nothing else.");
+                var strip = rail.Children().Single(child => child.name == "gd-bonus-strip");
+                Assert.That(strip.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap),
+                    "A wrapping strip would put the coin on a second line and make the rail taller.");
+                Assert.That(strip.childCount, Is.EqualTo(2),
+                    "The strip carries the item chips and the coin and nothing else.");
 
-                var caption = (Label)row.Children()
-                    .Single(child => child.name == "gd-turn-slots-caption");
-                var coins = row.Children().Single(child => child.name == "gd-hero-coins");
-                Assert.That(caption.style.marginTop.value.value, Is.EqualTo(8f).Within(0.01f),
-                    "The caption keeps its own spacing above the turn row rather than handing it to " +
-                    "the row: what the rail spends on this line is then the caption's own margin " +
-                    "box, which is exactly what it spent before the count joined it.");
-                Assert.That(coins.style.marginTop.value.value, Is.EqualTo(8f).Within(0.01f),
-                    "and the count takes the same 8, so the two readings sit on one baseline.");
-                var captionSize = caption.style.fontSize.value.value;
-                Assert.That(caption.style.whiteSpace.value, Is.EqualTo(WhiteSpace.NoWrap));
+                var coins = strip.Children().Single(child => child.name == "gd-hero-coins");
+                var disc = Descendants(coins).Single(child => child.name == "gd-hero-coin-disc");
+                Assert.That(disc.style.width.value.value, Is.EqualTo(18f).Within(0.01f),
+                    "The coin is a disc, so its two axes are one number.");
+                Assert.That(disc.style.height.value.value, Is.EqualTo(18f).Within(0.01f));
+                Assert.That(disc.style.flexShrink.value, Is.EqualTo(0f).Within(0.01f),
+                    "and a squashed coin at a narrow rail would be an ellipse with a number in it.");
+
                 foreach (var part in Descendants(coins).OfType<Label>())
                 {
-                    Assert.That(part.style.fontSize.value.value, Is.EqualTo(captionSize).Within(0.01f),
-                        "Both halves are drawn at the caption's own size: a larger amount would " +
-                        "raise this line and push every row under it down.");
                     Assert.That(part.style.whiteSpace.value, Is.EqualTo(WhiteSpace.NoWrap),
-                        "and a wrapped word would do the same.");
+                        "A wrapped balance would grow the disc it is centred in.");
                     Assert.That(part.style.marginTop.value.value, Is.EqualTo(0f).Within(0.01f),
                         "and the runtime theme's own three pixels above and below a label would " +
-                        "do it a third time, so the count's halves give them up.");
+                        "push the disc past the strip's line, so the balance gives them up.");
                     Assert.That(part.style.marginBottom.value.value, Is.EqualTo(0f).Within(0.01f));
                 }
             }
         }
 
         /// <summary>
-        /// Milestone 8.7a's mirror, kept: the caption still reads against the screen edge on either
-        /// rail and the count sits inward of it, so the two rails still read outward from the board.
+        /// Milestone 8.7a's mirror, kept through the move: the item chips read against the screen edge
+        /// on either rail and the coin sits inward of them, which is what every other row on the
+        /// mirrored rail does.
         /// </summary>
         [Test]
-        public void TheCoinReadout_SitsInwardOfTheCaptionOnBothRailsRatherThanRepeatingOneOrder()
+        public void TheCoinReadout_SitsInwardOfTheItemChipsOnBothRailsRatherThanRepeatingOneOrder()
         {
             var session = ConfiguredMatchFixtures.CreateConfiguredSession();
             var view = new HeroOverviewsUnityView();
@@ -1556,11 +1576,11 @@ namespace GuardsDigital.Tests.EditMode
 
             var columns = view.BlockingRegions.ToArray();
             Assert.That(columns, Has.Length.EqualTo(2), "One column per screen edge.");
-            Assert.That(CaptionRowOrder(columns[0]),
-                Is.EqualTo(new[] { "gd-turn-slots-caption", "gd-hero-coins" }),
-                "On the left rail the caption keeps the screen edge and the count sits inward.");
-            Assert.That(CaptionRowOrder(columns[1]),
-                Is.EqualTo(new[] { "gd-hero-coins", "gd-turn-slots-caption" }),
+            Assert.That(ItemStripOrder(columns[0]),
+                Is.EqualTo(new[] { "gd-item-chips", "gd-hero-coins" }),
+                "On the left rail the chips keep the screen edge and the coin sits inward.");
+            Assert.That(ItemStripOrder(columns[1]),
+                Is.EqualTo(new[] { "gd-hero-coins", "gd-item-chips" }),
                 "and the mirrored rail is that reflected, which is what every other row on it is.");
         }
 
@@ -1573,9 +1593,9 @@ namespace GuardsDigital.Tests.EditMode
                 session.Projection.PendingSystemTransitionStep.Invocations[0]));
         }
 
-        private static string[] CaptionRowOrder(VisualElement column) =>
+        private static string[] ItemStripOrder(VisualElement column) =>
             Descendants(column)
-                .Single(element => element.name == "gd-turn-slots-caption-row")
+                .Single(element => element.name == "gd-bonus-strip")
                 .Children()
                 .Select(child => child.name)
                 .ToArray();
@@ -1594,7 +1614,6 @@ namespace GuardsDigital.Tests.EditMode
                     .Single(entry => entry.HeroId.Equals(hero.HeroId));
                 Assert.That(hero.Coins, Is.EqualTo(projected.Coins),
                     "The rail counted its own coins at " + where + ".");
-                Assert.That(hero.CoinsLabel, Is.EqualTo("COINS"));
                 Assert.That(hero.CoinAmountLabel, Is.EqualTo(
                     projected.Coins.ToString(System.Globalization.CultureInfo.InvariantCulture)));
                 Assert.That(
@@ -3022,6 +3041,150 @@ namespace GuardsDigital.Tests.EditMode
             session.Projection.Definitions.Single(definition =>
                 definition.Reference.Equals(reference)).DisplayName;
 
+
+        /// <summary>
+        /// Milestone 8.23a: a held marker is drawn on its holder's rail, and every part of the reading
+        /// is the definition's rather than this presenter's.
+        ///
+        /// <para>Driven from a real staged Tigerclaw position that actually plays Poisoned Dagger, so
+        /// what the rail is rendered from is the register the rules wrote rather than a marker this
+        /// test attached by hand. The reading lands on the rail of the hero who was given it - which
+        /// is the enemy, because p.18 gives markers to other heroes and a marker property affects its
+        /// HOLDER where a token property affects its controller.</para>
+        /// </summary>
+        [Test]
+        public void AHeldMarker_IsDrawnOnItsHoldersRailFromTheProjectionAlone()
+        {
+            var board = TigerclawBoard.Create(
+                tier: 2,
+                branch: TigerclawUpgradeBranch.SecondSibling,
+                heroPlacements: StagedHeroBoard.At("primitive-hero", StagedHeroBoard.TwoAway));
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(board.Session, view);
+            presenter.Refresh();
+
+            Assert.That(view.Model.Heroes.SelectMany(hero => hero.HeldMarkers), Is.Empty,
+                "Nothing is held before the Skill is performed, so the row this test reads is one " +
+                "this test caused.");
+
+            board.StartPrimary(TigerclawCardContent.PoisonedDagger);
+            board.SelectFirst();
+            board.AnswerEveryStandingChoice();
+            presenter.Refresh();
+
+            // The projection carries what the register holds, which is what "no presentation-owned
+            // accounting" means at this seam: the same attachment, read back through a restore.
+            var attachment = board.MarkersHeldBy(board.Enemy).Single();
+            Assert.That(
+                board.Session.Projection.MarkersHeldBy(board.Enemy).Select(marker => marker.Id),
+                Is.EqualTo(new[] { attachment.Id }),
+                "The projection's held markers are the register's, so a surface reading one is " +
+                "reading the authority rather than a copy of it.");
+
+            var holder = view.Model.Heroes.Single(hero => hero.HeroId.Equals(board.Enemy));
+            var giver = view.Model.Heroes.Single(hero => !hero.HeroId.Equals(board.Enemy));
+            Assert.That(giver.HeldMarkers, Is.Empty,
+                "The hero who GAVE the marker is not the hero it affects. A build drawing it here " +
+                "would be telling the wrong player their values dropped.");
+            Assert.That(holder.HeldMarkers.Count, Is.EqualTo(1),
+                "One marker, from the one supply his face names.");
+
+            var marker = holder.HeldMarkers.Single();
+            Assert.That(marker.HolderHeroId, Is.EqualTo(board.Enemy));
+            Assert.That(marker.NameLabel, Is.EqualTo("POISON"),
+                "The marker's own display name, in the rail's caption case.");
+            Assert.That(
+                marker.ValueChanges.Select(change => change.Channel).ToArray(),
+                Is.EqualTo(new[]
+                {
+                    PrintedValueChannel.Initiative,
+                    PrintedValueChannel.Attack,
+                    PrintedValueChannel.Defense
+                }),
+                "The three channels the printed sentence names, in the definition's own order.");
+            foreach (var change in marker.ValueChanges)
+            {
+                Assert.That(change.Amount, Is.EqualTo(-1),
+                    "Poisoned Dagger's strength is one, and the sign arrives from the definition " +
+                    "rather than being applied here.");
+                Assert.That(change.AmountLabel, Is.EqualTo("-1"));
+            }
+
+            Assert.That(marker.AssistiveLabel,
+                Is.EqualTo("Poison: Initiative -1, Attack -1, Defense -1"),
+                "and the whole reading is spoken in words for a reader with no pointer.");
+
+            // and it is on the screen rather than only in the model.
+            var rail = RailOf(view, board.Enemy);
+            var row = Descendants(rail).Single(element => element.name == "gd-hero-marker");
+            Assert.That(
+                Descendants(row).OfType<Label>().Select(label => label.text).ToArray(),
+                Is.EqualTo(new[] { "POISON", "INI", "-1", "ATK", "-1", "DEF", "-1" }),
+                "The row a player reads carries the marker and its three losses. Shown: " +
+                    Describe(view));
+            Assert.That(row.tooltip, Is.EqualTo(marker.AssistiveLabel));
+        }
+
+        /// <summary>
+        /// Milestone 8.23a: the reading ends with the attachment, leaving nothing behind on any rail.
+        ///
+        /// <para>Rulebook p.8 returns every marker at the end of every round, so the row must be gone
+        /// once the register is empty - and gone from a presenter that was rendered while it was full,
+        /// which is the case a presentation-owned cache would fail.</para>
+        /// </summary>
+        [Test]
+        public void AReturnedMarker_LeavesNoReadingBehindOnAnyRail()
+        {
+            var board = TigerclawBoard.Create(
+                tier: 2,
+                branch: TigerclawUpgradeBranch.SecondSibling,
+                heroPlacements: StagedHeroBoard.At("primitive-hero", StagedHeroBoard.TwoAway));
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(board.Session, view);
+
+            board.StartPrimary(TigerclawCardContent.PoisonedDagger);
+            board.SelectFirst();
+            board.AnswerEveryStandingChoice();
+            presenter.Refresh();
+            Assert.That(
+                Descendants(view.Root).Count(element => element.name == "gd-hero-marker"),
+                Is.EqualTo(1),
+                "The row has to be there before its absence proves anything.");
+
+            board.RoundTripThroughASnapshot();
+            presenter.Refresh();
+            Assert.That(
+                Descendants(view.Root).Count(element => element.name == "gd-hero-marker"),
+                Is.EqualTo(1),
+                "A restored register redraws the same one row rather than none or two.");
+
+            board.CrossTheRoundBoundary();
+            presenter.Refresh();
+
+            Assert.That(board.MarkersHeldBy(board.Enemy), Is.Empty,
+                "p.8's Remove Tokens, Return Markers is what ends the attachment.");
+            Assert.That(view.Model.Heroes.SelectMany(hero => hero.HeldMarkers), Is.Empty,
+                "and no rail's model still claims one.");
+            Assert.That(
+                Descendants(view.Root).Any(element => element.name == "gd-hero-marker"),
+                Is.False,
+                "and nothing is left on the screen. Shown: " + Describe(view));
+        }
+
+        /// <summary>The rail element drawn for one hero, found by the model it was rendered from.</summary>
+        private static VisualElement RailOf(HeroOverviewsUnityView view, HeroId heroId)
+        {
+            var index = view.Model.Heroes
+                .Select((hero, position) => new { hero, position })
+                .Single(entry => entry.hero.HeroId.Equals(heroId))
+                .position;
+            var rails = Descendants(view.Root)
+                .Where(element => element.name == "gd-hero-rail")
+                .ToArray();
+            Assert.That(rails.Length, Is.EqualTo(view.Model.Heroes.Count),
+                "One rail per projected hero.");
+            return rails[index];
+        }
         private static string Describe(DirectorHandsUnityView view) =>
             string.Join("|", view.Model.Hands.SelectMany(hand => hand.TrayCards.Select(card =>
                 $"{hand.HeroId}:{card.CardInstanceId}:{card.Color}:{card.Group}:{card.PlayedTurnIndex}")));

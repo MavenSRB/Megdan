@@ -33,6 +33,32 @@ namespace GuardsDigital.Presentation.Match
         public static readonly Color MutedText = new Color(0.663f, 0.690f, 0.710f, 1f);
         public static readonly Color EmptySlot = new Color(0.188f, 0.212f, 0.227f, 1f);
 
+        /// <summary>
+        /// The struck coin milestone 8.23a draws p.15's balance on: its metal, its rim, and the ink
+        /// that reads against them.
+        ///
+        /// <para>Three declared colours rather than a picture. The project has no rulebook art and
+        /// 8.23a's non-goals keep imported sprites out, so the coin is composed the way the hero disc
+        /// beside it is - a filled circle, a rim a shade darker, and a centred label - and the ink is
+        /// dark because it sits on the one light surface in this HUD.</para>
+        /// </summary>
+        public static readonly Color CoinFace = new Color(0.847f, 0.686f, 0.298f, 1f);
+
+        public static readonly Color CoinEdge = new Color(0.612f, 0.463f, 0.153f, 1f);
+
+        public static readonly Color CoinInk = new Color(0.129f, 0.106f, 0.043f, 1f);
+
+        /// <summary>
+        /// What a held marker's name is written in on the rail. Milestone 8.23a.
+        ///
+        /// <para>It is its own ink rather than <see cref="MutedText"/> because a marker on your hero is
+        /// something done to you, and it stands one row under the item strip whose bonuses were done
+        /// for you. The value chips beside it carry the ordinary muted token and primary amount, so the
+        /// only thing this colours is which component the row is about - the numbers say the rest, and
+        /// nothing here means anything by colour alone.</para>
+        /// </summary>
+        public static readonly Color MarkerInk = new Color(0.804f, 0.541f, 0.588f, 1f);
+
         /// <summary>The pointed-at/keyboard-focused outline, shared by every control family.</summary>
         public static readonly Color FocusOutline = new Color(1f, 1f, 1f, 0.92f);
 
@@ -166,12 +192,18 @@ namespace GuardsDigital.Presentation.Match
         /// icons, and a token that reads as three letters everywhere is honest about that, while a glyph
         /// borrowed from the font would be a different picture on every platform. The full
         /// <see cref="ChannelName"/> stays available for the assistive and hover label.
+        ///
+        /// <para>Milestone 8.23a made Initiative keep that promise. It had been `INIT` while every
+        /// other channel was three letters, so the one token the paragraph above describes as "three
+        /// letters everywhere" was four - which showed up wherever tokens are stacked in a column and
+        /// one of them hung a character past the rest. `INI` is the same abbreviation at the width the
+        /// strip is built for, and the unabbreviated word is where it always was.</para>
         /// </summary>
         public static string ChannelToken(PrintedValueChannel channel)
         {
             switch (channel)
             {
-                case PrintedValueChannel.Initiative: return "INIT";
+                case PrintedValueChannel.Initiative: return "INI";
                 case PrintedValueChannel.Attack: return "ATK";
                 case PrintedValueChannel.Defense: return "DEF";
                 case PrintedValueChannel.Movement: return "MOV";

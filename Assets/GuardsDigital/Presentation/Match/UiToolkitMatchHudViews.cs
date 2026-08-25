@@ -641,25 +641,107 @@ namespace GuardsDigital.Presentation.Match
 
             rail.Add(head);
 
-            var bonuses = HudElements.Row(6f);
+            // The strip of standing numbers this hero carries into every turn: p.16's item bonuses on
+            // the outer end and p.15's coin balance on the inner one.
+            //
+            // Milestone 8.23a moved the balance here, by the user's 2026-08-26 decision, and the row
+            // it came from is gone entirely. Milestone 8.21a had put it on the `RESOLVED TURNS`
+            // caption's line because that was the one line in the rail with provably unused space -
+            // a sound argument for an addition that could not cost height, and the wrong shape once
+            // the rail itself is being made shorter. Deleting the caption gives back a whole line
+            // instead of sharing one, and the balance joins the strip that was already the rail's
+            // home for "a number that is true of this hero right now".
+            var bonuses = HudElements.Row(0f);
             bonuses.name = "gd-bonus-strip";
             bonuses.style.marginTop = 7f;
-            bonuses.style.justifyContent = mirrored ? Justify.FlexEnd : Justify.FlexStart;
+            bonuses.style.flexWrap = Wrap.NoWrap;
+            bonuses.style.alignItems = Align.Center;
+            bonuses.style.justifyContent = Justify.SpaceBetween;
+
+            var itemChips = HudElements.Row(6f);
+            itemChips.name = "gd-item-chips";
+            itemChips.style.flexWrap = Wrap.Wrap;
+            itemChips.style.alignItems = Align.Center;
+            itemChips.style.justifyContent = mirrored ? Justify.FlexEnd : Justify.FlexStart;
             foreach (var bonus in hero.ItemBonuses)
             {
-                var chip = HudElements.Row(3f);
-                chip.tooltip = bonus.AssistiveLabel;
-                chip.Add(HudElements.Text(bonus.Token, 10f, MatchHudTheme.MutedText, FontStyle.Bold));
-                chip.Add(HudElements.Text(bonus.AmountLabel, 11f, MatchHudTheme.PrimaryText, FontStyle.Bold));
-                bonuses.Add(chip);
+                itemChips.Add(BuildValueChip(bonus.Token, bonus.AmountLabel, bonus.AssistiveLabel));
             }
 
             if (hero.ItemBonuses.Count == 0)
             {
-                bonuses.Add(HudElements.Text("NO ITEMS", 10f, MatchHudTheme.MutedText));
+                itemChips.Add(HudElements.Text("NO ITEMS", 10f, MatchHudTheme.MutedText));
+            }
+
+            var coins = BuildCoinDisc(hero);
+            if (mirrored)
+            {
+                bonuses.Add(coins);
+                bonuses.Add(itemChips);
+            }
+            else
+            {
+                bonuses.Add(itemChips);
+                bonuses.Add(coins);
             }
 
             rail.Add(bonuses);
+
+            // Milestone 8.23a: rulebook p.18's markers this hero is holding, and what each does to
+            // them - the debt milestone 8.23 recorded on its own gate row, where Poisoned Dagger and
+            // Poisoned Dart lowered three of a hero's values with nothing on screen saying so.
+            //
+            // It sits directly under the item strip because the two are the same kind of fact about
+            // this hero and are drawn in the same chip: a named component shifting named channels by
+            // named amounts. p.16's item raises and p.18's marker lowers, and the sign is on the chip.
+            // Putting them anywhere else in the rail would have made a player learn two readings of
+            // one thing.
+            //
+            // Drawn only while something is held, on the terms the Ultimate row below is: p.8 returns
+            // every marker at the end of every round and p.13 returns a defeated holder's, so an
+            // always-present row would be an empty caption for almost all of a match - and the rail
+            // this milestone is compacting has no height to spend on one.
+            foreach (var marker in hero.HeldMarkers)
+            {
+                var held = HudElements.Row(6f);
+                held.name = "gd-hero-marker";
+                held.style.marginTop = 5f;
+                held.style.flexWrap = Wrap.NoWrap;
+                held.style.alignItems = Align.Center;
+                held.style.justifyContent = mirrored ? Justify.FlexEnd : Justify.FlexStart;
+                held.tooltip = marker.AssistiveLabel;
+
+                var markerName = HudElements.Text(
+                    marker.NameLabel, 9f, MatchHudTheme.MarkerInk, FontStyle.Bold);
+                markerName.name = "gd-hero-marker-name";
+                markerName.style.whiteSpace = WhiteSpace.NoWrap;
+                markerName.style.marginTop = 0f;
+                markerName.style.marginBottom = 0f;
+
+                var changes = HudElements.Row(5f);
+                changes.name = "gd-hero-marker-values";
+                changes.style.flexWrap = Wrap.NoWrap;
+                changes.style.alignItems = Align.Center;
+                foreach (var change in marker.ValueChanges)
+                {
+                    changes.Add(BuildValueChip(change.Token, change.AmountLabel, change.AssistiveLabel));
+                }
+
+                // Mirrored with the rest of the rail: the marker's name keeps the screen edge and its
+                // numbers read inward, the way the Ultimate caption and the identity block do.
+                if (mirrored)
+                {
+                    held.Add(changes);
+                    held.Add(markerName);
+                }
+                else
+                {
+                    held.Add(markerName);
+                    held.Add(changes);
+                }
+
+                rail.Add(held);
+            }
 
             // Milestone 8.15: the unlocked Ultimate, faceup beside the dashboard on the table and
             // therefore on the rail here - the one card a hero owns that is neither in the round the
@@ -695,89 +777,20 @@ namespace GuardsDigital.Presentation.Match
                 rail.Add(ultimate);
             }
 
-            // Milestone 8.7a: the four slots are captioned as what they now are. Without the caption
-            // the row is four card icons whose meaning a player has to infer, and the whole point of
-            // that milestone is that they mean resolved turns and the header marker means the turn
-            // being played. Milestone 8.11b: the caption carries more of that weight than it did, now
-            // that the ordinals are off the slots and the row's own order is what states the sequence.
-            var caption = HudElements.Text("RESOLVED TURNS", 9f, MatchHudTheme.MutedText, FontStyle.Bold);
-            caption.name = "gd-turn-slots-caption";
-            // The caption keeps its own margins, including the 8 above it, rather than handing them to
-            // the row it now shares. That is what makes this milestone's addition provably free of
-            // height: the row is as tall as the caption's own margin box was, and the caption's margin
-            // box is exactly what it contributed to the rail before the row existed.
-            caption.style.marginTop = 8f;
-            caption.style.unityTextAlign = outward;
-            caption.style.whiteSpace = WhiteSpace.NoWrap;
-
-            // Milestone 8.21a: this hero's public coin balance, on the inner end of the caption's own
-            // line.
+            // The four resolved-turn slots, which milestone 8.23a draws with no caption over them.
             //
-            // The caption's line is the one row in the rail whose content cannot grow. `RESOLVED
-            // TURNS` is a literal at a fixed size, so the space beside it is provably unused rather
-            // than unused until some position fills it, and every emptier-looking row is not: the item
-            // strip is as wide as p.16 has made it, the discard row is as wide as the pile, the header
-            // is as tall as the hero's own name and the current-card marker between them, and each of
-            // those grows on a real position. Sharing this line therefore adds no row, no height and
-            // no width - the rail's outer box, the standing HUD regions and the board's framing are
-            // exactly what they were - which is the constraint this milestone is under.
-            //
-            // Both halves are drawn at the caption's own size for the same reason: a larger amount
-            // would raise the line and push every row under it down. The word carries the muted ink
-            // because it never changes, and the amount carries the primary ink because it is the fact.
-            var captionRow = HudElements.Row(0f);
-            captionRow.name = "gd-turn-slots-caption-row";
-            captionRow.style.flexWrap = Wrap.NoWrap;
-            captionRow.style.justifyContent = Justify.SpaceBetween;
-            captionRow.style.alignItems = Align.Center;
-
-            var coins = HudElements.Row(0f);
-            coins.name = "gd-hero-coins";
-            coins.style.flexWrap = Wrap.NoWrap;
-            coins.style.alignItems = Align.Center;
-            coins.style.flexShrink = 0f;
-            // The same 8 the caption takes above it, so the two readings sit on one baseline; the
-            // labels inside give up the runtime theme's own three pixels, which is what keeps the
-            // count's margin box inside the caption's rather than beside it.
-            coins.style.marginTop = 8f;
-            // The words for the same fact, on the terms every other compact rail reading is named by:
-            // the pointer and an assistive reader get `3 coins`, and nothing here means a number by
-            // its position alone.
-            coins.tooltip = hero.CoinAssistiveLabel;
-            var coinWord = HudElements.Text(
-                hero.CoinsLabel, 9f, MatchHudTheme.MutedText, FontStyle.Bold);
-            coinWord.name = "gd-hero-coins-word";
-            coinWord.style.whiteSpace = WhiteSpace.NoWrap;
-            coinWord.style.marginTop = 0f;
-            coinWord.style.marginBottom = 0f;
-            var coinAmount = HudElements.Text(
-                hero.CoinAmountLabel, 9f, MatchHudTheme.PrimaryText, FontStyle.Bold);
-            coinAmount.name = "gd-hero-coins-amount";
-            coinAmount.style.whiteSpace = WhiteSpace.NoWrap;
-            coinAmount.style.marginTop = 0f;
-            coinAmount.style.marginBottom = 0f;
-            coinAmount.style.marginLeft = 4f;
-            coins.Add(coinWord);
-            coins.Add(coinAmount);
-
-            // Mirrored with the rest of the rail: the caption keeps the screen edge on either side and
-            // the count sits inward, so the two rails still read outward from the board.
-            if (mirrored)
-            {
-                captionRow.Add(coins);
-                captionRow.Add(caption);
-            }
-            else
-            {
-                captionRow.Add(caption);
-                captionRow.Add(coins);
-            }
-
-            rail.Add(captionRow);
-
+            // Milestone 8.7a had added `RESOLVED TURNS` for a real reason - without it the row is four
+            // card icons whose meaning a player has to infer - and the user's 2026-08-26 decision
+            // takes the line back for the rail's height, on the terms this HUD has settled twice
+            // before. The team label came off the header at 8.7a and lives on the hero disc's own
+            // reading; a card's printed colour has been named in its hover since 8.5a. This is the
+            // same move: every slot's tooltip and assistive label already read `Turn 1: Blue card -
+            // Static Barrier` or `Turn 3: empty`, built from the slot's own TurnIndex, so what the
+            // row means is one pointer rest away and is spoken in full to a reader with no pointer.
+            // Nothing here means a position by its position alone.
             var slots = HudElements.Row(0f);
             slots.name = "gd-turn-slots";
-            slots.style.marginTop = 4f;
+            slots.style.marginTop = 7f;
             slots.style.flexWrap = Wrap.NoWrap;
             slots.style.alignItems = Align.Stretch;
             var first = true;
@@ -843,13 +856,27 @@ namespace GuardsDigital.Presentation.Match
             discard.style.backgroundColor = new Color(0.129f, 0.149f, 0.161f, 1f);
             HudElements.Border(discard, MatchHudTheme.PanelBorder, 1f, 4f);
 
-            // The one row the mirror does not touch, by the user's 2026-08-21 decision: the pile reads
-            // left to right whichever rail it is on, so the two are compared side by side rather than
-            // being each other's reflection.
-            discard.Add(HudElements.Text(hero.DiscardLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold));
+            // Milestone 8.23a put the caption on the pile's own line, by the user's 2026-08-26
+            // decision, and it is the idiom the Ultimate row above already uses: a short fixed word
+            // beside the cards it names, rather than stacked above them. The caption is a literal at a
+            // fixed size and the pile is 34 tall, so the row is exactly as tall as the pile was and
+            // the caption's whole line is what the rail gets back.
+            //
+            // The pile keeps the one exception the mirror does not touch, by the user's 2026-08-21
+            // decision: it reads left to right whichever rail it is on, so two piles are compared side
+            // by side rather than being each other's reflection. Only the caption takes a side.
+            discard.style.flexDirection = FlexDirection.Row;
+            discard.style.alignItems = Align.Center;
+            var discardCaption = HudElements.Text(
+                hero.DiscardLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold);
+            discardCaption.name = "gd-discard-caption";
+            discardCaption.style.whiteSpace = WhiteSpace.NoWrap;
+            discardCaption.style.flexShrink = 0f;
             var pile = HudElements.Row(MiniCardGap);
             pile.name = "gd-discard-pile";
             pile.style.flexWrap = Wrap.Wrap;
+            pile.style.flexGrow = 1f;
+            pile.style.flexShrink = 1f;
             foreach (var card in hero.DiscardCards)
             {
                 pile.Add(BuildMiniCard("gd-discard-card", card, card.AssistiveLabel, card));
@@ -862,9 +889,101 @@ namespace GuardsDigital.Presentation.Match
                 pile.Add(HudElements.Text("EMPTY", 10f, MatchHudTheme.MutedText));
             }
 
-            discard.Add(pile);
+            if (mirrored)
+            {
+                discardCaption.style.marginLeft = 6f;
+                discard.Add(pile);
+                discard.Add(discardCaption);
+            }
+            else
+            {
+                discardCaption.style.marginRight = 6f;
+                discard.Add(discardCaption);
+                discard.Add(pile);
+            }
             rail.Add(discard);
             return rail;
+        }
+
+        /// <summary>
+        /// One channel-and-amount chip: the three-letter token in muted ink and the signed amount in
+        /// primary ink, as close together as a pair that is read as one thing should be.
+        ///
+        /// <para>Milestone 8.23a pulled it out of the item strip so p.18's marker draws the identical
+        /// chip rather than a lookalike, and closed the gap between the token and its number from 3 to
+        /// 1 by the user's 2026-08-26 decision. At 3 the two halves read as two words; the amount
+        /// belongs to the token beside it, and the gap between chips - which stayed at 6 - is what
+        /// separates one pair from the next.</para>
+        /// </summary>
+        private static VisualElement BuildValueChip(string token, string amountLabel, string assistiveLabel)
+        {
+            var chip = HudElements.Row(1f);
+            chip.name = "gd-value-chip";
+            chip.style.flexWrap = Wrap.NoWrap;
+            chip.style.alignItems = Align.Center;
+            chip.tooltip = assistiveLabel;
+            var tokenLabel = HudElements.Text(token, 10f, MatchHudTheme.MutedText, FontStyle.Bold);
+            tokenLabel.style.whiteSpace = WhiteSpace.NoWrap;
+            tokenLabel.style.marginTop = 0f;
+            tokenLabel.style.marginBottom = 0f;
+            var amount = HudElements.Text(amountLabel, 11f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            amount.style.whiteSpace = WhiteSpace.NoWrap;
+            amount.style.marginTop = 0f;
+            amount.style.marginBottom = 0f;
+            chip.Add(tokenLabel);
+            chip.Add(amount);
+            return chip;
+        }
+
+        /// <summary>The coin disc's diameter, which is what keeps it inside the item strip's line.</summary>
+        private const float CoinDiscSize = 18f;
+
+        /// <summary>
+        /// p.15's balance as the coin it counts: a struck disc with the number on its face.
+        ///
+        /// <para>Milestone 8.23a, by the user's 2026-08-26 decision. `COINS 0` was a caption
+        /// explaining a number, and a coin with the number on it is the same fact as one object -
+        /// which is the argument milestone 8.11b already made against the discard row's count and the
+        /// turn slots' ordinals, applied to the last number in the rail that still had a word in front
+        /// of it.</para>
+        ///
+        /// <para>It is composed rather than imported: a filled circle, a rim a shade darker, and a
+        /// centred label, from the same three primitives the 30px hero disc in the header is built
+        /// from. That is what keeps it inside this milestone's own non-goal against imported art, and
+        /// what keeps it looking like this HUD on every platform the project declares. The word
+        /// `COINS` is not lost - it is in the tooltip and the assistive reading as `3 coins`, which is
+        /// where this HUD names everything it draws as a shape.</para>
+        /// </summary>
+        private static VisualElement BuildCoinDisc(HeroOverviewViewModel hero)
+        {
+            var coins = HudElements.Row(0f);
+            coins.name = "gd-hero-coins";
+            coins.style.flexWrap = Wrap.NoWrap;
+            coins.style.alignItems = Align.Center;
+            coins.style.flexShrink = 0f;
+            // The words for the same fact, on the terms every other compact rail reading is named by:
+            // the pointer and an assistive reader get `3 coins`.
+            coins.tooltip = hero.CoinAssistiveLabel;
+
+            var coinDisc = new VisualElement { name = "gd-hero-coin-disc" };
+            coinDisc.style.width = CoinDiscSize;
+            coinDisc.style.height = CoinDiscSize;
+            coinDisc.style.flexShrink = 0f;
+            coinDisc.style.justifyContent = Justify.Center;
+            coinDisc.style.backgroundColor = MatchHudTheme.CoinFace;
+            HudElements.Border(coinDisc, MatchHudTheme.CoinEdge, 1f, CoinDiscSize / 2f);
+            var coinAmount = HudElements.Text(
+                hero.CoinAmountLabel, 9f, MatchHudTheme.CoinInk, FontStyle.Bold);
+            coinAmount.name = "gd-hero-coins-amount";
+            coinAmount.style.whiteSpace = WhiteSpace.NoWrap;
+            coinAmount.style.unityTextAlign = TextAnchor.MiddleCenter;
+            coinAmount.style.marginTop = 0f;
+            coinAmount.style.marginBottom = 0f;
+            coinAmount.style.marginLeft = 0f;
+            coinAmount.style.marginRight = 0f;
+            coinDisc.Add(coinAmount);
+            coins.Add(coinDisc);
+            return coins;
         }
 
         /// <summary>The mini card's footprint, and the gap between two of them.</summary>

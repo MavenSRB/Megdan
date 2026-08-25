@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -428,6 +429,104 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
+    /// One rulebook p.18 marker this hero is holding, and what holding it does to them.
+    ///
+    /// <para>Milestone 8.23a, and it is deliberately the same shape as
+    /// <see cref="HeroItemBonusViewModel"/> above rather than a new idiom. p.16's item and p.18's
+    /// marker are the same kind of fact about a hero - a named component that shifts named value
+    /// channels by named amounts - and they differ in the sign and in who gave it. Drawing them two
+    /// different ways would have made a player learn two readings of one thing.</para>
+    ///
+    /// <para><b>Every part of it is the definition's.</b> The name is the marker's own display name,
+    /// and each chip is one <c>MarkerPropertyDefinition</c>'s declared channel and amount. Nothing is
+    /// summed, nothing is negated here, and nothing is looked up by hero: Tigerclaw's two Poison
+    /// strengths print -1 and -2 on their own cards and arrive here already carrying their sign, so a
+    /// third strength added by a later hero draws itself with no change to this type.</para>
+    ///
+    /// <para>A property that declares no value modification contributes no chip. It is a real case -
+    /// <c>MarkerPropertyDefinition.Modification</c> is nullable for a property that only declares its
+    /// source and lifetime - and a chip reading `- 0` would be this surface inventing a rule the
+    /// component does not state.</para>
+    /// </summary>
+    public sealed class HeroMarkerViewModel
+    {
+        public HeroMarkerViewModel(MarkerAttachment attachment)
+        {
+            if (attachment == null) throw new ArgumentNullException(nameof(attachment));
+
+            MarkerInstanceId = attachment.Id;
+            HolderHeroId = attachment.HolderHeroId;
+            DisplayName = attachment.Definition.DisplayName;
+            NameLabel = DisplayName.ToUpperInvariant();
+            ValueChanges = Array.AsReadOnly(attachment.Definition.Properties
+                .Where(property => property.Modification != null &&
+                    property.Modification.Channel != PrintedValueChannel.None)
+                .Select(property => new HeroMarkerValueChangeViewModel(
+                    property.Modification.Channel, property.Modification.Amount))
+                .ToArray());
+
+            // `Poison: Initiative -1, Attack -1, Defense -1`, or `Poison` on its own for a marker
+            // whose properties change no value. The pointer and an assistive reader get the whole
+            // sentence, on the terms every other compact rail reading is named by.
+            AssistiveLabel = ValueChanges.Count == 0
+                ? DisplayName
+                : DisplayName + ": " + string.Join(
+                    ", ", ValueChanges.Select(change => change.AssistiveLabel));
+        }
+
+        public MarkerInstanceId MarkerInstanceId { get; }
+
+        /// <summary>The hero this marker is on, which is the hero whose values it changes.</summary>
+        public HeroId HolderHeroId { get; }
+
+        public string DisplayName { get; }
+
+        /// <summary>`POISON` - the marker's own name, in the rail's caption case.</summary>
+        public string NameLabel { get; }
+
+        /// <summary>One chip per channel the marker's properties change, in declaration order.</summary>
+        public IReadOnlyList<HeroMarkerValueChangeViewModel> ValueChanges { get; }
+
+        public string AssistiveLabel { get; }
+    }
+
+    /// <summary>
+    /// One value channel a held marker changes, as a signed chip.
+    ///
+    /// Milestone 8.23a, and the twin of <see cref="HeroItemBonusViewModel"/> - same token, same signed
+    /// amount, same words. It is a separate type only because an item bonus asserts its amount is
+    /// positive, which is true of p.16's items and false of the thing this draws.
+    /// </summary>
+    public sealed class HeroMarkerValueChangeViewModel
+    {
+        public HeroMarkerValueChangeViewModel(PrintedValueChannel channel, int amount)
+        {
+            if (channel == PrintedValueChannel.None)
+            {
+                throw new ArgumentException("A marker value change names its channel.", nameof(channel));
+            }
+
+            if (amount == 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(amount), "A change of nothing is not a change; such a property draws no chip.");
+            }
+
+            Channel = channel;
+            Amount = amount;
+            Token = MatchHudTheme.ChannelToken(channel);
+            AmountLabel = MatchHudTheme.Signed(amount);
+            AssistiveLabel = $"{MatchHudTheme.ChannelName(channel)} {AmountLabel}";
+        }
+
+        public PrintedValueChannel Channel { get; }
+        public int Amount { get; }
+        public string Token { get; }
+        public string AmountLabel { get; }
+        public string AssistiveLabel { get; }
+    }
+
+    /// <summary>
     /// One of the four fixed slots standing for this hero's <em>resolved</em> turns in the current
     /// round.
     ///
@@ -530,7 +629,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<TrayCardViewModel> discardCards,
             bool isViewed,
             HeroCurrentCardViewModel currentCard = null,
-            TrayCardViewModel ultimateCard = null)
+            TrayCardViewModel ultimateCard = null,
+            IEnumerable<HeroMarkerViewModel> heldMarkers = null)
         {
             if (!heroId.IsDefined)
             {
@@ -557,9 +657,17 @@ namespace GuardsDigital.Presentation.Match
             IsViewed = isViewed;
             CurrentCard = currentCard;
             UltimateCard = ultimateCard;
+            HeldMarkers = Array.AsReadOnly((heldMarkers ??
+                Enumerable.Empty<HeroMarkerViewModel>()).ToArray());
+            if (HeldMarkers.Any(marker => !marker.HolderHeroId.Equals(heroId)))
+            {
+                throw new ArgumentException(
+                    "A rail draws the markers its own hero holds; a marker on somebody else belongs on their rail.",
+                    nameof(heldMarkers));
+            }
+
             TeamLabel = teamSide == TeamSide.Red ? "RED HERO" : "BLUE HERO";
             LevelLabel = "LVL " + level.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            CoinsLabel = "COINS";
             CoinAmountLabel = coins.ToString(System.Globalization.CultureInfo.InvariantCulture);
             CoinAssistiveLabel = coins == 1 ? "1 coin" : CoinAmountLabel + " coins";
             DiscardLabel = "DISCARD";
@@ -609,9 +717,6 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public int Coins { get; }
 
-        /// <summary>`COINS` - the fixed word beside the amount, on the `LVL n` idiom.</summary>
-        public string CoinsLabel { get; }
-
         /// <summary>The balance itself, which is the only part of the readout that changes.</summary>
         public string CoinAmountLabel { get; }
 
@@ -658,6 +763,32 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>`ULTIMATE`, the marker row's caption.</summary>
         public string UltimateLabel { get; }
+
+        /// <summary>
+        /// Milestone 8.23a: rulebook p.18's markers this hero is currently holding, and what each one
+        /// does to them.
+        ///
+        /// <para>It is <c>MatchSessionProjection.MarkersHeldBy</c> read straight through, on exactly
+        /// the terms milestone 8.21a put <see cref="Coins"/> here: never a set this presenter
+        /// maintains, never a tally of give-and-return events it watched. That is what makes the
+        /// reading survive a snapshot restore, a deterministic replay, a retained-prefix Undo and a
+        /// presentation rebuild without a lifetime of its own - every one of those paths already
+        /// reconstructs the attachment register, and the same markers fall out of it.</para>
+        ///
+        /// <para><b>It is the holder's rail, which is normally the opponent's.</b> p.18 describes
+        /// markers as components "usually given to other heroes", so Tigerclaw poisoning an enemy puts
+        /// this reading on the enemy's rail and not on his. That is the point of the milestone rather
+        /// than an accident of it: a rule lowering three of a hero's values has to be visible to the
+        /// player it is applied to.</para>
+        ///
+        /// <para>Usually empty, and drawn only when it is not. p.8 returns every marker at the end of
+        /// every round, so most of a match has no row here at all - which is the same conditional the
+        /// <see cref="UltimateCard"/> row above is drawn under.</para>
+        /// </summary>
+        public IReadOnlyList<HeroMarkerViewModel> HeldMarkers { get; }
+
+        /// <summary>`MARKERS`, the held-marker row's caption.</summary>
+        public string MarkersLabel => "MARKERS";
     }
 
     public sealed class HeroOverviewsViewModel
@@ -744,7 +875,10 @@ namespace GuardsDigital.Presentation.Match
                 CurrentRoundCards.DiscardedCards(projection, heroId),
                 heroId.Equals(viewedHeroId),
                 CurrentRoundCards.CurrentCard(projection, heroId),
-                CurrentRoundCards.UnlockedUltimate(projection, heroId));
+                CurrentRoundCards.UnlockedUltimate(projection, heroId),
+                // Milestone 8.23a. The register's own order, kept rather than sorted: markers are
+                // given one at a time and the order they were given in is the only order there is.
+                projection.MarkersHeldBy(heroId).Select(marker => new HeroMarkerViewModel(marker)));
         }
     }
 

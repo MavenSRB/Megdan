@@ -916,7 +916,11 @@ namespace GuardsDigital.Application
                 CreateActiveEffectSourceCards(round),
                 // Milestone 8.21. The same pairing the effect choice has above: the pause and the
                 // affordable answers to it are read in one breath, from the authority that holds both.
-                turn?.DescribeRemovalPrevention(turnModifications));
+                turn?.DescribeRemovalPrevention(turnModifications),
+                // Milestone 8.23a. The register itself, not a copy of what it said: the same object
+                // p.8's cleanup and p.13's Defeat return markers to, so a reading of it can never
+                // outlive the attachment it describes.
+                round?.Markers.Attachments);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

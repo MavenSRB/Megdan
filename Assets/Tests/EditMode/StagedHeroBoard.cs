@@ -784,6 +784,27 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Session.CaptureSnapshot(), Is.EqualTo(captured),
                 "and reading it back has to produce the same state it was written from.");
         }
+        /// <summary>
+        /// Ends every remaining turn and drives the round through its own boundary, so a caller can
+        /// reach what rulebook p.8 does at the end of a round. Milestone 8.23a, for the marker whose
+        /// whole lifetime ends at "Remove Tokens, Return Markers".
+        /// </summary>
+        internal void CrossTheRoundBoundary()
+        {
+            var startedIn = Session.Projection.RoundIndex;
+
+            // Every remaining turn of this round, then the whole of p.8's stage list. Both halves are
+            // ConfiguredMatchFixtures' own, because a second implementation of "play out a round"
+            // that drifted from theirs would cross a different boundary than the rest of the suite
+            // measures against.
+            ConfiguredMatchFixtures.PlayOutTheRestOfTheRound(Session);
+            ConfiguredMatchFixtures.FinishEndOfRound(Session);
+
+            Assert.That(Session.Projection.RoundIndex, Is.GreaterThan(startedIn),
+                "The round has to actually end for p.8's Return Markers to have run; a caller that " +
+                "stopped short would read an absence this never caused.");
+        }
+
         internal void Accept(DirectorCommand command)
         {
             var result = Session.Execute(command);

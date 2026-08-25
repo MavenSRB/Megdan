@@ -506,7 +506,8 @@ namespace GuardsDigital.Application
                 pendingSystemTransitionDescription = null,
             IEnumerable<CardInstanceId> activeEffectSourceCardInstanceIds = null,
             GuardsDigital.Core.Rules.CardResolution.RemovalPreventionPrompt
-                pendingRemovalPrevention = null)
+                pendingRemovalPrevention = null,
+            IEnumerable<MarkerAttachment> heldMarkers = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -519,6 +520,15 @@ namespace GuardsDigital.Application
             Minions = Array.AsReadOnly((minions ?? throw new ArgumentNullException(nameof(minions))).ToArray());
             PlacedTokens = Array.AsReadOnly((placedTokens ??
                 throw new ArgumentNullException(nameof(placedTokens))).ToArray());
+            HeldMarkers = Array.AsReadOnly((heldMarkers ??
+                Enumerable.Empty<MarkerAttachment>()).ToArray());
+            if (HeldMarkers.Any(marker => marker == null) ||
+                HeldMarkers.Select(marker => marker.Id).Distinct().Count() != HeldMarkers.Count)
+            {
+                throw new ArgumentException(
+                    "Held markers must be non-null and distinct by instance ID.", nameof(heldMarkers));
+            }
+
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
             Phase = phase;
@@ -650,6 +660,40 @@ namespace GuardsDigital.Application
         /// is derived, so no rule can come to depend on a reading only this projection performs.
         /// </summary>
         public IReadOnlyList<PlacedToken> PlacedTokens { get; }
+
+        /// <summary>
+        /// Milestone 8.23a: the markers currently attached to heroes, as the register holds them.
+        ///
+        /// <para>The marker twin of <see cref="PlacedTokens"/> above, and handed over on exactly the
+        /// same terms: the authoritative <see cref="MarkerAttachment"/> instance, carrying the stable
+        /// identity, the holder, and the trusted <c>MarkerDefinition</c> object the catalog supplied.
+        /// A surface therefore reads the supply it came from, its printed strength and the channels it
+        /// changes off the definition that states them, and needs no component catalog of its own.</para>
+        ///
+        /// <para><b>There is no coordinate here and there must never be one.</b> Rulebook p.18 keeps
+        /// markers off the board - "Unlike tokens, markers are usually not placed on the board" - which
+        /// <see cref="MarkerAttachment"/> makes structural by having no field one could occupy a space
+        /// with. The holder is the whole of a marker's position.</para>
+        ///
+        /// <para>The list is the register's own, so the attachment's lifetime is the reading's: it
+        /// appears the moment a marker is given and is gone the moment p.8's end of round or p.13's
+        /// holder Defeat returns it. Nothing downstream keeps a count, which is what lets restore,
+        /// replay and retained-prefix Undo redraw it with no serialized field of their own - every one
+        /// of those paths already reconstructs the register.</para>
+        /// </summary>
+        public IReadOnlyList<MarkerAttachment> HeldMarkers { get; }
+
+        /// <summary>
+        /// The markers this hero is currently holding, in the register's own order.
+        ///
+        /// <para>Milestone 8.23a. The holder is the affected object - a marker property modifies the
+        /// hero who <em>has</em> it, where a token property modifies its controller - so this is the
+        /// question every surface drawing a marker asks, stated once here rather than as a filter each
+        /// caller writes.</para>
+        /// </summary>
+        public IEnumerable<MarkerAttachment> MarkersHeldBy(HeroId holderHeroId) =>
+            HeldMarkers.Where(marker => marker.HolderHeroId.Equals(holderHeroId));
+
         public int RoundIndex { get; }
         public int TurnIndex { get; }
         public RoundResolutionPhase Phase { get; }

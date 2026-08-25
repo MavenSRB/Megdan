@@ -446,7 +446,7 @@ Non-goals: No other new hero, six-player setup, networking, or production art.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-823-complete-and-verify-additional-pitch-hero-slot-d---tigerclaw-completion-evidence).
 
-### [~] 8.23a Draw a held marker on a rail that has room for it
+### [x] 8.23a Draw a held marker on a rail that has room for it
 
 Blocked by: Milestone 8.23 must attach the first verified marker.
 
@@ -480,6 +480,8 @@ Acceptance checks:
 Non-goals: No new marker content, no change to what a marker does, no six-player setup, and no
 imported production art - a coin drawn from the panel's own vocabulary is composition rather than
 art, and an imported sprite is out of scope.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-823a-draw-a-held-marker-on-a-rail-that-has-room-for-it-completion-evidence).
 
 ### [!] 8.24 Complete and verify additional pitch hero slot E - Xargatha
 

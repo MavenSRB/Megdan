@@ -137,8 +137,25 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The standing status strip's height. The Tie Breaker chip sits inside it.</summary>
         public const float StatusBarHeight = 56f;
 
-        /// <summary>A hero overview rail's width. Compact by intent: the board is the dominant surface.</summary>
-        public const float HeroRailWidth = 172f;
+        /// <summary>
+        /// A hero overview rail's width.
+        ///
+        /// <para>Milestone 8.23a widened it from 172, and the trade is deliberate rather than a matter
+        /// of taste. Rulebook p.6 puts three heroes on a side, so a rail's real budget is a third of
+        /// this column's height - and every row in a narrow rail buys its narrowness back in wrapped
+        /// lines: the discard pile wraps by the pile's own width, the item strip wraps at a fourth
+        /// channel, and a held marker's three value chips would wrap at 172 before the row existed.
+        /// Trading horizontal room the board does not need for vertical room three rails do need is
+        /// what makes the same readings fit in a third of the height.</para>
+        ///
+        /// <para>192 rather than more, because the widening is bounded by a standing product rule
+        /// rather than by taste: two rails together must stay under half the narrowest validated
+        /// viewport so the board remains the dominant surface, which
+        /// <c>MatchHudPresentationTests.TheStandingLayout_KeepsEveryRegionInsideBothValidatedViewports</c>
+        /// measures. 208 broke it at 416 against a 389 limit and was reduced rather than the rule
+        /// being loosened.</para>
+        /// </summary>
+        public const float HeroRailWidth = 192f;
 
         private const float DirectorToggleWidth = 122f;
         private const float DirectorToggleHeight = 30f;

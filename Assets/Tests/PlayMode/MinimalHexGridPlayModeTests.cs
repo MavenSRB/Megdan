@@ -614,11 +614,32 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(resolved.CurrentCard, Is.Null);
             Assert.That(resolved.TurnSlots.Count(slot => slot.IsOccupied), Is.EqualTo(1),
                 "and exactly one numbered turn is now history.");
+            // Milestone 8.23a took the `RESOLVED TURNS` caption off the rail to give the row's line
+            // back, at the user's 2026-08-26 direction, so what the slots are is carried by their own
+            // hover and assistive labels - the treatment milestone 8.7a gave the team label and 8.5a
+            // gave a card's printed colour. The claim this case makes is therefore the same one at the
+            // surface the fact moved to: the occupied slot names its turn and the card on it, and an
+            // empty one names its turn and says so.
             Assert.That(
                 Descendants(hud.RootElement).OfType<UnityEngine.UIElements.Label>()
-                    .Count(label => label.name == "gd-turn-slots-caption" && label.text == "RESOLVED TURNS"),
-                Is.EqualTo(rails.Length),
-                "and both rails caption the row as what it is.");
+                    .Any(label => label.name == "gd-turn-slots-caption"),
+                Is.False,
+                "The caption's line is what this milestone gave back to the rail.");
+            foreach (var rail in runtime.HeroOverviewsView.Model.Heroes)
+            {
+                foreach (var slot in rail.TurnSlots)
+                {
+                    Assert.That(slot.AssistiveLabel, Does.StartWith($"Turn {slot.TurnIndex}:"),
+                        "Every slot says which turn it stands for, so the row still means resolved " +
+                        "turns without a caption over it.");
+                    Assert.That(
+                        slot.AssistiveLabel,
+                        slot.IsOccupied
+                            ? Does.Contain(slot.PlayedCard.DisplayName)
+                            : Does.Contain("empty"),
+                        "and it names the card that resolved there, or says the turn is empty.");
+                }
+            }
 
             // Milestone 8.11b, in the runtime scene: the row is card icons rather than numbers, and
             // resting on one reveals that card's whole face through the rail's single preview. The

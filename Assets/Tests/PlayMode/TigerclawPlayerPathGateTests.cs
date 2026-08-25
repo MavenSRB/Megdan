@@ -107,6 +107,17 @@ namespace GuardsDigital.Tests.PlayMode
         private const string PoisonJourney =
             "PoisonedDagger_GivesThePoisonMarkerToTheHeroItsBoardClickNames";
 
+        /// <summary>Milestone 8.23a: the marker is read on the rail of the hero who is holding it.</summary>
+        private const string PoisonReadingJourney =
+            "APoisonedHero_ReadsTheMarkerAndItsThreeLostValuesOnTheirOwnRail";
+
+        /// <summary>
+        /// and the reading follows the attachment's lifetime through every reconstruction the gate
+        /// names, ending when p.8's end of round returns the marker.
+        /// </summary>
+        private const string PoisonReadingSurvivesJourney =
+            "ThePoisonReading_SurvivesRestoreReplayAndUndo_AndEndsWhenTheRoundReturnsTheMarker";
+
         private const string DefenseRiderJourney =
             "Parry_BlocksTheAttackItIsPrintedAgainstAndItsRiderTakesTheAttackersCard";
 
@@ -399,15 +410,16 @@ namespace GuardsDigital.Tests.PlayMode
                         "TigerclawPrintedSetTests.MasterThief_DeclaresTheTwoAmountsItsFacePrints"
                     }),
 
-                // The two Poison faces. What a player does is name the hero in range; the marker's
-                // own supply, strength and three value channels are the component's, and this build
-                // draws none of it - the debt row below records that rather than this row claiming a
-                // reading nobody can perform.
+                // The two Poison faces. What a player does is name the hero in range; what the marker
+                // then does to that hero is read on their own rail, which milestone 8.23a added and
+                // which the component row below owns. Both halves are this face's, so the face
+                // declares the reading its capability introduces as well as the click.
                 Face(TigerclawCardContent.PoisonedDagger, "Poisoned Dagger", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(PrimarySkillControl, PoisonJourney),
                         Prove(BoardUnitSelection, PoisonJourney),
+                        Prove(HeldMarkerReading, PoisonReadingJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)
                     },
@@ -440,6 +452,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(PrimarySkillControl, PoisonJourney),
                         Prove(BoardUnitSelection, PoisonJourney),
+                        Prove(HeldMarkerReading, PoisonReadingJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)
                     },
@@ -525,26 +538,40 @@ namespace GuardsDigital.Tests.PlayMode
                     "four dashboard slots they reach are pinned by TigerclawVerifiedContentTests." +
                     "HisTwelveItemIconsReachAllFourDashboardSlots_WithTheWidestMovementReach"),
 
-                // THE POISON MARKER, AND THE DEBT MILESTONE 8.23a IS SCHEDULED TO CLOSE.
+                // THE POISON MARKER, DRAWN AT LAST. Milestone 8.23a closed the debt this row carried.
                 //
-                // He is the first verified hero to attach one of p.19's markers, and this build draws
-                // no held marker anywhere: nothing in Assets/GuardsDigital/Presentation reads one, the
-                // HUD names an Active-effect source with ACTIVE and has no equivalent for an
-                // attachment, and a card face shows printed values rather than the totals a marker
-                // changes. So Poisoned Dagger and Poisoned Dart lower a hero's Attack, Defense and
-                // Initiative with nothing on screen saying so.
+                // Milestone 8.23 recorded an absence here, and recorded it honestly: he was the first
+                // verified hero to attach one of p.19's markers, this build drew no held marker
+                // anywhere, and Poisoned Dagger and Poisoned Dart lowered a hero's Initiative, Attack
+                // and Defense with nothing on screen saying so. What closes it is a reading rather
+                // than an excuse, so the row is now an ordinary component row with journeys.
                 //
-                // It is recorded here rather than classified away. The two supplies contribute no
-                // input shape because the hero who receives one is named by the selection node in
-                // front of them - that part is honest and the rows above carry the click. What this
-                // row says is the other half: there is a reading a player cannot perform, it is a
-                // presentation gap rather than a rules one, and milestone 8.23a owns it for every
-                // hero and every supply at once rather than for this hero's two faces.
-                AbsentComponent("tigerclaw-poison-marker", "the Poison supply, held by its hero",
-                    "milestone 8.23a is scheduled to draw a held marker; this build draws none, so " +
-                    "the attachment his two Poison faces make is authoritative and invisible - what " +
-                    "it does to its holder is pinned by TigerclawPrintedSetTests." +
-                    "PoisonedDagger_GivesTheMarker_AndTheHolderLosesThreeValues"),
+                // It is a component rather than a face row for the reason the coin balance and the
+                // footprint are: the subject is the hero holding the marker, not the card that gave
+                // it. The two faces above still carry their own click - the hero who receives one is
+                // named by the selection node in front of them - and this row carries what the click
+                // leaves behind.
+                //
+                // The reading is proved on WASP'S rail, which is the point of the milestone rather
+                // than an accident of the staging: p.18 gives markers to other heroes, a marker
+                // property affects its holder where a token property affects its controller, and a
+                // rule lowering three of a hero's values has to be visible to the player it is
+                // applied to.
+                Component("tigerclaw-poison-marker", "the Poison marker, read on the hero holding it",
+                    new[]
+                    {
+                        Prove(HeldMarkerReading, PoisonReadingJourney),
+                        Prove(HeldMarkerReading, PoisonReadingSurvivesJourney)
+                    },
+                    new[]
+                    {
+                        "TigerclawPrintedSetTests." +
+                            "PoisonedDagger_GivesTheMarker_AndTheHolderLosesThreeValues",
+                        "MatchHudPresentationTests." +
+                            "AHeldMarker_IsDrawnOnItsHoldersRailFromTheProjectionAlone",
+                        "MatchHudPresentationTests." +
+                            "AReturnedMarker_LeavesNoReadingBehindOnAnyRail"
+                    }),
 
                 // He places no token. His Blue basic places HIMSELF - p.18's Place with the actor as
                 // its own subject - and nothing else of his puts a new object on the board.
@@ -617,17 +644,20 @@ namespace GuardsDigital.Tests.PlayMode
                 "p.16's item track");
 
         /// <summary>
-        /// The marker row is held to the same standard, from the other direction: it may stand only
-        /// while his content actually names a marker supply. A build that stopped attaching one would
-        /// leave this row excusing nothing, and a later hero attaching one inherits the milestone
-        /// rather than the excuse.
+        /// Milestone 8.23a: the marker row has a subject, and it is no longer a debt.
+        ///
+        /// <para>Milestone 8.23 held the row to having something to excuse - a build that stopped
+        /// attaching a marker would have left it excusing nothing. The row is now an ordinary
+        /// component row, so what it is held to is the same fact from the other side: his content
+        /// still names a marker supply, and the row that draws one is therefore about something. A
+        /// later hero attaching a marker inherits the reading rather than the excuse.</para>
         /// </summary>
         [Test]
-        public void ThePoisonMarkerRowRecordsAnUndrawnComponent_AndHisContentActuallyAttachesOne() =>
-            CreateMatrix().AssertDeclaredDebtHasItsSubject(
-                "tigerclaw-poison-marker",
+        public void ThePoisonMarkerRow_HasItsSubject_BecauseHisContentActuallyAttachesOne() =>
+            Assert.That(
                 MarkerCapabilities.Any(ContentNamesCapability),
-                "p.19's marker, held by the hero it was given to");
+                Is.True,
+                "The Poison row draws a marker no face of his gives, so the row is about nothing.");
 
         [Test]
         public void TigerclawPrintsNoToken_AsTheMatrixRecords() =>

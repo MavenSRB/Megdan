@@ -5,6 +5,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -118,10 +119,11 @@ namespace GuardsDigital.Tests.PlayMode
         /// Poisoned Dagger: "Give a hero in range a Poison marker."
         ///
         /// <para>One board click on the hero standing in the printed disk, and p.10 keeps him out of
-        /// his own action - so the only candidate is the enemy. <b>What the marker then does is
-        /// authoritative and invisible.</b> This build draws no held marker anywhere, which milestone
-        /// 8.23's own gate row records as a debt and milestone 8.23a is scheduled to close; what the
-        /// attachment costs its holder is pinned by
+        /// his own action - so the only candidate is the enemy. This journey owns the click reaching
+        /// the rules and stops there; milestone 8.23a added
+        /// <see cref="APoisonedHero_ReadsTheMarkerAndItsThreeLostValuesOnTheirOwnRail"/> for what the
+        /// click then puts on the screen, which was the debt milestone 8.23's gate row recorded. What
+        /// the attachment costs its holder in the rules is pinned by
         /// <c>TigerclawPrintedSetTests.PoisonedDagger_GivesTheMarker_AndTheHolderLosesThreeValues</c>.</para>
         /// </summary>
         [UnityTest]
@@ -577,6 +579,243 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             yield return AdvanceToNextTurn(runtime);
+        }
+
+        /// <summary>
+        /// Milestone 8.23a: the hero who was given the marker reads it, and what it costs them, on
+        /// their own rail.
+        ///
+        /// <para>This is the debt milestone 8.23 recorded. The click that gives the marker is
+        /// <see cref="PoisonedDagger_GivesThePoisonMarkerToTheHeroItsBoardClickNames"/>'s subject;
+        /// what this journey adds is the half that had nowhere to happen - the marker is drawn, and
+        /// the three values its printed sentence lowers are drawn beside it.</para>
+        ///
+        /// <para><b>The reading is on the enemy's rail and the assertion says so in as many words.</b>
+        /// Tigerclaw sits on the Blue seat and the marker goes to the Red hero he named, because p.18
+        /// gives markers to other heroes and a marker property affects its HOLDER. A build that drew
+        /// the marker on the rail of the hero who gave it would pass every test about "a marker is
+        /// drawn" and would be telling the wrong player their values dropped, so both rails are read
+        /// and only one of them may carry it.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator APoisonedHero_ReadsTheMarkerAndItsThreeLostValuesOnTheirOwnRail()
+        {
+            yield return LoadStagedScene(
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedTigerclaw);
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var tigerclawId = TigerclawSeat(runtime).HeroId;
+            var enemyId = OtherHeroId(runtime, tigerclawId);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            // Nobody is holding anything before the Skill is performed, on either rail. Without this
+            // the journey could not tell a marker it caused from one the staging had already dealt.
+            HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Red, "the staged position");
+            HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Blue, "the staged position");
+
+            yield return GivePoisonThroughTheBoard(root, tigerclawId, enemyId, pointerInput);
+
+            // The whole of milestone 8.23a, in one assertion: the hero the marker was given to reads
+            // its name and the three channels it lowers, drawn on the rail that is theirs.
+            HeroRailMarkerCheck.AssertReadings(
+                hud, TeamSide.Red, "the answered Poisoned Dagger",
+                HeroRailMarkerCheck.PoisonOneReading);
+            HeroRailMarkerCheck.AssertReadings(
+                hud, TeamSide.Blue, "the answered Poisoned Dagger");
+
+            // THE MEASUREMENT MILESTONE 8.23a LEAVES BEHIND, and it is a negative one.
+            //
+            // The acceptance check asks for the recomposed rail's height recorded against a third of
+            // the hero-rail rect, so whether three fit is measured rather than claimed. It was
+            // measured, and a stacked column of three does not fit at the validated viewport: a rail
+            // carrying a held marker draws about 239 against a budget of about 156 in a 491 rail rect
+            // at 1920x1080. The recomposition took a row out and that is not close to enough.
+            //
+            // It is a fact about a stacked column at one viewport rather than about the roster - the
+            // rect is taller at a taller viewport, and milestone 8.25 may arrange six rails some other
+            // way entirely. The user's 2026-08-26 decision was to leave that open.
+            //
+            // So this asserts the regression rather than the aspiration. The ceiling is the height
+            // this build actually draws, which stops the rail growing back silently, and the shortfall
+            // is recorded in the milestone's evidence and in Project/MATCH_HUD.md rather than being
+            // written here as a check that fails on purpose.
+            var railRect = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
+                Screen.width, Screen.height, TeamSide.Red);
+            var budget = HeroRailMarkerCheck.ThreeUpBudget(railRect.height);
+            var drawn = HeroRailCoinCheck.BoxOf(hud, TeamSide.Red).height;
+            TestContext.WriteLine(
+                "8.23a rail measurement: a rail holding a marker is " + drawn + " tall; a third of " +
+                    "the " + railRect.height + " rail rect leaves " + budget + " for one of three.");
+            Assert.That(drawn, Is.LessThanOrEqualTo(HeroRailMarkerCheck.RecordedRailCeiling),
+                "The recomposed rail draws " + drawn + " against the " +
+                    HeroRailMarkerCheck.RecordedRailCeiling + " this build measured, so a later " +
+                    "change grew it back.");
+
+            yield return CaptureGameView("a-poisoned-hero-reads-the-marker-on-their-own-rail");
+        }
+
+        /// <summary>
+        /// Milestone 8.23a: the reading follows the attachment's own lifetime rather than a card's.
+        ///
+        /// <para>Four reconstructions and one ending, which is the milestone's acceptance check
+        /// stated as one journey. A snapshot restore, a presentation rebuild and a retained-prefix
+        /// Undo each rebuild the register the reading is derived from, so each must redraw the same
+        /// row with nothing stale left behind - and p.8's "Remove Tokens, Return Markers" must take
+        /// it away, because the sentence is printed in the present tense about the holder and stops
+        /// being true when the marker goes back to the supply.</para>
+        ///
+        /// <para>The Undo half is the one worth stating plainly: undoing the command that gave the
+        /// marker must remove the row, because a reading that survived its own cause would be
+        /// presentation holding state the authority no longer has - which is exactly the accounting
+        /// this milestone's acceptance check forbids.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator ThePoisonReading_SurvivesRestoreReplayAndUndo_AndEndsWhenTheRoundReturnsTheMarker()
+        {
+            yield return LoadStagedScene(
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedTigerclaw);
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var tigerclawId = TigerclawSeat(runtime).HeroId;
+            var enemyId = OtherHeroId(runtime, tigerclawId);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            yield return GivePoisonThroughTheBoard(root, tigerclawId, enemyId, pointerInput);
+            HeroRailMarkerCheck.AssertReadings(
+                hud, TeamSide.Red, "the answered Poisoned Dagger",
+                HeroRailMarkerCheck.PoisonOneReading);
+
+            // Presentation rebuild: a redrawn HUD reconstructs the row from the projection alone,
+            // with no second row left behind by the one it replaced.
+            runtime.RefreshAll();
+            yield return null;
+            HeroRailMarkerCheck.AssertReadings(
+                hud, TeamSide.Red, "a rebuilt presentation",
+                HeroRailMarkerCheck.PoisonOneReading);
+
+            // The position is captured before the Undo rather than after it, and the order is
+            // load-bearing: a restore reconstructs the session from the payload and leaves it with no
+            // accepted command history, so an Undo attempted afterwards is refused for having nothing
+            // to undo. Milestone 8.23a learned that from a red run reading `Round 1, turn 2: awaiting
+            // commitments` - the state was right and the history was gone.
+            var captured = runtime.CaptureSnapshot();
+
+            // Undo: the retained prefix puts the position back before the marker was given, and the
+            // row goes with the attachment rather than outliving it.
+            Assert.That(runtime.Undo(), Is.True,
+                "The command that gave the marker is undoable. " + Remaining(runtime));
+            yield return null;
+            HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Red, "a retained-prefix Undo");
+            HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Blue, "a retained-prefix Undo");
+
+            // Restore: the same position out of bytes redraws the same row, which is also what proves
+            // the Undo removed a reading rather than broke one.
+            Assert.That(runtime.RestoreSnapshot(captured), Is.True);
+            yield return null;
+            HeroRailMarkerCheck.AssertReadings(
+                hud, TeamSide.Red, "a restored position",
+                HeroRailMarkerCheck.PoisonOneReading);
+            HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Blue, "a restored position");
+
+            // p.8's end of round returns every marker, and the reading ends with it.
+            yield return CrossTheRoundBoundary(runtime);
+            HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Red, "the round after p.8 returned it");
+            HeroRailMarkerCheck.AssertReadings(hud, TeamSide.Blue, "the round after p.8 returned it");
+
+            yield return CaptureGameView("the-poison-reading-ends-when-the-round-returns-the-marker");
+        }
+
+        /// <summary>
+        /// Plays every remaining turn of the current round and its whole end-of-round stage list, so a
+        /// caller can reach what rulebook p.8 does at a round boundary. Milestone 8.23a.
+        ///
+        /// <para>The existing pair - <see cref="TigerclawEngagedUiJourneyPlayModeTests.YieldUntilNobodyIsActing"/>
+        /// then <see cref="TigerclawEngagedUiJourneyPlayModeTests.AdvanceToNextTurn"/> - reaches the
+        /// next TURN, and a round is four of them. A caller wanting the boundary has to keep going
+        /// until the round index actually moves, which is what this loops on and what it asserts:
+        /// milestone 8.23a's first red run read the marker still held, because the round had only
+        /// reached turn two and p.8's Return Markers had not run at all.</para>
+        /// </summary>
+        private static IEnumerator CrossTheRoundBoundary(ConfiguredMatchSceneRuntime runtime)
+        {
+            var startedIn = runtime.RoundIndex;
+            for (var budget = 0; runtime.RoundIndex == startedIn; budget++)
+            {
+                Assert.That(budget, Is.LessThan(24),
+                    "A round has to end within a bounded number of turns and stage answers. " +
+                    Remaining(runtime));
+
+                if (runtime.Phase == RoundResolutionPhase.EndOfRound)
+                {
+                    yield return AdvanceToNextTurn(runtime);
+                    continue;
+                }
+
+                if (runtime.SelectedActor.IsDefined)
+                {
+                    yield return YieldUntilNobodyIsActing(runtime);
+                    continue;
+                }
+
+                // Awaiting the next turn's commitments: every seat commits whatever it still holds,
+                // which spends the round without any of it being this journey's subject.
+                foreach (var seat in runtime.Setup.Heroes.Select(hero => hero.HeroId).ToArray())
+                {
+                    var held = runtime.Cards
+                        .Where(card => card.OwnerId.Equals(seat) &&
+                            card.State.Location == CardLocation.Hand)
+                        .OrderBy(card => card.Id.Value, System.StringComparer.Ordinal)
+                        .FirstOrDefault();
+                    if (held == null)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(runtime.SelectCommitmentCard(held.Id), Is.True);
+                    Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+                }
+
+                yield return null;
+            }
+
+            yield return null;
+        }
+
+        /// <summary>
+        /// Plays Poisoned Dagger and answers its one board question, which is the setup both readings
+        /// above stand on rather than the subject of either.
+        ///
+        /// <para>It is the same sequence
+        /// <see cref="PoisonedDagger_GivesThePoisonMarkerToTheHeroItsBoardClickNames"/> asserts its way
+        /// through, driven here without those assertions: that journey owns proving the click reaches
+        /// the rules, and these two own what the rules then put on the screen.</para>
+        /// </summary>
+        private static IEnumerator GivePoisonThroughTheBoard(
+            MatchSceneCompositionRoot root,
+            HeroId tigerclawId,
+            HeroId enemyId,
+            PrimitiveHeroPointerInput pointerInput)
+        {
+            var runtime = root.Runtime;
+            CommitSoTheNamedSeatActs(runtime, tigerclawId, TigerclawCardContent.PoisonedDagger);
+            yield return YieldUntilTheNamedSeatActs(runtime, tigerclawId);
+            yield return PointTrayAt(root, tigerclawId);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+
+            var target = StandingNode(runtime);
+            Assert.That(
+                UiPlayer.ClickBoard(
+                    pointerInput, root.Hud, HeroView(enemyId).transform.position),
+                Is.True,
+                "The hero who receives the marker is named by clicking them.");
+            yield return null;
+            yield return ConfirmIfStillStanding(root, target);
+            yield return null;
+
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "The answered selection completes the action. " + Remaining(runtime));
         }
     }
 }

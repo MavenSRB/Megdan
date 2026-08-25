@@ -226,7 +226,32 @@ namespace GuardsDigital.Tests.PlayMode
         /// no input, presentation, or transition shape. What is hero-specific about a rail - the
         /// piece, the identity, the items - already has its own shapes above.</para>
         /// </summary>
-        HeroCoinBalanceReading
+        HeroCoinBalanceReading,
+
+        /// <summary>
+        /// Milestone 8.23a: a rulebook p.18 marker this hero holds, drawn on their own rail together
+        /// with the value channels holding it changes.
+        ///
+        /// <para>A reading rather than an input, on the terms the readings above are - and the one
+        /// this table was carrying as an explicit debt. Milestone 8.23 gave Tigerclaw the first
+        /// verified marker in the build and could draw it nowhere, so his two Poison capabilities
+        /// mapped to no shape at all rather than to a shape no player could perform. The two entries
+        /// in <see cref="CapabilityShapes"/> name this now, which is what closes the debt: a hero
+        /// whose content attaches a marker owes a journey where a player reads one.</para>
+        ///
+        /// <para><b>It is derived from content, unlike the component shapes above it.</b> The subject
+        /// is a capability a hero's cards actually print, so a hero who gives no marker owes nothing
+        /// here and a hero who does cannot avoid it - which is the opposite of
+        /// <see cref="HeroCoinBalanceReading"/>, whose subject is a rail row every hero has. It is
+        /// therefore deliberately <em>not</em> in
+        /// <see cref="HeroPlayerPathMatrix.RequiredComponentShapes"/>.</para>
+        ///
+        /// <para>The reading is proved on the <em>holder's</em> rail, which is normally the enemy's:
+        /// p.18 gives markers to other heroes, a marker property affects its holder where a token
+        /// property affects its controller, and the whole point of drawing one is that the player
+        /// whose values dropped can see why.</para>
+        /// </summary>
+        HeldMarkerReading
     }
 
     /// <summary>
@@ -513,11 +538,15 @@ namespace GuardsDigital.Tests.PlayMode
                 ["transfer-resource"] = new[] { PlayerInteractionShape.ResourceAmountChoice },
 
                 // The two Poison supplies. The hero who receives one is named by the selection node
-                // in front of them, so the attachment itself asks nobody anything - and this build
-                // draws no held marker anywhere, which the fixture records as a debt rather than
-                // claiming a reading no player can perform.
-                ["tigerclaw-give-poison-marker-1"] = Array.Empty<PlayerInteractionShape>(),
-                ["tigerclaw-give-poison-marker-2"] = Array.Empty<PlayerInteractionShape>()
+                // in front of them, so the attachment itself asks nobody anything - but what it
+                // leaves behind is read, which is milestone 8.23a and the debt milestone 8.23 wrote
+                // here. Both entries stood empty while this build drew no held marker anywhere; the
+                // shape they name now is the reading on the holder's own rail, and a hero attaching a
+                // marker can no longer pass this gate without one.
+                ["tigerclaw-give-poison-marker-1"] =
+                    new[] { PlayerInteractionShape.HeldMarkerReading },
+                ["tigerclaw-give-poison-marker-2"] =
+                    new[] { PlayerInteractionShape.HeldMarkerReading }
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

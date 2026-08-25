@@ -39,16 +39,25 @@ namespace GuardsDigital.Tests.PlayMode
         private static readonly string[] AlwaysDrawnNeighbours =
         {
             "gd-hero-icon",
-            "gd-bonus-strip",
+
+            // Milestone 8.23a: the item CHIPS rather than the strip that holds them. The coin moved
+            // inside `gd-bonus-strip` in this milestone, so "the count does not overlap the strip"
+            // became a claim that cannot hold - a child always overlaps its parent - and the claim
+            // worth keeping is the one it was standing in for: the coin must not sit on the item
+            // icons it shares a line with.
+            "gd-item-chips",
             "gd-current-card-slot",
-            "gd-turn-slots-caption",
             "gd-turn-slots",
             "gd-discard"
         };
 
         private static readonly string[] SometimesDrawnNeighbours =
         {
-            "gd-ultimate"
+            "gd-ultimate",
+
+            // Milestone 8.23a. p.8 returns every marker at the end of every round, so a rail draws
+            // this row only while its hero is actually holding one.
+            "gd-hero-marker"
         };
 
         /// <summary>Every rail currently drawn on one edge of the screen, outermost first.</summary>
@@ -161,22 +170,27 @@ namespace GuardsDigital.Tests.PlayMode
                     $"'{label.text}' is clipped by the {side} readout's own box at {where}.");
             }
 
-            // The line the count shares is the caption's own line, and it is no taller for the
-            // sharing: a count that raised this row would push every row under it down, which is the
-            // same thing as making the rail taller.
+            // Milestone 8.23a: the coin costs the item strip no height at all.
             //
-            // Margin boxes are what the comparison is between, because a margin box is what a child
-            // contributes to the column above it - the caption's was the rail's whole spend on this
-            // line before the row existed, and the row's is the rail's whole spend on it now.
-            var row = UiPlayer.Descendants(rail)
-                .Single(element => element.name == "gd-turn-slots-caption-row");
-            var caption = UiPlayer.Descendants(row)
-                .Single(element => element.name == "gd-turn-slots-caption");
+            // Milestone 8.21a made this comparison against the `RESOLVED TURNS` caption, whose line
+            // the count then shared; that caption is gone and the coin now stands in the item strip.
+            // The claim is the same shape and stronger: the strip's margin box is what the rail spends
+            // on this line, and it must be the taller of what a chip needs and what the disc needs -
+            // never their sum, and never the disc pushing past a row of text it stands beside.
+            // Border boxes, not margin boxes, and the distinction is what a red run taught here: the
+            // strip carries its own 7-pixel margin above it and the chips row inside it carries none,
+            // so comparing the two margin boxes reports the strip's spacing from the row above as
+            // growth caused by the coin. What the claim is about is the line's own height.
+            var strip = UiPlayer.Descendants(rail)
+                .Single(element => element.name == "gd-bonus-strip");
+            var chips = UiPlayer.Descendants(strip)
+                .Single(element => element.name == "gd-item-chips");
             Assert.That(
-                MarginBoxHeight(row),
-                Is.EqualTo(MarginBoxHeight(caption)).Within(EdgeTolerance),
-                $"The {side} caption's line costs the rail {MarginBoxHeight(row)} at {where} where " +
-                    $"the caption alone cost it {MarginBoxHeight(caption)}, so the count raised it.");
+                strip.worldBound.height,
+                Is.EqualTo(Mathf.Max(chips.worldBound.height, box.height)).Within(EdgeTolerance),
+                $"The {side} item strip's line is {strip.worldBound.height} tall at {where}, where " +
+                    $"its chips need {chips.worldBound.height} and the coin is {box.height} - so the " +
+                    "line grew to hold both rather than fitting the coin inside it.");
 
             foreach (var name in AlwaysDrawnNeighbours)
             {
