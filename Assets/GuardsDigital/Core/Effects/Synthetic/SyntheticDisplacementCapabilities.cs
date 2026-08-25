@@ -97,6 +97,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string NamedDestinationParameterName = "destination";
 
         /// <summary>
+        /// Milestone 8.22. The disk
+        /// <see cref="DirectMoveDestinationPolicy.WithinActorRadius"/> keeps the destination inside,
+        /// written down by the definition rather than read off the card's icon.
+        ///
+        /// <para>Optional and defaulting to nothing, exactly as
+        /// <see cref="NamedDestinationParameterName"/> is, so every declaration written before this
+        /// milestone keeps its exact candidate set. It is a separate parameter from
+        /// <c>distance</c> because the two bound different things and a card can print them
+        /// differently: Sabina's Path to Victory moves a minion <em>one</em> space and keeps it within
+        /// <em>three</em>, so one number would have to be both the step and the leash.</para>
+        /// </summary>
+        public const string ActorRadiusParameterName = "actorRadius";
+
+        /// <summary>
         /// Revision 3, minted at milestone 8.8: revision 2's declaration plus the two things Wasp's
         /// kinetic Skills print that a node's failure policy could not say - the fewest spaces the card
         /// names, and how many units it may push.
@@ -227,7 +241,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter(
                         DestinationPolicyParameterName, EffectValueKind.Integer),
                     new EffectCapabilityParameter(
-                        NamedDestinationParameterName, EffectValueKind.Coordinate, isRequired: false)
+                        NamedDestinationParameterName, EffectValueKind.Coordinate, isRequired: false),
+                    new EffectCapabilityParameter(
+                        ActorRadiusParameterName, EffectValueKind.Integer, isRequired: false)
                 },
                 new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) });
 
@@ -362,6 +378,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var admitted = AdmittedDistances.ForDeclared(
                     namesASpace ? EffectFailurePolicy.UpTo : context.FailurePolicy, distance);
                 var namedDestination = context.Input(NamedDestinationParameterName);
+                var actorRadius = context.Input(ActorRadiusParameterName);
                 IEnumerable<HexCoordinate> travelled = DirectMoveDestinations.Admit(
                     destinationPolicy,
                     actorAt,
@@ -372,7 +389,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         .Select(destination => destination.Destination),
                     namedDestination.Kind == EffectValueKind.Coordinate
                         ? namedDestination.Coordinate
-                        : (HexCoordinate?)null);
+                        : (HexCoordinate?)null,
+                    actorRadius.Kind == EffectValueKind.Integer
+                        ? actorRadius.IntegerValue
+                        : (int?)null);
 
                 // Standing still is p.10's decision not to move, and a sentence that names where to
                 // move offers no such decision: the named space is the only thing that satisfies it.

@@ -62,7 +62,7 @@ namespace GuardsDigital.Tests.EditMode
                 // "It provides you with a powerful permanent ability."
                 Assert.That(definition.UltimateRule, Is.Not.Null, definition.Id.Value);
                 Assert.That(
-                    definition.UltimateRule.Modification.Kind,
+                    definition.UltimateRule.Modifications.Single().Kind,
                     Is.EqualTo(RuleModificationKind.Permission),
                     definition.Id.Value);
                 Assert.That(

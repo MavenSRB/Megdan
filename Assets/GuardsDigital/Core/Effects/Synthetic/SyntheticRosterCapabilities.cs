@@ -38,6 +38,33 @@ namespace GuardsDigital.Core.Effects.Synthetic
             Reference("pre-consequence-adjacency", 1);
 
         /// <summary>
+        /// Milestone 8.22. `target-is-adjacent@1` - whether the enclosing Attack's target is adjacent
+        /// to the actor <em>right now</em>, which is Sabina's Point Blank Shot: "After the attack: If
+        /// the target is adjacent to you, push it 1 space."
+        ///
+        /// <para><b>It is a different question from <see cref="PreConsequenceAdjacencyV1"/>, and the
+        /// difference is the whole reason it exists.</b> That one reads the space the target stood on
+        /// before p.14's consequences, because Shootout's sentence is printed in the past tense - "If
+        /// the target <em>was</em> adjacent to you" - and asks about the moment the Attack landed. This
+        /// one is printed in the present tense and is read at step 7, by which time step 6 may have
+        /// removed the target entirely. A piece that is not on the board is not adjacent to anything,
+        /// so a removed target makes this false and the push that depends on it never runs.</para>
+        ///
+        /// <para>Reading current occupancy rather than the captured space is what makes that true. The
+        /// two answers coincide for a target that survived - an Attack does not move its defender - so
+        /// the only case that separates them is the one the tenses separate, and each face gets the
+        /// answer its own words ask for. Neither capability resurrects anything: this one reports a
+        /// removed target as not adjacent, and an unconditional push at a vacated space finds no object
+        /// and reports itself infeasible.</para>
+        ///
+        /// <para>The target may be a hero or a minion, because p.13 lets an Attack take either, and
+        /// the answer is a plain boolean rather than a coordinate: what needs the space is the Push,
+        /// and <c>attacked-target-space@1</c> already publishes it.</para>
+        /// </summary>
+        public static EffectCapabilityReference TargetIsAdjacentV1 =>
+            Reference("target-is-adjacent", 1);
+
+        /// <summary>
         /// Milestone 8.20's `was-adjacent@1`, which the roster matrix names beside milestone 8.19b's
         /// <see cref="PreConsequenceAdjacencyV1"/> and which is a different question.
         ///
@@ -155,6 +182,36 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string PlayedAttackThisTurnParameter = "playedAttackThisTurn";
 
+        /// <summary>
+        /// Milestone 8.22. Whether the selection admits only candidates standing next to a minion of
+        /// the actor's own side - Sabina's Close Support and Covering Fire, "An enemy hero in radius
+        /// adjacent to your friendly minion".
+        ///
+        /// <para>It narrows the candidates for the reason
+        /// <see cref="PlayedAttackThisTurnParameter"/> does: the clause is part of who may be picked,
+        /// so an enemy hero standing alone is not one to offer and then refuse. The sentence has two
+        /// bounds and they are about different things - the disk is measured from Sabina and the
+        /// adjacency is measured from each of her minions - which is why this cannot be expressed by
+        /// moving the selection's origin.</para>
+        ///
+        /// <para><b>It is not <c>synthetic-hero-adjacent-to-minion@1</c>, which is the near miss worth
+        /// naming.</b> That capability is handed one minion and offers the heroes beside <em>it</em>.
+        /// This clause names no minion at all: any friendly minion of hers will do, and asking the
+        /// player to pick the minion first would invent a decision the card does not print - and a
+        /// wrong one, because a hero adjacent to two of her minions would be offered twice.</para>
+        ///
+        /// <para>Optional and defaulting to false, so every declaration written before this milestone
+        /// keeps its exact candidate set.</para>
+        /// </summary>
+        public const string AdjacentToFriendlyMinionParameter = "adjacentToFriendlyMinion";
+
+        /// <summary>
+        /// Milestone 8.22. The count <c>presence-count@1</c>'s <c>present</c> answer is measured
+        /// against - Sabina's Steady Advance and Unwavering Resolve, "If there are two or more
+        /// friendly minions in radius".
+        /// </summary>
+        public const string MinimumPresentParameter = "minimum";
+
         /// <summary>The hero whose own cards a card-state capability reads. Milestone 8.21.</summary>
         public const string HeroParameter = "hero";
 
@@ -220,12 +277,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             RegisteredHandlers().Concat(new IEffectCapabilityHandler[]
             {
-                new ChooseTargetSetHandler(),
-                new ChooseTargetPairHandler(),
                 new ThroughTargetLineHandler(),
                 new PlayedAttackThisTurnHandler(),
-                new PresenceCountHandler(),
-                new PreConsequenceAdjacencyHandler(),
                 new AdjacentTerrainPresenceHandler(),
                 new TransferResourceHandler()
             });
@@ -250,9 +303,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <c>hero-defeated-this-round@1</c>; and his two modal Ranged Attacks name
         /// <c>discard-owned-card@1</c> and <c>owned-card-present@1</c>. His Shield Bash and
         /// Counterattack name no contract of their own: "who has played an attack card this turn" is
-        /// a narrowing on <c>choose-target@2</c>'s candidates, so
-        /// <c>target-played-attack-this-turn@1</c> keeps waiting for Sabina, whose Quickdraw asks the
-        /// same question of a target it already has.</para>
+        /// a narrowing on <c>choose-target@2</c>'s candidates.</para>
+        ///
+        /// <para>Milestone 8.22 adds Sabina's four and the one it minted: her three swap Skills name
+        /// <c>choose-target-pair@1</c>; Shootout and Bullet Hell name <c>choose-target-set@1</c> and
+        /// <c>pre-consequence-adjacency@1</c>; Steady Advance and Unwavering Resolve name
+        /// <c>presence-count@1</c>; and Point Blank Shot names <c>target-is-adjacent@1</c>, which this
+        /// milestone had to mint because her present-tense rider and Shootout's past-tense one are
+        /// different questions.</para>
+        ///
+        /// <para><b><c>target-played-attack-this-turn@1</c> is still not registered, and Sabina is the
+        /// reason it is worth saying why.</b> Her Quickdraw, Gunslinger and Dead Shot are exactly the
+        /// cards it was minted for - "+3 Attack if the target played an attack card this turn" - but a
+        /// printed <c>+</c> on the Attack value is p.14's own convention for a number the card text
+        /// raises, and a number is not an effect node. Those three declare a
+        /// <c>RosterValueContributionDefinition</c> on the Attack action instead, which
+        /// <c>RosterDynamicValueQuery</c> answers with <c>PlayedAttackCardThisTurnQuery</c> - the same
+        /// question this capability asks, reached through the value pipeline rather than the effect
+        /// frame. Registering it would put a contract in the pinned list that no dealt card starts,
+        /// which is precisely what milestone 7.9's deferral gate refuses.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers()
         {
@@ -266,6 +335,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             yield return new GainResourceHandler();
             yield return new DiscardOwnedCardHandler();
             yield return new OwnedCardPresentHandler();
+            yield return new ChooseTargetSetHandler();
+            yield return new ChooseTargetPairHandler();
+            yield return new PresenceCountHandler();
+            yield return new PreConsequenceAdjacencyHandler();
+            yield return new TargetIsAdjacentHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>
@@ -378,6 +452,32 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return BoardObjectReference.ForMinion(value.MinionId);
                 return default;
             }
+
+            /// <summary>
+            /// Milestone 8.22. Where a chosen piece is standing, added to the outcome only when the
+            /// node asked for it - the identical shape milestone 8.20 gave <c>choose-target@2</c>'s
+            /// <c>chosenSpace</c> and milestone 8.20 gave the printed-icon minion arm.
+            ///
+            /// <para>Sabina's multi-piece selections need it because the operations they feed take
+            /// spaces: p.19's Swap exchanges two coordinates and Remove takes one, while her sentences
+            /// name minions. Reading the space now rather than deriving it from the identity later is
+            /// what makes it the answer's own fact - a node between the choice and the operation may
+            /// have moved something, and the coordinate published here is the one the chooser was
+            /// looking at.</para>
+            /// </summary>
+            protected static void AddSpaceIfPublished(
+                EffectCapabilityContext context,
+                ICollection<EffectOutcomeFact> facts,
+                BoardObjectReference target,
+                string spaceOutput)
+            {
+                if (context.Publishes(spaceOutput) &&
+                    context.Components?.Board != null &&
+                    context.Components.Board.TryGetObjectCoordinate(target, out var at))
+                {
+                    facts.Add(new EffectOutcomeFact(spaceOutput, EffectValue.Space(at)));
+                }
+            }
         }
 
         private sealed class ChooseTargetHandler : TargetingHandler, IEffectCapabilityHandler
@@ -396,7 +496,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter(
                         ExcludeTargetParameter, EffectValueKind.Boolean, isRequired: false),
                     new EffectCapabilityParameter(
-                        PlayedAttackThisTurnParameter, EffectValueKind.Boolean, isRequired: false)
+                        PlayedAttackThisTurnParameter, EffectValueKind.Boolean, isRequired: false),
+                    new EffectCapabilityParameter(
+                        AdjacentToFriendlyMinionParameter, EffectValueKind.Boolean, isRequired: false)
                 },
                 new[]
                 {
@@ -418,6 +520,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EffectCapabilityContext context)
             {
                 var declared = DeclaredTargets(context);
+
+                // Milestone 8.22. Each narrowing filters the set the one before it left, because a
+                // card printing both clauses would mean both - none does today, and reading them as
+                // alternatives would be a decision no face has asked for.
+                if (context.Input(AdjacentToFriendlyMinionParameter).BooleanValue)
+                {
+                    declared = AdjacentToAFriendlyMinion(context, declared);
+                }
+
                 if (!context.Input(PlayedAttackThisTurnParameter).BooleanValue)
                 {
                     return declared;
@@ -438,6 +549,54 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             context.CardState.Definitions,
                             context.CardState.Instances))
                     .ToArray();
+            }
+
+            /// <summary>
+            /// The candidates standing beside at least one minion allied with the actor.
+            ///
+            /// <para>The question is asked from each candidate outwards rather than from the actor's
+            /// minions inwards, and that is not just convenience: the sentence bounds the hero by the
+            /// card's Radius and bounds the minion by nothing at all, so a minion outside the disk
+            /// still qualifies the hero standing next to it. A disk of one drawn on the candidate is
+            /// exactly "adjacent to it" with no second bound smuggled in.</para>
+            ///
+            /// <para>It reaches <see cref="RosterPresenceQuery"/> rather than walking occupancies here,
+            /// so "friendly minion" means what it means to every other declaration in this vocabulary -
+            /// including the effective-type overlays that let a piece count as a minion, which p.17
+            /// allows and which a raw occupancy scan would silently miss.</para>
+            /// </summary>
+            private static IReadOnlyList<BoardObjectReference> AdjacentToAFriendlyMinion(
+                EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> declared)
+            {
+                var board = context.Components?.Board;
+                if (board == null || context.Participants == null)
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                var kept = new List<BoardObjectReference>();
+                foreach (var target in declared)
+                {
+                    if (!board.TryGetObjectCoordinate(target, out var targetAt)) continue;
+                    var beside = RosterPresenceQuery.FindUnitsWithin(
+                        targetAt,
+                        1,
+                        RosterUnitKind.Minion,
+                        SourceTeamRelation.AlliedWithSource,
+                        context.ActorId,
+                        board,
+                        context.Participants,
+                        context.Modifications);
+
+                    // p.9 measures a disk inclusively, so a radius of one contains the candidate's own
+                    // space. A minion cannot be standing on an enemy hero, so nothing needs excluding.
+                    if (beside.Count > 0)
+                    {
+                        kept.Add(target);
+                    }
+                }
+
+                return kept;
             }
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
@@ -497,7 +656,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectOutputBinding("firstHero", EffectValueKind.Hero),
                     new EffectOutputBinding("firstMinion", EffectValueKind.Minion),
                     new EffectOutputBinding("secondHero", EffectValueKind.Hero),
-                    new EffectOutputBinding("secondMinion", EffectValueKind.Minion)
+                    new EffectOutputBinding("secondMinion", EffectValueKind.Minion),
+                    new EffectOutputBinding("firstSpace", EffectValueKind.Coordinate),
+                    new EffectOutputBinding("secondSpace", EffectValueKind.Coordinate)
                 });
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -508,7 +669,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (!Bounds(context, candidates.Count, out var minimum, out var maximum))
                     return EffectExecutionResult.ImpossibleMandatory();
                 if (maximum == 0)
-                    return SetOutcome(Array.Empty<BoardObjectReference>());
+                    return SetOutcome(context, Array.Empty<BoardObjectReference>());
                 return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
                     EffectChooserRole.Actor, candidates.Select(AsValue), minimum, maximum));
             }
@@ -524,7 +685,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     chosen.Distinct().Count() != chosen.Length ||
                     chosen.Length < minimum || chosen.Length > maximum)
                     return EffectExecutionResult.ImpossibleMandatory();
-                return SetOutcome(Canonical(chosen));
+                return SetOutcome(context, Canonical(chosen));
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
@@ -548,16 +709,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             private static EffectExecutionResult SetOutcome(
-                IReadOnlyList<BoardObjectReference> selected)
+                EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> selected)
             {
                 var facts = new List<EffectOutcomeFact>
                 {
                     new EffectOutcomeFact("selectedCount", EffectValue.Integer(selected.Count))
                 };
                 if (selected.Count > 0)
+                {
                     facts.Add(AsOutcome(selected[0], "firstHero", "firstMinion"));
+                    AddSpaceIfPublished(context, facts, selected[0], "firstSpace");
+                }
+
                 if (selected.Count > 1)
+                {
                     facts.Add(AsOutcome(selected[1], "secondHero", "secondMinion"));
+                    AddSpaceIfPublished(context, facts, selected[1], "secondSpace");
+                }
+
                 return EffectExecutionResult.Applied(facts);
             }
         }
@@ -580,7 +749,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new EffectOutputBinding("firstHero", EffectValueKind.Hero),
                         new EffectOutputBinding("firstMinion", EffectValueKind.Minion),
                         new EffectOutputBinding("secondHero", EffectValueKind.Hero),
-                        new EffectOutputBinding("secondMinion", EffectValueKind.Minion)
+                        new EffectOutputBinding("secondMinion", EffectValueKind.Minion),
+                        new EffectOutputBinding("firstSpace", EffectValueKind.Coordinate),
+                        new EffectOutputBinding("secondSpace", EffectValueKind.Coordinate)
                     });
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -612,11 +783,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     chosen.Any(value => !value.IsDefined || !candidates.Contains(value)))
                     return EffectExecutionResult.ImpossibleMandatory();
                 var canonical = Canonical(chosen);
-                return EffectExecutionResult.Applied(new[]
+                var facts = new List<EffectOutcomeFact>
                 {
                     AsOutcome(canonical[0], "firstHero", "firstMinion"),
                     AsOutcome(canonical[1], "secondHero", "secondMinion")
-                });
+                };
+                AddSpaceIfPublished(context, facts, canonical[0], "firstSpace");
+                AddSpaceIfPublished(context, facts, canonical[1], "secondSpace");
+                return EffectExecutionResult.Applied(facts);
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
@@ -1028,7 +1202,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new[]
                 {
                     new EffectCapabilityParameter("excludeActor", EffectValueKind.Boolean),
-                    new EffectCapabilityParameter("excludeTarget", EffectValueKind.Boolean)
+                    new EffectCapabilityParameter("excludeTarget", EffectValueKind.Boolean),
+
+                    // Milestone 8.22. How many the card asks for - Sabina's Steady Advance and
+                    // Unwavering Resolve, "If there are two or more friendly minions in radius".
+                    //
+                    // It belongs on the declaration rather than in a comparison a definition writes,
+                    // because the threshold is the card's own number and `present` is the answer the
+                    // sentence asks for. A definition reading `count` and comparing it would need a
+                    // second capability that compares integers, and every card that printed a
+                    // different number would declare the comparison again.
+                    //
+                    // Optional and defaulting to one, which is what `count > 0` already meant, so
+                    // every declaration written before this milestone keeps its exact answer.
+                    new EffectCapabilityParameter(
+                        MinimumPresentParameter, EffectValueKind.Integer, isRequired: false)
                 },
                 new[]
                 {
@@ -1071,6 +1259,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     excludedTarget).Count;
             }
 
+            /// <summary>
+            /// How many the card asked for, floored at one: an undeclared threshold is the old
+            /// reading, and a declared zero would make `present` a constant rather than a question.
+            /// </summary>
+            private static int Minimum(EffectCapabilityContext context)
+            {
+                var declared = context.Input(MinimumPresentParameter);
+                return declared.Kind == EffectValueKind.Integer && declared.IntegerValue > 1
+                    ? declared.IntegerValue
+                    : 1;
+            }
+
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var count = Count(context);
@@ -1079,7 +1279,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     : EffectExecutionResult.Applied(new[]
                     {
                         new EffectOutcomeFact("count", EffectValue.Integer(count)),
-                        new EffectOutcomeFact("present", EffectValue.Boolean(count > 0))
+                        new EffectOutcomeFact(
+                            "present", EffectValue.Boolean(count >= Minimum(context)))
                     });
             }
             public EffectExecutionResult Resume(
@@ -1121,6 +1322,77 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Read(context).HasValue
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+        }
+
+        /// <summary>
+        /// Milestone 8.22. Point Blank Shot's present-tense adjacency, read off live occupancy.
+        ///
+        /// <para>The target is whichever unit the enclosing Attack bound - p.13 admits a hero or a
+        /// minion - and the answer is false when the board no longer holds it. That is not a failure
+        /// case handled specially: <c>TryGetObjectCoordinate</c> simply does not find a removed piece,
+        /// and "the target is adjacent to you" is exactly as false for a piece that is gone as for one
+        /// standing three spaces away.</para>
+        ///
+        /// <para>An Attack with no target at all is a different thing from a target that is not
+        /// adjacent, so it reports itself impossible rather than answering false. Card text applied
+        /// inside p.14 always has one by step 7, and a definition that reached here without one is
+        /// asking about something that did not happen.</para>
+        /// </summary>
+        private sealed class TargetIsAdjacentHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => TargetIsAdjacentV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    outputs: new[] { new EffectOutputBinding("adjacent", EffectValueKind.Boolean) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            private static bool? Read(EffectCapabilityContext context)
+            {
+                var attack = context.EnclosingAttack;
+                var board = context.Components?.Board;
+                if (board == null || !attack.IsDefined || !attack.HasTarget)
+                {
+                    return null;
+                }
+
+                var target = attack.HeroTargetId.IsDefined
+                    ? BoardObjectReference.ForHero(attack.HeroTargetId)
+                    : BoardObjectReference.ForMinion(attack.MinionTargetId);
+
+                // A removed target has no coordinate, which is the answer rather than an error: the
+                // sentence asks where it is standing and it is not standing anywhere.
+                if (!board.TryGetObjectCoordinate(target, out var targetAt) ||
+                    !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return false;
+                }
+
+                return HexDistanceQuery.Calculate(actorAt, targetAt) == 1;
+            }
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var value = Read(context);
+                return value.HasValue
+                    ? EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact("adjacent", EffectValue.Boolean(value.Value))
+                    })
+                    : EffectExecutionResult.ImpossibleMandatory();
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 Read(context).HasValue
                     ? EffectExecutionResultKind.Applied

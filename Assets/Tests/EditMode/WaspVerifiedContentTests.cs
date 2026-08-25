@@ -328,7 +328,7 @@ namespace GuardsDigital.Tests.EditMode
                 "p.16's Ultimate is never played, so it prints no Initiative.");
             Assert.That(ultimate.ActionDefinitions, Is.Empty,
                 "It is placed beside the dashboard rather than performed.");
-            Assert.That(ultimate.UltimateRule.Modification, Is.Null);
+            Assert.That(ultimate.UltimateRule.Modifications, Is.Empty);
             Assert.That(ultimate.UltimateRule.TextComposition.IsAwaited, Is.False);
             Assert.That(
                 ultimate.UltimateRule.TriggeredEffect,

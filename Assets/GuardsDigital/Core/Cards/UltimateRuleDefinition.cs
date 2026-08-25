@@ -61,11 +61,14 @@ namespace GuardsDigital.Core.Cards
             : this(
                 ruleId,
                 ruleKind,
-                modification ??
-                    throw new ArgumentNullException(
-                        nameof(modification),
-                        "An Ultimate's whole printed content is its permanent ability (rulebook p.16); " +
-                        "a declaration with no rule would be a card that does nothing."),
+                new[]
+                {
+                    modification ??
+                        throw new ArgumentNullException(
+                            nameof(modification),
+                            "An Ultimate's whole printed content is its permanent ability (rulebook " +
+                            "p.16); a declaration with no rule would be a card that does nothing.")
+                },
                 PrintedTextComposition.None,
                 Array.Empty<PrintedValueDefinition>())
         {
@@ -74,7 +77,7 @@ namespace GuardsDigital.Core.Cards
         private UltimateRuleDefinition(
             string ruleId,
             string ruleKind,
-            RuleModification modification,
+            IEnumerable<RuleModification> modifications,
             PrintedTextComposition textComposition,
             IEnumerable<PrintedValueDefinition> printedValues,
             EffectDefinitionReference? triggeredEffect = null,
@@ -94,7 +97,15 @@ namespace GuardsDigital.Core.Cards
 
             RuleId = ruleId;
             RuleKind = ruleKind;
-            Modification = modification;
+            Modifications = Array.AsReadOnly(
+                (modifications ?? Enumerable.Empty<RuleModification>()).ToArray());
+            if (Modifications.Any(value => value == null))
+            {
+                throw new ArgumentException(
+                    "An Ultimate's declared rules are typed modifications, never null.",
+                    nameof(modifications));
+            }
+
             TextComposition = textComposition;
             TriggeredEffect = triggeredEffect;
             TriggerCondition = triggerCondition;
@@ -130,7 +141,7 @@ namespace GuardsDigital.Core.Cards
             // an effect would be two abilities on a card that prints one sentence, and the reader would
             // have to decide which of them "the ability" meant.
             if (minionBattleRule != null &&
-                (modification != null || triggeredEffect.HasValue || beforeAction.IsDeclared ||
+                (Modifications.Count > 0 || triggeredEffect.HasValue || beforeAction.IsDeclared ||
                     afterPush.IsDeclared || textComposition.IsAwaited))
             {
                 throw new ArgumentException(
@@ -296,13 +307,25 @@ namespace GuardsDigital.Core.Cards
         /// fires <em>inside</em> an effect that is still running. What resumes afterwards is the
         /// enclosing effect at the exact node it left, which is the whole reason the moment needed a
         /// milestone of its own.</para>
+        ///
+        /// <para><b>Milestone 8.22 let it carry standing rules beside the trigger, and the card is why.</b>
+        /// Big Sodding Gun's full face is two sentences: "Your basic attack has +2 Range and +2 Attack.
+        /// If you push an enemy hero, that hero discards a card, or is defeated." The first is two
+        /// standing value declarations and the second is the trigger, and p.16 gives the card one
+        /// permanent ability made of both - the escalation is what her own Push does, and the Push is
+        /// reachable partly because the first sentence extended her basic Attack's reach. Refusing the
+        /// combination would have forced one half of a printed face to be modelled as something else.
+        /// This is not the exclusivity the three trigger shapes keep between <em>each other</em>: those
+        /// are three answers to one question - when does the ability run - and an Ultimate still
+        /// declares exactly one of them.</para>
         /// </summary>
         public static UltimateRuleDefinition AfterPushAbility(
             string ruleId,
             string ruleKind,
             EffectDefinitionReference triggeredEffect,
             AfterPushTrigger afterPush,
-            IEnumerable<PrintedValueDefinition> printedValues)
+            IEnumerable<PrintedValueDefinition> printedValues,
+            IEnumerable<RuleModification> standingRules = null)
         {
             if (!afterPush.IsDeclared)
             {
@@ -311,7 +334,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             return new UltimateRuleDefinition(
-                ruleId, ruleKind, null, PrintedTextComposition.None, printedValues,
+                ruleId, ruleKind, standingRules, PrintedTextComposition.None, printedValues,
                 triggeredEffect, null, UltimateTriggerCondition.None, default, null, afterPush);
         }
 
@@ -321,10 +344,22 @@ namespace GuardsDigital.Core.Cards
         public string RuleKind { get; }
 
         /// <summary>
-        /// The typed rule this Ultimate supplies while its hero is on the board, or null when
-        /// <see cref="TextComposition"/> names the milestone that owes it.
+        /// The typed rules this Ultimate supplies while its hero is on the board, or empty when
+        /// <see cref="TextComposition"/> names the milestone that owes them, when the ability is a
+        /// trigger rather than a rule, or when it is a Minion-Battle declaration.
+        ///
+        /// <para><b>Milestone 8.22 made it a list, and the card that forced it is the reason.</b>
+        /// Sabina's Big Sodding Gun prints "Your basic attack has +2 Range and +2 Attack" - one
+        /// sentence, one ability, and two of <see cref="RuleModification"/>'s value declarations,
+        /// because a modification names one channel. A single-valued field could only have carried it
+        /// by inventing a two-channel modification, which would make every other value declaration in
+        /// the build answer a question it does not have.</para>
+        ///
+        /// <para>Order is the order the definition declares, kept stable by
+        /// <c>RuleModificationSet</c>'s sort rather than re-derived. It decides nothing here: two value
+        /// declarations on different channels never interact, and two on one channel sum.</para>
         /// </summary>
-        public RuleModification Modification { get; }
+        public IReadOnlyList<RuleModification> Modifications { get; }
 
         public EffectDefinitionReference? TriggeredEffect { get; }
 
@@ -360,7 +395,7 @@ namespace GuardsDigital.Core.Cards
         /// <summary>
         /// Milestone 8.3. Whether this Ultimate's printed ability still owes its typed composition, and
         /// to which milestone. <see cref="PrintedTextComposition.None"/> whenever
-        /// <see cref="Modification"/> is present.
+        /// <see cref="Modifications"/> is non-empty.
         /// </summary>
         public PrintedTextComposition TextComposition { get; }
 
@@ -375,7 +410,7 @@ namespace GuardsDigital.Core.Cards
 
         private string DescribeContent()
         {
-            if (Modification != null) return Modification.ToString();
+            if (Modifications.Count > 0) return string.Join("; ", Modifications);
             if (MinionBattleRule != null) return MinionBattleRule.ToString();
             return TextComposition.ToString();
         }

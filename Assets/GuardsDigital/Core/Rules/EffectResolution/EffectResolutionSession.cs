@@ -1142,7 +1142,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IReadOnlyList<EffectNodeOutcome> outcomes,
             EffectResolutionContext context) =>
             BuildCapabilityContext(
-                frame, node, outcomes, context, ResolveInputBindings(node, frame, outcomes), null);
+                frame, node, outcomes, context, ResolveInputBindings(node, frame, outcomes, context.OpposingHeroId), null);
 
         /// <summary>
         /// The same context, with some inputs answered rather than resolved.
@@ -1233,15 +1233,26 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// restore re-derives a paused choice's candidates through this same path, rebuilding the
         /// bindings from the persisted completed outcomes rather than re-asking with none.
         /// </summary>
+        /// <param name="opposingHeroId">
+        /// Milestone 8.22. The hero <see cref="EffectRoleKind.OpposingHero"/> names, from the same
+        /// context field <see cref="ResolveChooser"/> reads for the matching chooser role. It is a
+        /// parameter rather than a frame field because it is a property of the resolution the frame is
+        /// running inside, and every caller - live execution, the eligibility probe and snapshot
+        /// restore - already holds that resolution. Carrying it on the frame would have persisted it,
+        /// and a restored pause would then be trusting a remembered hero instead of the one the
+        /// rebuilt context names.
+        /// </param>
         internal static IReadOnlyDictionary<string, EffectValue> ResolveInputBindings(
             EffectNodeDefinition node,
             PendingResolution frame,
-            IReadOnlyList<EffectNodeOutcome> outcomes)
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            HeroId opposingHeroId = default)
         {
             var inputs = new Dictionary<string, EffectValue>(StringComparer.Ordinal);
             foreach (var binding in node.Inputs)
             {
-                inputs[binding.ParameterName] = ResolveInput(binding, frame, outcomes);
+                inputs[binding.ParameterName] =
+                    ResolveInput(binding, frame, outcomes, opposingHeroId);
             }
 
             return inputs;
@@ -1250,7 +1261,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         private static EffectValue ResolveInput(
             EffectInputBinding binding,
             PendingResolution frame,
-            IReadOnlyList<EffectNodeOutcome> outcomes)
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            HeroId opposingHeroId)
         {
             switch (binding.SourceKind)
             {
@@ -1267,6 +1279,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             return EffectValue.Hero(frame.ControllerId);
                         case EffectRoleKind.SourceCard:
                             return EffectValue.Card(frame.SourceCardInstanceId);
+                        case EffectRoleKind.OpposingHero:
+                            // An undefined hero where the frame has none, rather than a throw: this is
+                            // a binding like any other, and the step that reads it reports itself
+                            // impossible. The chooser role throws because a decision with nobody to
+                            // make it is a definition fault; a subject that is not there is a step
+                            // that cannot happen, which p.10 already has an answer for.
+                            return opposingHeroId.IsDefined
+                                ? EffectValue.Hero(opposingHeroId)
+                                : default;
                         default:
                             return default;
                     }

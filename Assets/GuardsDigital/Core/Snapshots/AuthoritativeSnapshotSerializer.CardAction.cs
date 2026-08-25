@@ -1034,7 +1034,8 @@ namespace GuardsDigital.Core.Snapshots
                 restored.SourceCardInstanceId,
                 restored.SourceDefinitionReference,
                 restored.ActionDefinitionId,
-                EffectResolutionSession.ResolveInputBindings(node, restored, restored.CompletedOutcomes),
+                EffectResolutionSession.ResolveInputBindings(
+                    node, restored, restored.CompletedOutcomes, resolution.OpposingHeroId),
                 resolution.RoundIndex,
                 resolution.TurnIndex,
                 resolution.Participants,

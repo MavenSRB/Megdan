@@ -56,7 +56,30 @@ namespace GuardsDigital.Core.Effects
         Controller = 3,
         Chooser = 4,
         ChosenTarget = 5,
-        ChosenSpace = 6
+        ChosenSpace = 6,
+
+        /// <summary>
+        /// Milestone 8.22. The hero on the other side of whatever the frame is running inside -
+        /// Sabina's Big Sodding Gun, "If you push an enemy hero, <b>that hero</b> discards a card, or
+        /// is defeated."
+        ///
+        /// <para>The concept was already in the frame and already named: <see cref="EffectChooserRole"/>
+        /// has carried <c>OpposingHero</c> since milestone 6.2, and the after-push trigger's context
+        /// supplies the pushed hero as exactly that. What was missing is that a node could name them
+        /// as the <em>subject</em> of a step rather than only as the person answering a question, and
+        /// this card's second sentence is about doing something to them.</para>
+        ///
+        /// <para>It is a role rather than a selection because the card selects nobody: the push already
+        /// picked the hero out, and offering a one-candidate prompt would invent a decision - the same
+        /// reading milestone 6.5a gave "yourself". And it is a role rather than a published fact
+        /// because it is a property of the moment the text is running in, exactly as
+        /// <see cref="Actor"/> and <see cref="Controller"/> are; nothing in the text produced it.</para>
+        ///
+        /// <para>A binding that names it where the frame has no opposing hero resolves to the undefined
+        /// hero, which is what every unresolvable binding here resolves to, and the step that reads it
+        /// reports itself impossible rather than acting on nobody.</para>
+        /// </summary>
+        OpposingHero = 7
     }
 
     /// <summary>Who owns a decision. The resolver never chooses on a player's behalf.</summary>

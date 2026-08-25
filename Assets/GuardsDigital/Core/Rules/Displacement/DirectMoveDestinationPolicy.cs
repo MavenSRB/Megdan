@@ -11,7 +11,7 @@ namespace GuardsDigital.Core.Rules.Displacement
     ///
     /// Rulebook p.11 gives card-text movement the Movement action's own reachability and nothing
     /// further; a card that narrows where the subject may end up says so in its own words, and the
-    /// three readings below are the three sentences verified content prints. It is a declared kind
+    /// readings below are the sentences verified content prints. It is a declared kind
     /// rather than a pair of booleans for the reason <c>SyntheticDisplacementCapabilities</c> records
     /// beside the named Push: two flags saying "towards" and "keeping the same distance" could both be
     /// set, which is an ambiguity the definition validator refuses, and a card cannot mean both.
@@ -63,7 +63,28 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// asking a question with one answer - the same reason milestone 6.5a routes "yourself" through
         /// the actor's own space instead of a one-candidate prompt.</para>
         /// </summary>
-        NamedSpace = 4
+        NamedSpace = 4,
+
+        /// <summary>
+        /// Milestone 8.22. `to a space in radius`: only spaces inside the acting hero's own printed
+        /// Radius disk - Sabina's Troop Movement, Marching Orders and Path to Victory, "Move a friendly
+        /// minion in radius 1 space, to a space in radius."
+        ///
+        /// <para>It is a fifth member because the sentence prints the radius twice and means it twice.
+        /// The first "in radius" picks the minion and is the selection's own reach; the second bounds
+        /// where that minion may be put, and without it the card would move a minion one space in any
+        /// direction - including one space further out of the disk, which is the opposite of what a
+        /// command card does. Neither of the two actor-relative policies already here says it:
+        /// <see cref="TowardActor"/> would forbid a lateral shuffle the disk plainly allows, and
+        /// <see cref="EquidistantFromActor"/> would forbid stepping inward.</para>
+        ///
+        /// <para>The disk is p.9's, measured inclusively from where the hero stands at the moment the
+        /// node runs, so a repeat that follows the hero's own Movement measures from the new space. The
+        /// radius is a declared number rather than a read of the card, for the same reason
+        /// `DeclaredRadius.WrittenInText` exists: the capability is given what the sentence
+        /// says and never goes looking for the icon.</para>
+        /// </summary>
+        WithinActorRadius = 5
     }
 
     /// <summary>
@@ -84,7 +105,8 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// </summary>
         public static bool NeedsActorPosition(DirectMoveDestinationPolicy policy) =>
             policy == DirectMoveDestinationPolicy.TowardActor ||
-            policy == DirectMoveDestinationPolicy.EquidistantFromActor;
+            policy == DirectMoveDestinationPolicy.EquidistantFromActor ||
+            policy == DirectMoveDestinationPolicy.WithinActorRadius;
 
         /// <param name="actorAt">Where the acting hero stands, for a policy that measures from them.</param>
         /// <param name="moverAt">The subject's own starting space, which every comparison is against.</param>
@@ -94,12 +116,20 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// space is bound from another node's output, and an unbound binding is a move whose
         /// destination has not happened yet.
         /// </param>
+        /// <param name="actorRadius">
+        /// The disk <see cref="DirectMoveDestinationPolicy.WithinActorRadius"/> keeps the destination
+        /// inside, and nothing to any other policy. A radius policy without one admits nothing rather
+        /// than everything, for the same reason a named policy without a space does: an undeclared
+        /// bound is not an absent bound, and reading it as "anywhere" would silently widen the only
+        /// thing this policy exists to narrow.
+        /// </param>
         public static IReadOnlyList<HexCoordinate> Admit(
             DirectMoveDestinationPolicy policy,
             HexCoordinate actorAt,
             HexCoordinate moverAt,
             IEnumerable<HexCoordinate> reachable,
-            HexCoordinate? namedDestination = null)
+            HexCoordinate? namedDestination = null,
+            int? actorRadius = null)
         {
             if (reachable == null)
             {
@@ -122,12 +152,38 @@ namespace GuardsDigital.Core.Rules.Displacement
                         ? AsList(reachable, namedDestination.Value)
                         : Array.Empty<HexCoordinate>();
 
+                case DirectMoveDestinationPolicy.WithinActorRadius:
+                    return actorRadius.HasValue && actorRadius.Value >= 0
+                        ? WithinRadius(reachable, actorAt, actorRadius.Value)
+                        : Array.Empty<HexCoordinate>();
+
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(policy),
                         policy,
                         "A direct Move states which destinations relative to the actor it admits.");
             }
+        }
+
+        /// <summary>
+        /// The reachable spaces lying inside the acting hero's disk. p.9 measures a Radius inclusively
+        /// from the hero's own space, so the comparison is <c>&lt;=</c> and the hero's space itself is
+        /// in the disk - it is excluded from the result only because it is occupied, which the
+        /// reachability walk beneath has already decided rather than this filter.
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> WithinRadius(
+            IEnumerable<HexCoordinate> reachable, HexCoordinate actorAt, int radius)
+        {
+            var list = new List<HexCoordinate>();
+            foreach (var coordinate in reachable)
+            {
+                if (HexDistanceQuery.Calculate(actorAt, coordinate) <= radius)
+                {
+                    list.Add(coordinate);
+                }
+            }
+
+            return list;
         }
 
         private static IReadOnlyList<HexCoordinate> AsList(IEnumerable<HexCoordinate> reachable)

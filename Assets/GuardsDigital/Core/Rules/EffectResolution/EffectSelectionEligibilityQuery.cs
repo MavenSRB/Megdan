@@ -144,7 +144,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 return false;
             }
 
-            var inputs = EffectResolutionSession.ResolveInputBindings(consumer, frame, outcomes);
+            var inputs = EffectResolutionSession.ResolveInputBindings(
+                consumer, frame, outcomes, context.OpposingHeroId);
             var substituted = new HashSet<string>(consumed, StringComparer.Ordinal);
             var undecidable = handler.Schema.Parameters
                 .Where(parameter => parameter.IsRequired)

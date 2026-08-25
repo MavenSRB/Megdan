@@ -585,6 +585,11 @@ namespace GuardsDigital.Core.Effects
                 case EffectRoleKind.Actor:
                 case EffectRoleKind.Chooser:
                 case EffectRoleKind.Controller:
+                // Milestone 8.22. The frame resolves it wherever it has one - a defender's card text
+                // inside an Attack, and an after-push trigger's pushed hero. Where it has none the
+                // binding resolves to the undefined hero and the step reports itself impossible, which
+                // is why this is a value kind the frame can supply rather than a fifth role it cannot.
+                case EffectRoleKind.OpposingHero:
                     return EffectValueKind.Hero;
                 case EffectRoleKind.SourceCard:
                     return EffectValueKind.CardInstance;

@@ -601,26 +601,32 @@ namespace GuardsDigital.Core.Rules.Modifications
                 // its own milestone still owes supplies no typed rule, so it contributes nothing here.
                 // Contributing something would mean inventing the rule the card is waiting for, and
                 // faulting would make an unlocked card unplayable; the card is unlocked and inert until
-                // the milestone its declaration names composes it.
-                if (ultimate.Rule.Modification == null)
-                {
-                    continue;
-                }
-
+                // the milestone its declaration names composes it. The same emptiness is the ordinary
+                // state of an Ultimate whose ability is a trigger or a Minion-Battle rule.
                 var affected = RuleObject.ForHero(ultimate.OwnerId);
-                var resolved = ResolveDerivedAmount(
-                    ultimate.Rule.Modification, affected, ultimate.OwnerId, board, participants);
-                if (resolved == null)
+                for (var ruleIndex = 0; ruleIndex < ultimate.Rule.Modifications.Count; ruleIndex++)
                 {
-                    continue;
-                }
+                    var resolved = ResolveDerivedAmount(
+                        ultimate.Rule.Modifications[ruleIndex], affected, ultimate.OwnerId, board,
+                        participants);
+                    if (resolved == null)
+                    {
+                        continue;
+                    }
 
-                yield return AppliedRuleModification.FromContinuousSource(
-                    resolved,
-                    affected,
-                    ultimate.Source,
-                    participants.GetTeamForHero(ultimate.OwnerId).Side,
-                    index);
+                    // Milestone 8.22. One Ultimate can now declare more than one rule - Sabina's Big
+                    // Sodding Gun states its two channels in one sentence - and every rule of the same
+                    // Ultimate shares its ordering sequence and its source id. That is deliberate
+                    // rather than overlooked: they were printed at the same moment by the same card, so
+                    // there is no order between them to record, and `RuleModificationSet` sorts stably,
+                    // which keeps the declared order for anything that inspects the list.
+                    yield return AppliedRuleModification.FromContinuousSource(
+                        resolved,
+                        affected,
+                        ultimate.Source,
+                        participants.GetTeamForHero(ultimate.OwnerId).Side,
+                        index);
+                }
             }
         }
     }
