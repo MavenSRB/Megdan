@@ -417,9 +417,10 @@ Non-goals: No other new hero, six-player setup, networking, or production art.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-822-complete-and-verify-additional-pitch-hero-slot-c---sabina-completion-evidence).
 
-### [!] 8.23 Complete and verify additional pitch hero slot D - Tigerclaw
+### [x] 8.23 Complete and verify additional pitch hero slot D - Tigerclaw
 
-Blocked by: Milestone 8.22 must complete the third shared-composition consumer.
+Prerequisites satisfied: Milestone 8.22 completed the third shared-composition consumer and left the
+staged-hero fixture hero-neutral, so the named block was clear.
 
 Observable outcome: Tigerclaw the Cutpurse's complete verified set and Poison component are defined,
 dealt, resolved through the ordinary player pipeline, progressed through every printed upgrade/item/
@@ -442,6 +443,8 @@ Acceptance checks:
   Wasp/core regressions pass at the applicable tier.
 
 Non-goals: No other new hero, six-player setup, networking, or production art.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-823-complete-and-verify-additional-pitch-hero-slot-d---tigerclaw-completion-evidence).
 
 ### [!] 8.23a Draw a held marker where its holder is read
 
