@@ -782,6 +782,48 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 attackTextProfiles: new[] { RedChargeLineProfile, RedVacatedSpaceProfile });
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.22: the roster vocabulary Sabina's set is the first printed content to name,
+        // proved here on cards that are nobody's
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.22's roster-command Skill cards, sitting outside their team's ordinary
+        /// Initiative band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedRosterCommandSkillProfile { get; } =
+            new SyntheticSkillProfile("red-sergeant", "Red Sergeant", 21);
+
+        private static SyntheticSkillProfile BlueRosterCommandSkillProfile { get; } =
+            new SyntheticSkillProfile("blue-sergeant", "Blue Sergeant", 22);
+
+        /// <summary>The five ordinary cards plus milestone 8.22's roster-command Skill alone.</summary>
+        public static ConfiguredHand CreateRedWithRosterCommandSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                rosterCommandSkillProfile: RedRosterCommandSkillProfile);
+
+        public static ConfiguredHand CreateBlueWithRosterCommandSkill(HeroId ownerId) =>
+            Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                rosterCommandSkillProfile: BlueRosterCommandSkillProfile);
+
+        /// <summary>Sabina's two adjacency riders on one Attack, which no printed face prints together.</summary>
+        private static SyntheticAttackTextProfile RedAdjacencyRidersProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-marksman", "Red Marksman", 10, 4, 2, 2, CardTextTiming.AfterTheAttack,
+                false, false, continuation: SyntheticContinuationShape.AfterAttackAdjacencyRiders);
+
+        /// <summary>
+        /// The five ordinary cards with milestone 8.22's Attack-text card, which is how
+        /// <c>pre-consequence-adjacency@1</c> and <c>target-is-adjacent@1</c> become reachable from
+        /// showcase content rather than waiting for the hero whose faces print them.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithAdjacencyRiderText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedAdjacencyRidersProfile });
+
         /// <summary>Arien's Dangerous Current shape: a Before-Attack line drawn behind the target.</summary>
         private static SyntheticAttackTextProfile RedLineBehindProfile { get; } =
             new SyntheticAttackTextProfile(
@@ -853,6 +895,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile pausingSourceSkillProfile = null,
             SyntheticSkillProfile rosterSelectionSkillProfile = null,
             SyntheticSkillProfile rosterPaymentSkillProfile = null,
+            SyntheticSkillProfile rosterCommandSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1002,6 +1045,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateRosterPaymentSkillDefinition(rosterPaymentSkillProfile),
                     rosterPaymentSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (rosterCommandSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateRosterCommandSkillDefinition(rosterCommandSkillProfile),
+                    rosterCommandSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -2266,6 +2317,168 @@ namespace GuardsDigital.Core.Cards.Synthetic
         }
 
         /// <summary>
+        /// Milestone 8.22. A Skill that commands minions, naming the three roster contracts Sabina's
+        /// printed set is the first to reach through a Skill: counting friendly minions against a
+        /// threshold, naming an unordered pair of them, and naming a bounded set of them.
+        ///
+        /// <para>Every number here is a fixture number and the sentence is nobody's card. What it
+        /// proves is that each contract composes and runs, so none of them arrives for the first time
+        /// inside a verified hero's slice - which is the second half of the rule
+        /// <c>ConfiguredCardMatrixTests</c> asks. Her own faces put them on three different cards at
+        /// three different Radii; this one asks all three at one fixture distance, because what is
+        /// under test here is the contract rather than the sentence.</para>
+        ///
+        /// <para>The count gates nothing, and that is deliberate: a conditional would make the two
+        /// selections unreachable on a board with fewer than two minions, and this card exists to be
+        /// reached. Each selection carries its own <c>if able</c>, which is the honest reading of a
+        /// fixture that has no printed words to be faithful to.</para>
+        /// </summary>
+        private static CardDefinition CreateRosterCommandSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("roster-command-root");
+            var count = new EffectNodeId("roster-command-count");
+            var pair = new EffectNodeId("roster-command-pair");
+            var set = new EffectNodeId("roster-command-set");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-22-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { count, pair, set }),
+                    new EffectNodeDefinition(
+                        count, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.PresenceCountV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.OriginParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.CardResolution
+                                        .RosterQueryOrigin.Actor)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.DistanceParameter,
+                                EffectValue.Integer(3)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.UnitKindParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.CardResolution
+                                        .RosterUnitKind.Minion)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.Modifications
+                                        .SourceTeamRelation.AlliedWithSource)),
+                            EffectInputBinding.FromLiteral(
+                                "activity",
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill)),
+                            EffectInputBinding.FromLiteral(
+                                "excludeActor", EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                "excludeTarget", EffectValue.Boolean(false)),
+                            // Milestone 8.22's own threshold parameter, declared here so the fixture
+                            // exercises the arm a card's printed number reaches rather than the
+                            // default the eighteen earlier declarations keep.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.MinimumPresentParameter,
+                                EffectValue.Integer(2))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("count", EffectValueKind.Integer),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.PresentOutput, EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        pair, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticRosterCapabilities.ChooseTargetPairV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.OriginParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.CardResolution
+                                        .RosterQueryOrigin.Actor)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.DistanceParameter,
+                                EffectValue.Integer(3)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.Modifications
+                                        .SourceTeamRelation.AnyTeam))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("firstMinion", EffectValueKind.Minion),
+                            new EffectOutputBinding("secondMinion", EffectValueKind.Minion),
+                            new EffectOutputBinding("firstSpace", EffectValueKind.Coordinate),
+                            new EffectOutputBinding("secondSpace", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        set, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                        SyntheticRosterCapabilities.ChooseTargetSetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.OriginParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.CardResolution
+                                        .RosterQueryOrigin.Actor)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.DistanceParameter,
+                                EffectValue.Integer(3)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.UnitKindParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.CardResolution
+                                        .RosterUnitKind.Minion)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.Modifications
+                                        .SourceTeamRelation.AnyTeam)),
+                            EffectInputBinding.FromLiteral(
+                                "activity",
+                                EffectValue.Integer(
+                                    (int)GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill)),
+                            EffectInputBinding.FromLiteral("minimum", EffectValue.Integer(0)),
+                            EffectInputBinding.FromLiteral("maximum", EffectValue.Integer(2))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("selectedCount", EffectValueKind.Integer),
+                            new EffectOutputBinding("firstSpace", EffectValueKind.Coordinate),
+                            new EffectOutputBinding("secondSpace", EffectValueKind.Coordinate)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-22-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-roster-command-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
         /// Milestone 8.21. A Skill that spends and earns, naming the five roster contracts Brogan's
         /// printed set is the first to reach: taking a discarded card back, paying one out of hand,
         /// asking whether the pile holds one, reading whether a hero was defeated this round, and
@@ -2572,7 +2785,20 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// attacker into the space rulebook p.14's step 6 has just emptied, through
             /// <c>attacked-target-space@1</c> and a destination the definition names.
             /// </summary>
-            AfterAttackStepIntoVacatedSpace = 7
+            AfterAttackStepIntoVacatedSpace = 7,
+
+            /// <summary>
+            /// Milestone 8.22. Sabina's two adjacency riders side by side: "After the attack:" text
+            /// that asks both whether the target <em>was</em> adjacent when the Attack landed and
+            /// whether it <em>is</em> adjacent now, and pushes it one space when both hold.
+            ///
+            /// <para>It carries both questions on one card because the pair is what needs proving.
+            /// <c>pre-consequence-adjacency@1</c> and <c>target-is-adjacent@1</c> answer differently
+            /// exactly when p.14's step 6 removed the target, and a fixture that asked only one of them
+            /// could not show the difference is real. Her own faces print one each - Shootout the past
+            /// tense, Point Blank Shot the present - so neither is a card and this is neither.</para>
+            /// </summary>
+            AfterAttackAdjacencyRiders = 8
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -2823,6 +3049,13 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         "phase-8-21-rev-1",
                         new EffectNodeId("vacated-root"),
                         VacatedSpaceNodes());
+
+                case SyntheticContinuationShape.AfterAttackAdjacencyRiders:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-22-rev-1",
+                        new EffectNodeId("riders-root"),
+                        AdjacencyRiderNodes());
 
                 case SyntheticContinuationShape.AroundTheMovement:
                     return new EffectDefinition(
@@ -3088,6 +3321,99 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     outputs: new[]
                     {
                         new EffectOutputBinding("moved", EffectValueKind.Coordinate)
+                    })
+            };
+        }
+
+        /// <summary>
+        /// Milestone 8.22. Both of the roster's adjacency questions about an enclosing Attack's target,
+        /// asked at rulebook p.14's step 7, with a push behind the one that reads live occupancy.
+        ///
+        /// <para>It is nobody's card. What it exists for is the half of milestone 7.9's deferral gate
+        /// about implementations rather than declarations: <c>pre-consequence-adjacency@1</c> was built
+        /// at milestone 8.19b and <c>target-is-adjacent@1</c> at this one, and both would otherwise be
+        /// reachable only from Sabina's printed faces - which is precisely a reusable contract arriving
+        /// for the first time inside a verified hero's slice.</para>
+        ///
+        /// <para>Both are asked before either is acted on, so the two answers exist side by side in one
+        /// resolution. That is the arrangement no printed face has: hers ask one each, and a fixture
+        /// that did the same could never show that the two disagree about a removed target.</para>
+        /// </summary>
+        private static EffectNodeDefinition[] AdjacencyRiderNodes()
+        {
+            var root = new EffectNodeId("riders-root");
+            var wasAdjacent = new EffectNodeId("riders-was-adjacent");
+            var isAdjacent = new EffectNodeId("riders-is-adjacent");
+            var gate = new EffectNodeId("riders-gate");
+            var pushSequence = new EffectNodeId("riders-push-sequence");
+            var targetSpace = new EffectNodeId("riders-target-space");
+            var push = new EffectNodeId("riders-push");
+
+            return new[]
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { wasAdjacent, isAdjacent, gate }),
+                new EffectNodeDefinition(
+                    wasAdjacent, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.PreConsequenceAdjacencyV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("wasAdjacent", EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    isAdjacent, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.TargetIsAdjacentV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("adjacent", EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                    SyntheticEffectCapabilities.IsFlaggedV1,
+                    childNodeIds: new[] { pushSequence },
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "flag", isAdjacent, "adjacent", EffectValueKind.Boolean)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("value", EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    pushSequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { targetSpace, push }),
+                new EffectNodeDefinition(
+                    targetSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.FormerTargetSpaceV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                    }),
+                new EffectNodeDefinition(
+                    push, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticDisplacementCapabilities.PushTargetV3,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "target", targetSpace, "space", EffectValueKind.Coordinate),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                        EffectInputBinding.FromLiteral(
+                            SyntheticDisplacementCapabilities.LeastDistanceParameterName,
+                            EffectValue.Integer(1)),
+                        EffectInputBinding.FromLiteral(
+                            "ignoresObstacles", EffectValue.Boolean(false)),
+                        EffectInputBinding.FromLiteral(
+                            SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                            EffectValue.Integer(
+                                (int)GuardsDigital.Core.Rules.Displacement
+                                    .PushEligiblePieceKind.Unit))
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("distance", EffectValueKind.Integer),
+                        new EffectOutputBinding("moved", EffectValueKind.Integer)
                     })
             };
         }

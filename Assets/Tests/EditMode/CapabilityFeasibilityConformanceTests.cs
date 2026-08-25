@@ -134,7 +134,21 @@ namespace GuardsDigital.Tests.EditMode
             // declarations: `MinionsInRadius`, `ControllerAndUnitsInRadius`, `NamedSpace`,
             // `OpposingSourceOrUnaligned` and `choose-target@2`'s played-an-Attack narrowing are
             // content on a scope, a policy or a parameter rather than handlers.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(43),
+            // Milestone 8.22 moves it by five, and the split is the same one again. Four - milestone
+            // 8.19b's `choose-target-set@1`, `choose-target-pair@1`, `presence-count@1` and
+            // `pre-consequence-adjacency@1` - were implemented then and reach the catalog only now,
+            // because Sabina's faces are the first printed cards that name them. One is this
+            // milestone's own: `target-is-adjacent@1`, which asks whether an enclosing Attack's target
+            // is adjacent right now, and which exists separately from `pre-consequence-adjacency@1`
+            // because her two riders are printed in different tenses. This milestone's typed
+            // declarations register nothing here, as ever: `WithinActorRadius`,
+            // `EffectRoleKind.OpposingHero`, `choose-target@2`'s friendly-minion-adjacency narrowing,
+            // `presence-count@1`'s threshold, the two selections' space outputs and the Ultimate's list
+            // of standing rules are content on a policy, a role, a parameter or a declaration rather
+            // than handlers. `target-played-attack-this-turn@1` is still not registered even though
+            // Sabina is the hero it was minted for - her three `+` Attacks reach the same question
+            // through the value pipeline, so no effect node names it.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(48),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

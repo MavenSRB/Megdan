@@ -571,6 +571,16 @@ namespace GuardsDigital.Tests.EditMode
         // set the payload says it was written against, which is exactly what this pin is for. The
         // diagnostic envelope moves only because it embeds the authoritative payload. The same three
         // equality groups remain exact.
+        //
+        // Milestone 8.22 re-baselines both encoded halves for schema v30, for the same cause and with
+        // nothing about these scenarios moved. Each authoritative payload grows by exactly 117 bytes -
+        // five capability registrations at 92 UTF-8 bytes of id, five one-byte length prefixes and five
+        // four-byte versions - and the schema int changes 29 -> 30 in place at no cost. No field is
+        // added. These scenarios play showcase content and the five contracts belong to Sabina's
+        // printed faces, so none of them can run here; what changed is the contract set the payload
+        // says it was written against, which is exactly what this pin is for. The diagnostic envelope
+        // moves only because it embeds the authoritative payload. The same three equality groups
+        // remain exact.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
             new ScenarioDigest("accepted", "76e36405d5b1961556cb8b04b7b49d975c18c40ef314d820ddd919a97f236ebb", "2d5eacdccff54b8e3fd060358d59621c442d430703327df7faf41ce29da654df"),

@@ -339,7 +339,16 @@ namespace GuardsDigital.Tests.EditMode
                     // them arrives for the first time inside a verified hero's slice.
                     SyntheticShowcaseHand.CreateRedWithRosterPaymentSkill(owner),
                     SyntheticShowcaseHand.CreateBlueWithRosterPaymentSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithChargeAndVacatedSpaceText(owner)
+                    SyntheticShowcaseHand.CreateRedWithChargeAndVacatedSpaceText(owner),
+                    // Milestone 8.22's five. Four were implemented at 8.19b and reach the build's
+                    // catalog only now, because this is the milestone at which a printed card first
+                    // names one; `target-is-adjacent@1` is this milestone's own. The command Skill
+                    // carries the three a Skill can ask - the minion count against a threshold, the
+                    // unordered pair, the bounded set - and the Attack-text card carries the two
+                    // adjacency questions, which need an enclosing Attack to be about.
+                    SyntheticShowcaseHand.CreateRedWithRosterCommandSkill(owner),
+                    SyntheticShowcaseHand.CreateBlueWithRosterCommandSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithAdjacencyRiderText(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -360,6 +369,12 @@ namespace GuardsDigital.Tests.EditMode
                 // are proved on showcase content above before this concat admits the cards that name
                 // them.
                 .Concat(BroganCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.22. Sabina's printed set is the fourth, admitted on the same half of the
+                // rule: a capability named by a card a configured match deals is not a deferral. The
+                // other half still binds - no *handler* may arrive for the first time inside a hero
+                // slice - and her one new one is proved on showcase content above before this concat
+                // admits the cards that name it.
+                .Concat(SabinaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

@@ -229,7 +229,21 @@ namespace GuardsDigital.Core.Snapshots
         // this payload knew about" is exactly the case where a silent acceptance would let a restored
         // match resolve a card against contracts its own capture never had. The refusal is already
         // correct; the version is what tells a reader why.
-        public const int CurrentSchemaVersion = 29;
+        // Milestone 8.22 moves it to 30 for the same cause in the same place, and the repetition is
+        // the point rather than an oversight. Sabina's printed faces are the first content to reach
+        // five more contracts this build had registered nowhere - milestone 8.19b's `choose-target-set`,
+        // `choose-target-pair`, `presence-count` and `pre-consequence-adjacency`, and the
+        // `target-is-adjacent` her present-tense rider needed minted - so every v29 payload names a
+        // strictly shorter list than an 8.22 build registers. Nothing about a field moved: the six
+        // typed declarations this milestone also added are content on a policy, a role and three
+        // parameters, and none of them is written down anywhere.
+        //
+        // v29 is rejected rather than migrated on exactly the ground v28 was. What makes the repeat
+        // worth recording is that it is now the expected shape of a hero milestone: each of the five
+        // remaining roster heroes is the first printed content to name some of milestone 8.19b's
+        // vocabulary, so each of them lengthens this list and each of them costs a version. That is the
+        // list doing its job rather than churn.
+        public const int CurrentSchemaVersion = 30;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

@@ -925,23 +925,39 @@ namespace GuardsDigital.Tests.EditMode
         //
         // Brogan's own staged configurations are deliberately absent from the delta for the reason
         // Arien's were: these fixtures compose from the showcase and mirror configurations by name.
+        //
+        // Milestone 8.22 reject decision, and it is the same cause in the same place - which is now the
+        // expected shape of a hero milestone rather than a surprise. Sabina's printed faces reach five
+        // contracts this build had registered nowhere, so every v29 payload names a strictly shorter
+        // registration list than an 8.22 build has, and the same equality comparison refuses it on
+        // sight. Every fixture is renamed to v30 and re-pinned, and the measured delta is exactly
+        // +117 bytes on all fifteen. It is uniform for the same reason: five capabilities join the
+        // list - milestone 8.19b's `choose-target-set`, `choose-target-pair`, `presence-count` and
+        // `pre-consequence-adjacency` at 17, 18, 14 and 25 UTF-8 bytes, and this milestone's own
+        // `target-is-adjacent` at 18 - which is 92 id bytes plus five one-byte length prefixes plus
+        // five four-byte versions. The schema int changes 29 -> 30 in place and costs nothing, and no
+        // new field is added at all. The arithmetic is checkable against the two figures the previous
+        // milestone recorded: `verified-hand-setup` 6941 -> 7058 and `ended-match` 8327 -> 8444.
+        //
+        // Sabina's own staged configurations are absent from the delta for the reason Brogan's and
+        // Arien's are: these fixtures compose from the showcase and mirror configurations by name.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v29", "184acc4ee1336dff15cec76c4e744859aa9b31489488b45184de5d73f1f05f1b"),
-            new CompatibilityFixture("active-turn-v29", "029cee0e6eee6bd6ba323f80e8d57f6502d9b8d668e1e8b9e7eb938aef141a1b"),
-            new CompatibilityFixture("pending-choice-v29", "6844bf0824fb497f882f01e6b471539796a4b9a97dbdec010dc2f24fcf2cad0e"),
-            new CompatibilityFixture("end-of-round-v29", "bdacddfe9c79095aa31bb0e17d1ba2db82126af5052dd708667dcc5d018a11c6"),
-            new CompatibilityFixture("pending-minion-battle-v29", "8f75e6bc54d510a0ce6bc6f76f0d693f44333579da37d0f687a40bca9d102eb7"),
-            new CompatibilityFixture("placed-token-v29", "31642d7717c07dcb180db5548af0ca5245fd0cf30edb91f2940552201041bc59"),
-            new CompatibilityFixture("attached-marker-v29", "a9615fdd005fecd55468357a73c3be8dae7e7bfdf3cd7ccc4ac0b794824c4e5b"),
-            new CompatibilityFixture("pending-correction-v29", "31f0851068a733cb8124e85b7bee2dfa0dbf1a261a700a606162da902dfaca1d"),
-            new CompatibilityFixture("paused-level-up-v29", "1c60b7e6fba2ab62827992e7db42bf2b2d95477c7d93bf752f50dc82e4162784"),
-            new CompatibilityFixture("ended-match-v29", "c86ba047d8160a079d2a1ad1f1bf052019cf16d63150edee055708cb549e6b49"),
-            new CompatibilityFixture("verified-hand-setup-v29", "d418dca01bdbb3dce23ef1e1af91a2669851a4c58c7af361d826ba05d5dd5a0f"),
-            new CompatibilityFixture("paused-orbit-repeat-v29", "77886add4359a0d2f85aadeeb70039ed8f9b820b92a2abdeaf1cf84a069fe7a2"),
-            new CompatibilityFixture("paused-card-text-v29", "ac19720634d10408c8a24cebf2fced343841e3d8a66dca996ea1e9d8463b6a5f"),
-            new CompatibilityFixture("paused-block-rider-v29", "c5eaf28e4cf75bb856208a9422b60bcd842da2d442341d217ec7cf60d75b83e1"),
-            new CompatibilityFixture("parked-pre-action-v29", "f1d1c973f63e3b53b9a38761701b9268d3ae9eb15e84dbddbe85dc71971ea170")
+            new CompatibilityFixture("setup-v30", "184acc4ee1336dff15cec76c4e744859aa9b31489488b45184de5d73f1f05f1b"),
+            new CompatibilityFixture("active-turn-v30", "029cee0e6eee6bd6ba323f80e8d57f6502d9b8d668e1e8b9e7eb938aef141a1b"),
+            new CompatibilityFixture("pending-choice-v30", "6844bf0824fb497f882f01e6b471539796a4b9a97dbdec010dc2f24fcf2cad0e"),
+            new CompatibilityFixture("end-of-round-v30", "bdacddfe9c79095aa31bb0e17d1ba2db82126af5052dd708667dcc5d018a11c6"),
+            new CompatibilityFixture("pending-minion-battle-v30", "8f75e6bc54d510a0ce6bc6f76f0d693f44333579da37d0f687a40bca9d102eb7"),
+            new CompatibilityFixture("placed-token-v30", "31642d7717c07dcb180db5548af0ca5245fd0cf30edb91f2940552201041bc59"),
+            new CompatibilityFixture("attached-marker-v30", "a9615fdd005fecd55468357a73c3be8dae7e7bfdf3cd7ccc4ac0b794824c4e5b"),
+            new CompatibilityFixture("pending-correction-v30", "31f0851068a733cb8124e85b7bee2dfa0dbf1a261a700a606162da902dfaca1d"),
+            new CompatibilityFixture("paused-level-up-v30", "1c60b7e6fba2ab62827992e7db42bf2b2d95477c7d93bf752f50dc82e4162784"),
+            new CompatibilityFixture("ended-match-v30", "c86ba047d8160a079d2a1ad1f1bf052019cf16d63150edee055708cb549e6b49"),
+            new CompatibilityFixture("verified-hand-setup-v30", "d418dca01bdbb3dce23ef1e1af91a2669851a4c58c7af361d826ba05d5dd5a0f"),
+            new CompatibilityFixture("paused-orbit-repeat-v30", "77886add4359a0d2f85aadeeb70039ed8f9b820b92a2abdeaf1cf84a069fe7a2"),
+            new CompatibilityFixture("paused-card-text-v30", "ac19720634d10408c8a24cebf2fced343841e3d8a66dca996ea1e9d8463b6a5f"),
+            new CompatibilityFixture("paused-block-rider-v30", "c5eaf28e4cf75bb856208a9422b60bcd842da2d442341d217ec7cf60d75b83e1"),
+            new CompatibilityFixture("parked-pre-action-v30", "f1d1c973f63e3b53b9a38761701b9268d3ae9eb15e84dbddbe85dc71971ea170")
         };
 
         [Test]
@@ -1036,16 +1052,16 @@ namespace GuardsDigital.Tests.EditMode
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var session = CreateSession();
-            values.Add("setup-v29", session.CaptureSnapshot());
+            values.Add("setup-v30", session.CaptureSnapshot());
 
             CommitUnequalCards(session);
-            values.Add("active-turn-v29", session.CaptureSnapshot());
+            values.Add("active-turn-v30", session.CaptureSnapshot());
 
             var movement = session.Projection.AvailableTurnActions.First(offer =>
                 FindActionKind(session.Projection, offer) == ActionKind.Movement);
             Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null);
-            values.Add("pending-choice-v29", session.CaptureSnapshot());
+            values.Add("pending-choice-v30", session.CaptureSnapshot());
 
             session = CreateSession();
             while (session.Projection.Phase != RoundResolutionPhase.EndOfRound)
@@ -1061,7 +1077,7 @@ namespace GuardsDigital.Tests.EditMode
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
 
-            values.Add("end-of-round-v29", session.CaptureSnapshot());
+            values.Add("end-of-round-v30", session.CaptureSnapshot());
 
             session = CreateSessionWithMinionImbalance();
             AdvanceToEndOfRound(session);
@@ -1070,17 +1086,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(minionChoice, Is.Not.Null);
             Assert.That(session.Execute(DirectorCommand.SelectMinionBattleRemoval(
                 minionChoice.SelectInvocations[0])).Accepted, Is.True);
-            values.Add("pending-minion-battle-v29", session.CaptureSnapshot());
+            values.Add("pending-minion-battle-v30", session.CaptureSnapshot());
 
             // Milestone 6.2's two new wire sections. A version-controlled corpus whose fixtures all
             // carry zero components would leave the sections it exists to protect untested, so one
             // payload holds a token on the board and one holds a marker on a hero.
-            values.Add("placed-token-v29", CaptureComponentSnapshot("component-place-branch"));
-            values.Add("attached-marker-v29", CaptureComponentSnapshot("component-give-marker"));
+            values.Add("placed-token-v30", CaptureComponentSnapshot("component-place-branch"));
+            values.Add("attached-marker-v30", CaptureComponentSnapshot("component-give-marker"));
 
             // Milestone 6.4a's wire block: every persisted pending family keeps one corpus fixture,
             // so the paused after-action correction gets the eighth.
-            values.Add("pending-correction-v29", CapturePendingCorrectionSnapshot());
+            values.Add("pending-correction-v30", CapturePendingCorrectionSnapshot());
 
             // Milestone 7.9. The complete synthetic loop reaches two state shapes the eight fixtures
             // above never do, and both are shapes a payload has to survive rather than merely reach:
@@ -1091,38 +1107,38 @@ namespace GuardsDigital.Tests.EditMode
             // is a pin, and pinning one to a generated run would re-pin the corpus on every change to
             // anything the generator touches, which is the opposite of what a compatibility corpus is
             // for.
-            values.Add("paused-level-up-v29", CapturePausedLevelUpSnapshot());
-            values.Add("ended-match-v29", CaptureEndedMatchSnapshot());
+            values.Add("paused-level-up-v30", CapturePausedLevelUpSnapshot());
+            values.Add("ended-match-v30", CaptureEndedMatchSnapshot());
 
             // Milestone 8.4. The configured session as a player is dealt it: two mirrored Wasps holding
             // p.5's starting five with thirteen in each deck, which is the first verified content any
             // payload in this corpus has ever carried.
             values.Add(
-                "verified-hand-setup-v29",
+                "verified-hand-setup-v30",
                 ConfiguredMatchFixtures.CreateVerifiedMirrorSession().CaptureSnapshot());
 
             // Milestone 8.6's own schema move. The repeat continuation is written inside a pending Skill
             // frame and inside an owed repeat, and no fixture above holds either, so the section this
             // milestone added would have had no version-controlled coverage at all without this one.
-            values.Add("paused-orbit-repeat-v29", CapturePausedOrbitRepeatSnapshot());
+            values.Add("paused-orbit-repeat-v30", CapturePausedOrbitRepeatSnapshot());
 
             // Milestone 8.10's own schema move. The card-text continuation is written only while
             // rulebook p.14 is stopped on a question inside an Attack, and no fixture above holds one,
             // so the section this milestone added would have had no version-controlled coverage at all
             // without this one.
-            values.Add("paused-card-text-v29", CapturePausedCardTextSnapshot());
+            values.Add("paused-card-text-v30", CapturePausedCardTextSnapshot());
 
             // Milestone 8.11's own schema move. The Block result is written on an Attack resolution
             // that is still pending, and the one state a Block leaves one pending in is its own
             // rider's question - so no fixture above holds a payload with the field set to anything
             // but None, and a section only ever written as its zero value is protected vacuously.
-            values.Add("paused-block-rider-v29", CapturePausedBlockRiderSnapshot());
+            values.Add("paused-block-rider-v30", CapturePausedBlockRiderSnapshot());
 
             // Milestone 8.19a's own schema move, and the one fixture that holds both halves of it at
             // once: a frame standing outside an action, and the action it is standing outside of
             // running with a continuation of its own. No fixture above holds either, so the section
             // this milestone added would have had no version-controlled coverage at all without it.
-            values.Add("parked-pre-action-v29", CaptureParkedPreActionSnapshot());
+            values.Add("parked-pre-action-v30", CaptureParkedPreActionSnapshot());
             return values;
         }
 
