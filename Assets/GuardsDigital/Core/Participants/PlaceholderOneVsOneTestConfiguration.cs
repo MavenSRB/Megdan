@@ -332,6 +332,74 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
+        /// Arien and Brogan matches are on.
+        ///
+        /// <para>Sabina takes the Blue seat rather than joining it, for the reason
+        /// <see cref="CreateStagedBroganForInternalTest"/> records: milestone 8.25 owns the official
+        /// six-player configuration and every hero spawn it assigns. <see cref="Create"/> - the scene a
+        /// player loads - is untouched and still deals Wasp against Arien.</para>
+        ///
+        /// <para><b>She needs no ally seat, and that is worth saying because Brogan did.</b> Two of his
+        /// faces name a friendly <em>hero</em> and a one-hero team gave that selection no candidate at
+        /// all. Sabina's kit commands minions instead - "a friendly minion in radius", "two minions in
+        /// radius", "your friendly minion" - and p.8's waves put minions on the board in every
+        /// configuration this build has, so every one of her faces has something to act on without a
+        /// second Blue hero.</para>
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedSabinaForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedSabinaHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.22. The staged Wasp-versus-Sabina match at rulebook p.15's Tier II stage, with
+        /// Sabina holding one Tier II card of each colour on the branch the caller names - the same
+        /// pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedSabinaTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.SabinaUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedSabinaHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.22. The staged Wasp-versus-Sabina match at rulebook p.15's Tier III stage with
+        /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and Big
+        /// Sodding Gun in Sabina's.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedSabinaTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.SabinaUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedSabinaHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.SabinaCardContent.BigSoddingGun)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
         /// Milestone 8.20. The staged match at rulebook p.15's Tier II stage: Wasp holds her Red seat's
         /// three Tier II cards and Arien holds one Tier II card of each colour, on the branch the
         /// caller names.
@@ -532,6 +600,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.BroganProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.BroganProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.22. One seat's verified Sabina hand, prefixed by the seat's team side for the
+        /// reason the three earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.SabinaCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedSabinaHand(
+            bool tierThree, Cards.Verified.SabinaUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.SabinaProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.SabinaProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         /// <summary>

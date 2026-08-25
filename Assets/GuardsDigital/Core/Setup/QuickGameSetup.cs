@@ -218,6 +218,27 @@ namespace GuardsDigital.Core.Setup
             CreateOneVsOne(new HeroContentId("brogan"), "Brogan");
 
         /// <summary>
+        /// Milestone 8.22. The same board with Sabina on the Blue seat, for the fixtures whose subject
+        /// is her printed set.
+        ///
+        /// <para>It is a fourth one-hero-per-team staging rather than a wider match, for the reason the
+        /// second and third record: milestone 8.25 owns the official six-player configuration and all
+        /// six spawn assignments. The scene a player loads is unchanged and still deals Wasp against
+        /// Arien; this arm exists so a fixture can put Sabina where a player's input can reach her.</para>
+        ///
+        /// <para><b>She needs no second Blue seat</b>, unlike Brogan. His two coin-granting Skills name
+        /// a friendly <em>hero</em> and a one-hero team gave that selection no candidate; hers command
+        /// minions, and p.8's waves put twelve of those on this board before anybody acts.</para>
+        ///
+        /// <para>The display name is the epithet question S-01 answered on 2026-08-25 - the rulebook's
+        /// setup step 7 name - and it is a label on the seat rather than an identity: the content id
+        /// stays <c>sabina</c>, which is what the prepared token is addressed by and what every rule
+        /// that asks reads.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusSabinaOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("sabina"), "Sabina the Gunslinger");
+
+        /// <summary>
         /// Milestone 8.21. Wasp on Red against Arien and Brogan on Blue, which is the smallest board
         /// on which "a friendly hero in range" is true of anybody - the clause War Drummer and Master
         /// Skald print and the reason two of Brogan's nineteen faces would otherwise be unreachable.

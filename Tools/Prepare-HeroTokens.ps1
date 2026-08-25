@@ -52,7 +52,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('wasp', 'arien', 'brogan')]
+    [ValidateSet('wasp', 'arien', 'brogan', 'sabina')]
     [string] $Hero = 'wasp',
     [switch] $Check,
     [switch] $Force
@@ -68,6 +68,9 @@ $declaredHeroes = @{
     wasp   = @{ ElementId = 8597310; ElementName = 'Wasp';   DisplayName = 'Wasp' }
     arien  = @{ ElementId = 8596244; ElementName = 'Arien2'; DisplayName = 'Arien' }
     brogan = @{ ElementId = 8596274; ElementName = 'Brogan'; DisplayName = 'Brogan' }
+    # Milestone 8.22. Hers agrees with the project's name too, which is the second of four; the
+    # declaration stays a table because Arien's does not.
+    sabina = @{ ElementId = 8596284; ElementName = 'Sabina'; DisplayName = 'Sabina' }
 }
 
 $declared = $declaredHeroes[$Hero]

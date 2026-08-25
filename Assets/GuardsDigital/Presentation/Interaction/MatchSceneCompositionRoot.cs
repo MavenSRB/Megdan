@@ -180,7 +180,51 @@ namespace GuardsDigital.Presentation.Interaction
         /// The three-hero staging at rulebook p.15's Tier III stage on the second-sibling branch,
         /// where Master Skald is in Brogan's hand - the Tier III half of the same pair.
         /// </summary>
-        VerifiedStagedBroganWithAllyAtTierThree = 18
+        VerifiedStagedBroganWithAllyAtTierThree = 18,
+
+        /// <summary>
+        /// Milestone 8.22. The staged Wasp-versus-Sabina hands with both heroes restaged already
+        /// engaged, exactly as <see cref="VerifiedEngagedStagedBrogan"/> stages its two - same spaces,
+        /// same minion, same fixed Tie Breaker side under `DEV-005`.
+        ///
+        /// <para>Sabina takes the Blue seat rather than joining it. Milestone 8.25 owns the official
+        /// six-player configuration, so a fourth dealt hero is a fixture's choice of which two play
+        /// rather than a wider match, and <see cref="ConfiguredMatch"/> still deals Wasp against
+        /// Arien.</para>
+        ///
+        /// <para><b>No ally arm accompanies these, and the contrast with Brogan's is the reason worth
+        /// recording.</b> His three-hero arms exist because two of his faces name a friendly hero and a
+        /// one-hero team gave that selection no candidate. Sabina's Blue and Green kit commands minions
+        /// instead, and the engaged staging already puts her beside one Blue melee Battle-Zone minion
+        /// with eleven more on the board - so every face of hers has something to act on here.</para>
+        /// </summary>
+        VerifiedEngagedStagedSabina = 19,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Sabina holding the first sibling
+        /// of each colour - Gunslinger, Roger Roger and Marching Orders. `DEV-004` terms.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedSabina = 20,
+
+        /// <summary>
+        /// The Tier II staging with Sabina holding the <em>second</em> sibling of each colour -
+        /// Shootout, Steady Advance and Close Support - which is the other half of p.15's choice and
+        /// therefore the other half of her printed set.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedSabina = 21,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier III stage with p.16's Ultimate unlocked faceup
+        /// on both seats - High Voltage in Wasp's area and Big Sodding Gun in Sabina's - and Sabina
+        /// holding the first sibling of each colour: Dead Shot, Ready and Waiting and Path to Victory.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedSabina = 22,
+
+        /// <summary>
+        /// The Tier III staging with Sabina holding the second sibling of each colour: Bullet Hell,
+        /// Unwavering Resolve and Covering Fire.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedSabina = 23
     }
 
     [ExecuteAlways]
@@ -324,6 +368,25 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedStagedBroganWithAllyAtTierThree =>
                     PlaceholderOneVsOneTestConfiguration.CreateStagedBroganWithAllyForInternalTest(
                         TeamSide.Red, BroganAllyStage.TierThree),
+                SceneCardContent.VerifiedEngagedStagedSabina =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedSabina =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SabinaUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSabina =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SabinaUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedSabina =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SabinaUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSabina =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SabinaUpgradeBranch.SecondSibling),
                 _ => PlaceholderOneVsOneTestConfiguration.Create()
             };
             // Milestone 8.20. The board's hero identities have to agree with the hands the
@@ -342,7 +405,9 @@ namespace GuardsDigital.Presentation.Interaction
                         ? QuickGameSetupConfiguration.CreateStagedWaspVersusArienAndBroganOneVsTwo()
                         : IsStagedBrogan(content)
                             ? QuickGameSetupConfiguration.CreateStagedWaspVersusBroganOneVsOne()
-                            : QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne(),
+                            : IsStagedSabina(content)
+                                ? QuickGameSetupConfiguration.CreateStagedWaspVersusSabinaOneVsOne()
+                                : QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne(),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
@@ -357,7 +422,8 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedArien ||
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedArien ||
                 content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedArien ||
-                IsStagedBrogan(content))
+                IsStagedBrogan(content) ||
+                IsStagedSabina(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -523,6 +589,18 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBrogan ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedBrogan ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBrogan;
+
+        /// <summary>
+        /// Whether this content puts Sabina on the Blue seat. Milestone 8.22's five arms, which take
+        /// the one-hero-per-team setup and the ordinary engaged restaging - she needs no ally seat,
+        /// because what her Blue and Green kit commands is minions and the board has twelve.
+        /// </summary>
+        private static bool IsStagedSabina(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedSabina ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedSabina ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSabina ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedSabina ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSabina;
 
         /// <summary>
         /// Whether this content deals two heroes to the Blue team with Brogan beside Arien. Milestone
