@@ -606,15 +606,22 @@ namespace GuardsDigital.Tests.EditMode
         /// mandatory step it cannot complete and skips the rest, so "this node never ran" is an
         /// ordinary printed outcome rather than a fault - and <see cref="SequenceOfAppliedNode"/>
         /// asserts the opposite.
+        ///
+        /// <para><b>Two altitudes write a node's outcome and they spell it differently</b>, which is
+        /// why both are read here. Card text applied inside rulebook p.14 records
+        /// <c>step=&lt;moment&gt;:&lt;node&gt;:Applied</c> on one event type; a Skill's own effect
+        /// records <c>step=&lt;node&gt;</c> and puts the outcome in the event type itself. A matcher
+        /// that knew only the first answered "no" for every Skill node ever run, so an assertion that
+        /// a Skill's step did NOT run was true whatever the match did - which is exactly the shape of
+        /// vacuous evidence this project does not keep.</para>
         /// </summary>
         internal bool NodeApplied(string nodeId) =>
-            Session.Projection.DiagnosticEvents
-                .Any(entry => entry.Detail.Contains(":" + nodeId + ":Applied"));
+            Session.Projection.DiagnosticEvents.Any(entry => RecordsApplied(entry, nodeId));
 
         internal int SequenceOfAppliedNode(string nodeId)
         {
             var sequence = Session.Projection.DiagnosticEvents
-                .Where(entry => entry.Detail.Contains(":" + nodeId + ":Applied"))
+                .Where(entry => RecordsApplied(entry, nodeId))
                 .Select(entry => entry.Sequence)
                 .DefaultIfEmpty(0)
                 .Max();
@@ -622,6 +629,11 @@ namespace GuardsDigital.Tests.EditMode
                 $"No rule event records node '{nodeId}' applying, so it never ran.");
             return sequence;
         }
+
+        private static bool RecordsApplied(GuardsDigital.Core.Diagnostics.RuleEventLogEntry entry, string nodeId) =>
+            entry.Detail.Contains(":" + nodeId + ":Applied") ||
+            (entry.EventType.EndsWith("EffectNodeApplied", StringComparison.Ordinal) &&
+                entry.Detail == "step=" + nodeId);
 
         internal MinionId[] CandidateMinions(PendingEffectChoice choice) =>
             choice.Candidates

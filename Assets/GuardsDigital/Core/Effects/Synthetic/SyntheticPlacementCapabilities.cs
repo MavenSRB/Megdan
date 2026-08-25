@@ -351,9 +351,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 // Milestone 8.20. The written arm reads the number the definition states; the printed
                 // arm reads p.9's icon with p.16's items already composed onto it, through the same
-                // RangeValueQuery every printed-Range selection goes through. A card printing no Range
-                // icon has no such reach at all and p.16 does not invent one, which the zero total
-                // below turns into an impossible Place rather than an adjacent-by-default one.
+                // query the declared channel names - milestone 8.23 taught it the Radius twin. A card whose
+                // declared channel prints no icon has no such reach at all and p.16 does not invent one,
+                // which the zero total below turns into an impossible Place rather than an adjacent one.
                 var radius = boundChannel == PrintedValueChannel.None
                     ? context.Input("radius").IntegerValue
                     : PrintedReach(context);
@@ -440,10 +440,32 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// derive, asked here so a card's Place and a card's selection cannot come to measure
             /// different disks. Re-derived on every ask and never captured, for the reason those
             /// selections re-derive theirs.
+            ///
+            /// <para><b>The channel decides which query answers</b>, which is milestone 8.23's
+            /// correction. Milestone 8.20 wrote this against <see cref="RangeValueQuery"/> alone,
+            /// because the printed arm was the printed-<em>Range</em> Place and nothing else; this
+            /// milestone added the printed-Radius twin, and a card printing a Radius icon and no Range
+            /// icon measured its Range - zero - so the Place reported itself impossible and Blend Into
+            /// Shadows could never place. The pair is read exactly as
+            /// <see cref="SyntheticTargetingCapabilities"/> reads it, so a card's Place and a card's
+            /// selection still measure one disk.</para>
             /// </summary>
-            private static int PrintedReach(EffectCapabilityContext context) =>
-                context.CardState.IsAvailable
-                    ? GuardsDigital.Core.Rules.CardResolution.RangeValueQuery.Calculate(
+            private int PrintedReach(EffectCapabilityContext context)
+            {
+                if (!context.CardState.IsAvailable)
+                {
+                    return 0;
+                }
+
+                return boundChannel == PrintedValueChannel.Radius
+                    ? GuardsDigital.Core.Rules.CardResolution.RadiusValueQuery.Calculate(
+                        context.SourceCardInstanceId,
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions,
+                        context.ActorId,
+                        context.HeroItems).Total
+                    : GuardsDigital.Core.Rules.CardResolution.RangeValueQuery.Calculate(
                         context.SourceCardInstanceId,
                         context.SourceDefinitionReference,
                         context.ActionDefinitionId,
@@ -454,8 +476,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         ActionValueApplicabilityQuery.For(
                             context.SourceDefinitionReference,
                             context.ActionDefinitionId,
-                            context.CardState.Definitions)).Total
-                    : 0;
+                            context.CardState.Definitions)).Total;
+            }
 
             /// <summary>
             /// p.18's immunity for the named piece, asked once per activity the question has: the

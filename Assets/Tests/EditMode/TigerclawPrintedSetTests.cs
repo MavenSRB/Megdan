@@ -418,6 +418,54 @@ namespace GuardsDigital.Tests.EditMode
                 "a second question.");
         }
 
+        /// <summary>
+        /// Standing beside terrain, the same face offers the disk its own icon prints and places him
+        /// into the space he names.
+        ///
+        /// <para><b>This is the arm that found milestone 8.20's Place measuring the wrong icon.</b>
+        /// The printed-Radius Place is milestone 8.23's, and the reach behind it was reading
+        /// <c>RangeValueQuery</c> - the only printed arm that existed when it was written. Blend Into
+        /// Shadows prints a Radius icon and no Range icon, so its reach came back zero and the Place
+        /// reported itself impossible at every space on the board; the condition arm above passed
+        /// throughout, because a branch that is skipped never asks.</para>
+        /// </summary>
+        [Test]
+        public void BlendIntoShadows_BesideTerrain_OffersItsPrintedRadiusAndPlacesHimInIt()
+        {
+            var fixture = Create(heroPlacements: At("blue-test-hero", AdjacentAgainstTerrain));
+
+            fixture.StartPrimary(TigerclawCardContent.BlendIntoShadows);
+
+            Assert.That(fixture.Choice, Is.Not.Null,
+                "\"place yourself into a space in radius\" is a question, and standing beside the " +
+                "terrain at (-3, 3) is what makes the condition in front of it true.");
+            var offered = fixture.CandidateSpaces(fixture.Choice);
+            Assert.That(offered, Is.Not.Empty);
+            Assert.That(
+                offered.All(space =>
+                    HexDistanceQuery.Calculate(space, AdjacentAgainstTerrain) <= 2),
+                Is.True,
+                "The disk is the printed Radius 2 measured from him, and every space in it is his " +
+                "own icon's rather than some other channel's.");
+            Assert.That(
+                offered.Any(space =>
+                    HexDistanceQuery.Calculate(space, AdjacentAgainstTerrain) == 2),
+                Is.True,
+                "and it reaches the whole of that 2 - a disk one space short would be the Range " +
+                "icon he does not print.");
+
+            var destination = offered.First(space =>
+                HexDistanceQuery.Calculate(space, AdjacentAgainstTerrain) == 2);
+            fixture.Select(destination);
+            fixture.AnswerEveryStandingChoice();
+
+            Assert.That(fixture.HeroSpace(fixture.Hero), Is.EqualTo(destination),
+                "p.18's Place puts him into the space he named.");
+            Assert.That(fixture.NodeApplied("blend-place"), Is.True);
+            Assert.That(fixture.NodeApplied("blend-shadow"), Is.True,
+                "and the immunity behind the semicolon runs, because the Place it depends on did.");
+        }
+
         // -----------------------------------------------------------------------------------------
         // Absences recorded rather than tested around
         // -----------------------------------------------------------------------------------------
