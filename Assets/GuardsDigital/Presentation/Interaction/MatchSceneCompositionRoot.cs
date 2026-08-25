@@ -224,7 +224,46 @@ namespace GuardsDigital.Presentation.Interaction
         /// The Tier III staging with Sabina holding the second sibling of each colour: Bullet Hell,
         /// Unwavering Resolve and Covering Fire.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedSabina = 23
+        VerifiedTierThreeAlternateEngagedStagedSabina = 23,
+
+        /// <summary>
+        /// Milestone 8.23. The staged Wasp-versus-Tigerclaw hands with both heroes restaged already
+        /// engaged, exactly as <see cref="VerifiedEngagedStagedSabina"/> stages its two.
+        ///
+        /// <para>Tigerclaw takes the Blue seat rather than joining it, for the reason Brogan's and
+        /// Sabina's arms record: milestone 8.25 owns the official six-player configuration, and what
+        /// these arms owe until then is a board a player's own input can reach him on. Nothing his
+        /// printed set names needs a friendly hero - his thieving Greens take from an ENEMY hero, and
+        /// his two Poison faces say "a hero in range", which a one-versus-one answers with the
+        /// enemy.</para>
+        /// </summary>
+        VerifiedEngagedStagedTigerclaw = 24,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Tigerclaw holding the first
+        /// sibling of each colour: Combat Reflexes, Sidestep and Pick Pocket.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedTigerclaw = 25,
+
+        /// <summary>
+        /// The Tier II staging with Tigerclaw holding the <em>second</em> sibling of each colour -
+        /// Backstab, Parry and Poisoned Dagger - which is the half of p.15's upgrade the row above
+        /// does not deal.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedTigerclaw = 26,
+
+        /// <summary>
+        /// The engaged staging at p.15's Tier III stage, with p.16's Ultimate unlocked on both seats -
+        /// High Voltage in Wasp's area and Cloak and Daggers in Tigerclaw's - and Tigerclaw holding
+        /// the first sibling of each colour: Leaping Strike, Evade and Master Thief.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedTigerclaw = 27,
+
+        /// <summary>
+        /// The Tier III staging with Tigerclaw holding the second sibling of each colour: Backstab
+        /// with a Ballista, Riposte and Poisoned Dart.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedTigerclaw = 28
     }
 
     [ExecuteAlways]
@@ -387,6 +426,25 @@ namespace GuardsDigital.Presentation.Interaction
                     PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.SabinaUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedTigerclaw =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedTigerclaw =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.TigerclawUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedTigerclaw =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.TigerclawUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedTigerclaw =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.TigerclawUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedTigerclaw =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.TigerclawUpgradeBranch.SecondSibling),
                 _ => PlaceholderOneVsOneTestConfiguration.Create()
             };
             // Milestone 8.20. The board's hero identities have to agree with the hands the
@@ -407,7 +465,10 @@ namespace GuardsDigital.Presentation.Interaction
                             ? QuickGameSetupConfiguration.CreateStagedWaspVersusBroganOneVsOne()
                             : IsStagedSabina(content)
                                 ? QuickGameSetupConfiguration.CreateStagedWaspVersusSabinaOneVsOne()
-                                : QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne(),
+                                : IsStagedTigerclaw(content)
+                                    ? QuickGameSetupConfiguration
+                                        .CreateStagedWaspVersusTigerclawOneVsOne()
+                                    : QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne(),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
@@ -423,7 +484,8 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedTierThreeEngagedStagedArien ||
                 content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedArien ||
                 IsStagedBrogan(content) ||
-                IsStagedSabina(content))
+                IsStagedSabina(content) ||
+                IsStagedTigerclaw(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -601,6 +663,18 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSabina ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedSabina ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSabina;
+
+        /// <summary>
+        /// Whether this content puts Tigerclaw on the Blue seat. Milestone 8.23's five arms, which
+        /// take the one-hero-per-team setup and the ordinary engaged restaging for the same reason
+        /// Sabina's do: nothing his printed set names needs a friendly hero beside him.
+        /// </summary>
+        private static bool IsStagedTigerclaw(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedTigerclaw ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedTigerclaw ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedTigerclaw ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedTigerclaw ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedTigerclaw;
 
         /// <summary>
         /// Whether this content deals two heroes to the Blue team with Brogan beside Arien. Milestone

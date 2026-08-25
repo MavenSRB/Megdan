@@ -103,6 +103,23 @@ namespace GuardsDigital.Tests.PlayMode
         PushDistanceChoice,
 
         /// <summary>
+        /// Milestone 8.23. A printed quantity of a resource, answered by its own numeric controls -
+        /// Tigerclaw's three thieving Greens, "Take 1 coin" and Master Thief's "Take 1 or 2 coins".
+        ///
+        /// <para>It is its own shape rather than <see cref="PushDistanceChoice"/> because the two
+        /// choose different things: one is how far a piece travels and the other is how much of a
+        /// hero's pile changes hands, and a Green card claiming a push distance would name a control
+        /// about a displacement it never performs. They share a control kind, which is exactly the
+        /// relation <see cref="AdjacentAttackTarget"/> and <see cref="RangedAttackTarget"/> already
+        /// have.</para>
+        ///
+        /// <para>Every transfer opens it, including the two faces printing one amount: the candidate
+        /// list is the amounts the source can actually pay, so a card naming one still draws that one
+        /// as a control the player presses.</para>
+        /// </summary>
+        ResourceAmountChoice,
+
+        /// <summary>
         /// Milestone 8.21. Rulebook p.10's modal form - "Choose one —" followed by bullets, of which
         /// the chosen one applies and the rest are ignored.
         ///
@@ -472,7 +489,35 @@ namespace GuardsDigital.Tests.PlayMode
                 ["target-is-adjacent"] = Array.Empty<PlayerInteractionShape>(),
                 ["synthetic-remove"] = Array.Empty<PlayerInteractionShape>(),
                 ["synthetic-swap"] = Array.Empty<PlayerInteractionShape>(),
-                ["synthetic-push-target"] = Array.Empty<PlayerInteractionShape>()
+                ["synthetic-push-target"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.23. Tigerclaw's five.
+                //
+                // The through-line is one board click that answers two printed clauses at once: the
+                // unit crossed and, by the geometry, the space landed on. A row claiming a separate
+                // space selection beside it would name a control no player is ever shown, which is
+                // the correction milestone 8.21 made for a Move that names its own destination.
+                ["choose-through-target-line"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // Blend Into Shadows' Place, whose destination is a space a player clicks inside the
+                // printed radius - the same input its Range and written-radius siblings above ask for.
+                ["synthetic-place-in-radius"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // A presence question about the board, answered by the rules rather than by anybody.
+                ["adjacent-terrain-presence"] = Array.Empty<PlayerInteractionShape>(),
+
+                // p.15's coins, moved by the amount its own numeric controls offer. Who they come
+                // from is a separate selection node's board click, so this contributes the number
+                // alone.
+                ["transfer-resource"] = new[] { PlayerInteractionShape.ResourceAmountChoice },
+
+                // The two Poison supplies. The hero who receives one is named by the selection node
+                // in front of them, so the attachment itself asks nobody anything - and this build
+                // draws no held marker anywhere, which the fixture records as a debt rather than
+                // claiming a reading no player can perform.
+                ["tigerclaw-give-poison-marker-1"] = Array.Empty<PlayerInteractionShape>(),
+                ["tigerclaw-give-poison-marker-2"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
