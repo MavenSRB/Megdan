@@ -388,12 +388,12 @@ The completed audit, effort range, retained-gate decisions, and dependency-order
 8.19a, inserted 8.19a1, and 8.19b-8.19c live in
 [PHASE_8_ROSTER_REBASE.md](PHASE_8_ROSTER_REBASE.md).
 
-### [!] 8.22 Complete and verify additional pitch hero slot C - Sabina
+### [~] 8.22 Complete and verify additional pitch hero slot C - Sabina
 
-Blocked by: Milestone 8.21 must prove the unique roster system interaction, then milestone 8.21a must close
-the separately approved public-coin presentation gap without enlarging the side rails. S-01 blocks only
-Sabina's player-facing epithet and does not block stable-ID definition work; the milestone cannot finalize
-the display label until S-01 is answered.
+Prerequisites satisfied: Milestone 8.21 proved the unique roster system interaction and milestone 8.21a
+closed the public-coin presentation gap without enlarging the side rails, so both named blocks are
+discharged. S-01 is answered - the user selected the rulebook's setup-step-7 epithet, **Sabina the
+Gunslinger**, on 2026-08-25 - so the display label is no longer blocked and this milestone carries it.
 
 Observable outcome: Sabina's complete verified set is defined, dealt, resolved through the ordinary
 player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested, with the

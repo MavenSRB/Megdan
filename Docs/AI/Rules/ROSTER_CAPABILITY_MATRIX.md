@@ -92,8 +92,9 @@ Source: [HERO_BROGAN.md](HERO_BROGAN.md). Brogan owns no token or marker.
 
 ## Sabina
 
-Source: [HERO_SABINA.md](HERO_SABINA.md). S-01 blocks only the player-facing epithet; stable content identity
-uses `sabina` and no capability branches on either epithet.
+Source: [HERO_SABINA.md](HERO_SABINA.md). S-01 was answered on 2026-08-25 - the player-facing epithet is
+`Sabina the Gunslinger` - and it never reached this table: stable content identity uses `sabina` and no
+capability branches on either epithet.
 
 | Faces / component | Class | Effect nodes and exact contract |
 | --- | --- | --- |
