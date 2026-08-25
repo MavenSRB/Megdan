@@ -363,7 +363,7 @@ footprint work, broad HUD redesign, hero content, six-player setup, networking, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-820d-name-every-standing-decision-in-the-status-line-completion-evidence).
 
-### [ ] 8.21 Complete and verify additional pitch hero slot B - Brogan
+### [~] 8.21 Complete and verify additional pitch hero slot B - Brogan
 
 Prerequisite satisfied: Milestone 8.20d named the standing effect choice in the status line and gave its
 controls a heading of their own - discharged - so this milestone's removal-prevention prompt arrives as a

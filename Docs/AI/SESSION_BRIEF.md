@@ -13,7 +13,7 @@ The project has completed roadmap milestones through **8.20d**. Both dealt heroe
 ## Current authorization and next route
 
 - Current completed milestone: **8.20d**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **8.21**, in progress.
 - Next proposed milestone: **8.21**.
 
 Milestone **8.20d** completed on 2026-08-25, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). The status derivation ran two phase checks and six pending-family branches and had no `PendingEffectChoice` one, so every effect choice since 8.15 - rulebook p.10's discard chooser above all - reached the table under "Initiative N: choose an action or End Turn" with its controls appended to the row headed `ACTIONS`. A seventh branch names it, `EffectChoicePromptLabels` composes every word from the pause's own typed bounds and candidate kinds, and its controls now arrive under a heading of their own. The one list milestone 7.9c left is now exactly two halves - the families a player answers and the resolutions that ask nothing - and a conformance rule compares the first half against the derivation by what the compiled code reads, so the next family cannot arrive unnamed the way the sixth did.
