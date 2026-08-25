@@ -66,6 +66,20 @@ Repeat the milestone `8.36` real-internet playtest only when affectedness or obs
 
 The local gate does not establish relay/NAT traversal, external-latency, multi-network, or internet-reliability claims. Any required internet repeat uses a separately identified disposable private build and the milestone `8.36` privacy/distribution boundaries; it is validation evidence, not the retained pitch deliverable.
 
+## Declarative player-path journeys - not scheduled
+
+Recorded 2026-08-25, for the batched hero intake [Roadmap/POST_PITCH.md](../Roadmap/POST_PITCH.md) declares. It is not worth building for Tigerclaw and Xargatha; it is the change that decides whether a hero costs a week or a day once the roster grows past this one.
+
+The permanent gate above is satisfied today by roughly fifteen hand-written `[UnityTest]` journeys per hero, and they are the largest constant per-hero cost - the only term that has not decayed across Arien, Brogan and Sabina. The reason it is compressible is that the gate's own per-decision requirements are **identical for every decision in every journey**: the old prompt advances or clears, exactly one projected invocation is accepted, authoritative state and immutable projection agree, the next visible HUD/board state expresses that projection, a stale repeat cannot act, no `EngineFault` is emitted, and no dead, anonymous, duplicated, orphaned or unreachable control remains. Only three things vary between one decision and the next: which scene arm it starts from, which control is addressed and by which input route, and what the board is expected to look like afterwards.
+
+The proposal is to express those three as data - a per-hero table of `(scene arm, ordered steps, expected observations)`, where a step names a control locator and an input kind - and to let one shared runner apply the seven proofs at every step. `WaspUiPlayerDriver` already owns the click mechanics, and milestone 8.20c's `StandardCardFootprintCheck` is the precedent that this works under the gate: it is hero-neutral, enumerates the hero's own `AllDefinitions`, and collects its failures rather than stopping at the first.
+
+Three properties must survive, and they are what makes this worth designing rather than just writing:
+
+- **The gate must stay un-fakeable.** Its strength today is that a row's shapes are derived from printed content, that `PlayerPathRow.Prove(shape, journey)` makes "declared but unproved" unrepresentable, that journeys resolve by reflection so a rename fails, and that an orphan journey fails too. A declarative journey must therefore still surface as one named `[UnityTest]` the matrix binds to by name - generated through a test-case source, not replaced by a table row that asserts nothing.
+- **A step that finds no control must fail rather than skip.** That is the standard failure of data-driven UI suites and it would silently hollow out every row at once.
+- **Genuinely bespoke journeys stay hand-written.** The pausing path that must continue across snapshot restore and retained-prefix Undo, the restart and presentation rebuild, and the targeted non-batch Game View inspection are one-offs the format should not try to express. Compressing the repetitive fifteen is the whole prize; compressing the last three would cost more than it saves.
+
 ## Player-build smoke gate
 
 Added at milestone 6.1d. An Editor suite cannot observe a player that ships with an unresolved shader, a missing resource, or a type the build stripped: every Edit Mode and Play Mode test runs inside the Editor, where those assets are always present. This gate builds the real artifact, runs it, and requires the running player to say what it reached.
