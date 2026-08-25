@@ -567,7 +567,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
                         childNodeIds: new[] { select, swap }),
-                    FriendlyMinionInRadius(select, swap),
+                    FriendlyMinionInRadius(select),
                     new EffectNodeDefinition(
                         swap, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticExchangeCapabilities.SwapWithActorV1,
@@ -847,7 +847,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
                         childNodeIds: new[] { select, move, repeat }),
-                    FriendlyMinionInRadius(select, move),
+                    FriendlyMinionInRadius(select),
                     new EffectNodeDefinition(
                         move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticDisplacementCapabilities.DirectMoveV3,
@@ -1024,12 +1024,18 @@ namespace GuardsDigital.Core.Cards.Verified
         /// icon's and an item's <c>+1</c> reaches it; where the text states a number, the definition
         /// states it. Both of Sabina's users of this print a Radius.</para>
         ///
-        /// <para>The consumer is declared so the selection offers only pieces the step after it can
-        /// actually act on - Back to Back's Swap and Troop Movement's Move each refuse different
-        /// things, and a candidate neither could take is not one to offer.</para>
+        /// <para><b>It declares no consumer, and that is a correction rather than an omission.</b>
+        /// <c>EffectSelectionDeclaration</c> exists so a selection offers only pieces the step after
+        /// it can act on, and it works by handing the consumer each CANDIDATE and asking. This
+        /// selection's candidates are minions; both consumers here take a coordinate. So every
+        /// candidate was refused, no candidate was offered, and the printed Skill simply stopped
+        /// appearing in the action list - silently, because an offer that is not made reports nothing.
+        /// Arien's Ebb and Flow declares none for the same reason and this follows it. The narrowing
+        /// is not lost: p.18 makes immunity a targeting rule, so the selection already filters what
+        /// neither consumer could take.</para>
         /// </summary>
         private static EffectNodeDefinition FriendlyMinionInRadius(
-            EffectNodeId nodeId, EffectNodeId consumerNodeId) =>
+            EffectNodeId nodeId) =>
             new EffectNodeDefinition(
                 nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                 SyntheticTargetingCapabilities.RadiusMinionTargetV1,
@@ -1039,10 +1045,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         "activity", EffectValue.Integer((int)RuleActivity.Skill)),
                     EffectInputBinding.FromLiteral(
                         SyntheticTargetingCapabilities.TargetRelationParameterName,
-                        EffectValue.Integer((int)SourceTeamRelation.AlliedWithSource)),
-                    EffectInputBinding.FromLiteral(
-                        EffectSelectionDeclaration.ConsumerParameterName,
-                        EffectValue.Node(consumerNodeId))
+                        EffectValue.Integer((int)SourceTeamRelation.AlliedWithSource))
                 },
                 outputs: new[]
                 {
