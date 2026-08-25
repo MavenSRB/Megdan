@@ -414,7 +414,9 @@ Acceptance checks:
 
 Non-goals: No other new hero, general Minion-Battle redesign, six-player setup, networking, or art.
 
-### [~] 8.21a Show every hero's public coin balance on the fixed side rails
+### [x] 8.21a Show every hero's public coin balance on the fixed side rails
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-821a-show-every-heros-public-coin-balance-on-the-fixed-side-rails-completion-evidence).
 
 Prerequisite satisfied: Milestone 8.21 completed - Brogan's content, the removal-prevention prompt and his
 player-path gate all landed under that heading - so this rail change is the only presentation work in
