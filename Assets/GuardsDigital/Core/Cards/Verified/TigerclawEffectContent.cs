@@ -307,6 +307,14 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <para>The Move is p.18's direct Move to a named space rather than a Movement action: it
         /// spends no Movement value, it is not the card's Movement icon, and its destination is the one
         /// the line published.</para>
+        ///
+        /// <para><b>The crossing is declared on that Move.</b> "Through an enemy unit" is a sentence
+        /// about this movement, not a permission Tigerclaw carries, so it is bound as the Move's own
+        /// <c>movesThroughObstacles</c> rather than as a granted
+        /// <c>MoveThroughObstacles</c>: the unit he crossed stops him again on his very next Move.
+        /// The line above has already refused any route whose end space is occupied, which is p.18's
+        /// other sentence - a Move may cross an obstacle and may never rest on one - so the
+        /// declaration widens exactly the step it names and nothing else.</para>
         /// </summary>
         private static EffectDefinition CreateMoveThroughAndTarget(
             CardDefinitionId cardId, string contentRevision, RosterUnitKind crossed)
@@ -357,7 +365,11 @@ namespace GuardsDigital.Core.Cards.Verified
                                 EffectValue.Integer((int)DirectMoveDestinationPolicy.NamedSpace)),
                             EffectInputBinding.FromNodeOutput(
                                 SyntheticDisplacementCapabilities.NamedDestinationParameterName,
-                                line, DestinationOutput, EffectValueKind.Coordinate)
+                                line, DestinationOutput, EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities
+                                    .MovesThroughObstaclesParameterName,
+                                EffectValue.Boolean(true))
                         },
                         outputs: new[]
                         {

@@ -345,6 +345,29 @@ namespace GuardsDigital.Core.Cards
         }
 
         /// <summary>
+        /// The printed body this action declares under <paramref name="reference"/>, or <c>null</c>
+        /// where it declares none.
+        ///
+        /// <para>Milestone 8.23, and the second half of what <see cref="CardTextAt"/> exists for: a
+        /// paused frame names the body it is resolving by reference rather than by moment, because a
+        /// Skill's frame has no moment at all. An action carrying two bodies has to answer that
+        /// question about both of them - a reading that consulted <see cref="EffectRoot"/> alone found
+        /// nothing for a step-7 frame and the answer to its question was refused, which is how a
+        /// player met it: Combat Reflexes' second move opened, and no answer to it was accepted.</para>
+        /// </summary>
+        public EffectDefinition EffectRootFor(EffectDefinitionReference reference)
+        {
+            if (EffectRoot != null && EffectRoot.Reference.Equals(reference))
+            {
+                return EffectRoot;
+            }
+
+            return SecondCardTextRoot != null && SecondCardTextRoot.Reference.Equals(reference)
+                ? SecondCardTextRoot
+                : null;
+        }
+
+        /// <summary>
         /// Milestone 8.23. What a second printed body of card text has to be true of.
         ///
         /// <para>It requires a first, because "second" is meaningless without one and an action whose

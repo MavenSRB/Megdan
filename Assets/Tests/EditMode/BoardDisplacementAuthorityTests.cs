@@ -208,7 +208,9 @@ namespace GuardsDigital.Tests.EditMode
             // action", so an occupied space blocks a direct Move exactly as it blocks Movement.
             var board = CreateBoard(withMinion: true);
 
-            var destinations = board.FindDirectMoveDestinations(BoardObjectReference.ForHero(Mover), 2, RuleModificationSet.Empty);
+            var destinations = board.FindDirectMoveDestinations(
+                BoardObjectReference.ForHero(Mover), 2, RuleModificationSet.Empty,
+                moveIgnoresObstacles: false);
 
             var reached = destinations.Select(destination => destination.Destination).ToArray();
             Assert.That(reached, Has.Member(new HexCoordinate(2, 0)));
@@ -229,9 +231,11 @@ namespace GuardsDigital.Tests.EditMode
             var token = PlaceToken(board, new HexCoordinate(1, 0));
 
             var minionRoutes = board.FindDirectMoveDestinations(
-                BoardObjectReference.ForMinion(Minion), 2, RuleModificationSet.Empty);
+                BoardObjectReference.ForMinion(Minion), 2, RuleModificationSet.Empty,
+                moveIgnoresObstacles: false);
             var tokenRoutes = board.FindDirectMoveDestinations(
-                BoardObjectReference.ForToken(token.Id), 2, RuleModificationSet.Empty);
+                BoardObjectReference.ForToken(token.Id), 2, RuleModificationSet.Empty,
+                moveIgnoresObstacles: false);
 
             Assert.That(
                 minionRoutes.Select(destination => destination.Destination),
@@ -249,6 +253,43 @@ namespace GuardsDigital.Tests.EditMode
                 tokenRoutes.Select(destination => destination.Destination),
                 Has.No.Member(new HexCoordinate(4, 0)),
                 "The minion occupies (4,0), which blocks the token exactly as it blocks a hero.");
+        }
+
+        /// <summary>
+        /// Milestone 8.23. A Move whose own text crosses obstacles walks past the minion, and still
+        /// may not stop on it.
+        ///
+        /// <para>p.18 states the two halves separately - a crossing unit "is allowed to enter a space
+        /// with an obstacle and leave that space in any direction, while moving. However, a unit can
+        /// never end its movement on the same space as an obstacle" - so one flag answering both would
+        /// have let Blink Strike land on the unit it went through.</para>
+        /// </summary>
+        [Test]
+        public void FindDirectMoveDestinations_WhenTheMoveCrossesObstacles_PassesThemButNeverRestsOnOne()
+        {
+            var board = CreateBoard(withMinion: true);
+
+            var stopped = board
+                .FindDirectMoveDestinations(
+                    BoardObjectReference.ForHero(Mover), 5, RuleModificationSet.Empty,
+                    moveIgnoresObstacles: false)
+                .Select(destination => destination.Destination)
+                .ToArray();
+            var crossing = board
+                .FindDirectMoveDestinations(
+                    BoardObjectReference.ForHero(Mover), 5, RuleModificationSet.Empty,
+                    moveIgnoresObstacles: true)
+                .Select(destination => destination.Destination)
+                .ToArray();
+
+            Assert.That(stopped, Has.No.Member(new HexCoordinate(5, 0)),
+                "The minion at (4,0) stands between (0,0) and (5,0), and an ordinary Move stops at it.");
+            Assert.That(crossing, Has.Member(new HexCoordinate(5, 0)),
+                "The declared crossing is what the card prints, and it opens the space beyond.");
+            Assert.That(crossing, Has.No.Member(new HexCoordinate(4, 0)),
+                "The minion's own space is still no endpoint - the flag reaches transit alone.");
+            Assert.That(crossing, Has.No.Member(new HexCoordinate(6, 0)),
+                "Off the map is nothing rather than an obstacle, and no declaration answers it.");
         }
 
         [Test]
@@ -274,7 +315,11 @@ namespace GuardsDigital.Tests.EditMode
             var board = CreateBoard();
 
             Assert.That(
-                board.FindDirectMoveDestinations(BoardObjectReference.ForHero(new HeroId("absent")), 3, RuleModificationSet.Empty),
+                board.FindDirectMoveDestinations(
+                    BoardObjectReference.ForHero(new HeroId("absent")),
+                    3,
+                    RuleModificationSet.Empty,
+                    moveIgnoresObstacles: false),
                 Is.Empty);
         }
 

@@ -504,11 +504,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
                 foreach (var action in definition.ActionDefinitions)
                 {
-                    if (action.Id.Equals(pending.ActionDefinitionId) &&
-                        action.EffectRoot != null &&
-                        action.EffectRoot.Reference.Equals(pending.EffectDefinitionReference))
+                    if (!action.Id.Equals(pending.ActionDefinitionId))
                     {
-                        return action.EffectRoot;
+                        continue;
+                    }
+
+                    // Milestone 8.23. The action is asked which of its bodies the frame names, rather
+                    // than being assumed to have one: an Attack printing both of p.14's attacker
+                    // moments declares two, and a step-7 frame names the second.
+                    var root = action.EffectRootFor(pending.EffectDefinitionReference);
+                    if (root != null)
+                    {
+                        return root;
                     }
                 }
             }

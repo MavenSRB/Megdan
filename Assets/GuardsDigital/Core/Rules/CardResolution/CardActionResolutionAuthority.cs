@@ -1798,10 +1798,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// binding survives however many questions the text stopped on. The backend re-derives that
         /// unit's legality against the board the text has just changed; nothing here decides it.</para>
         ///
-        /// <para>The steps it produces cannot contain another card-text step, because an action
-        /// declares one moment and this one's is step 1. The refusal below states that rather than
-        /// trusting it, so a future action that could declare two is caught here instead of silently
-        /// skipping its second.</para>
+        /// <para><b>The steps it produces may contain this action's step 7, and never a second step
+        /// 1.</b> Milestone 8.19a wrote this refusal against every card-text step, because an action
+        /// declared one moment then and this one's was step 1; it named the future action that could
+        /// declare two, so that its second would be caught here rather than silently skipped.
+        /// Milestone 8.23 is that action - Combat Reflexes and Leaping Strike print "Before the
+        /// attack:" and "After the attack:" on one face - so the remainder of a step-1 pause now
+        /// legitimately carries step 7 and the refusal narrows to what stayed impossible. p.14 has one
+        /// step 1, and a remainder carrying another would apply the same sentence twice.</para>
         /// </summary>
         private IReadOnlyList<ResolutionStep> ResumeAttackAfterBeforeText(
             AttackTarget boundTarget,
@@ -1822,11 +1826,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "step was applied against, which nothing between them may clear.");
             }
 
-            if (continued.Steps.Any(produced => produced.Kind == ResolutionStepKind.CardText))
+            if (continued.Steps.Any(produced =>
+                produced.Kind == ResolutionStepKind.CardText &&
+                produced.CardTextTiming == CardTextTiming.BeforeTheAttack))
             {
                 throw new InvalidOperationException(
-                    "An action declares one of rulebook p.14's card-text moments, so the remainder of " +
-                    "a step-1 pause cannot contain another.");
+                    "Rulebook p.14 numbers one step 1, so the remainder of a step-1 pause cannot " +
+                    "contain another; an action's second moment is its step 7.");
             }
 
             RecordAttackLanePush(continued, resolutionId, participants, modifications);

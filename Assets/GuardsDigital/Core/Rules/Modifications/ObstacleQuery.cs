@@ -63,7 +63,31 @@ namespace GuardsDigital.Core.Rules.Modifications
             AdjacentMoveAuthority board,
             HexCoordinate coordinate,
             RuleObject mover,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications) =>
+            BlocksTransit(board, coordinate, mover, modifications, moverIgnoresObstacles: false);
+
+        /// <summary>
+        /// The same question for a movement that crosses obstacles because the card text says so
+        /// rather than because the mover was granted p.18's permission.
+        ///
+        /// Milestone 8.23. Blink Strike moves "2 spaces in a straight line through an enemy unit",
+        /// which is the effect's property and not the hero's: nothing about Tigerclaw changes, and
+        /// the very next Move he makes is stopped by that unit again. That is the shape
+        /// <see cref="GuardsDigital.Core.Rules.Displacement.PushPathQuery"/> already reads for
+        /// p.18's Push, and it is read the same way here - the declared crossing and the granted
+        /// permission are two sources of one answer, so they are asked together and the transit rule
+        /// stays in one place.
+        ///
+        /// It answers transit only. Off the map is still nothing rather than an obstacle to cross,
+        /// and where a movement may END is <see cref="BlocksEndOfMovement"/>'s question, which
+        /// neither this flag nor the permission is offered.
+        /// </summary>
+        public static bool BlocksTransit(
+            AdjacentMoveAuthority board,
+            HexCoordinate coordinate,
+            RuleObject mover,
+            RuleModificationSet modifications,
+            bool moverIgnoresObstacles)
         {
             if (board == null)
             {
@@ -83,7 +107,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                     return true;
                 }
 
-                return !HasMoveThroughPermission(mover, modifications);
+                return !MayCrossObstacles(mover, modifications, moverIgnoresObstacles);
             }
 
             if (!board.IsOccupied(coordinate) &&
@@ -92,11 +116,13 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return false;
             }
 
-            return !HasMoveThroughPermission(mover, modifications);
+            return !MayCrossObstacles(mover, modifications, moverIgnoresObstacles);
         }
 
-        private static bool HasMoveThroughPermission(RuleObject mover, RuleModificationSet modifications) =>
-            mover.IsDefined && modifications.HasPermission(mover, RulePermissionKind.MoveThroughObstacles);
+        private static bool MayCrossObstacles(
+            RuleObject mover, RuleModificationSet modifications, bool moverIgnoresObstacles) =>
+            moverIgnoresObstacles ||
+            (mover.IsDefined && modifications.HasPermission(mover, RulePermissionKind.MoveThroughObstacles));
 
         /// <summary>
         /// Whether <paramref name="coordinate"/> may be a movement endpoint. Deliberately identical to

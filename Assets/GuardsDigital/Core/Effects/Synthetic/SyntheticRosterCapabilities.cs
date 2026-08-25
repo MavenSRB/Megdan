@@ -1019,8 +1019,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var actor = BoardObjectReference.ForHero(context.ActorId);
                 var result = new List<ChargeOption>();
+                // Brogan's charge prints no crossing, so it walks p.18's obstacles the way every
+                // Move did before milestone 8.23 - the declaration is the card's, and this card
+                // makes none.
                 foreach (var route in board.FindDirectMoveDestinations(
-                    actor, maximum, context.Modifications))
+                    actor, maximum, context.Modifications, moveIgnoresObstacles: false))
                 {
                     if (route.Cost < minimum || route.Cost > maximum ||
                         !StraightLineQuery.TryGetDirection(

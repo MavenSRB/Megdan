@@ -49,7 +49,27 @@ namespace GuardsDigital.Core.Rules.Movement
             RuleObject mover,
             GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
             int movementAllowance,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications) =>
+            FindReachableDestinations(
+                origin, mover, board, movementAllowance, modifications, moverIgnoresObstacles: false);
+
+        /// <summary>
+        /// The same walk for a movement whose own text crosses obstacles - milestone 8.23's Blink
+        /// Strike, "Move 2 spaces in a straight line through an enemy unit".
+        ///
+        /// <para>The flag reaches the transit predicate and nothing else. It is not a permission
+        /// granted to the mover: it belongs to this movement, so the hero's next Move is stopped by
+        /// the same unit, and p.18's endpoint rule is untouched - a crossing movement still may not
+        /// stop on an obstacle, which is why the space beyond has to be empty for the line to exist
+        /// at all.</para>
+        /// </summary>
+        public static IReadOnlyList<ReachableMovementDestination> FindReachableDestinations(
+            HexCoordinate origin,
+            RuleObject mover,
+            GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
+            int movementAllowance,
+            RuleModificationSet modifications,
+            bool moverIgnoresObstacles)
         {
             if (board == null)
             {
@@ -83,7 +103,8 @@ namespace GuardsDigital.Core.Rules.Movement
             return FindReachableCore(
                 origin,
                 onMap,
-                coordinate => ObstacleQuery.BlocksTransit(board, coordinate, mover, modifications),
+                coordinate => ObstacleQuery.BlocksTransit(
+                    board, coordinate, mover, modifications, moverIgnoresObstacles),
                 coordinate => ObstacleQuery.BlocksEndOfMovement(board, coordinate, modifications),
                 movementAllowance);
         }

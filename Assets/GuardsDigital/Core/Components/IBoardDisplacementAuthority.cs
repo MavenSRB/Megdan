@@ -194,11 +194,17 @@ namespace GuardsDigital.Core.Components
         /// to move another unit or a token in the card text". A token holds no Move-Through permission
         /// of its own - p.19 says tokens are not units - so it reaches the transit predicate as the
         /// named absence rather than as a unit with nothing granted.
+        ///
+        /// <paramref name="moveIgnoresObstacles"/> is milestone 8.23's, and it is required for the
+        /// reason <see cref="ResolvePush"/>'s is: a caller that omitted it would silently be asking
+        /// about a different movement than the card printed. A card text that says nothing about
+        /// crossing passes <c>false</c>, which is p.18's own answer rather than a missing one.
         /// </summary>
         IReadOnlyList<GuardsDigital.Core.Rules.Movement.ReachableMovementDestination> FindDirectMoveDestinations(
             BoardObjectReference mover,
             int allowance,
-            RuleModificationSet modifications);
+            RuleModificationSet modifications,
+            bool moveIgnoresObstacles);
 
         /// <summary>
         /// The shortest routes of empty spaces from <paramref name="origin"/>, for milestone 6.4a's

@@ -111,6 +111,32 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string ActorRadiusParameterName = "actorRadius";
 
         /// <summary>
+        /// Milestone 8.23. Whether this Move crosses obstacles on its way - Blink Strike's "Move 2
+        /// spaces in a straight line <em>through</em> an enemy unit", and Nimble Strike's same
+        /// sentence about a hero.
+        ///
+        /// <para>Optional and defaulting to absent, exactly as
+        /// <see cref="NamedDestinationParameterName"/> and <see cref="ActorRadiusParameterName"/>
+        /// are, so every declaration written before this milestone keeps its exact candidate set: a
+        /// card that says nothing about crossing is a card whose mover is stopped by p.18's
+        /// obstacles.</para>
+        ///
+        /// <para>It is declared on the Move rather than granted to the hero, which is the whole
+        /// distinction p.18's <c>Move Through</c> entry draws. A granted
+        /// <see cref="RulePermissionKind.MoveThroughObstacles"/> is a property of a unit and lasts
+        /// while its source does; this is a property of one printed movement, so nothing about
+        /// Tigerclaw changes and the next space he moves into is closed to him again. p.18's Push
+        /// has read the same pair since milestone 6.4 - see the <c>ignoresObstacles</c> parameter
+        /// beside it - and the two are answered by one transit rule rather than by two.</para>
+        ///
+        /// <para>It reaches transit alone. Where a Move may END is p.18's other sentence, which no
+        /// declaration is offered: a crossing Move still may not stop on an obstacle, which is why
+        /// Blink Strike's line needs the space beyond the crossed unit empty before it exists at
+        /// all.</para>
+        /// </summary>
+        public const string MovesThroughObstaclesParameterName = "movesThroughObstacles";
+
+        /// <summary>
         /// Revision 3, minted at milestone 8.8: revision 2's declaration plus the two things Wasp's
         /// kinetic Skills print that a node's failure policy could not say - the fewest spaces the card
         /// names, and how many units it may push.
@@ -243,7 +269,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter(
                         NamedDestinationParameterName, EffectValueKind.Coordinate, isRequired: false),
                     new EffectCapabilityParameter(
-                        ActorRadiusParameterName, EffectValueKind.Integer, isRequired: false)
+                        ActorRadiusParameterName, EffectValueKind.Integer, isRequired: false),
+                    new EffectCapabilityParameter(
+                        MovesThroughObstaclesParameterName,
+                        EffectValueKind.Boolean,
+                        isRequired: false)
                 },
                 new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) });
 
@@ -379,12 +409,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     namesASpace ? EffectFailurePolicy.UpTo : context.FailurePolicy, distance);
                 var namedDestination = context.Input(NamedDestinationParameterName);
                 var actorRadius = context.Input(ActorRadiusParameterName);
+
+                // Milestone 8.23. An unbound declaration is the absence of the sentence, and the
+                // absence of "through" is p.18's ordinary movement - so a card that never mentions
+                // crossing reaches the same walk it always did.
+                var crossing = context.Input(MovesThroughObstaclesParameterName);
+                var movesThroughObstacles =
+                    crossing.Kind == EffectValueKind.Boolean && crossing.BooleanValue;
                 IEnumerable<HexCoordinate> travelled = DirectMoveDestinations.Admit(
                     destinationPolicy,
                     actorAt,
                     moverAt,
                     components.Board
-                        .FindDirectMoveDestinations(mover, distance, context.Modifications)
+                        .FindDirectMoveDestinations(
+                            mover, distance, context.Modifications, movesThroughObstacles)
                         .Where(destination => admitted.Admits(destination.Cost))
                         .Select(destination => destination.Destination),
                     namedDestination.Kind == EffectValueKind.Coordinate
