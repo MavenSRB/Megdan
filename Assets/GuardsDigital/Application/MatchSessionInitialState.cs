@@ -17,7 +17,7 @@ namespace GuardsDigital.Application
             InitialScenarioDescription scenario,
             QuickGameSetupState setup,
             IEnumerable<BoardMapDefinition> availableMaps,
-            PlaceholderOneVsOneTestConfiguration initialConfiguration = null,
+            MatchConfiguration initialConfiguration = null,
             ActiveEffectLifecycle initialTiming = null)
         {
             Scenario = scenario ?? throw new ArgumentNullException(nameof(scenario));
@@ -54,7 +54,7 @@ namespace GuardsDigital.Application
 
         public QuickGameSetupState Setup { get; }
 
-        public PlaceholderOneVsOneTestConfiguration InitialConfiguration { get; }
+        public MatchConfiguration InitialConfiguration { get; }
 
         public ActiveEffectLifecycle InitialTiming { get; }
 

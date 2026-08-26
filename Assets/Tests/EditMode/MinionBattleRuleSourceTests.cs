@@ -215,7 +215,7 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateSession(bool unlockRule, bool insideBattleZone)
         {
             var configuration =
-                PlaceholderOneVsOneTestConfiguration.CreateForMinionBattleRuleFixture(TeamSide.Blue);
+                MatchConfiguration.CreateForMinionBattleRuleFixture(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var fullSetup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

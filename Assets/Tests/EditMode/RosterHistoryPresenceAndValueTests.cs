@@ -27,9 +27,9 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class RosterHistoryPresenceAndValueTests
     {
         private static readonly HeroId Red =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
         private static readonly HeroId Blue =
-            new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
         private static readonly MapId Map = new MapId("roster-history-presence");
         private static readonly EffectCapabilityCatalog RosterCatalog =
             new EffectCapabilityCatalog(SyntheticRosterCapabilities.Handlers());
@@ -45,7 +45,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void HistoryCapabilities_ReadTheExactTurnAndTheRoundOwnedDefeatRecord()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var redAttack = configuration.CardInstances.First(card =>
                 card.OwnerId.Equals(Red) && PrimaryKind(configuration.CardDefinitions, card) == ActionKind.Attack);
             var blueOther = configuration.CardInstances.First(card =>
@@ -178,7 +178,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TwoSyntheticHeroes_UseTheSameTypedDynamicValueQueryForAttackAndRange()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var blueMinion = Minion("dynamic-blue", TeamSide.Blue, new HexCoordinate(0, 1));
             var redMinion = Minion("dynamic-red", TeamSide.Red, new HexCoordinate(1, -1));
             var board = Board(
@@ -326,7 +326,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void DefenseDeclarations_SuppressMinionContributionsAndForbidOnlyPrintedPrimaryBlocks()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var defense = DefenseAction(
                 "suppressed-defense", MinionDefenseContributionPolicy.SuppressAll);
             var defenseDefinition = Definition("suppressed-defense-card", defense);
@@ -404,7 +404,7 @@ namespace GuardsDigital.Tests.EditMode
                 inputs,
                 roundIndex,
                 turnIndex,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 modifications ?? RuleModificationSet.Empty,
                 cards ?? EffectCardState.Absent,
@@ -550,8 +550,8 @@ namespace GuardsDigital.Tests.EditMode
             new QuickGameMinionSetupState(
                 new MinionId(id),
                 new TeamId(side == TeamSide.Red
-                    ? PlaceholderOneVsOneParticipants.RedTeamIdValue
-                    : PlaceholderOneVsOneParticipants.BlueTeamIdValue),
+                    ? StagedBoardParticipants.RedTeamIdValue
+                    : StagedBoardParticipants.BlueTeamIdValue),
                 side,
                 StandardMinionType.Melee,
                 new ConfiguredSpawnPointReference(Map, new SpawnPointId($"spawn-{id}")),

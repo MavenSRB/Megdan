@@ -163,7 +163,7 @@ namespace GuardsDigital.Tests.EditMode
             out HeroId brogan, out HeroId ally, BroganAllyStage stage = BroganAllyStage.StartingHand)
         {
             var configuration =
-                PlaceholderOneVsOneTestConfiguration.CreateStagedBroganWithAllyForInternalTest(
+                MatchConfiguration.CreateStagedBroganWithAllyForInternalTest(
                     TeamSide.Red, stage);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -172,8 +172,8 @@ namespace GuardsDigital.Tests.EditMode
                 map,
                 configuration.TieBreakerState);
 
-            brogan = new HeroId(PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue);
-            ally = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            brogan = new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue);
+            ally = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
             var scenario = new InitialScenarioDescription(
                 configuration.Participants,

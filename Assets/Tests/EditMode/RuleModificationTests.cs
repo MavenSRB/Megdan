@@ -36,8 +36,8 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class RuleModificationTests
     {
-        private static readonly HeroId RedHero = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-        private static readonly HeroId BlueHero = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+        private static readonly HeroId RedHero = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+        private static readonly HeroId BlueHero = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
         private static readonly CardInstanceId SourceCard = new CardInstanceId("synthetic-modification-card");
         private static readonly ActionDefinitionId SourceAction = new ActionDefinitionId("synthetic-modification-action");
 
@@ -226,7 +226,7 @@ namespace GuardsDigital.Tests.EditMode
                     new HeroOccupancy(BlueHero, new HexCoordinate(1, 0))
                 },
                 CreateMinion("blue-melee", TeamSide.Blue, StandardMinionType.Melee, new HexCoordinate(0, 1)));
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var blue = RuleObject.ForHero(BlueHero);
             var modifications = Set(
                 Applied(RuleModification.ForImmunity(RuleActivity.Attack), blue, "attack-immunity", 0),
@@ -322,7 +322,7 @@ namespace GuardsDigital.Tests.EditMode
                 "magnetic-shape",
                 0,
                 TeamSide.Red));
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var sourceAlly = RuleObject.ForHero(RedHero);
             var sourceEnemy = RuleObject.ForHero(BlueHero);
 
@@ -393,7 +393,7 @@ namespace GuardsDigital.Tests.EditMode
                 new HeroOccupancy(RedHero, sourceAt),
                 new HeroOccupancy(BlueHero, actorAt)
             });
-            var participants = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red)
+            var participants = MatchConfiguration.CreateForInternalTest(TeamSide.Red)
                 .Participants;
             var timing = new ActiveEffectLifecycle();
             timing.Create(
@@ -550,7 +550,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OnlyActiveEffectsSupplyRules_AndTokensSupplyThemWhilePlaced()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var board = CreateBoard(new[] { new HeroOccupancy(RedHero, new HexCoordinate(0, 0)) });
             var timing = new ActiveEffectLifecycle();
             timing.Create(
@@ -620,7 +620,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TeamAndGlobalScopes_ExpandToEveryHeroTheyName()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var timing = new ActiveEffectLifecycle();
             timing.Create(
                 new ActiveEffectId("team-effect"),
@@ -662,7 +662,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void DefenseTotal_ComposesPrintedMinionActiveAndContinuousContributions()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var participants = configuration.Participants;
             var board = CreateBoard(
                 new[]
@@ -749,7 +749,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void FastTravelOffer_DisappearsUnderItsRestrictionWhileOtherOffersRemain()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var red = configuration.RedHand.Instances[0];
             var blue = configuration.BlueHand.Instances[0];
             var board = CreateBoard(new[]
@@ -834,7 +834,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ModificationsSurviveSnapshotRestore_WithoutAnyRuleEnteringThePayload()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var red = configuration.RedHand.Instances[0];
             var blue = configuration.BlueHand.Instances[0];
             var board = CreateBoard(
@@ -1023,8 +1023,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var mapId = new MapId("synthetic-coordinate-board");
             var teamId = new TeamId(side == TeamSide.Red
-                ? PlaceholderOneVsOneParticipants.RedTeamIdValue
-                : PlaceholderOneVsOneParticipants.BlueTeamIdValue);
+                ? StagedBoardParticipants.RedTeamIdValue
+                : StagedBoardParticipants.BlueTeamIdValue);
             return new QuickGameMinionSetupState(
                 new MinionId(id),
                 teamId,

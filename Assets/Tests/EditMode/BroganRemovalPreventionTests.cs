@@ -230,10 +230,10 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private sealed class GuardFixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
 
             private GuardFixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 AdjacentMoveAuthority board,
                 HeroId brogan,
                 HeroId wasp)
@@ -264,7 +264,7 @@ namespace GuardsDigital.Tests.EditMode
             public static GuardFixture Create()
             {
                 var configuration =
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganForInternalTest(
+                    MatchConfiguration.CreateStagedBroganForInternalTest(
                         TeamSide.Red);
                 var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
                 var setup = QuickGameSetupAuthority.Create(

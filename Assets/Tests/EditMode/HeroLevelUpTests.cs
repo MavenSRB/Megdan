@@ -588,15 +588,15 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private sealed class LevelUpFixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
             private readonly List<HeroLevelUpOutcome> outcomes = new List<HeroLevelUpOutcome>();
             private int awardCount;
 
             public LevelUpFixture(int redCoins)
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
-                RedHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-                BlueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                configuration = MatchConfiguration.CreateForShowcaseFixture();
+                RedHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+                BlueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
                 Levels = new HeroProgressionState(configuration.Participants);
                 Items = new HeroItemState(configuration.Participants);
                 CoinLedger = new HeroCoinLedger(configuration.Participants);

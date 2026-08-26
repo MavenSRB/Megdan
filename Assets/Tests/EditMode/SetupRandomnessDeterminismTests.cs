@@ -35,7 +35,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void NormalSetup_ReproducesItsTieBreakerSideFromTheRecordedSeedAlone()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = MatchConfiguration.Create();
 
             Assert.That(configuration.SetupSeed.IsRecorded, Is.True,
                 "Normal setup must record the draw it made. Without it the side can only be copied " +
@@ -52,7 +52,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ReplayingANormalSetupScenario_ReachesTheSameSideFromRecordedStateAlone()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = MatchConfiguration.Create();
             var scenario = CreateScenario(configuration);
 
             Assert.That(scenario.SetupSeed, Is.EqualTo(configuration.SetupSeed),
@@ -73,9 +73,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void CapturingAndRestoringAConfiguration_KeepsTheRecordedDraw()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = MatchConfiguration.Create();
 
-            var restored = PlaceholderOneVsOneTestConfiguration.Restore(
+            var restored = MatchConfiguration.Restore(
                 configuration.CaptureRestoreState());
 
             Assert.That(restored.SetupSeed, Is.EqualTo(configuration.SetupSeed),
@@ -131,7 +131,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AnExplicitlySelectedSide_RecordsNoDrawAndIsUnchanged()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
 
             Assert.That(configuration.TieBreakerState,
                 Is.EqualTo(new TieBreakerState(TeamSide.Red)),
@@ -170,7 +170,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static InitialScenarioDescription CreateScenario(
-            PlaceholderOneVsOneTestConfiguration configuration)
+            MatchConfiguration configuration)
         {
             var map = BoardMapDefinition.CreateSynthetic(
                 new MapId("setup-randomness-map"),

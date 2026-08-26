@@ -13,28 +13,28 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PlaceholderConfiguration_CreatesOneRedAndOneBlueHeroWithStableRelationships()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var participants = configuration.Participants;
 
             Assert.That(participants.Teams, Has.Count.EqualTo(2));
             Assert.That(participants.Players, Has.Count.EqualTo(2));
             Assert.That(participants.Heroes, Has.Count.EqualTo(2));
 
-            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var redHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var blueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             Assert.That(redHeroId.Value, Is.EqualTo("primitive-hero"));
             Assert.That(participants.GetTeamForHero(redHeroId).Side, Is.EqualTo(TeamSide.Red));
             Assert.That(participants.GetTeamForHero(blueHeroId).Side, Is.EqualTo(TeamSide.Blue));
-            Assert.That(participants.GetPlayerForHero(redHeroId).Id.Value, Is.EqualTo(PlaceholderOneVsOneParticipants.RedPlayerIdValue));
-            Assert.That(participants.GetPlayerForHero(blueHeroId).Id.Value, Is.EqualTo(PlaceholderOneVsOneParticipants.BluePlayerIdValue));
+            Assert.That(participants.GetPlayerForHero(redHeroId).Id.Value, Is.EqualTo(StagedBoardParticipants.RedPlayerIdValue));
+            Assert.That(participants.GetPlayerForHero(blueHeroId).Id.Value, Is.EqualTo(StagedBoardParticipants.BluePlayerIdValue));
         }
 
         [Test]
         public void PlaceholderConfiguration_GivesEachHeroFiveDistinctOwnedPlayableCards()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var redHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var blueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
             Assert.That(configuration.RedHand.DealtDefinitions, Has.Count.EqualTo(5));
             Assert.That(configuration.RedHand.Instances, Has.Count.EqualTo(5));
@@ -82,8 +82,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OriginalPhaseOneCardOwners_StillResolveToTheStableRedHero()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
-            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var participants = StagedBoardParticipants.Create();
+            var redHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
             var phaseOneHand = SyntheticShowcaseHand.Create(redHeroId);
 
             foreach (var card in phaseOneHand.Instances)

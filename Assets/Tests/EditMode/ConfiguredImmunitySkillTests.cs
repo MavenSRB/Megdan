@@ -690,8 +690,8 @@ namespace GuardsDigital.Tests.EditMode
             new EffectCapabilityContext(
                 new EffectNodeId("card-text-activity-node"),
                 EffectFailurePolicy.Mandatory,
-                new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
-                new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
+                new HeroId(StagedBoardParticipants.RedHeroIdValue),
+                new HeroId(StagedBoardParticipants.RedHeroIdValue),
                 new CardInstanceId("card-text-activity-card"),
                 new CardDefinitionReference(new CardDefinitionId("fixture-radius-context"), "fixture-rev-1"),
                 new ActionDefinitionId("card-text-activity-action"),
@@ -702,7 +702,7 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 1,
                 1,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 modifications,
                 EffectCardState.Absent,
@@ -721,9 +721,9 @@ namespace GuardsDigital.Tests.EditMode
                 new[]
                 {
                     new HeroOccupancy(
-                        new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue), new HexCoordinate(0, 0)),
+                        new HeroId(StagedBoardParticipants.RedHeroIdValue), new HexCoordinate(0, 0)),
                     new HeroOccupancy(
-                        new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue), new HexCoordinate(1, 0))
+                        new HeroId(StagedBoardParticipants.BlueHeroIdValue), new HexCoordinate(1, 0))
                 },
                 Array.Empty<ObstacleOccupancy>());
         }
@@ -734,7 +734,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static RuleModificationSet CardTextSkillImmunity()
         {
-            var blue = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var blue = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var definition = new ActiveEffectDefinition(
                 "card-text-activity-immunity-effect",
                 ActiveEffectAffectedScopeKind.ControllerHero,
@@ -765,14 +765,14 @@ namespace GuardsDigital.Tests.EditMode
                 new TieBreakerState(TeamSide.Red));
 
             var set = RuleModificationQuery.Build(
-                timing, null, PlaceholderOneVsOneParticipants.Create(),
+                timing, null, StagedBoardParticipants.Create(),
                 new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null,
                 null);
             Assert.That(
                 set.IsImmuneTo(
                     RuleObject.ForHero(blue),
                     RuleActivity.Skill,
-                    RuleObject.ForHero(new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue))),
+                    RuleObject.ForHero(new HeroId(StagedBoardParticipants.RedHeroIdValue))),
                 Is.True,
                 "The fixture must actually hold the immunity, or the case above proves nothing.");
             return set;
@@ -949,7 +949,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateAdjacentSkillSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForSkillFixture(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

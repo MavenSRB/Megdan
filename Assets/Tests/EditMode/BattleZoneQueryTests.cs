@@ -22,7 +22,7 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class BattleZoneQueryTests
     {
-        private static readonly HeroId Hero = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+        private static readonly HeroId Hero = new HeroId(StagedBoardParticipants.RedHeroIdValue);
         private static readonly MapId Map = new MapId("synthetic-battle-zone-query-map");
 
         [Test]
@@ -134,7 +134,7 @@ namespace GuardsDigital.Tests.EditMode
         private static QuickGameMinionSetupState Minion(string id, HexCoordinate at) =>
             new QuickGameMinionSetupState(
                 new MinionId(id),
-                new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue),
+                new TeamId(StagedBoardParticipants.RedTeamIdValue),
                 TeamSide.Red,
                 StandardMinionType.Melee,
                 new ConfiguredSpawnPointReference(Map, new SpawnPointId("zone-query-spawn")),

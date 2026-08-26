@@ -33,8 +33,8 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class DisplacementCapabilityTests
     {
-        private static readonly HeroId Actor = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-        private static readonly HeroId Other = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+        private static readonly HeroId Actor = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+        private static readonly HeroId Other = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
         private static readonly MinionId Minion = new MinionId("displacement-capability-minion");
         private static readonly MinionId AlliedMinion =
             new MinionId("displacement-capability-allied-minion");
@@ -932,7 +932,7 @@ namespace GuardsDigital.Tests.EditMode
             var set = RuleModificationQuery.Build(
                 timing,
                 null,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 new TieBreakerState(TeamSide.Red),
                 UnlockedUltimateSet.None, RuleObject.None, null,
                 null);
@@ -1108,7 +1108,7 @@ namespace GuardsDigital.Tests.EditMode
                 inputs,
                 1,
                 1,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 modifications,
                 EffectCardState.Absent,
@@ -1159,7 +1159,7 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     new QuickGameMinionSetupState(
                         Minion,
-                        new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue),
+                        new TeamId(StagedBoardParticipants.BlueTeamIdValue),
                         TeamSide.Blue,
                         StandardMinionType.Melee,
                         new ConfiguredSpawnPointReference(Map, new SpawnPointId("spawn-capability")),
@@ -1258,8 +1258,8 @@ namespace GuardsDigital.Tests.EditMode
             new QuickGameMinionSetupState(
                 minionId,
                 new TeamId(side == TeamSide.Blue
-                    ? PlaceholderOneVsOneParticipants.BlueTeamIdValue
-                    : PlaceholderOneVsOneParticipants.RedTeamIdValue),
+                    ? StagedBoardParticipants.BlueTeamIdValue
+                    : StagedBoardParticipants.RedTeamIdValue),
                 side,
                 StandardMinionType.Melee,
                 new ConfiguredSpawnPointReference(Map, new SpawnPointId("spawn-capability")),
@@ -1337,7 +1337,7 @@ namespace GuardsDigital.Tests.EditMode
             var set = RuleModificationQuery.Build(
                 timing,
                 null,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 new TieBreakerState(TeamSide.Red),
                 UnlockedUltimateSet.None, RuleObject.None, null,
                 null);

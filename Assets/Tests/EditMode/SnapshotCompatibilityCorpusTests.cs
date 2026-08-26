@@ -1488,7 +1488,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateCorrectionSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForSkillFixture(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -1599,7 +1599,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static MatchSession CreateComponentSession() =>
-            CreateFixtureSession(PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue));
+            CreateFixtureSession(MatchConfiguration.CreateForSkillFixture(TeamSide.Blue));
 
         /// <summary>
         /// One session from one named fixture configuration. Extracted at milestone 8.6, when the
@@ -1607,7 +1607,7 @@ namespace GuardsDigital.Tests.EditMode
         /// for every fixture configuration, and only which hands are dealt differs.
         /// </summary>
         private static MatchSession CreateFixtureSession(
-            PlaceholderOneVsOneTestConfiguration configuration)
+            MatchConfiguration configuration)
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -1628,7 +1628,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateSessionWithMinionImbalance()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var fullSetup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -1704,7 +1704,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

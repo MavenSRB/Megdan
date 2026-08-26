@@ -381,7 +381,7 @@ namespace GuardsDigital.Tests.EditMode
             (string, HexCoordinate)[] minionMoves = null,
             IEnumerable<HexCoordinate> obstacles = null)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(revealedSide);
+            var configuration = MatchConfiguration.CreateForInternalTest(revealedSide);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var fullSetup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

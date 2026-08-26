@@ -13,7 +13,7 @@ namespace GuardsDigital.Tests.EditMode
         public void MirroredWaspQuickGame_ResolvesExactOfficialMapSetupFromConfiguration()
         {
             var definition = LoadOfficialMap();
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var configuration = QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne();
             var tieBreaker = TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Blue);
 
@@ -58,7 +58,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var official = LoadOfficialMap();
             var configuration = QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne();
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var tieBreaker = TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Red);
 
             AssertReason(
@@ -103,7 +103,7 @@ namespace GuardsDigital.Tests.EditMode
                 QuickGameSetupRejectionReason.CrossMapReference,
                 () => QuickGameSetupAuthority.Create(
                     configuration,
-                    PlaceholderOneVsOneParticipants.Create(),
+                    StagedBoardParticipants.Create(),
                     official,
                     TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Red)));
         }
@@ -131,7 +131,7 @@ namespace GuardsDigital.Tests.EditMode
                 QuickGameSetupRejectionReason.SpawnSpaceMismatch,
                 () => QuickGameSetupAuthority.Create(
                     configuration,
-                    PlaceholderOneVsOneParticipants.Create(),
+                    StagedBoardParticipants.Create(),
                     official,
                     TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Blue)));
         }

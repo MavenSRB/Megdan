@@ -35,13 +35,13 @@ namespace GuardsDigital.Tests.EditMode
                 switch (tier)
                 {
                     case 3:
-                        return PlaceholderOneVsOneTestConfiguration
+                        return MatchConfiguration
                             .CreateStagedSabinaTierThreeForInternalTest(TeamSide.Red, branch);
                     case 2:
-                        return PlaceholderOneVsOneTestConfiguration
+                        return MatchConfiguration
                             .CreateStagedSabinaTierTwoForInternalTest(TeamSide.Red, branch);
                     default:
-                        return PlaceholderOneVsOneTestConfiguration
+                        return MatchConfiguration
                             .CreateStagedSabinaForInternalTest(TeamSide.Red);
                 }
             },

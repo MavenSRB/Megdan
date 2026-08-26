@@ -567,7 +567,7 @@ namespace GuardsDigital.Tests.EditMode
             out HeroId defender, out MinionId supportingMinion)
         {
             var configuration =
-                PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(TeamSide.Red);
+                MatchConfiguration.CreateVerifiedMirrorForInternalTest(TeamSide.Red);
             var map = BoardMapDefinition.CreateSynthetic(
                 new MapId("block-minion-defense-preview"),
                 1,

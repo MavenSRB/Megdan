@@ -61,7 +61,7 @@ namespace GuardsDigital.Tests.EditMode
                 "same kind of site the capability catalog already was: Tigerclaw's Poison marker is " +
                 "the first hero-owned rules component, and a registered marker definition joins the " +
                 "one list a snapshot compares here or nowhere"),
-            (typeof(PlaceholderOneVsOneTestConfiguration),
+            (typeof(MatchConfiguration),
                 "composes the staged match and therefore states which printed set each seat is dealt"),
             (typeof(QuickGameSetupConfiguration),
                 "binds a hero content identity to a participant at a configured spawn point, which is " +

@@ -35,10 +35,10 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly MapId Map = new MapId("synthetic-exchange-map");
 
         private static readonly HeroId RedActor =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
         private static readonly HeroId BlueActor =
-            new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
         private static readonly HexCoordinate ActorAt = new HexCoordinate(0, 0);
         private static readonly HexCoordinate NextTo = new HexCoordinate(1, 0);
@@ -321,7 +321,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var board = CreateLineBoard();
             PlaceHazard(board, NextTo);
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var before = RuleModificationQuery.Build(
                 null, board, participants, TieBreakerState.Unrevealed, UnlockedUltimateSet.None, RuleObject.None, null,
                 null);
@@ -536,7 +536,7 @@ namespace GuardsDigital.Tests.EditMode
                 BoardObjectReference.ForMinion(heavy),
                 new RemovalStageDecision(
                     RuleActivity.Skill, RuleObject.ForHero(actor), board, board,
-                    PlaceholderOneVsOneParticipants.Create(), RuleModificationSet.Empty,
+                    StagedBoardParticipants.Create(), RuleModificationSet.Empty,
                     LanePushCauseKind.Removal));
 
             Assert.That(outcome.Accepted, Is.True,
@@ -761,7 +761,7 @@ namespace GuardsDigital.Tests.EditMode
                     RuleObject.ForHero(BlueActor),
                     board,
                     board,
-                    PlaceholderOneVsOneParticipants.Create(),
+                    StagedBoardParticipants.Create(),
                     CountsAsMinion(redHero),
                     LanePushCauseKind.Removal));
 
@@ -834,7 +834,7 @@ namespace GuardsDigital.Tests.EditMode
                 inputs,
                 1,
                 1,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 modifications,
                 EffectCardState.Absent,
@@ -850,7 +850,7 @@ namespace GuardsDigital.Tests.EditMode
                 RuleObject.ForHero(BlueActor),
                 board,
                 board,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 RuleModificationSet.Empty,
                 LanePushCauseKind.Removal);
 
@@ -993,7 +993,7 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     new QuickGameMinionSetupState(
                         new MinionId("exchange-minion-01"),
-                        new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue),
+                        new TeamId(StagedBoardParticipants.RedTeamIdValue),
                         TeamSide.Red,
                         StandardMinionType.Melee,
                         new ConfiguredSpawnPointReference(Map, new SpawnPointId("spawn-exchange")),
@@ -1005,7 +1005,7 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>The official map with the configured setup, which is the only board with a Battle Zone.</summary>
         private static AdjacentMoveAuthority CreateOfficialBoard()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

@@ -201,9 +201,9 @@ namespace GuardsDigital.Tests.EditMode
             out MarkerAttachmentRegister markers,
             out AdjacentMoveAuthority board)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             board = new AdjacentMoveAuthority(
                 CreateRadiusThreeCoordinates(),
                 new[]
@@ -248,7 +248,7 @@ namespace GuardsDigital.Tests.EditMode
         private sealed class DefeatFixture
         {
             public DefeatFixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 HeroId attackerId,
                 HeroId defenderId,
                 CardActionResolutionAuthority authority,
@@ -261,7 +261,7 @@ namespace GuardsDigital.Tests.EditMode
                 AttackOffer = attackOffer;
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
             public HeroId AttackerId { get; }
             public HeroId DefenderId { get; }
             public CardActionResolutionAuthority Authority { get; }

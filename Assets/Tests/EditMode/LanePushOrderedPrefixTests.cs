@@ -406,7 +406,7 @@ namespace GuardsDigital.Tests.EditMode
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 map,
                 new TieBreakerState(TeamSide.Red));
             return new AdjacentMoveAuthority(

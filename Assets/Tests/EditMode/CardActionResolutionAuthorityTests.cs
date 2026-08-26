@@ -728,7 +728,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void StartTurnSkill_RejectsFabricatedOrNoLongerAvailableOffer()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForSkillFixture(TeamSide.Red);
             var redFocus = configuration.CardInstances.Single(card => card.Id.Value.Contains("red-focus"));
             var forgedOffer = new ActionOffer(
                 redFocus.Id,

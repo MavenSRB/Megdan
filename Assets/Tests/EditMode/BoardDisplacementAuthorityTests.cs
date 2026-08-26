@@ -364,7 +364,7 @@ namespace GuardsDigital.Tests.EditMode
         private static QuickGameMinionSetupState CreateMinionSetup(HexCoordinate coordinate) =>
             new QuickGameMinionSetupState(
                 Minion,
-                new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue),
+                new TeamId(StagedBoardParticipants.RedTeamIdValue),
                 TeamSide.Red,
                 StandardMinionType.Melee,
                 new ConfiguredSpawnPointReference(Map, new SpawnPointId("spawn-displacement")),

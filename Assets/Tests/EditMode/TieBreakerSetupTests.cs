@@ -10,7 +10,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void NormalSetup_StoresOneLegalRevealedSideInAuthoritativeState()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = MatchConfiguration.Create();
 
             Assert.That(configuration.TieBreakerState.IsDefined, Is.True);
             Assert.That(
@@ -23,7 +23,7 @@ namespace GuardsDigital.Tests.EditMode
         public void InternalTestSetup_StoresTheExplicitSide(TeamSide explicitSide)
         {
             var configuration =
-                PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(explicitSide);
+                MatchConfiguration.CreateForInternalTest(explicitSide);
 
             Assert.That(configuration.TieBreakerState.RevealedSide, Is.EqualTo(explicitSide));
         }
@@ -32,7 +32,7 @@ namespace GuardsDigital.Tests.EditMode
         public void InternalTestSetup_RejectsAnUndefinedSide()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
-                PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.None));
+                MatchConfiguration.CreateForInternalTest(TeamSide.None));
         }
 
         [Test]

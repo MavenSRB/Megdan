@@ -25,9 +25,24 @@ namespace GuardsDigital.Core.Participants
         TierThree = 2
     }
 
-    public sealed class PlaceholderOneVsOneTestConfiguration
+    /// <summary>
+    /// A composed match: who is playing, what each seat holds, and the content that match runs on.
+    ///
+    /// <para><b>Milestone 8.25b named this type after what it composes.</b> It was
+    /// `PlaceholderOneVsOneTestConfiguration` from milestone 2.1 until then, and by 8.25 every word of
+    /// that name was false: <see cref="Create"/> composes rulebook p.5's six official seats, it is the
+    /// configuration a player loads rather than a test one, and nothing about it stands in for
+    /// something later. Only the name had stayed behind, which is why the rename is its own
+    /// milestone and changes no behaviour.</para>
+    ///
+    /// <para>The staged boards keep saying they are staged: <see cref="CreateVerifiedMirrorForInternalTest"/>,
+    /// the per-hero <c>CreateStaged…ForInternalTest</c> arms and the <c>CreateFor…Fixture</c> arms are
+    /// named for the fixture that asks for them, and <see cref="StagedBoardParticipants"/> states the
+    /// seats they deal.</para>
+    /// </summary>
+    public sealed class MatchConfiguration
     {
-        private PlaceholderOneVsOneTestConfiguration(
+        private MatchConfiguration(
             MatchParticipants participants,
             ConfiguredHand redHand,
             ConfiguredHand blueHand,
@@ -56,7 +71,7 @@ namespace GuardsDigital.Core.Participants
         /// so the fixtures whose subject really is a one-versus-one board keep saying what they mean.
         /// </para>
         /// </summary>
-        private PlaceholderOneVsOneTestConfiguration(
+        private MatchConfiguration(
             MatchParticipants participants,
             IEnumerable<ConfiguredHand> hands,
             TieBreakerState tieBreakerState,
@@ -83,7 +98,7 @@ namespace GuardsDigital.Core.Participants
             if (!tieBreakerState.IsDefined)
             {
                 throw new ArgumentException(
-                    "The test configuration requires authoritative Tie Breaker setup state.",
+                    "A configuration requires authoritative Tie Breaker setup state.",
                     nameof(tieBreakerState));
             }
 
@@ -173,14 +188,14 @@ namespace GuardsDigital.Core.Participants
         public ConfiguredHand AllyHand => Hands.FirstOrDefault(hand =>
             string.Equals(
                 OwnerOf(hand).Value,
-                PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue,
+                StagedBoardParticipants.BlueAllyHeroIdValue,
                 StringComparison.Ordinal));
 
         private static HeroId OwnerOf(ConfiguredHand hand) => hand.AllInstances[0].OwnerId;
 
         private ConfiguredHand HandOn(TeamSide side) => Hands.First(hand =>
             !OwnerOf(hand).Value.Equals(
-                PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue, StringComparison.Ordinal) &&
+                StagedBoardParticipants.BlueAllyHeroIdValue, StringComparison.Ordinal) &&
             Participants.GetTeamForHero(OwnerOf(hand)).Side == side);
 
         public TieBreakerState TieBreakerState { get; }
@@ -226,7 +241,7 @@ namespace GuardsDigital.Core.Participants
         /// one seat, and each definition id already carries its own hero's content-set prefix: a card
         /// id therefore still says both which set it belongs to and which seat holds it.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration Create()
+        public static MatchConfiguration Create()
         {
             // Milestone 8.28b. The draw happens once, here, and is recorded before anything derives
             // from it, so the coin flip below can be carried out again from the record and land on the
@@ -242,7 +257,7 @@ namespace GuardsDigital.Core.Participants
         /// selected side, so a fixture can play it without a draw deciding who acts first. `DEV-005`,
         /// exactly as the staged internal-test configurations are.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateOfficialSixPlayerForInternalTest(
+        public static MatchConfiguration CreateOfficialSixPlayerForInternalTest(
             TeamSide initialTieBreakerSide) =>
             CreateOfficialSixPlayer(
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
@@ -257,7 +272,7 @@ namespace GuardsDigital.Core.Participants
         /// makes a side ambiguous - <c>red-01-wasp-magnetic-dagger</c> names the seat, the printed set
         /// and the card in that order.</para>
         /// </summary>
-        private static PlaceholderOneVsOneTestConfiguration CreateOfficialSixPlayer(
+        private static MatchConfiguration CreateOfficialSixPlayer(
             TieBreakerState tieBreakerState, SetupRandomnessSeed setupSeed)
         {
             var participants = OfficialSixPlayerParticipants.Create();
@@ -277,7 +292,7 @@ namespace GuardsDigital.Core.Participants
                     new HeroId(OfficialSixPlayerParticipants.SabinaHeroIdValue), "blue-03")
             };
 
-            return new PlaceholderOneVsOneTestConfiguration(
+            return new MatchConfiguration(
                 participants, hands, tieBreakerState, setupSeed, true);
         }
 
@@ -286,7 +301,7 @@ namespace GuardsDigital.Core.Participants
         /// explicitly selected side, so a fixture can play it without a draw deciding who acts first.
         /// `DEV-005`, exactly as <see cref="CreateVerifiedMirrorForInternalTest"/> is for the mirror.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedArienForInternalTest(
+        public static MatchConfiguration CreateStagedArienForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -305,7 +320,7 @@ namespace GuardsDigital.Core.Participants
         /// which two play rather than a wider match. <see cref="Create"/> - the scene a player loads -
         /// is untouched and still deals Wasp against Arien.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedBroganForInternalTest(
+        public static MatchConfiguration CreateStagedBroganForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -342,17 +357,17 @@ namespace GuardsDigital.Core.Participants
         /// hand holds either. The branch is the second sibling of each colour, which is the half of
         /// p.15's choice those two cards are on.
         /// </param>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedBroganWithAllyForInternalTest(
+        public static MatchConfiguration CreateStagedBroganWithAllyForInternalTest(
             TeamSide initialTieBreakerSide,
             BroganAllyStage stage = BroganAllyStage.StartingHand)
         {
-            var broganId = new HeroId(PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue);
-            return new PlaceholderOneVsOneTestConfiguration(
-                PlaceholderOneVsOneParticipants.CreateWithBlueAlly(),
+            var broganId = new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue);
+            return new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
                 CreateVerifiedWaspHand(TeamSide.Red)(
-                    new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue)),
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue)),
                 CreateVerifiedArienHand(TeamSide.Blue)(
-                    new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue)),
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue)),
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 SetupRandomnessSeed.Unrecorded,
                 allyHand: CreateAllyBroganHand(broganId, stage));
@@ -381,7 +396,7 @@ namespace GuardsDigital.Core.Participants
         /// Brogan holding one Tier II card of each colour on the branch the caller names - the same
         /// pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedBroganTierTwoForInternalTest(
+        public static MatchConfiguration CreateStagedBroganTierTwoForInternalTest(
             TeamSide initialTieBreakerSide, Cards.Verified.BroganUpgradeBranch branch)
         {
             return Create(
@@ -395,7 +410,7 @@ namespace GuardsDigital.Core.Participants
         /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and One
         /// Man Army in Brogan's.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedBroganTierThreeForInternalTest(
+        public static MatchConfiguration CreateStagedBroganTierThreeForInternalTest(
             TeamSide initialTieBreakerSide, Cards.Verified.BroganUpgradeBranch branch)
         {
             var configuration = Create(
@@ -428,7 +443,7 @@ namespace GuardsDigital.Core.Participants
         /// six-player configuration and every hero spawn it assigns. <see cref="Create"/> - the scene a
         /// player loads - is untouched and still deals Wasp against Arien.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedTigerclawForInternalTest(
+        public static MatchConfiguration CreateStagedTigerclawForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -446,7 +461,7 @@ namespace GuardsDigital.Core.Participants
         /// Block against one non-Ranged Block, so which sibling a staged hand took decides which
         /// attacks it can stop at all.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedTigerclawTierTwoForInternalTest(
+        public static MatchConfiguration CreateStagedTigerclawTierTwoForInternalTest(
             TeamSide initialTieBreakerSide, Cards.Verified.TigerclawUpgradeBranch branch)
         {
             return Create(
@@ -460,7 +475,7 @@ namespace GuardsDigital.Core.Participants
         /// with p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and
         /// Cloak and Daggers in Tigerclaw's.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedTigerclawTierThreeForInternalTest(
+        public static MatchConfiguration CreateStagedTigerclawTierThreeForInternalTest(
             TeamSide initialTieBreakerSide, Cards.Verified.TigerclawUpgradeBranch branch)
         {
             var configuration = Create(
@@ -493,7 +508,7 @@ namespace GuardsDigital.Core.Participants
         /// six-player configuration and every hero spawn it assigns. <see cref="Create"/> - the scene a
         /// player loads - is untouched and still deals Wasp against Arien.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedXargathaForInternalTest(
+        public static MatchConfiguration CreateStagedXargathaForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -512,7 +527,7 @@ namespace GuardsDigital.Core.Participants
         /// end-of-round Defeat. Which sibling a staged hand took therefore decides which of her
         /// mechanics exist in that match at all.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedXargathaTierTwoForInternalTest(
+        public static MatchConfiguration CreateStagedXargathaTierTwoForInternalTest(
             TeamSide initialTieBreakerSide, Cards.Verified.XargathaUpgradeBranch branch)
         {
             return Create(
@@ -531,7 +546,7 @@ namespace GuardsDigital.Core.Participants
         /// and Initiative are already scaling with whoever is standing beside her before any card is
         /// played.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedXargathaTierThreeForInternalTest(
+        public static MatchConfiguration CreateStagedXargathaTierThreeForInternalTest(
             TeamSide initialTieBreakerSide, Cards.Verified.XargathaUpgradeBranch branch)
         {
             var configuration = Create(
@@ -571,7 +586,7 @@ namespace GuardsDigital.Core.Participants
         /// configuration this build has, so every one of her faces has something to act on without a
         /// second Blue hero.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedSabinaForInternalTest(
+        public static MatchConfiguration CreateStagedSabinaForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -585,7 +600,7 @@ namespace GuardsDigital.Core.Participants
         /// Sabina holding one Tier II card of each colour on the branch the caller names - the same
         /// pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedSabinaTierTwoForInternalTest(
+        public static MatchConfiguration CreateStagedSabinaTierTwoForInternalTest(
             TeamSide initialTieBreakerSide, Cards.Verified.SabinaUpgradeBranch branch)
         {
             return Create(
@@ -599,7 +614,7 @@ namespace GuardsDigital.Core.Participants
         /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and Big
         /// Sodding Gun in Sabina's.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedSabinaTierThreeForInternalTest(
+        public static MatchConfiguration CreateStagedSabinaTierThreeForInternalTest(
             TeamSide initialTieBreakerSide, Cards.Verified.SabinaUpgradeBranch branch)
         {
             var configuration = Create(
@@ -633,7 +648,7 @@ namespace GuardsDigital.Core.Participants
         /// takes two stagings where the mirror reached Wasp's in one. `DEV-004` terms throughout, for
         /// the reason <see cref="Verified.ArienProgressedHands"/> records.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedArienTierTwoForInternalTest(
+        public static MatchConfiguration CreateStagedArienTierTwoForInternalTest(
             TeamSide initialTieBreakerSide, Cards.Verified.ArienUpgradeBranch branch)
         {
             return Create(
@@ -647,7 +662,7 @@ namespace GuardsDigital.Core.Participants
         /// unlocked on both seats: High Voltage faceup in Red's Ultimate area and Living Tsunami in
         /// Arien's.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateStagedArienTierThreeForInternalTest(
+        public static MatchConfiguration CreateStagedArienTierThreeForInternalTest(
             TeamSide initialTieBreakerSide, Cards.Verified.ArienUpgradeBranch branch)
         {
             var configuration = Create(
@@ -679,7 +694,7 @@ namespace GuardsDigital.Core.Participants
         /// a fixture can play it without a draw deciding who acts first. `DEV-005`, exactly as
         /// <see cref="CreateForInternalTest"/> uses it for the showcase hands.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateVerifiedMirrorForInternalTest(
+        public static MatchConfiguration CreateVerifiedMirrorForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -695,7 +710,7 @@ namespace GuardsDigital.Core.Participants
         /// 8.15, on `DEV-004` terms - a live match cannot be seeded to this position, for the reason
         /// <see cref="Verified.WaspProgressedHands"/> records.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateVerifiedTierTwoMirrorForInternalTest(
+        public static MatchConfiguration CreateVerifiedTierTwoMirrorForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -710,7 +725,7 @@ namespace GuardsDigital.Core.Participants
         /// between the seats, High Voltage faceup in each seat's Ultimate area, and every lower Tier
         /// in the deck. Milestone 8.15, on the same `DEV-004` terms.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateVerifiedTierThreeMirrorForInternalTest(
+        public static MatchConfiguration CreateVerifiedTierThreeMirrorForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             var configuration = Create(
@@ -752,7 +767,7 @@ namespace GuardsDigital.Core.Participants
         /// synthetic Skills asks for it by this name now, so that what a test is holding is legible
         /// from the call rather than from what the default happens to be this milestone.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForShowcaseFixture()
+        public static MatchConfiguration CreateForShowcaseFixture()
         {
             var setupSeed = SetupRandomnessAuthority.DrawSeed();
 
@@ -775,7 +790,7 @@ namespace GuardsDigital.Core.Participants
         /// the defender's card is Wasp's. Nothing synthetic decides anything about the defence: the
         /// Defense value, the discard it spends and the card it comes off are all verified content.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForVerifiedDefenseFixture(
+        public static MatchConfiguration CreateForVerifiedDefenseFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -880,7 +895,7 @@ namespace GuardsDigital.Core.Participants
         /// <c>EffectRoot</c> at all, so a fixture that watches p.14's order must be the only thing that
         /// can change what applies inside it.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForAttackTextFixture(
+        public static MatchConfiguration CreateForAttackTextFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -898,7 +913,7 @@ namespace GuardsDigital.Core.Participants
         /// cards reach pause altitudes no other content in the build reaches, and a fixture asserting
         /// over the ordinary hand would read past them.</para>
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForContinuationFixture(
+        public static MatchConfiguration CreateForContinuationFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -915,7 +930,7 @@ namespace GuardsDigital.Core.Participants
         /// p.8's battle counts and removes, and a fixture asserting over the ordinary hand would be
         /// asserting about a battle nothing had entered.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForMinionBattleRuleFixture(
+        public static MatchConfiguration CreateForMinionBattleRuleFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -932,7 +947,7 @@ namespace GuardsDigital.Core.Participants
         /// theirs: these two sources stop the game at moments no other content reaches, and a fixture
         /// asserting over the ordinary hand would be asserting about a pause nothing had opened.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForPausingSourceFixture(
+        public static MatchConfiguration CreateForPausingSourceFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -945,7 +960,7 @@ namespace GuardsDigital.Core.Participants
         /// Milestone 8.19c1. Red's Ultimate declares the after-Push trigger and Red's hand carries the
         /// Skill that performs rulebook p.18's Push, which is the pair the trigger needs.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForAfterPushFixture(
+        public static MatchConfiguration CreateForAfterPushFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -954,7 +969,7 @@ namespace GuardsDigital.Core.Participants
                 SyntheticShowcaseHand.CreateBlue);
         }
 
-        public static PlaceholderOneVsOneTestConfiguration CreateForInternalTest(
+        public static MatchConfiguration CreateForInternalTest(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -963,16 +978,16 @@ namespace GuardsDigital.Core.Participants
                 SyntheticShowcaseHand.CreateBlue);
         }
 
-        public PlaceholderConfigurationRestoreState CaptureRestoreState() =>
-            new PlaceholderConfigurationRestoreState(
+        public MatchConfigurationRestoreState CaptureRestoreState() =>
+            new MatchConfigurationRestoreState(
                 Participants,
                 CardDefinitions,
                 CardInstances,
                 TieBreakerState,
                 SetupSeed);
 
-        public static PlaceholderOneVsOneTestConfiguration Restore(
-            PlaceholderConfigurationRestoreState state)
+        public static MatchConfiguration Restore(
+            MatchConfigurationRestoreState state)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             var participants = state.Participants;
@@ -1068,7 +1083,7 @@ namespace GuardsDigital.Core.Participants
             // The hands are rebuilt from the flat definition and instance lists a snapshot restores,
             // using only relationships the content itself states; every seat is rebuilt the same way and
             // from the same lists, so a sixth is another owner rather than another rule.
-            return new PlaceholderOneVsOneTestConfiguration(
+            return new MatchConfiguration(
                 participants,
                 participants.Heroes.Select(hero => BuildHand(hero.Id)).ToArray(),
                 state.TieBreakerState,
@@ -1082,7 +1097,7 @@ namespace GuardsDigital.Core.Participants
         /// Separate from the default deliberately: the default configuration is what every pinned
         /// digest and card-matrix fixture measures, so the Skill fixture must not change it.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForSkillFixture(
+        public static MatchConfiguration CreateForSkillFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -1098,7 +1113,7 @@ namespace GuardsDigital.Core.Participants
         /// the whole enclosing action, so adding it to an existing fixture Skill would give every
         /// fixture that plays that Skill a decision it never asked about.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForRepeatFixture(
+        public static MatchConfiguration CreateForRepeatFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -1119,11 +1134,11 @@ namespace GuardsDigital.Core.Participants
         /// alone, and "the opposing hero" is not something a 3v3 match can be asked for, so the
         /// configuration - which is the one place both heroes are known - names them.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForCardStateFixture(
+        public static MatchConfiguration CreateForCardStateFixture(
             TeamSide initialTieBreakerSide)
         {
-            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var redHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var blueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
             return Create(
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
@@ -1138,7 +1153,7 @@ namespace GuardsDigital.Core.Participants
         /// content in the build to print rulebook p.9's Radius icon, so a fixture that measures the
         /// disk that icon scopes must be the only configuration that can change it.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForRadiusFixture(
+        public static MatchConfiguration CreateForRadiusFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -1155,7 +1170,7 @@ namespace GuardsDigital.Core.Participants
         /// so a fixture that watches a chain of three instances must be the only configuration that can
         /// change what that chain does.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForOrbitFixture(
+        public static MatchConfiguration CreateForOrbitFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -1169,7 +1184,7 @@ namespace GuardsDigital.Core.Participants
         /// content in the build to print rulebook p.9's Range icon on a Skill and the first to ask
         /// p.19's straight-line question, so it is separate for exactly the reason the Radius pair is.
         /// </summary>
-        public static PlaceholderOneVsOneTestConfiguration CreateForKinesisFixture(
+        public static MatchConfiguration CreateForKinesisFixture(
             TeamSide initialTieBreakerSide)
         {
             return Create(
@@ -1185,7 +1200,7 @@ namespace GuardsDigital.Core.Participants
         /// combination again, and the shape stayed, because it is what lets the three fixture hands
         /// differ from the ordinary one without any of them naming a flag.
         /// </summary>
-        private static PlaceholderOneVsOneTestConfiguration Create(
+        private static MatchConfiguration Create(
             TieBreakerState tieBreakerState,
             Func<HeroId, ConfiguredHand> redHand,
             Func<HeroId, ConfiguredHand> blueHand)
@@ -1199,17 +1214,17 @@ namespace GuardsDigital.Core.Participants
         /// first records the draw it made, the second records <see cref="SetupRandomnessSeed.Unrecorded"/>
         /// because it made none.
         /// </summary>
-        private static PlaceholderOneVsOneTestConfiguration Create(
+        private static MatchConfiguration Create(
             TieBreakerState tieBreakerState,
             SetupRandomnessSeed setupSeed,
             Func<HeroId, ConfiguredHand> redHand,
             Func<HeroId, ConfiguredHand> blueHand)
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
-            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var participants = StagedBoardParticipants.Create();
+            var redHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var blueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
-            return new PlaceholderOneVsOneTestConfiguration(
+            return new MatchConfiguration(
                 participants,
                 redHand(redHeroId),
                 blueHand(blueHeroId),

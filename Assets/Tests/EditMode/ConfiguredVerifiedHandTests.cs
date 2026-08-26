@@ -87,7 +87,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryConfiguredHand_HoldsThePrintedStartingFiveWithTheRemainingThirteenInTheDeck()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = MatchConfiguration.Create();
             Assert.That(configuration.Hands, Has.Count.EqualTo(6),
                 "p.5's six-player setup deals one hand per seat.");
 
@@ -121,7 +121,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void NoHandicapCard_IsInstantiatedAnywhereInTheConfiguredMatch()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = MatchConfiguration.Create();
             var boxed = OfficialSeats().SelectMany(seat => seat.Boxed).ToArray();
 
             Assert.That(boxed, Has.Length.EqualTo(6),
@@ -149,7 +149,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSixSeats_HoldSixPrintedSetsAndOneHundredAndEightDistinctInstances()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = MatchConfiguration.Create();
 
             Assert.That(configuration.CardDefinitions.Count, Is.EqualTo(108),
                 "Six heroes are six printed sets of eighteen, and no two seats share one.");

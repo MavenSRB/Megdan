@@ -325,7 +325,7 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateSession(
             Func<IReadOnlyList<QuickGameMinionSetupState>, IEnumerable<QuickGameMinionSetupState>> selectMinions)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var fullSetup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -727,7 +727,7 @@ namespace GuardsDigital.Tests.EditMode
             (string, GuardsDigital.Core.Board.HexCoordinate)[] minionMoves,
             IEnumerable<GuardsDigital.Core.Board.HexCoordinate> obstacleCoordinates)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForSkillFixture(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var fullSetup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

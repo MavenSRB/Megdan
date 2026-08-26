@@ -42,8 +42,8 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class MatchVictoryPathTests
     {
-        private static readonly TeamId RedTeam = new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue);
-        private static readonly TeamId BlueTeam = new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue);
+        private static readonly TeamId RedTeam = new TeamId(StagedBoardParticipants.RedTeamIdValue);
+        private static readonly TeamId BlueTeam = new TeamId(StagedBoardParticipants.BlueTeamIdValue);
         private static readonly ZoneId BlueThrone = new ZoneId("blue-throne");
 
         // -----------------------------------------------------------------------------------------
@@ -356,7 +356,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TwoVictoryPathsClaimingTheSameMatch_AreRejectedRatherThanRanked()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var lives = new TeamLifeState(participants, 1);
             Assert.That(lives.TrySpend(BlueTeam, 1).Accepted, Is.True);
 
@@ -372,7 +372,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TwoTeamsWithNoLifeCountersLeft_AreTheDuplicateWinnerCaseAndAreRejected()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var lives = new TeamLifeState(participants, 1);
             Assert.That(lives.TrySpend(BlueTeam, 1).Accepted, Is.True);
             Assert.That(lives.TrySpend(RedTeam, 1).Accepted, Is.True);
@@ -389,7 +389,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void APushWonByASideThisMatchDoesNotHave_NamesNoWinnerAndIsRejected()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
 
             var reading = MatchOutcomeQuery.Read(
                 participants,
@@ -406,7 +406,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void APhaseThatDisagreesWithEveryVictoryPath_IsRejectedInBothDirections()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var untouched = new TeamLifeState(participants, 3);
             var spent = new TeamLifeState(participants, 1);
             Assert.That(spent.TrySpend(BlueTeam, 1).Accepted, Is.True);
@@ -669,7 +669,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateAdjacentHeroSession(int lifeCountersPerTeam)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -723,7 +723,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateUncontestedPushSession(int waveCount)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -763,7 +763,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateSessionWithTheLastEnemyMinionBesideTheRedHero(int waveCount)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -861,7 +861,7 @@ namespace GuardsDigital.Tests.EditMode
                 team.TeamId, team.TeamSide, lifeCount, team.ThroneZoneId)).ToArray();
 
         private static MatchSession CreateSession(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             BoardMapDefinition map,
             QuickGameSetupState setup)
         {

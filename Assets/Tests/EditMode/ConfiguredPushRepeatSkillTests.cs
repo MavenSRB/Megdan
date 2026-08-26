@@ -897,8 +897,8 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateSession(HexCoordinate blueAt, bool withSkillCards = false)
         {
             var configuration = withSkillCards
-                ? PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue)
-                : PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+                ? MatchConfiguration.CreateForSkillFixture(TeamSide.Blue)
+                : MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

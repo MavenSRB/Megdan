@@ -34,9 +34,11 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class RetrievalNamingConformanceTests
     {
         /// <summary>
-        /// The qualifiers that claim limited reach. `Placeholder` is included because the 1v1 test
-        /// setup a match is still composed from is named for one, and a stage collaborator must never
-        /// be mistaken for it.
+        /// The qualifiers that claim limited reach. `Placeholder` is included because the build still
+        /// declares placeholder board presentation the temporary-structure register owns, and a stage
+        /// collaborator must never be mistaken for one. Milestone 8.25b took the qualifier off the
+        /// configuration a match is composed from, which is why the sample below is a literal rather
+        /// than a live name.
         /// </summary>
         private static readonly string[] LimitedReachQualifiers = { "Synthetic", "Fixture", "Placeholder" };
 
@@ -147,13 +149,15 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Qualifier("Synthetic" + "CardRetrievalHandler"), Is.EqualTo("Synthetic"));
             Assert.That(Qualifier("EndOfRound" + "FixtureCapabilities"), Is.EqualTo("Fixture"));
             Assert.That(Qualifier("TryRetrieveEligible" + "SyntheticCard"), Is.EqualTo("Synthetic"));
-            Assert.That(Qualifier("PlaceholderOneVsOneTestConfiguration"), Is.EqualTo("Placeholder"),
-                "A placeholder setup keeps its qualifier; the rule is about what a match composes, not about it.");
+            Assert.That(Qualifier("Placeholder" + "OneVsOneTestConfiguration"), Is.EqualTo("Placeholder"),
+                "The name milestone 8.25b corrected, kept as a literal so the rule keeps rejecting its shape.");
 
             // Their compliant twins, which are the names in the source today.
             Assert.That(Qualifier(nameof(CardRetrievalHandler)), Is.Null);
             Assert.That(Qualifier(nameof(EndOfRoundStageAvailability)), Is.Null);
             Assert.That(Qualifier(nameof(CardLifecycleAuthority.TryRetrieveEligibleCard)), Is.Null);
+            Assert.That(Qualifier(nameof(MatchConfiguration)), Is.Null,
+                "Milestone 8.25b named the configuration a player loads after what it composes.");
         }
 
         // ---------------------------------------------------------------------------------------
@@ -203,7 +207,7 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>The ordinary configured match on the official map, built the way the aggregate builds it.</summary>
         private static MatchSessionInitialState CreateConfiguredInitialState()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

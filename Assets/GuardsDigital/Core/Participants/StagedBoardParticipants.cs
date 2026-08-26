@@ -2,7 +2,16 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Participants
 {
-    public static class PlaceholderOneVsOneParticipants
+    /// <summary>
+    /// The seats every staged board deals: two teams, one synthetic hero each, and on the one board
+    /// that needs a friendly hero a second Blue seat.
+    ///
+    /// <para><b>Milestone 8.25b named this type after what it seats.</b> It was
+    /// `PlaceholderOneVsOneParticipants` from milestone 2.1 until then, when the seats it states were
+    /// the only ones the build had. <see cref="OfficialSixPlayerParticipants"/> is what a player
+    /// loads; these are the staged fixture boards, and the name now says so.</para>
+    /// </summary>
+    public static class StagedBoardParticipants
     {
         public const string RedTeamIdValue = "red-team";
         public const string BlueTeamIdValue = "blue-team";

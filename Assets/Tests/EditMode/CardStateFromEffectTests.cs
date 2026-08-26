@@ -386,7 +386,7 @@ namespace GuardsDigital.Tests.EditMode
             // than inheriting the first instance's, so it is a separate reach point even though the
             // card-state fixture itself never repeats. Asking the boundary directly is what proves it
             // carries the instances, without inventing a second repeat fixture to carry a discard.
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForCardStateFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForCardStateFixture(TeamSide.Blue);
             var boundary = new ActionBoundaryContext(
                 configuration.CardDefinitions,
                 configuration.CardInstances,
@@ -417,9 +417,9 @@ namespace GuardsDigital.Tests.EditMode
         private static EffectResolutionStepResult StartResolution(
             EffectCardState cardState, out HeroId chooserId)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForCardStateFixture(TeamSide.Blue);
-            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForCardStateFixture(TeamSide.Blue);
+            var redHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var blueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             chooserId = blueHeroId;
 
             var card = configuration.CardInstances.First(instance =>
@@ -457,9 +457,9 @@ namespace GuardsDigital.Tests.EditMode
         {
             var cardState = BuildCardState(chooserHasCards: true);
             var step = StartResolution(cardState, out chooserId);
-            actorId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            actorId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForCardStateFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForCardStateFixture(TeamSide.Blue);
             var card = configuration.CardInstances.First(instance =>
                 instance.Id.Value.Contains("red-demand"));
             var definition = configuration.CardDefinitions.Single(candidate =>
@@ -487,8 +487,8 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static EffectCardState BuildCardState(bool chooserHasCards)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForCardStateFixture(TeamSide.Blue);
-            var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForCardStateFixture(TeamSide.Blue);
+            var blueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var instances = chooserHasCards
                 ? configuration.CardInstances
                 : configuration.CardInstances.Where(instance => !instance.OwnerId.Equals(blueHeroId))
@@ -499,7 +499,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateCardStateSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForCardStateFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForCardStateFixture(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

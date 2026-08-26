@@ -486,7 +486,7 @@ namespace GuardsDigital.Tests.EditMode
             // capability's execution creates an Active effect on the actor. A probe that executed it
             // would grant the effect merely for opening the choice.
             var timing = new ActiveEffectLifecycle();
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var actor = participants.Heroes.First().Id;
             var definition = Choose(
                 EffectFailurePolicy.Mandatory, 1, 1,

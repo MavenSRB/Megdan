@@ -12,13 +12,13 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RewardDeferredHeroDefeatCannotAwardInventedAmounts()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var accounting = new HeroCoinLedger(participants);
             var outcome = new DefeatOutcome(
                 new DefeatOutcomeId("hero-defeat-awaiting-progression"),
-                new DefeatTargetId(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
-                new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue),
-                new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue));
+                new DefeatTargetId(StagedBoardParticipants.BlueHeroIdValue),
+                new TeamId(StagedBoardParticipants.BlueTeamIdValue),
+                new HeroId(StagedBoardParticipants.RedHeroIdValue));
 
             var result = accounting.Award(outcome);
 
@@ -33,30 +33,30 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OneVsOneDefeatAwardsTheActingHeroAndNotTheEnemy()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var accounting = new HeroCoinLedger(participants);
             var result = accounting.Award(Outcome(
                 "defeat-1",
-                PlaceholderOneVsOneParticipants.RedHeroIdValue,
-                PlaceholderOneVsOneParticipants.BlueTeamIdValue,
+                StagedBoardParticipants.RedHeroIdValue,
+                StagedBoardParticipants.BlueTeamIdValue,
                 3,
                 1));
 
             Assert.That(result.Accepted, Is.True);
             Assert.That(result.Operations, Has.Count.EqualTo(1));
             Assert.That(result.Operations[0].RecipientHeroId,
-                Is.EqualTo(new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue)));
+                Is.EqualTo(new HeroId(StagedBoardParticipants.RedHeroIdValue)));
             Assert.That(result.Operations[0].RecipientTeamId,
-                Is.EqualTo(new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue)));
+                Is.EqualTo(new TeamId(StagedBoardParticipants.RedTeamIdValue)));
             Assert.That(result.Operations[0].AwardKind, Is.EqualTo(CoinAwardKind.Defeat));
             Assert.That(result.Operations[0].Amount, Is.EqualTo(3));
             Assert.That(result.Operations[0].BalanceBefore, Is.Zero);
             Assert.That(result.Operations[0].BalanceAfter, Is.EqualTo(3));
             Assert.That(result.Operations[0].FailureBehavior,
                 Is.EqualTo(ResourceOperationFailureBehavior.RejectWithoutMutation));
-            Assert.That(accounting.GetCoins(new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue)),
+            Assert.That(accounting.GetCoins(new HeroId(StagedBoardParticipants.RedHeroIdValue)),
                 Is.EqualTo(3));
-            Assert.That(accounting.GetCoins(new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue)),
+            Assert.That(accounting.GetCoins(new HeroId(StagedBoardParticipants.BlueHeroIdValue)),
                 Is.Zero);
         }
 
@@ -111,12 +111,12 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PreventedRemovalDoesNotEraseOrDuplicateAnAwardedDefeatReward()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var accounting = new HeroCoinLedger(participants);
             var outcome = Outcome(
                 "prevented-removal",
-                PlaceholderOneVsOneParticipants.RedHeroIdValue,
-                PlaceholderOneVsOneParticipants.BlueTeamIdValue,
+                StagedBoardParticipants.RedHeroIdValue,
+                StagedBoardParticipants.BlueTeamIdValue,
                 4,
                 0);
 
@@ -139,19 +139,19 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SeparateDefeatOutcomesAccumulateDeterministically()
         {
-            var accounting = new HeroCoinLedger(PlaceholderOneVsOneParticipants.Create());
-            var actorId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var accounting = new HeroCoinLedger(StagedBoardParticipants.Create());
+            var actorId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
             var first = accounting.Award(Outcome(
                 "first",
                 actorId.Value,
-                PlaceholderOneVsOneParticipants.BlueTeamIdValue,
+                StagedBoardParticipants.BlueTeamIdValue,
                 2,
                 0));
             var second = accounting.Award(Outcome(
                 "second",
                 actorId.Value,
-                PlaceholderOneVsOneParticipants.BlueTeamIdValue,
+                StagedBoardParticipants.BlueTeamIdValue,
                 4,
                 0));
 
@@ -164,18 +164,18 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OverflowIsRejectedAtomicallyAndDoesNotConsumeTheOutcomeId()
         {
-            var accounting = new HeroCoinLedger(PlaceholderOneVsOneParticipants.Create());
-            var actorId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var accounting = new HeroCoinLedger(StagedBoardParticipants.Create());
+            var actorId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
             var first = Outcome(
                 "maximum",
                 actorId.Value,
-                PlaceholderOneVsOneParticipants.BlueTeamIdValue,
+                StagedBoardParticipants.BlueTeamIdValue,
                 int.MaxValue,
                 0);
             var overflow = Outcome(
                 "overflow",
                 actorId.Value,
-                PlaceholderOneVsOneParticipants.BlueTeamIdValue,
+                StagedBoardParticipants.BlueTeamIdValue,
                 1,
                 0);
 
@@ -193,13 +193,13 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void FriendlyDefeatIsRejectedWithoutMutation()
         {
-            var accounting = new HeroCoinLedger(PlaceholderOneVsOneParticipants.Create());
-            var actorId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var accounting = new HeroCoinLedger(StagedBoardParticipants.Create());
+            var actorId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
             var result = accounting.Award(Outcome(
                 "friendly",
                 actorId.Value,
-                PlaceholderOneVsOneParticipants.RedTeamIdValue,
+                StagedBoardParticipants.RedTeamIdValue,
                 2,
                 1));
 
@@ -212,13 +212,13 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void UnknownActorOrTeamIsRejectedWithoutMutation()
         {
-            var accounting = new HeroCoinLedger(PlaceholderOneVsOneParticipants.Create());
-            var knownActor = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var accounting = new HeroCoinLedger(StagedBoardParticipants.Create());
+            var knownActor = new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
             var unknownActor = accounting.Award(Outcome(
                 "unknown-actor",
                 "missing-hero",
-                PlaceholderOneVsOneParticipants.BlueTeamIdValue,
+                StagedBoardParticipants.BlueTeamIdValue,
                 2,
                 0));
             var unknownTeam = accounting.Award(Outcome(

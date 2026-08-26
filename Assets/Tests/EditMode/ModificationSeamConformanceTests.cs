@@ -854,7 +854,7 @@ namespace GuardsDigital.Tests.EditMode
             private const int OverlayRadius = 1;
 
             private SeamFixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 AdjacentMoveAuthority board,
                 HeroId red,
                 HeroId blue,
@@ -871,7 +871,7 @@ namespace GuardsDigital.Tests.EditMode
                 OverlayProbeSpace = overlayProbeSpace;
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
 
             public AdjacentMoveAuthority Board { get; }
 
@@ -891,7 +891,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public static SeamFixture Create()
             {
-                var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
                 var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
                 var setup = QuickGameSetupAuthority.Create(
                     QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

@@ -380,7 +380,7 @@ namespace GuardsDigital.Core.Setup
                 ordinary.Heroes.Concat(new[]
                 {
                     new QuickGameHeroPlacementDefinition(
-                        new HeroId(PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue),
+                        new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue),
                         new HeroContentId("brogan"),
                         "Brogan",
                         new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-hero-02")),
@@ -404,13 +404,13 @@ namespace GuardsDigital.Core.Setup
                 new[]
                 {
                     new QuickGameHeroPlacementDefinition(
-                        new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
+                        new HeroId(StagedBoardParticipants.RedHeroIdValue),
                         new HeroContentId("wasp"),
                         "Wasp",
                         Spawn("red-hero-01"),
                         Space("q-2_r-5")),
                     new QuickGameHeroPlacementDefinition(
-                        new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
+                        new HeroId(StagedBoardParticipants.BlueHeroIdValue),
                         blueContentId,
                         blueDisplayName,
                         Spawn("blue-hero-01"),

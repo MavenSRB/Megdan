@@ -337,7 +337,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateCountsAsSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var redHeroId = configuration.RedHand.Instances[0].OwnerId;
             var blueHeroId = configuration.BlueHand.Instances[0].OwnerId;

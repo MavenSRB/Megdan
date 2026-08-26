@@ -183,7 +183,7 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateSession(bool unlockUltimate, bool insideBattleZone)
         {
             var configuration =
-                PlaceholderOneVsOneTestConfiguration.CreateStagedBroganForInternalTest(TeamSide.Red);
+                MatchConfiguration.CreateStagedBroganForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var fullSetup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateStagedWaspVersusBroganOneVsOne(),

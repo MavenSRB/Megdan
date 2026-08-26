@@ -34,9 +34,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheRecord_TracksEachHeroIndependentlyAndForgetsTheRoundThatEnded()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
-            var red = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var blue = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var participants = StagedBoardParticipants.Create();
+            var red = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var blue = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var record = new RoundLevelingRecord(participants);
 
             Assert.That(record.HasLeveled(red), Is.False);
@@ -67,8 +67,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheRecord_RoundTripsAndRefusesAPayloadThisMatchCouldNotHaveProduced()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
-            var red = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var participants = StagedBoardParticipants.Create();
+            var red = new HeroId(StagedBoardParticipants.RedHeroIdValue);
             var record = new RoundLevelingRecord(participants);
             record.RecordLevelPurchased(red);
 
@@ -93,8 +93,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void APityCoin_IsGrantedWithoutADefeatAndKeepsItsBalanceTransition()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
-            var red = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var participants = StagedBoardParticipants.Create();
+            var red = new HeroId(StagedBoardParticipants.RedHeroIdValue);
             var ledger = new HeroCoinLedger(participants);
 
             Assert.That(ledger.TryGrant(red, 1, CoinGrantKind.PityCoin, out var granted), Is.True);
@@ -367,7 +367,7 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>The ordinary configured match, in which nobody collects a coin all round.</summary>
         private static MatchSession CreateConfiguredSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -429,7 +429,7 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateSessionWithAnAdjacentEnemyMinion(
             out HeroId redHeroId, out MinionId target)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

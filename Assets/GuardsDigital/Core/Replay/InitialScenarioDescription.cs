@@ -93,10 +93,10 @@ namespace GuardsDigital.Core.Replay
         public IReadOnlyList<HeroOccupancy> InitialHeroes => initialHeroes;
         public IReadOnlyList<ObstacleOccupancy> InitialObstacles => initialObstacles;
 
-        public PlaceholderOneVsOneTestConfiguration CreateConfiguration()
+        public MatchConfiguration CreateConfiguration()
         {
-            return PlaceholderOneVsOneTestConfiguration.Restore(
-                new PlaceholderConfigurationRestoreState(
+            return MatchConfiguration.Restore(
+                new MatchConfigurationRestoreState(
                     Participants,
                     definitions,
                     initialCards.Select(CloneCard),

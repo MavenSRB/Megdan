@@ -781,7 +781,7 @@ namespace GuardsDigital.Tests.EditMode
             /// <summary>The ordinary configured match on the official map.</summary>
             public static MatchSession CreateSession()
             {
-                var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
                 var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
                 var setup = QuickGameSetupAuthority.Create(
                     QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

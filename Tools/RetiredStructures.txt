@@ -15,3 +15,6 @@ typed action strategies | 6.1h | The strategy-registry-era name for the action h
 recursive review-correction closure rule | 2026-08-13 governance amendment | The automatic verification-after-every-correction rule; current policy requires fresh verification only for findings that cannot close mechanically
 next milestone profile | 2026-08-13 governance amendment | The retired per-milestone model/reasoning profile assignment; current routing authorizes a milestone without governed model labels
 PlaceholderMovementHand | 8.4 | The synthetic five-card hand that stood in for verified hero content; the configured session deals WaspCardContent and the showcase cards live in SyntheticShowcaseHand
+PlaceholderOneVsOneTestConfiguration | 8.25b | The configuration a player loads, named for a placeholder 1v1 setup it stopped being at 8.25; it is MatchConfiguration
+PlaceholderOneVsOneParticipants | 8.25b | The seats the staged fixture boards deal; they are StagedBoardParticipants, and OfficialSixPlayerParticipants states the six a player loads
+PlaceholderConfigurationRestoreState | 8.25b | The restore inputs of the configuration above; it is MatchConfigurationRestoreState

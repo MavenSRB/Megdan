@@ -325,8 +325,8 @@ namespace GuardsDigital.Tests.EditMode
             // than by building two boards: the Blue hero starts off the board, and p.13's respawn puts
             // it back.
             var session = CreateSessionWithUnlockedUltimates(placeBlueHero: false);
-            var blue = RuleObject.ForHero(new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue));
-            var red = RuleObject.ForHero(new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue));
+            var blue = RuleObject.ForHero(new HeroId(StagedBoardParticipants.BlueHeroIdValue));
+            var red = RuleObject.ForHero(new HeroId(StagedBoardParticipants.RedHeroIdValue));
 
             var beforeRespawn = ModificationsOf(session);
             Assert.That(
@@ -490,10 +490,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(beforeAnyCommand));
 
             var red = session.Projection.Cards.First(card =>
-                card.OwnerId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue &&
+                card.OwnerId.Value == StagedBoardParticipants.RedHeroIdValue &&
                 card.State.Location == CardLocation.Hand);
             var blue = session.Projection.Cards.First(card =>
-                card.OwnerId.Value == PlaceholderOneVsOneParticipants.BlueHeroIdValue &&
+                card.OwnerId.Value == StagedBoardParticipants.BlueHeroIdValue &&
                 card.State.Location == CardLocation.Hand);
             Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
             var afterFirstCommit = session.CaptureSnapshot();
@@ -562,7 +562,7 @@ namespace GuardsDigital.Tests.EditMode
             // A card beside a dashboard that is not an Ultimate.
             var notAnUltimate = CreateSession(instances => instances
                 .Select(card => card.State.Location == CardLocation.Hand &&
-                        card.OwnerId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue
+                        card.OwnerId.Value == StagedBoardParticipants.RedHeroIdValue
                     ? BesideTheDashboard(card)
                     : card)
                 .ToArray());
@@ -572,8 +572,8 @@ namespace GuardsDigital.Tests.EditMode
             // Two Ultimates for one hero. p.16 unlocks one.
             var twoForOneHero = CreateSession(instances =>
             {
-                var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
-                var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+                var configuration = MatchConfiguration.CreateForShowcaseFixture();
+                var redHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
                 var ultimate = configuration.RedHand.Definitions
                     .Single(definition => definition.Progression.IsUltimate);
                 return instances.Concat(new[]
@@ -683,7 +683,7 @@ namespace GuardsDigital.Tests.EditMode
             placeBlueHero);
 
         private static HashSet<CardDefinitionId> UltimateDefinitionIds() =>
-            new HashSet<CardDefinitionId>(PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture()
+            new HashSet<CardDefinitionId>(MatchConfiguration.CreateForShowcaseFixture()
                 .CardDefinitions
                 .Where(definition => definition.Progression.IsUltimate)
                 .Select(definition => definition.Id));
@@ -701,7 +701,7 @@ namespace GuardsDigital.Tests.EditMode
             Func<IReadOnlyList<CardInstance>, IReadOnlyList<CardInstance>> shapeCards,
             bool placeBlueHero = true)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -728,14 +728,14 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private sealed class UltimateFixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
             private readonly List<CardInstance> instances;
 
             public UltimateFixture()
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
-                RedHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-                BlueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                configuration = MatchConfiguration.CreateForShowcaseFixture();
+                RedHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+                BlueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
                 RedUltimate = configuration.RedHand.Definitions
                     .Single(definition => definition.Progression.IsUltimate);
                 BlueUltimate = configuration.BlueHand.Definitions

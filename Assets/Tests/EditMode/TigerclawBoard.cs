@@ -32,13 +32,13 @@ namespace GuardsDigital.Tests.EditMode
                 switch (tier)
                 {
                     case 3:
-                        return PlaceholderOneVsOneTestConfiguration
+                        return MatchConfiguration
                             .CreateStagedTigerclawTierThreeForInternalTest(TeamSide.Red, branch);
                     case 2:
-                        return PlaceholderOneVsOneTestConfiguration
+                        return MatchConfiguration
                             .CreateStagedTigerclawTierTwoForInternalTest(TeamSide.Red, branch);
                     default:
-                        return PlaceholderOneVsOneTestConfiguration
+                        return MatchConfiguration
                             .CreateStagedTigerclawForInternalTest(TeamSide.Red);
                 }
             },

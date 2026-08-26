@@ -1125,8 +1125,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(heroes, Has.Length.EqualTo(2));
             Assert.That(heroes.Select(hero => hero.Occupancy.HeroId.Value), Is.EquivalentTo(new[]
             {
-                PlaceholderOneVsOneParticipants.RedHeroIdValue,
-                PlaceholderOneVsOneParticipants.BlueHeroIdValue
+                StagedBoardParticipants.RedHeroIdValue,
+                StagedBoardParticipants.BlueHeroIdValue
             }));
             Assert.That(selectors, Has.Length.EqualTo(2));
             Assert.That(selectors, Has.All.Matches<PrimitiveHeroPointerSelector>(selector =>
@@ -1220,7 +1220,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadScene();
             var hero = Object.FindObjectsByType<PrimitiveHeroView>()
                 .Single(value => value.Occupancy.HeroId.Value ==
-                    PlaceholderOneVsOneParticipants.RedHeroIdValue);
+                    StagedBoardParticipants.RedHeroIdValue);
             var camera = Object.FindAnyObjectByType<Camera>();
 
             hero.SetTargetCue(
@@ -1617,7 +1617,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(pointerInput.MinionSelectors.Select(value =>
                 value.GetComponent<StandardMinionView>()), Is.EquivalentTo(reboundViews));
             var redHeroId = new GuardsDigital.Core.Units.Heroes.HeroId(
-                PlaceholderOneVsOneParticipants.RedHeroIdValue);
+                StagedBoardParticipants.RedHeroIdValue);
 
             // Reserved before the approach turns rather than looked for after them. Those turns spend
             // Red's highest cards, and since milestone 6.5b converted Red Bombard the team prints

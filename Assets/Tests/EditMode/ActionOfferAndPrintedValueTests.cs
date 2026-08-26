@@ -276,9 +276,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PlaceholderDefinitions_DeriveOwnedNonRangedAndRangedAttackAndDefenseReactionOffers()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var blueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var redHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var blueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
             var redNormalOffers = ActionOfferQuery.GetAvailableOffers(
                 configuration.CardDefinitions,

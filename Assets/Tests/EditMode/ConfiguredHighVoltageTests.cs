@@ -204,7 +204,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static SessionFixture CreateSessionFixture()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration
+            var configuration = MatchConfiguration
                 .CreateVerifiedMirrorForInternalTest(TeamSide.Red);
             var participants = configuration.Participants;
             var redHero = participants.Heroes.Single(hero =>
@@ -228,7 +228,7 @@ namespace GuardsDigital.Tests.EditMode
             bool adjacentEnemyHero,
             bool controllerOnBoard)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration
+            var configuration = MatchConfiguration
                 .CreateVerifiedMirrorForInternalTest(TeamSide.Red);
             var participants = configuration.Participants;
             var redHero = participants.Heroes.Single(hero =>

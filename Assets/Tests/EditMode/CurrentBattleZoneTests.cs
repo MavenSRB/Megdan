@@ -105,7 +105,7 @@ namespace GuardsDigital.Tests.EditMode
         public void AdvancingTheZone_MovesTheQuestionEveryConsumerAsks()
         {
             var board = CreateOfficialBoard();
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var modifications = RuleModificationSet.Empty;
 
             var insideBefore = BattleZoneQuery.FindEffectiveMinionsInside(board, participants, modifications);
@@ -438,7 +438,7 @@ namespace GuardsDigital.Tests.EditMode
         private static QuickGameSetupState CreateSetup(BoardMapDefinition map) =>
             QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 map,
                 new TieBreakerState(TeamSide.Red));
 
@@ -458,7 +458,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

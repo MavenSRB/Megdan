@@ -43,7 +43,7 @@ namespace GuardsDigital.Tests.EditMode
         public void TheRail_ShowsTheUnlockedUltimateAsARevealableIconReadingUnlocked()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorInRadiusOfAMinion(
-                PlaceholderOneVsOneTestConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
+                MatchConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
                     TeamSide.Red),
                 out _, out _, out _);
             var view = new HeroOverviewsUnityView();
@@ -3264,7 +3264,7 @@ namespace GuardsDigital.Tests.EditMode
                 var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
                 var setup = QuickGameSetupAuthority.Create(
                     QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
-                    PlaceholderOneVsOneParticipants.Create(),
+                    StagedBoardParticipants.Create(),
                     map,
                     new TieBreakerState(TeamSide.Red));
                 var blocked = map.SpawnPoints
@@ -3334,7 +3334,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public static RemovalPreventionPrompt CreatePrompt()
             {
-                var deciding = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                var deciding = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
                 var hand = BroganCardContent.CreateHand(deciding, "blue");
                 var payable = hand.Instances
                     .Where(card => BroganCardContent

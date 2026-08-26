@@ -52,7 +52,7 @@ namespace GuardsDigital.Tests.EditMode
             new ActionDefinitionId("lane-push-transition-skill");
 
         private static readonly HeroId RedHero =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
         private static readonly ZoneId StartingBattleZone = new ZoneId("starting-battle-zone");
         private static readonly ZoneId BlueApproach = new ZoneId("blue-approach");
@@ -470,7 +470,7 @@ namespace GuardsDigital.Tests.EditMode
             bool blockBlueApproachSpawnPoints = false)
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                 configuration.Participants,
@@ -771,7 +771,7 @@ namespace GuardsDigital.Tests.EditMode
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 map,
                 new TieBreakerState(TeamSide.Red));
 

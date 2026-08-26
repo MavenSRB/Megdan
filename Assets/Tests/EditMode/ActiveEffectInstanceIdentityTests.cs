@@ -25,7 +25,7 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class ActiveEffectInstanceIdentityTests
     {
         private static readonly HeroId Actor =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
         [Test]
         public void EveryCreator_MintsAFreshInstanceForALaterActivationDespiteASpentOne()
@@ -34,7 +34,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var definition = handler.ActiveEffectDefinitions.Single();
                 var timing = new ActiveEffectLifecycle();
-                var participants = PlaceholderOneVsOneParticipants.Create();
+                var participants = StagedBoardParticipants.Create();
 
                 handler.Execute(Context(timing, participants, 1, 1));
                 Assert.That(timing.Effects, Has.Count.EqualTo(1), definition.DefinitionId);
@@ -64,7 +64,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var definition = handler.ActiveEffectDefinitions.Single();
                 var timing = new ActiveEffectLifecycle();
-                var participants = PlaceholderOneVsOneParticipants.Create();
+                var participants = StagedBoardParticipants.Create();
 
                 handler.Execute(Context(timing, participants, 1, 1));
                 handler.Execute(Context(timing, participants, 1, 1));
@@ -80,7 +80,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var definition = FirstDefinition();
             var timing = new ActiveEffectLifecycle();
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
 
             Assert.That(
                 ActiveEffectInstanceIdentity.Mint(Context(timing, participants, 2, 3), definition),
@@ -96,7 +96,7 @@ namespace GuardsDigital.Tests.EditMode
             var definition = FirstDefinition();
             var other = LastDefinition();
             var timing = new ActiveEffectLifecycle();
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
 
             var baseline = ActiveEffectInstanceIdentity.Mint(
                 Context(timing, participants, 2, 3), definition);

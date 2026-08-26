@@ -33,9 +33,9 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class MarkerRuleSourceTests
     {
         private static readonly HeroId Red =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
         private static readonly HeroId Blue =
-            new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
         // ---------------------------------------------------------------------------------------
         // The rule reaches the holder
@@ -210,7 +210,7 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<HeroOccupancy>(),
                 Array.Empty<ObstacleOccupancy>(),
                 Array.Empty<QuickGameMinionSetupState>());
-            return new MarkerFixture(board, PlaceholderOneVsOneParticipants.Create());
+            return new MarkerFixture(board, StagedBoardParticipants.Create());
         }
 
         /// <summary>

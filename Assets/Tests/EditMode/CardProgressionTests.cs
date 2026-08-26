@@ -37,7 +37,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryConfiguredDefinition_StatesProgressionOrItsExplicitAbsence()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
 
             foreach (var definition in configuration.CardDefinitions)
             {
@@ -76,7 +76,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ConfiguredHands_HoldFiveDistinctColoursWithTheBasicPairAtDifferentSlots()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
 
             var red = configuration.RedHand.DealtDefinitions;
             var blue = configuration.BlueHand.DealtDefinitions;
@@ -107,7 +107,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void CardColour_IsNeitherTeamIdentityNorThePrintedActionIcon()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
             var red = configuration.RedHand.DealtDefinitions;
             var blue = configuration.BlueHand.DealtDefinitions;
 
@@ -147,7 +147,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void BasicCards_HaveNoTierAndNoUpgradeCandidates()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
             var basics = configuration.CardDefinitions
                 .Where(definition => definition.Progression.IsBasic)
                 .ToArray();
@@ -172,7 +172,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EachTierOneCard_UpgradesIntoTwoSameColourTierTwoCardsThatShareTwoTierThreeCards()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
             var definitions = configuration.CardDefinitions;
             var bulwark = definitions.Single(definition => definition.Id.Equals(RedBulwark));
 
@@ -216,7 +216,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void UpgradeRelationships_AreCheckedAgainstColourAndTierRatherThanInferredFromThem()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
             Assert.DoesNotThrow(() => CardProgressionValidator.Validate(configuration.CardDefinitions));
 
             // A candidate of a different colour, a candidate that is not one Tier higher, a candidate
@@ -527,7 +527,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryHero_StartsAtLevelOneAndTheStateRefusesAnIncompleteRestore()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
             var progression = new HeroProgressionState(configuration.Participants);
 
             Assert.That(progression.Levels, Has.Count.EqualTo(configuration.Participants.Heroes.Count));
@@ -601,9 +601,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(beforeAnyCommand));
 
             var red = session.Projection.Cards.First(card =>
-                card.OwnerId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue);
+                card.OwnerId.Value == StagedBoardParticipants.RedHeroIdValue);
             var blue = session.Projection.Cards.First(card =>
-                card.OwnerId.Value == PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                card.OwnerId.Value == StagedBoardParticipants.BlueHeroIdValue);
             Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
             var afterFirstCommit = session.CaptureSnapshot();
             Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
@@ -667,7 +667,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -696,14 +696,14 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private sealed class ProgressionFixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
             private readonly List<CardInstance> instances;
 
             public ProgressionFixture()
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
-                RedHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-                BlueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                configuration = MatchConfiguration.CreateForShowcaseFixture();
+                RedHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+                BlueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
                 // Milestone 7.5 deals p.6's remaining Tier II, Tier III and Tier IV cards into each
                 // hero's deck, so this fixture no longer builds them: the cards p.15's upgrade searches
                 // for are the configuration's own.

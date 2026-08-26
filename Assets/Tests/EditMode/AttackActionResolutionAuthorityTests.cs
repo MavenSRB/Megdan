@@ -119,12 +119,12 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TargetProjection_IncludesOnlyAdjacentEnemyHeroesAndNeverOccupancyObstacles()
         {
-            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var adjacentEnemyId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var attackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var adjacentEnemyId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var friendlyId = new HeroId("red-friendly-hero");
             var nonAdjacentEnemyId = new HeroId("blue-far-hero");
             var participants = CreateFourHeroParticipants(attackerId, adjacentEnemyId, friendlyId, nonAdjacentEnemyId);
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var authority = new CardActionResolutionAuthority(
                 MatchContentCatalogs.ForThisBuild(), new AdjacentMoveAuthority(
                 CreateRadiusThreeCoordinates(),
@@ -180,9 +180,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RangedAttack_RangeOneIncludesAdjacentEnemyThroughTypedOfferRange()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var rangedDefinition = new CardDefinition(
                 new CardDefinitionId("range-one-test-card"),
                 "rev-1",
@@ -237,9 +237,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RangedAttack_UsesHexDistanceThroughOccupiedSpaceAndRejectsBeyondMaximumRange()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var maximumRangeEnemyId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var maximumRangeEnemyId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var friendlyBlockerId = new HeroId("red-friendly-hero");
             var beyondRangeEnemyId = new HeroId("blue-far-hero");
             var participants = CreateFourHeroParticipants(
@@ -308,9 +308,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RangedAttack_TargetsThroughObstacleWithoutLineOfSightRule()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var authority = new CardActionResolutionAuthority(
                 MatchContentCatalogs.ForThisBuild(), new AdjacentMoveAuthority(
                 CreateRadiusThreeCoordinates(),
@@ -335,9 +335,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RangedAttack_RestoresTargetAndDefenseChoicesThroughSharedContinuationBoundary()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var board = new AdjacentMoveAuthority(
                 CreateRadiusThreeCoordinates(),
                 new[]
@@ -414,9 +414,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void StartAttack_WhenNoAdjacentEnemyExists_RejectsWithoutPendingStateOrCardMutation()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var authority = new CardActionResolutionAuthority(
                 MatchContentCatalogs.ForThisBuild(), new AdjacentMoveAuthority(
                 CreateRadiusThreeCoordinates(),
@@ -869,9 +869,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OutcomeComparison_GreaterDefenseSuccessfullyDefends()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var authority = new CardActionResolutionAuthority(
                 MatchContentCatalogs.ForThisBuild(), new AdjacentMoveAuthority(
                 CreateRadiusThreeCoordinates(),
@@ -1273,9 +1273,9 @@ namespace GuardsDigital.Tests.EditMode
         // does not have to move again. Its printed Attack is 4, where Red Bulwark's was 3.
         private static AttackFixture CreateFixture(string attackCardInstanceId = "red-pursuit-card")
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var boardAuthority = CreateBoardAuthority(attackerId, defenderId);
             return new AttackFixture(
                 configuration,
@@ -1298,7 +1298,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static ActionOffer GetAttackOffer(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             HeroId attackerId,
             string attackCardInstanceId = "red-pursuit-card")
         {
@@ -1313,7 +1313,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static ActionOffer GetRangedAttackOffer(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             HeroId attackerId)
         {
             return ActionOfferQuery.GetAvailableOffers(
@@ -1336,10 +1336,10 @@ namespace GuardsDigital.Tests.EditMode
             HeroId friendlyId,
             HeroId nonAdjacentEnemyId)
         {
-            var redTeamId = new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue);
-            var blueTeamId = new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue);
-            var redPlayerId = new PlayerId(PlaceholderOneVsOneParticipants.RedPlayerIdValue);
-            var bluePlayerId = new PlayerId(PlaceholderOneVsOneParticipants.BluePlayerIdValue);
+            var redTeamId = new TeamId(StagedBoardParticipants.RedTeamIdValue);
+            var blueTeamId = new TeamId(StagedBoardParticipants.BlueTeamIdValue);
+            var redPlayerId = new PlayerId(StagedBoardParticipants.RedPlayerIdValue);
+            var bluePlayerId = new PlayerId(StagedBoardParticipants.BluePlayerIdValue);
             var friendlyPlayerId = new PlayerId("red-friendly-player");
             var farPlayerId = new PlayerId("blue-far-player");
             return new MatchParticipants(
@@ -1383,7 +1383,7 @@ namespace GuardsDigital.Tests.EditMode
         private sealed class AttackFixture
         {
             public AttackFixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 HeroId attackerId,
                 HeroId defenderId,
                 AdjacentMoveAuthority boardAuthority,
@@ -1398,7 +1398,7 @@ namespace GuardsDigital.Tests.EditMode
                 AttackOffer = attackOffer;
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
             public HeroId AttackerId { get; }
             public HeroId DefenderId { get; }
             public AdjacentMoveAuthority BoardAuthority { get; }

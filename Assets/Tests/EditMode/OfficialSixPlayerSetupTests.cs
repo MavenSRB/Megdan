@@ -141,7 +141,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheConfigurationAPlayerLoads_FlipsTheTieBreakerAndRecordsTheDrawItMade()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.Create();
+            var configuration = MatchConfiguration.Create();
 
             Assert.That(configuration.TieBreakerState.IsDefined, Is.True);
             Assert.That(configuration.SetupSeed.IsRecorded, Is.True,
@@ -301,9 +301,9 @@ namespace GuardsDigital.Tests.EditMode
         // -----------------------------------------------------------------------------------------
 
         private static QuickGameSetupState CreateSetup(
-            out PlaceholderOneVsOneTestConfiguration configuration, out BoardMapDefinition map)
+            out MatchConfiguration configuration, out BoardMapDefinition map)
         {
-            configuration = PlaceholderOneVsOneTestConfiguration
+            configuration = MatchConfiguration
                 .CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
             map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             return QuickGameSetupAuthority.Create(
@@ -314,7 +314,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static MatchSession Compose(
-            PlaceholderOneVsOneTestConfiguration configuration, QuickGameSetupState setup)
+            MatchConfiguration configuration, QuickGameSetupState setup)
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var scenario = new InitialScenarioDescription(

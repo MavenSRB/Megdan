@@ -421,119 +421,119 @@ namespace GuardsDigital.Presentation.Interaction
             var configuration = content switch
             {
                 SceneCardContent.MechanicsShowcaseFixture =>
-                    PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture(),
+                    MatchConfiguration.CreateForShowcaseFixture(),
                 SceneCardContent.VerifiedEngagedMirror or SceneCardContent.VerifiedMirror =>
-                    PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                    MatchConfiguration.CreateVerifiedMirrorForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedTierTwoEngagedMirror =>
-                    PlaceholderOneVsOneTestConfiguration.CreateVerifiedTierTwoMirrorForInternalTest(
+                    MatchConfiguration.CreateVerifiedTierTwoMirrorForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedTierThreeEngagedMirror =>
-                    PlaceholderOneVsOneTestConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
+                    MatchConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedEngagedStagedArien or SceneCardContent.VerifiedStagedArien =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedArienForInternalTest(
+                    MatchConfiguration.CreateStagedArienForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedTierTwoEngagedStagedArien =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedArienTierTwoForInternalTest(
+                    MatchConfiguration.CreateStagedArienTierTwoForInternalTest(
                         TeamSide.Red, GuardsDigital.Core.Cards.Verified.ArienUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierTwoAlternateEngagedStagedArien =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedArienTierTwoForInternalTest(
+                    MatchConfiguration.CreateStagedArienTierTwoForInternalTest(
                         TeamSide.Red, GuardsDigital.Core.Cards.Verified.ArienUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedTierThreeEngagedStagedArien =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedArienTierThreeForInternalTest(
+                    MatchConfiguration.CreateStagedArienTierThreeForInternalTest(
                         TeamSide.Red, GuardsDigital.Core.Cards.Verified.ArienUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierThreeAlternateEngagedStagedArien =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedArienTierThreeForInternalTest(
+                    MatchConfiguration.CreateStagedArienTierThreeForInternalTest(
                         TeamSide.Red, GuardsDigital.Core.Cards.Verified.ArienUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedEngagedStagedBrogan =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganForInternalTest(
+                    MatchConfiguration.CreateStagedBroganForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedTierTwoEngagedStagedBrogan =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganTierTwoForInternalTest(
+                    MatchConfiguration.CreateStagedBroganTierTwoForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.BroganUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBrogan =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganTierTwoForInternalTest(
+                    MatchConfiguration.CreateStagedBroganTierTwoForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.BroganUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedTierThreeEngagedStagedBrogan =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganTierThreeForInternalTest(
+                    MatchConfiguration.CreateStagedBroganTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.BroganUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBrogan =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganTierThreeForInternalTest(
+                    MatchConfiguration.CreateStagedBroganTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.BroganUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedStagedBroganWithAlly =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganWithAllyForInternalTest(
+                    MatchConfiguration.CreateStagedBroganWithAllyForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedStagedBroganWithAllyAtTierTwo =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganWithAllyForInternalTest(
+                    MatchConfiguration.CreateStagedBroganWithAllyForInternalTest(
                         TeamSide.Red, BroganAllyStage.TierTwo),
                 SceneCardContent.VerifiedStagedBroganWithAllyAtTierThree =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedBroganWithAllyForInternalTest(
+                    MatchConfiguration.CreateStagedBroganWithAllyForInternalTest(
                         TeamSide.Red, BroganAllyStage.TierThree),
                 SceneCardContent.VerifiedEngagedStagedSabina =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaForInternalTest(
+                    MatchConfiguration.CreateStagedSabinaForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedTierTwoEngagedStagedSabina =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierTwoForInternalTest(
+                    MatchConfiguration.CreateStagedSabinaTierTwoForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.SabinaUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSabina =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierTwoForInternalTest(
+                    MatchConfiguration.CreateStagedSabinaTierTwoForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.SabinaUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedTierThreeEngagedStagedSabina =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierThreeForInternalTest(
+                    MatchConfiguration.CreateStagedSabinaTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.SabinaUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSabina =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedSabinaTierThreeForInternalTest(
+                    MatchConfiguration.CreateStagedSabinaTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.SabinaUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedEngagedStagedTigerclaw =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawForInternalTest(
+                    MatchConfiguration.CreateStagedTigerclawForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedTierTwoEngagedStagedTigerclaw =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawTierTwoForInternalTest(
+                    MatchConfiguration.CreateStagedTigerclawTierTwoForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.TigerclawUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierTwoAlternateEngagedStagedTigerclaw =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawTierTwoForInternalTest(
+                    MatchConfiguration.CreateStagedTigerclawTierTwoForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.TigerclawUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedTierThreeEngagedStagedTigerclaw =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawTierThreeForInternalTest(
+                    MatchConfiguration.CreateStagedTigerclawTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.TigerclawUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierThreeAlternateEngagedStagedTigerclaw =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawTierThreeForInternalTest(
+                    MatchConfiguration.CreateStagedTigerclawTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.TigerclawUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedEngagedStagedXargatha =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaForInternalTest(
+                    MatchConfiguration.CreateStagedXargathaForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedTierTwoEngagedStagedXargatha =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaTierTwoForInternalTest(
+                    MatchConfiguration.CreateStagedXargathaTierTwoForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierTwoAlternateEngagedStagedXargatha =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaTierTwoForInternalTest(
+                    MatchConfiguration.CreateStagedXargathaTierTwoForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedTierThreeEngagedStagedXargatha =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaTierThreeForInternalTest(
+                    MatchConfiguration.CreateStagedXargathaTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierThreeAlternateEngagedStagedXargatha =>
-                    PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaTierThreeForInternalTest(
+                    MatchConfiguration.CreateStagedXargathaTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
-                _ => PlaceholderOneVsOneTestConfiguration.Create()
+                _ => MatchConfiguration.Create()
             };
             // Milestone 8.20. The board's hero identities have to agree with the hands the
             // configuration above dealt: a seat's content identity is what addresses its prepared token

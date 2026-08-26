@@ -658,9 +658,9 @@ namespace GuardsDigital.Tests.EditMode
         // Helpers
         // -------------------------------------------------------------------------------------------
 
-        private static HeroId BlueHeroId => new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+        private static HeroId BlueHeroId => new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
-        private static HeroId RedHeroId => new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+        private static HeroId RedHeroId => new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
         private static int LifeOf(MatchSession session, TeamSide side)
         {
@@ -674,7 +674,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(RuleEventLogSnapshotEnvelope.TryDeserialize(
                 payload, out var envelope, out var rejection), Is.True);
             Assert.That(rejection, Is.EqualTo(RuleEventLogEnvelopeRejectionReason.None));
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -747,7 +747,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateAdjacentSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -814,7 +814,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static MatchParticipants OfficialParticipants() =>
-            PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red).Participants;
+            MatchConfiguration.CreateForInternalTest(TeamSide.Red).Participants;
 
         /// <summary>
         /// The official Phase 4 map with every configured hero on it except the named one, which is the
@@ -831,7 +831,7 @@ namespace GuardsDigital.Tests.EditMode
             HeroId absentHeroId,
             bool blockSpawnRing = false)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -917,17 +917,17 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private sealed class DefeatFixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
             private readonly CardActionResolutionAuthority cardActions;
             private readonly ActiveEffectLifecycle timing = new ActiveEffectLifecycle();
             private IReadOnlyList<ResolutionStep> lastSteps = Array.Empty<ResolutionStep>();
 
             public DefeatFixture(int lifeCountersPerTeam = 4)
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
                 StartingLifeCounters = lifeCountersPerTeam;
-                AttackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-                DefenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                AttackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+                DefenderId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
                 // Red Pursuit at Initiative 7 against Blue Hammer at 6: the Red hero acts first with the
                 // team's remaining printed non-Ranged Attack, and the Blue hero's card stays unresolved

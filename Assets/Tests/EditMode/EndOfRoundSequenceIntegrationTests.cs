@@ -528,7 +528,7 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>The ordinary configured match, whose mirrored Minion Battle awards no push.</summary>
         private static MatchSession CreateConfiguredSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -544,7 +544,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateUncontestedPushSession(int waveCount)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -618,7 +618,7 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateSessionWithAnAdjacentEnemyMinion(
             out HeroId redHeroId, out MinionId target)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -667,7 +667,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static MatchSession CreateSession(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             BoardMapDefinition map,
             QuickGameSetupState setup)
         {

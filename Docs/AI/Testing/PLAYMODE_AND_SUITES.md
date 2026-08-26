@@ -39,8 +39,8 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Complete Edit Mode | 1917 | 0 | 0 | 0 | `8.25a` |
-| Complete Play Mode | 227 | 0 | 0 | 0 | `8.25a` |
+| Complete Edit Mode | 1917 | 0 | 0 | 0 | `8.25b` |
+| Complete Play Mode | 227 | 0 | 0 | 0 | `8.25b` |
 
 **Correction after 8.20, same day:** the Edit Mode baseline is 1703, not 1700. Milestone 8.20's
 block - and 8.21's through 8.24's - each require their hero to work "without an <Hero>-name branch",
@@ -67,6 +67,8 @@ journey that takes it and leaves `ConfirmOrDecline` on the one that declines, be
 give one answer. The same audit found milestone 8.25a's own
 `CompleteHeldActionAfterItsTrigger` returning an accepted result that advanced nothing on two
 unreachable readings - the shape of the stall that milestone removed - which now fault instead.
+
+Milestone 8.25b moves neither baseline: complete unfiltered Edit Mode stays at **1917** and Play Mode at **227**, both green, and the revision cell moves because both suites were run again here rather than because a total changed. **An unmoved total is the evidence this milestone owes.** The three configuration types changed name across 126 files, which reaches nearly every Edit Mode fixture and one Play Mode one, so no affected-only argument was available: the unfiltered pair is the only thing that could show a missed call site, and a moved count would have meant the rename had changed what a test measures rather than what it is called. One fixture did have to change with it - `RetrievalNamingConformanceTests` asserted that the configuration's name carried a `Placeholder` qualifier, which the new name does not, so the retired spelling stays as a split literal and the new name is asserted to carry none. **The cross-platform harness ran throughout**, 1647/1647 before the rename and 1647/1647 after at about two minutes a run; it had been Application-Control blocked during 8.25a and cleared again with no deliberate change, and it carried the entire compile loop, with a scratch Presentation-and-tests csproj covering the assemblies it cannot see. Both complete runs were taken in batch mode.
 
 Milestone 8.25a moves the Edit Mode baseline 1911 to 1917 and the Play Mode baseline 226 to 227, the last of those by the same-day correction above. All six are `AfterActionRepeatContinuityTests`: the two demonstrated runs the milestone's block names, one seeded sweep per board, the reason a refused card-action command now carries, and the corrected run under replay, snapshot restore and a retained-prefix Undo. **The sweep is the reason this row is worth reading.** Stated over the first twelve seeds of both boards it cost 199 s in a single Unity case, which is past that tier's 180 s per-case timeout and about as long again as the whole Edit Mode suite had been; the first six of each board keep seven failing pre-fix runs of twelve, split one case per board, and the complete Edit Mode run is 234 s rather than the ~130 s it was. That is a real standing cost this milestone accepted deliberately, because the property it states - every command the projection offers for a pending resolution is accepted, or is not offered - is the one a whole class of unanswerable-decision defects breaks. **The Play Mode count moved by one**, and only after the audit: 8.23's journey answers the decision by declining and is unchanged and green, and the journey that takes it was added by the correction above. Both complete runs were taken in batch mode. **The cross-platform harness carried the diagnosis and then blocked mid-milestone** with `An Application Control policy has blocked this file. (0x800711C7)`, after running 1641 and then 1648 cases; `dotnet build` kept working, so the Windows Edit Mode tier ran every result recorded here.
 

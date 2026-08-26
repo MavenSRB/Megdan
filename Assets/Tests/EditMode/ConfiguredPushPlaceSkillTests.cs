@@ -620,8 +620,8 @@ namespace GuardsDigital.Tests.EditMode
             HexCoordinate redAt, HexCoordinate blueAt, bool withSkillCards = false)
         {
             var configuration = withSkillCards
-                ? PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Red)
-                : PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                ? MatchConfiguration.CreateForSkillFixture(TeamSide.Red)
+                : MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

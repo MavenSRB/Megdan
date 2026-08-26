@@ -42,7 +42,7 @@ namespace GuardsDigital.Tests.EditMode
             string contentId,
             string enemyContentId,
             Func<QuickGameSetupConfiguration> setup,
-            Func<int, bool, PlaceholderOneVsOneTestConfiguration> configuration,
+            Func<int, bool, MatchConfiguration> configuration,
             CardDefinitionId ultimateCardId)
         {
             if (string.IsNullOrWhiteSpace(contentId) || string.IsNullOrWhiteSpace(enemyContentId))
@@ -66,7 +66,7 @@ namespace GuardsDigital.Tests.EditMode
         internal Func<QuickGameSetupConfiguration> Setup { get; }
 
         /// <summary>The configuration for a p.15 stage and an upgrade branch.</summary>
-        internal Func<int, bool, PlaceholderOneVsOneTestConfiguration> Configuration { get; }
+        internal Func<int, bool, MatchConfiguration> Configuration { get; }
 
         /// <summary>The card p.16's unlock moves out of the deck.</summary>
         internal CardDefinitionId UltimateCardId { get; }

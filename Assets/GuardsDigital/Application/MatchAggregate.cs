@@ -96,7 +96,7 @@ namespace GuardsDigital.Application
         private readonly TieBreakerState setupTieBreakerState;
 
         private MatchGraphSet(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             AdjacentMoveAuthority board,
             CardActionResolutionAuthority cardActions,
             RoundResolutionAuthority round,
@@ -115,7 +115,7 @@ namespace GuardsDigital.Application
             this.setupTieBreakerState = setupTieBreakerState;
         }
 
-        public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+        public MatchConfiguration Configuration { get; }
         public AdjacentMoveAuthority Board { get; }
         public CardActionResolutionAuthority CardActions { get; }
         public RoundResolutionAuthority Round { get; }
@@ -123,7 +123,7 @@ namespace GuardsDigital.Application
 
         /// <summary>Graphs whose rule-event log restarts from the single setup entry.</summary>
         public static MatchGraphSet ForSetup(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             AdjacentMoveAuthority board,
             CardActionResolutionAuthority cardActions,
             RoundResolutionAuthority round,
@@ -144,7 +144,7 @@ namespace GuardsDigital.Application
 
         /// <summary>Graphs that arrive with an existing ordered rule-event log to adopt.</summary>
         public static MatchGraphSet ForRestore(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             AdjacentMoveAuthority board,
             CardActionResolutionAuthority cardActions,
             RoundResolutionAuthority round,
@@ -205,7 +205,7 @@ namespace GuardsDigital.Application
         private readonly AppendOnlyEventLog<RoundResolutionEvent> roundEvents =
             new AppendOnlyEventLog<RoundResolutionEvent>();
 
-        private PlaceholderOneVsOneTestConfiguration configuration;
+        private MatchConfiguration configuration;
         private AdjacentMoveAuthority board;
         private CardActionResolutionAuthority cardActions;
         private RoundResolutionAuthority round;
@@ -225,7 +225,7 @@ namespace GuardsDigital.Application
             this.initialState = initialState ?? throw new ArgumentNullException(nameof(initialState));
         }
 
-        public PlaceholderOneVsOneTestConfiguration Configuration => configuration;
+        public MatchConfiguration Configuration => configuration;
         public AdjacentMoveAuthority Board => board;
         public CardActionResolutionAuthority CardActions => cardActions;
         public RoundResolutionAuthority Round => round;
@@ -409,8 +409,8 @@ namespace GuardsDigital.Application
             }
 
             return new RestoredGraphs(
-                PlaceholderOneVsOneTestConfiguration.Restore(
-                    new PlaceholderConfigurationRestoreState(
+                MatchConfiguration.Restore(
+                    new MatchConfigurationRestoreState(
                         restored.Participants,
                         initialState.Scenario.CardDefinitions,
                         restored.Cards,
@@ -545,7 +545,7 @@ namespace GuardsDigital.Application
         private sealed class RestoredGraphs
         {
             public RestoredGraphs(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 RestoredAuthoritativeMatch restored)
             {
                 Configuration = configuration;
@@ -555,7 +555,7 @@ namespace GuardsDigital.Application
                 Participants = restored.Participants;
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
             public AdjacentMoveAuthority Board { get; }
             public CardActionResolutionAuthority CardActions { get; }
             public RoundResolutionAuthority Round { get; }

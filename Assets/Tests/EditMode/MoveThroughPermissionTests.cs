@@ -29,8 +29,8 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class MoveThroughPermissionTests
     {
-        private static readonly HeroId Mover = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-        private static readonly HeroId Blocker = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+        private static readonly HeroId Mover = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+        private static readonly HeroId Blocker = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
         // ---------------------------------------------------------------------------------------
         // Reachability
@@ -278,7 +278,7 @@ namespace GuardsDigital.Tests.EditMode
                 new ActiveEffectCheckpointContext(TimingCheckpoint.TurnStarted, 1, 2),
                 new TieBreakerState(TeamSide.Red));
 
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var set = RuleModificationQuery.Build(
                 timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null,
                 null);

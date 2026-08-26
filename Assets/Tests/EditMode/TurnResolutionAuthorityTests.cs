@@ -719,7 +719,7 @@ namespace GuardsDigital.Tests.EditMode
                 timing.Create(
                     new ActiveEffectId($"attack-order-effect-{index}"),
                     definition,
-                    new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue),
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue),
                     TeamSide.Red,
                     default,
                     new CardInstanceId($"attack-order-source-{index}"),
@@ -1009,7 +1009,7 @@ namespace GuardsDigital.Tests.EditMode
             // replaced Blue Sentinel's, so neither card of that pair prints an Attack any more and a
             // tied turn from this hand performs none: the tied fixture reveals Blue, the Blue hero
             // acts first, and what it proves is the deferred flip rather than an Attack across one.
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(
+            var configuration = MatchConfiguration.CreateForInternalTest(
                 tiedInitiative ? TeamSide.Blue : TeamSide.Red);
             // Milestone 6.5a replaced Red Needle's printed Attack too, so the untied non-Ranged
             // fixture performs its Attack with Red Pursuit at Initiative 7 against Blue Hammer at 6 -
@@ -1074,7 +1074,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static SkillTurnTestFixture CreateSkillTurnFixture(bool withCardActions = true)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForSkillFixture(TeamSide.Red);
             var redFocus = configuration.CardInstances.Single(card => card.Id.Value.Contains("red-focus"));
             var blueFocus = configuration.CardInstances.Single(card => card.Id.Value.Contains("blue-focus"));
             Assert.That(CardLifecycleAuthority.TryPlayFacedown(redFocus), Is.True);
@@ -1220,7 +1220,7 @@ namespace GuardsDigital.Tests.EditMode
         private sealed class SkillTurnTestFixture
         {
             public SkillTurnTestFixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 CardInstance redFocus,
                 TurnResolutionAuthority authority)
             {
@@ -1229,7 +1229,7 @@ namespace GuardsDigital.Tests.EditMode
                 Authority = authority;
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
 
             public CardInstance RedFocus { get; }
 
@@ -1289,7 +1289,7 @@ namespace GuardsDigital.Tests.EditMode
         private sealed class AttackTestFixture
         {
             public AttackTestFixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 CardInstance redPlayed,
                 CardInstance bluePlayed,
                 CardInstance blueDefense,
@@ -1302,7 +1302,7 @@ namespace GuardsDigital.Tests.EditMode
                 Authority = authority;
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
 
             public CardInstance RedPlayed { get; }
 

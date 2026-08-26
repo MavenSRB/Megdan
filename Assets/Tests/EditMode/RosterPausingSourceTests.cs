@@ -588,7 +588,7 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreatePausingSourceSession()
         {
             var configuration =
-                PlaceholderOneVsOneTestConfiguration.CreateForPausingSourceFixture(TeamSide.Red);
+                MatchConfiguration.CreateForPausingSourceFixture(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -755,10 +755,10 @@ namespace GuardsDigital.Tests.EditMode
 
         private sealed class SourceFixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
 
             private SourceFixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 AdjacentMoveAuthority board,
                 HeroId red,
                 HeroId blue,
@@ -783,7 +783,7 @@ namespace GuardsDigital.Tests.EditMode
             public static SourceFixture Create()
             {
                 var configuration =
-                    PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                    MatchConfiguration.CreateForInternalTest(TeamSide.Red);
                 var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
                 var setup = QuickGameSetupAuthority.Create(
                     QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

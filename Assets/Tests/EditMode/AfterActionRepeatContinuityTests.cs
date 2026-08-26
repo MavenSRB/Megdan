@@ -358,7 +358,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateStagedWaspVersusTigerclawSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration
+            var configuration = MatchConfiguration
                 .CreateStagedTigerclawForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -383,7 +383,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateOfficialSixPlayerSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration
+            var configuration = MatchConfiguration
                 .CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(

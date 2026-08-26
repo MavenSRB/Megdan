@@ -32,10 +32,10 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class PrintedRadiusAndItemExpansionTests
     {
         private static readonly HeroId RedHeroId =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
         private static readonly HeroId BlueHeroId =
-            new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
         private const int PrintedRadius = 2;
 
@@ -387,7 +387,7 @@ namespace GuardsDigital.Tests.EditMode
 
             // This milestone's own two Radius cards are dealt by their own configuration alone, which is
             // why 7.2b's corpus moved for the registration alone.
-            var ordinary = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var ordinary = MatchConfiguration.CreateForShowcaseFixture();
             Assert.That(
                 ordinary.CardDefinitions.Any(definition =>
                     definition.Id.Value.Contains("shockwave")),
@@ -426,7 +426,7 @@ namespace GuardsDigital.Tests.EditMode
             ActionDefinitionOrigin origin,
             PrintedValueDefinition printedValue)
         {
-            var effect = PlaceholderOneVsOneTestConfiguration
+            var effect = MatchConfiguration
                 .CreateForRadiusFixture(TeamSide.Red)
                 .CardDefinitions
                 .Single(definition => definition.Id.Value.Contains("red-shockwave"))
@@ -460,13 +460,13 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private sealed class RadiusFixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
             private readonly List<CardInstance> instances;
             private readonly List<CardDefinition> definitions;
 
             public RadiusFixture(int defenderDistance = 1, HexCoordinate? obstacleAt = null)
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.CreateForRadiusFixture(TeamSide.Red);
+                configuration = MatchConfiguration.CreateForRadiusFixture(TeamSide.Red);
                 definitions = configuration.CardDefinitions.ToList();
                 definitions.Add(RadiusItemDefinition);
                 instances = configuration.CardInstances.ToList();

@@ -631,7 +631,7 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateSession(
             Func<IReadOnlyList<QuickGameMinionSetupState>, IEnumerable<QuickGameMinionSetupState>> selectMinions)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var fullSetup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -736,7 +736,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static readonly EndOfRoundResolutionId ResolutionId = new EndOfRoundResolutionId("round-1-minion-battle");
         private static readonly EndOfRoundChoiceId ChoiceId = new EndOfRoundChoiceId("round-1-minion-battle-removals");
-        private static readonly TeamId LosingTeamId = new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue);
+        private static readonly TeamId LosingTeamId = new TeamId(StagedBoardParticipants.BlueTeamIdValue);
         private static readonly ZoneId BattleZoneId = new ZoneId("synthetic-battle-zone");
 
         private static MinionId MinionAt(int position) => new MinionId($"minion-{position:00}");
@@ -830,7 +830,7 @@ namespace GuardsDigital.Tests.EditMode
             string blueShape,
             bool countsAsBlueHero)
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var mapId = new MapId("synthetic-battle-zone-map");
             var total = redShape.Length + blueShape.Length;
             var coordinates = Enumerable.Range(0, Math.Max(total + 2, 3))
@@ -879,9 +879,9 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             var redHero = participants.GetHeroesForTeam(
-                new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue)).Single().Id;
+                new TeamId(StagedBoardParticipants.RedTeamIdValue)).Single().Id;
             var blueHero = participants.GetHeroesForTeam(
-                new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue)).Single().Id;
+                new TeamId(StagedBoardParticipants.BlueTeamIdValue)).Single().Id;
             var blueSpawn = coordinates[total + 1];
             var board = new AdjacentMoveAuthority(
                 map,
@@ -898,11 +898,11 @@ namespace GuardsDigital.Tests.EditMode
             var red = CardInstance.CreateInHand(
                 new CardInstanceId("battle-red-card"),
                 redDefinition.Reference,
-                participants.GetHeroesForTeam(new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue)).Single().Id);
+                participants.GetHeroesForTeam(new TeamId(StagedBoardParticipants.RedTeamIdValue)).Single().Id);
             var blue = CardInstance.CreateInHand(
                 new CardInstanceId("battle-blue-card"),
                 blueDefinition.Reference,
-                participants.GetHeroesForTeam(new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue)).Single().Id);
+                participants.GetHeroesForTeam(new TeamId(StagedBoardParticipants.BlueTeamIdValue)).Single().Id);
 
             var timing = new ActiveEffectLifecycle();
             if (countsAsBlueHero)

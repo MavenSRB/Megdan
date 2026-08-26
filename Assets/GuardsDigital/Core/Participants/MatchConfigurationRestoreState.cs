@@ -7,16 +7,20 @@ using GuardsDigital.Core.Setup;
 namespace GuardsDigital.Core.Participants
 {
     /// <summary>
-    /// The complete restore inputs of a <see cref="PlaceholderOneVsOneTestConfiguration"/>.
+    /// The complete restore inputs of a <see cref="MatchConfiguration"/>.
+    ///
+    /// <para>Milestone 8.25b named it after the configuration it restores; it was
+    /// `PlaceholderConfigurationRestoreState` from milestone 6.1g until then, which said nothing about
+    /// which configuration it belonged to.</para>
     /// </summary>
     /// <remarks>
     /// This entry point had no defaulted parameter to remove. It carries a typed state
     /// anyway so that a later persisted configuration field cannot be added without every
     /// construction site failing to compile.
     /// </remarks>
-    public sealed class PlaceholderConfigurationRestoreState
+    public sealed class MatchConfigurationRestoreState
     {
-        public PlaceholderConfigurationRestoreState(
+        public MatchConfigurationRestoreState(
             MatchParticipants participants,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,

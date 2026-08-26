@@ -24,7 +24,7 @@ namespace GuardsDigital.Tests.EditMode
         public void TheTierTwoHands_DealTheBasicsPlusOneTierTwoOfEachColourAndKeepTheRestInTheDeck()
         {
             var configuration =
-                PlaceholderOneVsOneTestConfiguration.CreateVerifiedTierTwoMirrorForInternalTest(
+                MatchConfiguration.CreateVerifiedTierTwoMirrorForInternalTest(
                     TeamSide.Red);
 
             foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
@@ -61,7 +61,7 @@ namespace GuardsDigital.Tests.EditMode
         public void TheTierThreeMirror_UnlocksBothHighVoltagesThroughThePageSixteenTransition()
         {
             var configuration =
-                PlaceholderOneVsOneTestConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
+                MatchConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
                     TeamSide.Red);
 
             var ultimates = configuration.CardInstances
@@ -94,7 +94,7 @@ namespace GuardsDigital.Tests.EditMode
         public void TheEngagedStaging_PutsBothWaspsBesideOneBlueMeleeMinionTwoSpacesApart()
         {
             var configuration =
-                PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                MatchConfiguration.CreateVerifiedMirrorForInternalTest(
                     TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -133,7 +133,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static System.Collections.Generic.List<CardDefinitionId> HandDefinitions(
-            PlaceholderOneVsOneTestConfiguration configuration, TeamSide side)
+            MatchConfiguration configuration, TeamSide side)
         {
             var heroId = configuration.Participants.Heroes.Single(hero =>
                 configuration.Participants.GetTeamForHero(hero.Id).Side == side).Id;
@@ -145,7 +145,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static CardDefinition Definition(
-            PlaceholderOneVsOneTestConfiguration configuration, CardDefinitionId id) =>
+            MatchConfiguration configuration, CardDefinitionId id) =>
             configuration.CardDefinitions.Single(definition => definition.Id.Equals(id));
     }
 }

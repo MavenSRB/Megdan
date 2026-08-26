@@ -18,7 +18,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PlayedAttackCardThisTurn_ReadsTheCommittedPrimaryCard_NotTheActionPerformed()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var definitions = configuration.CardDefinitions;
             var cards = configuration.CardInstances;
             var redHero = configuration.Participants.Heroes.Single(hero =>
@@ -76,7 +76,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void HeroDefeatHistory_IsTypedOrderedPersistableAndRoundScoped()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var red = participants.Heroes.Single(hero =>
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
             var blue = participants.Heroes.Single(hero =>
@@ -114,7 +114,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void HeroDefeatHistoryRestore_RejectsUnknownHeroesAndDuplicateOutcomes()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var red = participants.Heroes.Single(hero =>
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
             var blue = participants.Heroes.Single(hero =>

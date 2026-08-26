@@ -20,7 +20,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void OccupiedThroneSpawn_OffersEveryNearestEmptyAdjacentFallback()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var redHero = participants.Heroes.Single(hero =>
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
             var blueHero = participants.Heroes.Single(hero =>
@@ -142,7 +142,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateSessionWithBlueHeroOffBoard()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForSkillFixture(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

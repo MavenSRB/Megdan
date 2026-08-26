@@ -30,7 +30,7 @@ namespace GuardsDigital.Presentation.Match
         public ConfiguredMatchSceneRuntime(
             BoardMapDefinition map,
             QuickGameSetupState setup,
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             IEnumerable<BoardMapDefinition> maps,
             IEnumerable<PrimitiveHeroView> heroes,
             IEnumerable<StandardMinionView> minions,

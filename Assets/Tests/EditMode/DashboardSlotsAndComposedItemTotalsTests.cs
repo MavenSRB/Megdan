@@ -45,7 +45,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryHeroDeclaresThePageSixteenSlots_AndTheFourthCarriesThreeIcons()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
+            var participants = MatchConfiguration.CreateForShowcaseFixture().Participants;
             Assert.That(participants.Heroes, Is.Not.Empty);
 
             foreach (var hero in participants.Heroes)
@@ -138,7 +138,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TwoItemsUnderTheFourthSlot_RaiseTheirOwnIconsAndNotEachOther()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
+            var participants = MatchConfiguration.CreateForShowcaseFixture().Participants;
             var owner = participants.Heroes[0].Id;
             var fourth = HeroDashboard.RulebookLayout.Slots[3].Position;
             var items = HeroItemState.Restore(participants, new HeroItemRestoreState(new[]
@@ -177,7 +177,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AnInitiativeItem_RaisesTheValueTheTurnOrderReads()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
+            var participants = MatchConfiguration.CreateForShowcaseFixture().Participants;
             var red = participants.Heroes.Single(hero =>
                 participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
             var blue = participants.Heroes.Single(hero =>
@@ -386,8 +386,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ASetAsideCardNoSlotAccepts_IsRefusedWithoutMovingAnything()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
-            var redHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
+            var redHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
             var restricted = ParticipantsWithRestrictedRedDashboard();
             var items = new HeroItemState(restricted);
 
@@ -422,7 +422,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SetupValidation_RefusesAHeroWhoCanReachACardNoSlotOfTheirsAccepts()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
 
             // The configured content is exactly what the check is about: every hero's upgrade tree
             // leads to Attack, Initiative, Movement and Defense icons, and p.16's layout accepts all
@@ -442,7 +442,7 @@ namespace GuardsDigital.Tests.EditMode
             // Reachability is per hero: a Blue-only card is not something the Red hero can be made to
             // set aside, so a dashboard is judged against the cards its own hero can reach.
             var redOnly = configuration.CardInstances
-                .Where(instance => instance.OwnerId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue)
+                .Where(instance => instance.OwnerId.Value == StagedBoardParticipants.RedHeroIdValue)
                 .ToArray();
             Assert.That(redOnly, Is.Not.Empty);
             Assert.DoesNotThrow(() => HeroItemSlotSetupValidator.Validate(
@@ -450,7 +450,7 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardDefinitions,
                 configuration.CardInstances
                     .Where(instance =>
-                        instance.OwnerId.Value != PlaceholderOneVsOneParticipants.RedHeroIdValue)
+                        instance.OwnerId.Value != StagedBoardParticipants.RedHeroIdValue)
                     .ToArray()));
         }
 
@@ -464,13 +464,13 @@ namespace GuardsDigital.Tests.EditMode
             // and p.8 then pays that hero a Pity Coin for not having levelled. Nothing about that is
             // reachable with the generated showcase content, whose decks are complete by construction;
             // it is what a hand-transcribed verified hero deck gets wrong one card at a time.
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
 
             Assert.DoesNotThrow(() => HeroItemSlotSetupValidator.Validate(
                 configuration.Participants, configuration.CardDefinitions, configuration.CardInstances),
                 "The configured content owns every candidate its own cards name.");
 
-            var red = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var red = new HeroId(StagedBoardParticipants.RedHeroIdValue);
             var named = configuration.CardInstances
                 .Where(instance => instance.OwnerId.Equals(red))
                 .Select(instance => configuration.CardDefinitions
@@ -498,7 +498,7 @@ namespace GuardsDigital.Tests.EditMode
 
             // The same card removed from the *other* hero is not this hero's problem: the deck a
             // purchase searches is the levelling hero's own.
-            var blue = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var blue = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             Assert.That(configuration.CardInstances.Any(instance => instance.OwnerId.Equals(blue)), Is.True);
             Assert.DoesNotThrow(() => HeroItemSlotSetupValidator.Validate(
                 configuration.Participants,
@@ -518,9 +518,9 @@ namespace GuardsDigital.Tests.EditMode
             var start = session.CaptureSnapshot();
 
             var red = session.Projection.Cards.First(card =>
-                card.OwnerId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue);
+                card.OwnerId.Value == StagedBoardParticipants.RedHeroIdValue);
             var blue = session.Projection.Cards.First(card =>
-                card.OwnerId.Value == PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                card.OwnerId.Value == StagedBoardParticipants.BlueHeroIdValue);
             Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
             var afterFirst = session.CaptureSnapshot();
             Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
@@ -580,7 +580,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void APlacedItem_RoundTripsWithBothItsSlotAndItsIcon()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
+            var participants = MatchConfiguration.CreateForShowcaseFixture().Participants;
             var owner = participants.Heroes[0].Id;
             var fourth = HeroDashboard.RulebookLayout.Slots[3].Position;
             var captured = HeroItemState.Restore(participants, new HeroItemRestoreState(new[]
@@ -615,12 +615,12 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchParticipants ParticipantsWithRestrictedRedDashboard()
         {
-            var participants = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture().Participants;
+            var participants = MatchConfiguration.CreateForShowcaseFixture().Participants;
             return new MatchParticipants(
                 participants.Teams,
                 participants.Players,
                 participants.Heroes.Select(hero =>
-                    hero.Id.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue
+                    hero.Id.Value == StagedBoardParticipants.RedHeroIdValue
                         ? new Hero(hero.Id, hero.PlayerId, RestrictedDashboard())
                         : hero));
         }
@@ -675,7 +675,7 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>A set-aside instance of a configured definition printing the named Item icon.</summary>
         private static CardInstance SetAsideCard(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             PrintedValueChannel icon,
             HeroId owner)
         {
@@ -686,7 +686,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static CardInstance SetAsideTierOneCard(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             HeroId owner) =>
             SetAsideInstance(
                 configuration.CardDefinitions.First(definition =>
@@ -751,7 +751,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -778,16 +778,16 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private sealed class CompositionFixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
             private readonly List<CardInstance> instances;
             private readonly List<CardDefinition> definitions;
             private readonly AdjacentMoveAuthority board;
 
             public CompositionFixture(int defenderDistance = 1)
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-                RedHeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-                BlueHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+                RedHeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+                BlueHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
                 definitions = configuration.CardDefinitions.ToList();
                 definitions.Add(RangeItemDefinition);
                 instances = configuration.CardInstances.ToList();

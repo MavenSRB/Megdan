@@ -76,7 +76,7 @@ namespace GuardsDigital.Application
         // that introduced the aggregate shows the structural change rather than a rename sweep. The
         // two rule-event streams deliberately get no forward: their few remaining reads name the
         // aggregate, because only its commit boundary may append to them.
-        private PlaceholderOneVsOneTestConfiguration configuration => aggregate.Configuration;
+        private MatchConfiguration configuration => aggregate.Configuration;
         private AdjacentMoveAuthority board => aggregate.Board;
         private RoundResolutionAuthority round => aggregate.Round;
 

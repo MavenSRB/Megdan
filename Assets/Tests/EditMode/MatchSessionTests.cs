@@ -563,7 +563,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateSession(bool useAdjacentSyntheticBoard = false)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             if (useAdjacentSyntheticBoard)
             {
                 return CreateAdjacentSyntheticSession(configuration);
@@ -587,7 +587,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static MatchSession CreateAdjacentSyntheticSession(
-            PlaceholderOneVsOneTestConfiguration configuration)
+            MatchConfiguration configuration)
         {
             var map = BoardMapDefinition.CreateSynthetic(
                 new MapId("application-session-command-fixture"),
@@ -657,9 +657,9 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateSkillWithMovementSession()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
-            var redHero = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var blueHero = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var participants = StagedBoardParticipants.Create();
+            var redHero = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var blueHero = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var definitions = new[]
             {
                 CreatePausingSkillWithMovementDefinition("session-red-skill-move", 14),

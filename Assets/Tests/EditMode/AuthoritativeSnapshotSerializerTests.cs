@@ -228,9 +228,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RoundTrip_RederivesPausedCapabilityCandidatesFromPersistedInputBindings()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
-            var redHero = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var blueHero = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var participants = StagedBoardParticipants.Create();
+            var redHero = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var blueHero = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var redDefinition = CreateInputDependentSkillDefinition();
             var blueDefinition = CreateMinimalMovementDefinition("test-input-blue", 3);
             var definitions = new[] { redDefinition, blueDefinition };
@@ -463,7 +463,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static SnapshotFixture CreateFixture()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var redHero = configuration.RedHand.Instances[0].OwnerId;
             var blueHero = configuration.BlueHand.Instances[0].OwnerId;
             var board = new AdjacentMoveAuthority(
@@ -497,7 +497,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static void CompleteRoundWithHolds(
             RoundResolutionAuthority round,
-            PlaceholderOneVsOneTestConfiguration configuration)
+            MatchConfiguration configuration)
         {
             for (var turn = 0; turn < RoundResolutionAuthority.TurnsPerRound; turn++)
             {
@@ -602,10 +602,10 @@ namespace GuardsDigital.Tests.EditMode
 
         private sealed class SnapshotFixture
         {
-            public SnapshotFixture(PlaceholderOneVsOneTestConfiguration configuration,
+            public SnapshotFixture(MatchConfiguration configuration,
                 AdjacentMoveAuthority board, RoundResolutionAuthority round)
             { Configuration = configuration; Board = board; Round = round; }
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
             public AdjacentMoveAuthority Board { get; }
             public RoundResolutionAuthority Round { get; }
         }

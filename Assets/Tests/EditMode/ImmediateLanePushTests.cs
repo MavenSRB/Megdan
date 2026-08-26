@@ -48,10 +48,10 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class ImmediateLanePushTests
     {
         private static readonly HeroId RedHero =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
         private static readonly HeroId BlueHero =
-            new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
         private static readonly CardInstanceId RemoveCardId = new CardInstanceId("lane-push-remove-card");
 
@@ -238,11 +238,11 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PreventedDefeatResolution_CarriesTheCauseItWasGiven()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var outcome = new DefeatOutcome(
                 new DefeatOutcomeId("prevented:minion-defeat"),
                 new DefeatTargetId("blue-last"),
-                new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue),
+                new TeamId(StagedBoardParticipants.BlueTeamIdValue),
                 RedHero,
                 2,
                 0);
@@ -435,7 +435,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 BattleZoneQuery.FindEffectiveMinionsInside(
                         board,
-                        PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue)
+                        MatchConfiguration.CreateForInternalTest(TeamSide.Blue)
                             .Participants,
                         RuleModificationSet.Empty)
                     .Any(minion => minion.TeamSide == TeamSide.Red),
@@ -449,7 +449,7 @@ namespace GuardsDigital.Tests.EditMode
                     LanePushCauseKind.None,
                     new ActionResolutionId("displacement"),
                     board,
-                    PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue).Participants,
+                    MatchConfiguration.CreateForInternalTest(TeamSide.Blue).Participants,
                     RuleModificationSet.Empty),
                 Is.Null,
                 "An emptied zone is not the trigger; a Defeat or a removal is.");
@@ -497,7 +497,7 @@ namespace GuardsDigital.Tests.EditMode
                     LanePushCauseKind.Removal,
                     new ActionResolutionId("synthetic-cause"),
                     board,
-                    PlaceholderOneVsOneParticipants.Create(),
+                    StagedBoardParticipants.Create(),
                     RuleModificationSet.Empty),
                 Is.Null,
                 "A map that flags no single Battle Zone has no lane to push, which is the reading the " +
@@ -515,7 +515,7 @@ namespace GuardsDigital.Tests.EditMode
                     LanePushCauseKind.None,
                     new ActionResolutionId("no-cause"),
                     board,
-                    PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red).Participants,
+                    MatchConfiguration.CreateForInternalTest(TeamSide.Red).Participants,
                     RuleModificationSet.Empty),
                 Is.Null,
                 "An emptied Battle Zone is not p.8's trigger. Something has to have defeated or removed " +
@@ -529,7 +529,7 @@ namespace GuardsDigital.Tests.EditMode
         private sealed class AttackFixture
         {
             public AttackFixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 AdjacentMoveAuthority board,
                 CardActionResolutionAuthority authority,
                 ActionOffer offer)
@@ -540,7 +540,7 @@ namespace GuardsDigital.Tests.EditMode
                 Offer = offer;
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
             public AdjacentMoveAuthority Board { get; }
             public CardActionResolutionAuthority Authority { get; }
             public ActionOffer Offer { get; }
@@ -572,7 +572,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static AttackFixture CreateAttackFixture(params QuickGameMinionSetupState[] minions)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = CreateFlaggedBattleZoneMap();
             var board = new AdjacentMoveAuthority(
                 map,
@@ -605,7 +605,7 @@ namespace GuardsDigital.Tests.EditMode
         private static HeroDefeatFixture CreateHeroDefeatFixture(
             params QuickGameMinionSetupState[] minions)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var board = new AdjacentMoveAuthority(
                 CreateFlaggedBattleZoneMap(),
                 new[]
@@ -632,7 +632,7 @@ namespace GuardsDigital.Tests.EditMode
         private sealed class HeroDefeatFixture
         {
             public HeroDefeatFixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 AdjacentMoveAuthority board,
                 CardActionResolutionAuthority authority,
                 ActionOffer offer)
@@ -643,7 +643,7 @@ namespace GuardsDigital.Tests.EditMode
                 Offer = offer;
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
             public AdjacentMoveAuthority Board { get; }
             public CardActionResolutionAuthority Authority { get; }
             public ActionOffer Offer { get; }
@@ -718,8 +718,8 @@ namespace GuardsDigital.Tests.EditMode
             new QuickGameMinionSetupState(
                 new MinionId(id),
                 new TeamId(side == TeamSide.Red
-                    ? PlaceholderOneVsOneParticipants.RedTeamIdValue
-                    : PlaceholderOneVsOneParticipants.BlueTeamIdValue),
+                    ? StagedBoardParticipants.RedTeamIdValue
+                    : StagedBoardParticipants.BlueTeamIdValue),
                 side,
                 StandardMinionType.Melee,
                 new ConfiguredSpawnPointReference(
@@ -770,7 +770,7 @@ namespace GuardsDigital.Tests.EditMode
             out MinionId target, out HeroId actor)
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                 configuration.Participants,
@@ -968,7 +968,7 @@ namespace GuardsDigital.Tests.EditMode
                 inputs,
                 1,
                 1,
-                PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red).Participants,
+                MatchConfiguration.CreateForInternalTest(TeamSide.Red).Participants,
                 null,
                 RuleModificationSet.Empty,
                 EffectCardState.Absent,
@@ -1023,7 +1023,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static AdjacentMoveAuthority CreateOfficialBoard()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

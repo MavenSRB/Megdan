@@ -30,10 +30,10 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class PlacementCapabilityTests
     {
         private static readonly HeroId RedActor =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
         private static readonly HeroId BlueActor =
-            new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
         private static readonly HexCoordinate RedHeroAt = new HexCoordinate(-2, -5);
 
@@ -426,7 +426,7 @@ namespace GuardsDigital.Tests.EditMode
                 inputs ?? new Dictionary<string, EffectValue>(),
                 1,
                 1,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 RuleModificationSet.Empty,
                 EffectCardState.Absent,
@@ -447,7 +447,7 @@ namespace GuardsDigital.Tests.EditMode
                 new Dictionary<string, EffectValue>(),
                 1,
                 1,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 RuleModificationSet.Empty,
                 EffectCardState.Absent,
@@ -477,7 +477,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static AdjacentMoveAuthority CreateOfficialBoard(params string[] reservedMinionIds)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

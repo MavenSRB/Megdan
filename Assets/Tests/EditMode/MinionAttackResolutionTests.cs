@@ -226,9 +226,9 @@ namespace GuardsDigital.Tests.EditMode
 
         private static Fixture CreateFixture(params QuickGameMinionSetupState[] minions)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attacker = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var defender = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attacker = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defender = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var map = CreateBattleZoneMap();
             var board = new AdjacentMoveAuthority(
                 map,
@@ -269,8 +269,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var mapId = new MapId("minion-attack-map");
             var teamId = new TeamId(side == TeamSide.Red
-                ? PlaceholderOneVsOneParticipants.RedTeamIdValue
-                : PlaceholderOneVsOneParticipants.BlueTeamIdValue);
+                ? StagedBoardParticipants.RedTeamIdValue
+                : StagedBoardParticipants.BlueTeamIdValue);
             return new QuickGameMinionSetupState(
                 new MinionId(id), teamId, side, type,
                 new ConfiguredSpawnPointReference(mapId, new SpawnPointId($"spawn-{id}")),
@@ -290,7 +290,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private sealed class Fixture
         {
-            public Fixture(PlaceholderOneVsOneTestConfiguration configuration, HeroId attackerId,
+            public Fixture(MatchConfiguration configuration, HeroId attackerId,
                 BoardMapDefinition map, AdjacentMoveAuthority board,
                 CardActionResolutionAuthority authority, ActionOffer attackOffer)
             {
@@ -298,7 +298,7 @@ namespace GuardsDigital.Tests.EditMode
                 Board = board; Authority = authority; AttackOffer = attackOffer;
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
             public HeroId AttackerId { get; }
             public BoardMapDefinition Map { get; }
             public AdjacentMoveAuthority Board { get; }

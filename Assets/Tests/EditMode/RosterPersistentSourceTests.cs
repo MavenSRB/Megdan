@@ -484,11 +484,11 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private sealed class SourceFixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
             private HexCoordinate blueAt;
 
             private SourceFixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 AdjacentMoveAuthority board,
                 HeroId red,
                 HeroId blue,
@@ -517,7 +517,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public static SourceFixture Create()
             {
-                var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
                 var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
                 var setup = QuickGameSetupAuthority.Create(
                     QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

@@ -41,7 +41,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void InitialScenario_RecreatesFreshCardsBoardMapAndChosenTieBreaker()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = BoardMapDefinition.CreateSynthetic(
                 new MapId("replay-map"),
                 3,

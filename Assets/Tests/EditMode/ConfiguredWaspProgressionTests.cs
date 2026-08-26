@@ -289,10 +289,10 @@ namespace GuardsDigital.Tests.EditMode
 
             public WaspProgressionFixture(int coins)
             {
-                Configuration = PlaceholderOneVsOneTestConfiguration
+                Configuration = MatchConfiguration
                     .CreateVerifiedMirrorForInternalTest(TeamSide.Red);
-                HeroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-                EnemyHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+                HeroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+                EnemyHeroId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
                 Levels = new HeroProgressionState(Configuration.Participants);
                 Items = new HeroItemState(Configuration.Participants);
                 CoinLedger = new HeroCoinLedger(Configuration.Participants);
@@ -310,7 +310,7 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
 
             public HeroId HeroId { get; }
 

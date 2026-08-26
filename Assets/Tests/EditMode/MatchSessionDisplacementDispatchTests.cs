@@ -390,7 +390,7 @@ namespace GuardsDigital.Tests.EditMode
             // that spend that permission - each on exactly one card. The adjacency-derived batch
             // stays behind the Skill fixture, because no showcase card declares "every adjacent
             // object".
-            var ordinary = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var ordinary = MatchConfiguration.CreateForShowcaseFixture();
 
             var byCapability = ordinary.CardDefinitions
                 .SelectMany(definition => definition.ActionDefinitions
@@ -528,7 +528,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateDisplacementSession(HexCoordinate blueAt)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForSkillFixture(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

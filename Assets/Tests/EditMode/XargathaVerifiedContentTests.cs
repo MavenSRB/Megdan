@@ -451,7 +451,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheDealtCards_PassTheInitialSetupValidator()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration
+            var configuration = MatchConfiguration
                 .CreateStagedXargathaForInternalTest(TeamSide.Red);
 
             Assert.That(configuration.CardInstances

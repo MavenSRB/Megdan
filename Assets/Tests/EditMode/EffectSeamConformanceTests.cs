@@ -94,9 +94,11 @@ namespace GuardsDigital.Tests.EditMode
         /// <item><c>SyntheticEffectCapabilities</c> and <c>SyntheticComponentDefinitions</c> - the
         /// registered content itself. A catalog's own factory building a catalog is what a catalog is;
         /// what the rule is about is every other type naming it.</item>
-        /// <item><c>PlaceholderOneVsOneTestConfiguration</c> - the configured match's content
-        /// declaration, which states once what its cards need. It is the visibly test-only
-        /// configuration milestone 8.4 retires, and the exclusion retires with it.</item>
+        /// <item><c>MatchConfiguration</c> - the configured match's content declaration, which states
+        /// once what its cards need. Milestone 8.3 made it the only production type besides the
+        /// catalog itself that may ask the build what it registers, so the exclusion is that
+        /// declaration rather than a test-only allowance; milestone 8.25b's rename left it
+        /// unchanged.</item>
         /// </list>
         /// </summary>
         [Test]
@@ -200,7 +202,7 @@ namespace GuardsDigital.Tests.EditMode
                     type != typeof(MatchContentCatalogs) &&
                     type != typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticEffectCapabilities) &&
                     type != typeof(GuardsDigital.Core.Components.Synthetic.SyntheticComponentDefinitions) &&
-                    type != typeof(GuardsDigital.Core.Participants.PlaceholderOneVsOneTestConfiguration))
+                    type != typeof(GuardsDigital.Core.Participants.MatchConfiguration))
                 .ToArray();
 
         /// <summary>Deliberate violation: asks the build for content instead of being handed it.</summary>

@@ -423,7 +423,7 @@ Non-goals: No change to which abilities may repeat, to rulebook p.10's repeat ru
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825a-answer-an-after-action-repeat-that-outlives-its-actors-initiative-completion-evidence).
 
-### [ ] 8.25b Name the configuration types after what they now compose
+### [x] 8.25b Name the configuration types after what they now compose
 
 Proposed by milestone 8.25's independent review. `PlaceholderOneVsOneTestConfiguration`, `PlaceholderOneVsOneParticipants` and `PlaceholderConfigurationRestoreState` are neither placeholders nor one-versus-one since 8.25: the first composes rulebook p.5's six official seats and is the production configuration a player loads. Renaming them is mechanical and touches roughly 250 call sites, so it was deliberately not bundled into a milestone that changed what they mean.
 
@@ -437,6 +437,8 @@ Acceptance checks:
 - Complete unfiltered Edit Mode and Play Mode suites pass, because a rename of this breadth cannot be shown affected-only.
 
 Non-goals: No behavior change, no content change, no new configuration, and no change to the staged boards themselves.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825b-name-the-configuration-types-after-what-they-now-compose-completion-evidence).
 
 ### [ ] 8.25c Scale the HUD with the viewport and identify each rail with its hero portrait
 

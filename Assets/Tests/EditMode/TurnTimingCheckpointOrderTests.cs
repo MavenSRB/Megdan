@@ -100,7 +100,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ActionEndCheckpoint_ReachesAnEffectBeforeItsSourceCardCancellation()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var actingCardId = ActingCardId(configuration);
             var session = CreateObservingSession(configuration, sourceCardInstanceId: actingCardId);
 
@@ -369,7 +369,7 @@ namespace GuardsDigital.Tests.EditMode
         /// The card the Movement scenario's actor plays: Blue's Initiative-8 card, which
         /// <see cref="StartOfficialMapMovementFour"/> commits and which wins the Initiative.
         /// </summary>
-        private static CardInstanceId ActingCardId(PlaceholderOneVsOneTestConfiguration configuration)
+        private static CardInstanceId ActingCardId(MatchConfiguration configuration)
         {
             var definitionsByReference = configuration.CardDefinitions
                 .ToDictionary(definition => definition.Reference);
@@ -385,11 +385,11 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateObservingSession() =>
             CreateObservingSession(
-                PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue),
+                MatchConfiguration.CreateForInternalTest(TeamSide.Blue),
                 ObserverSourceCard);
 
         private static MatchSession CreateObservingSession(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             CardInstanceId sourceCardInstanceId)
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
@@ -430,7 +430,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateObservingAdjacentSession(bool withBlueMinionBetween = false)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = BoardMapDefinition.CreateSynthetic(
                 new MapId("timing-checkpoint-order-fixture"),
                 1,

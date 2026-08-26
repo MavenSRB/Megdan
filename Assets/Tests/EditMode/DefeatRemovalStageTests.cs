@@ -208,7 +208,7 @@ namespace GuardsDigital.Tests.EditMode
                 "A source offering to stop the removal stops rulebook p.14 where p.13 puts the " +
                 "decision: after the Defeat and its reward, and before the miniature leaves.");
             Assert.That(standing.DecidingHeroId.Value,
-                Is.EqualTo(PlaceholderOneVsOneParticipants.BlueHeroIdValue),
+                Is.EqualTo(StagedBoardParticipants.BlueHeroIdValue),
                 "p.10 gives the decision to the hero whose source is offering, which is the " +
                 "defender's - not the attacker who caused the Defeat.");
             Assert.That(
@@ -539,7 +539,7 @@ namespace GuardsDigital.Tests.EditMode
             new DefeatOutcome(
                 new DefeatOutcomeId($"prevented-{minionId}:minion-defeat"),
                 new DefeatTargetId(minionId),
-                new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue),
+                new TeamId(StagedBoardParticipants.BlueTeamIdValue),
                 fixture.AttackerId,
                 coins,
                 0);
@@ -610,7 +610,7 @@ namespace GuardsDigital.Tests.EditMode
                 // sides empty after the removal, which p.8 asks nothing about.
                 CreateMinion(
                     "red-holder", TeamSide.Red, StandardMinionType.Melee, new HexCoordinate(2, 0)));
-            var defender = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var defender = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var lifecycle = new GuardsDigital.Core.Timing.ActiveEffectLifecycle();
             lifecycle.Create(
                 new GuardsDigital.Core.Timing.ActiveEffectId("shield-probe"),
@@ -644,9 +644,9 @@ namespace GuardsDigital.Tests.EditMode
 
         private static Fixture CreateFixture(params QuickGameMinionSetupState[] minions)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attacker = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var defender = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attacker = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defender = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var map = CreateBattleZoneMap();
             var board = new AdjacentMoveAuthority(
                 map,
@@ -689,8 +689,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var mapId = new MapId("defeat-removal-map");
             var teamId = new TeamId(side == TeamSide.Red
-                ? PlaceholderOneVsOneParticipants.RedTeamIdValue
-                : PlaceholderOneVsOneParticipants.BlueTeamIdValue);
+                ? StagedBoardParticipants.RedTeamIdValue
+                : StagedBoardParticipants.BlueTeamIdValue);
             return new QuickGameMinionSetupState(
                 new MinionId(id), teamId, side, type,
                 new ConfiguredSpawnPointReference(mapId, new SpawnPointId($"spawn-{id}")),
@@ -710,7 +710,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private sealed class Fixture
         {
-            public Fixture(PlaceholderOneVsOneTestConfiguration configuration, HeroId attackerId,
+            public Fixture(MatchConfiguration configuration, HeroId attackerId,
                 BoardMapDefinition map, AdjacentMoveAuthority board,
                 CardActionResolutionAuthority authority, ActionOffer attackOffer,
                 IReadOnlyList<QuickGameMinionSetupState> minions)
@@ -719,7 +719,7 @@ namespace GuardsDigital.Tests.EditMode
                 Board = board; Authority = authority; AttackOffer = attackOffer; Minions = minions;
             }
 
-            public PlaceholderOneVsOneTestConfiguration Configuration { get; }
+            public MatchConfiguration Configuration { get; }
             public HeroId AttackerId { get; }
             public BoardMapDefinition Map { get; }
             public AdjacentMoveAuthority Board { get; }

@@ -28,9 +28,9 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class RosterStateOperationCapabilityTests
     {
         private static readonly HeroId Red =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
         private static readonly HeroId Blue =
-            new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
         private static readonly MapId Map = new MapId("roster-operation-map");
         private static readonly EffectCapabilityCatalog RosterCatalog =
             new EffectCapabilityCatalog(SyntheticRosterCapabilities.Handlers());
@@ -109,7 +109,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void GainResource_AnticipationIsPure_AndOverflowRefusesWithoutMutation()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var ledger = new HeroCoinLedger(participants);
             var roster = Roster(participants, ledger);
             var inputs = new Dictionary<string, EffectValue>
@@ -147,7 +147,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TransferResource_UsesAnExactChooserAndEveryStaleOrOverflowRefusalIsAtomic()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var ledger = new HeroCoinLedger(participants);
             Assert.That(ledger.TryGrant(Red, 3, CoinGrantKind.CardEffect, out _), Is.True);
             var roster = Roster(participants, ledger);
@@ -191,7 +191,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void StateOperations_RejectUnknownChoosersAndLedgerHeroesDuringPureFeasibility()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var unknown = new HeroId("roster-unknown-hero");
             var skill = Definition(
                 "unknown-chooser-skill",
@@ -242,7 +242,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PendingTransfer_RoundTripsAndRederivesFromExistingSnapshotStateWithoutASchemaField()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var transferDefinition = TransferSkillDefinition();
             var blueDefinition = MovementDefinition();
             var definitions = new[] { transferDefinition, blueDefinition };
@@ -370,7 +370,7 @@ namespace GuardsDigital.Tests.EditMode
                 inputs,
                 1,
                 1,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 RuleModificationSet.Empty,
                 cards ?? EffectCardState.Absent,

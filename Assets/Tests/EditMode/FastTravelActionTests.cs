@@ -132,7 +132,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PrimaryMovementReplacement_UsesFastTravelSuppressedTextPolicy()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var actorId = configuration.RedHand.Instances[0].OwnerId;
             var primaryMovement = new ActionDefinition(
                 new ActionDefinitionId("primary-movement-with-text"),
@@ -182,7 +182,7 @@ namespace GuardsDigital.Tests.EditMode
             string enemyHeroZoneId = null,
             bool surroundActorWithObstacles = false)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -257,14 +257,14 @@ namespace GuardsDigital.Tests.EditMode
 
         private sealed class Fixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
             private readonly BoardMapDefinition map;
             private readonly QuickGameSetupState setup;
             private readonly ActionOffer replacementOffer;
             private readonly HashSet<HexCoordinate> reserved;
 
             public Fixture(
-                PlaceholderOneVsOneTestConfiguration configuration,
+                MatchConfiguration configuration,
                 BoardMapDefinition map,
                 QuickGameSetupState setup,
                 AdjacentMoveAuthority board,

@@ -374,7 +374,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var configured = QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne();
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForSkillFixture(TeamSide.Blue);
             var setup = QuickGameSetupAuthority.Create(
                 configured, configuration.Participants, map, configuration.TieBreakerState);
 
@@ -434,7 +434,7 @@ namespace GuardsDigital.Tests.EditMode
         private static HeroId ActingHero(
             BoardMapDefinition map,
             QuickGameSetupState setup,
-            PlaceholderOneVsOneTestConfiguration configuration)
+            MatchConfiguration configuration)
         {
             var probe = CreateSession(map, setup, configuration, default, default);
             CommitShoveCards(probe);
@@ -448,7 +448,7 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateSession(
             BoardMapDefinition map,
             QuickGameSetupState setup,
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             HeroId placed,
             HexCoordinate at,
             HexCoordinate? otherAt = null)
@@ -473,7 +473,7 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>A space well away from the Battle Zone, so the other hero is beside nothing.</summary>
         private static HexCoordinate ElsewhereFor(HeroId heroId) =>
-            heroId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue
+            heroId.Value == StagedBoardParticipants.RedHeroIdValue
                 ? new HexCoordinate(-2, -5)
                 : BlueAt;
 

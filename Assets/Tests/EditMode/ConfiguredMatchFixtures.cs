@@ -128,7 +128,7 @@ namespace GuardsDigital.Tests.EditMode
         public static MatchSession CreateSessionWithAnAdjacentEnemyMinion(
             out HeroId redHeroId, out MinionId target)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -149,7 +149,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateVerifiedMirrorWithAnAdjacentEnemyMinion(out MinionId target)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+            var configuration = MatchConfiguration.CreateVerifiedMirrorForInternalTest(
                 TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -216,7 +216,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </remarks>
         public static MatchSession CreateEngagedSession(int lifeCountersPerTeam)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -243,7 +243,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateAdjacentConfiguredSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -266,7 +266,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateAttackTextSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForAttackTextFixture(
+            var configuration = MatchConfiguration.CreateForAttackTextFixture(
                 TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -295,7 +295,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateEngagedVerifiedMirrorSession() =>
             CreateEngagedFixtureSession(
-                PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(TeamSide.Red));
+                MatchConfiguration.CreateVerifiedMirrorForInternalTest(TeamSide.Red));
 
         /// <summary>
         /// Milestone 8.16. The same engaged verified mirror with the stated number of Life counters per
@@ -309,7 +309,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateEngagedVerifiedMirrorSession(int lifeCountersPerTeam)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+            var configuration = MatchConfiguration.CreateVerifiedMirrorForInternalTest(
                 TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -337,7 +337,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateUncontestedVerifiedPushSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+            var configuration = MatchConfiguration.CreateVerifiedMirrorForInternalTest(
                 TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -374,7 +374,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateOrbitSession() =>
             CreateEngagedFixtureSession(
-                PlaceholderOneVsOneTestConfiguration.CreateForOrbitFixture(TeamSide.Red));
+                MatchConfiguration.CreateForOrbitFixture(TeamSide.Red));
 
         /// <summary>
         /// Milestone 8.19a. The two heroes standing beside each other with the four roster continuation
@@ -387,7 +387,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateContinuationSession() =>
             CreateEngagedFixtureSession(
-                PlaceholderOneVsOneTestConfiguration.CreateForContinuationFixture(TeamSide.Red));
+                MatchConfiguration.CreateForContinuationFixture(TeamSide.Red));
 
         /// <summary>
         /// Milestone 8.19a. The same board with the Red hero's Ultimate already beside the dashboard,
@@ -400,7 +400,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateContinuationSessionWithUnlockedUltimate()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForContinuationFixture(
+            var configuration = MatchConfiguration.CreateForContinuationFixture(
                 TeamSide.Red);
             var redHero = configuration.Participants.Heroes.Single(hero =>
                 configuration.Participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
@@ -430,7 +430,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateKinesisSession(out MinionId outOfLineMinionId)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForKinesisFixture(
+            var configuration = MatchConfiguration.CreateForKinesisFixture(
                 TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -724,7 +724,7 @@ namespace GuardsDigital.Tests.EditMode
             return session;
         }
 
-        private static PlaceholderOneVsOneTestConfiguration WithCardSwappedIntoTheRedHand(
+        private static MatchConfiguration WithCardSwappedIntoTheRedHand(
             CardDefinitionId cardId, out HeroId redHeroId) =>
             WithCardSwappedIntoTheRedHand(cardId, out redHeroId, emptyTheOpposingHand: false);
 
@@ -733,10 +733,10 @@ namespace GuardsDigital.Tests.EditMode
         /// hero's hand and one into the opposing hero's, each in place of that hand's card of its own
         /// colour, so both hands keep p.15's "exactly 5 cards, 1 of each color".
         /// </summary>
-        private static PlaceholderOneVsOneTestConfiguration WithCardsSwappedIntoBothHands(
+        private static MatchConfiguration WithCardsSwappedIntoBothHands(
             CardDefinitionId redCardId, CardDefinitionId blueCardId, out HeroId redHeroId)
         {
-            var source = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+            var source = MatchConfiguration.CreateVerifiedMirrorForInternalTest(
                 TeamSide.Red);
             var state = source.CaptureRestoreState();
             redHeroId = state.Participants.Heroes
@@ -766,8 +766,8 @@ namespace GuardsDigital.Tests.EditMode
                     : null;
             }
 
-            return PlaceholderOneVsOneTestConfiguration.Restore(
-                new PlaceholderConfigurationRestoreState(
+            return MatchConfiguration.Restore(
+                new MatchConfigurationRestoreState(
                     state.Participants,
                     state.Definitions,
                     state.Instances.Select(instance =>
@@ -778,10 +778,10 @@ namespace GuardsDigital.Tests.EditMode
                     state.SetupSeed));
         }
 
-        private static PlaceholderOneVsOneTestConfiguration WithCardSwappedIntoTheRedHand(
+        private static MatchConfiguration WithCardSwappedIntoTheRedHand(
             CardDefinitionId cardId, out HeroId redHeroId, bool emptyTheOpposingHand)
         {
-            var source = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+            var source = MatchConfiguration.CreateVerifiedMirrorForInternalTest(
                 TeamSide.Red);
             var state = source.CaptureRestoreState();
             redHeroId = state.Participants.Heroes
@@ -808,8 +808,8 @@ namespace GuardsDigital.Tests.EditMode
                         instance.Id, instance.DefinitionReference, instance.OwnerId)
                     : instance;
 
-            return PlaceholderOneVsOneTestConfiguration.Restore(
-                new PlaceholderConfigurationRestoreState(
+            return MatchConfiguration.Restore(
+                new MatchConfigurationRestoreState(
                     state.Participants,
                     state.Definitions,
                     state.Instances.Select(instance =>
@@ -907,7 +907,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateMagneticDaggerSession(out MinionId adjacentMinionId)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+            var configuration = MatchConfiguration.CreateVerifiedMirrorForInternalTest(
                 TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -957,8 +957,8 @@ namespace GuardsDigital.Tests.EditMode
             bool stagedArien = false)
         {
             var configuration = stagedArien
-                ? PlaceholderOneVsOneTestConfiguration.CreateStagedArienForInternalTest(TeamSide.Red)
-                : PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+                ? MatchConfiguration.CreateStagedArienForInternalTest(TeamSide.Red)
+                : MatchConfiguration.CreateVerifiedMirrorForInternalTest(
                     TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -1018,7 +1018,7 @@ namespace GuardsDigital.Tests.EditMode
         /// one. Extracted at milestone 8.6 from the identical bodies above it.
         /// </summary>
         private static MatchSession CreateEngagedFixtureSession(
-            PlaceholderOneVsOneTestConfiguration configuration)
+            MatchConfiguration configuration)
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -1043,7 +1043,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateAttackTextSessionWithAnAdjacentMinion(out MinionId minionId)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForAttackTextFixture(
+            var configuration = MatchConfiguration.CreateForAttackTextFixture(
                 TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -1076,7 +1076,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateVerifiedMirrorSession(TeamSide initialTieBreakerSide)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateVerifiedMirrorForInternalTest(
+            var configuration = MatchConfiguration.CreateVerifiedMirrorForInternalTest(
                 initialTieBreakerSide);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -1094,7 +1094,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateVerifiedDefenderSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForVerifiedDefenseFixture(
+            var configuration = MatchConfiguration.CreateForVerifiedDefenseFixture(
                 TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
@@ -1120,7 +1120,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateUncontestedPushSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -1172,7 +1172,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static MatchSession CreateSession(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             BoardMapDefinition map,
             QuickGameSetupState setup)
         {
@@ -1190,7 +1190,7 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>The ordinary configured match on the official map, with nobody earning a coin.</summary>
         public static MatchSession CreateConfiguredSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -1387,12 +1387,12 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateSessionWithAPassingHero(out HeroId passingHeroId)
         {
-            var source = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var source = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var state = source.CaptureRestoreState();
             var dropped = new HashSet<CardInstanceId>(
                 source.BlueHand.Instances.Skip(1).Select(instance => instance.Id));
-            var configuration = PlaceholderOneVsOneTestConfiguration.Restore(
-                new PlaceholderConfigurationRestoreState(
+            var configuration = MatchConfiguration.Restore(
+                new MatchConfigurationRestoreState(
                     state.Participants,
                     state.Definitions,
                     state.Instances.Where(instance => !dropped.Contains(instance.Id)),
@@ -1496,7 +1496,7 @@ namespace GuardsDigital.Tests.EditMode
         /// is the same either way, so it is built once.</para>
         /// </summary>
         public static MatchSession CreateVerifiedMirrorInRadiusOfAMinion(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             out HeroId redHeroId,
             out HeroId blueHeroId,
             out MinionId targetMinionId)
@@ -1558,7 +1558,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public static MatchSession CreateSessionAwaitingADefenseResponse()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = BoardMapDefinition.CreateSynthetic(
                 new MapId("hud-defense-fixture"),
                 1,

@@ -179,7 +179,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AnEffectDeclaringATriggerWindow_RunsItsDeclaredEffectWhenTheCheckpointArrives()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var sourceCard = configuration.RedHand.Instances[0];
             var sourceAction = configuration.CardDefinitions.Single(definition =>
                     definition.Reference.Equals(sourceCard.DefinitionReference))
@@ -231,7 +231,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ActiveAndContinuousTriggers_UseTieBreakerOrderWithoutFlippingIt()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var redCard = configuration.RedHand.Instances[0];
             var blueCard = configuration.BlueHand.Instances[0];
             var redDefinition = configuration.CardDefinitions.Single(value =>
@@ -286,7 +286,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void CancelledOrExpiredActiveEffect_DoesNotExecuteItsTrigger()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var sourceCard = configuration.RedHand.Instances[0];
             var sourceDefinition = configuration.CardDefinitions.Single(value =>
                 value.Reference.Equals(sourceCard.DefinitionReference));
@@ -340,7 +340,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TriggeredEffectThatPauses_UsesTheExistingSerializableEffectFrame()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var sourceCard = configuration.RedHand.Instances[0];
             var sourceDefinition = configuration.CardDefinitions.Single(value =>
                 value.Reference.Equals(sourceCard.DefinitionReference));
@@ -486,7 +486,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SnapshotRestoreReplayAndRetainedPrefixUndo_PreserveDormantAndActiveState()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var redCard = configuration.RedHand.Instances[0];
             var redAction = configuration.CardDefinitions.Single(definition =>
                     definition.Reference.Equals(redCard.DefinitionReference))
@@ -545,7 +545,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RoundAuthority_EmitsLifecycleFactsBeforeTurnEnded()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var redCard = configuration.RedHand.Instances.OrderBy(card =>
                 configuration.CardDefinitions.Single(definition =>
                     definition.Reference.Equals(card.DefinitionReference)).Initiative.Value).First();
@@ -594,7 +594,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ResolvingSourceCard_CancelsItsActiveEffectThroughTurnAuthority()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var redCard = configuration.RedHand.Instances.OrderBy(card =>
                 configuration.CardDefinitions.Single(definition =>
                     definition.Reference.Equals(card.DefinitionReference)).Initiative.Value).First();
@@ -860,7 +860,7 @@ namespace GuardsDigital.Tests.EditMode
                 new TieBreakerState(TeamSide.Red));
 
         private static MatchSession CreateSession(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             ActiveEffectLifecycle timing)
         {
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);

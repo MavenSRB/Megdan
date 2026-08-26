@@ -739,9 +739,9 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static QuickGameSetupState CreateSetup(
-            BoardMapDefinition map, out PlaceholderOneVsOneTestConfiguration configuration)
+            BoardMapDefinition map, out MatchConfiguration configuration)
         {
-            configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             return QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
                 configuration.Participants,
@@ -794,12 +794,12 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateSession(
             BoardMapDefinition map,
             QuickGameSetupState setup,
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             HexCoordinate blueAt,
             bool withSkillCards = false)
         {
             var built = withSkillCards
-                ? PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue)
+                ? MatchConfiguration.CreateForSkillFixture(TeamSide.Blue)
                 : configuration;
             var occupancies = setup.Heroes
                 .Select(hero => new HeroOccupancy(

@@ -30,10 +30,10 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class PrintedRadiusPlaceBoundTests
     {
         private static readonly HeroId RedHeroId =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
         private static readonly HeroId BlueHeroId =
-            new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
         private static readonly ActionDefinitionId NeedleSkill =
             new ActionDefinitionId("primary-push-place-skill");
@@ -99,7 +99,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ThePublishedRadius_RefusesACardThatPrintsNoIcon()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForShowcaseFixture();
+            var configuration = MatchConfiguration.CreateForShowcaseFixture();
             var handler = SyntheticEffectCapabilities.CreateCatalog()
                 .Load(SyntheticValueCapabilities.CardRadiusV1);
 
@@ -124,7 +124,7 @@ namespace GuardsDigital.Tests.EditMode
         // ----- Helpers -----
 
         private static EffectCapabilityContext Context(
-            PlaceholderOneVsOneTestConfiguration configuration,
+            MatchConfiguration configuration,
             CardInstance card,
             ActionDefinitionId action) =>
             new EffectCapabilityContext(
@@ -154,7 +154,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private sealed class NeedleFixture
         {
-            private readonly PlaceholderOneVsOneTestConfiguration configuration;
+            private readonly MatchConfiguration configuration;
             private readonly List<CardInstance> instances;
             private readonly List<CardDefinition> definitions;
             private readonly CardActionResolutionAuthority cardActions;
@@ -162,7 +162,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public NeedleFixture()
             {
-                configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
                 definitions = configuration.CardDefinitions.ToList();
                 instances = configuration.CardInstances.ToList();
                 var board = new AdjacentMoveAuthority(

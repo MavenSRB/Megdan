@@ -351,7 +351,7 @@ namespace GuardsDigital.Tests.EditMode
             var set = RuleModificationQuery.Build(
                 timing,
                 null,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 new TieBreakerState(TeamSide.Red),
                 UnlockedUltimateSet.None, RuleObject.None, null,
                 null);

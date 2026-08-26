@@ -33,7 +33,7 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class TerrainObstacleTests
     {
-        private static readonly HeroId Mover = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+        private static readonly HeroId Mover = new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
         private static readonly HexCoordinate Terrain = new HexCoordinate(1, 0);
         private static readonly HexCoordinate Beyond = new HexCoordinate(2, 0);
@@ -366,7 +366,7 @@ namespace GuardsDigital.Tests.EditMode
                 new ActiveEffectCheckpointContext(TimingCheckpoint.TurnStarted, 1, 2),
                 new TieBreakerState(TeamSide.Red));
 
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var set = RuleModificationQuery.Build(
                 timing, null, participants, new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null,
                 null);

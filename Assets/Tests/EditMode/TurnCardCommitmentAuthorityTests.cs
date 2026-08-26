@@ -15,7 +15,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             for (var index = 0; index < 5; index++)
             {
-                var eligible = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                var eligible = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
                 var selected = eligible.RedHand.Instances[index];
                 var authority = CreateAuthority(eligible);
                 Assert.That(authority.TryCommitCard(selected.OwnerId, selected.Id).Accepted, Is.True);
@@ -27,7 +27,7 @@ namespace GuardsDigital.Tests.EditMode
                         selected.Id),
                     Has.Count.EqualTo(2));
 
-                var discarded = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                var discarded = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
                 var discardedCard = discarded.BlueHand.Instances[index];
                 Assert.That(CardLifecycleAuthority.TryDiscardFromHand(discardedCard), Is.True);
                 var rejected = CreateAuthority(discarded)
@@ -74,7 +74,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Commit_IsHeroOwnedAndRejectsUnknownCrossOwnerMissingRepeatedAndStaleState()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var authority = CreateAuthority(configuration);
             var red = configuration.RedHand.Instances[0];
             var blue = configuration.BlueHand.Instances[0];
@@ -105,7 +105,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Pass_RequiresAnActuallyEmptyOwnedHandEvenWhenHeroHasNoBoardPresence()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var authority = CreateAuthority(configuration);
             var redHeroId = configuration.RedHand.Instances[0].OwnerId;
 
@@ -131,7 +131,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void InvalidInHandLifecycleState_IsAuthorityErrorRatherThanEmptyHandPass()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var redHeroId = GetHeroId(participants, TeamSide.Red);
             var invalid = new CardInstance(
                 new CardInstanceId("invalid-red-hand-card"),
@@ -157,7 +157,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Constructor_RejectsDuplicateCardIdentityAndBrokenOwnerReference()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var definition = new CardDefinitionReference(
                 new CardDefinitionId("test-definition"),
                 "rev-1");
@@ -195,7 +195,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static TurnCardCommitmentAuthority CreateAuthority(
-            PlaceholderOneVsOneTestConfiguration configuration)
+            MatchConfiguration configuration)
         {
             return new TurnCardCommitmentAuthority(
                 configuration.CardInstances,
@@ -219,7 +219,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static ReplayFacts RunCommitSequence()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var authority = CreateAuthority(configuration);
             var events = authority.TryCommitCard(
                     configuration.BlueHand.Instances[0].OwnerId,

@@ -28,10 +28,10 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class MarkerInstanceIdentityTests
     {
         private static readonly HeroId Actor =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
 
         private static readonly HeroId Holder =
-            new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
         /// <summary>
         /// Milestone 6.8h's failing observation. The marker supply is one, so give, return, and give
@@ -211,7 +211,7 @@ namespace GuardsDigital.Tests.EditMode
                 null,
                 roundIndex,
                 turnIndex,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 RuleModificationSet.Empty,
                 EffectCardState.Absent,

@@ -27,8 +27,8 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class ChooseTargetCapabilityTests
     {
-        private static readonly HeroId Actor = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-        private static readonly HeroId Other = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+        private static readonly HeroId Actor = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+        private static readonly HeroId Other = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
         private static readonly MapId Map = new MapId("synthetic-choose-target-map");
 
         private static readonly HexCoordinate ActorAt = new HexCoordinate(0, 0);
@@ -146,7 +146,7 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 1,
                 1,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 RuleModificationSet.Empty,
                 EffectCardState.Absent,
@@ -184,7 +184,7 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 1,
                 1,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 modifications ?? RuleModificationSet.Empty,
                 EffectCardState.Absent,
@@ -248,7 +248,7 @@ namespace GuardsDigital.Tests.EditMode
                 new TieBreakerState(TeamSide.Red));
 
             var set = RuleModificationQuery.Build(
-                timing, null, PlaceholderOneVsOneParticipants.Create(),
+                timing, null, StagedBoardParticipants.Create(),
                 new TieBreakerState(TeamSide.Red), UnlockedUltimateSet.None, RuleObject.None, null,
                 null);
             Assert.That(

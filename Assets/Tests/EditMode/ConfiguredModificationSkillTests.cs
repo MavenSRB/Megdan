@@ -752,7 +752,7 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>The ordinary configured match on the official map.</summary>
         private static MatchSession CreateConfiguredSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -793,7 +793,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateLineSession(IReadOnlyList<HexCoordinate> coordinates)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = BoardMapDefinition.CreateSynthetic(
                 new MapId($"modification-skill-line-{coordinates.Count}"),
                 1,

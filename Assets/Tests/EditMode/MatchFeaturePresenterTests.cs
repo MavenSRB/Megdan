@@ -1479,7 +1479,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -1728,7 +1728,7 @@ namespace GuardsDigital.Tests.EditMode
         private static MatchSession CreateNeedleSession(
             HexCoordinate redAt, HexCoordinate blueAt, bool redOutnumbered = false)
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 redOutnumbered
@@ -1764,7 +1764,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchSession CreateSessionWithBlueHeroOffBoard()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForSkillFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForSkillFixture(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
@@ -1812,7 +1812,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateAdjacentSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = BoardMapDefinition.CreateSynthetic(
                 new MapId("presenter-adjacent-fixture"),
                 1,
@@ -1871,7 +1871,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateAdjacentMinionSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = BoardMapDefinition.CreateSynthetic(
                 new MapId("presenter-adjacent-minion-fixture"),
                 1,
@@ -1939,7 +1939,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateDefensePreviewSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var map = BoardMapDefinition.CreateSynthetic(
                 new MapId("defense-preview-fixture"),
                 1,

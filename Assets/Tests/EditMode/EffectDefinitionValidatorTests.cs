@@ -391,7 +391,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 ILConformanceScanner.References(
                     ILConformanceScanner.WithNestedTypes(
-                        typeof(GuardsDigital.Core.Participants.PlaceholderOneVsOneTestConfiguration)),
+                        typeof(GuardsDigital.Core.Participants.MatchConfiguration)),
                     ILConformanceScanner.Method(
                         typeof(EffectDefinitionValidator), nameof(EffectDefinitionValidator.Validate))),
                 Is.True,
@@ -433,7 +433,7 @@ namespace GuardsDigital.Tests.EditMode
                             }))
                 });
 
-            var loadPath = typeof(GuardsDigital.Core.Participants.PlaceholderOneVsOneTestConfiguration)
+            var loadPath = typeof(GuardsDigital.Core.Participants.MatchConfiguration)
                 .GetMethod(
                     "ValidateEffectDefinitions",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);

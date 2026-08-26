@@ -28,9 +28,9 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class RosterTargetGeometryCapabilityTests
     {
         private static readonly HeroId Actor =
-            new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
         private static readonly HeroId Other =
-            new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
         private static readonly MapId Map = new MapId("roster-target-geometry");
         private static readonly EffectCapabilityCatalog Catalog =
             new EffectCapabilityCatalog(SyntheticRosterCapabilities.Handlers());
@@ -143,7 +143,7 @@ namespace GuardsDigital.Tests.EditMode
                 new HexCoordinate(1, -1));
             var board = BattleZoneBoard(new[] { heavy, escort });
             var configuration =
-                PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+                MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var source = configuration.CardInstances
                 .Where(card => card.OwnerId.Equals(Actor))
                 .Select(card => new
@@ -495,7 +495,7 @@ namespace GuardsDigital.Tests.EditMode
                 inputs,
                 3,
                 2,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 null,
                 modifications ?? RuleModificationSet.Empty,
                 EffectCardState.Absent,
@@ -550,8 +550,8 @@ namespace GuardsDigital.Tests.EditMode
             new QuickGameMinionSetupState(
                 new MinionId(id),
                 new TeamId(side == TeamSide.Red
-                    ? PlaceholderOneVsOneParticipants.RedTeamIdValue
-                    : PlaceholderOneVsOneParticipants.BlueTeamIdValue),
+                    ? StagedBoardParticipants.RedTeamIdValue
+                    : StagedBoardParticipants.BlueTeamIdValue),
                 side,
                 type,
                 new ConfiguredSpawnPointReference(Map, new SpawnPointId($"spawn-{id}")),

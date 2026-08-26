@@ -23,7 +23,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ExistingMinionState_IsAUnitObstacleForConstructionMovementAndReachability()
         {
-            var heroId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
+            var heroId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
             var origin = new HexCoordinate(0, 0);
             var minionCoordinate = new HexCoordinate(1, 0);
             var minion = CreateMinion("blue-melee", TeamSide.Blue, StandardMinionType.Melee, minionCoordinate);
@@ -73,7 +73,7 @@ namespace GuardsDigital.Tests.EditMode
                     {
                         new QuickGameMinionSetupState(
                             new MinionId("wrong-space"),
-                            new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue),
+                            new TeamId(StagedBoardParticipants.BlueTeamIdValue),
                             TeamSide.Blue,
                             StandardMinionType.Melee,
                             new ConfiguredSpawnPointReference(
@@ -96,9 +96,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void DefenseResponse_AddsOnlyRulebookMinionModifiersWithStableSourceProvenance()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
-            var attackerId = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var defenderId = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var attackerId = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var defenderId = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
             var minions = new[]
             {
                 CreateMinion("blue-friendly-heavy", TeamSide.Blue, StandardMinionType.Heavy, new HexCoordinate(1, 1)),
@@ -209,7 +209,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SnapshotRoundTrip_RebindsExistingMinionsAndPreservesDefenseContributionSources()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             // Red Pursuit at Initiative 7 against Blue Hammer at 6: the Red hero acts first with a
             // printed non-Ranged Attack, which the showcase conversions took off both hands' first card.
             var red = configuration.RedHand.Instances[3];
@@ -286,8 +286,8 @@ namespace GuardsDigital.Tests.EditMode
         {
             var mapId = new MapId("synthetic-coordinate-board");
             var teamId = new TeamId(side == TeamSide.Red
-                ? PlaceholderOneVsOneParticipants.RedTeamIdValue
-                : PlaceholderOneVsOneParticipants.BlueTeamIdValue);
+                ? StagedBoardParticipants.RedTeamIdValue
+                : StagedBoardParticipants.BlueTeamIdValue);
             return new QuickGameMinionSetupState(
                 new MinionId(id),
                 teamId,

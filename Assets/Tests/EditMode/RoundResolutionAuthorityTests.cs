@@ -18,7 +18,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void FourTurns_RecordResolvedCardsInSlotsAndEnterEndOfRound()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var authority = CreateAuthority(configuration);
             var allEvents = new List<RoundResolutionEvent>();
 
@@ -72,7 +72,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ResolvedCard_CannotBeReplayedInALaterTurn()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var authority = CreateAuthority(configuration);
             var red = configuration.RedHand.Instances[0];
             var blue = configuration.BlueHand.Instances[0];
@@ -162,11 +162,11 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TurnSlot_RequiresOneOwnedAssignmentPerHeroAndCopiesDeterministicCollection()
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var redHeroId = participants.GetHeroesForTeam(
-                new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue)).Single().Id;
+                new TeamId(StagedBoardParticipants.RedTeamIdValue)).Single().Id;
             var blueHeroId = participants.GetHeroesForTeam(
-                new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue)).Single().Id;
+                new TeamId(StagedBoardParticipants.BlueTeamIdValue)).Single().Id;
             var definition = new CardDefinitionReference(new CardDefinitionId("slot-card"), "rev-1");
             var redCard = CardInstance.CreateInHand(
                 new CardInstanceId("red-card"), definition, redHeroId);
@@ -223,7 +223,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ExistingMovementAndAttackCommands_ResolveInsideSuccessiveRoundTurns()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var board = new AdjacentMoveAuthority(
                 new[]
                 {
@@ -339,7 +339,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EndOfRound_UsesOrderedExplicitStagesRetrievesOwnersAndStartsFreshRound()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var authority = CreateAuthority(configuration);
             var firstRoundSlots = new List<RoundTurnSlot>();
             for (var turn = 0; turn < RoundResolutionAuthority.TurnsPerRound; turn++)
@@ -452,8 +452,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EndOfRound_GameEndingHandlerStopsCursorAndLaterCommands()
         {
-            var teamLives = new TeamLifeState(PlaceholderOneVsOneParticipants.Create(), 1);
-            var losingTeamId = new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue);
+            var teamLives = new TeamLifeState(StagedBoardParticipants.Create(), 1);
+            var losingTeamId = new TeamId(StagedBoardParticipants.BlueTeamIdValue);
             var fixture = CreateOneCardPerSideFixture(
                 new EndOfRoundStageAvailability(new[] { EndOfRoundStage.MinionBattle }),
                 new Dictionary<EndOfRoundStage, IEndOfRoundStageHandler>
@@ -555,8 +555,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EndOfRound_AGameEndingStageBeforeRetrieval_RetrievesNoCardAtAll()
         {
-            var teamLives = new TeamLifeState(PlaceholderOneVsOneParticipants.Create(), 1);
-            var losingTeamId = new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue);
+            var teamLives = new TeamLifeState(StagedBoardParticipants.Create(), 1);
+            var losingTeamId = new TeamId(StagedBoardParticipants.BlueTeamIdValue);
             var fixture = CreateOneCardPerSideFixture(
                 new EndOfRoundStageAvailability(new[]
                 {
@@ -602,7 +602,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var fixture = CreateOneCardPerSideFixture();
             var defeatedHero = fixture.Blue.OwnerId;
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             fixture.Authority.HeroDefeatHistory.Record(new DefeatOutcome(
                 new DefeatOutcomeId("round-boundary-history-defeat"),
                 new DefeatTargetId(defeatedHero.Value),
@@ -625,7 +625,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static RoundResolutionAuthority CreateAuthority(
-            PlaceholderOneVsOneTestConfiguration configuration)
+            MatchConfiguration configuration)
         {
             return new RoundResolutionAuthority(
                 configuration.CardDefinitions,
@@ -651,17 +651,17 @@ namespace GuardsDigital.Tests.EditMode
             IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> handlers = null,
             TeamLifeState teamLives = null)
         {
-            var participants = PlaceholderOneVsOneParticipants.Create();
+            var participants = StagedBoardParticipants.Create();
             var redDefinition = CreateDefinition("red", 7);
             var blueDefinition = CreateDefinition("blue", 4);
             var red = CardInstance.CreateInHand(
                 new CardInstanceId("red-card"),
                 redDefinition.Reference,
-                participants.GetHeroesForTeam(new TeamId(PlaceholderOneVsOneParticipants.RedTeamIdValue)).Single().Id);
+                participants.GetHeroesForTeam(new TeamId(StagedBoardParticipants.RedTeamIdValue)).Single().Id);
             var blue = CardInstance.CreateInHand(
                 new CardInstanceId("blue-card"),
                 blueDefinition.Reference,
-                participants.GetHeroesForTeam(new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue)).Single().Id);
+                participants.GetHeroesForTeam(new TeamId(StagedBoardParticipants.BlueTeamIdValue)).Single().Id);
             var authority = new RoundResolutionAuthority(
                 new[] { redDefinition, blueDefinition },
                 new[] { red, blue },
@@ -702,7 +702,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static string RunTwoRoundReplay()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var authority = CreateAuthority(configuration);
             var facts = new List<string>();
             for (var round = 1; round <= 2; round++)

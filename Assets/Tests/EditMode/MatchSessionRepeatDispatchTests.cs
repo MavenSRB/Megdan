@@ -296,7 +296,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void NoOrdinaryStart_CanCreateARepeatedInstance()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForRepeatFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForRepeatFixture(TeamSide.Blue);
             var volley = configuration.CardInstances.Single(card => card.Id.Value.Contains("red-volley"));
             var forged = new ActionOffer(
                 volley.Id,
@@ -458,7 +458,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateRepeatSession()
         {
-            var configuration = PlaceholderOneVsOneTestConfiguration.CreateForRepeatFixture(TeamSide.Blue);
+            var configuration = MatchConfiguration.CreateForRepeatFixture(TeamSide.Blue);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var setup = QuickGameSetupAuthority.Create(
                 QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),

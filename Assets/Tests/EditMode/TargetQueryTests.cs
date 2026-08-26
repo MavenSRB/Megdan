@@ -27,8 +27,8 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class TargetQueryTests
     {
-        private static readonly HeroId Actor = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-        private static readonly HeroId Other = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+        private static readonly HeroId Actor = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+        private static readonly HeroId Other = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
         private static readonly MinionId Minion = new MinionId("target-query-minion");
         private static readonly MapId Map = new MapId("synthetic-target-query-map");
 
@@ -44,7 +44,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var targets = TargetQuery.FindTargetsWithin(
                 Origin, 1, false, RuleObject.ForHero(Actor), RuleActivity.Skill, board,
-                PlaceholderOneVsOneParticipants.Create(), immunity);
+                StagedBoardParticipants.Create(), immunity);
             var present = UnitPresenceQuery.FindUnitsWithin(
                 Origin, 1, EffectiveUnitKind.Hero, board, immunity);
 
@@ -65,7 +65,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var targets = TargetQuery.FindTargetsWithin(
                 Origin, 1, false, RuleObject.ForHero(Actor), RuleActivity.Skill, board,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 RuleModificationSet.Empty);
 
             Assert.That(targets.Select(target => target.HeroId), Has.Member(Other));
@@ -79,7 +79,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var targets = TargetQuery.FindTargetsWithin(
                 Origin, 1, false, RuleObject.ForHero(Actor), RuleActivity.Skill, board,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 ImmunityFor(Other, RuleActivity.Attack));
 
             Assert.That(targets.Select(target => target.HeroId), Has.Member(Other));
@@ -95,7 +95,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var targets = TargetQuery.FindTargetsWithin(
                 Origin, 1, false, RuleObject.ForHero(Actor), RuleActivity.Skill, board,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 SkillImmunityFor(Other));
 
             Assert.That(targets.Single().Kind, Is.EqualTo(BoardObjectKind.Token),
@@ -109,11 +109,11 @@ namespace GuardsDigital.Tests.EditMode
 
             var without = TargetQuery.FindTargetsWithin(
                 Origin, 1, false, RuleObject.ForHero(Actor), RuleActivity.Skill, board,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 RuleModificationSet.Empty);
             var with = TargetQuery.FindTargetsWithin(
                 Origin, 1, true, RuleObject.ForHero(Actor), RuleActivity.Skill, board,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 RuleModificationSet.Empty);
 
             Assert.That(without.Select(target => target.HeroId), Has.No.Member(Actor),
@@ -130,7 +130,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var targets = TargetQuery.FindTargetsWithin(
                 Origin, 2, true, RuleObject.ForHero(Actor), RuleActivity.Skill, board,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 RuleModificationSet.Empty);
 
             Assert.That(targets.Select(target => target.Kind), Is.EqualTo(new[]
@@ -146,11 +146,11 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.Throws<ArgumentOutOfRangeException>(() => TargetQuery.FindTargetsWithin(
                 Origin, -1, false, RuleObject.ForHero(Actor), RuleActivity.Skill, board,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 RuleModificationSet.Empty));
             Assert.Throws<ArgumentException>(() => TargetQuery.FindTargetsWithin(
                 Origin, 1, false, RuleObject.ForHero(Actor), RuleActivity.None, board,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 RuleModificationSet.Empty));
         }
 
@@ -169,7 +169,7 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     new QuickGameMinionSetupState(
                         Minion,
-                        new TeamId(PlaceholderOneVsOneParticipants.BlueTeamIdValue),
+                        new TeamId(StagedBoardParticipants.BlueTeamIdValue),
                         TeamSide.Blue,
                         StandardMinionType.Melee,
                         new ConfiguredSpawnPointReference(Map, new SpawnPointId("spawn-target-query")),
@@ -234,7 +234,7 @@ namespace GuardsDigital.Tests.EditMode
             var set = RuleModificationQuery.Build(
                 timing,
                 null,
-                PlaceholderOneVsOneParticipants.Create(),
+                StagedBoardParticipants.Create(),
                 new TieBreakerState(TeamSide.Red),
                 UnlockedUltimateSet.None, RuleObject.None, null,
                 null);

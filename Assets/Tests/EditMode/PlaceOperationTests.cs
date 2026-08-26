@@ -27,8 +27,8 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class PlaceOperationTests
     {
-        private static readonly HeroId Actor = new HeroId(PlaceholderOneVsOneParticipants.RedHeroIdValue);
-        private static readonly HeroId Other = new HeroId(PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+        private static readonly HeroId Actor = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+        private static readonly HeroId Other = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
         private static readonly MapId Map = new MapId("synthetic-place-map");
         private static readonly HexCoordinate ActorAt = new HexCoordinate(0, 0);
 
