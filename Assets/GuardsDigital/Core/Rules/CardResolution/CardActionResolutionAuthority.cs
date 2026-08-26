@@ -1720,7 +1720,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // Pushes is entitled to that moment wherever the Push happened. The Skill altitude has
                 // watched since 8.19c1; this one did not, so an after-push trigger could never fire
                 // from an Attack's own rider, which is the only push her set prints.
-                watchesAppliedPushes: WatchesAppliedPushes(materializedDefinitions, instances));
+                watchesAppliedPushes: WatchesAppliedPushes(materializedDefinitions, instances),
+                // Milestone 8.25d. Rulebook p.10: "You cannot repeat a repeated action!" A
+                // `RepeatAction` node reached inside p.14 asks to repeat the attack this text is
+                // running inside - `RecordOwedAttackRepeat` owes the request to that attack and to no
+                // other, whichever of the page's three moments asked - so an attack that is already a
+                // repeated instance has nothing left this page may repeat, and the node is skipped in
+                // silence exactly as a chain that has run its declared maximum is.
+                //
+                // It is stated here because this is where the enclosing attack is known. Before this
+                // milestone the enclosing attack could not say it was a repeat at all: the second
+                // instance copied the first's printed context, so Cleave's step 7 asked again inside
+                // its own second instance and a third instance started - measured, not assumed.
+                repeatIsUnavailable: RepeatedActionQuery.IsRepeatedInstance(
+                    step.CardTextRemainderResolution?.InvocationContext ??
+                    ActionInvocationContext.PrintedPrimary));
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"card-text-{card.Id.Value}-{action.Id.Value}-{step.CardTextTiming}"),
@@ -1936,6 +1950,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 8.25d. The identity a card-text repeat's second instance runs under, derived from
+        /// the instance that asked for it rather than minted from a counter, so a replay of the same
+        /// accepted commands produces the same one - the rule
+        /// <see cref="RepeatResolutionIdFor"/> already follows for the after-action path.
+        ///
+        /// <para><b>Why it is not the completed instance's own.</b> Rulebook p.13's Defeat outcome is
+        /// identified as <c>&lt;resolution&gt;:hero-defeat</c> or <c>&lt;resolution&gt;:minion-defeat</c>
+        /// and a Defeat outcome pays out once, so two instances sharing one identity cannot both defeat
+        /// the same kind of unit: the second one's reward is refused and rulebook p.14 stops on a fault
+        /// the player did nothing to cause. p.10's bar on repeating a repeat makes <c>:repeat</c> unique
+        /// without a counter - there is exactly one repeated instance per printed one.</para>
+        /// </summary>
+        private static ActionResolutionId CardTextRepeatResolutionIdFor(
+            PendingAttackResolution completed) =>
+            new ActionResolutionId($"{completed.ResolutionId.Value}:repeat");
+
+        /// <summary>
         /// Milestone 8.10. Starts the Attack instance the finished one asked for, once that instance's
         /// page is closed.
         ///
@@ -1962,7 +1993,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var repeated = attackDefenseBackend.StartRepeatedAttack(
-                attack, excluded, definitions, instances, participants, modifications);
+                attack, CardTextRepeatResolutionIdFor(attack), excluded, definitions, instances,
+                participants, modifications);
             return repeated.Accepted
                 ? CardActionResolutionResult.Accept(false, null, null, repeated.Steps)
                 : CardActionResolutionResult.Accept(true, null, null, Array.Empty<ResolutionStep>());
@@ -2051,6 +2083,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             AttackResolutionPhase.ChooseTarget,
                             default(AttackTarget),
                             null),
+                        // Milestone 8.25d: the identity minted above, unchanged. This path already
+                        // gives its instance one of its own, which is why only the card-text path
+                        // needed a derivation added.
+                        owed.ResolutionId,
                         // p.10's exclusion belongs to card text that names it. Cloak and Daggers prints
                         // its own - "if you repeat an attack action, you cannot target the same unit" -
                         // and that arrives as the request's binding rather than as a rule of this
@@ -2233,7 +2269,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 components: components,
                 heroItems: skillBackend.HeroItems,
                 enclosingAttack: EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions),
-                rosterState: rosterState);
+                rosterState: rosterState,
+                // Milestone 8.25d, the resume half of the same bound the start half states: a frame
+                // that comes back to a `RepeatAction` node after answering an earlier question is
+                // still running inside the same attack, and p.10 bars a repeat of a repeat wherever
+                // the node is reached from.
+                repeatIsUnavailable: RepeatedActionQuery.IsRepeatedInstance(
+                    pendingCardText.Attack?.InvocationContext ??
+                    ActionInvocationContext.PrintedPrimary));
             var step = EffectResolutionSession.Answer(pendingCardText.Frame, command, context);
             if (!step.Accepted)
             {

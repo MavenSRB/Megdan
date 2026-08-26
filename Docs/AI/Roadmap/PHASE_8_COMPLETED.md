@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard holding Phase 8 milestone definitions that are complete and self-contained. Return to [ROADMAP.md](../ROADMAP.md) or the active shard [PHASE_8.md](PHASE_8.md). Historical completion evidence: [PHASE_8 handoffs](../Archive/Phase-Handoffs/PHASE_8.md).
 
-Created 2026-08-22 during milestone 8.8a's required warning-threshold ownership review, extended on the same date during milestone 8.11a's, and extended again on 2026-08-26 with milestones 8.11 through 8.11c when milestone 8.25a's audit added two proposed corrective blocks and took the active shard past its hard limit, under the standing growth pattern [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) established on 2026-08-14: when a phase shard reaches its 85% warning threshold, its completed self-contained definition sections move here verbatim during that same handoff, leaving a routing summary and stable link behind. Definitions remain active authority under the same `Roadmap/` family threshold - this is sharding, not archiving. Completed milestone evidence stays in commit bodies indexed by phase-handoff rows per [DOCUMENTATION_GOVERNANCE.md](../DOCUMENTATION_GOVERNANCE.md).
+Created 2026-08-22 during milestone 8.8a's required warning-threshold ownership review, extended on the same date during milestone 8.11a's, extended again on 2026-08-26 with milestones 8.11 through 8.11c when milestone 8.25a's audit added two proposed corrective blocks and took the active shard past its hard limit, and extended once more on 2026-08-27 with milestones 8.12 through 8.15a during milestone 8.25d's review, under the standing growth pattern [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) established on 2026-08-14: when a phase shard reaches its 85% warning threshold, its completed self-contained definition sections move here verbatim during that same handoff, leaving a routing summary and stable link behind. Definitions remain active authority under the same `Roadmap/` family threshold - this is sharding, not archiving. Completed milestone evidence stays in commit bodies indexed by phase-handoff rows per [DOCUMENTATION_GOVERNANCE.md](../DOCUMENTATION_GOVERNANCE.md).
 
 The active shard keeps the milestones the current route reads against - the most recently completed slices and everything still open - so a task planning the next milestone still finds its immediate predecessors there.
 
@@ -438,3 +438,82 @@ Acceptance checks:
 Non-goals: no change to effect-choice authority, candidate sets, legality, or command shapes; no change to the board underlay, registration, camera framing, cue vocabulary, or highlight palette; no schema move, and no new pending state.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811c-answer-identity-named-effect-choice-candidates-on-the-board-completion-evidence).
+
+### [x] 8.12 Execute Active-effect and continuous trigger windows
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-812-execute-active-effect-and-continuous-trigger-windows-completion-evidence).
+
+Blocked by: milestone 8.11e, so triggered continuations inherit one atomic command/reconstruction-to-projection publication boundary.
+
+Observable outcome: an Active-effect or continuous source that declares a triggered effect runs that effect when its trigger checkpoint arrives, proven on synthetic definitions.
+
+Acceptance checks:
+
+- `ActiveEffectDefinition` and the continuous-source declaration can carry a typed effect reference, and the lifecycle's `Triggered` visit - today one emit site with zero production readers - executes the declared effect through the ordinary frame (closes F-CARD-02; `ActiveEffectLifecycleTests.AnEffectDeclaringATriggerWindow_RunsItsDeclaredEffectWhenTheCheckpointArrives` observed failing pre-fix).
+- Simultaneous triggered effects order through p.17's tie procedure without flipping the Tie Breaker; cancellation on defeat, card-state change, and expiry follows the implemented p.17 boundaries.
+- A triggered execution that pauses rides the existing continuation contract; a new pending kind is an explicit schema decision with the full ceremony.
+
+Non-goals: no High Voltage composition (8.13), no new trigger vocabulary beyond what the synthetic proof needs.
+
+### [x] 8.13 Complete High Voltage
+
+Blocked by: milestones 8.9 (the basic-action fact), 8.10 (effect-invoked Defeat), and 8.12 (trigger execution).
+
+Observable outcome: the unlocked Ultimate's continuous ability fires after each basic skill Wasp performs, exactly as printed.
+
+Acceptance checks:
+
+- The 7.3 continuous Ultimate source declares the triggered ability; the trigger consumes the 8.9 performed-basic-skill fact, applies only while the hero is on the board, and fires each qualifying time.
+- The optional defeat targets one enemy minion in radius through the effect-invoked staged Defeat 8.10 registered, with Heavy-minion immunity filtering targeting, defeat coins per p.17's keyword, and a resulting last-minion removal recording p.8's mid-turn Lane-Push cause exactly as any other defeat.
+- The rider reads adjacency against the pre-removal state - `an enemy hero who was adjacent to that minion` - with the actor choosing among the was-adjacent heroes per p.10 and the chosen hero discarding a card, if able.
+- Unlock is not claimed here: 8.14 proves the p.15/p.16 path that turns the card faceup; this milestone may stage the unlocked state directly, visibly test-only.
+
+Non-goals: no leveling or item integration.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-813-complete-high-voltage-completion-evidence).
+
+### [x] 8.14 Integrate Wasp progression, items, and the Ultimate unlock
+
+Blocked by: milestones 8.6, 8.8, 8.9, 8.10, 8.11, and 8.13 - every upgraded card a Level Up can put in hand must already resolve its text.
+
+Observable outcome: the complete p.15/p.16 progression runs over Wasp's real eighteen-card deck, from the first Level Up through the Ultimate unlock, with items composing onto verified printed icons.
+
+Acceptance checks:
+
+- p.15's mandatory end-of-round leveling runs over the verified upgrade pairs the 8.1 inventory records, through the implemented 7.5 transition, with the set-aside card of each pair becoming the p.16 item under its verified icon and slot.
+- The `SetAside` sweep keeps reading the location, and `HeroLevelUpTests.TheSetAsideLocation_HasExactlyOneWriterAndItIsPageFifteensUpgradeStep` fails the day that location gains a second writer. Scoping the sweep by the transition's own completed items was implemented, reviewed and **withdrawn by user-approved amendment on 2026-08-23**: F-PROG-08 is a growth finding with no reachable case - `CardLifecycleAuthority.TrySetAsideFromDeck` has exactly one caller and admits a card only from the deck - and a completed item can name the hero rather than the card, so the scope would not have covered the future rule the finding anticipates. F-PROG-08 stays open against the rule that first needs it.
+- Item bonuses compose per icon onto verified cards, including the 2026-08-21 approved interpretation of ledger question 12: an item's +1 reaches a matching printed icon on the Ultimate, so a +1 Radius item makes High Voltage's Radius 4; the interpretation is recorded in `RULES_LEDGER.md` and superseded by any later official ruling.
+- Upgrading every non-basic card to Tier III and leveling once more unlocks the Ultimate - faceup beside the dashboard, no further levels, coins still collectable - and 8.13's ability is reachable end-to-end from an ordinary match.
+
+Non-goals: no rebalance, no second hero.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-814-integrate-wasp-progression-items-and-the-ultimate-unlock-completion-evidence).
+
+### [x] 8.15 Complete and verify every Wasp card behavior
+
+Observable outcome: Every Wasp definition and legal action at each pitch-relevant tier passes source-linked focused scenarios after its re-baselined dependencies are available.
+
+Acceptance checks:
+
+- Every offer/context from the milestone 8.2 matrix is implemented; a blocked entry keeps this milestone incomplete.
+- No placeholder value, display-name branch, runtime text parsing, or UI-owned rule path remains.
+- Interaction tests cover each required timing, target, modifier, replacement, repeat, state change, Active effect, and continuous source.
+- Any unresolved source question prevents completion rather than being guessed.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-815-complete-and-verify-every-wasp-card-behavior-completion-evidence).
+
+### [x] 8.15a Present card choices as faces and finish board-first selection
+
+Inserted 2026-08-23 as a user-approved roadmap amendment, from the user's direction on 8.15's result: the discard chooser must show whole card faces, and every choice whose subject stands on the map is made on the map.
+
+Observable outcome: a choice among cards is presented as the cards themselves, and no prompt control anywhere in the HUD names a board object or space.
+
+Acceptance checks:
+
+- A card-instance effect-choice candidate is drawn as its whole printed face through the shared tray builder - rulebook p.10's discard chooser included - forwarding exactly its projected invocation; the card's name stays in the control's hover and assistive reading.
+- The open Clear selection marks every offered token where it stands, Eligible or Selected with the Removal intent, derived from the selection itself rather than from pointer state; a click on an offered token's space toggles it through the same board intent chain every other board answer takes; and the prompt keeps only the controls that have no board surface - confirm and cancel.
+- The prompt-reachability conformance fixture covers the Clear selection: every offered candidate markable and toggleable on the board, and no candidate prompt control drawn (observed failing at the pre-fix surface).
+
+Non-goals: no rules change - the empty-subset Clear confirm stays legal per 8.8b and the greyed unavailable offer stays refused; no schema change.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-815a-present-card-choices-as-faces-and-finish-board-first-selection-completion-evidence).

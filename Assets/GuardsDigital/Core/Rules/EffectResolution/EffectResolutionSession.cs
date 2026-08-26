@@ -262,13 +262,16 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         /// <summary>
         /// Whether a <see cref="EffectNodeKind.RepeatAction"/> node in this frame has nothing to
-        /// repeat. Milestone 8.23, and false for every frame that runs inside the action it repeats.
+        /// repeat. Milestone 8.23.
         ///
-        /// <para>It exists for the one family that does not: a permanent ability triggered after an
-        /// action ends - Tigerclaw's Cloak and Daggers - stands outside the action it offers to repeat
-        /// and therefore can be reached at a moment when there is nothing repeatable. Rulebook p.10's
-        /// "You cannot repeat a repeated action!" is exactly such a moment, and so is a completed
-        /// action this build has no repeated instance for.</para>
+        /// <para><b>Two families set it, and they are the same sentence read from two sides.</b> A
+        /// permanent ability triggered after an action ends - Tigerclaw's Cloak and Daggers - stands
+        /// outside the action it offers to repeat, so it can be reached at a moment when there is
+        /// nothing repeatable: rulebook p.10's "You cannot repeat a repeated action!" is exactly such
+        /// a moment, and so is a completed action this build has no repeated instance for. Milestone
+        /// 8.25d added the other side: card text applied inside rulebook p.14 repeats the attack it is
+        /// running inside, so this is set for a frame whose enclosing attack is itself a repeated
+        /// instance - which is a fact that milestone is what made knowable.</para>
         ///
         /// <para>An ineligible node is skipped in silence rather than refused, which is the behaviour a
         /// bounded chain's last instance already has: the node kind cannot be mandatory, so nothing is

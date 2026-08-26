@@ -401,6 +401,45 @@ namespace GuardsDigital.Tests.EditMode
                 "so no second instance starts either.");
         }
 
+        /// <summary>
+        /// Milestone 8.25d. The same repeat, read for what the instance says about itself: it runs
+        /// under <see cref="ActionInvocationContext.Repeated"/>, and its offered set is unchanged.
+        ///
+        /// <para>Thunder Boomerang is the other half of the content this milestone moves, and it is
+        /// the half that must not change shape. Its clause is "on a different target", which excludes
+        /// and narrows nothing - so the minion the first instance left standing is still offered, and
+        /// only Xargatha's "on a different enemy hero" takes kinds out of the set. What was wrong here
+        /// was invisible: the second instance reported the first's printed context, so p.10's "You
+        /// cannot repeat a repeated action!" was false of every card-text Attack repeat in the build.
+        /// </para>
+        /// </summary>
+        [Test]
+        public void ThunderBoomerangsSecondInstance_SaysItIsARepeatAndStillOffersEveryOtherTarget()
+        {
+            var session = ConfiguredMatchFixtures.CreateThunderBoomerangSession(out var minionId);
+            var enemy = HeroOn(session, TeamSide.Blue);
+
+            StartTheBoomerang(session, WaspCardContent.ThunderBoomerang);
+            var firstChoice = session.Projection.PendingAttackTargetChoice;
+            ConfiguredMatchFixtures.Accept(
+                session,
+                DirectorCommand.ChooseAttackTarget(
+                    firstChoice.ResolutionId, firstChoice.ChoiceId, enemy));
+            ResolveTheDefenseResponse(session);
+            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+
+            var second = session.Projection.PendingAttackTargetChoice;
+            Assert.That(second.LegalTargetMinionIds, Does.Contain(minionId),
+                "\"on a different target\" excludes one unit and narrows no kind, so a repeat this " +
+                "milestone now marks as repeated still admits the minion it always did.");
+
+            var restored = Restore(session);
+            Assert.That(restored.CardActions.PendingAttackResolution.InvocationContext,
+                Is.EqualTo(ActionInvocationContext.Repeated),
+                "The instance the card asked for is a repeat and now says so, which is what the " +
+                "ActionEnded checkpoint it will raise reports to every trigger reading it.");
+        }
+
         // ---------------------------------------------------------------------------------------
         // Helpers
         // ---------------------------------------------------------------------------------------

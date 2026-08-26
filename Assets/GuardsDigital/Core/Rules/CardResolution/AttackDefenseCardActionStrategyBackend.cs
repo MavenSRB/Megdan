@@ -244,10 +244,34 @@ namespace GuardsDigital.Core.Rules.CardResolution
         ///
         /// <para>Everything after this point is the ordinary Attack: the same target choice, the same
         /// Defense response, the same p.13 consequences and the same p.14 order. What the repeated
-        /// instance carries that the first did not is the target it may not take.</para>
+        /// instance carries that the first did not is the target it may not take - and, since
+        /// milestone 8.25d, <see cref="ActionInvocationContext.Repeated"/>.</para>
+        ///
+        /// <para><b>Milestone 8.25d: why the context is minted here rather than copied.</b> This built
+        /// its second instance with <c>completed.InvocationContext</c>, which is the printed one the
+        /// first instance ran under, so a card-text Attack repeat reported itself as printed
+        /// everywhere downstream: Xargatha's "on a different enemy hero" narrowing never fired, and the
+        /// <see cref="TimingCheckpoint.ActionEnded"/> this instance raises reported a printed context,
+        /// which is what p.10's "You cannot repeat a repeated action!" is enforced by. It is the same
+        /// value milestone 8.23's after-action arm has always passed in, so the two paths that start a
+        /// repeated Attack now agree - and <see cref="PendingAttackResolution"/> has admitted the
+        /// context since milestone 8.25a.</para>
+        ///
+        /// <para><b>Milestone 8.25d: the second instance runs under an identity of its own.</b>
+        /// Everything else it inherits from the completed one, but not this: rulebook p.13's Defeat
+        /// outcome is identified as <c>&lt;resolution&gt;:hero-defeat</c> or
+        /// <c>&lt;resolution&gt;:minion-defeat</c>, and <see cref="HeroCoinLedger"/> refuses to pay a
+        /// Defeat outcome twice - so two instances sharing one identity could not both defeat the same
+        /// kind of unit. The caller names the identity because the two callers mint it differently:
+        /// milestone 8.23's after-action path already mints <c>after-action-repeat:...</c> for its
+        /// instance, and milestone 8.10's card-text path derives one from the instance that asked.
+        /// Measured on the official six-player board: Cleave's printed instance defeated one adjacent
+        /// enemy hero, its repeat took the other, and declining that Defense threw
+        /// <c>OutcomeAlreadyAwarded</c>.</para>
         /// </summary>
         internal AttackActionResolutionResult StartRepeatedAttack(
             PendingAttackResolution completed,
+            ActionResolutionId repeatedResolutionId,
             AttackTarget excludedTarget,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
@@ -255,6 +279,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications)
         {
             if (completed == null) throw new ArgumentNullException(nameof(completed));
+            if (!repeatedResolutionId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A repeated Attack instance runs under a resolution identity of its own.",
+                    nameof(repeatedResolutionId));
+            }
+
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ??
@@ -265,12 +296,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var repeated = new PendingAttackResolution(
-                completed.ResolutionId,
+                repeatedResolutionId,
                 completed.SourceCardInstanceId,
                 completed.SourceDefinitionReference,
                 completed.ActionDefinitionId,
                 completed.ActorId,
-                completed.InvocationContext,
+                ActionInvocationContext.Repeated,
                 new ActionResolutionStepId("attack-target"),
                 AttackResolutionPhase.ChooseTarget,
                 default(AttackTarget),
@@ -300,12 +331,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (repeatedPolicy.TargetIsBoundByCardText)
             {
                 var applying = new PendingAttackResolution(
-                    completed.ResolutionId,
+                    repeatedResolutionId,
                     completed.SourceCardInstanceId,
                     completed.SourceDefinitionReference,
                     completed.ActionDefinitionId,
                     completed.ActorId,
-                    completed.InvocationContext,
+                    ActionInvocationContext.Repeated,
                     new ActionResolutionStepId("before-attack-text"),
                     AttackResolutionPhase.ApplyBeforeAttackText,
                     default(AttackTarget),
