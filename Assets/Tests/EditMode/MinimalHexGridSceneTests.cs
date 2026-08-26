@@ -452,7 +452,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 root.Hud.Header.Text,
                 Does.Contain(side == TeamSide.Red ? "[R] RED" : "[B] BLUE"));
-            Assert.That(indicatorRect.xMax, Is.EqualTo(Screen.width - 12f).Within(0.01f));
+            // Milestone 8.25c: the chip's rectangle is in the panel's reference units, so the right
+            // margin is measured off the panel's own width rather than the screen's pixel count.
+            Assert.That(
+                indicatorRect.xMax,
+                Is.EqualTo(ConfiguredMatchHudRenderer.PanelViewport.x - 12f).Within(0.01f));
             Assert.That(indicatorRect.yMin, Is.EqualTo(12f).Within(0.01f));
         }
 

@@ -127,6 +127,11 @@ namespace GuardsDigital.Presentation.Match
     [DisallowMultipleComponent]
     public sealed class ConfiguredMatchHudRenderer : MonoBehaviour
     {
+        // Milestone 8.25c. EVERY NUMBER IN THIS CLASS IS A REFERENCE UNIT, not a device pixel. One
+        // reference unit is one pixel on a 2560x1440 screen - the size this layout fits at, which is
+        // what makes it the reference - and the panel scales them with the viewport, so each region is
+        // the same share of every screen instead of the same count of its pixels.
+        // `MatchHudPanelScaling` is the declaration and says why that size and not a smaller one.
         private const float Margin = 12f;
         private const float CardPanelWidth = 1280f;
         private const float CardPanelHeight = 360f;
@@ -134,7 +139,9 @@ namespace GuardsDigital.Presentation.Match
         private const float EventLogPreferredWidth = 720f;
         private const float EventLogPreferredHeight = 360f;
 
-        /// <summary>The standing status strip's height. The Tie Breaker chip sits inside it.</summary>
+        /// <summary>
+        /// The standing status strip's height, in reference units. The Tie Breaker chip sits inside it.
+        /// </summary>
         public const float StatusBarHeight = 56f;
 
         /// <summary>
@@ -160,6 +167,13 @@ namespace GuardsDigital.Presentation.Match
         /// <c>MatchHudPresentationTests.TheStandingLayout_KeepsEveryRegionInsideBothValidatedViewports</c>
         /// measures. 208 broke it at 416 against a 389 limit and was reduced rather than the rule
         /// being loosened.</para>
+        ///
+        /// <para><b>Milestone 8.25c restates it rather than re-measuring it.</b> 192 is now 192
+        /// <em>reference units</em> - the same panel points 8.23a measured, since a rail's rows are
+        /// laid out in points and not in pixels - so the number keeps exactly the meaning that
+        /// milestone gave it, and the product rule above becomes a fact about every screen rather than
+        /// about whichever one was narrowest. What changes is that a rail is 192 pixels on a
+        /// 2560-wide screen and 144 on a 1920-wide one, which is the same share of both.</para>
         /// </summary>
         public const float HeroRailWidth = 192f;
 
@@ -190,13 +204,27 @@ namespace GuardsDigital.Presentation.Match
         private HeroOverviewsUnityView heroOverviews;
         private MatchHudHeaderViewModel header;
 
+        /// <summary>
+        /// The rectangle this HUD lays out into, in the reference units milestone 8.25c made every
+        /// number in this file. It is the panel's own size, which is the screen's size scaled by
+        /// <see cref="MatchHudPanelScaling"/> - and it is the reference resolution itself on every
+        /// screen of the reference's shape, whatever that screen's pixel count.
+        ///
+        /// <para>Every rectangle below is measured in it. Reading <c>Screen.width</c> here instead
+        /// would put a device pixel where a reference unit belongs, which is the defect this milestone
+        /// removed.</para>
+        /// </summary>
+        public static Vector2 PanelViewport => MatchHudPanelScaling.CurrentReferenceViewport();
+
         public MatchHudHeaderViewModel Header => header;
         public Rect CardPanelRect => GetCardPanelRect();
         public Rect TieBreakerIndicatorRect => GetTieBreakerIndicatorRect();
         public Rect RuleEventLogPanelRect => GetRuleEventLogRect();
-        public Rect StatusBarRect => CalculateStatusBarRect(Screen.width, Screen.height);
-        public Rect RedHeroRailRect => CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Red);
-        public Rect BlueHeroRailRect => CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Blue);
+        public Rect StatusBarRect => CalculateStatusBarRect(PanelViewport.x, PanelViewport.y);
+        public Rect RedHeroRailRect =>
+            CalculateHeroRailRect(PanelViewport.x, PanelViewport.y, TeamSide.Red);
+        public Rect BlueHeroRailRect =>
+            CalculateHeroRailRect(PanelViewport.x, PanelViewport.y, TeamSide.Blue);
 
         /// <summary>Whether the compact `DIRECTOR` drawer is open. Local state; it changes no match state.</summary>
         public bool IsDirectorDrawerOpen { get; private set; }
@@ -244,30 +272,66 @@ namespace GuardsDigital.Presentation.Match
         /// on it. Live element bounds are preferred where the panel has laid out, because a rail's
         /// height follows its content; the deterministic rects are the fallback and are what an Edit Mode
         /// fixture with no live panel reads.
+        ///
+        /// <para><b>Milestone 8.25c: the screen position is converted before anything is compared.</b>
+        /// The argument is a device pixel with its origin at the screen's bottom-left corner - what
+        /// <c>PrimitiveHeroPointerInput</c> reads off the pointer - and everything it is measured
+        /// against, live bounds included, is a reference unit with its origin at the panel's top-left
+        /// one. Until this milestone the conversion was a bare <c>Screen.height - y</c> flip, which was
+        /// the whole mapping only while the panel drew one point per pixel. A wrong conversion throws
+        /// nothing: the HUD simply blocks the pointer somewhere other than where it is drawn, and every
+        /// board click in the game passes through here.</para>
         /// </summary>
         public bool BlocksPointerAt(Vector2 screenPosition)
         {
-            var guiPosition = new Vector2(screenPosition.x, Screen.height - screenPosition.y);
+            var viewport = PanelViewport;
+            var panelPosition = MatchHudPanelScaling.ScreenToPanelPoint(
+                screenPosition, Screen.width, Screen.height);
             var tray = TryLiveRect(trayRegion, out var liveTray) ? liveTray : GetCardPanelRect();
-            if (tray.Contains(guiPosition) ||
-                GetTieBreakerIndicatorRect().Contains(guiPosition) ||
-                CalculateStatusBarRect(Screen.width, Screen.height).Contains(guiPosition) ||
-                GetDirectorToggleRect().Contains(guiPosition) ||
-                (IsDirectorDrawerOpen && GetDirectorDrawerRect().Contains(guiPosition)) ||
-                (diagnostics?.Model?.IsExpanded == true && GetRuleEventLogRect().Contains(guiPosition)))
+            if (tray.Contains(panelPosition) ||
+                GetTieBreakerIndicatorRect().Contains(panelPosition) ||
+                CalculateStatusBarRect(viewport.x, viewport.y).Contains(panelPosition) ||
+                GetDirectorToggleRect().Contains(panelPosition) ||
+                (IsDirectorDrawerOpen && GetDirectorDrawerRect().Contains(panelPosition)) ||
+                (diagnostics?.Model?.IsExpanded == true && GetRuleEventLogRect().Contains(panelPosition)))
             {
                 return true;
             }
 
             foreach (var region in HeroRailRegions())
             {
-                if (region.Contains(guiPosition))
+                if (region.Contains(panelPosition))
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Whether the HUD's standing regions consume the pointer at a screen position, stated for a
+        /// device viewport and answerable with no live panel.
+        ///
+        /// <para>Milestone 8.25c. It is the same question <see cref="BlocksPointerAt"/> answers, for
+        /// the five regions that are drawn at every viewport whatever the match is doing - the status
+        /// strip, the Tie Breaker chip, the card tray and both hero-rail columns - so that the mapping
+        /// from a screen pixel to the panel can be checked at a scale other than 1 without a running
+        /// scene. <see cref="BlocksPointerAt"/> adds what depends on live state: the tray's own laid-out
+        /// box, the rails' laid-out boxes, the `DIRECTOR` toggle and drawer, and an expanded event
+        /// log.</para>
+        /// </summary>
+        public static bool StandingRegionsBlockPointerAt(
+            Vector2 screenPosition, float viewportWidth, float viewportHeight)
+        {
+            var panelPosition = MatchHudPanelScaling.ScreenToPanelPoint(
+                screenPosition, viewportWidth, viewportHeight);
+            var panel = MatchHudPanelScaling.ReferenceViewport(viewportWidth, viewportHeight);
+            return CalculateStatusBarRect(panel.x, panel.y).Contains(panelPosition) ||
+                CalculateTieBreakerIndicatorRect(panel.x, panel.y).Contains(panelPosition) ||
+                CalculateCardPanelRect(panel.x, panel.y).Contains(panelPosition) ||
+                CalculateHeroRailRect(panel.x, panel.y, TeamSide.Red).Contains(panelPosition) ||
+                CalculateHeroRailRect(panel.x, panel.y, TeamSide.Blue).Contains(panelPosition);
         }
 
         private IEnumerable<Rect> HeroRailRegions()
@@ -285,8 +349,9 @@ namespace GuardsDigital.Presentation.Match
                 yield break;
             }
 
-            yield return CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Red);
-            yield return CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Blue);
+            var viewport = PanelViewport;
+            yield return CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Red);
+            yield return CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Blue);
         }
 
         private static bool TryLiveRect(VisualElement element, out Rect rect)
@@ -346,8 +411,14 @@ namespace GuardsDigital.Presentation.Match
                 : ScriptableObject.CreateInstance<PanelSettings>();
             panelSettings.name = "Guards Configured Match Panel";
             panelSettings.hideFlags = HideFlags.HideAndDontSave;
-            panelSettings.scaleMode = PanelScaleMode.ConstantPixelSize;
-            panelSettings.scale = 1f;
+
+            // Milestone 8.25c. The coordinate space is declared once, in `MatchHudPanelScaling`, and
+            // the committed asset above already carries the same four values - so this agrees with the
+            // asset rather than overriding it, and exists for the one path that has no asset to copy.
+            // Before this milestone the two lines here said `ConstantPixelSize` at `scale = 1` while
+            // the asset carried an inert 1200x800 reference resolution, which is how every layout
+            // number in this file came to be a literal device pixel.
+            MatchHudPanelScaling.Apply(panelSettings);
             panelSettings.clearColor = false;
             panelSettings.sortingOrder = 100f;
             var theme = Resources.Load<ThemeStyleSheet>(RuntimeThemeResourcePath);
@@ -449,8 +520,12 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            var width = Screen.width;
-            var height = Screen.height;
+            // Milestone 8.25c: the panel's own rectangle rather than the screen's. Every style write
+            // below lands on a panel whose coordinate space is the reference one, so a device pixel
+            // here would be laid out as though it were a reference unit.
+            var viewport = PanelViewport;
+            var width = viewport.x;
+            var height = viewport.y;
             var bar = CalculateStatusBarRect(width, height);
             statusBar?.Layout(bar, GetTieBreakerIndicatorRect());
             // The tray is anchored to the bottom edge and grows upward only as far as its content
@@ -547,8 +622,8 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
-        public static Rect CalculateStatusBarRect(float viewportWidth, float viewportHeight) =>
-            new Rect(0f, 0f, Mathf.Max(0f, viewportWidth), Mathf.Min(StatusBarHeight, Mathf.Max(0f, viewportHeight)));
+        public static Rect CalculateStatusBarRect(float panelWidth, float panelHeight) =>
+            new Rect(0f, 0f, Mathf.Max(0f, panelWidth), Mathf.Min(StatusBarHeight, Mathf.Max(0f, panelHeight)));
 
         /// <summary>
         /// The share of a tall viewport the tray may use when its content needs it.
@@ -580,23 +655,26 @@ namespace GuardsDigital.Presentation.Match
         /// That is where the vertical room came from: the rails stopped competing with the tray for the
         /// same corner.</para>
         ///
-        /// <para><b>It starts at the window's own left margin, and the rail column above it is what
-        /// gives.</b> The user's 2026-08-26 decision, taken twice on seeing the six-player HUD: first
-        /// that the tray should leave the centre of the band, then that "all the way left" means the
-        /// window edge rather than the edge of the band. The rail column keeps the whole screen edge -
-        /// that is where rulebook p.6's three rails a side came from - so the two overlap in the
-        /// bottom-left corner, and the tray is drawn over the rail there. The cost is stated at
-        /// <see cref="CalculateHeroRailRect"/> and is the player's accepted trade.</para>
+        /// <para><b>It starts at the window's own left margin.</b> The user's 2026-08-26 decision, taken
+        /// twice on seeing the six-player HUD: first that the tray should leave the centre of the band,
+        /// then that "all the way left" means the window edge rather than the edge of the band. The rail
+        /// column keeps the whole screen edge - that is where rulebook p.6's three rails a side came
+        /// from - so the two meet in the bottom-left corner, and the tray is drawn over the rail there.
+        /// At the reference resolution that overlap is the third rail's bottom padding and nothing a
+        /// player reads; <see cref="CalculateHeroRailRect"/> states the measurement and
+        /// <c>MinimalHexGridPlayModeTests</c> asserts that every row of every rail stays clear of the
+        /// tray.</para>
         /// </summary>
-        public static Rect CalculateCardPanelRect(float viewportWidth, float viewportHeight)
+        public static Rect CalculateCardPanelRect(float panelWidth, float panelHeight)
         {
-            var width = Mathf.Min(CardPanelWidth, Mathf.Max(0f, viewportWidth - (Margin * 2f)));
+            var left = Margin;
+            var width = Mathf.Min(CardPanelWidth, Mathf.Max(0f, panelWidth - (Margin * 2f)));
             var height = Mathf.Min(
-                Mathf.Max(CardPanelHeight, viewportHeight * CardPanelTallViewportShare),
-                Mathf.Max(0f, viewportHeight - (Margin * 2f) - StatusBarHeight));
+                Mathf.Max(CardPanelHeight, panelHeight * CardPanelTallViewportShare),
+                Mathf.Max(0f, panelHeight - (Margin * 2f) - StatusBarHeight));
             return new Rect(
-                Margin,
-                Mathf.Max(Margin, viewportHeight - height - Margin),
+                left,
+                Mathf.Max(Margin, panelHeight - height - Margin),
                 width,
                 height);
         }
@@ -612,18 +690,18 @@ namespace GuardsDigital.Presentation.Match
         /// stated separately here rather than by raising the share for every tray. The reserved toggle
         /// band is what keeps Undo reachable at the one moment this region is at its largest.
         /// </summary>
-        public static float CalculateTallContextHeight(float viewportHeight) =>
+        public static float CalculateTallContextHeight(float panelHeight) =>
             Mathf.Max(
                 0f,
-                viewportHeight - (Margin * 3f) - StatusBarHeight - DirectorToggleHeight);
+                panelHeight - (Margin * 3f) - StatusBarHeight - DirectorToggleHeight);
 
-        public static Rect CalculatePlayfieldRect(float viewportWidth, float viewportHeight)
+        public static Rect CalculatePlayfieldRect(float panelWidth, float panelHeight)
         {
-            var tray = CalculateCardPanelRect(viewportWidth, viewportHeight);
+            var tray = CalculateCardPanelRect(panelWidth, panelHeight);
             return new Rect(
                 0f,
                 StatusBarHeight,
-                Mathf.Max(0f, viewportWidth),
+                Mathf.Max(0f, panelWidth),
                 Mathf.Max(0f, tray.yMin - StatusBarHeight));
         }
 
@@ -636,43 +714,64 @@ namespace GuardsDigital.Presentation.Match
         /// at 8.23a. A column that runs the whole height has about 1000 there, which holds three rails
         /// of the height 8.23a's recomposition achieved with room over.</para>
         ///
-        /// <para><b>The column and the tray overlap in the bottom corners, and the tray is drawn over
-        /// the column there.</b> That is the user's 2026-08-26 decision and the cost of it: the tray
-        /// starts at the window's own left margin, so the third Red rail is clipped from the tray's top
-        /// edge down - about 230 lines at 1920x1080 and about 35 at 2560x1440. The tray is on top
-        /// because it holds the cards a player has to click and the rail is a reading; the rail's rows
-        /// above the tray are unaffected, and the clipped band is the discard row and the last turn
-        /// slots. `gd-hero-rails` is added to the panel before `gd-tray-region`, which is what decides
-        /// it, so a later change reordering those two silently reverses this.</para>
+        /// <para><b>The column and the tray meet in the bottom corners, and the tray is drawn over the
+        /// column there.</b> That is the user's 2026-08-26 decision. At the reference resolution the
+        /// measurement is: three rails draw 733 from 68, so the third ends at 801 against a tray top
+        /// edge at 765.6 - an overlap of about 35, which is the third rail's bottom padding and border
+        /// rather than any row it draws. `gd-hero-rails` is added to the panel before `gd-tray-region`,
+        /// which is what decides the z-order, so a later change reordering those two silently reverses
+        /// it.</para>
+        ///
+        /// <para><b>Milestone 8.25c is why that overlap is now the same on every screen, and why it is
+        /// small.</b> Before it, the rails were a fixed count of device pixels and the tray's height a
+        /// share of the viewport, so the overlap was about 35 at 2560x1440 and about 230 at 1920x1080 -
+        /// which buried the whole third rail on the smaller screen. The layout is written in reference
+        /// units now and the reference is 2560x1440, so every screen gets the 35.</para>
         ///
         /// <para>The width bound is unchanged and is still the standing product rule - both rails
         /// together stay under half the narrowest validated viewport, so the board remains the dominant
         /// surface.</para>
+        ///
+        /// <para><b>Milestone 8.25c re-derived both of 8.25's accepted geometry facts.</b> Three rails
+        /// still stack a side - measured at 733 drawn into this 1360-unit column, with room over - and
+        /// the tray still meets the third one. What the re-derivation changed is that the meeting is
+        /// one number everywhere instead of a different number per screen, and that the number is the
+        /// small one. See <see cref="MatchHudPanelScaling"/> for why the reference is 2560x1440 and not
+        /// the screen the older numbers were quoted at.</para>
         /// </summary>
-        public static Rect CalculateHeroRailRect(float viewportWidth, float viewportHeight, TeamSide side)
+        public static Rect CalculateHeroRailRect(float panelWidth, float panelHeight, TeamSide side)
         {
-            var width = CalculateHeroRailWidth(viewportWidth);
+            var width = CalculateHeroRailWidth(panelWidth);
             var x = side == TeamSide.Red
                 ? Margin
-                : Mathf.Max(Margin, viewportWidth - width - Margin);
+                : Mathf.Max(Margin, panelWidth - width - Margin);
             var top = StatusBarHeight + Margin;
-            return new Rect(x, top, width, Mathf.Max(0f, viewportHeight - top - Margin));
+            return new Rect(x, top, width, Mathf.Max(0f, panelHeight - top - Margin));
         }
 
-        private static float CalculateHeroRailWidth(float viewportWidth) =>
-            Mathf.Min(HeroRailWidth, Mathf.Max(0f, (viewportWidth / 2f) - (Margin * 2f)));
+        private static float CalculateHeroRailWidth(float panelWidth) =>
+            Mathf.Min(HeroRailWidth, Mathf.Max(0f, (panelWidth / 2f) - (Margin * 2f)));
 
-        private static Rect GetCardPanelRect() => CalculateCardPanelRect(Screen.width, Screen.height);
+        private static Rect GetCardPanelRect() =>
+            CalculateCardPanelRect(PanelViewport.x, PanelViewport.y);
 
-        private static Rect GetTieBreakerIndicatorRect()
+        /// <summary>
+        /// The Tie Breaker chip's own rectangle inside the status strip. Milestone 8.25c made it a
+        /// stated function of the viewport rather than a reader of the current screen, so a check can
+        /// ask where it is at a viewport that is not the one the fixture is running at.
+        /// </summary>
+        public static Rect CalculateTieBreakerIndicatorRect(float panelWidth, float panelHeight)
         {
-            var width = Mathf.Min(TieBreakerWidth, Mathf.Max(120f, Screen.width - (Margin * 2f)));
+            var width = Mathf.Min(TieBreakerWidth, Mathf.Max(120f, panelWidth - (Margin * 2f)));
             return new Rect(
-                Mathf.Max(Margin, Screen.width - width - Margin),
+                Mathf.Max(Margin, panelWidth - width - Margin),
                 Margin,
                 width,
-                Mathf.Max(0f, StatusBarHeight - (Margin * 2f)));
+                Mathf.Max(0f, Mathf.Min(StatusBarHeight, Mathf.Max(0f, panelHeight)) - (Margin * 2f)));
         }
+
+        private static Rect GetTieBreakerIndicatorRect() =>
+            CalculateTieBreakerIndicatorRect(PanelViewport.x, PanelViewport.y);
 
         /// <summary>
         /// Where the `DIRECTOR` toggle stands: just above the tray, or - milestone 8.8a - just under the
@@ -690,7 +789,8 @@ namespace GuardsDigital.Presentation.Match
             // column nothing else draws in. Milestone 8.8a put the tall-context toggle here; milestone
             // 8.25 gave the rail the rest of that column, so the ordinary toggle moves in beside it too
             // and only the height it sits at still depends on what the contextual region is drawing.
-            var rail = CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Red);
+            var viewport = PanelViewport;
+            var rail = CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Red);
             if (trayUsesTallContext)
             {
                 return new Rect(
@@ -700,7 +800,7 @@ namespace GuardsDigital.Presentation.Match
                     DirectorToggleHeight);
             }
 
-            var playfield = CalculatePlayfieldRect(Screen.width, Screen.height);
+            var playfield = CalculatePlayfieldRect(viewport.x, viewport.y);
             return new Rect(
                 rail.xMax + Margin,
                 Mathf.Max(Margin, playfield.yMax - DirectorToggleHeight - Margin),
@@ -732,17 +832,18 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private static Rect GetRuleEventLogRect()
         {
-            var cardPanel = GetCardPanelRect();
-            var railWidth = CalculateHeroRailWidth(Screen.width) + Margin;
-            var availableRightWidth = Screen.width - cardPanel.xMax - railWidth - (Margin * 2f);
+            var viewport = PanelViewport;
+            var cardPanel = CalculateCardPanelRect(viewport.x, viewport.y);
+            var railWidth = CalculateHeroRailWidth(viewport.x) + Margin;
+            var availableRightWidth = viewport.x - cardPanel.xMax - railWidth - (Margin * 2f);
             if (availableRightWidth >= 420f)
             {
                 var width = Mathf.Min(EventLogPreferredWidth, availableRightWidth);
                 var height = Mathf.Min(
                     EventLogPreferredHeight,
-                    Mathf.Max(160f, Screen.height - StatusBarHeight - (Margin * 3f)));
+                    Mathf.Max(160f, viewport.y - StatusBarHeight - (Margin * 3f)));
                 return new Rect(
-                    Screen.width - width - railWidth - Margin,
+                    viewport.x - width - railWidth - Margin,
                     StatusBarHeight + (Margin * 2f),
                     width,
                     height);
@@ -760,7 +861,7 @@ namespace GuardsDigital.Presentation.Match
             // because since the rails took the screen edge those are no longer the same x.
             var aboveLeft = Mathf.Max(
                 cardPanel.x,
-                CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Red).xMax +
+                CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Red).xMax +
                     Margin + DirectorDrawerWidth + Margin);
             return new Rect(
                 aboveLeft,

@@ -102,5 +102,17 @@ namespace GuardsDigital.Tests.PlayMode
         /// leave the runtime theme's own rounding alone.</para>
         /// </summary>
         internal const float RecordedRailCeiling = 245f;
+
+        /// <summary>
+        /// How many independently laid-out rows a hero rail stacks: the header, the item strip, a held
+        /// marker's row, the four turn slots, the discard caption and the discard pile.
+        ///
+        /// <para>Milestone 8.25c. On a scaled panel each of those is snapped to the nearer device
+        /// pixel, so a whole rail's measured height can differ from its declared one by about this
+        /// many pixels expressed in reference units. It is stated here because two fixtures compare a
+        /// rail's height against a number recorded in reference units; see
+        /// <see cref="UiPlayer.PixelSnapping"/>.</para>
+        /// </summary>
+        internal const int RailRowCount = 8;
     }
 }

@@ -2166,9 +2166,18 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AtAShortViewport_TheRegionScrollsAndTheCardKeepsItsFootprint()
         {
-            var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(1920f, 1080f);
+            // Milestone 8.25c: both are PANEL rectangles in reference units. The reference is what a
+            // 16:9 window of any pixel count resolves to, so the window that reaches the short case is
+            // one whose SHAPE is short rather than one whose pixel count is - a 2560x540 window on a
+            // wide monitor, which resolves to a panel about 3724 by 785.
+            var referencePanel = new Vector2(
+                MatchHudPanelScaling.ReferenceWidth, MatchHudPanelScaling.ReferenceHeight);
+            var shortPanel = MatchHudPanelScaling.ReferenceViewport(2560f, 540f);
+
+            var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(
+                referencePanel.x, referencePanel.y);
             Assert.That(CardFootprint.Height, Is.LessThan(tray.height),
-                "One card stands inside the tray region at the validated desktop viewport.");
+                "One card stands inside the tray region at the reference resolution.");
             Assert.That(CardFootprint.Height,
                 Is.GreaterThanOrEqualTo(CardFootprint.Width * 1.5f),
                 "A card is drawn as a card: portrait, at roughly the approved mockup's proportions, " +
@@ -2176,10 +2185,11 @@ namespace GuardsDigital.Tests.EditMode
 
             // The tray region's own padding and border, which the cards inside it never get.
             const float regionChrome = (12f * 2f) + (1f * 2f);
-            var shortViewport = ConfiguredMatchHudRenderer.CalculateCardPanelRect(1280f, 720f);
+            var shortViewport = ConfiguredMatchHudRenderer.CalculateCardPanelRect(
+                shortPanel.x, shortPanel.y);
             Assert.That(shortViewport.height - regionChrome, Is.LessThan(CardFootprint.Height),
-                "The short supported desktop viewport is the case this rule is about: the region " +
-                "cannot hold a whole card, and what gives is the region rather than the card.");
+                "The short panel is the case this rule is about: the region cannot hold a whole card, " +
+                "and what gives is the region rather than the card.");
 
             var view = new DirectorHandsUnityView();
             new DirectorHandsPresenter(ConfiguredMatchFixtures.CreateVerifiedMirrorSession(), view)
@@ -2196,32 +2206,26 @@ namespace GuardsDigital.Tests.EditMode
             // WaspUiJourneyPlayModeTests.Scene_KeepsEveryTrayCardTheSameSizeWhenTheMapPointerSwitchesHeroes
             // rather than guessed at here.
             Assert.That(
-                ConfiguredMatchHudRenderer.CalculateCardPanelRect(1280f, 720f).width,
+                shortViewport.width,
                 Is.GreaterThanOrEqualTo(
                     (5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap)) - 30f),
-                "and the short viewport still holds p.6's five cards on one row, so the scroll it " +
+                "and the short panel still holds p.6's five cards on one row, so the scroll it " +
                 "needs is vertical only.");
 
             // Milestone 8.25: what keeps that true now that the rails take a screen edge each. The
             // tray was not moved out from under them - it keeps the window's own left margin and its
             // full width, by the user's decision - so the row it can hold is exactly the row it could
-            // hold before, and neither the rail's width nor the card's footprint gives at any
-            // viewport. What gives is the third rail on each side, which the tray is drawn over.
-            foreach (var viewport in new[] { new Vector2(1280f, 720f), new Vector2(1920f, 1080f) })
+            // hold before, and neither the rail's width nor the card's footprint gives at any panel.
+            foreach (var panel in new[] { shortPanel, referencePanel })
             {
                 Assert.That(
-                    ConfiguredMatchHudRenderer.CalculateCardPanelRect(viewport.x, viewport.y).x,
+                    ConfiguredMatchHudRenderer.CalculateCardPanelRect(panel.x, panel.y).x,
                     Is.EqualTo(12f),
-                    $"The tray keeps the window's left margin at {viewport}.");
-            }
-
-            foreach (var viewport in new[] { new Vector2(1280f, 720f), new Vector2(1920f, 1080f) })
-            {
+                    $"The tray keeps the window's left margin at {panel}.");
                 Assert.That(
-                    ConfiguredMatchHudRenderer.CalculateHeroRailRect(
-                        viewport.x, viewport.y, TeamSide.Red).width,
+                    ConfiguredMatchHudRenderer.CalculateHeroRailRect(panel.x, panel.y, TeamSide.Red).width,
                     Is.EqualTo(ConfiguredMatchHudRenderer.HeroRailWidth),
-                    $"The rail is one width at every supported viewport, and {viewport} is one.");
+                    $"The rail is one width at every supported panel, and {panel} is one.");
             }
         }
 
@@ -2974,6 +2978,16 @@ namespace GuardsDigital.Tests.EditMode
                 Is.False);
         }
 
+        /// <summary>
+        /// Every region stays inside the viewport it is laid out into, and the standing product rule -
+        /// both rails together under half of it - holds, at two extreme shapes.
+        ///
+        /// <para>Milestone 8.25c: the two pairs below are <em>panel</em> rectangles in reference units
+        /// rather than screens in device pixels, and they are the two extreme shapes a window can
+        /// resolve to rather than two screens a player might own. Which device resolutions produce
+        /// which panel, and that every 16:9 one produces the same layout, is
+        /// <c>MatchHudPanelScalingTests</c>'s.</para>
+        /// </summary>
         [Test]
         public void TheStandingLayout_KeepsEveryRegionInsideBothValidatedViewports()
         {

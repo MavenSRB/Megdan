@@ -595,22 +595,7 @@ namespace GuardsDigital.Presentation.Match
             head.style.flexWrap = Wrap.NoWrap;
             head.style.justifyContent = Justify.SpaceBetween;
             head.style.alignItems = Align.FlexStart;
-            var icon = new VisualElement { name = "gd-hero-icon" };
-            icon.style.width = 30f;
-            icon.style.height = 30f;
-            icon.style.flexShrink = 0f;
-            icon.style.backgroundColor = accent;
-            icon.style.justifyContent = Justify.Center;
-            HudElements.Border(icon, accent, 1f, 15f);
-            var initial = HudElements.Text(hero.IconInitial, 14f, Color.white, FontStyle.Bold);
-            initial.style.unityTextAlign = TextAnchor.MiddleCenter;
-            icon.Add(initial);
-            // The team is on the disc's own reading rather than spelled under the hero's name - the
-            // user's 2026-08-21 decision. Two rails, two accents and two edges already say which side a
-            // hero is on, and the word took a third line of the header to repeat it. It is not lost:
-            // this is the same treatment milestone 8.5a gives a card's printed colour, which is named in
-            // the hover and assistive reading rather than written on the face.
-            icon.tooltip = hero.TeamLabel;
+            var icon = BuildHeroPortrait(hero, accent);
             var identity = HudElements.Column(0f);
             identity.style.flexShrink = 1f;
             identity.style.overflow = Overflow.Hidden;
@@ -958,6 +943,79 @@ namespace GuardsDigital.Presentation.Match
         /// `COINS` is not lost - it is in the tooltip and the assistive reading as `3 coins`, which is
         /// where this HUD names everything it draws as a shape.</para>
         /// </summary>
+        /// <summary>The hero disc's footprint. Milestone 8.25c keeps the badge's own 30 exactly.</summary>
+        private const float HeroPortraitSize = 30f;
+
+        /// <summary>
+        /// The rail's hero disc: this hero's own official token face, in a disc rimmed in their team's
+        /// accent.
+        ///
+        /// <para><b>Milestone 8.25c.</b> Until this milestone the disc carried the first letter of the
+        /// hero's display name - the placeholder milestone 7.8a's decision left a slot for. Six
+        /// configured heroes tell each other apart about as well as their initials happen to differ,
+        /// and the fix was already in the project: the same private token face the piece on the board
+        /// is drawn from, addressed the same way. So the rail and the map now show one hero rather than
+        /// a picture and an initial that have to be matched up.</para>
+        ///
+        /// <para><b>The face is selected, never read.</b>
+        /// <see cref="HeroOverviewViewModel.PortraitResourcePath"/> is built from the projected content
+        /// identity and the authoritative team; nothing here asks the display name, and nothing asks a
+        /// pixel. No rule and no control ownership is decided by the image - this is a background on a
+        /// disc that answers no pointer.</para>
+        ///
+        /// <para><b>Its footprint is the badge's, to the unit.</b> A hero rail's height is under a
+        /// measured ceiling and a three-up budget that rulebook p.6's three heroes a side depend on, so
+        /// this milestone deliberately buys no height with the change. What it does buy is scale: at 30
+        /// reference units the disc is 30 pixels on a 1920-wide screen and 40 on the 2560-wide one that
+        /// prompted the milestone, where before it was 30 on both.</para>
+        ///
+        /// <para><b>There is no letter fallback.</b> The private artwork is ignored by Git and a clean
+        /// checkout resolves none, exactly as the board's own face does; the disc is then the team
+        /// accent with nothing written in it, and the hero's name beside it - which never left - is
+        /// what carries the identity. Falling back to the initial would keep the surface this milestone
+        /// exists to replace alive in the tracked project.</para>
+        /// </summary>
+        private static VisualElement BuildHeroPortrait(HeroOverviewViewModel hero, Color accent)
+        {
+            var icon = new VisualElement { name = "gd-hero-icon" };
+            icon.style.width = HeroPortraitSize;
+            icon.style.height = HeroPortraitSize;
+            icon.style.flexShrink = 0f;
+            icon.style.justifyContent = Justify.Center;
+            icon.style.backgroundColor = accent;
+            icon.style.overflow = Overflow.Hidden;
+            HudElements.Border(icon, accent, 1f, HeroPortraitSize / 2f);
+
+            if (!string.IsNullOrEmpty(hero.PortraitResourcePath))
+            {
+                var portrait = Resources.Load<Texture2D>(hero.PortraitResourcePath);
+                if (portrait != null)
+                {
+                    // Contained rather than covered, and centred: the source is a circular token
+                    // inscribed in a square, so containing it fills the disc exactly while a cover
+                    // would crop a face that is already as wide as it is tall. Aspect is the
+                    // background's own and is never set from the element's.
+                    icon.style.backgroundImage = new StyleBackground(portrait);
+                    icon.style.backgroundSize =
+                        new StyleBackgroundSize(new BackgroundSize(BackgroundSizeType.Contain));
+                    icon.style.backgroundPositionX =
+                        new StyleBackgroundPosition(
+                            new BackgroundPosition(BackgroundPositionKeyword.Center));
+                    icon.style.backgroundPositionY =
+                        new StyleBackgroundPosition(
+                            new BackgroundPosition(BackgroundPositionKeyword.Center));
+                }
+            }
+
+            // Who and which side, in words. Milestone 8.7a took the team off the rail's face by the
+            // user's 2026-08-21 decision and left it on this disc's own hover and assistive reading;
+            // milestone 8.25c adds the hero's name to it for the same reason it is on the tooltip at
+            // all - the disc's whole statement is now a picture, and a picture states nothing to a
+            // reader who cannot use one.
+            icon.tooltip = hero.PortraitAssistiveLabel;
+            return icon;
+        }
+
         private static VisualElement BuildCoinDisc(HeroOverviewViewModel hero)
         {
             var coins = HudElements.Row(0f);
@@ -2797,7 +2855,10 @@ namespace GuardsDigital.Presentation.Match
 
         private void LayoutPreview()
         {
-            var viewport = new Vector2(Screen.width, Screen.height);
+            // Milestone 8.25c: the panel's rectangle in reference units, not the screen's in pixels.
+            // The three style writes below are panel coordinates, so a device pixel here would put the
+            // breakdown outside the panel on any screen that is not the reference one.
+            var viewport = ConfiguredMatchHudRenderer.PanelViewport;
             var size = new Vector2(
                 Mathf.Min(440f, Mathf.Max(240f, viewport.x - 24f)),
                 Mathf.Min(240f, Mathf.Max(120f, viewport.y - 24f)));

@@ -127,11 +127,17 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(header.Text, Does.Contain(side == TeamSide.Red ? "[R] RED" : "[B] BLUE"));
             Assert.That(header.Text, Does.Contain("WAVES 3"));
             Assert.That(header.Text, Does.Contain("LIVES  [R] 4  [B] 4"));
-            Assert.That(indicator.xMax, Is.EqualTo(Screen.width - 12f).Within(0.01f));
+            // Milestone 8.25c: every rectangle the HUD reports is in the panel's reference units, so
+            // the margin is measured off the panel's own width and a point on it is turned into the
+            // screen pixel a player would click by the same declaration the boundary converts with.
+            var panel = ConfiguredMatchHudRenderer.PanelViewport;
+            Assert.That(indicator.xMax, Is.EqualTo(panel.x - 12f).Within(0.01f));
             Assert.That(indicator.yMin, Is.EqualTo(12f).Within(0.01f));
-            var guiPoint = indicator.center;
-            Assert.That(root.Hud.BlocksPointerAt(new Vector2(guiPoint.x, Screen.height - guiPoint.y)), Is.True);
-
+            Assert.That(
+                root.Hud.BlocksPointerAt(
+                    MatchHudPanelScaling.PanelPointToScreen(
+                        indicator.center, Screen.width, Screen.height)),
+                Is.True);
         }
 
         [UnityTest]
@@ -139,13 +145,17 @@ namespace GuardsDigital.Tests.PlayMode
         {
             yield return LoadScene();
 
+            // Milestone 8.25c: the tray's rectangle and the viewport it is bounded by are both in the
+            // panel's reference units. The screen's pixel count decides how large a reference unit is
+            // drawn and nothing else about this arithmetic.
+            var viewport = ConfiguredMatchHudRenderer.PanelViewport;
             var panel = Root().Hud.CardPanelRect;
             Assert.That(panel.xMin, Is.GreaterThanOrEqualTo(0f));
             Assert.That(panel.yMin, Is.GreaterThanOrEqualTo(0f));
-            Assert.That(panel.xMax, Is.LessThanOrEqualTo(Screen.width));
-            Assert.That(panel.yMax, Is.LessThanOrEqualTo(Screen.height));
+            Assert.That(panel.xMax, Is.LessThanOrEqualTo(viewport.x));
+            Assert.That(panel.yMax, Is.LessThanOrEqualTo(viewport.y));
             Assert.That(panel.width,
-                Is.EqualTo(Mathf.Min(1280f, Mathf.Max(0f, Screen.width - 24f))).Within(0.01f));
+                Is.EqualTo(Mathf.Min(1280f, Mathf.Max(0f, viewport.x - 24f))).Within(0.01f));
             // Milestone 7.8a: the tray also clears the standing status strip, so the two never claim
             // the same pixels and neither guaranteed surface can hide behind the other. Its height
             // bound is 360 or a share of a tall viewport, whichever is larger, and never more than the
@@ -153,11 +163,153 @@ namespace GuardsDigital.Tests.PlayMode
             // now carries its face's whole printed text.
             Assert.That(panel.height,
                 Is.EqualTo(Mathf.Min(
-                    Mathf.Max(360f, Screen.height * 0.46f),
-                    Mathf.Max(0f, Screen.height - 24f - ConfiguredMatchHudRenderer.StatusBarHeight)))
+                    Mathf.Max(360f, viewport.y * 0.46f),
+                    Mathf.Max(0f, viewport.y - 24f - ConfiguredMatchHudRenderer.StatusBarHeight)))
                     .Within(0.01f));
             Assert.That(panel.yMin,
                 Is.GreaterThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
+        }
+
+        /// <summary>
+        /// Milestone 8.25c's targeted Game View evidence: the six-player HUD as a player sees it, at
+        /// the reference resolution and at the 2560-wide screen that prompted the milestone.
+        ///
+        /// <para>Two captures rather than one, because the whole subject is whether the HUD is the same
+        /// share of both. It no-ops in batch, like every other capture in this suite.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_CapturesTheSixPlayerHudAtTwoResolutionsForGameViewInspection()
+        {
+            if (UnityEngine.Application.isBatchMode)
+            {
+                Assert.That(UnityEngine.Application.isBatchMode, Is.True,
+                    "The capture branch is exercised by the dedicated nonbatch recipe.");
+                yield break;
+            }
+
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            UiPlayer.SetPlayerViewport(1920, 1080, "8.25c reference-resolution capture");
+            yield return LoadOfficialSixPlayerScene();
+            yield return null;
+            yield return null;
+            var root = Root();
+            root.Runtime.RefreshAll();
+            yield return null;
+            yield return null;
+            TestContext.WriteLine(
+                "8.25c capture at " + Screen.width + "x" + Screen.height + ": panel " +
+                    ConfiguredMatchHudRenderer.PanelViewport + ", tray " + root.Hud.CardPanelRect +
+                    ", red column " + root.Hud.RedHeroRailRect + ", red column drawn " +
+                    Named(root.Hud.RootElement, "gd-hero-rail-red").worldBound + ".");
+            yield return Capture("tmp/milestone-8-25c-six-player-1920x1080.png");
+
+            UiPlayer.SetPlayerViewport(2560, 1440, "8.25c wide-screen capture");
+            yield return null;
+            root.Runtime.RefreshAll();
+            yield return null;
+            yield return null;
+            TestContext.WriteLine(
+                "8.25c capture at " + Screen.width + "x" + Screen.height + ": panel " +
+                    ConfiguredMatchHudRenderer.PanelViewport + ", tray " + root.Hud.CardPanelRect +
+                    ", red column " + root.Hud.RedHeroRailRect + ", red column drawn " +
+                    Named(root.Hud.RootElement, "gd-hero-rail-red").worldBound + ".");
+            yield return Capture("tmp/milestone-8-25c-six-player-2560x1440.png");
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.25c restore the viewport this session was running at");
+            yield return null;
+        }
+
+        /// <summary>
+        /// Milestone 8.25c. The live panel resolves the scale <see cref="MatchHudPanelScaling"/>
+        /// predicts, at a viewport that is not the reference and is not even the reference's shape.
+        ///
+        /// <para><b>Why this case exists.</b> Every rectangle in the HUD is laid out into a viewport
+        /// this project computes for itself, and the pointer boundary converts a screen pixel with the
+        /// same arithmetic - both because an Edit Mode fixture has no panel to ask. That arithmetic is
+        /// a reproduction of Unity's own, so it has to be measured against Unity's own or it is a
+        /// belief. 1600x1000 is chosen because it is neither the reference resolution nor 16:9: at any
+        /// 16:9 viewport the prediction is exactly the reference resolution whatever the formula, so a
+        /// wrong one would pass unnoticed.</para>
+        ///
+        /// <para>The measurements are written out before they are judged, so a formula that turns out
+        /// to be the wrong one reports the numbers it should have produced rather than only that it
+        /// did not.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_ResolvesTheDeclaredPanelScaleOnTheLiveRuntimePanel()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            UiPlayer.SetPlayerViewport(1600, 1000, "8.25c off-reference panel scale measurement");
+            yield return LoadScene();
+            yield return null;
+            yield return null;
+
+            var hud = Root().Hud;
+            Assert.That(hud.RootElement?.panel, Is.Not.Null, "There is no live panel to measure.");
+
+            var deviceWidth = (float)Screen.width;
+            var deviceHeight = (float)Screen.height;
+            var predicted = MatchHudPanelScaling.ReferenceViewport(deviceWidth, deviceHeight);
+            var measured = hud.RootElement.worldBound;
+            // The probe is a pointer position as `PrimitiveHeroPointerInput` reads one: device pixels
+            // with the origin at the screen's BOTTOM-left, which is where the Input System puts it.
+            //
+            // `RuntimePanelUtils.ScreenToPanel` scales but does not flip - measured here rather than
+            // assumed, and the reason this comparison hands it the flipped position. Unity's answer is
+            // therefore the oracle for the scale, and the flip is this project's own, owed to the
+            // origin the pointer arrives in.
+            var probe = new Vector2(deviceWidth * 0.37f, deviceHeight * 0.61f);
+            var predictedPoint = MatchHudPanelScaling.ScreenToPanelPoint(
+                probe, deviceWidth, deviceHeight);
+            var measuredPoint = UnityEngine.UIElements.RuntimePanelUtils.ScreenToPanel(
+                hud.RootElement.panel, new Vector2(probe.x, deviceHeight - probe.y));
+
+            TestContext.WriteLine(
+                "8.25c panel scale at " + deviceWidth + "x" + deviceHeight + ": predicted panel " +
+                    predicted + " and measured " + measured.size + "; screen " + probe +
+                    " predicted as panel point " + predictedPoint + " and measured as " +
+                    measuredPoint + ".");
+
+            var restored = false;
+            try
+            {
+                Assert.That(
+                    MatchHudPanelScaling.PanelPointsPerScreenPixel(deviceWidth, deviceHeight),
+                    Is.Not.EqualTo(1f).Within(0.001f),
+                    "The measurement is only worth taking where the scale is not 1.");
+                Assert.That(measured.width, Is.EqualTo(predicted.x).Within(1f),
+                    "The live panel is a different width from the one every layout number is written " +
+                    "into, so the reproduced scale resolution is not Unity's.");
+                Assert.That(measured.height, Is.EqualTo(predicted.y).Within(1f));
+                Assert.That(measuredPoint.x, Is.EqualTo(predictedPoint.x).Within(0.5f),
+                    "The pointer boundary scales a screen pixel differently from the panel it is " +
+                    "asking about.");
+                Assert.That(measuredPoint.y, Is.EqualTo(predictedPoint.y).Within(0.5f),
+                    "and the flip that turns a bottom-left pointer position into a top-left panel " +
+                    "one no longer lands where the panel's own conversion does.");
+
+                // And the boundary agrees with what is drawn, on the live panel rather than on
+                // computed rectangles: a screen pixel over the tray as it stands is blocked.
+                var tray = Named(hud.RootElement, "gd-tray-region").worldBound;
+                Assert.That(
+                    hud.BlocksPointerAt(
+                        MatchHudPanelScaling.PanelPointToScreen(
+                            tray.center, deviceWidth, deviceHeight)),
+                    Is.True,
+                    "The HUD does not consume the pointer where it draws the tray.");
+            }
+            finally
+            {
+                UiPlayer.SetPlayerViewport(
+                    restoreWidth, restoreHeight, "8.25c restore the viewport this session was running at");
+                restored = true;
+            }
+
+            Assert.That(restored, Is.True);
+            yield return null;
         }
 
         /// <summary>
@@ -185,9 +337,10 @@ namespace GuardsDigital.Tests.PlayMode
 
             foreach (var rect in new[] { hud.CardPanelRect, hud.TieBreakerIndicatorRect })
             {
-                var guiPoint = rect.center;
                 Assert.That(
-                    hud.BlocksPointerAt(new Vector2(guiPoint.x, Screen.height - guiPoint.y)),
+                    hud.BlocksPointerAt(
+                        MatchHudPanelScaling.PanelPointToScreen(
+                            rect.center, Screen.width, Screen.height)),
                     Is.True,
                     $"The HUD consumes the pointer over {rect}.");
             }
@@ -263,7 +416,9 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(bounds.height, Is.LessThanOrEqualTo(column.Rect.height + 0.5f),
                     $"Three rails stack inside the column the renderer reserved: drew {bounds.height} " +
                     $"into {column.Rect.height} at {Screen.width}x{Screen.height}.");
-                Assert.That(bounds.yMax, Is.LessThanOrEqualTo(Screen.height + 0.5f),
+                Assert.That(
+                    bounds.yMax,
+                    Is.LessThanOrEqualTo(ConfiguredMatchHudRenderer.PanelViewport.y + 0.5f),
                     "and the last rail is on screen rather than under its bottom edge.");
                 foreach (var rail in railsInColumn)
                 {
@@ -271,37 +426,77 @@ namespace GuardsDigital.Tests.PlayMode
                 }
             }
 
-            // The tray keeps the window's own left margin, so it overlaps the bottom of the Red column
-            // and is drawn over it - the user's 2026-08-26 decision, recorded here as a measurement
-            // rather than left to be discovered. The clipped band is what the tray's top edge cuts off
-            // the third rail, and this reports it in the run output so a later layout change can see
-            // what it is changing.
+            // MILESTONE 8.25c: A RAIL THE HUD DRAWS IS A RAIL A PLAYER CAN READ.
+            //
+            // This is the check whose absence let milestone 8.25 ship a HUD with two of its six rails
+            // invisible. Every assertion above is about rectangles - three rails fit inside the column
+            // the renderer reserved, and they did - while the tray was drawn over the bottom 230 units
+            // of that 1000-unit column, which is where the third rail is. The overlap was recorded as
+            // a `TestContext.WriteLine` and as a deliberate decision, so nothing failed.
+            //
+            // 8.25 recorded the cost as the third rail's "discard row and the last turn slots". The
+            // measurement 8.25c took is that three rails draw 733 from 68, so the third occupies 562
+            // to 801 against a tray top edge at 571.2: nine readable units out of 239. The tray moved
+            // into the band between the columns, and this asserts the result rather than reporting it.
             var tray = hud.CardPanelRect;
             var redColumn = Named(hud.RootElement, "gd-hero-rail-red").worldBound;
-            Assert.That(tray.xMin, Is.LessThan(hud.RedHeroRailRect.xMax),
-                "The tray starts inside the Red column's strip rather than clear of it.");
-            var clipped = Mathf.Max(0f, redColumn.yMax - tray.yMin);
+            var referencePanel = ConfiguredMatchHudRenderer.PanelViewport;
             TestContext.WriteLine(
-                "8.25 tray/rail overlap: the tray's top edge is at " + tray.yMin + " and the Red " +
-                    "column's content ends at " + redColumn.yMax + ", so " + clipped + " of the " +
-                    "third rail is drawn over at " + Screen.width + "x" + Screen.height + ".");
+                "8.25c layout: the panel is " + referencePanel.x + "x" + referencePanel.y +
+                    " reference units at " + Screen.width + "x" + Screen.height + " device pixels " +
+                    "(scale " +
+                    MatchHudPanelScaling.ScreenPixelsPerPanelPoint(Screen.width, Screen.height) +
+                    " pixels per unit), three rails draw " + redColumn.height + " into the " +
+                    hud.RedHeroRailRect.height + "-unit column, and the tray is " + tray + ".");
 
-            // The tray is on top where they meet, and the rail still owns the column above it. Both
-            // halves are asserted, because the z-order is decided by the order the two are added to
-            // the panel and nothing else would notice if that reversed.
-            var overlapPoint = new Vector2(redColumn.center.x, tray.yMin + 4f);
-            Assert.That(
-                hud.BlocksPointerAt(new Vector2(overlapPoint.x, Screen.height - overlapPoint.y)),
-                Is.True,
-                "The HUD consumes the pointer where the tray covers the rail.");
+            // EVERY ROW OF EVERY RAIL IS CLEAR OF THE TRAY AS IT IS DRAWN - which is the claim, rather
+            // than that the boxes do not touch. Two things make the drawn box the right one to measure
+            // against. The rail's own box runs about 35 units under the tray's reserved rect at the
+            // reference resolution, and that band is the rail's bottom padding and border rather than
+            // anything a player reads. And the tray region is anchored to the bottom and sized to its
+            // own content inside that rect, so the rect is the space it MAY take and the drawn box is
+            // the space it does - which is what actually covers anything, and what
+            // `ConfiguredMatchHudRenderer.BlocksPointerAt` itself prefers.
+            var drawnTray = Named(hud.RootElement, "gd-tray-region").worldBound;
+            var readableRows = new[]
+            {
+                "gd-hero-icon", "gd-bonus-strip", "gd-item-chips", "gd-hero-coins",
+                "gd-current-card-slot", "gd-turn-slots", "gd-discard", "gd-hero-marker", "gd-ultimate"
+            };
+            foreach (var rail in Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-hero-rail"))
+            {
+                Assert.That(rail.worldBound.yMax, Is.LessThanOrEqualTo(referencePanel.y + 0.5f),
+                    "A rail that runs off the bottom of the panel is not drawn: " + rail.worldBound);
+                foreach (var row in Descendants(rail)
+                    .Where(element => readableRows.Contains(element.name)))
+                {
+                    Assert.That(row.worldBound.Overlaps(drawnTray), Is.False,
+                        "A row a player cannot read is a row that is not drawn: " + row.name + " at " +
+                            row.worldBound + " is under the tray at " + drawnTray + ".");
+                }
+            }
+
+            // The rails still answer the pointer over their whole column, which is what stops a click
+            // meant for a rail reaching the board behind it.
             foreach (var column in columns)
             {
                 var element = Named(hud.RootElement, column.Name);
-                var above = new Vector2(element.worldBound.center.x, element.worldBound.yMin + 4f);
-                Assert.That(
-                    hud.BlocksPointerAt(new Vector2(above.x, Screen.height - above.y)),
-                    Is.True,
-                    $"The HUD consumes the pointer over {column.Name} above the tray.");
+                foreach (var probe in new[]
+                {
+                    element.worldBound.yMin + 4f,
+                    element.worldBound.center.y,
+                    element.worldBound.yMax - 4f
+                })
+                {
+                    var point = new Vector2(element.worldBound.center.x, probe);
+                    Assert.That(
+                        hud.BlocksPointerAt(
+                            MatchHudPanelScaling.PanelPointToScreen(
+                                point, Screen.width, Screen.height)),
+                        Is.True,
+                        $"The HUD consumes the pointer over {column.Name} at {point}.");
+                }
             }
         }
 
@@ -686,7 +881,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             // Every rail stays inside its own reserved region with the marker in it, and the two rails
             // are mirrored - the marker on the inner corner of each.
-            var playfield = ConfiguredMatchHudRenderer.CalculatePlayfieldRect(Screen.width, Screen.height);
+            var playfieldViewport = ConfiguredMatchHudRenderer.PanelViewport;
+            var playfield = ConfiguredMatchHudRenderer.CalculatePlayfieldRect(
+                playfieldViewport.x, playfieldViewport.y);
             foreach (var rail in Descendants(hud.RootElement).Where(element =>
                 element.name == "gd-hero-rail"))
             {

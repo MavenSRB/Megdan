@@ -440,7 +440,7 @@ Non-goals: No behavior change, no content change, no new configuration, and no c
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825b-name-the-configuration-types-after-what-they-now-compose-completion-evidence).
 
-### [ ] 8.25c Scale the HUD with the viewport and identify each rail with its hero portrait
+### [x] 8.25c Scale the HUD with the viewport and identify each rail with its hero portrait
 
 Proposed at the user's direction on 2026-08-26, after milestone 8.25's six-player HUD was seen on a 2560-wide screen, and amended at the user's direction the same day to replace each rail header's circled initial with that hero's picture while the rail layout is already being re-derived. `ConfiguredMatchHudRenderer.Build` sets `PanelScaleMode.ConstantPixelSize` with `scale = 1`, so every layout number is a literal device pixel: the rail is 192 and a card 186x420 on a 1280-wide screen and on a 2560-wide one alike, and the HUD is half its designed share of the second. The committed panel-settings asset already carries a `1200x800` reference resolution, inert under that mode.
 
@@ -462,6 +462,8 @@ Acceptance checks:
 - Complete unfiltered Edit Mode and Play Mode suites pass, because a change to the panel's coordinate space cannot be shown affected-only.
 
 Non-goals: No broader production-art pipeline or new HUD content beyond the six rail portraits, and no change to any rule, command or projection. No render-pipeline work - this is independent of milestone 8.28 and is cheaper before it, because a scaled layout is what production presentation is authored against. Private or excluded source imagery is not added, published or distributed without the separate authorization and rights already required by the project boundary.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825c-scale-the-hud-with-the-viewport-and-identify-each-rail-with-its-hero-portrait-completion-evidence).
 
 ### [ ] 8.25d Let a card-text Attack repeat say that it is one
 

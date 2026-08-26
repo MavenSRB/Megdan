@@ -491,9 +491,11 @@ namespace GuardsDigital.Tests.PlayMode
         ///
         /// <para>It is the other half of the standard footprint's bargain. One fixed height for every
         /// card in the game is only supportable if some screens can show less of the tray rather than a
-        /// smaller card, and this is the screen where that happens: at 1280x720 the tray region is
-        /// shorter than one card, so the region's own scroll view is what keeps every card reachable -
-        /// which the journey proves by scrolling to the last card and clicking it.</para>
+        /// smaller card, and this is the screen where that happens: at the short viewport the tray
+        /// region is shorter than one card, so the region's own scroll view is what keeps every card
+        /// reachable - which the journey proves by scrolling to the last card and clicking it.
+        /// Milestone 8.25c changed which window that is and nothing about the rule; see
+        /// <see cref="ShortViewportWidth"/>.</para>
         ///
         /// <para><b>Why the assertions come after the viewport is restored.</b> This is the one journey
         /// in the suite that shrinks the play view, and every other journey reads its geometry from
@@ -566,9 +568,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(sizes, Is.Not.Empty, "The short viewport still draws the hand.");
             foreach (var size in sizes)
             {
-                Assert.That(size.x, Is.EqualTo(CardFootprint.Width).Within(0.01f),
+                Assert.That(size.x, Is.EqualTo(CardFootprint.Width).Within(UiPlayer.PixelSnapping()),
                     "A card is the same width on a short screen as on a tall one.");
-                Assert.That(size.y, Is.EqualTo(CardFootprint.Height).Within(0.01f),
+                Assert.That(size.y, Is.EqualTo(CardFootprint.Height).Within(UiPlayer.PixelSnapping()),
                     "and the same height - what gives on a short screen is the region, not the card.");
             }
 
@@ -591,10 +593,13 @@ namespace GuardsDigital.Tests.PlayMode
         /// other surface on it, at the viewport this session is running at and at the short supported
         /// desktop one.
         ///
-        /// <para>Both sizes are measured because the rail's width is the same 172 pixels on either -
-        /// the region arithmetic caps it rather than scaling it - so a count that fits on a wide screen
-        /// and not on a short one could only come from something else on the rail moving, and that is
-        /// exactly the failure this rule is about.</para>
+        /// <para>Both sizes are measured because the rail is the same width in the panel's own units on
+        /// either - the region arithmetic caps it rather than letting the viewport decide it - so a
+        /// count that fits on a wide screen and not on a short one could only come from something else
+        /// on the rail moving, and that is exactly the failure this rule is about. Milestone 8.25c
+        /// leaves that argument standing and changes what the two viewports are: the short one is now
+        /// a window whose <em>shape</em> gives a short panel, since a scaled panel makes every 16:9
+        /// window resolve to the same rectangle.</para>
         ///
         /// <para>The facts are collected before the viewport is restored and judged afterwards, for the
         /// reason <see cref="Scene_KeepsTheCardFootprintAtAShortViewportAndScrollsTheRegion"/> gives:
@@ -632,6 +637,11 @@ namespace GuardsDigital.Tests.PlayMode
             };
             HeroRailCoinCheck.AssertTheCountStandsClear(hud, "the short viewport");
 
+            // Taken here, at the coarser of the two scales, because that is the one whose pixel grid
+            // the two measurements can disagree by.
+            var railSnapping = UiPlayer.PixelSnapping(HeroRailMarkerCheck.RailRowCount);
+            var railWidthSnapping = UiPlayer.PixelSnapping();
+
             UiPlayer.SetPlayerViewport(
                 restoreWidth, restoreHeight, "8.21a restore the viewport this session was running at");
             yield return null;
@@ -644,13 +654,18 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(shortHeight, Is.EqualTo((int)ShortViewportHeight));
             Assert.That(shortAmounts, Is.All.EqualTo("0"),
                 "The opening position's empty purses are drawn on a short screen too.");
-            Assert.That(shortRed.width, Is.EqualTo(wideRed.width).Within(0.5f),
+            // Milestone 8.25c: to within the panel's own pixel grid at each of the two scales. A rail
+            // stacks about eight rows and each one is snapped to the nearer device pixel, so the two
+            // totals may differ by about that many pixels expressed in reference units - which is what
+            // `UiPlayer.PixelSnapping` states. The claim is unchanged: nothing in the rail is sized
+            // from the viewport.
+            Assert.That(shortRed.width, Is.EqualTo(wideRed.width).Within(railWidthSnapping),
                 "The rail is the same width on a short screen as on a tall one, which is what makes " +
                 "one measurement of what fits inside it hold at both.");
-            Assert.That(shortBlue.width, Is.EqualTo(wideBlue.width).Within(0.5f));
-            Assert.That(shortRed.height, Is.EqualTo(wideRed.height).Within(0.5f),
+            Assert.That(shortBlue.width, Is.EqualTo(wideBlue.width).Within(railWidthSnapping));
+            Assert.That(shortRed.height, Is.EqualTo(wideRed.height).Within(railSnapping),
                 "and the same height, because nothing in the rail is sized from the viewport.");
-            Assert.That(shortBlue.height, Is.EqualTo(wideBlue.height).Within(0.5f));
+            Assert.That(shortBlue.height, Is.EqualTo(wideBlue.height).Within(railSnapping));
             Assert.That((uint)Screen.width, Is.EqualTo(restoreWidth),
                 "The viewport this session was running at is restored before this journey ends.");
             Assert.That((uint)Screen.height, Is.EqualTo(restoreHeight));
@@ -658,11 +673,19 @@ namespace GuardsDigital.Tests.PlayMode
 
         /// <summary>
         /// The short supported desktop viewport milestone 8.20c states the bounded-scroll fallback at.
-        /// 1280x720 is the smallest screen this project's own HUD arithmetic is written against.
+        ///
+        /// <para><b>Milestone 8.25c moved it, because the rule it is for stopped being about a pixel
+        /// count.</b> It was 1280x720 - the smallest screen this project's HUD arithmetic used to be
+        /// written against - and under a scaled panel every 16:9 window resolves to the reference
+        /// rectangle, where a whole card face fits comfortably. The case 8.20c's rule is about is a
+        /// panel too short to hold one, and on a scaled panel that is a fact about the window's
+        /// <em>shape</em>: 2560x540 is a short window on a wide monitor, it resolves to a panel about
+        /// 3724 by 785, and 0.46 of 785 is under the 420 a card face needs. The rule is unchanged;
+        /// what changed is which window reaches it.</para>
         /// </summary>
-        private const uint ShortViewportWidth = 1280;
+        private const uint ShortViewportWidth = 2560;
 
-        private const uint ShortViewportHeight = 720;
+        private const uint ShortViewportHeight = 540;
 
         /// <summary>The one live element carrying <paramref name="name"/>.</summary>
         private static UnityEngine.UIElements.VisualElement NamedElement(
@@ -685,9 +708,9 @@ namespace GuardsDigital.Tests.PlayMode
             foreach (var card in cards)
             {
                 var box = card.worldBound;
-                Assert.That(box.width, Is.EqualTo(CardFootprint.Width).Within(0.01f),
+                Assert.That(box.width, Is.EqualTo(CardFootprint.Width).Within(UiPlayer.PixelSnapping()),
                     $"A card in {what} is {box.width} wide rather than the standard footprint.");
-                Assert.That(box.height, Is.EqualTo(CardFootprint.Height).Within(0.01f),
+                Assert.That(box.height, Is.EqualTo(CardFootprint.Height).Within(UiPlayer.PixelSnapping()),
                     $"A card in {what} is {box.height} tall rather than the standard footprint.");
             }
         }

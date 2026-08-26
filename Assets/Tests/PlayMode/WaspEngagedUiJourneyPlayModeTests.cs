@@ -413,11 +413,27 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the other hero's rail is untouched, because the reward was not theirs.");
             Assert.That(runtime.CoinsOf(blueHeroId), Is.EqualTo(0));
 
-            Assert.That(HeroRailCoinCheck.BoxOf(hud, TeamSide.Red), Is.EqualTo(redRailBefore),
-                "The rail's own box is exactly what it was, net of the marker the tray moved: a " +
-                "balance that resized the rail would move the board framing this milestone may " +
-                "not touch.");
-            Assert.That(HeroRailCoinCheck.BoxOf(hud, TeamSide.Blue), Is.EqualTo(blueRailBefore));
+            // Milestone 8.25c: compared dimension by dimension inside the panel's own pixel grid
+            // rather than as one Rect. A scaled panel snaps every laid-out edge to the nearer device
+            // pixel, so two measurements of an unchanged rail can differ in the last bits even when
+            // nothing about it moved - and `Rect.Equals` reports that as a difference while printing
+            // two identical-looking rectangles, which is exactly the failure this used to give.
+            var railSnapping = UiPlayer.PixelSnapping(HeroRailMarkerCheck.RailRowCount);
+            foreach (var (side, before) in new[]
+            {
+                (TeamSide.Red, redRailBefore), (TeamSide.Blue, blueRailBefore)
+            })
+            {
+                var after = HeroRailCoinCheck.BoxOf(hud, side);
+                Assert.That(after.x, Is.EqualTo(before.x).Within(UiPlayer.PixelSnapping()), $"{side}");
+                Assert.That(after.y, Is.EqualTo(before.y).Within(UiPlayer.PixelSnapping()), $"{side}");
+                Assert.That(after.width, Is.EqualTo(before.width).Within(UiPlayer.PixelSnapping()),
+                    $"{side}");
+                Assert.That(after.height, Is.EqualTo(before.height).Within(railSnapping),
+                    "The rail's own box is exactly what it was, net of the marker the tray moved: a " +
+                    "balance that resized the rail would move the board framing this milestone may " +
+                    $"not touch. ({side})");
+            }
             HeroRailCoinCheck.AssertTheCountStandsClear(hud, "the paid Defeat reward");
 
             yield return UiPlayer.CaptureGameView("8-21a", "the-defeat-reward-on-the-red-rail");

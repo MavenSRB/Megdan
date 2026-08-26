@@ -5,7 +5,9 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Units.Heroes;
 
 namespace GuardsDigital.Presentation.Match
 {
@@ -621,6 +623,7 @@ namespace GuardsDigital.Presentation.Match
         public HeroOverviewViewModel(
             HeroId heroId,
             TeamSide teamSide,
+            HeroContentId contentId,
             string heroDisplayName,
             int level,
             int coins,
@@ -645,6 +648,7 @@ namespace GuardsDigital.Presentation.Match
 
             HeroId = heroId;
             TeamSide = teamSide;
+            ContentId = contentId;
             HeroDisplayName = heroDisplayName ?? throw new ArgumentNullException(nameof(heroDisplayName));
             Level = level;
             Coins = coins;
@@ -673,16 +677,49 @@ namespace GuardsDigital.Presentation.Match
             DiscardLabel = "DISCARD";
             UltimateLabel = "ULTIMATE";
 
-            // The icon slot the milestone 7.8a decision wired: a configured image drops in here later,
-            // and until one exists the disc carries the hero's own initial so the two rails are told
-            // apart by a glyph as well as by a side and a colour.
-            IconInitial = heroDisplayName.Trim().Length == 0
-                ? "?"
-                : heroDisplayName.Trim().Substring(0, 1).ToUpperInvariant();
+            // Milestone 8.25c. The image slot the milestone 7.8a decision wired is now filled: this is
+            // where the hero's own official token face lives, addressed exactly as the piece on the
+            // board is - by projected content identity and authoritative team, never by the display
+            // name beside it and never by anything read out of the picture. Until this milestone the
+            // disc carried the first letter of the display name instead, which told six heroes apart
+            // only as well as their initials happen to differ.
+            PortraitResourcePath = contentId.IsDefined
+                ? HeroTokenArtwork.ResourcePath(contentId, teamSide)
+                : null;
+            PortraitAssistiveLabel = HeroDisplayName + ", " + TeamLabel.ToLowerInvariant();
         }
 
         public HeroId HeroId { get; }
         public TeamSide TeamSide { get; }
+
+        /// <summary>
+        /// Which hero's printed set this rail is drawing - the same identity
+        /// <c>QuickGameHeroSetup.ContentId</c> states and the board's own piece is addressed by.
+        /// Milestone 8.25c: the rail's portrait is selected from this, so the picture follows the hero
+        /// the projection names rather than the words drawn beside it.
+        /// </summary>
+        public HeroContentId ContentId { get; }
+
+        /// <summary>
+        /// Where this hero's portrait would be, or null when the projection names no content identity.
+        ///
+        /// <para>It is the same resource the board's own token is drawn from - see
+        /// <see cref="HeroTokenArtwork"/> - which is what makes the rail's picture and the piece on the
+        /// map the same hero rather than two artists' opinions of one. The artwork is private and a
+        /// clean checkout has none, so the path resolving to nothing is an ordinary state; the rail
+        /// draws the team-accented disc with no letter in it, and the hero's written name beside it is
+        /// what carries the identity there.</para>
+        /// </summary>
+        public string PortraitResourcePath { get; }
+
+        /// <summary>
+        /// What the portrait reads as to a hover and to assistive technology: the hero's name and their
+        /// team, in words. Milestone 8.25c keeps the readable identity off the picture, for the reason
+        /// the disc's team reading was kept off it at 8.7a - a surface whose only statement is an image
+        /// or a colour states nothing to a reader who cannot use either.
+        /// </summary>
+        public string PortraitAssistiveLabel { get; }
+
         public string HeroDisplayName { get; }
         /// <summary>
         /// `RED HERO` or `BLUE HERO`. Milestone 8.7a took it off the rail's face by the user's
@@ -692,7 +729,6 @@ namespace GuardsDigital.Presentation.Match
         /// milestone 8.5a put a card's printed colour for the same reason.
         /// </summary>
         public string TeamLabel { get; }
-        public string IconInitial { get; }
 
         /// <summary>p.15's Hero Level, projected rather than counted from upgrades seen.</summary>
         public int Level { get; }
@@ -847,7 +883,16 @@ namespace GuardsDigital.Presentation.Match
                     projection.Setup.Heroes
                         .OrderBy(hero => hero.TeamSide)
                         .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
-                        .Select(hero => Build(projection, hero.HeroId, hero.TeamSide, hero.DisplayName, viewed)));
+                        .Select(hero => Build(
+                            projection,
+                            hero.HeroId,
+                            hero.TeamSide,
+                            // Milestone 8.25c: the rail's portrait is addressed by this, so it comes
+                            // off the projected setup beside the hero's seat and team rather than out
+                            // of the name the rail happens to print.
+                            hero.ContentId,
+                            hero.DisplayName,
+                            viewed)));
             }
 
             view.Render(lastViewModel);
@@ -857,6 +902,7 @@ namespace GuardsDigital.Presentation.Match
             MatchSessionProjection projection,
             HeroId heroId,
             TeamSide teamSide,
+            HeroContentId contentId,
             string displayName,
             HeroId viewedHeroId)
         {
@@ -865,6 +911,7 @@ namespace GuardsDigital.Presentation.Match
             return new HeroOverviewViewModel(
                 heroId,
                 teamSide,
+                contentId,
                 displayName,
                 progression?.Level ?? 0,
                 progression?.Coins ?? 0,

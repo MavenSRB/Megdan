@@ -55,6 +55,16 @@ namespace GuardsDigital.Presentation.Match
         /// viewport scrolls the region that holds the cards - the tray region has always been a
         /// <see cref="ScrollView"/> - rather than shrinking the cards inside it, so a card is the same
         /// size on every screen this project supports.</para>
+        ///
+        /// <para><b>Milestone 8.25c: 186 by 420 are reference units.</b> They keep the exact meaning
+        /// milestone 8.20c gave them, and no verified face changes which side of the ceiling it falls
+        /// on, because the measurement was in <em>panel points</em> to begin with: UI Toolkit lays text
+        /// out in points at a stated font size, so the 344-to-401 range those thirty-eight faces
+        /// settled into is the same range whatever the panel is scaled to. What changes is only how
+        /// many device pixels a point is drawn across. "The same size on every screen" is now literally
+        /// true rather than true of the pixel count. The short case the bounded scroll is for is still
+        /// real and is now a matter of the window's <em>shape</em> - a panel shorter than about 913
+        /// reference units cannot hold a whole face - rather than of its pixel count.</para>
         /// </summary>
         public const float Height = 420f;
 

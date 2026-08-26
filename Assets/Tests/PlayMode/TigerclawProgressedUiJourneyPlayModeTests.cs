@@ -733,16 +733,25 @@ namespace GuardsDigital.Tests.PlayMode
             // three times inside a rect of about 1000. So this asserts both halves: the rail does not
             // grow back past the height 8.23a achieved, and three of them fit the column that has to
             // hold rulebook p.6's three heroes a side.
-            var railRect = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
-                Screen.width, Screen.height, TeamSide.Red);
+            // Milestone 8.25c: the column the renderer reserved, in the panel's own reference units -
+            // which is what the rail's laid-out box below is measured in too. Reading the screen's
+            // pixel count here would compare a rail drawn in reference units against a column measured
+            // in device ones.
+            var railRect = hud.RedHeroRailRect;
             var budget = HeroRailMarkerCheck.ThreeUpBudget(railRect.height);
             var drawn = HeroRailCoinCheck.BoxOf(hud, TeamSide.Red).height;
             TestContext.WriteLine(
                 "8.25 rail measurement: a rail holding a marker is " + drawn + " tall; a third of " +
                     "the " + railRect.height + " rail rect leaves " + budget + " for one of three.");
-            Assert.That(drawn, Is.LessThanOrEqualTo(HeroRailMarkerCheck.RecordedRailCeiling),
+            // Milestone 8.25c: the ceiling is a reference-unit claim and the measurement is taken off a
+            // scaled panel, so it carries the panel's own pixel grid - one device pixel per stacked
+            // row, stated by `UiPlayer.PixelSnapping`. What is allowed is the snapping; a rail that
+            // grew a row still fails.
+            var ceiling = HeroRailMarkerCheck.RecordedRailCeiling + UiPlayer.PixelSnapping(HeroRailMarkerCheck.RailRowCount);
+            Assert.That(drawn, Is.LessThanOrEqualTo(ceiling),
                 "The recomposed rail draws " + drawn + " against the " +
-                    HeroRailMarkerCheck.RecordedRailCeiling + " this build measured, so a later " +
+                    HeroRailMarkerCheck.RecordedRailCeiling + " this build measured (allowing " +
+                    UiPlayer.PixelSnapping(HeroRailMarkerCheck.RailRowCount) + " for the panel's pixel grid), so a later " +
                     "change grew it back.");
             // Asserted wherever a third of the column could hold the recorded ceiling at all. A
             // viewport short enough that it cannot is one where three rails were never going to stack,

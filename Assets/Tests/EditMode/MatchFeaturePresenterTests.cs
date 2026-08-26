@@ -36,8 +36,14 @@ namespace GuardsDigital.Tests.EditMode
             //
             // Milestone 8.25 left this rect exactly where it was. The rail columns took the whole
             // screen edge, but the tray kept the window's own left margin and its full width by the
-            // user's decision, so the two overlap in the bottom corners rather than the tray moving
-            // out of them.
+            // user's decision, so the two meet in the bottom corners rather than the tray moving out
+            // of them.
+            //
+            // Milestone 8.25c: 778 by 300 is now a PANEL rectangle in reference units rather than a
+            // screen in device pixels, and the assertions below are unchanged because the arithmetic
+            // this measures is unchanged - what moved is which viewport reaches it. A panel this small
+            // is reached by a window whose shape is this extreme rather than by one whose pixel count
+            // is, which is the whole point of the scaled panel.
             Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(12f, 68f, 754f, 220f)));
             Assert.That(panel.xMax, Is.LessThanOrEqualTo(778f));
             Assert.That(panel.yMax, Is.LessThanOrEqualTo(300f));
@@ -62,9 +68,11 @@ namespace GuardsDigital.Tests.EditMode
             // content, so this is the region it may use and not the region it does use.
             // Milestone 8.25: the tray keeps the window's own left margin and its full width, by the
             // user's decision, even though the rail columns now run the whole screen edge. The two
-            // therefore overlap in the bottom corners and the tray is drawn over the rail there, which
+            // therefore meet in the bottom corners and the tray is drawn over the rail there, which
             // is what this pair of assertions records - it is a deliberate overlap rather than a
-            // layout that happens not to have been checked.
+            // layout that happens not to have been checked. What is under there is the rail's bottom
+            // padding; that every row a player reads stays clear of the tray is milestone 8.25c's,
+            // asserted on the live panel by `MinimalHexGridPlayModeTests`.
             Assert.That(panel.width, Is.EqualTo(1280f));
             Assert.That(panel.x, Is.EqualTo(12f));
             Assert.That(

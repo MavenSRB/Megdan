@@ -78,8 +78,14 @@ namespace GuardsDigital.Tests.PlayMode
                 $"{heroDisplayName} supplies no verified faces to measure, which is not a pass.");
             Assert.That(hud.RootElement?.panel, Is.Not.Null,
                 "The footprint is measured on the live panel; there is none.");
-            Assert.That(Screen.width, Is.GreaterThanOrEqualTo(1280),
-                "The gate measures the footprint at the validated player viewport.");
+            // Milestone 8.25c: the gate measures at the reference resolution, which is what the live
+            // panel lays out in. It is the same measurement it always was - the reference is the
+            // 1920x1080 screen milestone 8.20c took the footprint on - but it is now a fact about the
+            // panel rather than about how many pixels the Game View happens to have.
+            var panel = ConfiguredMatchHudRenderer.PanelViewport;
+            Assert.That(panel.x, Is.GreaterThanOrEqualTo(1280f),
+                $"The gate measures the footprint at the reference resolution; the panel resolved " +
+                $"{panel} from a {Screen.width}x{Screen.height} viewport.");
 
             // A stage larger than the footprint in both directions, so a face that does not fit is
             // measured at the size it actually wants instead of being clamped by what it is put in -
@@ -144,13 +150,18 @@ namespace GuardsDigital.Tests.PlayMode
                 yield break;
             }
 
-            if (!Mathf.Approximately(box.width, CardFootprint.Width))
+            // Milestone 8.25c: to within the panel's own pixel grid. A face is declared in reference
+            // units and drawn on a scaled panel, so its laid-out size is the declared one snapped to
+            // the nearer device pixel - see `UiPlayer.PixelSnapping`. The gate is still an exact-size
+            // gate; what is allowed is the snapping, not a face that wanted a different size.
+            var snapping = UiPlayer.PixelSnapping();
+            if (Mathf.Abs(box.width - CardFootprint.Width) > snapping)
             {
                 yield return $"{name}: {box.width} wide, and the standard footprint is " +
                     $"{CardFootprint.Width}.";
             }
 
-            if (!Mathf.Approximately(box.height, CardFootprint.Height))
+            if (Mathf.Abs(box.height - CardFootprint.Height) > snapping)
             {
                 yield return $"{name}: {box.height} tall, and the standard footprint is " +
                     $"{CardFootprint.Height} - a difference of " +

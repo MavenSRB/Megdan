@@ -281,6 +281,28 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// How far a laid-out size may honestly sit from the size that was declared for it, in the
+        /// panel's own reference units.
+        ///
+        /// <para><b>Milestone 8.25c, and it is a property of a scaled panel rather than a fudge.</b>
+        /// UI Toolkit snaps every laid-out edge to the device pixel grid. While the panel drew one
+        /// point per pixel that was invisible - a 186-point card was 186 pixels and measured 186 - but
+        /// at any other scale a declared size lands between two pixels and the layout takes the nearer
+        /// one. At the reference's 0.75 pixels per point a 186-point card is 139.5 pixels, is drawn at
+        /// 140, and measures back as 186.667. So a live measurement in reference units is its declared
+        /// value to within one device pixel per edge, and a column of stacked boxes to within one per
+        /// box.</para>
+        ///
+        /// <para>Pass the number of independently snapped edges the measurement accumulates: 1 for a
+        /// single box's width or height, and the number of stacked rows for a column's total.</para>
+        /// </summary>
+        public static float PixelSnapping(int snappedEdges = 1) =>
+            Mathf.Max(
+                0.01f,
+                Mathf.Max(1, snappedEdges) *
+                    MatchHudPanelScaling.PanelPointsPerScreenPixel(Screen.width, Screen.height));
+
         /// <summary>The pointer leaves a control it was resting on.</summary>
         public static void PointAway(VisualElement element)
         {
