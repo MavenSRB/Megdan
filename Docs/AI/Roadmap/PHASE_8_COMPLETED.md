@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard holding Phase 8 milestone definitions that are complete and self-contained. Return to [ROADMAP.md](../ROADMAP.md) or the active shard [PHASE_8.md](PHASE_8.md). Historical completion evidence: [PHASE_8 handoffs](../Archive/Phase-Handoffs/PHASE_8.md).
 
-Created 2026-08-22 during milestone 8.8a's required warning-threshold ownership review, and extended on the same date during milestone 8.11a's, under the standing growth pattern [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) established on 2026-08-14: when a phase shard reaches its 85% warning threshold, its completed self-contained definition sections move here verbatim during that same handoff, leaving a routing summary and stable link behind. Definitions remain active authority under the same `Roadmap/` family threshold - this is sharding, not archiving. Completed milestone evidence stays in commit bodies indexed by phase-handoff rows per [DOCUMENTATION_GOVERNANCE.md](../DOCUMENTATION_GOVERNANCE.md).
+Created 2026-08-22 during milestone 8.8a's required warning-threshold ownership review, extended on the same date during milestone 8.11a's, and extended again on 2026-08-26 with milestones 8.11 through 8.11c when milestone 8.25a's audit added two proposed corrective blocks and took the active shard past its hard limit, under the standing growth pattern [PHASE_6_COMPLETED.md](PHASE_6_COMPLETED.md) established on 2026-08-14: when a phase shard reaches its 85% warning threshold, its completed self-contained definition sections move here verbatim during that same handoff, leaving a routing summary and stable link behind. Definitions remain active authority under the same `Roadmap/` family threshold - this is sharding, not archiving. Completed milestone evidence stays in commit bodies indexed by phase-handoff rows per [DOCUMENTATION_GOVERNANCE.md](../DOCUMENTATION_GOVERNANCE.md).
 
 The active shard keeps the milestones the current route reads against - the most recently completed slices and everything still open - so a task planning the next milestone still finds its immediate predecessors there.
 
@@ -316,3 +316,125 @@ Non-goals: no Defense text (8.11), no trigger windows (8.12).
 - **The defeat capability declares and performs nothing**, which is milestone 6.9's mid-turn Lane-Push shape: p.13's list prices a reward by Level, spends Life counters, returns markers, resolves an unresolved card and cancels Active effects, all of it authority state no capability holds and all of it already written once in the Attack resolver. Three of that resolver's event factories read the defeated hero off the Attack's own target and now take it explicitly, because a rider can defeat a hero the Attack never targeted.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-810-complete-the-wasp-attack-cards-completion-evidence).
+
+### [x] 8.11 Complete the Wasp Defense cards
+
+Blocked by: milestone 8.8 (discard rider family) - discharged. Milestone 8.5 supplied the Defense text seam.
+
+Observable outcome: Stop Projectiles, Deflect Projectiles, and Reflect Projectiles resolve their complete printed text as p.14 Block cards.
+
+Acceptance checks:
+
+- Block evaluation lands on the reserved 5.8 `DefenseBlockResult` seam at p.14's step 4: the condition - the incoming attack is ranged, read from the attack's typed subtype facts - fulfilled means a successful defense regardless of totals, unfulfilled means the defender is defeated, and no Block ever becomes a sentinel Defense amount.
+- Deflect's and Reflect's on-success riders compose the defender-anchored `RangeQuery` from the card's printed Range icon: one enemy hero in range - excluding the attacker on Deflect, any enemy hero on Reflect - chosen by the defender performing the Block per p.10, discards a card, if able.
+- A Defense-primary card in the played state offers only its secondary and general-rule actions, because p.14 forbids performing a Defense action on an already played card.
+- The pending-defense continuation state the Block evaluation adds is an explicit schema decision with the full ceremony.
+
+Non-goals: no continuous sources, no Ultimate.
+
+- **The Block verdict is a fact the resolution carries, not a Defense number.** `DefenseBlockResult` lands on the seam milestone 5.8 reserved, gains `ConditionUnfulfilled` beside `Fulfilled` and `None`, and is written on the Attack resolution state - which is why this milestone moves the schema. A Block never produces a Defense amount at all: where a Defense card would be totalled, a Block short-circuits the comparison, so no sentinel value can be mistaken for a printed one and p.14's step 5 is skipped rather than fed. Unfulfilled defeats the defender through the same staged p.13 chain 8.10 registered, not through a second copy of the page.
+- **p.14's already-played rule holds twice over, and the case says so rather than claiming a mechanism.** A printed Block is available in the Reaction window and nowhere else, and it declares a Hand -> DiscardPile state transition, so a card in the turn area fails both tests independently. The knockout evidence in the handoff found this: removing the window alone left the transition covering the same assertion. The case now pins the outcome and names both rules, and the window's other half - that the Block *is* offered once an Attack is being answered - is what every Block case stands on.
+- **The Block keeps its printed origin; the window and the invocation context widened instead.** Milestone 8.3's rule is that a printed primary is recorded as one, so `PrintedPrimary` stays and `ActionOfferQuery` asks the definition rather than the origin. The two sites that had encoded "a Defense is a Reaction" as an origin check - the pending defense-response choice and the completed-defense match - were taught the printed Block instead of relaxed.
+- **The attacker exclusion is a parameter of the Range channel and of nothing else.** "another enemy hero" is printed only by Deflect, only on a Range selection, and the attacker it excludes is the enclosing Attack's actor - a fact about the action being answered rather than about anything the text did - so it is read from the same context p.13's subtype is, through `EnclosingAttackFacts`. Declaring it per channel keeps the Radius selections' declarations byte-identical, which the corpus measurement confirms.
+- **Milestone 8.4's honesty rule got its refusal case, and its subject is synthetic on purpose.** After this milestone no verified Defense owes a composition, so a case built on Wasp's own cards would assert over nothing; the discriminating pair is one synthetic card offered when its text is composed and withheld when it is not. p.14 makes refusing costless the same way p.12 does, so a withheld Defense costs the defender nothing.
+- **A new corpus fixture earned its place the moment it existed.** `paused-block-rider-v24` caught a Conditional root declaring an output its predicate never published - on this milestone's rider, and latently on 8.10's repeat root, where no other fixture looked. That is the case for adding a fixture per pausing section rather than per milestone.
+- **8.10's digest re-pin had no recorded cause, and this milestone recorded it.** The aggregate-invariance fixture requires every re-pin to state its byte-level delta in the re-pinning commit; 8.10 moved all nine pairs without one. The delta was measured after the fact in a throwaway worktree at 19a6def8 - schema 22 -> 23 plus four capability registrations, 126 bytes on every carried payload and 180 on the verified-hand one - and written into the fixture beside this milestone's own.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811-complete-the-wasp-defense-cards-completion-evidence).
+
+### [x] 8.11a Official map underlay and transparent interaction overlay
+
+Blocked by: milestone 8.11, so the current rules-content milestone closes before this bounded presentation amendment begins.
+
+Observable outcome: The configured match presents the official `GuardsII_Small_Board` artwork as its
+private board underlay while retaining the reviewed 292-space map and every existing board interaction
+as a precisely registered transparent overlay.
+
+Acceptance checks:
+
+- A project-local deterministic preparation route reads the private Tabletopia manifest entry named
+  `GuardsII_Small_Board`, extracts its declared 1588-by-1588 sprite from the declared
+  `Image_17_Atlas` source, and writes only an ignored private Unity runtime asset; it does not alter,
+  move, add, or commit the source atlas, extracted corpus, or map-reference directory.
+- With the private runtime asset present, the complete official artwork is rendered flat on the board's
+  XZ plane beneath units, tokens, spawn markers, highlights, and board-facing cues. Base tile fills and
+  debug edges are transparent or visually suppressed without removing the tile views used by existing
+  selection and highlighting paths.
+- The authoritative 292 spaces in `official-single-lane` revision 1 register to their corresponding
+  artwork positions within one declared visual tolerance across the complete board. The check uses
+  reviewed map identity and coordinates; Tabletopia's 332 magnetic centres may assist calibration but
+  neither create spaces nor become runtime or rules authority.
+- Movement, Fast Travel, Attack targeting, effect choices, correction destinations, Hero Respawn,
+  Defense contributors, Minion Battle choices, Clear selections, and token/object cues retain their
+  existing projected legality and typed command paths. Their visible overlays remain readable against
+  the artwork and identify the same stable space or object before and after Undo, restart, snapshot
+  restore, replay, and a presentation rebuild.
+- Camera framing still contains the whole authoritative map in the board band left by the HUD at the
+  validated 2048-by-1152 Game View and the applicable short-viewport fallback. A targeted visual
+  inspection confirms that artwork, units, transparent overlays, and the standing HUD remain legible
+  without z-fighting, opaque debug tiles, clipped board edges, or the card tray concealing an actionable
+  cue.
+- With the private runtime asset absent, the tracked project loads and plays through the existing
+  generated-board fallback without a missing-reference exception, compile failure, or rules/state
+  difference. The private artwork is included only in specifically authorized internal builds and is
+  not added to the public source repository or otherwise distributed by this milestone.
+
+Non-goals: No change to the official map specification, space count, topology, zones, spawn points,
+rules, commands, snapshots, or replay; no adoption of Tabletopia magnetic centres as game spaces; no
+new camera controls, 3D scenery, unit art, animation, HUD redesign, public build, publication-rights
+determination, or distribution authorization.
+
+**User-approved scope amendment, 2026-08-22:** board targeting was folded into this milestone. Every choice with a board surface is answered on the board, the way an Attack target always has been, and the prompt keeps only what has no board surface.
+
+- **The registration was settled against the artwork, not against the manifest's magnetic map.** The manifest's 332 magnetic centres fit one hexagonal lattice exactly - 332 distinct indices, worst deviation 10.4% of the 2.4074-unit spacing - and they are stated in the sprite's own frame, which was confirmed by drawing all 332 onto the extracted face and finding every one on a painted hex. What they could not settle is orientation: the twelve lattice symmetries score 272 to 283 of 292, so the best is not meaningfully better than the rest. It was settled by drawing the map's seven zones over the face, where one orientation puts every zone boundary on a painted boundary - Red Throne on the drill, Blue Throne on the crystal, both jungles on the forests, terrain on the rock ring - and no other does. **The highest-scoring lattice match is not that orientation**, which is why `OfficialBoardArtwork` records the reasoning rather than only the numbers.
+- **The measured registration is a similarity and nothing looser**, fitted over the 275 spaces that have a magnetic centre: mean deviation 0.031 and worst 0.076 board units, which is 0.054 world units or 5.4% of a space's outer radius, against a declared tolerance of a tenth of a space. No shear and no mirroring, both excluded by test rather than by hope, because a landmark table cannot see either.
+- **The camera stands on the board's own axes, by the user's decision.** The board's hex lattice sits about fifteen degrees inside its square, so the square and the lane cannot both be square to the screen. The artwork wins: the square reads upright as it does on the table, and the lane runs corner to corner because on this board it does. `BoardChoiceCue` takes its up from the same statement, so every board-facing cue turns with it - `StandardMinionView` had that rotation written out by hand and was the one thing that stayed crooked until it read the shared construction.
+- **Nothing is removed to make room for the artwork; it is suppressed.** Tile fills become one fully transparent material, debug edges and spawn rings switch their renderers off, and every view stays configured - so selection, highlighting and the presentation tests all read exactly what they read before, and a checkout without the artwork puts all of it straight back.
+- **A hex you choose is lit; a piece you choose is marked.** Ranges, correction destinations, respawn spaces and empty effect-choice candidates keep the outlined region, because the answer is the space and a region only reads as a region when it is lit. Attack targets and effect candidates naming a unit or token wear the Minion Battle's own marker instead, because the answer is the thing standing there. That split is also the only thing that reads: a tint has to contrast with pale sand, mid brown, jungle and near-black rock at once and no colour does, while the marker carries its own dark backing.
+- **A Block was unreachable, and milestone 8.11 shipped it that way.** The defence preview calculated a Defense value for every offer, so a Block previewed as a card worth zero and predicted the defender losing an attack it in fact stops; the prompt then looked for the offer's printed Defense icon, found none on a Block, and threw where it was drawn - so the authority asked and the screen asked nothing. p.14's condition now lives in one `DefenseBlockQuery` that both the resolver and the preview ask, because a preview that disagreed with the resolution would be worse than none. **8.11's cases all drove the authority directly and never built the prompt**, which is the gap `PromptReachabilityConformanceTests` now closes: every offer the authority makes must be answerable on the board or in the prompt, checked from the authority's own legal sets.
+- **The board never offers what the rules withhold.** Marking every Battle candidate rather than only the hovered one exposed that `Candidates` is every unit in the zone while `LegalSelectUnits` is p.8's Heavy-removed-last rule applied; the board reads the latter.
+- **What the artwork could not be drawn with.** `RuntimeShaderResolutionTests` requires every shader resolved by name to be declared in Graphics settings, so two attempts were made to render the face with the Standard shader: albedo and emission both carrying the texture doubled it, and blacking the albedo left the broad specular and reflection response to this scene's flat blue-grey ambient, which bleached it even with both switched off. `Unlit/Texture` is declared instead, at the file id measured from the Editor rather than guessed into project settings.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811a-official-map-underlay-and-transparent-interaction-overlay-completion-evidence).
+
+### [x] 8.11b Replace Wasp pins and abbreviated card indicators with verified card-table visuals
+
+Blocked by: milestone 8.11, so Wasp's complete printed Defense set and the response path it uses are available before this bounded presentation pass begins.
+
+Observable outcome: the configured mirrored match renders each primitive Wasp pin as the official team-coloured Wasp token, a pending Defense response renders every legal Defense card as the same complete portrait card face used in the ordinary tray, and each hero rail represents resolved and discarded cards with individual mini-card icons whose complete faces appear on mouseover.
+
+Acceptance checks:
+
+- A project-local deterministic preparation route reads the private Tabletopia manifest entry `Wasp` (`VerticalTokens`, element `8597310`), extracts its declared 302-by-302 Red and Blue circular token faces from `Image_1_Atlas`, and writes only ignored private Unity runtime assets. It does not alter, move, add, or commit the source atlas or extracted corpus.
+- Each configured mirrored Wasp view selects the matching Red or Blue face from its projected hero content and authoritative team. The token is a flat board-readable disc centred on the hero's authoritative coordinate; art never supplies hero identity, team, occupancy, selection, or legality.
+- The token replaces only the primitive prism's visible mesh/material. Existing pointer selection, collider footprint, target and choice cues, movement refresh, Defeat/respawn visibility, Undo, restart, snapshot restore, replay, and presentation rebuild continue to bind the same stable `HeroId` without duplicate or stale views.
+- Every legal Defense-card invocation is drawn through the tray's shared complete card-face builder, including Initiative, name, printed values and qualifiers, exact source text, Range or Radius badge when present, and assistive colour reading. The whole card is the selectable control and forwards only its projected response invocation; `DECLINE DEFENSE` remains a distinct non-card control.
+- Hover and keyboard focus on a Defense card retain the authority-computed Attack/Defense/result preview, including the offer-bound `PRINTED DEFENSE` reading, without presentation recomputing totals, Block results, eligibility, or predicted outcome. Visible order and keyboard order match the projected response order, and selection changes no card width, wrapping, or row height.
+- Each occupied resolved-turn slot is a compact card-shaped icon derived from that exact resolved card. The `1`, `2`, `3`, and `4` text is removed from the slots; their fixed left-to-right positions under `RESOLVED TURNS` retain sequence, while an unoccupied reserved slot remains an empty card outline with no invented card or number.
+- The discard row replaces its aggregate number and colour pips with one compact card-shaped icon for each projected discarded card. It displays no numeric count: the visible icons are the count. Their deterministic display order is derived from projected card state rather than from presentation-observed discard events.
+- Resting the pointer on any occupied resolved-turn or discard icon opens the same single complete card-face preview used by the tray and current-card rail. Moving between icons replaces that preview, leaving the rail or rebuilding it closes the preview, and empty slots reveal nothing. Visible colour is supplemented by an assistive label naming the exact card and lifecycle location.
+- Four legal Defense cards plus Decline remain simultaneously pointer- and keyboard-reachable at the validated 2048-by-1152 Game View, with the existing bounded-scroll fallback on short desktop viewports. A targeted Game View inspection covers both team-coloured Wasp tokens, a numeric Defense face, a Block face, Decline, preview hover/focus, and board cues against the current board presentation.
+- Focused `MatchHudPresentationTests` cover shared card-face reuse, exact response forwarding, Defense-preview retention, response order, constrained-viewport reachability, icon-per-card discard representation, number-free resolved/discard slots, full-face rail previews, empty slots, and refresh without stale icons. Directly affected Play Mode coverage proves both Wasp token variants across movement, selection, Defeat/respawn and rebuild, plus the configured pending-Defense and hero-rail interaction paths. T2 validation includes one targeted Game View inspection.
+- With the private token assets absent, the tracked project loads and plays through the existing generated primitive hero fallback without a missing-reference exception, compile failure, or rules/state difference. The private artwork is included only in specifically authorized internal builds and is not added to the public source repository or otherwise distributed by this milestone.
+
+Non-goals: no change to hero or team authority, occupancy, movement, targeting, Defense eligibility or resolution, contribution totals, Block semantics, card lifecycle, discard or resolved-turn authority, snapshots or replay; no official-map underlay, 3D miniature, animation, camera change, general Phase 9 hero-art pipeline, broader HUD redesign, public build, publication-rights determination, or distribution authorization.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811b-replace-wasp-pins-and-abbreviated-card-indicators-with-verified-card-table-visuals-completion-evidence).
+
+### [x] 8.11c Answer identity-named effect-choice candidates on the board
+
+Blocked by: milestone 8.11a, which put every space-named candidate on the board and left this one shape behind.
+
+Observable outcome: an effect choice that names a hero, a minion, or a token by identity is answered by clicking that piece, exactly as one that names a space already is, and its control leaves the prompt.
+
+Acceptance checks:
+
+- A candidate's board space is resolved from authoritative occupancy rather than from the candidate's own value kind, so a candidate carrying a `HeroId`, a `MinionId` or a `TokenInstanceId` marks and answers on the piece it names. `EffectChoiceCandidatePreview` covers space-valued candidates only today; extending the preview query is the preferred home, because the preview already exists to say what a candidate means on the board and would then supply the resulting-space reading these candidates currently lack.
+- The resolution is total and asserted as such. `IBoardDisplacementAuthority.TryGetObjectAt` returns at most one object per space, so exactly one candidate resolves to any space; two is a violated invariant and fails loudly rather than falling back to a control.
+- Every candidate the authority offers is marked on the piece it names or lit on the space it names, and its prompt control is withdrawn - which requires the round view model to carry whether an invocation is answerable on the board, rather than the view inferring it from the candidate's shape. `EffectChoiceDestinations`, `EffectChoiceTargets` and the generic `EffectChoices` list keep their existing meanings.
+- Reflect Projectiles' rider is the live subject: it names the attacker by `HeroId`, so clicking the attacking hero answers it. Milestone 8.11a's `PromptReachabilityConformanceTests` tightens from "answerable on the board or in the prompt" to "answerable on the board" for every candidate that names an object, and the pre-fix observation is that case failing.
+- Selection, targeting, correction, respawn, Minion Battle and Attack targeting keep their existing projected legality and typed command paths, and identify the same stable space or object before and after Undo, restart, snapshot restore, replay, and a presentation rebuild.
+
+Non-goals: no change to effect-choice authority, candidate sets, legality, or command shapes; no change to the board underlay, registration, camera framing, cue vocabulary, or highlight palette; no schema move, and no new pending state.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811c-answer-identity-named-effect-choice-candidates-on-the-board-completion-evidence).

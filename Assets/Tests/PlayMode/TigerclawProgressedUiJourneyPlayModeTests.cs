@@ -507,6 +507,101 @@ namespace GuardsDigital.Tests.PlayMode
             yield return CaptureGameView("cloak-and-daggers-offers-its-repeat");
         }
 
+        /// <summary>
+        /// The other answer, taken - and what taking it does.
+        ///
+        /// <para>Milestone 8.25a. The journey above proves the decision is drawn and that declining is
+        /// accepted; until that milestone it could prove nothing more, because taking the repeat
+        /// settled an instance nothing ever started, so both answers looked alike from the surface.
+        /// Rulebook p.10 makes the repeat a separate action performed on the same card by the same
+        /// hero, so what a player sees after confirming is that card's own action asked again with the
+        /// turn still theirs.</para>
+        ///
+        /// <para><b>The repeated action here is a Movement, not the Attack the journey above takes.</b>
+        /// That is the shape milestone 8.25a's six-player evidence stalled on - a
+        /// <c>secondary-movement</c> repeat surfacing in another hero's turn - and it is the one that
+        /// reliably has somewhere to go: Blink Strike's line names the unit it crossed and the card
+        /// forbids repeating onto the same one, so on this staging that Attack's repeat correctly finds
+        /// nothing and skips in silence, which proves the turn was held but not that the second
+        /// instance runs.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator CloakAndDaggers_TakenRepeatRunsHisBasicActionAgainOnTheSameCard()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeEngagedStagedTigerclaw);
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var tigerclawId = TigerclawSeat(runtime).HeroId;
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            CommitSoTheNamedSeatActs(runtime, tigerclawId, TigerclawCardContent.BlinkStrike);
+            var actingCard = runtime.SelectedActor.CardInstanceId;
+            yield return PointTrayAt(root, tigerclawId);
+            yield return StartActionThroughControl(root, ActionKind.Movement);
+
+            Assert.That(runtime.PendingMovementChoice, Is.Not.Null,
+                "The clicked control opens p.10's movement session. " + Remaining(runtime));
+            yield return StepOntoTheFirstLitSpace(root, pointerInput);
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The performed basic action is what the Ultimate watches, so the game stops on its " +
+                "printed offer once the Movement is spent. " + Remaining(runtime));
+            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            Assert.That(confirm, Is.Not.Null,
+                "\"you may repeat it once\" - taking it is an answer a player has to be able to give " +
+                "by name. Shown: " + UiPlayer.Describe(hud));
+
+            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(tigerclawId),
+                "p.10's repeated action is performed by the same hero, so the turn is still his - " +
+                "and before milestone 8.25a Initiative had already left him by this point. " +
+                Remaining(runtime));
+            Assert.That(runtime.SelectedActor.CardInstanceId, Is.EqualTo(actingCard),
+                "and it is still the card he took the action on, which is why that card had to stay " +
+                "unresolved across the decision.");
+            Assert.That(runtime.PendingMovementChoice, Is.Not.Null,
+                "Taking the repeat starts the second instance rather than owing one, so the Movement " +
+                "is asked again and the board lights for it. Shown: " + UiPlayer.Describe(hud) + " " +
+                Remaining(runtime));
+
+            var walkedTo = runtime.Heroes.Single(hero => hero.HeroId.Equals(tigerclawId)).Coordinate;
+            yield return StepOntoTheFirstLitSpace(root, pointerInput);
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(tigerclawId)).Coordinate,
+                Is.Not.EqualTo(walkedTo),
+                "and answering it moves him again - the second instance is an action he performs, " +
+                "not a decision that closes.");
+
+            yield return CaptureGameView("cloak-and-daggers-repeats-the-action-he-just-took");
+        }
+
+        /// <summary>
+        /// Clicks the first lit destination of the standing movement session, the way the walk journey
+        /// does: the tile has to be lit before it is clicked, because a player can only click what the
+        /// board is showing them.
+        /// </summary>
+        private static IEnumerator StepOntoTheFirstLitSpace(
+            MatchSceneCompositionRoot root, PrimitiveHeroPointerInput pointerInput)
+        {
+            var runtime = root.Runtime;
+            var destinations = runtime.PendingMovementChoice.LegalDestinations
+                .Select(value => value.Destination)
+                .ToArray();
+            Assert.That(destinations, Is.Not.Empty,
+                "A standing movement session lights somewhere to go. " + Remaining(runtime));
+            var chosen = FirstClickableSpace(pointerInput, destinations);
+            var tile = Tile(chosen);
+            Assert.That(tile.IsHighlighted, Is.True,
+                "A destination a player is about to click must be lit before they click it.");
+            Assert.That(UiPlayer.ClickBoard(pointerInput, root.Hud, tile.transform.position), Is.True);
+            yield return null;
+            yield return null;
+        }
+
         // ---------------------------------------------------------------------------------------
         // Steps
         // ---------------------------------------------------------------------------------------

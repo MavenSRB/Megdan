@@ -1289,11 +1289,22 @@ namespace GuardsDigital.Core.Cards
                 return AdvanceInitiative(events);
             }
 
+            // Neither reading is a state this turn can legitimately be in, and accepting the command
+            // while advancing nothing would be the exact shape of the stall this milestone removed -
+            // a selected actor sitting on a resolved card with no advance owed and nothing left to
+            // move the turn on. A selected actor names a card that exists, and a resolved card has
+            // already cleared the selection through TryAcknowledgeSelectedCardResolved, so either
+            // reading means that acknowledgement was skipped. Faulting rolls the answer back and says
+            // which; shrugging would leave the match unplayable and silent about why.
             var card = instances.SingleOrDefault(candidate =>
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
             if (card == null || card.State.ResolutionStatus != CardResolutionStatus.Unresolved)
             {
-                return TurnResolutionResult.Accept(events);
+                throw new InvalidOperationException(
+                    "An action held for the ability that may repeat it was finished against a " +
+                    "selected actor whose card is " +
+                    (card == null ? "absent" : "already resolved") +
+                    ", so Initiative was never acknowledged for it.");
             }
 
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))

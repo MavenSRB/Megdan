@@ -133,6 +133,14 @@ namespace GuardsDigital.Tests.PlayMode
         private const string UltimateJourney =
             "CloakAndDaggers_IsDrawnOnTigerclawsRailAndRepeatsTheBasicActionHeJustTook";
 
+        /// <summary>
+        /// Milestone 8.25a. The repeat decision has two answers and one journey can only give one, so
+        /// the shape that is about what taking it *does* rests on the journey that takes it. The one
+        /// above declines, which is what proves the decline is accepted.
+        /// </summary>
+        private const string TakenRepeatJourney =
+            "CloakAndDaggers_TakenRepeatRunsHisBasicActionAgainOnTheSameCard";
+
         // -----------------------------------------------------------------------------------------
         // The matrix. One row per printed face in the shard's table order, then the hero-owned
         // components. Read it beside Docs/AI/Rules/HERO_TIGERCLAW.md's inventory table, which is in
@@ -471,7 +479,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(UltimateRailVisibility, UltimateJourney),
                         Prove(UltimateTriggerPause, UltimateJourney),
                         Prove(ConfirmOrDecline, UltimateJourney),
-                        Prove(RepeatDecision, UltimateJourney)
+                        Prove(RepeatDecision, TakenRepeatJourney)
                     },
                     new[]
                     {
