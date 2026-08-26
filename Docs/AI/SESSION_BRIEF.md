@@ -14,7 +14,7 @@ The project has completed roadmap milestones through **8.25d**. **The match a pl
 
 - Current completed milestone: **8.25d**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.26**.
+- Next proposed milestone: **8.25e**.
 
 Milestone **8.25d** completed on 2026-08-27, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). A repeated Attack instance says it is one. The repeat a card's own text asks for carries the repeated invocation context and a resolution identity of its own, so Xargatha's "on a different enemy hero" narrowing fires for the first time and both Defeats of one played Cleave pay out. p.10's bar on repeating a repeat was measured unenforced on that path - one played Cleave started three Attacks - and now lives on the enclosing attack. Each check observed failing before and passing after. Edit Mode **1930**, Play Mode **229**; no schema or digest move.
 
@@ -32,13 +32,15 @@ Milestones **8.1-8.16** dealt all nineteen verified Wasp faces through ordinary 
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1-7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed the 7.9a review's findings.
 
-The remaining **Phase 8** route continues with six-hero director control at 8.26 and the retained 3v3/URP/online gates; 8.16b and the proposed 8.25e-8.25f await scheduling. Each implementation requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
+The remaining **Phase 8** route closes the known repeat defect at 8.25e, then stops for the independent roster-complete stabilization audit at 8.25e1 before real card faces at 8.25f or six-hero director control at 8.26 may begin. The retained 3v3/URP/online gates and unscheduled 8.16b remain. Each implementation or review requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
 Roadmap amendment, 2026-08-26, at the user's direction after auditing 8.25a, with 8.25d proposed beside it and now complete: **8.25e** - a repeat can be offered, taken, and do nothing, on all four arms of one switch: Hold, Fast Travel and Clear are never attempted, and an attempted one that cannot start is dropped in silence.
 
-Roadmap amendment, 2026-08-26, at the user's direction: **8.25f** replaces every complete generated card face with its verified private front when locally prepared, retains the generated clean-checkout fallback and identity-free facedown commitment, and keeps private pixels ignored and outside rules authority. It awaits scheduling and does not displace 8.26 as the next proposed milestone.
+Roadmap amendment, 2026-08-27, at the user's direction: **8.25e1** is a truth-first fresh-task stabilization gate after 8.25e. It reconciles operative active-document claims against current authority, explains why the earlier governance migrations did not keep semantic truth and aggregate task context bounded, measures fresh-agent retrieval, evaluates replacement of the active access model, and dispositions the external architecture review against the roster-complete revision. It implements nothing; 8.25f and 8.26 wait until its approved gate-blocking findings actually close.
+
+Roadmap amendment, 2026-08-26, at the user's direction: **8.25f** replaces every complete generated card face with its verified private front when locally prepared, retains the generated clean-checkout fallback and identity-free facedown commitment, and keeps private pixels ignored and outside rules authority. It awaits scheduling after 8.25e1's stabilization gate.
 
 Roadmap amendment, 2026-08-25: heroes beyond this roster are taken **in batches of about five rather than one at a time**, and [Roadmap/POST_PITCH.md](Roadmap/POST_PITCH.md) owns why and what a batch owes first. It changed nothing inside this roster.
 
