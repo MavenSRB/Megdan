@@ -394,7 +394,7 @@ Observable outcome: Configuration data places three different Red heroes and thr
 Acceptance checks:
 
 - All six stable player/hero identities, ownership relationships, hero spawn positions, hands, dashboards, and hero-owned components resolve without assuming one hero per team.
-- Every authoritative turn slot contains exactly six ownership-validated assignments—one for each configured `HeroId`—and snapshot round-trip preserves their deterministic order and committed-card-or-empty-hand-Pass facts; controlling `PlayerId` and team resolve through the participant graph.
+- Every authoritative turn slot contains exactly six ownership-validated assignments-one for each configured `HeroId`-and snapshot round-trip preserves their deterministic order and committed-card-or-empty-hand-Pass facts; controlling `PlayerId` and team resolve through the participant graph.
 - Setup uses three Wave counters, five Life counters per team, the normal Tie Breaker flip, and the verified official board/minion setup.
 - Wasp appears once; all six heroes are different and assigned to exactly one team/player.
 - DEV-001 and DEV-002 are marked retired; only approved director/debug deviations remain.
@@ -438,13 +438,13 @@ Acceptance checks:
 
 Non-goals: No behavior change, no content change, no new configuration, and no change to the staged boards themselves.
 
-### [ ] 8.25c Scale the HUD with the viewport instead of drawing it at fixed pixels
+### [ ] 8.25c Scale the HUD with the viewport and identify each rail with its hero portrait
 
-Proposed at the user's direction on 2026-08-26, after milestone 8.25's six-player HUD was seen on a 2560-wide screen. `ConfiguredMatchHudRenderer.Build` sets `PanelScaleMode.ConstantPixelSize` with `scale = 1`, so every layout number is a literal device pixel: the rail is 192 and a card 186x420 on a 1280-wide screen and on a 2560-wide one alike, and the HUD is half its designed share of the second. The committed panel-settings asset already carries a `1200x800` reference resolution, inert under that mode.
+Proposed at the user's direction on 2026-08-26, after milestone 8.25's six-player HUD was seen on a 2560-wide screen, and amended at the user's direction the same day to replace each rail header's circled initial with that hero's picture while the rail layout is already being re-derived. `ConfiguredMatchHudRenderer.Build` sets `PanelScaleMode.ConstantPixelSize` with `scale = 1`, so every layout number is a literal device pixel: the rail is 192 and a card 186x420 on a 1280-wide screen and on a 2560-wide one alike, and the HUD is half its designed share of the second. The committed panel-settings asset already carries a `1200x800` reference resolution, inert under that mode.
 
 **Most of the layout pressure milestone 8.25 fought is a symptom of this.** Three rails a side not stacking, the tray band being too narrow for rulebook p.6's five-card row below 1392 wide, and the 230-line clip 8.25 accepted where the tray covers the third rail are all one fixed-pixel layout serving viewports from 778 to 2560 wide. A scaled panel makes each region the same fraction of every screen, so those three either dissolve or change shape; this milestone re-derives them rather than assuming either.
 
-Observable outcome: the player-facing HUD occupies the same share of the screen at every supported resolution, and every pointer decision it makes stays correct at a panel scale other than 1.
+Observable outcome: the player-facing HUD occupies the same share of the screen at every supported resolution, every pointer decision it makes stays correct at a panel scale other than 1, and each hero rail identifies its hero with a recognizable hero-specific portrait instead of a letter inside a circle.
 
 Acceptance checks:
 
@@ -457,7 +457,7 @@ Acceptance checks:
 - The board's framing band `CalculatePlayfieldRect` feeds the fixed camera converts out of reference units before it reaches the camera, so milestone 8.5a's framing is unchanged in world terms.
 - Complete unfiltered Edit Mode and Play Mode suites pass, because a change to the panel's coordinate space cannot be shown affected-only.
 
-Non-goals: No production art, no new HUD content, and no change to what any region shows or to any rule, command or projection. No render-pipeline work - this is independent of milestone 8.28 and is cheaper before it, because a scaled layout is what production presentation is authored against.
+Non-goals: No broader production-art pipeline or new HUD content beyond the six rail portraits, and no change to any rule, command or projection. No render-pipeline work - this is independent of milestone 8.28 and is cheaper before it, because a scaled layout is what production presentation is authored against. Private or excluded source imagery is not added, published or distributed without the separate authorization and rights already required by the project boundary.
 
 ### [ ] 8.25d Let a card-text Attack repeat say that it is one
 
