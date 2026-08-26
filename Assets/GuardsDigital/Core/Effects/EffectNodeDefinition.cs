@@ -324,7 +324,10 @@ namespace GuardsDigital.Core.Effects
                     // Milestone 8.10. A different-target repeat names no selection either: what it
                     // excludes is the target the action itself took, which is the action's own state
                     // and not a node's published output.
-                    if (RepeatTargetBinding == RepeatTargetBinding.DifferentTarget &&
+                    // Milestone 8.24. A repeat narrowed to a different enemy hero excludes the same
+                    // thing and narrows what is left, so it names no selection node either.
+                    if ((RepeatTargetBinding == RepeatTargetBinding.DifferentTarget ||
+                            RepeatTargetBinding == RepeatTargetBinding.DifferentEnemyHero) &&
                         BoundSelectionNodeId.IsDefined)
                         throw new ArgumentException(
                             "A different-target repeat excludes the action's own target, so it names " +

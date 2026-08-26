@@ -240,6 +240,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
         public const string MinionParameterName = "minion";
 
+        /// <summary>
+        /// Milestone 8.24. Which of p.22's minion classes a printed-icon minion selection admits, as
+        /// <see cref="RosterMinionClass"/>.
+        ///
+        /// <para>A parameter rather than a third and fourth capability id, unlike the Range/Radius
+        /// split above it: that split exists because p.9 gives the two icons two meanings and p.16 two
+        /// items, so one parameter spanning them would let a Range card read a Radius item. A class
+        /// adjective narrows <em>within</em> one icon's meaning and reads no item at all, which is the
+        /// same kind of thing <c>excludeAdjacent</c> and <c>excludeStraightLine</c> already are.</para>
+        ///
+        /// <para>It is optional, and an undeclared parameter admits every class - so the five minion
+        /// selections composed before Xargatha's Green line are unchanged without naming it.</para>
+        /// </summary>
+        public const string AdmittedMinionClassParameterName = "admittedMinionClass";
+
         private static IReadOnlyList<RuleActivity> AllActivities { get; } =
             Array.AsReadOnly(Enum.GetValues(typeof(RuleActivity)).Cast<RuleActivity>()
                 .Where(value => value != RuleActivity.None).ToArray());
@@ -462,6 +477,32 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     parameters.Add(new EffectCapabilityParameter(
                         TargetRelationParameterName, EffectValueKind.Integer));
+
+                    // Milestone 8.24. The class adjective Xargatha's Green line prints, on the minion
+                    // arm alone: a unit selection's sentence names heroes as well, so a minion-class
+                    // narrowing there would be a parameter that could not describe half its own
+                    // candidates.
+                    if (subject == PrintedIconSelectionSubject.Minion)
+                    {
+                        parameters.Add(new EffectCapabilityParameter(
+                            AdmittedMinionClassParameterName,
+                            EffectValueKind.Integer,
+                            isRequired: false));
+                    }
+
+                    // Milestone 8.24. "not adjacent to you", which the hero arm has declared since
+                    // 8.11 and which a verified card now pairs with the unit arm as well: Siren's
+                    // Call, "Target an enemy unit not adjacent to you and in range". It is added here
+                    // by the same rule that kept it off the arms that had no card printing it -
+                    // declare the narrowing a verified face pairs with this selection - and it is
+                    // optional, so Brogan's two unit selections keep their exact candidate sets.
+                    if (subject == PrintedIconSelectionSubject.Unit)
+                    {
+                        parameters.Add(new EffectCapabilityParameter(
+                            ExcludeAdjacentParameterName,
+                            EffectValueKind.Boolean,
+                            isRequired: false));
+                    }
                 }
 
                 if (declaresStraightLineFilter)
@@ -488,7 +529,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // was named is the answer rather than something the node decided in advance - the
                     // same pair `choose-target@2` publishes for the same reason.
                     .Concat(subject == PrintedIconSelectionSubject.Unit
-                        ? new[] { new EffectOutputBinding(ChosenHeroOutputName, EffectValueKind.Hero) }
+                        ? new[]
+                        {
+                            new EffectOutputBinding(ChosenHeroOutputName, EffectValueKind.Hero),
+                            // Milestone 8.24. Siren's Call moves whichever kind it named, and a Move
+                            // takes a coordinate, so the unit arm publishes the space beside the
+                            // identity exactly as the minion arm has since 8.20.
+                            new EffectOutputBinding(
+                                ChosenMinionSpaceOutputName, EffectValueKind.Coordinate)
+                        }
                         : Enumerable.Empty<EffectOutputBinding>())
                     .Concat(subject == PrintedIconSelectionSubject.Minion
                         // Milestone 8.20. The minion arm publishes where its answer is standing as
@@ -524,6 +573,35 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     EffectChooserRole.Actor, candidates, 1, 1));
             }
 
+            /// <summary>
+            /// Milestone 8.24. One selection outcome, with the chosen piece's space beside it where the
+            /// consuming node asked for one.
+            ///
+            /// <para>It is the same publication the minion arm has made since 8.20 and it is here for
+            /// the same reason: a card whose sentence names a unit and then moves it needs both halves
+            /// - the identity, because the sentence names one, and the space, because every
+            /// repositioning operation in this build takes a coordinate. Xargatha's Siren's Call is
+            /// what needs it on the unit arm, where the piece it moves may be either kind. It is
+            /// published only for a node that declared the output, so Brogan's two unit selections see
+            /// exactly what they saw.</para>
+            /// </summary>
+            private static IReadOnlyList<EffectOutcomeFact> WithChosenSpace(
+                EffectCapabilityContext context,
+                BoardObjectReference chosen,
+                EffectOutcomeFact identity)
+            {
+                var outcomes = new List<EffectOutcomeFact> { identity };
+                if (context.Publishes(ChosenMinionSpaceOutputName) &&
+                    context.Components?.Board != null &&
+                    context.Components.Board.TryGetObjectCoordinate(chosen, out var at))
+                {
+                    outcomes.Add(new EffectOutcomeFact(
+                        ChosenMinionSpaceOutputName, EffectValue.Space(at)));
+                }
+
+                return outcomes;
+            }
+
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
@@ -540,21 +618,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     if (selected[0].Kind == EffectValueKind.Hero &&
                         HeroCandidates(context).Contains(selected[0].HeroId))
                     {
-                        return EffectExecutionResult.Applied(new[]
-                        {
+                        return EffectExecutionResult.Applied(WithChosenSpace(
+                            context,
+                            BoardObjectReference.ForHero(selected[0].HeroId),
                             new EffectOutcomeFact(
-                                ChosenHeroOutputName, EffectValue.Hero(selected[0].HeroId))
-                        });
+                                ChosenHeroOutputName, EffectValue.Hero(selected[0].HeroId))));
                     }
 
                     if (selected[0].Kind == EffectValueKind.Minion &&
                         MinionCandidates(context).Contains(selected[0].MinionId))
                     {
-                        return EffectExecutionResult.Applied(new[]
-                        {
+                        return EffectExecutionResult.Applied(WithChosenSpace(
+                            context,
+                            BoardObjectReference.ForMinion(selected[0].MinionId),
                             new EffectOutcomeFact(
-                                ChosenMinionOutputName, EffectValue.Minion(selected[0].MinionId))
-                        });
+                                ChosenMinionOutputName, EffectValue.Minion(selected[0].MinionId))));
                     }
 
                     return EffectExecutionResult.ImpossibleMandatory();
@@ -652,16 +730,67 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<MinionId>();
                 }
 
-                var targets = PrintedIconTargets(context, channel, includeSelf: false, out _);
+                // Milestone 8.24. The class adjective, where the sentence prints one. An undeclared
+                // parameter is p.22's whole set, which is what every minion selection before
+                // Xargatha's Green line means by naming no class; an integer that is not one of the
+                // three is a definition making a claim this vocabulary cannot answer, so it offers
+                // nobody rather than quietly widening to everybody.
+                var admittedClass = (RosterMinionClass)context
+                    .Input(AdmittedMinionClassParameterName).IntegerValue;
+                if (!Enum.IsDefined(typeof(RosterMinionClass), admittedClass))
+                {
+                    return Array.Empty<MinionId>();
+                }
+
+                var targets = PrintedIconTargets(context, channel, includeSelf: false, out var origin);
                 var board = context.Components?.Board;
                 if (board == null) return Array.Empty<MinionId>();
+
+                // Milestone 8.24. A unit selection's "not adjacent to you" has to remove minions as
+                // well as heroes, or Siren's Call would refuse the adjacent hero and offer the
+                // adjacent minion standing beside him - which is not what "an enemy unit not adjacent
+                // to you" says. The hero half applies the identical rule.
+                var excludeAdjacent = subject == PrintedIconSelectionSubject.Unit &&
+                    context.Input(ExcludeAdjacentParameterName).BooleanValue;
 
                 return targets
                     .Where(target => target.Kind == BoardObjectKind.Minion &&
                         TargetQuery.StandsInRelationTo(
-                            relation, target, context.ActorId, context.Participants, board))
+                            relation, target, context.ActorId, context.Participants, board) &&
+                        AdmitsClass(admittedClass, target.MinionId, board) &&
+                        !(excludeAdjacent &&
+                            board.TryGetObjectCoordinate(target, out var at) &&
+                            HexDistanceQuery.Calculate(origin, at) == 1))
                     .Select(target => target.MinionId)
                     .ToArray();
+            }
+
+            /// <summary>
+            /// Whether one minion on the board is of a class the printed sentence admits.
+            ///
+            /// <para>It reads the minion's own <see cref="StandardMinionType"/> off the board rather
+            /// than deriving a class from behaviour, because p.22 prints the three classes as
+            /// identities and a card that says "ranged minion" is naming that identity. A minion the
+            /// board does not know is admitted by nothing, which cannot happen for a target the disk
+            /// just produced and is stated so the answer does not depend on that.</para>
+            /// </summary>
+            private static bool AdmitsClass(
+                RosterMinionClass admittedClass, MinionId minionId, IBoardDisplacementAuthority board)
+            {
+                if (admittedClass == RosterMinionClass.AnyClass)
+                {
+                    return true;
+                }
+
+                var minion = board.Minions
+                    .FirstOrDefault(value => value.MinionId.Equals(minionId));
+                if (minion == null)
+                {
+                    return false;
+                }
+
+                return SyntheticRosterCapabilities.AdmittedClassIncludes(
+                    admittedClass, minion.MinionType);
             }
 
             /// <summary>
@@ -692,7 +821,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HeroId>();
                 }
 
-                var excludeAdjacent = channel == PrintedValueChannel.Radius &&
+                // Milestone 8.24 widens the arm rather than the meaning: the Radius hero selection has
+                // declared this since 8.11, and a unit selection declares it now because Siren's Call
+                // prints it on one. The word means the same thing on both - p.9's reach without its
+                // innermost ring.
+                var excludeAdjacent =
+                    (channel == PrintedValueChannel.Radius ||
+                        subject == PrintedIconSelectionSubject.Unit) &&
                     context.Input(ExcludeAdjacentParameterName).BooleanValue;
 
                 // Milestone 8.11. "other than the attacker", which only a Block's rider prints and only

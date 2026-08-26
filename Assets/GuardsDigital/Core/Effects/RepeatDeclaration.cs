@@ -46,7 +46,28 @@ namespace GuardsDigital.Core.Effects
         /// than about a selection node - which is why the exclusion is carried by the repeated Attack
         /// instance rather than bound to a node id.</para>
         /// </summary>
-        DifferentTarget = 2
+        DifferentTarget = 2,
+
+        /// <summary>
+        /// Milestone 8.24. `on a different enemy hero`: the exclusion <see cref="DifferentTarget"/>
+        /// makes, and a narrowing of what the repeated instance may take at all.
+        ///
+        /// <para>It is a third member rather than a second axis because the cards print it as one
+        /// clause. Xargatha's Cleave says "Target a unit adjacent to you. After the attack: May repeat
+        /// once on a different enemy hero", and its parenthesis spells out the consequence the two
+        /// halves have together - "You may repeat even if the original target was a minion". So the
+        /// printed instance admits p.19's units and the repeated one admits enemy heroes, which no
+        /// earlier repeat in this build does: <see cref="DifferentTarget"/> takes one unit out of a set
+        /// and leaves the set's kinds alone.</para>
+        ///
+        /// <para><b>The narrowing is derived, never stored.</b> A repeated instance already knows it is
+        /// one, and which action it repeats; what that action's card declares here is read from the
+        /// trusted definition when the instance builds its candidates, exactly as
+        /// <see cref="RepeatContinuation"/> rebinds meaning rather than carrying it. So this member
+        /// moves no snapshot field and no schema version, and a tampered payload cannot widen the set
+        /// back.</para>
+        /// </summary>
+        DifferentEnemyHero = 3
     }
 
     /// <summary>

@@ -21,6 +21,39 @@ namespace GuardsDigital.Core.Rules.CardResolution
         Unit = 3
     }
 
+    /// <summary>
+    /// Milestone 8.24. Which of rulebook p.22's minion classes a printed sentence admits, where the
+    /// sentence names one.
+    ///
+    /// <para><b>Why the undeclared value admits every minion rather than none.</b> The other roster
+    /// enums here spell <c>None = 0</c> and reject it, because each of them answers a question the card
+    /// must have answered - which unit kind, which space, which retrieval. This one answers a
+    /// narrowing, and a card that prints no narrowing has said something rather than nothing: "an enemy
+    /// minion" admits all three classes. So the zero value is the absence of the adjective, and a
+    /// selection that never declares this parameter behaves exactly as every minion selection built
+    /// before Xargatha did.</para>
+    ///
+    /// <para>Xargatha's Green line is what prints it, and prints all four readings: Charm reaches "an
+    /// enemy ranged minion", Control and Final Embrace "ranged or melee", Constrict "an enemy melee
+    /// minion", and Dominate "an enemy minion" with the Heavy immunity expressly overridden. The
+    /// classes themselves are <see cref="GuardsDigital.Core.Setup.StandardMinionType"/>'s; this names
+    /// which of them one printed clause offers.</para>
+    /// </summary>
+    public enum RosterMinionClass
+    {
+        /// <summary>The sentence prints no class adjective, so every minion is admitted.</summary>
+        AnyClass = 0,
+
+        /// <summary>"a ranged minion".</summary>
+        Ranged = 1,
+
+        /// <summary>"a ranged or melee minion" - which is every class but Heavy.</summary>
+        RangedOrMelee = 2,
+
+        /// <summary>"a melee minion".</summary>
+        Melee = 3
+    }
+
     /// <summary>Which already-authoritative space one derived query is centered on.</summary>
     public enum RosterQueryOrigin
     {

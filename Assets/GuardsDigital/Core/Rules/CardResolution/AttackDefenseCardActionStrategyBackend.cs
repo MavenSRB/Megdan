@@ -2156,14 +2156,60 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // p.18's immunity - is decided once and the exclusion is the only difference.
             var legal = FindLegalAttackTargets(
                 resolution.ActorId, offer, definitions, participants, modifications);
+            if (resolution.ExcludedTarget.IsDefined)
+            {
+                legal = legal.Where(target => !target.Equals(resolution.ExcludedTarget)).ToArray();
+            }
+
+            // Milestone 8.24. "on a different enemy hero" is the same repeat clause narrowing what is
+            // left of the set, and Xargatha's Cleave and Rapid Thrusts are what print it. It is read
+            // off the trusted definition here rather than carried on the resolution: a repeated
+            // instance already knows it is one and which action it repeats, so the card can be asked
+            // again - which is why the clause moves no snapshot field, and why a payload naming a
+            // minion cannot put one back into the set.
+            if (resolution.InvocationContext == ActionInvocationContext.Repeated &&
+                RepeatAdmitsEnemyHeroesOnly(resolution, definitions))
+            {
+                legal = legal.Where(target => target.Kind == AttackTargetKind.Hero).ToArray();
+            }
+
             return new PendingAttackTargetChoice(
                 resolution.ResolutionId,
                 resolution.CurrentStepId,
                 resolution.ActorId,
-                resolution.ExcludedTarget.IsDefined
-                    ? legal.Where(target => !target.Equals(resolution.ExcludedTarget)).ToArray()
-                    : legal);
+                legal);
         }
+
+        /// <summary>
+        /// Whether the card this repeated Attack came from declared its repeat as
+        /// <see cref="RepeatTargetBinding.DifferentEnemyHero"/>.
+        ///
+        /// <para>It asks the definition rather than the resolution, and asks it for the action this
+        /// instance is actually performing - both of p.14's card-text moments, because a face may print
+        /// its repeat at either and the page does not care which one asked. A card that declares no
+        /// such repeat narrows nothing, which is every Attack in the build but two.</para>
+        /// </summary>
+        private static bool RepeatAdmitsEnemyHeroesOnly(
+            PendingAttackResolution resolution, IReadOnlyList<CardDefinition> definitions)
+        {
+            var card = definitions?.FirstOrDefault(candidate =>
+                candidate.Id.Equals(resolution.SourceDefinitionReference.DefinitionId));
+            var action = card?.ActionDefinitions?.FirstOrDefault(candidate =>
+                candidate.Id.Equals(resolution.ActionDefinitionId));
+            if (action == null)
+            {
+                return false;
+            }
+
+            return DeclaresEnemyHeroRepeat(action.EffectRoot) ||
+                DeclaresEnemyHeroRepeat(action.SecondCardTextRoot);
+        }
+
+        private static bool DeclaresEnemyHeroRepeat(EffectDefinition effect) =>
+            effect != null &&
+            effect.Nodes.Any(node =>
+                node.Kind == EffectNodeKind.RepeatAction &&
+                node.RepeatTargetBinding == RepeatTargetBinding.DifferentEnemyHero);
 
         /// <summary>
         /// The attacker's Attack value: the printed icon with rulebook p.16's item bonuses composed

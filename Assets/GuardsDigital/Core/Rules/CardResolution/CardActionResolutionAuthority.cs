@@ -474,7 +474,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // repeats freely - and it applies to an Attack alone, because no other action kind the
                 // page repeats has a target to exclude.
                 owedAfterActionRepeatExclusion =
-                    requested.Value.Binding == RepeatTargetBinding.DifferentTarget &&
+                    (requested.Value.Binding == RepeatTargetBinding.DifferentTarget ||
+                        requested.Value.Binding == RepeatTargetBinding.DifferentEnemyHero) &&
                     repeatSubject.Kind == ActionKind.Attack
                         ? repeatSubject.CompletedAttackTarget
                         : default;
@@ -1908,8 +1909,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             owedAttackRepeat = attack;
+            // Milestone 8.24. Xargatha's "on a different enemy hero" excludes the target this instance
+            // took exactly as "on a different target" does; what it adds is a narrowing of the kinds
+            // left, and that half is derived from the card when the repeated instance builds its
+            // candidates rather than carried here.
             owedAttackRepeatExclusion =
-                result.RepeatRequested.Binding == RepeatTargetBinding.DifferentTarget
+                result.RepeatRequested.Binding == RepeatTargetBinding.DifferentTarget ||
+                result.RepeatRequested.Binding == RepeatTargetBinding.DifferentEnemyHero
                     ? attack.Target
                     : default;
         }

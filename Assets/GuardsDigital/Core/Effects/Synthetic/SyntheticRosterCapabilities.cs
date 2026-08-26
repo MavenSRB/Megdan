@@ -180,6 +180,39 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string ExcludeTargetParameter = "excludeTarget";
 
         /// <summary>
+        /// Milestone 8.24. Which of p.22's minion classes a roster selection admits, as
+        /// <see cref="RosterMinionClass"/>. Spelled the same as the printed-icon selections' parameter
+        /// because it is the same adjective on a different reach.
+        /// </summary>
+        public const string AdmittedMinionClassParameter = "admittedMinionClass";
+
+        /// <summary>
+        /// Milestone 8.24. Whether one minion's printed class satisfies the adjective a card's sentence
+        /// prints. It is stated once and shared by both selection families, because the adjective means
+        /// the same thing whether the reach came from p.9's icon or from the card's own words - two
+        /// copies of it could disagree about what "ranged or melee" admits, and the classes are
+        /// rulebook content rather than either family's.
+        /// </summary>
+        public static bool AdmittedClassIncludes(
+            RosterMinionClass admittedClass, StandardMinionType minionType)
+        {
+            switch (admittedClass)
+            {
+                case RosterMinionClass.AnyClass:
+                    return true;
+                case RosterMinionClass.Ranged:
+                    return minionType == StandardMinionType.Ranged;
+                case RosterMinionClass.Melee:
+                    return minionType == StandardMinionType.Melee;
+                case RosterMinionClass.RangedOrMelee:
+                    return minionType == StandardMinionType.Ranged ||
+                        minionType == StandardMinionType.Melee;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
         /// Milestone 8.21. Whether the selection admits only heroes who have played an Attack card
         /// this turn - Brogan's Shield Bash and Counterattack, "An enemy hero adjacent to you who has
         /// played an attack card this turn".
@@ -382,7 +415,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter(UnitKindParameter, EffectValueKind.Integer),
                     new EffectCapabilityParameter(RelationParameter, EffectValueKind.Integer),
                     new EffectCapabilityParameter(
-                        "activity", EffectValueKind.Integer, isRequired: false)
+                        "activity", EffectValueKind.Integer, isRequired: false),
+
+                    // Milestone 8.24. p.22's class adjective, where the sentence prints one:
+                    // Xargatha's Constrict reaches "an enemy melee minion adjacent to you" and Final
+                    // Embrace "an enemy melee or ranged minion". It sits beside `unitKind` rather than
+                    // inside it because the two answer different questions - p.19's kind of piece, and
+                    // p.22's class of minion - and a card can print either without the other.
+                    // Optional and defaulting to every class, so every roster selection declared
+                    // before this milestone keeps its exact candidate set.
+                    new EffectCapabilityParameter(
+                        AdmittedMinionClassParameter, EffectValueKind.Integer, isRequired: false)
                 }.Concat(extra ?? Enumerable.Empty<EffectCapabilityParameter>()),
                 outputs ?? new[]
                 {
@@ -418,6 +461,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (board == null || context.Participants == null)
                     return Array.Empty<BoardObjectReference>();
 
+                // Milestone 8.24. The class adjective, applied to the minions in the set and to
+                // nothing else - a sentence naming "an enemy melee minion" says nothing about heroes,
+                // and a selection admitting both kinds keeps every hero it already admitted.
+                var admittedClass =
+                    (RosterMinionClass)context.Input(AdmittedMinionClassParameter).IntegerValue;
+                if (!Enum.IsDefined(typeof(RosterMinionClass), admittedClass))
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
                 return RosterPresenceQuery.FindUnitsWithin(
                         at,
                         distance,
@@ -429,6 +482,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.Modifications,
                         BoardObjectReference.ForHero(context.ActorId),
                         excludeEnclosingTarget ? EnclosingTarget(context) : default)
+                    .Where(target => AdmitsClass(admittedClass, target, board))
                     .Where(target => !ImmunityQuery.IsImmuneTo(
                         target.AsRuleObject(),
                         activity,
@@ -438,6 +492,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.Modifications,
                         context.ImmunityOverrides))
                     .ToArray();
+            }
+
+            /// <summary>
+            /// Whether one piece in a selection's set is of a class the printed sentence admits.
+            /// A hero is admitted by every class adjective, because the adjective is about minions.
+            /// </summary>
+            private static bool AdmitsClass(
+                RosterMinionClass admittedClass,
+                BoardObjectReference target,
+                IBoardDisplacementAuthority board)
+            {
+                if (admittedClass == RosterMinionClass.AnyClass ||
+                    target.Kind != BoardObjectKind.Minion)
+                {
+                    return true;
+                }
+
+                var minion = board.Minions
+                    .FirstOrDefault(value => value.MinionId.Equals(target.MinionId));
+                if (minion == null)
+                {
+                    return false;
+                }
+
+                return AdmittedClassIncludes(admittedClass, minion.MinionType);
             }
 
             protected static IReadOnlyList<BoardObjectReference> DeclaredTargets(

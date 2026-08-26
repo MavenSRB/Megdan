@@ -101,7 +101,14 @@ namespace GuardsDigital.Core.Cards
                     // his ends. It is the first verified content whose triggered effect asks to repeat
                     // the action it fired for rather than doing something of its own.
                     TigerclawEffectContent.CloakAndDaggersTriggeredEffect(
-                        TigerclawCardContent.ContentRevision)
+                        TigerclawCardContent.ContentRevision),
+                    // Milestone 8.24. What Xargatha's Constrict and Final Embrace run at p.8's moment
+                    // before the Minion Battle. They are the first verified effects reached from an
+                    // Active effect's own trigger rather than from an Ultimate's, and there are two
+                    // because the two faces admit different minion classes - which is the whole
+                    // difference between the cards.
+                    XargathaActiveEffectContent.ConstrictTriggeredEffect.Definition,
+                    XargathaActiveEffectContent.FinalEmbraceTriggeredEffect.Definition
                 }));
     }
 }

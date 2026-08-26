@@ -128,7 +128,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // set prints, and his two Green marker cards declare the two capabilities that give
                 // the Poison marker - the first hero-owned rules component in this project.
                 .Concat(GuardsDigital.Core.Cards.Verified.TigerclawActiveEffectContent.Handlers())
-                .Concat(GuardsDigital.Core.Cards.Verified.TigerclawComponentContent.Handlers()));
+                .Concat(GuardsDigital.Core.Cards.Verified.TigerclawComponentContent.Handlers())
+                // Milestone 8.24. Xargatha's five persistent texts join the same list: the three
+                // petrification disks her Blue line lays down, and the two end-of-round sources her
+                // Green Skills leave standing. The first three are the only content in the build that
+                // adds an effective type to a hero without replacing what it already was, and the last
+                // two are the first verified content to reach milestone 8.19c1's pre-Minion-Battle
+                // window, which until now only the synthetic shape visited.
+                .Concat(GuardsDigital.Core.Cards.Verified.XargathaActiveEffectContent.Handlers()));
 
         /// <summary>
         /// Creates one Active effect on the actor. This is the capability that gives acceptance check 5

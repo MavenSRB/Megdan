@@ -218,6 +218,46 @@ namespace GuardsDigital.Core.Cards
         }
 
         /// <summary>
+        /// Milestone 8.24. An Ultimate whose printed ability is simply true while its hero is on the
+        /// board, stating more than one rule.
+        ///
+        /// <para><b>Why the one-modification constructor was not enough.</b> Every Ultimate composed
+        /// before Xargatha's either states one rule or runs an effect at a trigger, and the public
+        /// constructor above was shaped to the first of those. Metamorphosis states three - "+1
+        /// Movement and +1 Initiative for each enemy unit adjacent to you. You may move through
+        /// obstacles." - and they are three because the card prints three, not because the modelling
+        /// prefers it: two value channels scale independently and the permission scales with nothing.
+        /// The private constructor has taken a sequence since milestone 6.2a; this is the public way in,
+        /// and it adds no field, no schema and no lifetime.</para>
+        ///
+        /// <para><b>It stays exclusive with the trigger shapes for the reason they are exclusive with
+        /// each other.</b> p.16 gives an Ultimate one permanent ability. Several declarations composing
+        /// one printed sentence is not several abilities; an ability that also ran an effect at a
+        /// moment would be a second sentence, and this factory cannot express one.</para>
+        /// </summary>
+        public static UltimateRuleDefinition PermanentAbility(
+            string ruleId,
+            string ruleKind,
+            IEnumerable<RuleModification> modifications)
+        {
+            var declared = (modifications ?? Enumerable.Empty<RuleModification>()).ToArray();
+            if (declared.Length == 0)
+            {
+                throw new ArgumentException(
+                    "An Ultimate's whole printed content is its permanent ability (rulebook p.16); a " +
+                    "declaration with no rule would be a card that does nothing.",
+                    nameof(modifications));
+            }
+
+            return new UltimateRuleDefinition(
+                ruleId,
+                ruleKind,
+                declared,
+                PrintedTextComposition.None,
+                Array.Empty<PrintedValueDefinition>());
+        }
+
+        /// <summary>
         /// A permanent Ultimate ability whose trusted declaration enters the ordinary effect frame at
         /// its named checkpoint. It is a continuous source rather than an Active effect, so its
         /// lifetime remains derived from the unlocked card and the controller being on the board.
