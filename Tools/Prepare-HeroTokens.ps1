@@ -52,7 +52,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('wasp', 'arien', 'brogan', 'sabina', 'tigerclaw')]
+    [ValidateSet('wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha')]
     [string] $Hero = 'wasp',
     [switch] $Check,
     [switch] $Force
@@ -74,6 +74,11 @@ $declaredHeroes = @{
     # Milestone 8.23. His element sits next to Wasp's in the corpus rather than beside the other
     # heroes' - 8597311 to her 8597310 - which is why the id is declared and never searched for.
     tigerclaw = @{ ElementId = 8597311; ElementName = 'Tigerclaw'; DisplayName = 'Tigerclaw' }
+    # Milestone 8.24. Hers is the sixth and last of the 8.17 roster. The element is the ordinary
+    # standee the manifest calls a `VerticalTokens` entry - Tabletopia's label for the hero
+    # miniature, not rulebook p.19's token category - and its id is recorded in
+    # Docs/AI/Rules/HERO_XARGATHA.md beside the atlas it is cut from.
+    xargatha = @{ ElementId = 8597214; ElementName = 'Xargatha'; DisplayName = 'Xargatha' }
 }
 
 $declared = $declaredHeroes[$Hero]
