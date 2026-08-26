@@ -362,10 +362,15 @@ namespace GuardsDigital.Tests.PlayMode
                 .ActionDefinitions.Single(value => value.Id.Equals(actionId)).Kind;
         }
 
+        /// <summary>
+        /// The staged Wasp-versus-Arien board these journeys were written on. Milestone 8.25 named it:
+        /// it was the composition root default from 8.20 until then, when the default became rulebook
+        /// p.5's six seats, and every case here counts the two pieces of a one-versus-one board.
+        /// </summary>
         private static IEnumerator LoadConfiguredScene()
         {
             UiPlayer.EnsurePlayerViewport();
-            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.VerifiedStagedArien;
             var operation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(operation, Is.Not.Null);
             while (!operation.isDone)

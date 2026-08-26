@@ -18,7 +18,8 @@ using UnityEngine.TestTools;
 namespace GuardsDigital.Tests.PlayMode
 {
     /// <summary>
-    /// Milestone 8.15: the configured Wasp mirror played the way a player plays it.
+    /// Milestone 8.15: the staged one-hero-per-team board played the way a player plays it. Milestone
+    /// 8.25 names that board rather than inheriting it as the default - see <c>LoadScene</c>.
     ///
     /// <para>Every decision these journeys make is made on the real surface: tray cards and controls
     /// are clicked as live UI Toolkit elements through <see cref="UiPlayer"/>, and board decisions go
@@ -857,8 +858,18 @@ namespace GuardsDigital.Tests.PlayMode
                 $"heroes: {heroReport}");
         }
 
+        /// <summary>
+        /// The staged one-hero-per-team board these journeys were written on - Wasp on Red against
+        /// Arien on Blue, both at their own spawn points.
+        ///
+        /// <para>Milestone 8.25 named it. It was the composition root default from milestone 8.20 until
+        /// this one; these journeys read the hero the match is waiting on and the one other hero there
+        /// is, which is a fact about a one-versus-one board, so the board is asked for by name now that
+        /// the default deals rulebook p.5's six seats.</para>
+        /// </summary>
         private static IEnumerator LoadScene()
         {
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.VerifiedStagedArien;
             // Before the scene composes, so the HUD's first layout is already at player size.
             UiPlayer.EnsurePlayerViewport();
             var operation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);

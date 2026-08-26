@@ -2201,6 +2201,27 @@ namespace GuardsDigital.Tests.EditMode
                     (5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap)) - 30f),
                 "and the short viewport still holds p.6's five cards on one row, so the scroll it " +
                 "needs is vertical only.");
+
+            // Milestone 8.25: what keeps that true now that the rails can take a screen edge each.
+            // They take it only where the band left between them still seats this row, and 1280 is
+            // below that line - so neither the rail nor the card gives at the short viewport, the
+            // arrangement does. Both sides of the line are stated, because a rule that only ever
+            // reports one answer is not a rule.
+            Assert.That(ConfiguredMatchHudRenderer.RailsTakeTheWholeColumn(1280f), Is.False);
+            Assert.That(ConfiguredMatchHudRenderer.RailsTakeTheWholeColumn(1920f), Is.True);
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateCardPanelRect(1920f, 1080f).width,
+                Is.GreaterThanOrEqualTo(
+                    (5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap)) - 30f),
+                "and the row still fits between the two columns where they do take the edge.");
+            foreach (var viewport in new[] { new Vector2(1280f, 720f), new Vector2(1920f, 1080f) })
+            {
+                Assert.That(
+                    ConfiguredMatchHudRenderer.CalculateHeroRailRect(
+                        viewport.x, viewport.y, TeamSide.Red).width,
+                    Is.EqualTo(ConfiguredMatchHudRenderer.HeroRailWidth),
+                    $"The rail is one width at every supported viewport, and {viewport} is one.");
+            }
         }
 
         /// <summary>

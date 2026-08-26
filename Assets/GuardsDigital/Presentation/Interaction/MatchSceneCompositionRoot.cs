@@ -20,13 +20,14 @@ namespace GuardsDigital.Presentation.Interaction
     public enum SceneCardContent
     {
         /// <summary>
-        /// The configured match: Wasp on Red and Arien on Blue, each dealt their verified printed set.
-        /// This is what a player - and the built player the smoke gate runs - always gets.
+        /// The configured match: rulebook p.5's official six-player line-up - Wasp, Xargatha and
+        /// Tigerclaw on Red against Arien, Brogan and Sabina on Blue - each dealt their own verified
+        /// printed set. This is what a player, and the built player the smoke gate runs, always gets.
         ///
-        /// <para>Milestone 8.20 made it two heroes. It was two mirrored Wasps for as long as one
-        /// verified set was all this build had; the mirror is still composed by
-        /// <see cref="VerifiedEngagedMirror"/> and its two progressed stages, which the fixtures that
-        /// measure one seat against its own reflection ask for by name.</para>
+        /// <para>Milestone 8.25 made it six. It was two mirrored Wasps for as long as one verified set
+        /// was all this build had, and two different heroes from milestone 8.20; both boards are still
+        /// composed by the arms below, which the fixtures whose subject is one printed set ask for by
+        /// name.</para>
         /// </summary>
         ConfiguredMatch = 0,
 
@@ -311,7 +312,25 @@ namespace GuardsDigital.Presentation.Interaction
         /// The Tier III staging with Xargatha holding the second sibling of each colour: Rapid
         /// Thrusts, Devoted Followers and Final Embrace.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedXargatha = 33
+        VerifiedTierThreeAlternateEngagedStagedXargatha = 33,
+
+        /// <summary>
+        /// Milestone 8.25. The staged one-hero-per-team board - Wasp on Red, Arien on Blue, both at
+        /// their own spawn points and neither restaged - which is what
+        /// <see cref="ConfiguredMatch"/> composed between milestones 8.20 and 8.25.
+        ///
+        /// <para>It exists because the default stopped being that board and the fixtures written on it
+        /// did not: the scene and HUD journeys that measure two rails, two pieces and one hero a side
+        /// measure a real composition and go on measuring the same one, by name instead of by being the
+        /// default. Nothing about the board changed - same map, same spawn points, same twelve
+        /// minions.</para>
+        ///
+        /// <para>Its Tie Breaker side is selected rather than flipped, on the `DEV-005` terms every
+        /// named staged arm here is on. The default's own coin is a real draw and stays one; a journey
+        /// that reads which hero the match is waiting on does not need to know which way it landed, and
+        /// one that does should not be asking a coin.</para>
+        /// </summary>
+        VerifiedStagedArien = 34
     }
 
     [ExecuteAlways]
@@ -412,7 +431,7 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedTierThreeEngagedMirror =>
                     PlaceholderOneVsOneTestConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
                         TeamSide.Red),
-                SceneCardContent.VerifiedEngagedStagedArien =>
+                SceneCardContent.VerifiedEngagedStagedArien or SceneCardContent.VerifiedStagedArien =>
                     PlaceholderOneVsOneTestConfiguration.CreateStagedArienForInternalTest(
                         TeamSide.Red),
                 SceneCardContent.VerifiedTierTwoEngagedStagedArien =>
@@ -512,34 +531,20 @@ namespace GuardsDigital.Presentation.Interaction
                     PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.SecondSibling),
+                // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
+                // it deals rulebook p.5's six official seats, which is what a player loads.
                 _ => PlaceholderOneVsOneTestConfiguration.Create()
             };
             // Milestone 8.20. The board's hero identities have to agree with the hands the
-            // configuration above dealt: the Blue seat's content identity is what addresses its
-            // prepared token and what the projection names it by, so a mirror board under an Arien
-            // hand would draw Wasp's face on a hero holding Arien's cards. The three mirror arms keep
-            // the mirror board; the default arm, which is what a player plays, takes the staged one.
+            // configuration above dealt: a seat's content identity is what addresses its prepared token
+            // and what the projection names it by, so a mirror board under an Arien hand would draw
+            // Wasp's face on a hero holding Arien's cards. Each staged arm therefore takes the board its
+            // own hands belong on.
+            //
+            // Milestone 8.25: the default arm - what a player plays - is now rulebook p.5's official
+            // six-player board, and it is the only arm that places six heroes.
             var setup = QuickGameSetupAuthority.Create(
-                content == SceneCardContent.VerifiedEngagedMirror ||
-                content == SceneCardContent.VerifiedTierTwoEngagedMirror ||
-                content == SceneCardContent.VerifiedTierThreeEngagedMirror ||
-                content == SceneCardContent.VerifiedMirror ||
-                content == SceneCardContent.MechanicsShowcaseFixture
-                    ? QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne()
-                    : IsBroganWithAlly(content)
-                        ? QuickGameSetupConfiguration.CreateStagedWaspVersusArienAndBroganOneVsTwo()
-                        : IsStagedBrogan(content)
-                            ? QuickGameSetupConfiguration.CreateStagedWaspVersusBroganOneVsOne()
-                            : IsStagedSabina(content)
-                                ? QuickGameSetupConfiguration.CreateStagedWaspVersusSabinaOneVsOne()
-                                : IsStagedTigerclaw(content)
-                                    ? QuickGameSetupConfiguration
-                                        .CreateStagedWaspVersusTigerclawOneVsOne()
-                                    : IsStagedXargatha(content)
-                                        ? QuickGameSetupConfiguration
-                                            .CreateStagedWaspVersusXargathaOneVsOne()
-                                        : QuickGameSetupConfiguration
-                                            .CreateStagedWaspVersusArienOneVsOne(),
+                SelectSetupConfiguration(content),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
@@ -709,6 +714,58 @@ namespace GuardsDigital.Presentation.Interaction
             pointerSelectors = (pointerSelectors ?? Array.Empty<PrimitiveHeroPointerSelector>())
                 .Concat(selectors)
                 .ToArray();
+        }
+
+        /// <summary>
+        /// The board each composed content belongs on.
+        ///
+        /// <para>Milestone 8.25. The default arm - <see cref="SceneCardContent.ConfiguredMatch"/>, what
+        /// a player and the built player load - is rulebook p.5's official six-player configuration.
+        /// Every other arm names a staged board, because its subject is one printed set rather than a
+        /// table: the mirror for the fixtures that measure a seat against its own reflection, the
+        /// one-hero-per-team stagings for the five heroes whose journeys were written on them, and the
+        /// two-Blue-seat board for the two cards that name a friendly hero.</para>
+        /// </summary>
+        private static QuickGameSetupConfiguration SelectSetupConfiguration(SceneCardContent content)
+        {
+            switch (content)
+            {
+                case SceneCardContent.VerifiedEngagedMirror:
+                case SceneCardContent.VerifiedTierTwoEngagedMirror:
+                case SceneCardContent.VerifiedTierThreeEngagedMirror:
+                case SceneCardContent.VerifiedMirror:
+                case SceneCardContent.MechanicsShowcaseFixture:
+                    return QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne();
+                case SceneCardContent.ConfiguredMatch:
+                    return QuickGameSetupConfiguration.CreateOfficialSixPlayer();
+                default:
+                    if (IsBroganWithAlly(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusArienAndBroganOneVsTwo();
+                    }
+
+                    if (IsStagedBrogan(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusBroganOneVsOne();
+                    }
+
+                    if (IsStagedSabina(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusSabinaOneVsOne();
+                    }
+
+                    if (IsStagedTigerclaw(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusTigerclawOneVsOne();
+                    }
+
+                    if (IsStagedXargatha(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusXargathaOneVsOne();
+                    }
+
+                    return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
+            }
         }
 
         /// <summary>

@@ -205,6 +205,96 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 8.25: the scene a player loads composes rulebook p.5's six seats, and the HUD
+        /// draws all six of them.
+        ///
+        /// <para>Three rails a side did not fit in the band the rails used to have - milestone 8.23a
+        /// measured 733 needed against 491 available at 1920x1080 - so the rail column now runs the
+        /// whole screen edge and the tray takes what is between the two columns. What this asks is that
+        /// the arrangement actually holds it: six rails, three per column, every one of them inside its
+        /// own column's rectangle, and the tray clear of both columns rather than under them.</para>
+        ///
+        /// <para>It reads the live element bounds rather than the deterministic rects, because a rail's
+        /// height follows its content and the question is whether the content fits.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_DrawsAllSixOfficialRailsInsideTheirOwnColumnsWithTheTrayBetweenThem()
+        {
+            // The subject is a measurement, so the viewport is stated rather than inherited: a leaked
+            // short one from an earlier journey would measure a different arrangement, and 1920x1080
+            // is the reference this milestone's numbers are recorded at.
+            UiPlayer.SetPlayerViewport(1920, 1080, "8.25 six-rail measurement");
+            yield return LoadOfficialSixPlayerScene();
+            yield return null;
+            yield return null;
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+
+            Assert.That(
+                ConfiguredMatchHudRenderer.RailsTakeTheWholeColumn(Screen.width), Is.True,
+                $"This measurement is about the whole-column arrangement and the viewport is " +
+                $"{Screen.width}x{Screen.height}.");
+            Assert.That(runtime.Setup.Heroes, Has.Count.EqualTo(6),
+                "p.5's official setup places three heroes a side.");
+            Assert.That(
+                runtime.Setup.Heroes.Count(hero => hero.TeamSide == TeamSide.Red), Is.EqualTo(3));
+            Assert.That(
+                runtime.Setup.Heroes.Count(hero => hero.TeamSide == TeamSide.Blue), Is.EqualTo(3));
+
+            var rails = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-hero-rail")
+                .ToArray();
+            Assert.That(rails, Has.Length.EqualTo(6), "One overview per projected hero.");
+
+            var columns = new[]
+            {
+                (Name: "gd-hero-rail-red", Rect: hud.RedHeroRailRect),
+                (Name: "gd-hero-rail-blue", Rect: hud.BlueHeroRailRect)
+            };
+            foreach (var column in columns)
+            {
+                var element = Named(hud.RootElement, column.Name);
+                Assert.That(element, Is.Not.Null, $"The {column.Name} column is on the panel.");
+                var railsInColumn = Descendants(element)
+                    .Where(candidate => candidate.name == "gd-hero-rail")
+                    .ToArray();
+                Assert.That(railsInColumn, Has.Length.EqualTo(3),
+                    "Three heroes a side means three rails in each column.");
+
+                var bounds = element.worldBound;
+                Assert.That(bounds.height, Is.GreaterThan(0f), "The column resolved a real rectangle.");
+                Assert.That(bounds.height, Is.LessThanOrEqualTo(column.Rect.height + 0.5f),
+                    $"Three rails stack inside the column the renderer reserved: drew {bounds.height} " +
+                    $"into {column.Rect.height} at {Screen.width}x{Screen.height}.");
+                Assert.That(bounds.yMax, Is.LessThanOrEqualTo(Screen.height + 0.5f),
+                    "and the last rail is on screen rather than under its bottom edge.");
+                foreach (var rail in railsInColumn)
+                {
+                    Assert.That(rail.worldBound.width, Is.LessThanOrEqualTo(column.Rect.width + 0.5f));
+                }
+            }
+
+            var tray = hud.CardPanelRect;
+            Assert.That(tray.xMin, Is.GreaterThanOrEqualTo(hud.RedHeroRailRect.xMax),
+                "The tray starts clear of the Red column rather than under it.");
+            Assert.That(tray.xMax, Is.LessThanOrEqualTo(hud.BlueHeroRailRect.xMin),
+                "and ends clear of the Blue one.");
+
+            // The rails own their whole column, so the pointer is blocked at the bottom of it - the
+            // corner the tray used to take and the `DIRECTOR` toggle used to stand in.
+            foreach (var column in columns)
+            {
+                var element = Named(hud.RootElement, column.Name);
+                var guiPoint = element.worldBound.center;
+                Assert.That(
+                    hud.BlocksPointerAt(new Vector2(guiPoint.x, Screen.height - guiPoint.y)),
+                    Is.True,
+                    $"The HUD consumes the pointer over {column.Name}.");
+            }
+        }
+
+        /// <summary>
         /// Milestone 7.8a's visible Game View sweep: the standing HUD, the HUD with the `DIRECTOR`
         /// drawer open, and the contextual region drawing a paused leveling prompt.
         ///
@@ -2909,7 +2999,7 @@ namespace GuardsDigital.Tests.PlayMode
         private static IEnumerator LoadShowcaseScene()
         {
             MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.MechanicsShowcaseFixture;
-            return LoadScene();
+            return LoadComposedScene();
         }
 
         /// <summary>
@@ -2921,9 +3011,33 @@ namespace GuardsDigital.Tests.PlayMode
         private static IEnumerator LoadMirrorScene()
         {
             MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.VerifiedMirror;
-            return LoadScene();
+            return LoadComposedScene();
         }
+        /// <summary>
+        /// The staged one-hero-per-team board this fixture was written on.
+        ///
+        /// <para>Milestone 8.25 named it. It was the composition root default from milestone 8.20 until
+        /// this one, when the default became rulebook p.5's six seats; every case here that counts
+        /// rails, pieces or heroes counts a one-versus-one board, so the board it counts is now asked for
+        /// rather than inherited. <see cref="LoadOfficialSixPlayerScene"/> loads what a player loads.</para>
+        /// </summary>
         private static IEnumerator LoadScene()
+        {
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.VerifiedStagedArien;
+            return LoadComposedScene();
+        }
+
+        /// <summary>
+        /// Milestone 8.25: rulebook p.5's official six-player configuration, which is what the scene
+        /// composes when nothing asks for anything else.
+        /// </summary>
+        private static IEnumerator LoadOfficialSixPlayerScene()
+        {
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            return LoadComposedScene();
+        }
+
+        private static IEnumerator LoadComposedScene()
         {
             var operation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
             Assert.That(operation, Is.Not.Null);

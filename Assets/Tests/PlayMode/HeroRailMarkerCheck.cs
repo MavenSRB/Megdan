@@ -84,12 +84,12 @@ namespace GuardsDigital.Tests.PlayMode
         /// rail holding a marker draws about 239. The recomposition removed a row and widened the
         /// rail, and the remaining gap is roughly a third again.</para>
         ///
-        /// <para><b>That is a fact about this arrangement, not about the roster.</b> The budget is a
-        /// third of one column because a column is what this build draws; the rect is taller at a
-        /// taller viewport, and milestone 8.25 is free to arrange six rails some other way entirely -
-        /// across the screen, scrolling, or collapsed for heroes who are not acting. The user's
-        /// 2026-08-26 decision was to leave that open. The number is kept here so 8.25 starts from a
-        /// measurement rather than re-deriving one.</para>
+        /// <para><b>That was a fact about that arrangement, not about the roster</b>, and milestone
+        /// 8.25 changed the arrangement on the user's 2026-08-26 decision rather than the rail: the
+        /// rail columns took the whole screen edge and the tray took the band between them, so the
+        /// rect is about 1000 at 1920x1080 and the budget about 325 against the same 239. The formula
+        /// is unchanged and is now met; it is asserted rather than only recorded, by
+        /// <c>TigerclawProgressedUiJourneyPlayModeTests</c>.</para>
         /// </summary>
         internal static float ThreeUpBudget(float railRectHeight) => (railRectHeight / 3f) - 8f;
 

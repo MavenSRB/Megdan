@@ -214,33 +214,36 @@ namespace GuardsDigital.Tests.EditMode
             var tiles = Object.FindObjectsByType<HexTileView>();
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
 
-            Assert.That(heroes, Has.Length.EqualTo(2));
+            // Milestone 8.25: six, not two, and all different. This case used to see two mirrored
+            // Wasps because the rebuild helper built its own mirrored setup; it rebuilds from what the
+            // scene composed now, which is rulebook p.5's six-player line-up.
+            Assert.That(heroes, Has.Length.EqualTo(6));
             Assert.That(
-                heroes.Select(hero => hero.Occupancy.HeroId.Value),
-                Is.EquivalentTo(new[]
-                {
-                    PlaceholderOneVsOneParticipants.RedHeroIdValue,
-                    PlaceholderOneVsOneParticipants.BlueHeroIdValue
-                }));
-            Assert.That(heroes.Select(hero => hero.Coordinate).Distinct().Count(), Is.EqualTo(2));
+                heroes.Select(hero => hero.HeroContentId?.Value),
+                Is.EquivalentTo(new[] { "wasp", "xargatha", "tigerclaw", "arien", "brogan", "sabina" }),
+                "Six different heroes, and Wasp exactly once.");
+            Assert.That(heroes.Select(hero => hero.Coordinate).Distinct().Count(), Is.EqualTo(6));
+            Assert.That(heroes.Count(hero => hero.TeamSide == TeamSide.Red), Is.EqualTo(3));
+            Assert.That(heroes.Count(hero => hero.TeamSide == TeamSide.Blue), Is.EqualTo(3));
 
-            var redHero = heroes.Single(hero =>
-                hero.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.RedHeroIdValue);
-            var blueHero = heroes.Single(hero =>
-                hero.Occupancy.HeroId.Value == PlaceholderOneVsOneParticipants.BlueHeroIdValue);
+            var redHero = heroes.Single(hero => hero.HeroContentId.Equals(new HeroContentId("wasp")));
+            var blueHero = heroes.Single(hero => hero.HeroContentId.Equals(new HeroContentId("arien")));
             Assert.That(redHero.TeamSide, Is.EqualTo(TeamSide.Red));
             Assert.That(blueHero.TeamSide, Is.EqualTo(TeamSide.Blue));
-            Assert.That(redHero.HeroContentId, Is.EqualTo(new HeroContentId("wasp")));
-            Assert.That(blueHero.HeroContentId, Is.EqualTo(new HeroContentId("wasp")));
-            Assert.That(redHero.HeroDisplayName, Is.EqualTo("Wasp"));
-            Assert.That(blueHero.HeroDisplayName, Is.EqualTo("Wasp"));
+            Assert.That(redHero.HeroDisplayName, Is.EqualTo("Wasp the Warmaiden"));
+            Assert.That(blueHero.HeroDisplayName, Is.EqualTo("Arien the Tidemaster"));
             Assert.That(redHero.ConfiguredSpawnPointId, Is.EqualTo(new SpawnPointId("red-hero-01")));
             Assert.That(blueHero.ConfiguredSpawnPointId, Is.EqualTo(new SpawnPointId("blue-hero-01")));
             var definition = Object.FindAnyObjectByType<PlaceholderTestGridView>().RenderedDefinition;
-            Assert.That(redHero.Coordinate, Is.EqualTo(definition.Spaces.Single(space => space.Id.Equals(
-                definition.SpawnPoints.Single(spawn => spawn.Id.Equals(redHero.ConfiguredSpawnPointId.Value)).SpaceId)).Coordinate));
-            Assert.That(blueHero.Coordinate, Is.EqualTo(definition.Spaces.Single(space => space.Id.Equals(
-                definition.SpawnPoints.Single(spawn => spawn.Id.Equals(blueHero.ConfiguredSpawnPointId.Value)).SpaceId)).Coordinate));
+            foreach (var hero in heroes)
+            {
+                // Every seat stands on the space its own configured spawn point occupies, which is what
+                // rulebook p.6 setup step 9 places a hero miniature on.
+                Assert.That(hero.Coordinate, Is.EqualTo(definition.Spaces.Single(space => space.Id.Equals(
+                    definition.SpawnPoints
+                        .Single(spawn => spawn.Id.Equals(hero.ConfiguredSpawnPointId.Value)).SpaceId))
+                    .Coordinate));
+            }
 
             foreach (var hero in heroes)
             {
@@ -272,7 +275,10 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(setup, Is.Not.Null);
             Assert.That(setup.WaveCount, Is.EqualTo(3));
-            Assert.That(setup.Teams, Has.All.Matches<QuickGameTeamSetupState>(team => team.LifeCount == 4));
+            // Five since milestone 8.25: rulebook p.6 step 5's table gives a Quick game four Life
+            // counters per team at four players and five at six, and the composed setup is the
+            // six-player one.
+            Assert.That(setup.Teams, Has.All.Matches<QuickGameTeamSetupState>(team => team.LifeCount == 5));
             Assert.That(minions, Has.Length.EqualTo(12));
             Assert.That(minions.Select(view => view.Occupancy.MinionId).Distinct().Count(), Is.EqualTo(12));
             Assert.That(minions.Select(view => view.Occupancy.OccupiedSpace).Distinct().Count(), Is.EqualTo(12));
@@ -314,7 +320,25 @@ namespace GuardsDigital.Tests.EditMode
             var compositionRoots = Object.FindObjectsByType<MatchSceneCompositionRoot>();
             var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
 
-            Assert.That(selectors, Has.Length.EqualTo(2));
+            // Six since milestone 8.25: the scene composes rulebook p.5's six-player setup, and a seat
+            // the scene authors no view for gets a generated view and a generated selector. The seats
+            // are named as well as counted, because a count alone cannot say whether an authored view
+            // for a seat this configuration does not deal is still standing on the board.
+            Assert.That(
+                heroes.Select(hero => hero.Occupancy.HeroId.Value).OrderBy(value => value, System.StringComparer.Ordinal),
+                Is.EqualTo(compositionRoots[0].Runtime.Setup.Heroes
+                    .Select(hero => hero.HeroId.Value)
+                    .OrderBy(value => value, System.StringComparer.Ordinal)),
+                "Exactly the configured seats are drawn.");
+            Assert.That(
+                selectors
+                    .Select(selector => selector.GetComponent<PrimitiveHeroView>()?.Occupancy.HeroId.Value)
+                    .OrderBy(value => value, System.StringComparer.Ordinal),
+                Is.EqualTo(compositionRoots[0].Runtime.Setup.Heroes
+                    .Select(hero => hero.HeroId.Value)
+                    .OrderBy(value => value, System.StringComparer.Ordinal)),
+                "One pointer selector per drawn seat, and none belonging to a seat this configuration " +
+                "does not deal.");
             Assert.That(minionSelectors, Has.Length.EqualTo(12));
             Assert.That(minionSelectors, Has.All.Matches<StandardMinionPointerSelector>(selector =>
                 selector.GetComponent<StandardMinionView>() != null &&
@@ -323,20 +347,26 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(compositionRoots, Has.Length.EqualTo(1));
             Assert.That(compositionRoots[0].Runtime, Is.Not.Null);
             Assert.That(compositionRoots[0].Session, Is.Not.Null);
-            // Thirty-six, which is rulebook p.6's eighteen cards per hero. Ten of them are the five
-            // dealt into each hand: milestone 6.2d had made that twelve by dealing milestone 6.2's Cache
-            // card beside the five ordinary ones, because nothing else could put a token on this board,
-            // and Blue Sentinel and Blue Feint carry those capabilities now. Milestone 7.5 deals the
-            // remaining thirteen per hero into the deck, because p.15's Upgrade a Card step searches it.
-            Assert.That(compositionRoots[0].Session.Projection.Cards, Has.Count.EqualTo(36));
+            // One hundred and eight, which is rulebook p.6's eighteen cards per hero across milestone
+            // 8.25's six seats. Thirty of them are the five dealt into each hand: milestone 6.2d had
+            // made that twelve by dealing milestone 6.2's Cache card beside the five ordinary ones,
+            // because nothing else could put a token on this board, and Blue Sentinel and Blue Feint
+            // carry those capabilities now. Milestone 7.5 deals the remaining thirteen per hero into
+            // the deck, because p.15's Upgrade a Card step searches it.
+            Assert.That(compositionRoots[0].Session.Projection.Cards, Has.Count.EqualTo(108));
             Assert.That(
                 compositionRoots[0].Session.Projection.Cards.Count(card =>
                     card.State.Location == CardLocation.Hand),
-                Is.EqualTo(10));
-            Assert.That(compositionRoots[0].Session.Projection.Heroes, Has.Count.EqualTo(2));
+                Is.EqualTo(30));
+            Assert.That(compositionRoots[0].Session.Projection.Heroes, Has.Count.EqualTo(6));
             Assert.That(inputs[0].EventCamera, Is.Not.Null);
-            Assert.That(inputs[0].Selectors.Count, Is.EqualTo(2));
-            Assert.That(inputs[0].Selectors, Is.EquivalentTo(selectors));
+            // The input is handed every selector the scene authors as well as every one composition
+            // generated: an authored seat this configuration does not deal keeps its selector, its
+            // GameObject is deactivated, and the pointer therefore reaches nothing through it.
+            Assert.That(inputs[0].Selectors, Is.SupersetOf(selectors));
+            Assert.That(
+                inputs[0].Selectors.Where(selector => selector.gameObject.activeInHierarchy),
+                Is.EquivalentTo(selectors));
             Assert.That(heroes, Has.All.Matches<PrimitiveHeroView>(hero =>
                 hero.GetComponent<CapsuleCollider>() != null &&
                 hero.GetComponent<PrimitiveHeroPointerSelector>() != null));
@@ -447,11 +477,22 @@ namespace GuardsDigital.Tests.EditMode
                     runtime.Projection.PendingInitiativeChoice.CandidateCardInstanceIds[0]), Is.True);
             }
 
-            var movement = runtime.Projection.AvailableTurnActions.Single(offer =>
+            // Milestone 8.25: whichever of the six acts first may print both a primary and a secondary
+            // Movement, so the offer this case is about is named by its printed origin rather than by
+            // being the only one there is.
+            ActionDefinition ActionOf(ActionOffer offer) =>
                 runtime.Projection.Definitions.Single(definition =>
                         definition.Reference.Equals(offer.SourceDefinitionReference))
-                    .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId)).Kind ==
-                ActionKind.Movement);
+                    .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId));
+            var movementOffers = runtime.Projection.AvailableTurnActions
+                .Where(offer => ActionOf(offer).Kind == ActionKind.Movement)
+                .ToArray();
+            Assert.That(movementOffers, Is.Not.Empty,
+                "The acting hero's card offers a Movement, or this case has no subject.");
+            var secondary = movementOffers
+                .Where(offer => ActionOf(offer).Origin == ActionDefinitionOrigin.PrintedSecondary)
+                .ToArray();
+            var movement = secondary.Length > 0 ? secondary[0] : movementOffers[0];
             Assert.That(runtime.SubmitAction(movement.ActionDefinitionId), Is.True);
 
             var highlightedCoordinates = tiles
@@ -468,10 +509,14 @@ namespace GuardsDigital.Tests.EditMode
                 tiles.Single(tile => tile.Coordinate.Equals(runtime.Projection.PendingMovementChoice.Origin))
                     .IsHighlighted,
                 Is.False);
+            // Milestone 8.25: five other heroes stand on this board rather than one, and an occupied
+            // space is not a destination whichever of them is standing on it.
             var actor = runtime.Projection.SelectedActor.ActorId;
-            Assert.That(
-                highlightedCoordinates,
-                Has.No.Member(runtime.Projection.Heroes.Single(hero => !hero.HeroId.Equals(actor)).Coordinate));
+            foreach (var other in runtime.Projection.Heroes.Where(hero => !hero.HeroId.Equals(actor)))
+            {
+                Assert.That(highlightedCoordinates, Has.No.Member(other.Coordinate),
+                    $"{other.HeroId} is standing on {other.Coordinate}.");
+            }
         }
 
         /// <summary>
@@ -487,16 +532,22 @@ namespace GuardsDigital.Tests.EditMode
             root.Compose();
         }
 
+        /// <summary>
+        /// Rebuilds the board from the setup the scene actually composed.
+        ///
+        /// <para>Milestone 8.25. It used to rebuild from a mirrored one-versus-one setup it built
+        /// itself, which agreed with the composition only for as long as the composition was that
+        /// board. Once the scene composes rulebook p.5's six seats, rebuilding from a different setup
+        /// leaves the scene holding both sets of pieces - which is a state no composition produces and
+        /// which every later case in the run then measures.</para>
+        /// </summary>
         private static PlaceholderTestGridView RebuildOfficialMap()
         {
             var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
+            var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            Assert.That(root?.Runtime, Is.Not.Null, "The scene must have composed before a rebuild.");
             var definition = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var setup = QuickGameSetupAuthority.Create(
-                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
-                PlaceholderOneVsOneParticipants.Create(),
-                definition,
-                TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Red));
-            mapView.Rebuild(definition, setup);
+            mapView.Rebuild(definition, root.Runtime.Setup);
             return mapView;
         }
 

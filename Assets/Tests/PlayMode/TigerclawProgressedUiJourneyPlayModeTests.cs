@@ -627,30 +627,44 @@ namespace GuardsDigital.Tests.PlayMode
             // THE MEASUREMENT MILESTONE 8.23a LEAVES BEHIND, and it is a negative one.
             //
             // The acceptance check asks for the recomposed rail's height recorded against a third of
-            // the hero-rail rect, so whether three fit is measured rather than claimed. It was
-            // measured, and a stacked column of three does not fit at the validated viewport: a rail
-            // carrying a held marker draws about 239 against a budget of about 156 in a 491 rail rect
-            // at 1920x1080. The recomposition took a row out and that is not close to enough.
+            // the hero-rail rect, so whether three fit is measured rather than claimed. At 8.23a it
+            // was measured and did not fit: a rail carrying a held marker draws about 239 against a
+            // budget of about 156 in the 491-tall rail rect the band above the tray left at 1920x1080.
+            // The recomposition took a row out and that was not close to enough.
             //
-            // It is a fact about a stacked column at one viewport rather than about the roster - the
-            // rect is taller at a taller viewport, and milestone 8.25 may arrange six rails some other
-            // way entirely. The user's 2026-08-26 decision was to leave that open.
-            //
-            // So this asserts the regression rather than the aspiration. The ceiling is the height
-            // this build actually draws, which stops the rail growing back silently, and the shortfall
-            // is recorded in the milestone's evidence and in Project/MATCH_HUD.md rather than being
-            // written here as a check that fails on purpose.
+            // **Milestone 8.25 closed it from the other side.** The shortfall was a fact about a
+            // stacked column inside that band rather than about the roster, so the rails took the whole
+            // screen edge and the tray took the band between the two columns; the same rail now stacks
+            // three times inside a rect of about 1000. So this asserts both halves: the rail does not
+            // grow back past the height 8.23a achieved, and three of them fit the column that has to
+            // hold rulebook p.6's three heroes a side.
             var railRect = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
                 Screen.width, Screen.height, TeamSide.Red);
             var budget = HeroRailMarkerCheck.ThreeUpBudget(railRect.height);
             var drawn = HeroRailCoinCheck.BoxOf(hud, TeamSide.Red).height;
             TestContext.WriteLine(
-                "8.23a rail measurement: a rail holding a marker is " + drawn + " tall; a third of " +
+                "8.25 rail measurement: a rail holding a marker is " + drawn + " tall; a third of " +
                     "the " + railRect.height + " rail rect leaves " + budget + " for one of three.");
             Assert.That(drawn, Is.LessThanOrEqualTo(HeroRailMarkerCheck.RecordedRailCeiling),
                 "The recomposed rail draws " + drawn + " against the " +
                     HeroRailMarkerCheck.RecordedRailCeiling + " this build measured, so a later " +
                     "change grew it back.");
+            if (ConfiguredMatchHudRenderer.RailsTakeTheWholeColumn(Screen.width))
+            {
+                Assert.That(drawn, Is.LessThanOrEqualTo(budget),
+                    "A rail holding a marker draws " + drawn + " against the " + budget + " a third " +
+                        "of the " + railRect.height + " column leaves, so three do not stack for " +
+                        "p.6's three heroes a side.");
+            }
+            else
+            {
+                // A viewport too narrow to seat the tray's row between two columns keeps the older
+                // arrangement, where three never fitted and the roster is not drawn three a side
+                // anyway. The ceiling above still holds there, which is the regression this guards.
+                TestContext.WriteLine(
+                    "Three-up budget not asserted at " + Screen.width + "x" + Screen.height +
+                        ": the rails do not take the whole column at this viewport.");
+            }
 
             yield return CaptureGameView("a-poisoned-hero-reads-the-marker-on-their-own-rail");
         }

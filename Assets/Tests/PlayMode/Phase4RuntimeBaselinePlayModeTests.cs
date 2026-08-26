@@ -99,12 +99,7 @@ namespace GuardsDigital.Tests.PlayMode
                 for (var turn = 0; turn < 4; turn++)
                 {
                     Commit(runtime, acceptedCommandRefreshMilliseconds);
-                    MeasureAcceptedCommandRefresh(
-                        acceptedCommandRefreshMilliseconds,
-                        runtime.SubmitEndTurn);
-                    MeasureAcceptedCommandRefresh(
-                        acceptedCommandRefreshMilliseconds,
-                        runtime.SubmitEndTurn);
+                    ResolveTurn(runtime, acceptedCommandRefreshMilliseconds);
                     yield return null;
                 }
 
@@ -216,26 +211,61 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// Commits one card for every hand the turn is still waiting on.
+        ///
+        /// <para>Milestone 8.25. It used to name the Red hand and the Blue hand, which was every hand
+        /// there was; rulebook p.5's official setup deals six, so the loop asks the projection which
+        /// ones are still awaiting a response instead of counting on two. That is also what makes this
+        /// flow measure a six-hero turn rather than a two-hero one, which is what
+        /// <c>RISK-SCALE-001</c>'s payload half is measured on.</para>
+        /// </summary>
         private static void Commit(
             ConfiguredMatchSceneRuntime runtime,
             ICollection<double> acceptedCommandRefreshMilliseconds)
         {
-            var red = runtime.HandsView.Model.Hands.Single(value => value.TeamSide == TeamSide.Red).Cards[0];
-            var blue = runtime.HandsView.Model.Hands.Single(value => value.TeamSide == TeamSide.Blue).Cards[0];
-            Assert.That(runtime.SelectCommitmentCard(red.Id), Is.True);
-            MeasureAcceptedCommandRefresh(
-                acceptedCommandRefreshMilliseconds,
-                runtime.ConfirmSelectedCommitment);
-            Assert.That(runtime.SelectCommitmentCard(blue.Id), Is.True);
-            MeasureAcceptedCommandRefresh(
-                acceptedCommandRefreshMilliseconds,
-                runtime.ConfirmSelectedCommitment);
-            if (runtime.PendingInitiativeChoice != null)
+            while (true)
             {
-                var candidate = runtime.PendingInitiativeChoice.CandidateCardInstanceIds[0];
+                var awaiting = runtime.HandsView.Model.Hands.FirstOrDefault(hand =>
+                    hand.CommitmentStatus == TurnCardCommitmentStatus.AwaitingResponse &&
+                    hand.Cards.Count > 0);
+                if (awaiting == null)
+                {
+                    break;
+                }
+
+                Assert.That(runtime.SelectCommitmentCard(awaiting.Cards[0].Id), Is.True);
                 MeasureAcceptedCommandRefresh(
                     acceptedCommandRefreshMilliseconds,
-                    () => runtime.SubmitInitiativeChoice(candidate));
+                    runtime.ConfirmSelectedCommitment);
+            }
+        }
+
+        /// <summary>
+        /// Resolves the open turn: every tied Initiative decision the reveal produced, then one End Turn
+        /// for each hero that has to act. Milestone 8.25, for the reason <see cref="Commit"/> records -
+        /// six heroes act where two used to, and ties between six revealed cards are ordinary.
+        /// </summary>
+        private static void ResolveTurn(
+            ConfiguredMatchSceneRuntime runtime,
+            ICollection<double> acceptedCommandRefreshMilliseconds)
+        {
+            var budget = (runtime.Setup.Heroes.Count * 4) + 8;
+            while (runtime.Phase == RoundResolutionPhase.ResolvingTurn)
+            {
+                Assert.That(budget--, Is.GreaterThan(0), "The turn did not resolve inside its budget.");
+                if (runtime.PendingInitiativeChoice != null)
+                {
+                    var candidate = runtime.PendingInitiativeChoice.CandidateCardInstanceIds[0];
+                    MeasureAcceptedCommandRefresh(
+                        acceptedCommandRefreshMilliseconds,
+                        () => runtime.SubmitInitiativeChoice(candidate));
+                    continue;
+                }
+
+                MeasureAcceptedCommandRefresh(
+                    acceptedCommandRefreshMilliseconds,
+                    runtime.SubmitEndTurn);
             }
         }
 

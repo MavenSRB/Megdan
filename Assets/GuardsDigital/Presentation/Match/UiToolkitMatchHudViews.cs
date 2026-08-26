@@ -504,8 +504,12 @@ namespace GuardsDigital.Presentation.Match
         {
             Root.style.left = 0f;
             Root.style.top = 0f;
-            Root.style.width = playfield.width + playfield.x;
-            Root.style.height = playfield.height + playfield.y;
+            Root.style.width = Mathf.Max(playfield.width + playfield.x, Mathf.Max(red.xMax, blue.xMax));
+            // Milestone 8.25: a rail column now runs past the playfield's bottom edge, because rulebook
+            // p.6's three heroes a side need the whole screen edge rather than the band above the tray.
+            // The container has to cover them, or the reveal below places a card face against a height
+            // the rails are no longer inside.
+            Root.style.height = Mathf.Max(playfield.height + playfield.y, Mathf.Max(red.yMax, blue.yMax));
             Place(redColumn, red);
             Place(blueColumn, blue);
         }

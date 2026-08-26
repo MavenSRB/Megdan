@@ -509,7 +509,7 @@ Non-goals: No six-player setup, networking, production art, alternate miniature,
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-824-complete-and-verify-additional-pitch-hero-slot-e---xargatha-completion-evidence).
 
-### [!] 8.25 Replace the staged 1v1 setup with the official six-player Quick Game configuration
+### [x] 8.25 Replace the staged 1v1 setup with the official six-player Quick Game configuration
 
 Observable outcome: Configuration data places three different Red heroes and three different Blue heroes with their own hands and components using the official six-player Quick Game baseline.
 
@@ -525,6 +525,38 @@ Acceptance checks:
 - The player-build smoke gate's pinned `heroes=2 cards=36` markers move to the six-player values in `Testing/FUTURE_GATES.md` in this milestone - the marker line this configuration breaks now has an owner, per the 7.9a documentation correction the 8.2 re-baseline applied.
 
 Non-goals: No networking, hidden per-player devices, AI, matchmaking, or balance changes. No reassessment of `RISK-SCALE-001`'s ordering half, which needs a round boundary this milestone does not reach.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825-replace-the-staged-1v1-setup-with-the-official-six-player-quick-game-configuration-completion-evidence).
+
+### [ ] 8.25a Answer an after-action repeat that outlives its actor's Initiative
+
+Proposed by milestone 8.25's independent review, which found it with an offline `DeterministicMatchLoop` run rather than in an active suite. It is a rules/timing correction to milestone 8.23's after-action repeat, is reachable on a board that shipped at 8.23, and 8.25's own acceptance checks name no match loop, so it is scheduled separately rather than folded in.
+
+Observable outcome: a decision the projection offers is answerable. A pending card-action resolution whose actor is not the hero Initiative has currently selected is either not offered, or accepted when answered.
+
+Acceptance checks:
+
+- The demonstrated case is a regression fixture before it is a fix: on the staged Wasp-versus-Tigerclaw board, `DeterministicMatchLoop.Play(session, seed: 1, 4000)` reaches Tigerclaw's Cloak and Daggers repeating Blend Into Shadows and is refused `TurnCommandRejected (SkillCommandRejected)` at command 1047 while `SelectedActor` names the other hero; the same shape appears as a Movement refusal on the official six-player board. Both are observed failing at the pre-fix revision and passing after.
+- Every command the projection offers for a pending resolution is accepted by the rules, or the projection does not offer it. Stated as a property over a seeded sweep rather than over one seed.
+- `TurnResolutionAuthority` no longer discards the backend's `CardActionResolutionRejectionReason`: a refused card-action command reports the reason its backend gave, because the refusal above took a per-destination retry to diagnose.
+- Snapshot restore, replay and retained-prefix Undo reproduce the corrected sequence; the compatibility corpus records whether the schema moved.
+
+Non-goals: No change to which abilities may repeat, to rulebook p.10's repeat rule, or to Initiative order. No six-hero match-loop gate, which milestone 8.27 owns.
+
+### [ ] 8.25b Name the configuration types after what they now compose
+
+Proposed by milestone 8.25's independent review. `PlaceholderOneVsOneTestConfiguration`, `PlaceholderOneVsOneParticipants` and `PlaceholderConfigurationRestoreState` are neither placeholders nor one-versus-one since 8.25: the first composes rulebook p.5's six official seats and is the production configuration a player loads. Renaming them is mechanical and touches roughly 250 call sites, so it was deliberately not bundled into a milestone that changed what they mean.
+
+Observable outcome: every configuration type is named after the thing it is, and the temporary-structure register carries no row for a structure that is no longer temporary.
+
+Acceptance checks:
+
+- The three types are renamed with their `.cs` and `.cs.meta` files moved together so Unity GUIDs survive; no behavior, content, digest or schema changes, and the compatibility corpus is byte-identical.
+- The staged one-hero-per-team arms keep names that say they are staged fixtures.
+- `TECHNICAL_RISKS.md`'s temporary-structure register retires the row these types carry, or restates what is still temporary about them with a live owner.
+- Complete unfiltered Edit Mode and Play Mode suites pass, because a rename of this breadth cannot be shown affected-only.
+
+Non-goals: No behavior change, no content change, no new configuration, and no change to the staged boards themselves.
 
 ### [!] 8.26 Integrate six-hero director control and team interactions
 

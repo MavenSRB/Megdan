@@ -53,7 +53,7 @@ Post-authorization only:
 
 Everything not listed here must behave exactly like the authoritative physical game sources.
 
-1. Before the final pitch integration, staged development configurations may use one hero per team and mirrored Wasp; both temporary deviations must be retired by the official six-player setup gate.
+1. **Retired at milestone 8.25**: staged development configurations used one hero per team and a mirrored Wasp before the final pitch integration. The setup a player loads is the official six-player one, and the one-hero-per-team boards survive only as fixtures asked for by name.
 2. One controller sees and operates all six heroes in director mode.
 3. Internal debug tools may expose hidden state, undo commands, restart matches, import/export snapshots, change animation speed, and override the initial Tie Breaker side.
 

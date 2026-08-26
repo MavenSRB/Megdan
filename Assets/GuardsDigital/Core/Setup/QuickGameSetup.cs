@@ -177,6 +177,81 @@ namespace GuardsDigital.Core.Setup
         public IReadOnlyList<QuickGameMinionPlacementDefinition> Minions => minions;
 
         /// <summary>
+        /// Milestone 8.25. Rulebook p.5-6's official six-player Quick Game board: three different Red
+        /// heroes and three different Blue heroes, each on a hero spawn point in their own Throne zone,
+        /// with three Wave counters, five Life counters per team and setup step 10's minions.
+        ///
+        /// <para><b>This is the configuration a player loads, and it is what every earlier staged arm
+        /// said this milestone owned.</b> `DEV-001`'s one-hero-per-team staging and `DEV-002`'s
+        /// mirrored Wasp are both retired by it: six seats, six different printed sets, Wasp dealt
+        /// exactly once.</para>
+        ///
+        /// <para><b>Two numbers move and one does not.</b> The Life count moves from four to five,
+        /// because p.6's table gives a Quick game four Lives at four players and five at six, and this
+        /// is the first configuration here with six. The Wave count stays three, because p.6 makes it a
+        /// choice of game length rather than of player count. The minions stay exactly what they were:
+        /// setup step 10 places one Ranged, four Melee and one Heavy per team on the starting Battle
+        /// Zone's own spawn points, and it says nothing about the player count - so the twelve
+        /// placements below are the same twelve the staged board has always used.</para>
+        ///
+        /// <para><b>The hero-to-spawn assignment is stated rather than drawn</b>, for the reason
+        /// <see cref="Participants.OfficialSixPlayerParticipants"/> states the hero-to-seat one: the
+        /// three spawn points of a Throne are interchangeable at setup, and a draw between them would
+        /// change nothing a rule can ask. Wasp keeps <c>red-hero-01</c> and Arien <c>blue-hero-01</c>,
+        /// which are the two the staged board used, so the two heroes a journey already knows stand
+        /// where they always stood.</para>
+        ///
+        /// <para>The display names are p.6 setup step 7's own, all six of them. The staged arms keep
+        /// their shorter labels because their subject is one printed set rather than a table, but a
+        /// player looking at the official setup is looking at the six dashboards that step names, and
+        /// the epithet is how the rulebook names them. It is a label on the seat either way - the
+        /// content identity is what a rule, a token and a snapshot read.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateOfficialSixPlayer()
+        {
+            var mapId = new MapId("official-single-lane");
+            ConfiguredSpawnPointReference Spawn(string value) =>
+                new ConfiguredSpawnPointReference(mapId, new SpawnPointId(value));
+            ConfiguredSpaceReference Space(string value) =>
+                new ConfiguredSpaceReference(mapId, new SpaceId(value));
+            QuickGameHeroPlacementDefinition Hero(
+                string heroIdValue, string contentId, string displayName, string spawn, string space) =>
+                new QuickGameHeroPlacementDefinition(
+                    new HeroId(heroIdValue),
+                    new HeroContentId(contentId),
+                    displayName,
+                    Spawn(spawn),
+                    Space(space));
+
+            return new QuickGameSetupConfiguration(
+                new MapDefinitionReference(mapId, 1),
+                3,
+                5,
+                new[]
+                {
+                    Hero(
+                        Participants.OfficialSixPlayerParticipants.WaspHeroIdValue,
+                        "wasp", "Wasp the Warmaiden", "red-hero-01", "q-2_r-5"),
+                    Hero(
+                        Participants.OfficialSixPlayerParticipants.XargathaHeroIdValue,
+                        "xargatha", "Xargatha the Changed", "red-hero-02", "q-6_r-4"),
+                    Hero(
+                        Participants.OfficialSixPlayerParticipants.TigerclawHeroIdValue,
+                        "tigerclaw", "Tigerclaw the Cutpurse", "red-hero-03", "q-4_r-4"),
+                    Hero(
+                        Participants.OfficialSixPlayerParticipants.ArienHeroIdValue,
+                        "arien", "Arien the Tidemaster", "blue-hero-01", "q-3_r10"),
+                    Hero(
+                        Participants.OfficialSixPlayerParticipants.BroganHeroIdValue,
+                        "brogan", "Brogan the Destroyer", "blue-hero-02", "q-1_r10"),
+                    Hero(
+                        Participants.OfficialSixPlayerParticipants.SabinaHeroIdValue,
+                        "sabina", "Sabina the Gunslinger", "blue-hero-03", "q-5_r11")
+                },
+                CreateOfficialMinionPlacements(mapId));
+        }
+
+        /// <summary>
         /// The staged one-hero-per-team board with both seats dealing Wasp's printed set.
         ///
         /// It stays exactly what it was: every fixture that measures the mirror measures this, and
@@ -322,10 +397,6 @@ namespace GuardsDigital.Core.Setup
                 new ConfiguredSpawnPointReference(mapId, new SpawnPointId(value));
             ConfiguredSpaceReference Space(string value) =>
                 new ConfiguredSpaceReference(mapId, new SpaceId(value));
-            QuickGameMinionPlacementDefinition Minion(
-                string id, TeamSide side, StandardMinionType type, string spawn, string space) =>
-                new QuickGameMinionPlacementDefinition(new MinionId(id), side, type, Spawn(spawn), Space(space));
-
             return new QuickGameSetupConfiguration(
                 new MapDefinitionReference(mapId, 1),
                 3,
@@ -345,21 +416,45 @@ namespace GuardsDigital.Core.Setup
                         Spawn("blue-hero-01"),
                         Space("q-3_r10"))
                 },
-                new[]
-                {
-                    Minion("red-melee-01", TeamSide.Red, StandardMinionType.Melee, "red-melee-minion-04", "q-1_r-1"),
-                    Minion("red-melee-02", TeamSide.Red, StandardMinionType.Melee, "red-melee-minion-05", "q-1_r0"),
-                    Minion("red-melee-03", TeamSide.Red, StandardMinionType.Melee, "red-melee-minion-08", "q-8_r4"),
-                    Minion("red-melee-04", TeamSide.Red, StandardMinionType.Melee, "red-melee-minion-09", "q-4_r4"),
-                    Minion("red-ranged-01", TeamSide.Red, StandardMinionType.Ranged, "red-ranged-minion-02", "q-4_r2"),
-                    Minion("red-heavy-01", TeamSide.Red, StandardMinionType.Heavy, "red-heavy-minion-03", "q-7_r6"),
-                    Minion("blue-melee-01", TeamSide.Blue, StandardMinionType.Melee, "blue-melee-minion-03", "q-3_r2"),
-                    Minion("blue-melee-02", TeamSide.Blue, StandardMinionType.Melee, "blue-melee-minion-04", "q1_r2"),
-                    Minion("blue-melee-03", TeamSide.Blue, StandardMinionType.Melee, "blue-melee-minion-07", "q-6_r6"),
-                    Minion("blue-melee-04", TeamSide.Blue, StandardMinionType.Melee, "blue-melee-minion-08", "q-6_r7"),
-                    Minion("blue-ranged-01", TeamSide.Blue, StandardMinionType.Ranged, "blue-ranged-minion-02", "q-3_r4"),
-                    Minion("blue-heavy-01", TeamSide.Blue, StandardMinionType.Heavy, "blue-heavy-minion-01", "q0_r0")
-                });
+                CreateOfficialMinionPlacements(mapId));
+        }
+
+        /// <summary>
+        /// Rulebook p.6 setup step 10's minions: one Ranged, four Melee and one Heavy per team, each on
+        /// the starting Battle Zone's spawn point of its own team colour and type.
+        ///
+        /// <para>Milestone 8.25 lifted these twelve out of the staged factory rather than copying them
+        /// into the six-player one. Setup step 10 says nothing about the player count, so the two
+        /// configurations place the same minions, and two lists that must agree forever are one list.
+        /// </para>
+        /// </summary>
+        private static IEnumerable<QuickGameMinionPlacementDefinition> CreateOfficialMinionPlacements(
+            MapId mapId)
+        {
+            QuickGameMinionPlacementDefinition Minion(
+                string id, TeamSide side, StandardMinionType type, string spawn, string space) =>
+                new QuickGameMinionPlacementDefinition(
+                    new MinionId(id),
+                    side,
+                    type,
+                    new ConfiguredSpawnPointReference(mapId, new SpawnPointId(spawn)),
+                    new ConfiguredSpaceReference(mapId, new SpaceId(space)));
+
+            return new[]
+            {
+                Minion("red-melee-01", TeamSide.Red, StandardMinionType.Melee, "red-melee-minion-04", "q-1_r-1"),
+                Minion("red-melee-02", TeamSide.Red, StandardMinionType.Melee, "red-melee-minion-05", "q-1_r0"),
+                Minion("red-melee-03", TeamSide.Red, StandardMinionType.Melee, "red-melee-minion-08", "q-8_r4"),
+                Minion("red-melee-04", TeamSide.Red, StandardMinionType.Melee, "red-melee-minion-09", "q-4_r4"),
+                Minion("red-ranged-01", TeamSide.Red, StandardMinionType.Ranged, "red-ranged-minion-02", "q-4_r2"),
+                Minion("red-heavy-01", TeamSide.Red, StandardMinionType.Heavy, "red-heavy-minion-03", "q-7_r6"),
+                Minion("blue-melee-01", TeamSide.Blue, StandardMinionType.Melee, "blue-melee-minion-03", "q-3_r2"),
+                Minion("blue-melee-02", TeamSide.Blue, StandardMinionType.Melee, "blue-melee-minion-04", "q1_r2"),
+                Minion("blue-melee-03", TeamSide.Blue, StandardMinionType.Melee, "blue-melee-minion-07", "q-6_r6"),
+                Minion("blue-melee-04", TeamSide.Blue, StandardMinionType.Melee, "blue-melee-minion-08", "q-6_r7"),
+                Minion("blue-ranged-01", TeamSide.Blue, StandardMinionType.Ranged, "blue-ranged-minion-02", "q-3_r4"),
+                Minion("blue-heavy-01", TeamSide.Blue, StandardMinionType.Heavy, "blue-heavy-minion-01", "q0_r0")
+            };
         }
     }
 
@@ -500,7 +595,7 @@ namespace GuardsDigital.Core.Setup
                 participants.Teams.Count(value => value.Side == TeamSide.Red) != 1 ||
                 participants.Teams.Count(value => value.Side == TeamSide.Blue) != 1)
                 throw Reject(QuickGameSetupRejectionReason.ParticipantMismatch,
-                    "Mirrored 1v1 Quick Game setup requires exactly one Red team and one Blue team.");
+                    "Quick Game setup requires exactly one Red team and one Blue team.");
             if (!configuration.RequiredMap.MapId.Equals(selectedMap.Id))
                 throw Reject(QuickGameSetupRejectionReason.MapIdentityMismatch,
                     $"Setup requires map '{configuration.RequiredMap.MapId}', not '{selectedMap.Id}'.");

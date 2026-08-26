@@ -35,6 +35,33 @@ namespace GuardsDigital.Core.Participants
             SetupRandomnessSeed setupSeed,
             bool validateInitialCardState = true,
             ConfiguredHand allyHand = null)
+            : this(
+                participants,
+                allyHand == null
+                    ? new[] { redHand, blueHand }
+                    : new[] { redHand, blueHand, allyHand },
+                tieBreakerState,
+                setupSeed,
+                validateInitialCardState)
+        {
+        }
+
+        /// <summary>
+        /// Milestone 8.25. One hand per seat, in the order the configuration deals them.
+        ///
+        /// <para>Every configuration before the official six-player one dealt two seats, or three on the
+        /// single board that needed a friendly hero, and named them by side. That naming stops being a
+        /// key at three heroes a side: `RedHand` is not a fact about a team, it is a fact about one
+        /// seat. The list is the fact now, and the three named properties below are readings of it kept
+        /// so the fixtures whose subject really is a one-versus-one board keep saying what they mean.
+        /// </para>
+        /// </summary>
+        private PlaceholderOneVsOneTestConfiguration(
+            MatchParticipants participants,
+            IEnumerable<ConfiguredHand> hands,
+            TieBreakerState tieBreakerState,
+            SetupRandomnessSeed setupSeed,
+            bool validateInitialCardState)
         {
             SetupSeed = setupSeed;
 
@@ -45,9 +72,14 @@ namespace GuardsDigital.Core.Participants
             // what it registers. Everything downstream takes what it is given.
             ContentCatalogs = MatchContentCatalogs.ForThisBuild();
             Participants = participants ?? throw new ArgumentNullException(nameof(participants));
-            RedHand = redHand ?? throw new ArgumentNullException(nameof(redHand));
-            BlueHand = blueHand ?? throw new ArgumentNullException(nameof(blueHand));
-            AllyHand = allyHand;
+            var handArray = hands?.ToArray() ?? throw new ArgumentNullException(nameof(hands));
+            if (handArray.Length == 0 || handArray.Any(hand => hand == null))
+            {
+                throw new ArgumentException(
+                    "A configuration requires one non-null hand per dealt seat.", nameof(hands));
+            }
+
+            Hands = Array.AsReadOnly(handArray);
             if (!tieBreakerState.IsDefined)
             {
                 throw new ArgumentException(
@@ -60,9 +92,8 @@ namespace GuardsDigital.Core.Participants
             // Milestone 7.5. Every card each hand supplies, hand and deck alike: p.15's Upgrade a Card
             // step searches the deck, so a match composed from the dealt five alone would have had a
             // mandatory level nobody could complete.
-            var cardInstances = redHand.AllInstances
-                .Concat(blueHand.AllInstances)
-                .Concat(allyHand?.AllInstances ?? Enumerable.Empty<CardInstance>())
+            var cardInstances = handArray
+                .SelectMany(hand => hand.AllInstances)
                 .ToArray();
             foreach (var instance in cardInstances)
             {
@@ -75,9 +106,8 @@ namespace GuardsDigital.Core.Participants
             // eighteen. Distinct by reference rather than by id on purpose - the same id at two
             // content revisions is a real conflict and stays one, and CardInitialSetupValidator below
             // is what refuses it.
-            var cardDefinitions = redHand.Definitions
-                .Concat(blueHand.Definitions)
-                .Concat(allyHand?.Definitions ?? Enumerable.Empty<CardDefinition>())
+            var cardDefinitions = handArray
+                .SelectMany(hand => hand.Definitions)
                 .GroupBy(definition => definition.Reference)
                 .Select(group => group.First())
                 .ToArray();
@@ -123,16 +153,35 @@ namespace GuardsDigital.Core.Participants
         /// </summary>
         public MatchContentCatalogs ContentCatalogs { get; }
 
-        public ConfiguredHand RedHand { get; }
+        /// <summary>
+        /// Milestone 8.25. One hand per dealt seat, in the order the configuration dealt them - two for
+        /// every staged board, six for rulebook p.5's official setup.
+        /// </summary>
+        public IReadOnlyList<ConfiguredHand> Hands { get; }
 
-        public ConfiguredHand BlueHand { get; }
+        /// <summary>The first Red seat's hand. On a one-hero-per-team board it is the Red seat's.</summary>
+        public ConfiguredHand RedHand => HandOn(TeamSide.Red);
+
+        /// <summary>The first Blue seat's hand. On a one-hero-per-team board it is the Blue seat's.</summary>
+        public ConfiguredHand BlueHand => HandOn(TeamSide.Blue);
 
         /// <summary>
-        /// Milestone 8.21. The second Blue seat's hand, or <c>null</c> in every configuration that
-        /// deals one hero per team - which is all of them but the one whose subject is a card naming a
-        /// friendly hero.
+        /// Milestone 8.21. The second Blue seat's hand on the one staged board that deals one, and
+        /// <c>null</c> everywhere else - including the official six-player setup, where three Blue
+        /// seats are the configuration rather than an extra one.
         /// </summary>
-        public ConfiguredHand AllyHand { get; }
+        public ConfiguredHand AllyHand => Hands.FirstOrDefault(hand =>
+            string.Equals(
+                OwnerOf(hand).Value,
+                PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue,
+                StringComparison.Ordinal));
+
+        private static HeroId OwnerOf(ConfiguredHand hand) => hand.AllInstances[0].OwnerId;
+
+        private ConfiguredHand HandOn(TeamSide side) => Hands.First(hand =>
+            !OwnerOf(hand).Value.Equals(
+                PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue, StringComparison.Ordinal) &&
+            Participants.GetTeamForHero(OwnerOf(hand)).Side == side);
 
         public TieBreakerState TieBreakerState { get; }
 
@@ -148,36 +197,34 @@ namespace GuardsDigital.Core.Participants
         public IReadOnlyList<CardInstance> CardInstances { get; }
 
         /// <summary>
-        /// The configured match: Wasp on Red and Arien the Tidemaster on Blue, each dealt rulebook
-        /// p.6's starting five with the remaining thirteen in their deck. This is what the scene
-        /// composes and what a player plays.
+        /// The configured match: rulebook p.5's official six-player line-up - Wasp, Xargatha and
+        /// Tigerclaw on Red against Arien, Brogan and Sabina on Blue - each dealt p.6's starting five
+        /// with the remaining thirteen in their own deck. This is what the scene composes and what a
+        /// player plays.
         ///
-        /// <para><b>Milestone 8.20 is where this stopped being a mirror.</b> Two Wasps were what the
-        /// build had: one verified printed set, dealt twice, because there was only one. Arien's set
-        /// is the second, so the staged match now deals two different heroes - which is what a match of
-        /// this game is, and what makes every cross-hero rule reachable at all. Spell Break shutting
-        /// down Static Barrier is the first of them and could not have existed in a mirror, where both
-        /// seats hold the same Basic Skill on the same colour.</para>
+        /// <para><b>Milestone 8.25 is where this stopped being one hero per team.</b> Two seats were
+        /// what the build could deal: one verified printed set at 8.4, dealt twice, then two different
+        /// ones at 8.20. All six of p.6 setup step 7's dashboards exist now, so the match a player
+        /// loads is the match the rulebook describes. `DEV-001` and `DEV-002` retire with it.</para>
         ///
-        /// <para>The mirror did not disappear: <see cref="CreateVerifiedMirrorForInternalTest"/> and
-        /// its two progressed twins still deal it, and every fixture that measures one seat against its
-        /// own reflection asks for it by name. What changed is what the default is.</para>
+        /// <para>The staged boards did not disappear: <see cref="CreateVerifiedMirrorForInternalTest"/>,
+        /// <see cref="CreateStagedArienForInternalTest"/> and the rest still deal one seat per team, and
+        /// every fixture whose subject is one printed set asks for the board it needs by name. What
+        /// changed is what the default is.</para>
         ///
-        /// <para><b>It is still one hero per team.</b> The development deviation p.6's setup would
-        /// otherwise forbid is unchanged, and milestone 8.25 still owns the official six-player
-        /// configuration and all six of its spawn assignments.</para>
-        ///
-        /// <para>Milestone 8.4 is where this stopped being synthetic. Until now it dealt the
+        /// <para>Milestone 8.4 is where this stopped being synthetic. Until then it dealt the
         /// mechanics-showcase cards, whose values and text were invented to exercise machinery; it now
-        /// deals <see cref="WaspCardContent"/>, whose every value and word is transcribed from the
-        /// printed faces. The showcase cards did not disappear - <see cref="SyntheticShowcaseHand"/>
-        /// still fills the fixture configurations below, which say so in their names - but nothing
-        /// synthetic stands in for hero content on the path a match takes any more.</para>
+        /// deals <see cref="WaspCardContent"/> and its five siblings, whose every value and word is
+        /// transcribed from the printed faces. The showcase cards did not disappear -
+        /// <see cref="SyntheticShowcaseHand"/> still fills the fixture configurations below, which say
+        /// so in their names - but nothing synthetic stands in for hero content on the path a match
+        /// takes any more.</para>
         ///
-        /// <para>The two seats now deal thirty-six definitions between them - two printed sets, one
-        /// each - where the mirror dealt eighteen twice. Instance ids are still prefixed by the seat's
-        /// team side, and each definition id already carries its own hero's content-set prefix, so a
-        /// card id says both which set it belongs to and which seat holds it.</para>
+        /// <para>The six seats deal <b>108 instances of 108 definitions</b> between them - six printed
+        /// sets, one each, and no two seats sharing a set the way the mirror's two did. An instance id
+        /// is prefixed by the seat rather than by the team side, because a side no longer identifies
+        /// one seat, and each definition id already carries its own hero's content-set prefix: a card
+        /// id therefore still says both which set it belongs to and which seat holds it.</para>
         /// </summary>
         public static PlaceholderOneVsOneTestConfiguration Create()
         {
@@ -186,11 +233,52 @@ namespace GuardsDigital.Core.Participants
             // same side. It is still a real flip: the seed came from platform entropy a moment ago.
             var setupSeed = SetupRandomnessAuthority.DrawSeed();
 
-            return Create(
-                TieBreakerSetupAuthority.CreateNormalSetupState(setupSeed),
-                setupSeed,
-                CreateVerifiedWaspHand(TeamSide.Red),
-                CreateVerifiedArienHand(TeamSide.Blue));
+            return CreateOfficialSixPlayer(
+                TieBreakerSetupAuthority.CreateNormalSetupState(setupSeed), setupSeed);
+        }
+
+        /// <summary>
+        /// Milestone 8.25. The official six-player match with p.6's coin flip replaced by an explicitly
+        /// selected side, so a fixture can play it without a draw deciding who acts first. `DEV-005`,
+        /// exactly as the staged internal-test configurations are.
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateOfficialSixPlayerForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            CreateOfficialSixPlayer(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded);
+
+        /// <summary>
+        /// The six official seats and the printed set each one holds, in p.6 setup step 7's order.
+        ///
+        /// <para>The hand a seat is dealt follows the hero that seat holds, which
+        /// <see cref="OfficialSixPlayerParticipants"/> states; nothing here decides it a second time.
+        /// The instance-id prefix is the seat rather than its team side, because three seats a side
+        /// makes a side ambiguous - <c>red-01-wasp-magnetic-dagger</c> names the seat, the printed set
+        /// and the card in that order.</para>
+        /// </summary>
+        private static PlaceholderOneVsOneTestConfiguration CreateOfficialSixPlayer(
+            TieBreakerState tieBreakerState, SetupRandomnessSeed setupSeed)
+        {
+            var participants = OfficialSixPlayerParticipants.Create();
+            var hands = new[]
+            {
+                WaspCardContent.CreateHand(
+                    new HeroId(OfficialSixPlayerParticipants.WaspHeroIdValue), "red-01"),
+                Cards.Verified.XargathaCardContent.CreateHand(
+                    new HeroId(OfficialSixPlayerParticipants.XargathaHeroIdValue), "red-02"),
+                Cards.Verified.TigerclawCardContent.CreateHand(
+                    new HeroId(OfficialSixPlayerParticipants.TigerclawHeroIdValue), "red-03"),
+                Cards.Verified.ArienCardContent.CreateHand(
+                    new HeroId(OfficialSixPlayerParticipants.ArienHeroIdValue), "blue-01"),
+                Cards.Verified.BroganCardContent.CreateHand(
+                    new HeroId(OfficialSixPlayerParticipants.BroganHeroIdValue), "blue-02"),
+                Cards.Verified.SabinaCardContent.CreateHand(
+                    new HeroId(OfficialSixPlayerParticipants.SabinaHeroIdValue), "blue-03")
+            };
+
+            return new PlaceholderOneVsOneTestConfiguration(
+                participants, hands, tieBreakerState, setupSeed, true);
         }
 
         /// <summary>
@@ -890,21 +978,15 @@ namespace GuardsDigital.Core.Participants
             var participants = state.Participants;
             var definitionArray = state.Definitions;
             var instanceArray = state.Instances;
-            var redHero = participants.Heroes.Single(hero =>
-                participants.GetTeamForHero(hero.Id).Side == TeamSide.Red).Id;
 
-            // Milestone 8.21. A restore used to identify each side by its one hero, which was true of
-            // every configuration this type composed until the staged match that deals a second Blue
-            // seat - the one board on which "a friendly hero in range" can be true of anybody. The
-            // extra seat is named rather than ordered, because which hand belongs to which hero is a
-            // fact about the seat and not about where it happens to sort.
-            var allyHeroId = new HeroId(PlaceholderOneVsOneParticipants.BlueAllyHeroIdValue);
-            var blueHeroes = participants.Heroes
-                .Where(hero => participants.GetTeamForHero(hero.Id).Side == TeamSide.Blue)
-                .Select(hero => hero.Id)
-                .ToArray();
-            var blueHero = blueHeroes.Single(heroId => !heroId.Equals(allyHeroId));
-            var hasAlly = blueHeroes.Any(heroId => heroId.Equals(allyHeroId));
+            // Milestone 8.25. A restore rebuilds one hand per configured hero, in the participant
+            // graph's own order, and asks nothing about sides at all.
+            //
+            // Milestone 8.21 had already stopped identifying a side by its one hero - the staged board
+            // that deals a friendly hero named the extra seat rather than ordering it - and the official
+            // six-player setup finishes the move: with three seats a side there is no "the Red hero" to
+            // name. Which hand belongs to which hero was never a fact about a side; it is card ownership,
+            // which every restored instance already carries.
             ConfiguredHand BuildHand(HeroId ownerId)
             {
                 var ownedInstances = instanceArray.Where(instance => instance.OwnerId.Equals(ownerId)).ToArray();
@@ -984,17 +1066,14 @@ namespace GuardsDigital.Core.Participants
             }
 
             // The hands are rebuilt from the flat definition and instance lists a snapshot restores,
-            // using only relationships the content itself states; the sides are already re-identified
-            // from the restored teams above, so nothing new is decided. A second Blue seat is rebuilt
-            // the same way and from the same lists - it is another owner, not another rule.
+            // using only relationships the content itself states; every seat is rebuilt the same way and
+            // from the same lists, so a sixth is another owner rather than another rule.
             return new PlaceholderOneVsOneTestConfiguration(
                 participants,
-                BuildHand(redHero),
-                BuildHand(blueHero),
+                participants.Heroes.Select(hero => BuildHand(hero.Id)).ToArray(),
                 state.TieBreakerState,
                 state.SetupSeed,
-                false,
-                hasAlly ? BuildHand(allyHeroId) : null);
+                false);
         }
 
         /// <summary>
