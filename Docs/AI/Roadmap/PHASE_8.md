@@ -581,6 +581,25 @@ Acceptance checks:
 
 Non-goals: No production art, no new HUD content, and no change to what any region shows or to any rule, command or projection. No render-pipeline work - this is independent of milestone 8.28 and is cheaper before it, because a scaled layout is what production presentation is authored against.
 
+### [ ] 8.25d Let a card-text Attack repeat say that it is one
+
+Proposed at the user's direction on 2026-08-26, after milestone 8.25a made a repeated Attack resolution able to carry `ActionInvocationContext.Repeated` and found that the path Xargatha's cards actually use still does not. 8.25a admitted the context on the resolution and left this alone deliberately, because what it changes is which targets two verified cards offer - that milestone's stated non-goal.
+
+`AttackDefenseCardActionStrategyBackend.StartRepeatedAttack` builds the second instance with `completed.InvocationContext`, which is the printed one the first instance ran under, so a card-text Attack repeat reports itself as printed everywhere downstream. Two consequences are live. Xargatha's Cleave and Rapid Thrusts print "May repeat once on a different enemy hero", and the narrowing half of that clause is gated on `resolution.InvocationContext == ActionInvocationContext.Repeated`, so it has never fired: her repeat excludes the unit she just hit - that half travels separately as `ExcludedTarget` - and still admits minions. And the repeated instance's `ActionEnded` checkpoint reports a printed context, so `PendingAfterActionRepeat.For` and `TriggeredEffectResolutionAuthority`'s own guard both read `WasRepeatedInstance` as false, which is what rulebook p.10's "You cannot repeat a repeated action!" is enforced by.
+
+Observable outcome: a repeated Attack instance is one the rules can tell is repeated, and every clause a card prints about its own repeat applies to it.
+
+Acceptance checks:
+
+- `StartRepeatedAttack`'s second instance carries `ActionInvocationContext.Repeated`. The exact set of content this moves is **Wasp's Thunder Boomerang and Xargatha's Cleave and Rapid Thrusts**, which are the only verified Attack texts declaring a `RepeatAction` node; Sabina's and Arien's repeats are Skill and Movement repeats and reach different backends, and Tigerclaw's Cloak and Daggers is the after-action path milestone 8.25a already corrected.
+- Xargatha's repeat offers enemy heroes only. Observed failing at the pre-fix revision on a board where her repeat has both an eligible enemy hero and an eligible minion, and passing after - the minion is offered before and not after, and the exclusion on the unit the first instance took is unchanged in both.
+- **p.10's bound on a card-text Attack repeat is re-derived rather than assumed.** The repeated instance runs its own page, including the step-7 rider that asked for the repeat, and the Attack path carries no `RepeatContinuation`, so whether a second request is possible today is a measurement this milestone owes before it changes what the checkpoint reports. If a chain is reachable, the milestone states where the bound lives; if it is not, it states what stops it.
+- No hero's player-path gate row newly passes or newly fails, and no configured hero's journeys change except where an offered target set legitimately narrows; the two heroes above are re-run at their own tiers.
+- The compatibility corpus records whether any fixture holds an Attack resolution mid-repeat. Milestone 8.11 recorded that none did - "no corpus payload held a paused Thunder repeat" - so the expectation is that no digest and no schema version moves, and the expectation is checked rather than trusted.
+- Complete unfiltered Edit Mode and Play Mode suites pass, because a change to what an action reports at its own completion checkpoint is read by triggers, and cannot be shown affected-only.
+
+Non-goals: No change to any printed text, to which abilities may repeat, or to the after-action repeat path milestone 8.25a owns. No new repeat binding, and no change to `RepeatTargetBinding`'s members.
+
 ### [!] 8.26 Integrate six-hero director control and team interactions
 
 Observable outcome: One director can play and resolve a complete turn for all six independently owned heroes while the rules preserve normal 3v3 ownership, Initiative, target, assist, reaction, and team relationships.
