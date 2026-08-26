@@ -32,11 +32,13 @@ Milestones **8.1-8.16** dealt all nineteen verified Wasp faces through ordinary 
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1-7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed the 7.9a review's findings.
 
-The remaining **Phase 8** route continues with six-hero director control at 8.26 and the retained 3v3/URP/online gates; 8.16b and the proposed 8.25c-8.25e await scheduling. Each implementation requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
+The remaining **Phase 8** route continues with six-hero director control at 8.26 and the retained 3v3/URP/online gates; 8.16b and the proposed 8.25c-8.25f await scheduling. Each implementation requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
 Roadmap amendments, 2026-08-26, at the user's direction after auditing 8.25a: **8.25d** - a card-text Attack repeat still reports itself as printed, so Xargatha's "on a different enemy hero" narrowing has never fired - and **8.25e** - a repeat can be offered, taken, and do nothing, on all four arms of one switch: Hold, Fast Travel and Clear are never attempted, and an attempted one that cannot start is dropped in silence.
+
+Roadmap amendment, 2026-08-26, at the user's direction: **8.25f** replaces every complete generated card face with its verified private front when locally prepared, retains the generated clean-checkout fallback and identity-free facedown commitment, and keeps private pixels ignored and outside rules authority. It awaits scheduling and does not displace 8.26 as the next proposed milestone.
 
 Roadmap amendment, 2026-08-25: heroes beyond this roster are taken **in batches of about five rather than one at a time**, and [Roadmap/POST_PITCH.md](Roadmap/POST_PITCH.md) owns why and what a batch owes first. It changed nothing inside this roster.
 
