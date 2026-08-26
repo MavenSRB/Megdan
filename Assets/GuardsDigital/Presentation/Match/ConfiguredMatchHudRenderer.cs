@@ -580,10 +580,12 @@ namespace GuardsDigital.Presentation.Match
         /// That is where the vertical room came from: the rails stopped competing with the tray for the
         /// same corner.</para>
         ///
-        /// <para>It is centred in that band rather than pinned to its left edge, because the band is
-        /// symmetric and a centred tray keeps the same distance from both rails at every viewport. Its
-        /// own width bound is unchanged, so at any viewport wide enough the tray is exactly as wide as
-        /// it has been.</para>
+        /// <para>It sits at the band's left edge rather than centred in it - the user's 2026-08-26
+        /// decision, taken on seeing the six-player HUD. The tray is read left to right and the hand it
+        /// draws starts at its left edge, so a tray that floats away from the rail beside it puts the
+        /// first card of the hand somewhere that moves with the viewport. Its own width bound is
+        /// unchanged, so at any viewport wide enough the tray is exactly as wide as it has been and
+        /// only the slack falls on the right.</para>
         /// </summary>
         public static Rect CalculateCardPanelRect(float viewportWidth, float viewportHeight)
         {
@@ -593,7 +595,7 @@ namespace GuardsDigital.Presentation.Match
                 Mathf.Max(CardPanelHeight, viewportHeight * CardPanelTallViewportShare),
                 Mathf.Max(0f, viewportHeight - (Margin * 2f) - StatusBarHeight));
             return new Rect(
-                band.x + Mathf.Max(0f, (band.width - width) / 2f),
+                band.x,
                 Mathf.Max(Margin, viewportHeight - height - Margin),
                 width,
                 height);
@@ -793,10 +795,18 @@ namespace GuardsDigital.Presentation.Match
 
             var availableAboveHeight = Mathf.Max(140f, cardPanel.y - StatusBarHeight - (Margin * 2f));
             var aboveHeight = Mathf.Min(EventLogPreferredHeight, availableAboveHeight);
+
+            // The band above the tray is also the `DIRECTOR` toggle's and its drawer's, and this log is
+            // tall enough to cover both. It starts clear of that column, for the reason
+            // `CalculateTallContextHeight` reserves the same strip: the drawer is the only route to
+            // Undo, and a log the player opened is not a reason to lose it. Latent until milestone 8.25
+            // moved the tray to the band's left edge, which put the two columns on the same x and left
+            // `RESET` behind the log's own scroll view.
+            var aboveLeft = cardPanel.x + DirectorDrawerWidth + Margin;
             return new Rect(
-                cardPanel.x,
+                aboveLeft,
                 Mathf.Max(StatusBarHeight + Margin, cardPanel.y - aboveHeight - Margin),
-                cardPanel.width,
+                Mathf.Max(0f, cardPanel.xMax - aboveLeft),
                 aboveHeight);
         }
     }

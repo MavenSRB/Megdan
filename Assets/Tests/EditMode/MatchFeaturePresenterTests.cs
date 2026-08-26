@@ -63,11 +63,13 @@ namespace GuardsDigital.Tests.EditMode
             // putting a row of a mandatory choice behind a scrollbar. Milestone 8.5a raised that share
             // to 0.46 for the printed rules text a tray card now carries. The tray sizes to its
             // content, so this is the region it may use and not the region it does use.
-            // Milestone 8.25: the tray is centred in the band between the two rail columns rather than
-            // pinned to the left margin. Its width bound is unchanged, so a viewport wide enough for
-            // both still draws exactly the 1280-wide tray milestone 5.1c sized the Defense row against.
+            // Milestone 8.25: the tray sits at the left edge of the band between the two rail columns
+            // rather than at the screen's left margin - the Red column owns that now - so its x is one
+            // rail width and two margins in. Its own width bound is unchanged, so a viewport wide
+            // enough for both still draws exactly the 1280-wide tray milestone 5.1c sized the Defense
+            // row against, and the slack falls on the right.
             Assert.That(panel.width, Is.EqualTo(1280f));
-            Assert.That(panel.x, Is.EqualTo(384f));
+            Assert.That(panel.x, Is.EqualTo(216f));
             Assert.That(
                 panel.xMin,
                 Is.GreaterThanOrEqualTo(
