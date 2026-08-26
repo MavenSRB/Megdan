@@ -478,7 +478,7 @@ Acceptance checks:
 
 Non-goals: No change to any printed text, to which abilities may repeat, or to the after-action repeat path milestone 8.25a owns. No new repeat binding, and no change to `RepeatTargetBinding`'s members.
 
-### [ ] 8.25e Repeat the general-rule basic actions, or stop offering to
+### [ ] 8.25e Perform the repeat that was offered, or stop offering it
 
 Proposed at the user's direction on 2026-08-26, found while auditing milestone 8.25a. It is the same family as that milestone and is deliberately not folded into it: 8.25a corrected *when* an owed repeat runs, and this is about *which actions can be repeated at all*, which 8.25a's block names as a non-goal.
 
@@ -486,13 +486,17 @@ Rulebook p.9 makes every action performed on a Gold or Silver card a basic actio
 
 **Why no gate caught it.** The property milestone 8.25a closed on is that every command the projection offers is accepted and no decision stalls. This command *is* accepted; it simply has no effect, so a seeded match-loop sweep of any length passes over it in silence. That is the reusable finding: an offered decision whose answer changes nothing is invisible to a driver that only checks acceptance.
 
-Observable outcome: taking the repeat of a Hold, a Fast Travel or a Clear performs that action a second time - or the ability does not offer a repeat it cannot perform, and the page's reason for that is written down.
+**The audit that produced this block found the same shape on three more arms of the same switch, and this milestone owns all four.** `StartOwedAfterActionRepeat` also reports "nothing happened" when the second instance is attempted and the backend refuses it - `repeatedAttack`, `repeatedSkill` and `repeatedMovement` each fall through to it on `Accepted == false`. The commonest cause is a board with nothing left the card admits, which the code and two comments call "p.10 offering a repeat rather than owing one". **It is reachable on shipped content through the real surface**: driving Tigerclaw's Cloak and Daggers after Blink Strike on `VerifiedTierThreeEngagedStagedTigerclaw`, taking the repeat returns the game to "choose an action or End Turn" with nothing having happened, because the card forbids repeating onto the unit the first instance crossed and that staging has one. Observed in Play Mode during milestone 8.25a's audit.
+
+**The root cause is one predicate, and it is the same for all four.** `TriggeredEffectResolutionAuthority`'s `RepeatIsUnavailable` is `!TriggeringBasicAction.IsDefined || TriggeringBasicAction.WasRepeatedInstance` - a fact about the action that *ended*. Whether the repeat can be performed is a fact about the dispatcher's kind coverage and about the board as it now stands. So the offer admits strictly more than the answer can perform, in two independent ways, and the ability has no way to know it.
+
+Observable outcome: taking a repeat performs the action a second time - or the ability does not offer a repeat it cannot perform, and the page's reason for that is written down. The four arms are one question, not four.
 
 Acceptance checks:
 
 - **The milestone decides which of the two outcomes is correct against the printed page, and records the reading before it builds either.** p.9's supertype says all three are basic; whether p.10's repeat is performable on them - a second Hold on a card already resolved, a second Fast Travel from a Throne the hero now stands in, a Clear with nothing left adjacent - is a rules question, and `RULES_LEDGER.md` owns the answer if the page is not decisive. A repeat that cannot happen is p.10 offering rather than owing one, which the ability already skips in silence; what is refused here is offering it and then dropping it.
-- Observed failing before and passing after, per kind that survives that reading: on a staged board with the Ultimate unlocked, the decision is offered after the action, taking it is accepted, and the second instance is visible in the authoritative state rather than absent.
-- The `default:` arm's comment no longer describes behaviour that does not exist. Whatever the milestone decides, the code and the sentence beside it agree.
+- Observed failing before and passing after, per arm that survives that reading: on a staged board with the Ultimate unlocked, the decision is offered after the action, taking it is accepted, and the second instance is visible in the authoritative state rather than absent. The Blink Strike case above is the one already observed and is the cheapest to write first.
+- The `default:` arm's comment no longer describes behaviour that does not exist, and the two "simply does not happen ... p.10 offers a repeat rather than owing one" comments either carry the reading this milestone records or go. Whatever it decides, the code and the sentences beside it agree.
 - **The three general-rule paths owe the hold milestone 8.25a gave the other three.** `TryPerformHold`, `TryPerformFastTravel` and the Clear path all resolve their source card before the checkpoint runs, so an instance started from their decision would have no unresolved card and no selected actor to run on - the exact state 8.25a removed for Attack, Skill and Movement.
 - A driver-level check exists for the family this escaped: a decision the projection offers and the rules accept changes the authoritative state, or the milestone states why this one does not. One shape, stated once, rather than a case per kind.
 - Complete unfiltered Edit Mode and Play Mode suites pass.
