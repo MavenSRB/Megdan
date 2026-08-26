@@ -984,7 +984,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var result = Session.Execute(command);
             Assert.That(result.Accepted, Is.True,
-                $"'{command.Kind}' was refused: {result.RejectionReason}.");
+                $"'{command.Kind}' was refused: {result.RejectionReason}. {result.Detail}");
         }
 
         // -------------------------------------------------------------------------------------

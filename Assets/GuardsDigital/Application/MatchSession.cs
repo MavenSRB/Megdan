@@ -128,6 +128,7 @@ namespace GuardsDigital.Application
                     dispatch.RoundRejectionReason,
                     dispatch.CommitmentRejectionReason,
                     dispatch.TurnRejectionReason,
+                    dispatch.CardActionRejectionReason,
                     Array.Empty<RoundResolutionEvent>(),
                     Projection);
             }
@@ -182,6 +183,7 @@ namespace GuardsDigital.Application
                 RoundResolutionRejectionReason.None,
                 TurnCardCommitmentRejectionReason.None,
                 TurnResolutionRejectionReason.None,
+                CardActionResolutionRejectionReason.None,
                 dispatch.Events,
                 Projection);
         }
@@ -1170,6 +1172,7 @@ namespace GuardsDigital.Application
                 RoundResolutionRejectionReason.None,
                 TurnCardCommitmentRejectionReason.None,
                 TurnResolutionRejectionReason.None,
+                CardActionResolutionRejectionReason.None,
                 Array.Empty<RoundResolutionEvent>(),
                 Projection);
         }
@@ -1190,6 +1193,7 @@ namespace GuardsDigital.Application
                 RoundResolutionRejectionReason roundRejectionReason,
                 TurnCardCommitmentRejectionReason commitmentRejectionReason,
                 TurnResolutionRejectionReason turnRejectionReason,
+                CardActionResolutionRejectionReason cardActionRejectionReason,
                 IReadOnlyList<RoundResolutionEvent> events)
             {
                 Accepted = accepted;
@@ -1198,6 +1202,7 @@ namespace GuardsDigital.Application
                 RoundRejectionReason = roundRejectionReason;
                 CommitmentRejectionReason = commitmentRejectionReason;
                 TurnRejectionReason = turnRejectionReason;
+                CardActionRejectionReason = cardActionRejectionReason;
                 Events = events;
             }
 
@@ -1207,6 +1212,7 @@ namespace GuardsDigital.Application
             public RoundResolutionRejectionReason RoundRejectionReason { get; }
             public TurnCardCommitmentRejectionReason CommitmentRejectionReason { get; }
             public TurnResolutionRejectionReason TurnRejectionReason { get; }
+            public CardActionResolutionRejectionReason CardActionRejectionReason { get; }
             public IReadOnlyList<RoundResolutionEvent> Events { get; }
 
             public static DispatchResult From(RoundResolutionResult result)
@@ -1220,6 +1226,7 @@ namespace GuardsDigital.Application
                     result.RejectionReason,
                     result.CommitmentRejectionReason,
                     result.TurnRejectionReason,
+                    result.CardActionRejectionReason,
                     result.Events);
             }
 
@@ -1232,6 +1239,7 @@ namespace GuardsDigital.Application
                     RoundResolutionRejectionReason.None,
                     TurnCardCommitmentRejectionReason.None,
                     TurnResolutionRejectionReason.None,
+                    CardActionResolutionRejectionReason.None,
                     Array.Empty<RoundResolutionEvent>());
             }
 
@@ -1244,7 +1252,14 @@ namespace GuardsDigital.Application
 
                 if (result.TurnRejectionReason != TurnResolutionRejectionReason.None)
                 {
-                    return $"{result.RejectionReason} ({result.TurnRejectionReason})";
+                    // Milestone 8.25a. The backend's own reason, where it gave one. It is appended
+                    // rather than substituted because the two say different things - which command was
+                    // refused, and what the rules said about it - and a reader that lost either would
+                    // be back where the diagnosis of that milestone's stall started.
+                    return result.CardActionRejectionReason == CardActionResolutionRejectionReason.None
+                        ? $"{result.RejectionReason} ({result.TurnRejectionReason})"
+                        : $"{result.RejectionReason} ({result.TurnRejectionReason}: " +
+                            $"{result.CardActionRejectionReason})";
                 }
 
                 return result.RejectionReason.ToString();

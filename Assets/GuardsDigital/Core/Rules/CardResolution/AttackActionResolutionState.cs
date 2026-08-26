@@ -160,10 +160,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentException("Pending Attack resolution requires defined stable identities.");
             }
 
+            // Milestone 8.25a admits the third. p.10's repeated instance of an Attack is that Attack
+            // performed again, and the context is how it says so: the ActionEnded checkpoint reports
+            // it, `PendingAfterActionRepeat.For` reads it, and that is what makes "You cannot repeat a
+            // repeated action!" true of an Attack. Milestone 8.23's after-action arm and milestone
+            // 8.24's `on a different enemy hero` narrowing were both already written against a
+            // repeated Attack resolution; this guard is what neither of them could get past, and the
+            // 8.23 arm threw here the first time a match reached it.
             if (invocationContext != ActionInvocationContext.PrintedPrimary &&
-                invocationContext != ActionInvocationContext.PrintedSecondary)
+                invocationContext != ActionInvocationContext.PrintedSecondary &&
+                invocationContext != ActionInvocationContext.Repeated)
             {
-                throw new ArgumentException("Pending Attack resolution requires a printed invocation context.", nameof(invocationContext));
+                throw new ArgumentException(
+                    "Pending Attack resolution requires a printed or repeated invocation context.",
+                    nameof(invocationContext));
             }
 
             if (phase == AttackResolutionPhase.ChooseTarget)

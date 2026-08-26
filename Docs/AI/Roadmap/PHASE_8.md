@@ -528,7 +528,7 @@ Non-goals: No networking, hidden per-player devices, AI, matchmaking, or balance
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825-replace-the-staged-1v1-setup-with-the-official-six-player-quick-game-configuration-completion-evidence).
 
-### [ ] 8.25a Answer an after-action repeat that outlives its actor's Initiative
+### [x] 8.25a Answer an after-action repeat that outlives its actor's Initiative
 
 Proposed by milestone 8.25's independent review, which found it with an offline `DeterministicMatchLoop` run rather than in an active suite. It is a rules/timing correction to milestone 8.23's after-action repeat, is reachable on a board that shipped at 8.23, and 8.25's own acceptance checks name no match loop, so it is scheduled separately rather than folded in.
 
@@ -542,6 +542,8 @@ Acceptance checks:
 - Snapshot restore, replay and retained-prefix Undo reproduce the corrected sequence; the compatibility corpus records whether the schema moved.
 
 Non-goals: No change to which abilities may repeat, to rulebook p.10's repeat rule, or to Initiative order. No six-hero match-loop gate, which milestone 8.27 owns.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825a-answer-an-after-action-repeat-that-outlives-its-actors-initiative-completion-evidence).
 
 ### [ ] 8.25b Name the configuration types after what they now compose
 

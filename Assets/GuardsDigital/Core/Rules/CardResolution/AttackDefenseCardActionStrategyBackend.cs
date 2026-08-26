@@ -2423,7 +2423,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     candidate.Value.SourceCardInstanceId.Equals(resolution.SourceCardInstanceId) &&
                     candidate.Value.SourceDefinitionReference.Equals(resolution.SourceDefinitionReference) &&
                     candidate.Value.ActionDefinitionId.Equals(resolution.ActionDefinitionId) &&
-                    candidate.Value.InvocationContext == resolution.InvocationContext);
+                    // Milestone 8.25a. A repeated instance is offered under the context its card
+                    // prints, because the card prints one action and the repeat is that action again.
+                    // The action definition is what identifies it here; the context on the resolution
+                    // says which instance this is, which is a fact about the resolution rather than
+                    // about the offer, so it is not what the offer is looked up by.
+                    (resolution.InvocationContext == ActionInvocationContext.Repeated ||
+                        candidate.Value.InvocationContext == resolution.InvocationContext));
         }
 
         private static bool AttackTargetChoicesMatch(

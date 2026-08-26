@@ -2081,7 +2081,8 @@ namespace GuardsDigital.Core.Cards
             {
                 return RoundResolutionResult.Reject(
                     RoundResolutionRejectionReason.TurnCommandRejected,
-                    turnReason: result.RejectionReason);
+                    turnReason: result.RejectionReason,
+                    cardActionReason: result.CardActionRejectionReason);
             }
 
             var events = result.Events

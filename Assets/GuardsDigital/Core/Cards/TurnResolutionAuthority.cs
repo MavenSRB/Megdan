@@ -383,10 +383,12 @@ namespace GuardsDigital.Core.Cards
         private TurnResolutionResult(
             bool accepted,
             TurnResolutionRejectionReason rejectionReason,
+            CardActionResolutionRejectionReason cardActionRejectionReason,
             IEnumerable<TurnResolutionEvent> events)
         {
             Accepted = accepted;
             RejectionReason = rejectionReason;
+            CardActionRejectionReason = cardActionRejectionReason;
             Events = Array.AsReadOnly((events ?? throw new ArgumentNullException(nameof(events))).ToArray());
         }
 
@@ -394,21 +396,45 @@ namespace GuardsDigital.Core.Cards
 
         public TurnResolutionRejectionReason RejectionReason { get; }
 
+        /// <summary>
+        /// Milestone 8.25a. The reason the card-action backend itself gave, when the refusal came from
+        /// one, and <see cref="CardActionResolutionRejectionReason.None"/> otherwise.
+        ///
+        /// <para>This authority mapped every backend refusal onto one of its own command reasons and
+        /// dropped what the backend had said, so a refused Movement arrived as
+        /// <c>MovementCommandRejected</c> with nothing about why. Diagnosing the stall milestone 8.25a
+        /// closes took retrying all sixteen offered destinations one at a time to learn that the
+        /// refusal was about the resolution rather than about any destination - which the backend had
+        /// already said, in a value this struct threw away.</para>
+        /// </summary>
+        public CardActionResolutionRejectionReason CardActionRejectionReason { get; }
+
         public IReadOnlyList<TurnResolutionEvent> Events { get; }
 
         public static TurnResolutionResult Accept(IEnumerable<TurnResolutionEvent> events)
         {
-            return new TurnResolutionResult(true, TurnResolutionRejectionReason.None, events);
+            return new TurnResolutionResult(
+                true,
+                TurnResolutionRejectionReason.None,
+                CardActionResolutionRejectionReason.None,
+                events);
         }
 
-        public static TurnResolutionResult Reject(TurnResolutionRejectionReason reason)
+        public static TurnResolutionResult Reject(TurnResolutionRejectionReason reason) =>
+            Reject(reason, CardActionResolutionRejectionReason.None);
+
+        /// <summary>Milestone 8.25a: the same refusal, still carrying the backend's own reason.</summary>
+        public static TurnResolutionResult Reject(
+            TurnResolutionRejectionReason reason,
+            CardActionResolutionRejectionReason cardActionRejectionReason)
         {
             if (reason == TurnResolutionRejectionReason.None)
             {
                 throw new ArgumentException("A rejected turn command requires a reason.", nameof(reason));
             }
 
-            return new TurnResolutionResult(false, reason, Array.Empty<TurnResolutionEvent>());
+            return new TurnResolutionResult(
+                false, reason, cardActionRejectionReason, Array.Empty<TurnResolutionEvent>());
         }
     }
 
@@ -1051,7 +1077,8 @@ namespace GuardsDigital.Core.Cards
                 instances,
                 CurrentModifications());
             if (!result.Accepted)
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementActionRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.MovementActionRejected, result.RejectionReason);
             events.AddRange(MaterializeSteps(result.Steps, TurnResolutionEvent.FromCardAction));
             return TurnResolutionResult.Accept(events);
         }
@@ -1069,7 +1096,7 @@ namespace GuardsDigital.Core.Cards
             if (!work.Accepted)
             {
                 return TurnResolutionResult.Reject(
-                    TurnResolutionRejectionReason.MovementActionRejected);
+                    TurnResolutionRejectionReason.MovementActionRejected, work.RejectionReason);
             }
 
             events.AddRange(MaterializeSteps(work.Steps, TurnResolutionEvent.FromCardAction));
@@ -1120,7 +1147,8 @@ namespace GuardsDigital.Core.Cards
             var result = cardActions.AnswerMovementChoice(command, CurrentModifications());
             if (!result.Accepted)
             {
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementCommandRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.MovementCommandRejected, result.RejectionReason);
             }
 
             var events = MaterializeSteps(result.Steps, TurnResolutionEvent.FromCardAction);
@@ -1174,6 +1202,122 @@ namespace GuardsDigital.Core.Cards
             return repeated.IsComplete ? (TurnResolutionResult?)null : TurnResolutionResult.Accept(events);
         }
 
+        /// <summary>
+        /// Milestone 8.25a. Whether the action that has just finished is being held open by an ability
+        /// that may still ask to repeat it, and so must not resolve its card or hand Initiative on yet.
+        ///
+        /// <para>Rulebook p.10 makes each instance of a repeat a separate action performed on the same
+        /// card by the same hero, and this build already honoured that for an ability that asked
+        /// nothing: the second instance starts in <see cref="TryStartOwedAfterActionRepeat"/>, before
+        /// the card resolves and before the advance. An ability that asks - "you <em>may</em> repeat it
+        /// once" - is answered in a later command, and until milestone 8.25a the turn resolved the card
+        /// and acknowledged Initiative before that answer arrived, withholding only the advance. The
+        /// repeat the answer then owed had no actor selected and no unresolved card to run on, and was
+        /// picked up instead by whichever action completed next, in whoever's turn that was. Holding
+        /// the action makes the deferred case the same case as the immediate one.</para>
+        ///
+        /// <para>The subject is held for any decision standing at the checkpoint, not only for one
+        /// printed by an ability that mentions repeats, because which of the two it is cannot be known
+        /// until it has been answered. That is the honest line: the action is not over while something
+        /// may still repeat it.</para>
+        /// </summary>
+        private TurnResolutionResult? HoldTheActionForTheAbilityThatMayRepeatIt(
+            List<TurnResolutionEvent> events) =>
+            cardActions?.AfterActionRepeatSubject != null
+                ? (TurnResolutionResult?)TurnResolutionResult.Accept(events)
+                : null;
+
+        /// <summary>
+        /// Milestone 8.25a. What the turn does once a command has finished a standing trigger: the two
+        /// commands that can finish one - the effect choice and milestone 8.21's removal prevention -
+        /// now do the same thing with the answer, because the answer means the same thing to both.
+        /// </summary>
+        /// <param name="heldAction">
+        /// The subject that was held when the answer arrived, or <c>null</c>. Non-null says the turn is
+        /// holding an action open across this decision, so this is where that action finishes.
+        /// </param>
+        private TurnResolutionResult FinishTriggerAnswer(
+            GuardsDigital.Core.Rules.CardResolution.PendingAfterActionRepeat heldAction,
+            List<TurnResolutionEvent> triggerEvents)
+        {
+            // The ability asked something else before it finished. The action stays held, whatever it
+            // decides in the end.
+            if (cardActions.IsPendingTriggeredEffect)
+            {
+                return TurnResolutionResult.Accept(triggerEvents);
+            }
+
+            // Milestone 8.25a. The answer is where "you may repeat it once" becomes an instance, so it
+            // is where that instance starts - inside the same command, while the hero it belongs to is
+            // still the one Initiative selected and their card is still unresolved. An instance that
+            // opens a question of its own leaves the turn exactly where the first one left it.
+            var repeated = TryStartOwedAfterActionRepeat(triggerEvents);
+            if (repeated.HasValue)
+            {
+                return repeated.Value;
+            }
+
+            if (heldAction != null)
+            {
+                return CompleteHeldActionAfterItsTrigger(triggerEvents);
+            }
+
+            // Milestone 8.21, unchanged, for every trigger this turn is not holding an action for.
+            // Initiative may already have moved on, and an advance is owed only when nobody is
+            // selected: advancing a second time is an Initiative command against an actor whose own
+            // card is unresolved, which is refused *after* the answer has already taken its payment,
+            // and the aggregate reports that as an atomicity violation and rolls the whole answer back
+            // - a decision a player could be shown and could never answer.
+            return initiative.SelectedActor.IsDefined
+                ? TurnResolutionResult.Accept(triggerEvents)
+                : AdvanceInitiative(triggerEvents);
+        }
+
+        /// <summary>
+        /// Milestone 8.25a. Finishes the action the turn held open across its ability's decision, now
+        /// that the decision is answered and asked for no repeat - or asked for one that has already
+        /// run to its end inside this command.
+        /// </summary>
+        private TurnResolutionResult CompleteHeldActionAfterItsTrigger(
+            List<TurnResolutionEvent> events)
+        {
+            // A composition that resolved its card before the trigger ran holds nothing to finish:
+            // p.12's Hold and p.11's Fast Travel both resolve theirs on the way in, so their
+            // after-action decision stands over an acknowledged Initiative exactly as it always did.
+            if (!initiative.SelectedActor.IsDefined)
+            {
+                return AdvanceInitiative(events);
+            }
+
+            var card = instances.SingleOrDefault(candidate =>
+                candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
+            if (card == null || card.State.ResolutionStatus != CardResolutionStatus.Unresolved)
+            {
+                return TurnResolutionResult.Accept(events);
+            }
+
+            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+            {
+                throw new InvalidOperationException(
+                    "An action held for the ability that may repeat it could not resolve its " +
+                    "prevalidated source card.");
+            }
+
+            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
+            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
+                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            if (!acknowledgement.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A card resolved after the ability that may repeat its action could not be " +
+                    "acknowledged by Initiative authority.");
+            }
+
+            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
+            return AdvanceInitiative(events);
+        }
+
         private TurnResolutionResult CompleteMovementAndAdvance(
             CardInstance card,
             List<TurnResolutionEvent> events)
@@ -1182,6 +1326,12 @@ namespace GuardsDigital.Core.Cards
             if (repeated.HasValue)
             {
                 return repeated.Value;
+            }
+
+            var held = HoldTheActionForTheAbilityThatMayRepeatIt(events);
+            if (held.HasValue)
+            {
+                return held.Value;
             }
 
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
@@ -1250,7 +1400,8 @@ namespace GuardsDigital.Core.Cards
                 CurrentModifications());
             if (!result.Accepted || !result.IsComplete)
             {
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.FastTravelActionRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.FastTravelActionRejected, result.RejectionReason);
             }
 
             var card = instances.Single(candidate =>
@@ -1334,7 +1485,8 @@ namespace GuardsDigital.Core.Cards
                 CurrentModifications());
             if (!result.Accepted || !result.IsComplete)
             {
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ClearActionRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.ClearActionRejected, result.RejectionReason);
             }
 
             var card = instances.Single(candidate =>
@@ -1415,7 +1567,8 @@ namespace GuardsDigital.Core.Cards
                 resolutionId, offer, definitions, instances, participants, timing,
                 CurrentModifications(), TieBreakerState, roundIndex, turnIndex);
             if (!skillResult.Accepted)
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillActionRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.SkillActionRejected, skillResult.RejectionReason);
             return CompleteSkillStep(skillResult);
         }
 
@@ -1569,6 +1722,8 @@ namespace GuardsDigital.Core.Cards
 
             if (cardActions?.IsPendingTriggeredEffect == true)
             {
+                // Milestone 8.25a. Read before the answer, because answering is what settles it.
+                var heldAction = cardActions.AfterActionRepeatSubject;
                 var answeredTrigger = cardActions.AnswerTriggeredEffectChoice(
                     command, definitions, instances, participants, timing, CurrentModifications(),
                     roundIndex, turnIndex);
@@ -1577,16 +1732,7 @@ namespace GuardsDigital.Core.Cards
                 var triggerEvents = MaterializeSteps(
                     cardActions.ConsumeTriggeredResolutionSteps(),
                     TurnResolutionEvent.FromTriggeredEffect);
-                // Milestone 8.23. The same guard milestone 8.21 put on the removal-prevention answer,
-                // on the other command that finishes a trigger of this shape. Tigerclaw's Cloak and
-                // Daggers fires AFTER a basic action has ended - p.10's Repeat reached from outside
-                // the action it repeats - so the actor's card is already resolved and the next actor
-                // already selected while its decision stands. Advancing a second time is refused, and
-                // the aggregate reports the refusal as an atomicity violation and rolls the whole
-                // answer back: the decision was drawn, and NEITHER answer to it could be given.
-                return cardActions.IsPendingTriggeredEffect || initiative.SelectedActor.IsDefined
-                    ? TurnResolutionResult.Accept(triggerEvents)
-                    : AdvanceInitiative(triggerEvents);
+                return FinishTriggerAnswer(heldAction, triggerEvents);
             }
 
             if (cardActions?.PendingSkillResolution == null || !initiative.SelectedActor.IsDefined)
@@ -1614,7 +1760,8 @@ namespace GuardsDigital.Core.Cards
                 command, definitions, instances, participants, timing, CurrentModifications(),
                 TieBreakerState, roundIndex, turnIndex);
             if (!answered.Accepted)
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.SkillCommandRejected, answered.RejectionReason);
             return CompleteSkillStep(answered);
         }
 
@@ -1648,7 +1795,8 @@ namespace GuardsDigital.Core.Cards
                 TieBreakerState, roundIndex, turnIndex);
             if (!answered.Accepted)
             {
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.AttackCommandRejected, answered.RejectionReason);
             }
 
             var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromAttackAction);
@@ -1727,7 +1875,8 @@ namespace GuardsDigital.Core.Cards
                 roundIndex, turnIndex);
             if (!answered.Accepted)
             {
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.SkillCommandRejected, answered.RejectionReason);
             }
 
             var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromTriggeredEffect);
@@ -1800,6 +1949,9 @@ namespace GuardsDigital.Core.Cards
             }
 
             var origin = standing.Origin;
+            // Milestone 8.25a. Read before the answer, for the reason the effect-choice answer reads it
+            // before its own: this is the other command that can finish the trigger holding it.
+            var heldByThePrevention = cardActions.AfterActionRepeatSubject;
             var answered = cardActions.AnswerRemovalPrevention(
                 command,
                 new GuardsDigital.Core.Rules.CardResolution.ActionBoundaryContext(
@@ -1808,7 +1960,8 @@ namespace GuardsDigital.Core.Cards
                 CurrentModifications());
             if (!answered.Accepted)
             {
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.AttackCommandRejected, answered.RejectionReason);
             }
 
             if (origin ==
@@ -1818,24 +1971,12 @@ namespace GuardsDigital.Core.Cards
                 var triggerEvents = MaterializeSteps(
                     cardActions.ConsumeTriggeredResolutionSteps(),
                     TurnResolutionEvent.FromTriggeredEffect);
-                if (cardActions.IsPendingTriggeredEffect)
-                {
-                    return TurnResolutionResult.Accept(triggerEvents);
-                }
 
-                // Milestone 8.21. Initiative may already have moved on. A trigger of this shape runs
-                // after its own action has ended, so the actor's card was resolved and acknowledged and
-                // the next actor selected while this decision still stood - and an Initiative advance
-                // is owed only when nobody is selected. Advancing a second time is an Initiative
-                // command against an actor whose own card is unresolved, which is refused *after* this
-                // method has already taken the payment and kept the miniature; the aggregate reports
-                // that as an atomicity violation and rolls the whole answer back, which left a decision
-                // a player could be shown and could never answer. Milestone 8.19c1 could not have found
-                // it: no configured content reached this altitude until Brogan's Fortify met an enemy
-                // Ultimate that defeats a minion by effect.
-                return initiative.SelectedActor.IsDefined
-                    ? TurnResolutionResult.Accept(triggerEvents)
-                    : AdvanceInitiative(triggerEvents);
+                // Milestone 8.25a. The prevention answer is the other command that can finish an
+                // after-action trigger, and the only one that never settled the repeat it may have
+                // asked for. Settling here is a no-op while the frame is still standing.
+                cardActions.SettleStandingAfterActionRepeat();
+                return FinishTriggerAnswer(heldByThePrevention, triggerEvents);
             }
 
             var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromAttackAction);
@@ -1867,7 +2008,8 @@ namespace GuardsDigital.Core.Cards
                     roundIndex, turnIndex));
             if (!answered.Accepted)
             {
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.SkillCommandRejected, answered.RejectionReason);
             }
 
             var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromTriggeredEffect);
@@ -1983,7 +2125,8 @@ namespace GuardsDigital.Core.Cards
                     definitions, instances, participants, timing, TieBreakerState,
                     roundIndex, turnIndex));
             if (!answered.Accepted)
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CorrectionCommandRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.CorrectionCommandRejected, answered.RejectionReason);
             return CompleteSkillStep(answered);
         }
 
@@ -2003,6 +2146,12 @@ namespace GuardsDigital.Core.Cards
             if (repeatedInstance.HasValue)
             {
                 return repeatedInstance.Value;
+            }
+
+            var heldSkill = HoldTheActionForTheAbilityThatMayRepeatIt(events);
+            if (heldSkill.HasValue)
+            {
+                return heldSkill.Value;
             }
 
             var card = instances.Single(candidate =>
@@ -2095,7 +2244,8 @@ namespace GuardsDigital.Core.Cards
                 participants,
                 CurrentModifications());
             if (!result.Accepted)
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackActionRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.AttackActionRejected, result.RejectionReason);
             var events = precedingEvents ?? new List<TurnResolutionEvent>();
             events.AddRange(MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction));
 
@@ -2143,7 +2293,8 @@ namespace GuardsDigital.Core.Cards
                 CurrentModifications(), roundIndex, turnIndex);
             if (!started.Accepted)
             {
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.SkillCommandRejected, started.RejectionReason);
             }
 
             events.AddRange(MaterializeSteps(started.Steps, TurnResolutionEvent.FromTriggeredEffect));
@@ -2172,7 +2323,8 @@ namespace GuardsDigital.Core.Cards
                 participants,
                 CurrentModifications());
             if (!result.Accepted)
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.AttackCommandRejected, result.RejectionReason);
             var targetEvents = MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction);
             return result.MinionDefeat != null && !cardActions.IsCardTextPageStopped
                 ? CompleteAttackOrStartItsRepeat(targetEvents)
@@ -2200,7 +2352,8 @@ namespace GuardsDigital.Core.Cards
                 CurrentModifications());
             if (!response.Accepted)
             {
-                return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.AttackCommandRejected, response.RejectionReason);
             }
 
             // The result-comparison checkpoint is emitted by the Defense resolver itself, as the last
@@ -2259,6 +2412,12 @@ namespace GuardsDigital.Core.Cards
             if (repeatedInstance.HasValue)
             {
                 return repeatedInstance.Value;
+            }
+
+            var heldAttack = HoldTheActionForTheAbilityThatMayRepeatIt(events);
+            if (heldAttack.HasValue)
+            {
+                return heldAttack.Value;
             }
 
             var card = instances.Single(candidate =>

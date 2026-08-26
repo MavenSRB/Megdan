@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.CardResolution;
 
 namespace GuardsDigital.Application
 {
@@ -32,6 +33,7 @@ namespace GuardsDigital.Application
             RoundResolutionRejectionReason roundRejectionReason,
             TurnCardCommitmentRejectionReason commitmentRejectionReason,
             TurnResolutionRejectionReason turnRejectionReason,
+            CardActionResolutionRejectionReason cardActionRejectionReason,
             IReadOnlyList<RoundResolutionEvent> events,
             MatchSessionProjection projection)
         {
@@ -42,6 +44,7 @@ namespace GuardsDigital.Application
             RoundRejectionReason = roundRejectionReason;
             CommitmentRejectionReason = commitmentRejectionReason;
             TurnRejectionReason = turnRejectionReason;
+            CardActionRejectionReason = cardActionRejectionReason;
             Events = events;
             Projection = projection;
         }
@@ -53,6 +56,18 @@ namespace GuardsDigital.Application
         public RoundResolutionRejectionReason RoundRejectionReason { get; }
         public TurnCardCommitmentRejectionReason CommitmentRejectionReason { get; }
         public TurnResolutionRejectionReason TurnRejectionReason { get; }
+
+        /// <summary>
+        /// Milestone 8.25a. The reason the card-action backend gave for a refused Movement, Skill,
+        /// Attack or correction command, and <c>None</c> for every refusal that did not come from one.
+        ///
+        /// <para>The three <see cref="TurnResolutionRejectionReason"/> command members say which
+        /// command the rules refused; this says what they said about it. Diagnosing that milestone's
+        /// stall took retrying all sixteen offered destinations one at a time, because the answer -
+        /// that the refusal was about the resolution and not about any destination - was thrown away
+        /// one layer below this one.</para>
+        /// </summary>
+        public CardActionResolutionRejectionReason CardActionRejectionReason { get; }
         public IReadOnlyList<RoundResolutionEvent> Events { get; }
         public MatchSessionProjection Projection { get; }
     }

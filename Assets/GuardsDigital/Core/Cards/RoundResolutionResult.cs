@@ -112,12 +112,14 @@ namespace GuardsDigital.Core.Cards
             RoundResolutionRejectionReason rejectionReason,
             TurnCardCommitmentRejectionReason commitmentRejectionReason,
             TurnResolutionRejectionReason turnRejectionReason,
+            CardActionResolutionRejectionReason cardActionRejectionReason,
             IEnumerable<RoundResolutionEvent> events)
         {
             Accepted = accepted;
             RejectionReason = rejectionReason;
             CommitmentRejectionReason = commitmentRejectionReason;
             TurnRejectionReason = turnRejectionReason;
+            CardActionRejectionReason = cardActionRejectionReason;
             Events = Array.AsReadOnly((events ?? throw new ArgumentNullException(nameof(events))).ToArray());
         }
 
@@ -129,6 +131,13 @@ namespace GuardsDigital.Core.Cards
 
         public TurnResolutionRejectionReason TurnRejectionReason { get; }
 
+        /// <summary>
+        /// Milestone 8.25a. The card-action backend's own reason, carried the rest of the way out for
+        /// the reason it is carried at all: the turn's three command reasons say which command was
+        /// refused and nothing about why.
+        /// </summary>
+        public CardActionResolutionRejectionReason CardActionRejectionReason { get; }
+
         public IReadOnlyList<RoundResolutionEvent> Events { get; }
 
         public static RoundResolutionResult Accept(IEnumerable<RoundResolutionEvent> events)
@@ -138,13 +147,16 @@ namespace GuardsDigital.Core.Cards
                 RoundResolutionRejectionReason.None,
                 TurnCardCommitmentRejectionReason.None,
                 TurnResolutionRejectionReason.None,
+                CardActionResolutionRejectionReason.None,
                 events);
         }
 
         public static RoundResolutionResult Reject(
             RoundResolutionRejectionReason reason,
             TurnCardCommitmentRejectionReason commitmentReason = TurnCardCommitmentRejectionReason.None,
-            TurnResolutionRejectionReason turnReason = TurnResolutionRejectionReason.None)
+            TurnResolutionRejectionReason turnReason = TurnResolutionRejectionReason.None,
+            CardActionResolutionRejectionReason cardActionReason =
+                CardActionResolutionRejectionReason.None)
         {
             if (reason == RoundResolutionRejectionReason.None)
             {
@@ -156,6 +168,7 @@ namespace GuardsDigital.Core.Cards
                 reason,
                 commitmentReason,
                 turnReason,
+                cardActionReason,
                 Array.Empty<RoundResolutionEvent>());
         }
     }

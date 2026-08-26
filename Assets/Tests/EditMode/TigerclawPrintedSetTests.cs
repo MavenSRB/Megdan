@@ -576,10 +576,14 @@ namespace GuardsDigital.Tests.EditMode
         /// Brogan's removal-prevention prompt and guarded that command; this is the other command that
         /// finishes a trigger of this shape.</para>
         ///
-        /// <para>What the repeat then does is not this case's subject. Blink Strike's own line names
-        /// the unit it crossed and the card forbids repeating onto the same one, so a board with one
-        /// crossable enemy leaves the repeated Attack nothing to take - which milestone 8.23's
-        /// `RepeatIsUnavailable` skips in silence rather than stopping on.</para>
+        /// <para><b>Milestone 8.25a states what each answer then does</b>, which this case could not:
+        /// until that milestone, taking the repeat owed an instance nothing started, so both answers
+        /// looked alike from here and the assertion below could only say that the decision closed.
+        /// Declining ends the action and hands Initiative on; taking it starts the second instance
+        /// there and then, on the same card, under the same hero, with his card still unresolved -
+        /// which is the position rulebook p.10 describes. Blink Strike's own line then names a unit
+        /// again, under the exclusion the card prints, so what stands after a taken repeat is that
+        /// line rather than nothing.</para>
         /// </summary>
         [Test]
         public void CloakAndDaggers_OffersItsRepeatAfterABasicAction_AndBothAnswersAreAccepted()
@@ -604,18 +608,40 @@ namespace GuardsDigital.Tests.EditMode
                     "\"you may repeat it once\" - p.17's `you may` is an offer, so the decline is an " +
                     "answer a player has to be able to give by name.");
 
+                // Milestone 8.25a. The decision stands inside his own action, so he is still the hero
+                // Initiative has selected and the card he took the action on is still unresolved.
+                // Before that milestone both had already been given up, which is why the instance the
+                // answer owed had nothing to run on.
+                Assert.That(fixture.Session.Projection.SelectedActor.ActorId, Is.EqualTo(fixture.Hero),
+                    "The ability asks about his own action, so it asks while it is still his turn.");
+
                 if (takeIt)
                 {
                     fixture.Confirm();
+
+                    Assert.That(fixture.Choice, Is.Not.Null,
+                        "Taking the repeat starts the second instance rather than owing one: p.10's " +
+                        "repeated action is that action performed again, and Blink Strike's line is " +
+                        "the first thing it asks.");
+                    Assert.That(fixture.Choice.NodeId.Value, Is.EqualTo("blink-line"));
+                    Assert.That(fixture.Choice.ChooserId, Is.EqualTo(fixture.Hero),
+                        "and it is his question, asked while Initiative still has him selected - " +
+                        "which is what makes it answerable at all.");
+                    Assert.That(
+                        fixture.Session.Projection.SelectedActor.ActorId, Is.EqualTo(fixture.Hero));
                 }
                 else
                 {
                     fixture.Decline();
-                }
 
-                Assert.That(fixture.Choice, Is.Null,
-                    (takeIt ? "Taking" : "Declining") + " the repeat closes the decision rather than " +
-                    "being rolled back under it.");
+                    Assert.That(fixture.Choice, Is.Null,
+                        "Declining closes the decision rather than being rolled back under it, and " +
+                        "the action it was about is over.");
+                    Assert.That(fixture.Session.Projection.SelectedActor.ActorId,
+                        Is.Not.EqualTo(fixture.Hero),
+                        "so the turn goes on in Initiative order, which it could not do while the " +
+                        "ability was still standing.");
+                }
             }
         }
         // -----------------------------------------------------------------------------------------

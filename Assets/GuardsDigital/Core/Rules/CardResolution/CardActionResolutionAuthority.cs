@@ -493,6 +493,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <summary>The subject a standing after-action ability may still ask to repeat, or null.</summary>
         public PendingAfterActionRepeat AfterActionRepeatSubject => repeatSubject;
 
+        /// <summary>
+        /// Milestone 8.25a. Settles the held subject from wherever the trigger frame it belongs to
+        /// finished, rather than only from the effect choice that is the commonest way to finish one.
+        ///
+        /// <para>The subject exists for exactly as long as the ability that may repeat the action is
+        /// standing, and milestone 8.21's removal-prevention answer is the other command that can
+        /// finish such an ability: a triggered effect that asked for a Defeat stops at p.19's
+        /// prevention offer and completes when it is answered. Left unsettled there, the subject
+        /// outlives its trigger - and, now that the turn holds its card while one is held, would hold
+        /// that card forever. It is a no-op while the frame is still standing, which is what makes it
+        /// safe to call at any boundary that might have finished one.</para>
+        /// </summary>
+        public void SettleStandingAfterActionRepeat() =>
+            SettleAfterActionRepeat(triggeredEffects.LastRepeatRequested);
+
         internal EffectResolutionStepResult AnswerTriggeredEffectChoice(
             EffectChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
