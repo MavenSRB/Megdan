@@ -276,8 +276,9 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(
-                Primary(XargathaCardContent.Definition(XargathaCardContent.Cleave)).AttackTargetPolicy,
-                Is.Null,
+                Primary(XargathaCardContent.Definition(XargathaCardContent.Cleave))
+                    .AttackTargetPolicy.Value.TargetableUnits,
+                Is.EqualTo(AttackTargetableUnits.HeroesAndMinions),
                 "Cleave's printed instance targets \"a unit\", which is p.13's own word - the " +
                 "narrowing to heroes is on the repeat, which is why its parenthesis can say the " +
                 "first target may have been a minion.");

@@ -229,7 +229,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// completes by stopping rather than by asking. That is the difference this pair draws against
         /// every "you may" in her set.</para>
         /// </summary>
-        internal static class ConstrictTriggeredEffect
+        public static class ConstrictTriggeredEffect
         {
             public static EffectDefinition Definition { get; } =
                 EndOfRoundDefeat("xargatha-constrict-defeat", RosterMinionClass.Melee);
@@ -238,7 +238,7 @@ namespace GuardsDigital.Core.Cards.Verified
         }
 
         /// <summary>What Final Embrace runs at the same moment, admitting ranged minions as well.</summary>
-        internal static class FinalEmbraceTriggeredEffect
+        public static class FinalEmbraceTriggeredEffect
         {
             public static EffectDefinition Definition { get; } =
                 EndOfRoundDefeat("xargatha-final-embrace-defeat", RosterMinionClass.RangedOrMelee);

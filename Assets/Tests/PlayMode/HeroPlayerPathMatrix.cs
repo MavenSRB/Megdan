@@ -81,6 +81,19 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>p.11's default moment for a Movement card's own text, before the walk.</summary>
         BeforeMovementTextPause,
 
+        /// <summary>
+        /// Milestone 8.24. The player choosing which side of their own primary action the card's text
+        /// runs on - Xargatha's Charm, Control and Dominate, "before or after movement".
+        ///
+        /// <para>It is a separate shape from <see cref="BeforeMovementTextPause"/> rather than a
+        /// variant of it, because the two are different things happening to the player. That one is a
+        /// moment the page picks and the text simply arrives at; this is a question with two answers
+        /// and no way to decline, and answering it differently changes the board. p.11 draws the line
+        /// itself: the text comes into effect before movement "unless it says otherwise", and these
+        /// three faces are the first verified content to say otherwise.</para>
+        /// </summary>
+        ActionTextPlacementChoice,
+
         /// <summary>Card text that reaches the table only because the card was discarded to defend.</summary>
         DefenseTextApplication,
 
@@ -532,6 +545,13 @@ namespace GuardsDigital.Tests.PlayMode
                 // A presence question about the board, answered by the rules rather than by anybody.
                 ["adjacent-terrain-presence"] = Array.Empty<PlayerInteractionShape>(),
 
+                // Milestone 8.24. Where the card's own text runs relative to the primary action it
+                // encloses - Xargatha's three Green Movements, "before or after movement". It is one
+                // decision with two answers and no decline, so it contributes its own shape rather
+                // than the confirm-or-decline every optional step already carries.
+                ["around-primary-action"] =
+                    new[] { PlayerInteractionShape.ActionTextPlacementChoice },
+
                 // p.15's coins, moved by the amount its own numeric controls offer. Who they come
                 // from is a separate selection node's board click, so this contributes the number
                 // alone.
@@ -693,7 +713,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             foreach (var node in action.EffectRoot.Nodes)
             {
-                AddNodeShapes(node, shapes);
+                AddNodeShapes(node, action.EffectRoot, shapes);
             }
         }
 
@@ -716,11 +736,40 @@ namespace GuardsDigital.Tests.PlayMode
 
             foreach (var node in effect.Nodes)
             {
-                AddNodeShapes(node, shapes);
+                AddNodeShapes(node, effect, shapes);
             }
         }
 
-        private void AddNodeShapes(EffectNodeDefinition node, ISet<PlayerInteractionShape> shapes)
+        /// <summary>
+        /// Whether a Choose node's branches are the two sides of the primary action it encloses, which
+        /// is Xargatha's "before or after movement" and not rulebook p.10's modal form.
+        ///
+        /// <para>It is read off the branches rather than off the card, so it says what it means: a
+        /// Choose between placements is a placement decision whoever prints it, and a Choose between
+        /// anything else is p.10's modal whoever prints it. Milestone 8.24.</para>
+        /// </summary>
+        private static bool ChoosesAnActionTextPlacement(
+            EffectNodeDefinition node, EffectDefinition definition)
+        {
+            if (node.ChildNodeIds.Count == 0)
+            {
+                return false;
+            }
+
+            return node.ChildNodeIds.All(childId =>
+                definition.Nodes.Any(child =>
+                    child.Id.Equals(childId) &&
+                    child.Capability.IsDefined &&
+                    string.Equals(
+                        child.Capability.CapabilityId.Value,
+                        "around-primary-action",
+                        StringComparison.Ordinal)));
+        }
+
+        private void AddNodeShapes(
+            EffectNodeDefinition node,
+            EffectDefinition definition,
+            ISet<PlayerInteractionShape> shapes)
         {
             // "may" and "up to" are the two printed words that open a decision; `if able` and a
             // mandatory step do not, which is the distinction EffectFailurePolicy exists to keep.
@@ -740,7 +789,15 @@ namespace GuardsDigital.Tests.PlayMode
             // to use it, and picking a bullet is not any of the shapes above - it is neither a
             // confirm-or-decline nor a piece on the board, and the two bullets go on to ask different
             // questions of the player who chose one.
-            if (node.Kind == EffectNodeKind.Choose)
+            //
+            // Milestone 8.24 narrows it by what the branches ARE, not by which card carries them.
+            // Xargatha's three Green Movements choose between two `around-primary-action` placements -
+            // "before or after movement" - and that is not p.10's modal form: no bullet is printed, no
+            // sentence is ignored, and the same text runs either way. Classifying it as a modal would
+            // put a second control on the row beside `ActionTextPlacementChoice` when the player is
+            // shown one, which is the correction milestone 8.20b made for a push distance. A Choose
+            // whose branches are anything else is unchanged, so every Brogan row stays byte-identical.
+            if (node.Kind == EffectNodeKind.Choose && !ChoosesAnActionTextPlacement(node, definition))
             {
                 shapes.Add(PlayerInteractionShape.ModalBulletChoice);
             }

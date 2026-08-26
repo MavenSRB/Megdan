@@ -995,23 +995,48 @@ namespace GuardsDigital.Tests.EditMode
         // accepting a shorter list would let a restored match resolve against contracts its own capture
         // never had, and absence of the actor space would report a paused Combat Reflexes as not having
         // moved whether or not he had.
+        //
+        // Milestone 8.24 moves it to v34, and this one is the pinned list ALONE - the third time that
+        // list has moved the version, and the first move since 8.21 with no field beside it. Xargatha's
+        // five persistent texts are five capability contracts no v33 payload names: her three
+        // petrification disks (`xargatha-stone-gaze`, `xargatha-petrifying-stare`,
+        // `xargatha-turn-into-statues`) and the two end-of-round sources her Green Skills leave
+        // standing (`xargatha-constrict`, `xargatha-final-embrace`).
+        //
+        // The measured delta is **+135 bytes on all fifteen**, and it is uniform for the reason 8.22's
+        // list move was: a registration list is not a continuation, so the two payloads holding no
+        // card-action authority carry it exactly like the thirteen that do. The arithmetic is
+        // checkable against the figures the previous entry recorded: the five ids are 19, 25, 26, 18
+        // and 22 UTF-8 bytes, which is 110, plus five one-byte length prefixes and five four-byte
+        // revisions - 110 + 5 + 20 = 135. `ended-match` goes 8716 -> 8851, `verified-hand-setup`
+        // 7328 -> 7463, and `paused-card-text` 8225 -> 8360.
+        //
+        // NOTHING ABOUT HER SET NEEDED A FIELD, which is the part worth recording rather than the
+        // bytes. TECHNICAL_RISKS told itself at 8.22 to expect each remaining roster hero to lengthen
+        // this list and cost a version; what it could not say was whether any of them would also stop
+        // the game somewhere the wire had no room for. She does not. Her Ultimate is a standing
+        // declaration rather than a stopped decision, and the class and target narrowings her Green
+        // line and her two repeats print are re-read from trusted definitions when the question is
+        // asked rather than carried. So the predicted delta is the whole delta, and v33 is rejected
+        // rather than migrated on the single standing ground: accepting a shorter list would let a
+        // restored match resolve a card against contracts its own capture never had.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v34", "d97b578bae524234fa14be02b6afcd3507ab0443cc58584bd0601e1b66190153"),
-            new CompatibilityFixture("active-turn-v34", "a86f6c33a8f43c1b32336ea6922a04576bdf3570a9ae480bfbe01eee38fc81a9"),
-            new CompatibilityFixture("pending-choice-v34", "cfa0bce31c235cccbb8ddf192a479b489a286033e1c6bbca002fda6f321d65a6"),
-            new CompatibilityFixture("end-of-round-v34", "aff0fc093cf9df72ac342479e23a829ee5f80bc76bb3021b3022b69e345219e7"),
-            new CompatibilityFixture("pending-minion-battle-v34", "70441c88c527b0ef39847f0f6df7fcac90bfcabfef2918fa37744f3314c9ebbf"),
-            new CompatibilityFixture("placed-token-v34", "2c495f214f1261dae6eab6b3198c0e997035c100b2d4bc6a07c4bcb04ebf2821"),
-            new CompatibilityFixture("attached-marker-v34", "7e658a7f9dc1cc048291434e3214c59cd763e69cc4895cf9acb2e1f5010710f7"),
-            new CompatibilityFixture("pending-correction-v34", "2d032bf78cbeffc585079cd41e322e8429e854a429d86e5535af2643f93067ff"),
-            new CompatibilityFixture("paused-level-up-v34", "98e5ae97bf03f2e6467ad057c762f698779cae5d032f80e92ab259e54683626a"),
-            new CompatibilityFixture("ended-match-v34", "8082c3dc81f9049ab62f24cc814fb3901ea089b1f66a437b47d2b173d8a1bedc"),
-            new CompatibilityFixture("verified-hand-setup-v34", "1a7228ddd305b5ae3d6417af076c69fae8ae48f1f6be87d2f898c1bf81e7713a"),
-            new CompatibilityFixture("paused-orbit-repeat-v34", "2aab95c1f5fdcdbd9072e314d086f903de76a62553e1d541257589cb03e1fbec"),
-            new CompatibilityFixture("paused-card-text-v34", "456bd03a55a2f6e090059b78326563c7561cc5bdb734053372ad64a6c05de804"),
-            new CompatibilityFixture("paused-block-rider-v34", "91350c102cf91920083915d92d428e094d22a0b9a148ea3a9d25e398168c1b5f"),
-            new CompatibilityFixture("parked-pre-action-v34", "73c3b1d0cae096a8836a463be45c03cb6884889702c796d4ceeca7e1020c466d")
+            new CompatibilityFixture("setup-v34", "ca67434fb04a949da41160039d65eeca762c35cd0c036d7f566919fa664bd478"),
+            new CompatibilityFixture("active-turn-v34", "c4943c8bcde31801dfea043af5021500548a0a4e3f0b898a84968a9200f32e9c"),
+            new CompatibilityFixture("pending-choice-v34", "f4b71ff95bc7e891f427e6be6130ab129fb507c8d351d159c2c10caf2728c1f6"),
+            new CompatibilityFixture("end-of-round-v34", "bd55fb07c5c30374f05d28369cf3134dd77b80092d39599aa93f8654714ec250"),
+            new CompatibilityFixture("pending-minion-battle-v34", "29259edf0a824771da64fdf3877fa0730bb82c52962b62e5133b17af773ca5ed"),
+            new CompatibilityFixture("placed-token-v34", "83af23ddf9ae27bbdd59470ede1632c007462737a2734cdf7c02cecbc439deae"),
+            new CompatibilityFixture("attached-marker-v34", "560c0f2cf9b967e2a90066bba5d7832d86065dfd8eb3751ca5876282b7553575"),
+            new CompatibilityFixture("pending-correction-v34", "b5d6ca6ab1c1b5408c898f7f6f06064b6affc5cd00af137a85b4c37a1be1ad98"),
+            new CompatibilityFixture("paused-level-up-v34", "582293f00a56249006a41b9971d5454b9784c7ac11d8dfbf5270d943e927ffb8"),
+            new CompatibilityFixture("ended-match-v34", "4dc8c854023346c8e0e3fa57b3b98bc294525ae97c26bd25effd43c73737bfa0"),
+            new CompatibilityFixture("verified-hand-setup-v34", "90a8e1952dda4771988beab2709caf758ef39de996f119305c61c3e36ad31685"),
+            new CompatibilityFixture("paused-orbit-repeat-v34", "570d08a1721333bd13f9619359255c38d08b44135472503d28fe91fa3b2cb64b"),
+            new CompatibilityFixture("paused-card-text-v34", "baf25127837ba33743e66690617b52ec8ed932c919e015952dd40d242e4d221a"),
+            new CompatibilityFixture("paused-block-rider-v34", "2313a4b631e3b3dc5263299b166b99c8f885c68484f38687f2544fe5afdc54e3"),
+            new CompatibilityFixture("parked-pre-action-v34", "eac1395e22092205985ebaaf7b62c71b12a7a288a096b8ff1d941684f7024723")
         };
 
         [Test]

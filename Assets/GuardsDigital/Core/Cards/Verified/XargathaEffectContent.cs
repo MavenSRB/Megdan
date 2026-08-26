@@ -431,6 +431,7 @@ namespace GuardsDigital.Core.Cards.Verified
             var root = new EffectNodeId("converts-root");
             var presence = new EffectNodeId("converts-presence");
             var gate = new EffectNodeId("converts-gate");
+            var may = new EffectNodeId("converts-may");
             var retrieve = new EffectNodeId("converts-retrieve");
 
             return new EffectDefinition(
@@ -474,7 +475,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     new EffectNodeDefinition(
                         gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
                         SyntheticEffectCapabilities.IsFlaggedV1,
-                        childNodeIds: new[] { retrieve },
+                        childNodeIds: new[] { may },
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
@@ -484,10 +485,16 @@ namespace GuardsDigital.Core.Cards.Verified
                         {
                             new EffectOutputBinding("value", EffectValueKind.Boolean)
                         }),
+                    // "you may" is the offer, and it is its own node: a Capability node opens no
+                    // decision, so the chooser and the decline live on the Optional above it and the
+                    // retrieve below is an ordinary mandatory step once it has been accepted.
                     new EffectNodeDefinition(
-                        retrieve, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                        may, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        childNodeIds: new[] { retrieve },
+                        chooser: EffectChooserRole.Actor),
+                    new EffectNodeDefinition(
+                        retrieve, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticRosterCapabilities.RetrieveCardV1,
-                        chooser: EffectChooserRole.Actor,
                         inputs: new[]
                         {
                             EffectInputBinding.FromRole(

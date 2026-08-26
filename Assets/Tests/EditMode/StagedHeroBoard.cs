@@ -694,6 +694,42 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
 
         /// <summary>
+        /// Whether one hero is currently forbidden an activity by a live rule source, and whether that
+        /// hero currently counts as an additional effective type. Milestone 8.24, for the petrification
+        /// sentence whose whole content is one of each.
+        ///
+        /// <para>Both read through a restore for the reason <see cref="ValueModifierFor"/> does: the
+        /// sources are round-owned state rather than projection fields, and a restored set is the one
+        /// every rule sees. They are one method because the card is one sentence - a build that ended
+        /// the restriction without ending the overlay, or the other way round, is exactly the failure
+        /// worth catching, and two separate readings taken at two moments could not see it.</para>
+        /// </summary>
+        internal (bool Restricted, bool CountsAsTerrain) PetrificationReadingFor(
+            HeroId heroId, RuleActivity activity)
+        {
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
+                Session.Projection.AuthoritativeSnapshot,
+                Session.Projection.Definitions,
+                new[] { Session.Projection.SelectedMap },
+                Session.Projection.Setup.Minions);
+            var modifications = RuleModificationQuery.Build(
+                null,
+                restored.Board,
+                restored.Participants,
+                restored.Round.TieBreakerState,
+                UltimateUnlockQuery.Derive(Session.Projection.Definitions, restored.Cards),
+                RuleObject.None,
+                null,
+                restored.Round.Markers);
+            var subject = RuleObject.ForHero(heroId);
+            return (
+                modifications.IsRestricted(subject, activity),
+                EffectiveUnitKindQuery.Is(
+                    subject, EffectiveUnitKind.Terrain, modifications));
+        }
+
+        /// <summary>
         /// What one hero's value on a channel is currently modified by, summed over every live source.
         /// Milestone 8.23, for the marker whose whole rule is three of these.
         /// </summary>
@@ -789,6 +825,145 @@ namespace GuardsDigital.Tests.EditMode
         /// reach what rulebook p.8 does at the end of a round. Milestone 8.23a, for the marker whose
         /// whole lifetime ends at "Remove Tokens, Return Markers".
         /// </summary>
+        /// <summary>
+        /// Turns held until the staged hero's own next turn begins - which is what rulebook p.19's
+        /// <c>Next turn:</c> waits for, and the reason crossing the round boundary is the wrong way to
+        /// reach it. Milestone 8.24.
+        ///
+        /// <para>A Next Turn effect becomes applicable at its controller's next <c>TurnStarted</c> and
+        /// is cancelled by p.8's end-of-round card retrieval if that turn never comes. So a fixture
+        /// that ends the round to "advance time" reads the effect's <em>cancellation</em> and calls it
+        /// an absence. This walks the intervening turns instead, holding each one, and stops the
+        /// moment the staged hero is the actor again.</para>
+        /// </summary>
+        internal void HoldUntilHerNextTurn(int budget = 8)
+        {
+            for (var step = 0; step < budget; step++)
+            {
+                if (Session.Projection.Phase != RoundResolutionPhase.ResolvingTurn)
+                {
+                    Assert.Fail(
+                        "The round left its turn phase before the staged hero's next turn began, so " +
+                        "p.19's Next Turn window was never reached.");
+                }
+
+                var actor = Session.Projection.SelectedActor;
+                Assert.That(actor.CardInstanceId.IsDefined, Is.True,
+                    "A turn with no selected actor cannot be held on.");
+                Accept(DirectorCommand.PerformHold(actor.CardInstanceId));
+
+                var next = Session.Projection.SelectedActor;
+                if (Session.Projection.Phase == RoundResolutionPhase.ResolvingTurn &&
+                    next.ActorId.Equals(Hero))
+                {
+                    return;
+                }
+            }
+
+            Assert.Fail("The staged hero's next turn did not begin inside the budget.");
+        }
+
+        /// <summary>
+        /// The round crossed while answering whatever stops it on the way. Milestone 8.24.
+        ///
+        /// <para><see cref="CrossTheRoundBoundary"/> assumes nothing interrupts p.8, which was true of
+        /// every hero before Xargatha. Her Constrict and Final Embrace are the first verified content
+        /// to declare milestone 8.19c1's pre-Minion-Battle source, and that source stops the round on
+        /// her own decision - so a fixture that drove p.8's stage list straight through would submit
+        /// its next command into a paused round and be refused. This answers each pause where it
+        /// stands and then goes on, which is what a player does.</para>
+        /// </summary>
+        /// <param name="stopWhen">
+        /// An optional condition that ends the drive early. It exists for the end-of-round sources
+        /// whose subject is <em>when</em> something happened rather than that the round finished:
+        /// Constrict's Defeat lands at p.8's pre-battle moment, and a caller that only checked after
+        /// the whole page had run could not tell that moment from any later one. Stopping the instant
+        /// the board changes is the stronger claim, and it is also the only one available when the
+        /// Defeat leaves p.8 in a state this driver has no command for.
+        /// </param>
+        internal void CrossTheRoundBoundaryAnsweringPauses(
+            int budget = 24, Func<bool> stopWhen = null)
+        {
+            var startedIn = Session.Projection.RoundIndex;
+            for (var step = 0; step < budget && Session.Projection.RoundIndex == startedIn; step++)
+            {
+                if (stopWhen != null && stopWhen())
+                {
+                    return;
+                }
+
+                if (Choice != null)
+                {
+                    AnswerEveryStandingChoice();
+                    continue;
+                }
+
+                if (Session.Projection.Phase == RoundResolutionPhase.ResolvingTurn)
+                {
+                    var actor = Session.Projection.SelectedActor;
+                    Assert.That(actor.CardInstanceId.IsDefined, Is.True,
+                        "A turn with no selected actor cannot be held on.");
+                    Accept(DirectorCommand.PerformHold(actor.CardInstanceId));
+                    continue;
+                }
+
+                // p.7's commitment step comes round again inside the same round index, and a fixture
+                // that only advanced end-of-round stages would spin here forever.
+                if (Session.Projection.Phase == RoundResolutionPhase.AwaitingCommitments)
+                {
+                    ConfiguredMatchFixtures.CommitBothHands(Session);
+                    continue;
+                }
+
+                // p.8's Minion Battle asks its own question, and a hero who has just defeated a minion
+                // before the battle is precisely the hero who makes it ask: the Battle Zone she left
+                // behind is the one being counted. It is not an effect choice and has its own
+                // commands, which is why the pause check above walks past it.
+                var battle = Session.Projection.PendingMinionBattleChoice;
+                if (battle != null)
+                {
+                    while (Session.Projection.PendingMinionBattleChoice.SelectInvocations.Count > 0)
+                    {
+                        Accept(DirectorCommand.SelectMinionBattleRemoval(
+                            Session.Projection.PendingMinionBattleChoice.SelectInvocations[0]));
+                    }
+
+                    Accept(DirectorCommand.ConfirmMinionBattleRemovals(
+                        Session.Projection.PendingMinionBattleChoice.ConfirmInvocation));
+                    continue;
+                }
+
+                // ONE stage per iteration, and a refusal is not a failure here. A round stopped by a
+                // pausing source refuses its next stage until somebody answers, and which of the two
+                // states the round is in is exactly what this loop is discovering - so it offers the
+                // stage, and comes back round to the pause check when the offer is declined.
+                // ConfiguredMatchFixtures.FinishEndOfRound cannot be used for this: its inner loop
+                // advances every stage without ever looking for a pause between them.
+                if (!Session.Execute(DirectorCommand.AdvanceEndOfRound()).Accepted &&
+                    Choice == null)
+                {
+                    Assert.Fail(
+                        "The round refused its next end-of-round stage with no effect choice " +
+                        "standing, so nothing this driver knows how to answer would move it on. " +
+                        $"Phase={Session.Projection.Phase}, " +
+                        $"IsTurnActive={Session.Projection.IsTurnActive}, " +
+                        $"PendingSkill={Session.Projection.PendingSkillResolution != null}, " +
+                        $"PendingMinionBattle={Session.Projection.PendingMinionBattleChoice != null}, " +
+                        $"PendingLanePush={Session.Projection.PendingLanePushRequest != null}, " +
+                        $"PendingRespawn={Session.Projection.PendingHeroRespawnChoice != null}");
+                }
+            }
+
+            if (stopWhen != null && stopWhen())
+            {
+                return;
+            }
+
+            Assert.That(Session.Projection.RoundIndex, Is.GreaterThan(startedIn),
+                "The round has to actually end for p.8's own stages to have run; a caller that " +
+                "stopped short would read an absence this never caused.");
+        }
+
         internal void CrossTheRoundBoundary()
         {
             var startedIn = Session.Projection.RoundIndex;

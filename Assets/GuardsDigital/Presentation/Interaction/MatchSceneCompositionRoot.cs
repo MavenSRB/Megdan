@@ -263,7 +263,55 @@ namespace GuardsDigital.Presentation.Interaction
         /// The Tier III staging with Tigerclaw holding the second sibling of each colour: Backstab
         /// with a Ballista, Riposte and Poisoned Dart.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedTigerclaw = 28
+        VerifiedTierThreeAlternateEngagedStagedTigerclaw = 28,
+
+        /// <summary>
+        /// Milestone 8.24. The staged Wasp-versus-Xargatha hands with both heroes restaged already
+        /// engaged, exactly as <see cref="VerifiedEngagedStagedTigerclaw"/> stages its two.
+        ///
+        /// <para>Xargatha takes the Blue seat rather than joining it, for the reason the three arms
+        /// before hers record: milestone 8.25 owns the official six-player configuration. She needs no
+        /// ally arm at all, and her reason is the cleanest in the roster - every clause of hers that
+        /// names another unit names an ENEMY one, so a friendly hero would widen no candidate set she
+        /// has.</para>
+        ///
+        /// <para><b>What her arms do need is the staging's minions left standing.</b> Five of her
+        /// faces are answered only by a minion and three of her values are counted from the ones
+        /// beside her, so the engaged position's own neighbours are content here rather than
+        /// scenery.</para>
+        /// </summary>
+        VerifiedEngagedStagedXargatha = 29,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Xargatha holding the first
+        /// sibling of each colour: Deadly Swipe, Petrifying Stare and Control.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedXargatha = 30,
+
+        /// <summary>
+        /// The Tier II staging with Xargatha holding the <em>second</em> sibling of each colour - Long
+        /// Thrust, Fresh Converts and Constrict - which is the half of p.15's upgrade the row above
+        /// does not deal. Her two branches are the widest apart in the roster: this one petrifies
+        /// nothing and its Skills do nothing at all until p.8's pre-battle moment.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedXargatha = 31,
+
+        /// <summary>
+        /// The engaged staging at p.15's Tier III stage, with p.16's Ultimate unlocked on both seats -
+        /// High Voltage in Wasp's area and Metamorphosis in Xargatha's - and Xargatha holding the
+        /// first sibling of each colour: Lethal Spin, Turn Into Statues and Dominate.
+        ///
+        /// <para>Hers is the first unlocked Ultimate in this build that asks nothing and waits for
+        /// nothing, so this staging starts with her Movement and Initiative already scaling with
+        /// whoever is standing beside her.</para>
+        /// </summary>
+        VerifiedTierThreeEngagedStagedXargatha = 32,
+
+        /// <summary>
+        /// The Tier III staging with Xargatha holding the second sibling of each colour: Rapid
+        /// Thrusts, Devoted Followers and Final Embrace.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedXargatha = 33
     }
 
     [ExecuteAlways]
@@ -445,6 +493,25 @@ namespace GuardsDigital.Presentation.Interaction
                     PlaceholderOneVsOneTestConfiguration.CreateStagedTigerclawTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.TigerclawUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedXargatha =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedXargatha =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedXargatha =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedXargatha =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedXargatha =>
+                    PlaceholderOneVsOneTestConfiguration.CreateStagedXargathaTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.SecondSibling),
                 _ => PlaceholderOneVsOneTestConfiguration.Create()
             };
             // Milestone 8.20. The board's hero identities have to agree with the hands the
@@ -468,7 +535,11 @@ namespace GuardsDigital.Presentation.Interaction
                                 : IsStagedTigerclaw(content)
                                     ? QuickGameSetupConfiguration
                                         .CreateStagedWaspVersusTigerclawOneVsOne()
-                                    : QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne(),
+                                    : IsStagedXargatha(content)
+                                        ? QuickGameSetupConfiguration
+                                            .CreateStagedWaspVersusXargathaOneVsOne()
+                                        : QuickGameSetupConfiguration
+                                            .CreateStagedWaspVersusArienOneVsOne(),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
@@ -485,7 +556,8 @@ namespace GuardsDigital.Presentation.Interaction
                 content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedArien ||
                 IsStagedBrogan(content) ||
                 IsStagedSabina(content) ||
-                IsStagedTigerclaw(content))
+                IsStagedTigerclaw(content) ||
+                IsStagedXargatha(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -675,6 +747,18 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedTigerclaw ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedTigerclaw ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedTigerclaw;
+
+        /// <summary>
+        /// Whether this content puts Xargatha on the Blue seat. Milestone 8.24's five arms, on the
+        /// one-hero-per-team setup and the ordinary engaged restaging: every clause of hers that names
+        /// another unit names an enemy one, so a friendly hero would widen no candidate set she has.
+        /// </summary>
+        private static bool IsStagedXargatha(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedXargatha ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedXargatha ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedXargatha ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedXargatha ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedXargatha;
 
         /// <summary>
         /// Whether this content deals two heroes to the Blue team with Brogan beside Arien. Milestone

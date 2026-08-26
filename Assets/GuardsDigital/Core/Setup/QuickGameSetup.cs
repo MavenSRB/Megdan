@@ -258,6 +258,32 @@ namespace GuardsDigital.Core.Setup
             CreateOneVsOne(new HeroContentId("tigerclaw"), "Tigerclaw the Cutpurse");
 
         /// <summary>
+        /// Milestone 8.24. Wasp on Red against Xargatha on Blue - the sixth verified hero and the last
+        /// of the 8.17 roster.
+        ///
+        /// <para><b>She is a Red hero on the pitch roster and takes the Blue seat here</b>, exactly as
+        /// Brogan, Sabina and Tigerclaw do and for the reason all three record: milestone 8.25 owns the
+        /// official six-player configuration and all six spawn assignments, and this staging is one
+        /// seat per team.</para>
+        ///
+        /// <para><b>She needs no second Blue seat, and the reason is different from Tigerclaw's.</b>
+        /// Every clause of hers that names another unit names an enemy one - "an enemy unit not
+        /// adjacent to you", "enemy heroes in radius", "an enemy ranged minion", "an enemy melee minion
+        /// adjacent to you" - so a friendly hero would widen no candidate set she has. Her set is the
+        /// first in the roster with no friendly-facing arm at all, which is why one seat per team
+        /// reaches all nineteen faces.</para>
+        ///
+        /// <para><b>What this staging does need is minions, and more of them than any earlier hero.</b>
+        /// Five of her faces are answered only by minions - the three Green Movements move one, and
+        /// Constrict and Final Embrace defeat one - and three of those five narrow it to a printed
+        /// class. The ordinary Quick Game minion setup supplies all three of p.22's classes, so nothing
+        /// here is staged specially; it is recorded because a fixture that cleared her neighbourhood of
+        /// minions would make five faces unreachable without failing.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusXargathaOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("xargatha"), "Xargatha the Changed");
+
+        /// <summary>
         /// Milestone 8.21. Wasp on Red against Arien and Brogan on Blue, which is the smallest board
         /// on which "a friendly hero in range" is true of anybody - the clause War Drummer and Master
         /// Skald print and the reason two of Brogan's nineteen faces would otherwise be unreachable.
