@@ -649,7 +649,10 @@ namespace GuardsDigital.Tests.PlayMode
                 "The recomposed rail draws " + drawn + " against the " +
                     HeroRailMarkerCheck.RecordedRailCeiling + " this build measured, so a later " +
                     "change grew it back.");
-            if (ConfiguredMatchHudRenderer.RailsTakeTheWholeColumn(Screen.width))
+            // Asserted wherever a third of the column could hold the recorded ceiling at all. A
+            // viewport short enough that it cannot is one where three rails were never going to stack,
+            // and the ceiling above is what guards the rail there.
+            if (budget >= HeroRailMarkerCheck.RecordedRailCeiling)
             {
                 Assert.That(drawn, Is.LessThanOrEqualTo(budget),
                     "A rail holding a marker draws " + drawn + " against the " + budget + " a third " +
@@ -658,12 +661,9 @@ namespace GuardsDigital.Tests.PlayMode
             }
             else
             {
-                // A viewport too narrow to seat the tray's row between two columns keeps the older
-                // arrangement, where three never fitted and the roster is not drawn three a side
-                // anyway. The ceiling above still holds there, which is the regression this guards.
                 TestContext.WriteLine(
                     "Three-up budget not asserted at " + Screen.width + "x" + Screen.height +
-                        ": the rails do not take the whole column at this viewport.");
+                        ": a third of the " + railRect.height + " column is " + budget + ".");
             }
 
             yield return CaptureGameView("a-poisoned-hero-reads-the-marker-on-their-own-rail");

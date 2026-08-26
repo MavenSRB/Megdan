@@ -580,40 +580,25 @@ namespace GuardsDigital.Presentation.Match
         /// That is where the vertical room came from: the rails stopped competing with the tray for the
         /// same corner.</para>
         ///
-        /// <para>It sits at the band's left edge rather than centred in it - the user's 2026-08-26
-        /// decision, taken on seeing the six-player HUD. The tray is read left to right and the hand it
-        /// draws starts at its left edge, so a tray that floats away from the rail beside it puts the
-        /// first card of the hand somewhere that moves with the viewport. Its own width bound is
-        /// unchanged, so at any viewport wide enough the tray is exactly as wide as it has been and
-        /// only the slack falls on the right.</para>
+        /// <para><b>It starts at the window's own left margin, and the rail column above it is what
+        /// gives.</b> The user's 2026-08-26 decision, taken twice on seeing the six-player HUD: first
+        /// that the tray should leave the centre of the band, then that "all the way left" means the
+        /// window edge rather than the edge of the band. The rail column keeps the whole screen edge -
+        /// that is where rulebook p.6's three rails a side came from - so the two overlap in the
+        /// bottom-left corner, and the tray is drawn over the rail there. The cost is stated at
+        /// <see cref="CalculateHeroRailRect"/> and is the player's accepted trade.</para>
         /// </summary>
         public static Rect CalculateCardPanelRect(float viewportWidth, float viewportHeight)
         {
-            var band = CalculateCardPanelBand(viewportWidth);
-            var width = Mathf.Min(CardPanelWidth, band.width);
+            var width = Mathf.Min(CardPanelWidth, Mathf.Max(0f, viewportWidth - (Margin * 2f)));
             var height = Mathf.Min(
                 Mathf.Max(CardPanelHeight, viewportHeight * CardPanelTallViewportShare),
                 Mathf.Max(0f, viewportHeight - (Margin * 2f) - StatusBarHeight));
             return new Rect(
-                band.x,
+                Margin,
                 Mathf.Max(Margin, viewportHeight - height - Margin),
                 width,
                 height);
-        }
-
-        /// <summary>
-        /// The horizontal band between the two rail columns, as an <c>x</c> and a width. Everything the
-        /// rails do not own lives here: the tray, the `DIRECTOR` toggle and the event log.
-        /// </summary>
-        private static (float x, float width) CalculateCardPanelBand(float viewportWidth)
-        {
-            if (!RailsTakeTheWholeColumn(viewportWidth))
-            {
-                return (Margin, Mathf.Max(0f, viewportWidth - (Margin * 2f)));
-            }
-
-            var x = Margin + CalculateHeroRailWidth(viewportWidth) + Margin;
-            return (x, Mathf.Max(0f, viewportWidth - (2f * x)));
         }
 
         /// <summary>
@@ -649,9 +634,16 @@ namespace GuardsDigital.Presentation.Match
         /// <para>Milestone 8.25. It used to stop where the tray began, which left about 491 lines at
         /// 1920x1080 - a third of a rail short of holding rulebook p.6's three heroes a side, measured
         /// at 8.23a. A column that runs the whole height has about 1000 there, which holds three rails
-        /// of the height 8.23a's recomposition achieved with room over. The trade is stated at
-        /// <see cref="CalculateCardPanelRect"/>: the tray gives up the two corners it never drew in.
-        /// </para>
+        /// of the height 8.23a's recomposition achieved with room over.</para>
+        ///
+        /// <para><b>The column and the tray overlap in the bottom corners, and the tray is drawn over
+        /// the column there.</b> That is the user's 2026-08-26 decision and the cost of it: the tray
+        /// starts at the window's own left margin, so the third Red rail is clipped from the tray's top
+        /// edge down - about 230 lines at 1920x1080 and about 35 at 2560x1440. The tray is on top
+        /// because it holds the cards a player has to click and the rail is a reading; the rail's rows
+        /// above the tray are unaffected, and the clipped band is the discard row and the last turn
+        /// slots. `gd-hero-rails` is added to the panel before `gd-tray-region`, which is what decides
+        /// it, so a later change reordering those two silently reverses this.</para>
         ///
         /// <para>The width bound is unchanged and is still the standing product rule - both rails
         /// together stay under half the narrowest validated viewport, so the board remains the dominant
@@ -664,42 +656,8 @@ namespace GuardsDigital.Presentation.Match
                 ? Margin
                 : Mathf.Max(Margin, viewportWidth - width - Margin);
             var top = StatusBarHeight + Margin;
-            if (!RailsTakeTheWholeColumn(viewportWidth))
-            {
-                var playfield = CalculatePlayfieldRect(viewportWidth, viewportHeight);
-                return new Rect(x, top, width, Mathf.Max(0f, playfield.height - (Margin * 2f)));
-            }
-
             return new Rect(x, top, width, Mathf.Max(0f, viewportHeight - top - Margin));
         }
-
-        /// <summary>
-        /// The narrowest band the tray may be left with between the two rail columns: one row of
-        /// rulebook p.6's five starting cards at the shared footprint.
-        ///
-        /// <para>Milestone 8.25. Insetting the tray between the rails costs it two rail widths, and at
-        /// the short supported desktop viewport that would take the five-card row below one line for
-        /// the first time. Neither surface may give: the rail is one fixed width everywhere and two
-        /// Play Mode checks measure it, and the card is one fixed footprint everywhere and the tray
-        /// region is what gives instead. So the <em>arrangement</em> gives - see
-        /// <see cref="RailsTakeTheWholeColumn"/>.</para>
-        /// </summary>
-        public static float MinimumCardPanelBandWidth =>
-            (5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap)) - 30f;
-
-        /// <summary>
-        /// Whether the rail columns take the whole screen edge, which is what rulebook p.6's three
-        /// heroes a side need, or stop where the tray begins as they did before milestone 8.25.
-        ///
-        /// <para>They take it wherever the band left between them still seats the tray's own row. A
-        /// viewport too narrow for that is one where three rails do not stack anyway - it is short as
-        /// well as narrow at every supported aspect - so the taller column would buy nothing there and
-        /// would cost the tray a row it can still hold. The two validated desktop viewports are on
-        /// opposite sides of this line, and both behaviours are asserted.</para>
-        /// </summary>
-        public static bool RailsTakeTheWholeColumn(float viewportWidth) =>
-            viewportWidth - (2f * (Margin + CalculateHeroRailWidth(viewportWidth) + Margin)) >=
-                MinimumCardPanelBandWidth;
 
         private static float CalculateHeroRailWidth(float viewportWidth) =>
             Mathf.Min(HeroRailWidth, Mathf.Max(0f, (viewportWidth / 2f) - (Margin * 2f)));
@@ -744,7 +702,7 @@ namespace GuardsDigital.Presentation.Match
 
             var playfield = CalculatePlayfieldRect(Screen.width, Screen.height);
             return new Rect(
-                RailsTakeTheWholeColumn(Screen.width) ? rail.xMax + Margin : Margin,
+                rail.xMax + Margin,
                 Mathf.Max(Margin, playfield.yMax - DirectorToggleHeight - Margin),
                 DirectorToggleWidth,
                 DirectorToggleHeight);
@@ -767,18 +725,15 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.25 changed nothing here and moved it anyway. The log takes the column to the
-        /// right of the tray when there is one wide enough, and the band above the tray otherwise; the
-        /// tray now ends inside the Blue rail rather than short of it, so at the reference viewport the
-        /// right-hand column is no longer wide enough and the log opens above the tray. That is the
-        /// better of the two placements it already had: the previous one overlapped the Blue rail.
+        /// The log takes the column to the right of the tray when there is one wide enough, and the
+        /// band above the tray otherwise. Milestone 8.25 changed neither branch and moved both: the
+        /// right-hand column now stops short of the Blue rail, which owns the whole edge, and the
+        /// above-the-tray branch starts clear of the `DIRECTOR` column.
         /// </summary>
         private static Rect GetRuleEventLogRect()
         {
             var cardPanel = GetCardPanelRect();
-            var railWidth = RailsTakeTheWholeColumn(Screen.width)
-                ? CalculateHeroRailWidth(Screen.width) + Margin
-                : 0f;
+            var railWidth = CalculateHeroRailWidth(Screen.width) + Margin;
             var availableRightWidth = Screen.width - cardPanel.xMax - railWidth - (Margin * 2f);
             if (availableRightWidth >= 420f)
             {
@@ -800,9 +755,13 @@ namespace GuardsDigital.Presentation.Match
             // tall enough to cover both. It starts clear of that column, for the reason
             // `CalculateTallContextHeight` reserves the same strip: the drawer is the only route to
             // Undo, and a log the player opened is not a reason to lose it. Latent until milestone 8.25
-            // moved the tray to the band's left edge, which put the two columns on the same x and left
-            // `RESET` behind the log's own scroll view.
-            var aboveLeft = cardPanel.x + DirectorDrawerWidth + Margin;
+            // moved the tray left, which put the two on the same x and left `RESET` behind the log's
+            // own scroll view. Measured from the drawer's column rather than from the tray's edge,
+            // because since the rails took the screen edge those are no longer the same x.
+            var aboveLeft = Mathf.Max(
+                cardPanel.x,
+                CalculateHeroRailRect(Screen.width, Screen.height, TeamSide.Red).xMax +
+                    Margin + DirectorDrawerWidth + Margin);
             return new Rect(
                 aboveLeft,
                 Mathf.Max(StatusBarHeight + Margin, cardPanel.y - aboveHeight - Margin),

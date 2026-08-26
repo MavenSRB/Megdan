@@ -2202,18 +2202,19 @@ namespace GuardsDigital.Tests.EditMode
                 "and the short viewport still holds p.6's five cards on one row, so the scroll it " +
                 "needs is vertical only.");
 
-            // Milestone 8.25: what keeps that true now that the rails can take a screen edge each.
-            // They take it only where the band left between them still seats this row, and 1280 is
-            // below that line - so neither the rail nor the card gives at the short viewport, the
-            // arrangement does. Both sides of the line are stated, because a rule that only ever
-            // reports one answer is not a rule.
-            Assert.That(ConfiguredMatchHudRenderer.RailsTakeTheWholeColumn(1280f), Is.False);
-            Assert.That(ConfiguredMatchHudRenderer.RailsTakeTheWholeColumn(1920f), Is.True);
-            Assert.That(
-                ConfiguredMatchHudRenderer.CalculateCardPanelRect(1920f, 1080f).width,
-                Is.GreaterThanOrEqualTo(
-                    (5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap)) - 30f),
-                "and the row still fits between the two columns where they do take the edge.");
+            // Milestone 8.25: what keeps that true now that the rails take a screen edge each. The
+            // tray was not moved out from under them - it keeps the window's own left margin and its
+            // full width, by the user's decision - so the row it can hold is exactly the row it could
+            // hold before, and neither the rail's width nor the card's footprint gives at any
+            // viewport. What gives is the third rail on each side, which the tray is drawn over.
+            foreach (var viewport in new[] { new Vector2(1280f, 720f), new Vector2(1920f, 1080f) })
+            {
+                Assert.That(
+                    ConfiguredMatchHudRenderer.CalculateCardPanelRect(viewport.x, viewport.y).x,
+                    Is.EqualTo(12f),
+                    $"The tray keeps the window's left margin at {viewport}.");
+            }
+
             foreach (var viewport in new[] { new Vector2(1280f, 720f), new Vector2(1920f, 1080f) })
             {
                 Assert.That(

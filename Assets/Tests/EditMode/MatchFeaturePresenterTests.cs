@@ -34,13 +34,10 @@ namespace GuardsDigital.Tests.EditMode
             // cannot both claim the same pixels on a short viewport and hide one of two guaranteed
             // surfaces behind the other.
             //
-            // Milestone 8.25 left this viewport exactly where it was. The rails take the whole screen
-            // edge and the tray takes the band between them only where that band still seats the
-            // tray's own row of five cards; 778 is far below that, so the arrangement here is the one
-            // this case has always measured - full-width tray, rails stopping where it begins.
-            Assert.That(
-                ConfiguredMatchHudRenderer.RailsTakeTheWholeColumn(778f), Is.False,
-                "This viewport cannot seat a five-card row between two rail columns.");
+            // Milestone 8.25 left this rect exactly where it was. The rail columns took the whole
+            // screen edge, but the tray kept the window's own left margin and its full width by the
+            // user's decision, so the two overlap in the bottom corners rather than the tray moving
+            // out of them.
             Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(12f, 68f, 754f, 220f)));
             Assert.That(panel.xMax, Is.LessThanOrEqualTo(778f));
             Assert.That(panel.yMax, Is.LessThanOrEqualTo(300f));
@@ -63,21 +60,18 @@ namespace GuardsDigital.Tests.EditMode
             // putting a row of a mandatory choice behind a scrollbar. Milestone 8.5a raised that share
             // to 0.46 for the printed rules text a tray card now carries. The tray sizes to its
             // content, so this is the region it may use and not the region it does use.
-            // Milestone 8.25: the tray sits at the left edge of the band between the two rail columns
-            // rather than at the screen's left margin - the Red column owns that now - so its x is one
-            // rail width and two margins in. Its own width bound is unchanged, so a viewport wide
-            // enough for both still draws exactly the 1280-wide tray milestone 5.1c sized the Defense
-            // row against, and the slack falls on the right.
+            // Milestone 8.25: the tray keeps the window's own left margin and its full width, by the
+            // user's decision, even though the rail columns now run the whole screen edge. The two
+            // therefore overlap in the bottom corners and the tray is drawn over the rail there, which
+            // is what this pair of assertions records - it is a deliberate overlap rather than a
+            // layout that happens not to have been checked.
             Assert.That(panel.width, Is.EqualTo(1280f));
-            Assert.That(panel.x, Is.EqualTo(216f));
+            Assert.That(panel.x, Is.EqualTo(12f));
             Assert.That(
                 panel.xMin,
-                Is.GreaterThanOrEqualTo(
-                    ConfiguredMatchHudRenderer.CalculateHeroRailRect(2048f, 1152f, TeamSide.Red).xMax));
-            Assert.That(
-                panel.xMax,
-                Is.LessThanOrEqualTo(
-                    ConfiguredMatchHudRenderer.CalculateHeroRailRect(2048f, 1152f, TeamSide.Blue).xMin));
+                Is.LessThan(
+                    ConfiguredMatchHudRenderer.CalculateHeroRailRect(2048f, 1152f, TeamSide.Red).xMax),
+                "The tray starts inside the Red rail column's own strip, and is drawn over it.");
             Assert.That(panel.height, Is.GreaterThanOrEqualTo(360f));
             Assert.That(panel.height, Is.EqualTo(1152f * 0.46f).Within(0.01f));
             Assert.That(panel.yMax, Is.EqualTo(1152f - 12f).Within(0.01f));

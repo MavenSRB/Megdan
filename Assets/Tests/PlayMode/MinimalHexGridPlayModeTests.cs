@@ -231,10 +231,6 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var hud = root.Hud;
 
-            Assert.That(
-                ConfiguredMatchHudRenderer.RailsTakeTheWholeColumn(Screen.width), Is.True,
-                $"This measurement is about the whole-column arrangement and the viewport is " +
-                $"{Screen.width}x{Screen.height}.");
             Assert.That(runtime.Setup.Heroes, Has.Count.EqualTo(6),
                 "p.5's official setup places three heroes a side.");
             Assert.That(
@@ -275,22 +271,37 @@ namespace GuardsDigital.Tests.PlayMode
                 }
             }
 
+            // The tray keeps the window's own left margin, so it overlaps the bottom of the Red column
+            // and is drawn over it - the user's 2026-08-26 decision, recorded here as a measurement
+            // rather than left to be discovered. The clipped band is what the tray's top edge cuts off
+            // the third rail, and this reports it in the run output so a later layout change can see
+            // what it is changing.
             var tray = hud.CardPanelRect;
-            Assert.That(tray.xMin, Is.GreaterThanOrEqualTo(hud.RedHeroRailRect.xMax),
-                "The tray starts clear of the Red column rather than under it.");
-            Assert.That(tray.xMax, Is.LessThanOrEqualTo(hud.BlueHeroRailRect.xMin),
-                "and ends clear of the Blue one.");
+            var redColumn = Named(hud.RootElement, "gd-hero-rail-red").worldBound;
+            Assert.That(tray.xMin, Is.LessThan(hud.RedHeroRailRect.xMax),
+                "The tray starts inside the Red column's strip rather than clear of it.");
+            var clipped = Mathf.Max(0f, redColumn.yMax - tray.yMin);
+            TestContext.WriteLine(
+                "8.25 tray/rail overlap: the tray's top edge is at " + tray.yMin + " and the Red " +
+                    "column's content ends at " + redColumn.yMax + ", so " + clipped + " of the " +
+                    "third rail is drawn over at " + Screen.width + "x" + Screen.height + ".");
 
-            // The rails own their whole column, so the pointer is blocked at the bottom of it - the
-            // corner the tray used to take and the `DIRECTOR` toggle used to stand in.
+            // The tray is on top where they meet, and the rail still owns the column above it. Both
+            // halves are asserted, because the z-order is decided by the order the two are added to
+            // the panel and nothing else would notice if that reversed.
+            var overlapPoint = new Vector2(redColumn.center.x, tray.yMin + 4f);
+            Assert.That(
+                hud.BlocksPointerAt(new Vector2(overlapPoint.x, Screen.height - overlapPoint.y)),
+                Is.True,
+                "The HUD consumes the pointer where the tray covers the rail.");
             foreach (var column in columns)
             {
                 var element = Named(hud.RootElement, column.Name);
-                var guiPoint = element.worldBound.center;
+                var above = new Vector2(element.worldBound.center.x, element.worldBound.yMin + 4f);
                 Assert.That(
-                    hud.BlocksPointerAt(new Vector2(guiPoint.x, Screen.height - guiPoint.y)),
+                    hud.BlocksPointerAt(new Vector2(above.x, Screen.height - above.y)),
                     Is.True,
-                    $"The HUD consumes the pointer over {column.Name}.");
+                    $"The HUD consumes the pointer over {column.Name} above the tray.");
             }
         }
 
