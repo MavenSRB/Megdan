@@ -395,6 +395,78 @@ namespace GuardsDigital.Core.Participants
 
             return configuration;
         }
+
+        /// <summary>
+        /// Milestone 8.24. The staged Wasp-versus-Xargatha match, on the same `DEV-005` terms the
+        /// staged Arien, Brogan, Sabina and Tigerclaw matches are on.
+        ///
+        /// <para>Xargatha takes the Blue seat though p.5 puts her on Red, for the reason
+        /// <see cref="CreateStagedBroganForInternalTest"/> records: milestone 8.25 owns the official
+        /// six-player configuration and every hero spawn it assigns. <see cref="Create"/> - the scene a
+        /// player loads - is untouched and still deals Wasp against Arien.</para>
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedXargathaForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedXargathaHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.24. The staged Wasp-versus-Xargatha match at rulebook p.15's Tier II stage, with
+        /// Xargatha holding one Tier II card of each colour on the branch the caller names - the same
+        /// pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
+        ///
+        /// <para>Her branches are the widest apart in the roster: the first takes the petrification
+        /// line and a second Movement primary, the second takes a Ranged Attack, a retrieval and an
+        /// end-of-round Defeat. Which sibling a staged hand took therefore decides which of her
+        /// mechanics exist in that match at all.</para>
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedXargathaTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.XargathaUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedXargathaHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.24. The staged Wasp-versus-Xargatha match at rulebook p.15's Tier III stage with
+        /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and
+        /// Metamorphosis in Xargatha's.
+        ///
+        /// <para>Hers is the first unlocked Ultimate in this build that asks nothing and waits for
+        /// nothing: it is simply true from the moment it is faceup, so a Tier III Xargatha's Movement
+        /// and Initiative are already scaling with whoever is standing beside her before any card is
+        /// played.</para>
+        /// </summary>
+        public static PlaceholderOneVsOneTestConfiguration CreateStagedXargathaTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.XargathaUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedXargathaHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.XargathaCardContent.Metamorphosis)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
         /// <summary>
         /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
         /// Arien and Brogan matches are on.
@@ -680,6 +752,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.TigerclawProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.TigerclawProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.24. One seat's verified Xargatha hand, prefixed by the seat's team side for the
+        /// reason the four earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedXargathaHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.XargathaCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedXargathaHand(
+            bool tierThree, Cards.Verified.XargathaUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.XargathaProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.XargathaProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

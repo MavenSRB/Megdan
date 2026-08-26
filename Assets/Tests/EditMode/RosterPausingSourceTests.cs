@@ -523,7 +523,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaVersionMovesForThreeDecisionsV26CannotHold()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(33),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(34),
                 "Milestone 8.19c1 adds a trigger frame standing inside the effect it interrupted, a " +
                 "Defeat waiting at its removal stage with the coin operations that paid it, and a " +
                 "round-scoped record that p.8's pre-battle moment has already run. None of the three " +
@@ -541,7 +541,12 @@ namespace GuardsDigital.Tests.EditMode
                 "Daggers may still be asked to repeat, which is a fifth, and the first that stands " +
                 "outside the action it is about rather than inside it - and once more again at 8.23, for " +
                 "where the attacker stood when an Attack started, which Combat Reflexes asks about " +
-                "six numbered steps later and is a sixth. This " +
+                "six numbered steps later and is a sixth - and once more at milestone 8.24, which is " +
+                "the pinned list again and the THIRD cause to have moved this version more than once: " +
+                "Xargatha's faces reach five contracts no v33 payload pins, and two of those five are " +
+                "this family's own, because Constrict and Final Embrace are the first verified content " +
+                "to stop the game at the pre-Minion-Battle moment 8.19c1 built with nothing visiting " +
+                "it. This " +
                 "case pins the current version rather than its own, so a later move has to be " +
                 "accounted for here rather than passing unread.");
         }

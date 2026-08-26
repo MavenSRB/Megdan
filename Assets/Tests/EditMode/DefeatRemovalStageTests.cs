@@ -467,9 +467,9 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(33),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(34),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
-                "own. The version has since moved twenty-one times, none of them for it: milestone 6.7 for " +
+                "own. The version has since moved twenty-two times, none of them for it: milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +
                 "mid-turn Lane-Push request a completed action can leave behind, milestone 6.10 for " +
                 "p.8's Battle Zone itself, milestone 6.10a for a paused system transition, " +
@@ -495,7 +495,11 @@ namespace GuardsDigital.Tests.EditMode
                 "still be asked to repeat, which no v31 payload can describe because no ability in " +
                 "an 8.22 build stands outside the action it repeats, and milestone 8.23 again for where " +
                 "the attacker stood when an Attack started, which no v32 payload records because no " +
-                "earlier face asks at one of p.14's moments about what happened at another. " +
+                "earlier face asks at one of p.14's moments about what happened at another, and " +
+                "milestone 8.24 for the five capability contracts Xargatha's printed faces are the " +
+                "first to reach - her three petrification disks and her two end-of-round sources - " +
+                "which every v33 payload names a shorter list than, so one is refused rather than " +
+                "resolved against contracts its own capture never had. " +
                 "The decision is still re-derived from the state as it then stands.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),

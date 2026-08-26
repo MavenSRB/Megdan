@@ -159,6 +159,15 @@ namespace GuardsDigital.Tests.EditMode
             // each a definition bound to its own capability the way every hero's Active effects are -
             // and each on a handler *type* the showcase already reaches, which is why they add
             // registrations here without adding implementations.
+            // Milestone 8.24 adds NOTHING here, and that is the point worth recording. Xargatha's five
+            // persistent texts are five more registrations - three petrification disks and two
+            // end-of-round sources - and every one of them is an ActiveEffectCreationHandler, the type
+            // milestone 6.8 proved on synthetic content. Her other new vocabulary is content on a
+            // parameter, an enum member or a declaration rather than a handler: `RosterMinionClass` on
+            // two selection families, `RepeatTargetBinding.DifferentEnemyHero`, the unit selection's
+            // `excludeAdjacent` and its space output, and the Ultimate's list of standing rules. So the
+            // last hero of the roster lands with no new implementation to review, which is what the
+            // dependency slices 8.19a-8.19c1 were for.
             Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(52),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");

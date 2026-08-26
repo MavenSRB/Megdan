@@ -392,6 +392,14 @@ namespace GuardsDigital.Tests.EditMode
                 // hero slice - and the check below is what holds it, on his four new contracts and on
                 // the printed-Radius Place twin beside them.
                 .Concat(TigerclawCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.24. Xargatha's printed set is the sixth and the last of the 8.17 roster,
+                // admitted on the same half of the rule: a capability named by a card a configured
+                // match deals is not a deferral. The other half still binds - no *handler* may arrive
+                // for the first time inside a hero slice - and her five new contracts all run on
+                // ActiveEffectCreationHandler, the shape the showcase has reached since milestone 6.8.
+                // Her two end-of-round sources reach their effects through the triggered-effect concat
+                // below rather than through a card node, which is what that concat is there for.
+                .Concat(XargathaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
