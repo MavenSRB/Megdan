@@ -558,6 +558,27 @@ Acceptance checks:
 
 Non-goals: No behavior change, no content change, no new configuration, and no change to the staged boards themselves.
 
+### [ ] 8.25c Scale the HUD with the viewport instead of drawing it at fixed pixels
+
+Proposed at the user's direction on 2026-08-26, after milestone 8.25's six-player HUD was seen on a 2560-wide screen. `ConfiguredMatchHudRenderer.Build` sets `PanelScaleMode.ConstantPixelSize` with `scale = 1`, so every layout number is a literal device pixel: the rail is 192 and a card 186x420 on a 1280-wide screen and on a 2560-wide one alike, and the HUD is half its designed share of the second. The committed panel-settings asset already carries a `1200x800` reference resolution, inert under that mode.
+
+**Most of the layout pressure milestone 8.25 fought is a symptom of this.** Three rails a side not stacking, the tray band being too narrow for rulebook p.6's five-card row below 1392 wide, and the 230-line clip 8.25 accepted where the tray covers the third rail are all one fixed-pixel layout serving viewports from 778 to 2560 wide. A scaled panel makes each region the same fraction of every screen, so those three either dissolve or change shape; this milestone re-derives them rather than assuming either.
+
+Observable outcome: the player-facing HUD occupies the same share of the screen at every supported resolution, and every pointer decision it makes stays correct at a panel scale other than 1.
+
+Acceptance checks:
+
+- **The pointer boundary is converted before anything else, and its check comes first.** `ConfiguredMatchHudRenderer.BlocksPointerAt` takes a screen position, flips it with `Screen.height - y`, and compares it against rects computed from `Screen.width`/`Screen.height`; that is an identity mapping only while the scale is 1, and every board click in the game passes through it. A wrong conversion throws nothing and blocks the pointer in the wrong places, so the closing check is observed failing at a scale other than 1 before the conversion exists and passing after.
+- The panel declares one scale mode, one reference resolution and one match mode in one place, and the committed asset and the code agree rather than the code overriding the asset as it does today.
+- `CardFootprint`, `HeroRailWidth`, the hero-rail column height and the standing rule that both rails together stay under half the narrowest validated viewport are **restated in reference units** rather than re-measured in device pixels; each keeps the meaning its own milestone gave it.
+- The permanent hero player-path completion gate still measures every verified face of every configured hero against one shared footprint, now at the reference resolution, and no hero's content newly fails or newly passes because of the change.
+- The exact-rect expectations at the validated viewports become reference-space expectations, and at least two device resolutions either side of the reference produce the same layout in reference units.
+- Milestone 8.25's two accepted geometry facts are re-derived: whether three rails still stack a side, and whether the tray still covers the third rail. If scaling removes that clip, the milestone records it and the clip goes rather than being preserved for consistency.
+- The board's framing band `CalculatePlayfieldRect` feeds the fixed camera converts out of reference units before it reaches the camera, so milestone 8.5a's framing is unchanged in world terms.
+- Complete unfiltered Edit Mode and Play Mode suites pass, because a change to the panel's coordinate space cannot be shown affected-only.
+
+Non-goals: No production art, no new HUD content, and no change to what any region shows or to any rule, command or projection. No render-pipeline work - this is independent of milestone 8.28 and is cheaper before it, because a scaled layout is what production presentation is authored against.
+
 ### [!] 8.26 Integrate six-hero director control and team interactions
 
 Observable outcome: One director can play and resolve a complete turn for all six independently owned heroes while the rules preserve normal 3v3 ownership, Initiative, target, assist, reaction, and team relationships.
