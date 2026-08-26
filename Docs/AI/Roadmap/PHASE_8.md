@@ -483,7 +483,7 @@ art, and an imported sprite is out of scope.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-823a-draw-a-held-marker-on-a-rail-that-has-room-for-it-completion-evidence).
 
-### [!] 8.24 Complete and verify additional pitch hero slot E - Xargatha
+### [x] 8.24 Complete and verify additional pitch hero slot E - Xargatha
 
 Blocked by: Milestone 8.23 must complete the marker/general-action Repeat consumer.
 
@@ -506,6 +506,8 @@ Acceptance checks:
   regressions pass at the applicable tier without an Xargatha-name branch.
 
 Non-goals: No six-player setup, networking, production art, alternate miniature, or statue component.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-824-complete-and-verify-additional-pitch-hero-slot-e---xargatha-completion-evidence).
 
 ### [!] 8.25 Replace the staged 1v1 setup with the official six-player Quick Game configuration
 

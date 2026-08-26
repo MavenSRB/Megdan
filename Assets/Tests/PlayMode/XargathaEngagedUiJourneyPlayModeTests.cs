@@ -380,6 +380,191 @@ namespace GuardsDigital.Tests.PlayMode
                 "The spent Defense keeps her on the board.");
         }
 
+        /// <summary>
+        /// The same printed repeat, taken back and given again: an Undo across the answered decision,
+        /// then a snapshot restored onto it, then the replay both of those rest on.
+        ///
+        /// <para>It is Cleave's repeat rather than any earlier question of hers because a repeat is
+        /// the one pause a player is asked <em>after</em> the thing it is about has already happened -
+        /// p.14's step 7, with an Attack resolved between the target click and this control - so a
+        /// re-derivation that came back with the wrong instance has something to be wrong about. The
+        /// Undo half is proved on the live session before the capture, because a restore adopts a
+        /// state rather than a history and clears the retained prefix behind it.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator CleavesRepeat_IsAnsweredAgainAfterAnUndoAndAfterARestore()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedXargatha);
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var xargathaId = XargathaSeat(runtime).HeroId;
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            CommitSoTheNamedSeatActs(runtime, xargathaId, XargathaCardContent.Cleave);
+            yield return YieldUntilTheNamedSeatActs(runtime, xargathaId);
+            yield return PointTrayAt(root, xargathaId);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+
+            var targets = runtime.PendingAttackTargetChoice.LegalTargetMinionIds;
+            Assert.That(targets, Is.Not.Empty);
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, MinionView(targets[0]).transform.position),
+                Is.True);
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The journey needs the repeat standing. " + Remaining(runtime));
+            var node = runtime.PendingEffectChoice.NodeId;
+            var commandsAtPause = runtime.AcceptedCommands.Count;
+
+            // Answered, then taken back. The answer is an ordinary recorded command, so the retained
+            // prefix replays every command before it - the commitment, the Attack, the target - and
+            // stops on the same question.
+            UiPlayer.Click(UiPlayer.Button(hud, DeclineControl(runtime).Label));
+            yield return null;
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtPause + 1),
+                "One click on the repeat's control is one accepted command.");
+            Assert.That(runtime.PendingEffectChoice, Is.Null);
+
+            UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
+            yield return null;
+            UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
+            yield return null;
+
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtPause),
+                "The Undo drops exactly the answer it retained the prefix of.");
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "and the repeat is standing again, replayed rather than remembered. " +
+                Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.NodeId, Is.EqualTo(node),
+                "about the same printed decision.");
+            Assert.That(DeclineControl(runtime), Is.Not.Null,
+                "and offering the refusal it offered before, which is derived from the node's own " +
+                "floor rather than stored beside it.");
+
+            // A snapshot taken on the stopped decision and restored onto the same session.
+            var payload = runtime.CaptureSnapshot();
+            Assert.That(payload, Is.Not.Null.And.Not.Empty);
+            UiPlayer.Click(UiPlayer.Button(hud, DeclineControl(runtime).Label));
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "The declined repeat is gone and the card is finished.");
+
+            Assert.That(runtime.RestoreSnapshot(payload), Is.True, "The payload must restore.");
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The restored match is stopped on the same decision it was captured on. " +
+                Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.NodeId, Is.EqualTo(node));
+
+            // and it is answerable on the same visible surface, by clicking the same real control.
+            var restored = DeclineControl(runtime);
+            Assert.That(restored, Is.Not.Null,
+                "and it offers what the live pause offered, because nothing about the options is " +
+                "persisted. " + Remaining(runtime));
+            UiPlayer.Click(UiPlayer.Button(hud, restored.Label));
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "The click a player made after the restore answered the restored decision.");
+        }
+
+        /// <summary>
+        /// p.13's Defeat and respawn, with the piece as its subject: the token leaves the board when
+        /// the answer is a decline, and comes back on a clicked spawn space at her own next turn. It
+        /// is also the half of the spawn claim the engaged staging leaves open - the space she returns
+        /// to is the map's own Blue hero spawn area, not the space the staging moved her to.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Xargatha_IsDefeatedByAnAttackAndRespawnsOnHerOwnSpawnByAClick()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedXargatha);
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var xargathaId = XargathaSeat(runtime).HeroId;
+            var enemyId = OtherHeroId(runtime, xargathaId);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            // Setup, headlessly: she walks into the one contact space with no enemy minion beside it,
+            // and the enemy's Attack follows on the next turn.
+            CommitSoTheNamedSeatActs(runtime, xargathaId, XargathaCardContent.DangerousSlash);
+            yield return YieldUntilTheNamedSeatActs(runtime, xargathaId);
+            yield return WalkHeadlesslyTo(runtime, xargathaId, DefenceContact);
+            yield return YieldUntilNobodyIsActing(runtime);
+            yield return AdvanceToNextTurn(runtime);
+
+            CommitSoTheNamedSeatActs(runtime, enemyId, WaspCardContent.MagneticDagger);
+            yield return YieldUntilTheNamedSeatActs(runtime, enemyId);
+            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True,
+                "The enemy's Attack is setup for this journey. " + Remaining(runtime));
+            yield return null;
+
+            var pending = runtime.PendingAttackTargetChoice;
+            Assert.That(pending, Is.Not.Null,
+                "The enemy's Attack must ask which unit it takes. " + Remaining(runtime));
+            Assert.That(pending.LegalTargetHeroIds, Has.Member(xargathaId),
+                "She is standing beside him, so she is a legal target of it.");
+            Assert.That(
+                runtime.SubmitProjectedCommand(DirectorCommand.ChooseAttackTarget(
+                    pending.ResolutionId, pending.ChoiceId, xargathaId)),
+                Is.True);
+            yield return null;
+
+            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null,
+                "The journey needs p.14's Defense response standing. " + Remaining(runtime));
+            var lifeBefore = hud.Header.BlueLifeLabel;
+            Assert.That(runtime.DeclineDefense(), Is.True,
+                "Declining is what makes this Attack a Defeat; spending a face is " +
+                "SecondaryDefense_IsSpentOnItsOwnNumericFaceAndXargathaSurvivesTheAttack's subject.");
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(xargathaId)), Is.False,
+                "The defeated hero is off the board until she respawns.");
+            Assert.That(Object.FindObjectsByType<PrimitiveHeroView>()
+                    .Any(view => view.Occupancy.HeroId.Equals(xargathaId)), Is.False,
+                "and her token is gone with her rather than left standing.");
+            Assert.That(hud.Header.BlueLifeLabel, Is.Not.EqualTo(lifeBefore),
+                "The defeat spends a Blue Life, and the status strip says so.");
+
+            yield return YieldUntilNobodyIsActing(runtime);
+            yield return AdvanceToNextTurn(runtime);
+
+            // p.13 offers the respawn at the defeated hero's own next turn, so the card she commits
+            // for it has to take that turn: Cleave's printed 11 is above every card the enemy still
+            // holds, and a lower one would leave the offer standing behind theirs.
+            CommitSoTheNamedSeatActs(runtime, xargathaId, XargathaCardContent.Cleave);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(xargathaId),
+                "The respawn is offered at her own turn, so her card has to open it. " +
+                Remaining(runtime));
+            yield return PointTrayAt(root, enemyId);
+            yield return null;
+
+            Assert.That(runtime.RoundView.Model.HeroRespawnOptions, Is.Not.Empty,
+                "The defeated Xargatha must be offered her respawn at her own turn. Status: " +
+                runtime.RoundView.Model.Status);
+            var respawn = runtime.RoundView.Model.HeroRespawnOptions.First();
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, Tile(respawn.Destination).transform.position),
+                Is.True,
+                "The respawn space is answered on the board.");
+            yield return null;
+
+            Assert.That(runtime.RoundView.Model.HeroRespawnOptions, Is.Empty,
+                "The answered respawn withdraws its options.");
+            var respawned = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Where(view => view.Occupancy.HeroId.Equals(xargathaId))
+                .ToArray();
+            Assert.That(respawned, Has.Length.EqualTo(1),
+                "Exactly one Xargatha token stands after the respawn, not a second one beside a " +
+                "stale.");
+            Assert.That(respawned[0].Coordinate, Is.EqualTo(respawn.Destination));
+            Assert.That(respawned[0].HasTokenVisual, Is.True,
+                "and it is her own official token that came back.");
+        }
+
         // ---------------------------------------------------------------------------------------
         // Steps
         // ---------------------------------------------------------------------------------------
