@@ -414,7 +414,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.25e5f | Siren's Call now offers its printed Defense 3 and no Movement/Fast Travel at `xargatha-8-25e5f-rev-1`; focused source/content/query/live-player gates pass, the other 113 source results carry forward, F-SOURCE-01 is reopened, and separately approvable 8.25e5f1/8.25e5g own the demonstrated "up to 3" defect and fresh verification. | `PENDING` |
+| 8.25e5f | Siren's Call now offers its printed Defense 3 and no Movement/Fast Travel at `xargatha-8-25e5f-rev-1`; focused source/content/query/live-player gates pass, the other 113 source results carry forward, F-SOURCE-01 is reopened, and separately approvable 8.25e5f1/8.25e5g own the demonstrated "up to 3" defect and fresh verification. | `2660281` |
 
 ## Milestone 8.25f Replace generated complete card faces with the verified private faces completion evidence
 
