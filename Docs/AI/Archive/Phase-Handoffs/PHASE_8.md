@@ -354,7 +354,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.25e1 | **The roster-complete implementation is strong, but its active truth and evidence gates are not yet fit to authorize 8.25f or 8.26.** A fresh current-revision review audited all 66 governed active leaves and inventoried the external A-D proposals, decision families, harness and launcher, rollback, six-hero source evidence, and governance recurrence. It confirmed gate-blocking semantic-document drift, Unity-result integrity and independent-source residue, plus an 8.26-blocking central reachability omission; proposed corrections await a separate user-approved roadmap amendment. No runtime, rule, test, launcher, harness, asset or governance migration was implemented. | `pending` |
+| 8.25e1 | **The roster-complete implementation is strong, but its active truth and evidence gates are not yet fit to authorize 8.25f or 8.26.** A fresh current-revision review audited all 66 governed active leaves and inventoried the external A-D proposals, decision families, harness and launcher, rollback, six-hero source evidence, and governance recurrence. It confirmed gate-blocking semantic-document drift, Unity-result integrity and independent-source residue, plus an 8.26-blocking central reachability omission; proposed corrections await a separate user-approved roadmap amendment. No runtime, rule, test, launcher, harness, asset or governance migration was implemented. | `55afe3b1` |
 
 ## Milestone 8.25e Perform the repeat that was offered, or stop offering it completion evidence
 
