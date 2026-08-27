@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
@@ -67,6 +68,14 @@ namespace GuardsDigital.Tests.EditMode
         /// </remarks>
         private static readonly int[] SweepSeeds = { 1, 2, 3, 4, 5, 6 };
 
+        /// <summary>
+        /// How large a rule-event log the director Undo can still roll a probe answer back through.
+        /// RuleEventLogSnapshotEnvelope bounds a captured log at 10,000 entries and Undo replays
+        /// through a capture, so a sweep long enough to pass that bound cannot be forked any more.
+        /// Milestone 8.25e.
+        /// </summary>
+        private const int RollbackReadableEventCount = 9000;
+
         // -----------------------------------------------------------------------------------------
         // The two demonstrated cases
         // -----------------------------------------------------------------------------------------
@@ -131,20 +140,29 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EverySweptSeedOfTheStagedBoard_PlaysWithoutStallingOrRefusal()
         {
+            var indistinguishable = new List<string>();
             foreach (var seed in SweepSeeds)
             {
-                Sweep(CreateStagedWaspVersusTigerclawSession(), seed, "staged Wasp versus Tigerclaw");
+                Sweep(
+                    CreateStagedWaspVersusTigerclawSession(), seed, "staged Wasp versus Tigerclaw",
+                    indistinguishable);
             }
+
+            AssertOnlyTheRecordedOffersHaveOneAnswer(indistinguishable);
         }
 
         /// <summary>The same property on the board a player loads. See the case above.</summary>
         [Test]
         public void EverySweptSeedOfTheSixPlayerBoard_PlaysWithoutStallingOrRefusal()
         {
+            var indistinguishable = new List<string>();
             foreach (var seed in SweepSeeds)
             {
-                Sweep(CreateOfficialSixPlayerSession(), seed, "official six-player");
+                Sweep(
+                    CreateOfficialSixPlayerSession(), seed, "official six-player", indistinguishable);
             }
+
+            AssertOnlyTheRecordedOffersHaveOneAnswer(indistinguishable);
         }
 
         // -----------------------------------------------------------------------------------------
@@ -254,14 +272,18 @@ namespace GuardsDigital.Tests.EditMode
         /// answers require before they will accept anything, so a decision that fails it is a decision
         /// nothing can answer, whichever of its options a seed happens to reach for.
         /// </remarks>
-        private static void Sweep(MatchSession session, int seed, string board)
+        private static void Sweep(
+            MatchSession session, int seed, string board, List<string> indistinguishable)
         {
             var random = new MatchLoopRandom(seed);
+            var probed = new HashSet<string>(StringComparer.Ordinal);
             var count = 0;
             while (session.Projection.Phase != RoundResolutionPhase.GameEnded && count < SweepBudget)
             {
                 AssertEveryStandingActionDecisionBelongsToTheSelectedActor(
                     session.Projection, board, seed, count);
+                AssertBothAnswersToAStandingYesOrNoDoSomethingDifferent(
+                    session, board, seed, count, indistinguishable, probed);
 
                 var candidates = DeterministicMatchLoop.EnumerateLegalCommands(session.Projection);
                 Assert.That(candidates.Count, Is.GreaterThan(0),
@@ -301,6 +323,148 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.Fail("No Movement stood inside the budget, so there is nothing to refuse.");
             return null;
+        }
+
+        /// <summary>
+        /// Milestone 8.25e's own property, and the one shape the family this milestone closes escaped
+        /// through: where the projection stands on a yes-or-no, the two answers do not leave the match
+        /// in the same state.
+        ///
+        /// <para><b>Why this and not "an accepted command changes something".</b> Milestone 8.25a's
+        /// property above is that every offered command is accepted and no decision stalls, and it is
+        /// blind by construction to a command that is accepted and then does nothing: taking rulebook
+        /// p.10's repeat after a Hold was accepted, produced no instance at all, and the turn moved on
+        /// exactly as a decline would have - so the whole match state still changed, and a check on
+        /// "did anything change" would have passed. What separates the two is each other. An offer
+        /// whose answers are indistinguishable is not a decision; it is a question with one
+        /// answer.</para>
+        ///
+        /// <para>Both answers are given here, each rolled back by the director Undo that milestone 3.7
+        /// built, and the sweep then goes on with whichever one it drew - so the property is checked
+        /// over the same runs rather than over runs of its own. It is stated once, for every
+        /// confirm-or-decline the projection can publish, rather than once per action kind: the defect
+        /// was one predicate answering for four arms, and a case per arm would have been four chances
+        /// to miss the fifth.</para>
+        ///
+        /// <para><b>It is written as an allowed set rather than as a flat assertion because it
+        /// immediately found a second one, in a different mechanism.</b> See
+        /// <see cref="IndistinguishableAnswersThisMilestoneDoesNotOwn"/>.</para>
+        /// </summary>
+        private static void AssertBothAnswersToAStandingYesOrNoDoSomethingDifferent(
+            MatchSession session, string board, int seed, int commandCount,
+            List<string> indistinguishable, HashSet<string> probed)
+        {
+            var choice = session.Projection.PendingEffectChoice;
+            if (choice == null || choice.ConfirmInvocation == null || choice.DeclineInvocation == null ||
+                // Once per node per run. The rollback is the director Undo, which replays the whole
+                // accepted prefix, so a node a seed reaches sixty times would cost sixty replays to
+                // learn the one thing it can teach - Wasp's `high-voltage-may` does exactly that.
+                !probed.Add(choice.NodeId.Value) ||
+                // The rollback is the director Undo, and Undo replays through a snapshot whose
+                // rule-event log is bounded at 10,000 entries. A four-thousand-command sweep passes
+                // that bound part-way through, and the bound is the envelope's rather than this
+                // check's, so the check stops where the instrument does instead of asking the
+                // milestone to widen a wire limit it has no business touching. Every decision either
+                // board reaches in its first several rounds is well inside it.
+                session.Projection.DiagnosticEvents.Count > RollbackReadableEventCount)
+            {
+                return;
+            }
+
+            var taken = AnswerAndRollBack(session, DirectorCommand.AnswerEffectChoice(
+                choice.ConfirmInvocation));
+            var declined = AnswerAndRollBack(session, DirectorCommand.AnswerEffectChoice(
+                choice.DeclineInvocation));
+            if (taken != declined)
+            {
+                return;
+            }
+
+            indistinguishable.Add(
+                $"{choice.NodeId.Value} ({choice.ChooserId.Value}, {board} seed {seed}, after " +
+                $"{commandCount} commands)");
+        }
+
+        /// <summary>
+        /// The whole sweep's inventory at once, rather than the first one it happened to reach.
+        /// Milestone 8.25e: this check found four on its first runs and each failure would otherwise
+        /// have hidden the next, which is the same shape of blindness it exists to remove.
+        /// </summary>
+        private static void AssertOnlyTheRecordedOffersHaveOneAnswer(
+            IReadOnlyList<string> indistinguishable)
+        {
+            var unrecorded = indistinguishable
+                .Where(entry => !IndistinguishableAnswersThisMilestoneDoesNotOwn.Any(
+                    known => entry.StartsWith(known + " ", StringComparison.Ordinal)))
+                .Distinct()
+                .ToArray();
+            Assert.That(unrecorded, Is.Empty,
+                "The projection published a yes-or-no whose answers leave the match in exactly the " +
+                "same state, so the player was asked a question with one answer: " +
+                string.Join("; ", unrecorded) +
+                ". Either the offer is wrong, or the node belongs beside the recorded ones with its " +
+                "own reason.");
+        }
+
+        /// <summary>
+        /// The nodes whose two answers this sweep has observed to be the same state, and which this
+        /// milestone deliberately leaves as they are.
+        ///
+        /// <para><b>Eight nodes across five heroes, all one mechanism, and none of them p.10's
+        /// repeat.</b> The check found them on its first runs. Every one is an optional card-text step
+        /// - a printed "you may" - whose body begins with a mandatory selection: Wasp's
+        /// <c>high-voltage-may</c> and <c>kinetic-push</c>, Brogan's <c>shove-move</c> and
+        /// <c>throw-discard</c>, Arien's <c>wave-push</c>, Tigerclaw's <c>theft-opening-move</c>, and
+        /// Xargatha's <c>green-may</c> and <c>converts-may</c>. Where the board leaves that selection
+        /// nothing to name, taking the offer reaches the step, cannot complete it, and rulebook p.10's
+        /// Mandatory and Optional Steps stops the action exactly where declining leaves it. Observed on
+        /// both boards, on six seeds each.</para>
+        ///
+        /// <para><b>Why they are recorded rather than fixed here.</b> The repeat family this milestone
+        /// owns is closed by asking one authority whether the instance it would start can start, and
+        /// the authority already knows. These would need an optional node to look ahead into a nested
+        /// selection's candidates before offering itself, which is a different seam, in card text,
+        /// across five heroes' content. The project already holds the ruling such a fix would be built
+        /// against - <c>RULES_LEDGER.md</c>'s question 11, where an option the actor cannot perform is
+        /// refused rather than offered - so what is missing is the mechanism rather than the decision.
+        /// Milestone 8.25e1's independent offer-and-answer reachability inventory is where it belongs,
+        /// and this constant is what hands it over: a ninth node fails the sweep until somebody says
+        /// why it is here.</para>
+        /// </summary>
+        private static readonly string[] IndistinguishableAnswersThisMilestoneDoesNotOwn =
+        {
+            "high-voltage-may", "kinetic-push", "shove-move", "throw-discard", "wave-push",
+            "theft-opening-move", "green-may", "converts-may"
+        };
+
+        /// <summary>
+        /// Gives one answer, reads the state and the history it produced, and puts the match back.
+        ///
+        /// <para>The rule events the answer raised are read beside the authoritative payload, because
+        /// rulebook p.12's Hold is an action whose whole content is that nothing happens: a second one
+        /// changes no piece, no card and no counter, and what makes it a performed action rather than a
+        /// declined offer is that it was performed - the <c>ActionStarted</c> and <c>ActionEnded</c> it
+        /// raises, and the basic action p.9 records. Reading the payload alone would call a real second
+        /// Hold indistinguishable from declining one; the captured snapshot carries both but refuses to
+        /// serialize once a long sweep has filled its log, so the two are read separately here.</para>
+        /// </summary>
+        private static string AnswerAndRollBack(MatchSession session, DirectorCommand command)
+        {
+            var beforeCommands = session.Projection.AcceptedCommands.Count;
+            var beforeEvents = session.Projection.DiagnosticEvents.Count;
+            var answered = session.Execute(command);
+            Assert.That(answered.Accepted, Is.True, answered.Detail);
+            var produced = session.Projection.AuthoritativeSnapshot + "\n" + string.Join(
+                "\n",
+                session.Projection.DiagnosticEvents.Skip(beforeEvents)
+                    .Select(entry => entry.DisplayText));
+            while (session.Projection.AcceptedCommands.Count > beforeCommands)
+            {
+                var undone = session.Undo();
+                Assert.That(undone.Accepted, Is.True, undone.Detail);
+            }
+
+            return produced;
         }
 
         private static void AssertEveryStandingActionDecisionBelongsToTheSelectedActor(

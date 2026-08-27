@@ -407,7 +407,7 @@ Non-goals: No change to any printed text, to which abilities may repeat, or to t
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825d-let-a-card-text-attack-repeat-say-that-it-is-one-completion-evidence).
 
-### [ ] 8.25e Perform the repeat that was offered, or stop offering it
+### [x] 8.25e Perform the repeat that was offered, or stop offering it
 
 Proposed at the user's direction on 2026-08-26, found while auditing milestone 8.25a. It is the same family as that milestone and is deliberately not folded into it: 8.25a corrected *when* an owed repeat runs, and this is about *which actions can be repeated at all*, which 8.25a's block names as a non-goal.
 
@@ -431,6 +431,8 @@ Acceptance checks:
 - Complete unfiltered Edit Mode and Play Mode suites pass.
 
 Non-goals: No change to Attack, Skill or Movement repeats, to the after-action hold milestone 8.25a built, or to `RepeatTargetBinding`. No new printed content, and no reinterpretation of which cards are basic - p.9's supertype is settled and this milestone reads it rather than revisiting it.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e-perform-the-repeat-that-was-offered-or-stop-offering-it-completion-evidence).
 
 Milestone **8.25e1** is defined in the dedicated [roster-complete stabilization shard](PHASE_8_STABILIZATION.md). It is a truth-first fresh-task independent review after 8.25e and a hard gate before 8.25f or 8.26; the review implements no correction or documentation migration.
 

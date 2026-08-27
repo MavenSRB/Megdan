@@ -431,12 +431,148 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // case and every case before this milestone.
             repeatSubject = PendingAfterActionRepeat.For(
                 basicAction, RepeatResolutionIdFor(basicAction), completedAttackTarget);
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ??
+                throw new ArgumentNullException(nameof(instances));
             var events = triggeredEffects.ApplyCheckpoint(
-                timing, checkpoint, tieBreaker, definitions, instances, participants, modifications,
-                skillBackend.HeroItems, continuousSources);
+                timing, checkpoint, tieBreaker, materializedDefinitions, materializedInstances,
+                participants, modifications, skillBackend.HeroItems, continuousSources,
+                // Milestone 8.25e. The ability asks this before it offers, and asks it with the
+                // binding its own node declares - the exclusion Cloak and Daggers prints is part of
+                // what the instance it offers would have to satisfy. The board is the one this
+                // checkpoint is standing on, because it is the board the second instance would start
+                // from.
+                binding => OwedRepeatCanBePerformed(
+                    binding, materializedDefinitions, materializedInstances, participants,
+                    modifications, checkpoint.RoundIndex, checkpoint.TurnIndex, timing));
             SettleAfterActionRepeat(triggeredEffects.LastRepeatRequested);
             return events;
         }
+
+        /// <summary>
+        /// Milestone 8.25e. Whether the repeat this checkpoint's held subject stands for could be
+        /// performed, asked before it is offered rather than discovered after it is taken.
+        ///
+        /// <para><b>The defect this closes, in one sentence: the offer admitted strictly more than the
+        /// answer could perform.</b> The ability decided from
+        /// <see cref="PerformedBasicAction.CanBeRepeated"/> alone - a fact about the action that
+        /// ended - while whether a second instance can start is a fact about which kinds this
+        /// dispatcher covers and about the board as it now stands. Both halves are answered here, and
+        /// each kind is answered by the resolver that would start it rather than by a rule restated in
+        /// this method.</para>
+        ///
+        /// <para>p.12's Hold is the one kind that is always performable: performing a Hold is doing
+        /// nothing, and doing nothing needs nothing from the board. p.11's Fast Travel and p.13's
+        /// Clear are the two the page will not repeat at all, which
+        /// <see cref="PerformedBasicAction.KindCanBeRepeated"/> states and the subject above has
+        /// already applied.</para>
+        /// </summary>
+        private bool OwedRepeatCanBePerformed(
+            RepeatTargetBinding binding,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex,
+            ActiveEffectLifecycle timing)
+        {
+            var owed = repeatSubject;
+            if (owed == null)
+            {
+                return false;
+            }
+
+            if (owed.Kind == ActionKind.Hold)
+            {
+                // p.12: "When you perform a Hold action you simply do nothing." There is no board
+                // condition on doing nothing, so a second one can always be performed - and it is an
+                // action performed, so it raises p.8's checkpoints of its own. It is answered before
+                // the lookup below because a Hold is a general-rule action: its definition is p.12's
+                // own, and the card it is performed on prints no action for it to be found under.
+                return true;
+            }
+
+            var card = instances.FirstOrDefault(
+                candidate => candidate.Id.Equals(owed.SourceCardInstanceId));
+            var definition = card == null
+                ? null
+                : definitions.FirstOrDefault(
+                    candidate => candidate.Reference.Equals(card.DefinitionReference));
+            var action = definition?.ActionDefinitions
+                .FirstOrDefault(candidate => candidate.Id.Equals(owed.ActionDefinitionId));
+            if (action == null)
+            {
+                return false;
+            }
+
+            switch (owed.Kind)
+            {
+                case ActionKind.Attack:
+                    return attackDefenseBackend.CanStartRepeatedAttack(
+                        RepeatedAttackSubjectFor(owed, definition),
+                        owed.ResolutionId,
+                        ExclusionFor(binding, owed),
+                        definitions, instances, participants, modifications);
+
+                case ActionKind.Skill:
+                    // The Skill resolver refuses only an action it cannot find an effect for; a Skill
+                    // whose text finds nothing on the board still runs and simply applies nothing,
+                    // which is the action performed rather than an offer that should not have been
+                    // made.
+                    return action.EffectRoot != null;
+
+                case ActionKind.Movement:
+                    return movementBackend.CanStartRepeatedMovement(
+                        RepeatedOfferFor(owed, definition, action), definitions, instances,
+                        modifications);
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// The unit an owed repeat may not take, read off the ability that asked for it. Milestone
+        /// 8.25e extracted it so the offer and the instance apply the one rule: the offer has to know
+        /// what the instance it is offering would be barred from, or it is not offering that instance.
+        /// </summary>
+        private static AttackTarget ExclusionFor(
+            RepeatTargetBinding binding, PendingAfterActionRepeat subject) =>
+            (binding == RepeatTargetBinding.DifferentTarget ||
+                binding == RepeatTargetBinding.DifferentEnemyHero) &&
+            subject.Kind == ActionKind.Attack
+                ? subject.CompletedAttackTarget
+                : default;
+
+        /// <summary>The completed instance a repeated Attack is rebuilt from. Milestone 8.25e.</summary>
+        private static PendingAttackResolution RepeatedAttackSubjectFor(
+            PendingAfterActionRepeat owed, CardDefinition definition) =>
+            new PendingAttackResolution(
+                owed.ResolutionId,
+                owed.SourceCardInstanceId,
+                definition.Reference,
+                owed.ActionDefinitionId,
+                owed.ActorId,
+                ActionInvocationContext.Repeated,
+                new ActionResolutionStepId("attack-target"),
+                AttackResolutionPhase.ChooseTarget,
+                default(AttackTarget),
+                null);
+
+        /// <summary>The offer a repeated instance runs under. Milestone 8.25e.</summary>
+        private static ActionOffer RepeatedOfferFor(
+            PendingAfterActionRepeat owed, CardDefinition definition, ActionDefinition action) =>
+            new ActionOffer(
+                owed.SourceCardInstanceId,
+                definition.Reference,
+                owed.ActionDefinitionId,
+                owed.ActorId,
+                ActionInvocationContext.Repeated,
+                true,
+                action.AttackRange,
+                action.SourceCardStateTransition);
 
         /// <summary>
         /// The identity the repeated instance runs under, derived from the action it repeats rather
@@ -472,13 +608,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // target the same unit", which arrives as the requesting node's own declared binding.
                 // It is read off the ability rather than assumed, so an ability printing no such clause
                 // repeats freely - and it applies to an Attack alone, because no other action kind the
-                // page repeats has a target to exclude.
+                // page repeats has a target to exclude. Since milestone 8.25e the offer reads it
+                // through the same helper, because an offer that did not know it would be offering a
+                // different instance than the one the answer performs.
                 owedAfterActionRepeatExclusion =
-                    (requested.Value.Binding == RepeatTargetBinding.DifferentTarget ||
-                        requested.Value.Binding == RepeatTargetBinding.DifferentEnemyHero) &&
-                    repeatSubject.Kind == ActionKind.Attack
-                        ? repeatSubject.CompletedAttackTarget
-                        : default;
+                    ExclusionFor(requested.Value.Binding, repeatSubject);
             }
 
             repeatSubject = null;
@@ -489,6 +623,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>The owed repeat, or null. Milestone 8.23.</summary>
         public PendingAfterActionRepeat OwedAfterActionRepeat => owedAfterActionRepeat;
+
+        /// <summary>
+        /// Milestone 8.25e. Hands the owed repeat to the caller that will perform it and clears it
+        /// here, for the one kind no resolver in this dispatcher holds: p.12's Hold is raised by the
+        /// turn authority, so its second instance is performed there too.
+        ///
+        /// <para>It clears exactly as <see cref="StartOwedAfterActionRepeat"/> does, so a repeat is
+        /// consumed once whichever of the two performs it.</para>
+        /// </summary>
+        public PendingAfterActionRepeat TakeOwedAfterActionRepeat()
+        {
+            var owed = owedAfterActionRepeat ??
+                throw new InvalidOperationException("No after-action repeat is owed.");
+            owedAfterActionRepeat = null;
+            owedAfterActionRepeatExclusion = default;
+            return owed;
+        }
 
         /// <summary>The subject a standing after-action ability may still ask to repeat, or null.</summary>
         public PendingAfterActionRepeat AfterActionRepeatSubject => repeatSubject;
@@ -2010,15 +2161,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// applies again from the board as it now stands.</para>
         ///
         /// <para>Which resolver starts it is decided by the kind, and by nothing else. p.9 makes every
-        /// action on a basic card basic, so the set is wider than the printed icons: a Movement, a
-        /// Hold, a Fast Travel and a Clear performed on a basic card are all repeatable, and each is
-        /// started by the same backend that started the first instance. Nothing here reads a card name
-        /// or an ability.</para>
+        /// action on a basic card basic, so the set is wider than the printed icons: a Movement and a
+        /// Hold performed on a basic card are repeatable alongside the printed Attack and Skill, and
+        /// each is started by the resolver that started the first instance. Nothing here reads a card
+        /// name or an ability.</para>
         ///
-        /// <para>A repeat that cannot start - the actor has left the board, the card no longer offers
-        /// the action, no unit the Attack admits is left - simply does not happen, which is p.10
-        /// offering a repeat rather than owing one. It is reported as a completed action rather than as
-        /// a rejected command, exactly as milestone 8.10's Attack repeat is.</para>
+        /// <para><b>Milestone 8.25e: nothing arrives here that cannot start.</b> This used to report
+        /// "nothing happened" on four arms - the two kinds it had no case for, and any of the other
+        /// three whose backend refused the second instance - so an ability could offer a repeat, have
+        /// the player take it, and change nothing at all. The question is now asked before the offer,
+        /// by <see cref="OwedRepeatCanBePerformed"/>, so a repeat that cannot be performed is never
+        /// owed; p.11's Fast Travel and p.13's Clear are refused by
+        /// <see cref="PerformedBasicAction.KindCanBeRepeated"/> before that, and p.12's Hold is
+        /// performed by the turn authority, which is the only place that raises a Hold.</para>
+        ///
+        /// <para>A backend that refuses anyway means the offer and the answer have disagreed, which is
+        /// the defect itself rather than a state to shrug at, so it faults and the command transaction
+        /// rolls the answer back.</para>
         /// </summary>
         public CardActionResolutionResult StartOwedAfterActionRepeat(
             IEnumerable<CardDefinition> definitions,
@@ -2099,12 +2258,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     owedAfterActionRepeatExclusion = default;
                     return repeatedAttack.Accepted
                         ? CardActionResolutionResult.Accept(false, null, null, repeatedAttack.Steps)
-                        : nothingHappened;
+                        : throw RefusedAfterItWasOffered(owed, repeatedAttack.RejectionReason);
 
                 case ActionKind.Skill:
                     if (action.EffectRoot == null)
                     {
-                        return nothingHappened;
+                        throw RefusedAfterItWasOffered(
+                            owed, CardActionResolutionRejectionReason.UnavailableOffer);
                     }
 
                     var repeatedSkill = skillBackend.StartRepeatedSkill(
@@ -2130,11 +2290,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         out _,
                         out _,
                         out _);
-                    return repeatedSkill.Accepted && !repeatedSkill.IsComplete
-                        ? CardActionResolutionResult.Accept(false, null, null, repeatedSkill.Steps)
-                        : repeatedSkill.Accepted
-                            ? CardActionResolutionResult.Accept(true, null, null, repeatedSkill.Steps)
-                            : nothingHappened;
+                    if (!repeatedSkill.Accepted)
+                    {
+                        throw RefusedAfterItWasOffered(owed, repeatedSkill.RejectionReason);
+                    }
+
+                    return CardActionResolutionResult.Accept(
+                        repeatedSkill.IsComplete, null, null, repeatedSkill.Steps);
 
                 case ActionKind.Movement:
                     var repeatedMovement = movementBackend.StartRepeatedMovement(
@@ -2143,16 +2305,37 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     return repeatedMovement.Accepted
                         ? CardActionResolutionResult.Accept(
                             repeatedMovement.IsComplete, null, null, repeatedMovement.Steps)
-                        : nothingHappened;
+                        : throw RefusedAfterItWasOffered(owed, repeatedMovement.RejectionReason);
 
                 default:
-                    // p.11's Fast Travel, p.12's Hold and p.13's Clear complete inside the command that
-                    // starts them and are driven by the turn authority rather than by a resolver this
-                    // dispatcher holds, so their second instance is started there. Reporting "nothing
-                    // happened" here would lose it; the caller asks this only for the kinds above.
-                    return nothingHappened;
+                    // p.12's Hold is the one basic action no resolver here holds - it is raised by the
+                    // turn authority, which is where its second instance is performed - so an owed Hold
+                    // never reaches this dispatcher at all. p.11's Fast Travel and p.13's Clear never
+                    // become an owed repeat, because p.10 refuses a repeated instance that is a
+                    // replacement and PerformedBasicAction.KindCanBeRepeated states that before the
+                    // ability offers. Either one arriving here means that rule was bypassed.
+                    throw RefusedAfterItWasOffered(
+                        owed, CardActionResolutionRejectionReason.UnsupportedActionKind);
             }
         }
+
+        /// <summary>
+        /// Milestone 8.25e. The offer and the answer have disagreed about the same instance, which is
+        /// the defect this milestone closes rather than a state to report as a completed action.
+        ///
+        /// <para>Before this milestone every one of these arms returned "nothing happened", so a player
+        /// could be offered rulebook p.10's repeat, take it, and watch the turn move on with the action
+        /// unperformed. A seeded driver that only checks that offered commands are accepted passes over
+        /// that in silence, which is why it stood for two milestones. Faulting rolls the answer back
+        /// through the command transaction and names the kind and the reason.</para>
+        /// </summary>
+        private static InvalidOperationException RefusedAfterItWasOffered(
+            PendingAfterActionRepeat owed, CardActionResolutionRejectionReason reason) =>
+            new InvalidOperationException(
+                $"An after-action repeat of a {owed.Kind} was offered and taken, and the resolver " +
+                $"that would start its second instance refused it as {reason}. Rulebook p.10's " +
+                "repeat is offered only where it can be performed, so the offer and the answer have " +
+                "disagreed about the same instance.");
 
         private void AppendRequestedHeroDefeats(
             EffectResolutionStepResult result,

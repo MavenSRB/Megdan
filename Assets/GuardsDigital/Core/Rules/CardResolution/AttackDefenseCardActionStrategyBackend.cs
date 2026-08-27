@@ -290,45 +290,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ??
                 throw new ArgumentNullException(nameof(instances));
-            if (pendingAttackResolution != null)
+            var refusal = PlanRepeatedAttack(
+                completed, repeatedResolutionId, excludedTarget, materializedDefinitions,
+                materializedInstances, participants, modifications,
+                out var repeated, out var plannedChoice, out var targetIsBoundByCardText);
+            if (refusal != CardActionResolutionRejectionReason.None)
             {
-                return RejectAttack(CardActionResolutionRejectionReason.ResolutionAlreadyPending);
+                return RejectAttack(refusal);
             }
 
-            var repeated = new PendingAttackResolution(
-                repeatedResolutionId,
-                completed.SourceCardInstanceId,
-                completed.SourceDefinitionReference,
-                completed.ActionDefinitionId,
-                completed.ActorId,
-                ActionInvocationContext.Repeated,
-                new ActionResolutionStepId("attack-target"),
-                AttackResolutionPhase.ChooseTarget,
-                default(AttackTarget),
-                null,
-                excludedTarget: excludedTarget,
-                actorSpaceAtActionStart: ActorSpaceOf(completed.ActorId));
-            var offer = FindPendingAttackOffer(
-                repeated, materializedDefinitions, materializedInstances);
-            if (!offer.HasValue)
-            {
-                return RejectAttack(CardActionResolutionRejectionReason.UnavailableOffer);
-            }
-
-            if (!adjacentMoveAuthority.Occupancies.Any(
-                occupancy => occupancy.HeroId.Equals(repeated.ActorId)))
-            {
-                return RejectAttack(CardActionResolutionRejectionReason.ActorUnavailable);
-            }
-
-            // Milestone 8.19a. A repeated instance of an Attack whose text names its target does the
-            // same thing the printed instance did: it starts at p.14's step 1 with nothing bound, and
-            // the text names a unit again - under the exclusion this instance carries.
-            var repeatedAction = ActionOfferQuery.FindActionDefinition(
-                offer.Value, materializedDefinitions);
-            var repeatedPolicy = repeatedAction.AttackTargetPolicy ??
-                PrintedAttackTargetPolicy.ForClassification(offer.Value.AttackRange);
-            if (repeatedPolicy.TargetIsBoundByCardText)
+            if (targetIsBoundByCardText)
             {
                 var applying = new PendingAttackResolution(
                     repeatedResolutionId,
@@ -362,18 +333,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             pendingAttackResolution = repeated;
-            pendingAttackTargetChoice = CreateAttackTargetChoice(
-                repeated, offer.Value, materializedDefinitions, participants, modifications);
+            pendingAttackTargetChoice = plannedChoice;
             pendingDefenseChoice = null;
-
-            if (pendingAttackTargetChoice.LegalTargets.Count == 0)
-            {
-                // p.10's repeat is offered, not owed: an instance with nobody left to take simply does
-                // not happen, and the action that asked for it is already complete.
-                pendingAttackResolution = null;
-                pendingAttackTargetChoice = null;
-                return RejectAttack(CardActionResolutionRejectionReason.TargetUnavailable);
-            }
 
             return AttackActionResolutionResult.Accept(
                 pendingAttackResolution,
@@ -384,6 +345,114 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     ResolutionStep.FromFact(
                         CardActionResolutionEvent.AttackTargetChoiceRequested(pendingAttackResolution))
                 });
+        }
+
+        /// <summary>
+        /// Milestone 8.25e. Whether a repeated instance of this completed Attack could start from the
+        /// board as it now stands, without starting one.
+        ///
+        /// <para>Rulebook p.10's repeat is an offer - "you <em>may</em> perform the entire action
+        /// again" - so an ability that offers one has to know whether there is an instance to offer.
+        /// The answer is the same judgement <see cref="StartRepeatedAttack"/> makes, asked from
+        /// <see cref="PlanRepeatedAttack"/> rather than restated here, for the reason
+        /// <c>CanClearRemoveAnything</c> exists: one statement of the judgement, asked in both places,
+        /// so the offer and the answer cannot drift apart.</para>
+        ///
+        /// <para>What it cannot answer is whether the instance will <em>finish</em>. An Attack whose
+        /// text names its own target starts at p.14's step 1 and the text names a unit there; a board
+        /// that leaves it nothing to name stops the action at that mandatory step, which is p.10's own
+        /// Mandatory and Optional Steps rather than an offer that should not have been made. Deciding
+        /// that here would mean running the card text speculatively at the checkpoint.</para>
+        /// </summary>
+        internal bool CanStartRepeatedAttack(
+            PendingAttackResolution completed,
+            ActionResolutionId repeatedResolutionId,
+            AttackTarget excludedTarget,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications) =>
+            completed != null &&
+            repeatedResolutionId.IsDefined &&
+            definitions != null &&
+            instances != null &&
+            PlanRepeatedAttack(
+                completed, repeatedResolutionId, excludedTarget, definitions.ToArray(),
+                instances.ToArray(), participants, modifications,
+                out _, out _, out _) == CardActionResolutionRejectionReason.None;
+
+        /// <summary>
+        /// Everything <see cref="StartRepeatedAttack"/> decides before it commits anything: the
+        /// instance it would run, the target question it would ask, and whether the card's own text
+        /// names the target instead. Nothing here writes a field, so the query above can ask it.
+        /// </summary>
+        private CardActionResolutionRejectionReason PlanRepeatedAttack(
+            PendingAttackResolution completed,
+            ActionResolutionId repeatedResolutionId,
+            AttackTarget excludedTarget,
+            IReadOnlyList<CardDefinition> materializedDefinitions,
+            IReadOnlyList<CardInstance> materializedInstances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            out PendingAttackResolution planned,
+            out PendingAttackTargetChoice plannedChoice,
+            out bool targetIsBoundByCardText)
+        {
+            planned = null;
+            plannedChoice = null;
+            targetIsBoundByCardText = false;
+            if (pendingAttackResolution != null)
+            {
+                return CardActionResolutionRejectionReason.ResolutionAlreadyPending;
+            }
+
+            planned = new PendingAttackResolution(
+                repeatedResolutionId,
+                completed.SourceCardInstanceId,
+                completed.SourceDefinitionReference,
+                completed.ActionDefinitionId,
+                completed.ActorId,
+                ActionInvocationContext.Repeated,
+                new ActionResolutionStepId("attack-target"),
+                AttackResolutionPhase.ChooseTarget,
+                default(AttackTarget),
+                null,
+                excludedTarget: excludedTarget,
+                actorSpaceAtActionStart: ActorSpaceOf(completed.ActorId));
+            var offer = FindPendingAttackOffer(
+                planned, materializedDefinitions, materializedInstances);
+            if (!offer.HasValue)
+            {
+                return CardActionResolutionRejectionReason.UnavailableOffer;
+            }
+
+            var actorId = planned.ActorId;
+            if (!adjacentMoveAuthority.Occupancies.Any(
+                occupancy => occupancy.HeroId.Equals(actorId)))
+            {
+                return CardActionResolutionRejectionReason.ActorUnavailable;
+            }
+
+            // Milestone 8.19a. A repeated instance of an Attack whose text names its target does the
+            // same thing the printed instance did: it starts at p.14's step 1 with nothing bound, and
+            // the text names a unit again - under the exclusion this instance carries.
+            var repeatedAction = ActionOfferQuery.FindActionDefinition(
+                offer.Value, materializedDefinitions);
+            var repeatedPolicy = repeatedAction.AttackTargetPolicy ??
+                PrintedAttackTargetPolicy.ForClassification(offer.Value.AttackRange);
+            if (repeatedPolicy.TargetIsBoundByCardText)
+            {
+                targetIsBoundByCardText = true;
+                return CardActionResolutionRejectionReason.None;
+            }
+
+            plannedChoice = CreateAttackTargetChoice(
+                planned, offer.Value, materializedDefinitions, participants, modifications);
+            return plannedChoice.LegalTargets.Count == 0
+                // p.10's repeat is offered, not owed: an instance with nobody left to take simply does
+                // not happen, and since milestone 8.25e it is not offered either.
+                ? CardActionResolutionRejectionReason.TargetUnavailable
+                : CardActionResolutionRejectionReason.None;
         }
 
         private AttackActionResolutionResult StartAttackResolution(

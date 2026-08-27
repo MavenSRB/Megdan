@@ -101,6 +101,43 @@ namespace GuardsDigital.Core.Cards
 
         public bool IsDefined => Kind != ActionKind.None;
 
+        /// <summary>
+        /// Whether rulebook p.10's repeat has anything to make a second instance of here. Milestone
+        /// 8.25e; the whole of "is there something to repeat", asked in one place so the ability that
+        /// offers and the authority that holds the subject cannot answer it differently.
+        ///
+        /// <para>Three sentences, and each removes a different case. There is no action at all when
+        /// the completion recorded none. p.10's "You cannot repeat a repeated action!" removes the
+        /// second instance. And <see cref="KindCanBeRepeated"/> removes the two kinds the page will
+        /// not make a second instance of at all.</para>
+        /// </summary>
+        public bool CanBeRepeated =>
+            IsDefined && !WasRepeatedInstance && KindCanBeRepeated(Kind);
+
+        /// <summary>
+        /// Whether rulebook p.10's repeat can produce a second instance of an action of this kind.
+        ///
+        /// <para>p.9 makes every action on a basic card basic, so this set is wider than the printed
+        /// icons: an Attack, a Skill, a Movement and p.12's Hold are all repeatable, and repeating a
+        /// Hold performs a Hold again - "you simply do nothing" is what that instance does, and it is
+        /// still an action performed, so it raises p.8's checkpoints of its own.</para>
+        ///
+        /// <para><b>p.11's Fast Travel and p.13's Clear are not, and the page says so three times.</b>
+        /// Both exist only as replacements - "instead of your entire Movement action", "instead of
+        /// your entire Attack action" - and p.10's own bullet reads "A repeated instance of an action
+        /// cannot be replaced with a different action (Such as Clear or Fast Travel)". p.11 adds "You
+        /// can only perform one Fast Travel action, regardless of the movement value on the card!" and
+        /// p.13 offers "one Clear secondary action". So the only instance such a repeat could produce
+        /// is a second replacement, which all three sentences refuse; there is nothing else it could
+        /// be, because performing the un-replaced action instead would be the replacement running
+        /// backwards. The offer is therefore not made rather than made and dropped.</para>
+        /// </summary>
+        public static bool KindCanBeRepeated(ActionKind kind) =>
+            kind == ActionKind.Attack ||
+            kind == ActionKind.Skill ||
+            kind == ActionKind.Movement ||
+            kind == ActionKind.Hold;
+
         public bool Equals(PerformedBasicAction other) =>
             ActorId.Equals(other.ActorId) &&
             SourceCardInstanceId.Equals(other.SourceCardInstanceId) &&

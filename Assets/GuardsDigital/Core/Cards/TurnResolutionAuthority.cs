@@ -892,8 +892,14 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.HoldNotAvailable);
             }
 
+            // Milestone 8.25e. The same four facts CardLifecycleAuthority.TryResolveAfterAction
+            // requires, asked here rather than resolved here: the resolution itself moved below the
+            // checkpoint, and this command still refuses a card that could not take it.
             var card = instances.Single(candidate => candidate.Id.Equals(cardInstanceId));
-            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+            if (card.State.Location != CardLocation.TurnArea ||
+                !card.State.HasBeenPlayed ||
+                card.State.ResolutionStatus != CardResolutionStatus.Unresolved ||
+                card.State.FaceOrientation != CardFaceOrientation.FaceUp)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardResolutionFailed);
             }
@@ -901,29 +907,24 @@ namespace GuardsDigital.Core.Cards
             var events = new List<TurnResolutionEvent>();
             AddTiming(events, TimingCheckpoint.ActionStarted);
             events.Add(TurnResolutionEvent.HoldPerformed(offer.Value));
-            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
-            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
-                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
 
             // Milestone 8.9. p.9 counts *every* action on a basic card as basic, and p.7's Hold is an
             // action a hero performs on one, so a Hold spent from Magnetic Dagger or Static Barrier
             // records the fact exactly as their printed primaries do. It is the one completion the turn
             // authority raises itself rather than materializing from a resolver's stream.
+            //
+            // Milestone 8.25e moved the card's resolution and the Initiative acknowledgement below this
+            // line. They ran above it, so a Hold on a basic card reached the checkpoint with its card
+            // already resolved and its actor already handed on - the exact state milestone 8.25a
+            // removed for the Attack, Skill and Movement tails, and the reason a repeat this ability
+            // owed for a Hold had nothing to run on.
             AddCompletedAction(
                 events,
                 offer.Value.SourceCardInstanceId,
                 offer.Value.ActionDefinitionId,
                 offer.Value.ActorId,
                 ActionKind.Hold);
-            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
-            if (!acknowledgement.Accepted)
-            {
-                throw new InvalidOperationException(
-                    "A card resolved by the turn authority could not be acknowledged by Initiative authority.");
-            }
-
-            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
-            return AdvanceInitiative(events);
+            return CompleteGeneralRuleActionAndAdvance(events, "Hold");
         }
 
         public TurnResolutionResult TryStartMovement(
@@ -1195,11 +1196,66 @@ namespace GuardsDigital.Core.Cards
                 return null;
             }
 
+            // Milestone 8.25e. p.12's Hold is the one basic action no card-action resolver holds - it
+            // is raised here, and "you simply do nothing" is all of it - so its second instance is
+            // performed here too. That is what the dispatcher's own comment used to claim happened for
+            // all three general-rule kinds, where nothing happened at all.
+            if (cardActions.OwedAfterActionRepeat.Kind == ActionKind.Hold)
+            {
+                PerformRepeatedHold(cardActions.TakeOwedAfterActionRepeat(), events);
+                return null;
+            }
+
             var repeated = cardActions.StartOwedAfterActionRepeat(
                 definitions, instances, participants, timing, CurrentModifications(),
                 roundIndex, turnIndex);
             events.AddRange(MaterializeSteps(repeated.Steps, TurnResolutionEvent.FromSkillAction));
-            return repeated.IsComplete ? (TurnResolutionResult?)null : TurnResolutionResult.Accept(events);
+
+            // Milestone 8.25e. What decides whether the turn is now waiting is what actually stands
+            // once the steps have been applied, rather than what the resolver reported before they
+            // were. A repeated Attack whose text names its own target starts at p.14's step 1, and a
+            // board that leaves that text nothing to name stops the action at that mandatory step -
+            // p.10's own Mandatory and Optional Steps - so the instance was performed and is over.
+            // Reported as "not complete" and left there, the held action never finished: the actor
+            // stayed selected on an unresolved card and the match offered him a second action on it,
+            // which p.7 forbids. Observed on Tigerclaw's Blink Strike with nothing left to cross.
+            return cardActions.HasPendingResolution || cardActions.IsCardTextPageStopped
+                ? TurnResolutionResult.Accept(events)
+                : (TurnResolutionResult?)null;
+        }
+
+        /// <summary>
+        /// Milestone 8.25e. Performs the second instance of a Hold that an after-action ability asked
+        /// for, on the card and by the hero the first was performed on.
+        ///
+        /// <para>Rulebook p.12: "When you perform a Hold action you simply do nothing." So this
+        /// performs nothing - and performing nothing is still performing an action, which is what the
+        /// page's own "Treat each instance of repeat as a separate action" means here: p.8's
+        /// <c>ActionStarted</c> and <c>ActionEnded</c> are raised again, and the completed action is
+        /// recorded under <see cref="ActionInvocationContext.Repeated"/>, which is what makes p.10's
+        /// "You cannot repeat a repeated action!" true of the instance that follows.</para>
+        /// </summary>
+        private void PerformRepeatedHold(
+            GuardsDigital.Core.Rules.CardResolution.PendingAfterActionRepeat owed,
+            List<TurnResolutionEvent> events)
+        {
+            var repeatedOffer = new ActionOffer(
+                owed.SourceCardInstanceId,
+                instances.Single(candidate => candidate.Id.Equals(owed.SourceCardInstanceId))
+                    .DefinitionReference,
+                owed.ActionDefinitionId,
+                owed.ActorId,
+                ActionInvocationContext.Repeated,
+                true);
+            AddTiming(events, TimingCheckpoint.ActionStarted);
+            events.Add(TurnResolutionEvent.HoldPerformed(repeatedOffer));
+            AddCompletedAction(
+                events,
+                owed.SourceCardInstanceId,
+                owed.ActionDefinitionId,
+                owed.ActorId,
+                ActionKind.Hold,
+                ActionInvocationContext.Repeated);
         }
 
         /// <summary>
@@ -1415,27 +1471,11 @@ namespace GuardsDigital.Core.Cards
                     TurnResolutionRejectionReason.FastTravelActionRejected, result.RejectionReason);
             }
 
-            var card = instances.Single(candidate =>
-                candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
-            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
-            {
-                throw new InvalidOperationException(
-                    "A completed Fast Travel could not resolve its prevalidated source card.");
-            }
-
-            var events = MaterializeSteps(result.Steps, TurnResolutionEvent.FromFastTravelAction);
-            events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
-            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
-                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
-            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
-            if (!acknowledgement.Accepted)
-            {
-                throw new InvalidOperationException(
-                    "A card resolved after Fast Travel could not be acknowledged by Initiative authority.");
-            }
-
-            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
-            return AdvanceInitiative(events);
+            // Milestone 8.25e. The card resolves and Initiative is acknowledged below the checkpoint
+            // rather than above it, for the reason p.12's Hold does; see that path.
+            return CompleteGeneralRuleActionAndAdvance(
+                MaterializeSteps(result.Steps, TurnResolutionEvent.FromFastTravelAction),
+                "Fast Travel");
         }
 
         public TurnResolutionResult TryPerformClear(
@@ -1500,15 +1540,46 @@ namespace GuardsDigital.Core.Cards
                     TurnResolutionRejectionReason.ClearActionRejected, result.RejectionReason);
             }
 
+            // Milestone 8.25e. Below the checkpoint rather than above it, for the reason p.12's Hold
+            // is; see that path.
+            return CompleteGeneralRuleActionAndAdvance(
+                MaterializeSteps(result.Steps, TurnResolutionEvent.FromClearAction), "Clear");
+        }
+
+        /// <summary>
+        /// Milestone 8.25e. Finishes one of rulebook p.11's, p.12's and p.13's general-rule actions the
+        /// way milestone 8.25a's tails finish an Attack, a Skill and a Movement: an owed repeat starts
+        /// first, an ability that may still ask for one holds the action open, and only then does the
+        /// card resolve and Initiative move on.
+        ///
+        /// <para>These three raised their <c>ActionEnded</c> checkpoint with the card already resolved
+        /// and the actor already handed on, so a decision opened there stood over a turn that had
+        /// finished - the exact state 8.25a removed for the other three, and the reason a repeat owed
+        /// for a Hold had no unresolved card and no selected actor to run on.</para>
+        /// </summary>
+        private TurnResolutionResult CompleteGeneralRuleActionAndAdvance(
+            List<TurnResolutionEvent> events, string action)
+        {
+            var repeatedInstance = TryStartOwedAfterActionRepeat(events);
+            if (repeatedInstance.HasValue)
+            {
+                return repeatedInstance.Value;
+            }
+
+            var held = HoldTheActionForTheAbilityThatMayRepeatIt(events);
+            if (held.HasValue)
+            {
+                return held.Value;
+            }
+
             var card = instances.Single(candidate =>
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
-                    "A completed Clear could not resolve its prevalidated source card.");
+                    $"A completed {action} could not resolve its prevalidated source card.");
             }
 
-            var events = MaterializeSteps(result.Steps, TurnResolutionEvent.FromClearAction);
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
             foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
                 events.Add(TurnResolutionEvent.FromTiming(timingEvent));
@@ -1516,7 +1587,7 @@ namespace GuardsDigital.Core.Cards
             if (!acknowledgement.Accepted)
             {
                 throw new InvalidOperationException(
-                    "A card resolved after Clear could not be acknowledged by Initiative authority.");
+                    $"A card resolved after {action} could not be acknowledged by Initiative authority.");
             }
 
             events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));

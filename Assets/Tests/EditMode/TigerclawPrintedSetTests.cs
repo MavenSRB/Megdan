@@ -5,6 +5,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
 using NUnit.Framework;
 using static GuardsDigital.Tests.EditMode.StagedHeroBoard;
 using static GuardsDigital.Tests.EditMode.TigerclawBoard;
@@ -644,6 +645,161 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
         }
+        /// <summary>
+        /// Milestone 8.25e. p.12's Hold is a basic action when it is performed on a basic card, so the
+        /// Ultimate offers to repeat it - and taking that offer performs a second Hold.
+        /// </summary>
+        /// <remarks>
+        /// Taking it did nothing at all. The dispatcher that starts an owed repeat switched on Attack,
+        /// Skill and Movement and reported "nothing happened" for every other kind, and its comment for
+        /// that arm said the second instance "is started there", in the turn authority, where nothing
+        /// started it. So the ability offered, the player confirmed, the command was accepted, and the
+        /// turn moved on exactly as a decline would have.
+        ///
+        /// <para>Two facts make the second instance real rather than ceremonial, and both are asserted
+        /// here. The first is that the action is <em>held</em> across the decision: before this
+        /// milestone the three general-rule paths resolved their card and acknowledged Initiative
+        /// before raising the checkpoint the ability fires at, so the decision stood over a finished
+        /// turn - nobody selected, card resolved - and an instance started from it would have had
+        /// nothing to run on. The second is that performing a Hold raises p.8's checkpoints and records
+        /// p.9's supertype again, which is what a second instance of an action that does nothing
+        /// consists of.</para>
+        /// </remarks>
+        [Test]
+        public void CloakAndDaggers_RepeatsAHoldByPerformingASecondOne()
+        {
+            var fixture = Create(
+                tier: 3,
+                minionPlacements: At("red-melee-01", FirstAdjacent),
+                heroPlacements: new Dictionary<string, HexCoordinate>());
+
+            // Commits every seat and drains to his own turn without starting an action, so the Hold
+            // below is the one action performed on the card.
+            fixture.IsPrimaryAvailable(TigerclawCardContent.BlinkStrike);
+            var selected = fixture.Session.Projection.SelectedActor;
+            fixture.Accept(DirectorCommand.PerformHold(selected.CardInstanceId));
+
+            Assert.That(fixture.Choice, Is.Not.Null);
+            Assert.That(fixture.Choice.NodeId.Value, Is.EqualTo("cloak-and-daggers-repeat"),
+                "p.9 makes every action on a basic card basic, and Blink Strike is Gold, so his Hold " +
+                "on it is a basic action the Ultimate watches.");
+            Assert.That(fixture.Session.Projection.SelectedActor.ActorId, Is.EqualTo(fixture.Hero),
+                "and the action is held open across the decision, exactly as an Attack, a Skill and a " +
+                "Movement have been since milestone 8.25a - which is what gives the second instance a " +
+                "hero and an unresolved card to be performed on.");
+
+            var before = HoldsPerformed(fixture);
+            fixture.Confirm();
+
+            Assert.That(HoldsPerformed(fixture), Is.EqualTo(before + 1),
+                "p.10: \"you may perform the entire action again\". Performing a Hold is doing " +
+                "nothing, and doing nothing twice is two actions performed rather than one.");
+            Assert.That(fixture.Choice, Is.Null,
+                "The repeated instance is itself a repeat, so p.10's \"You cannot repeat a repeated " +
+                "action!\" closes the ability rather than asking again.");
+            Assert.That(fixture.Session.Projection.SelectedActor.ActorId, Is.Not.EqualTo(fixture.Hero),
+                "and the held action then finishes: his card resolves and the turn goes on.");
+        }
+
+        /// <summary>
+        /// Milestone 8.25e. p.11's Fast Travel is a basic action on a basic card and the Ultimate does
+        /// not offer to repeat it, because the only instance that repeat could produce is a second
+        /// replacement.
+        /// </summary>
+        /// <remarks>
+        /// It was offered, and taking it did nothing - the same dropped arm the Hold above fell into.
+        /// The reading is recorded in the <see href="../../../Docs/AI/Rules/RULE_SYSTEMS.md">rule-system
+        /// ledger</see>: p.11 performs a Fast Travel "instead of your entire Movement action" and caps
+        /// it at "one Fast Travel action, regardless of the movement value on the card", and p.10's own
+        /// bullet reads "A repeated instance of an action cannot be replaced with a different action
+        /// (Such as Clear or Fast Travel)". p.13's Clear is the same sentence about an Attack.
+        ///
+        /// <para>The board is his own with every minion banished and Wasp put two zones away, because
+        /// p.11 refuses a Fast Travel out of or into a zone holding an enemy hero or minion and the
+        /// staged board deliberately holds both.</para>
+        /// </remarks>
+        [Test]
+        public void CloakAndDaggers_DoesNotOfferToRepeatAFastTravel()
+        {
+            var fixture = Create(
+                tier: 3,
+                banishedMinions: new[]
+                {
+                    "red-melee-01", "red-melee-02", "red-melee-03", "red-melee-04",
+                    "red-ranged-01", "red-heavy-01",
+                    "blue-melee-01", "blue-melee-02", "blue-melee-03", "blue-melee-04",
+                    "blue-ranged-01", "blue-heavy-01"
+                },
+                heroPlacements: At("primitive-hero", new HexCoordinate(-7, 1)));
+
+            fixture.IsPrimaryAvailable(TigerclawCardContent.BlinkStrike);
+            var option = fixture.Session.Projection.AvailableFastTravelOptions.Single();
+            fixture.Accept(DirectorCommand.PerformFastTravel(
+                option.ReplacedMovementActionDefinitionId, option.LegalDestinations[0]));
+
+            Assert.That(fixture.Choice, Is.Null,
+                "A repeat the page cannot make an instance of is one the ability does not offer. It " +
+                "used to be offered and dropped, which is the one outcome a `may` must never produce.");
+            Assert.That(fixture.Session.Projection.SelectedActor.ActorId, Is.Not.EqualTo(fixture.Hero),
+                "and with nothing standing, his card resolves and the turn goes on.");
+        }
+
+        /// <summary>
+        /// Milestone 8.25e. A repeated Attack that starts and then cannot complete the first mandatory
+        /// step of its own text finishes the action it repeated, rather than leaving the turn open.
+        /// </summary>
+        /// <remarks>
+        /// This is the case milestone 8.25e's block reported from Play Mode: taking the repeat "returns
+        /// the game to choose an action or End Turn with nothing having happened". Blink Strike's text
+        /// names its own target - a straight two-space line through an enemy unit - so the second
+        /// instance starts at p.14's step 1 and the text looks for a line. On a board with nothing left
+        /// to cross there is none, and p.10's Mandatory and Optional Steps stops the action at that
+        /// step, which is the page working rather than an offer that should not have been made.
+        ///
+        /// <para>What was wrong is what happened next. The turn decided whether it was waiting from
+        /// what the resolver reported <em>before</em> the steps were applied, so it accepted the answer
+        /// and returned while the started instance had already died inside its text: the hero stayed
+        /// selected on an unresolved card and the match offered him a second action on it, which p.7
+        /// forbids. It is decided from what actually stands afterwards now.</para>
+        /// </remarks>
+        [Test]
+        public void CloakAndDaggers_RepeatThatStopsAtItsOwnMandatoryStep_StillFinishesTheAction()
+        {
+            var fixture = Create(
+                tier: 3,
+                minionPlacements: At("red-melee-01", FirstAdjacent),
+                banishedMinions: new[]
+                {
+                    "red-melee-02", "red-melee-03", "red-melee-04",
+                    "red-ranged-01", "red-heavy-01",
+                    "blue-melee-01", "blue-melee-02", "blue-melee-03", "blue-melee-04",
+                    "blue-ranged-01", "blue-heavy-01"
+                },
+                heroPlacements: At("primitive-hero", new HexCoordinate(-7, 1)));
+
+            fixture.StartPrimary(TigerclawCardContent.BlinkStrike);
+            fixture.SelectFirst();
+            fixture.Confirm();
+            Assert.That(fixture.Choice, Is.Not.Null);
+            Assert.That(fixture.Choice.NodeId.Value, Is.EqualTo("cloak-and-daggers-repeat"));
+            Assert.That(fixture.MinionIds(), Is.Empty,
+                "The one unit he could cross was the one his first instance defeated, so the second " +
+                "has no line at all.");
+
+            fixture.Confirm();
+
+            Assert.That(fixture.Choice, Is.Null);
+            Assert.That(fixture.Session.Projection.SelectedActor.ActorId, Is.Not.EqualTo(fixture.Hero),
+                "The repeated instance stopped at its own first mandatory step, and the action it " +
+                "repeated is then over: his card resolves and Initiative moves on. It used to leave " +
+                "him selected on an unresolved card, able to start a second action on it.");
+        }
+
+        /// <summary>How many Holds this match has recorded, in its authoritative rule-event log.</summary>
+        private static int HoldsPerformed(StagedHeroBoard fixture) =>
+            fixture.Session.Projection.DiagnosticEvents
+                .Count(entry => entry.EventType == "Turn.HoldActionPerformed");
+
         // -----------------------------------------------------------------------------------------
         // Absences recorded rather than tested around
         // -----------------------------------------------------------------------------------------

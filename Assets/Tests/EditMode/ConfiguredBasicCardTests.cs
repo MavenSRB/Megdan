@@ -425,6 +425,61 @@ namespace GuardsDigital.Tests.EditMode
                 "is the card's and never the action's.");
         }
 
+        /// <summary>
+        /// Milestone 8.25e. Rulebook p.10's repeat, read for which of p.9's basic actions it can make a
+        /// second instance of - and this is the whole of the reading, stated in one place.
+        /// </summary>
+        /// <remarks>
+        /// p.9 makes every action on a basic card basic, so an ability that repeats a basic action
+        /// reaches all six kinds a hero can perform on one. The page then answers them separately, and
+        /// the answers were what milestone 8.25e had to decide before it built anything.
+        ///
+        /// <para>An Attack, a Skill, a Movement and p.12's Hold are repeatable. Performing a Hold again
+        /// is performing it again - "you simply do nothing" is what that instance does, and it is still
+        /// an action performed.</para>
+        ///
+        /// <para>p.11's Fast Travel and p.13's Clear are not, and three printed sentences say so. Both
+        /// exist only as replacements - "instead of your entire Movement action", "instead of your
+        /// entire Attack action" - and p.10's own bullet reads "A repeated instance of an action cannot
+        /// be replaced with a different action (Such as Clear or Fast Travel)". p.11 adds "You can only
+        /// perform one Fast Travel action, regardless of the movement value on the card!" and p.13
+        /// offers "one Clear secondary action". The only instance such a repeat could produce is a
+        /// second replacement, which all three refuse.</para>
+        /// </remarks>
+        [Test]
+        public void PageTensRepeat_MakesASecondInstanceOfEveryBasicKindExceptTheTwoReplacements()
+        {
+            Assert.That(
+                new[]
+                {
+                    ActionKind.Attack, ActionKind.Skill, ActionKind.Movement, ActionKind.Hold
+                }.All(PerformedBasicAction.KindCanBeRepeated), Is.True,
+                "p.10's \"you may perform the entire action again\" reaches every kind p.9 counts as " +
+                "basic that is an action in its own right.");
+
+            Assert.That(PerformedBasicAction.KindCanBeRepeated(ActionKind.FastTravel), Is.False,
+                "p.11's Fast Travel is performed instead of an entire Movement action and is capped " +
+                "at one per card, so the repeated instance p.10 would make is the replacement its own " +
+                "bullet refuses.");
+            Assert.That(PerformedBasicAction.KindCanBeRepeated(ActionKind.Clear), Is.False,
+                "and p.13's Clear is the same sentence about an Attack.");
+
+            var performed = PerformedBasicAction.Of(
+                Hero("red"), new CardInstanceId("card"), WaspCardContent.PrimarySkill,
+                ActionKind.Skill);
+            Assert.That(performed.CanBeRepeated, Is.True);
+            Assert.That(
+                PerformedBasicAction.Of(
+                    Hero("red"), new CardInstanceId("card"), WaspCardContent.PrimarySkill,
+                    ActionKind.Skill, wasRepeatedInstance: true).CanBeRepeated, Is.False,
+                "p.10: \"You cannot repeat a repeated action!\"");
+            Assert.That(PerformedBasicAction.None.CanBeRepeated, Is.False,
+                "and an action performed on a card p.9 does not count as basic offers nothing to " +
+                "repeat at all.");
+        }
+
+        private static HeroId Hero(string value) => new HeroId(value);
+
         /// <summary>Red commits the named card and Holds it, in a mirror of its own.</summary>
         private static PerformedBasicAction[] HoldOne(
             CardDefinitionId cardId, out CardInstanceId heldCardId)

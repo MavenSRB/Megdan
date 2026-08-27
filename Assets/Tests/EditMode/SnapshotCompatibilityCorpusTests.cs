@@ -1020,17 +1020,36 @@ namespace GuardsDigital.Tests.EditMode
         // asked rather than carried. So the predicted delta is the whole delta, and v33 is rejected
         // rather than migrated on the single standing ground: accepting a shorter list would let a
         // restored match resolve a card against contracts its own capture never had.
+        //
+        // Milestone 8.25e moves THREE digests and NO version, and the measurement is what says why that
+        // is right: every one of the three authoritative payloads is byte-identical on both sides -
+        // `end-of-round` 8933, `pending-minion-battle` 9138 and `paused-level-up` 9443 bytes, with
+        // `cmp` reporting zero differing bytes in each - so no state was added, removed or reshaped,
+        // and the other twelve fixtures do not move at all. What moved is the rule-event log the
+        // envelope carries beside the payload, and only there: two swapped entries per Hold, four in
+        // `end-of-round`, four in `pending-minion-battle` and eight in `paused-level-up`, each one a
+        // Hold now raising `Turn.BasicActionPerformed` BEFORE `Turn.CardResolved` instead of after it.
+        // Those three are exactly the fixtures built out of Holds.
+        //
+        // The order is the correction rather than a side effect. p.9's supertype fact is recorded at
+        // the checkpoint that ends the action, and milestone 8.25a had already put that checkpoint
+        // ahead of the card's resolution for the Attack, Skill and Movement tails, because an ability
+        // that may repeat the action is asked there and needs an unresolved card and a selected actor
+        // to run its second instance on. p.11's Fast Travel, p.12's Hold and p.13's Clear kept the old
+        // order and so asked over a turn that had already finished. Migration is not a question here:
+        // no payload changes, so every v34 snapshot in the wild still loads byte-identically, and the
+        // digest is re-pinned rather than the version moved.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
             new CompatibilityFixture("setup-v34", "ca67434fb04a949da41160039d65eeca762c35cd0c036d7f566919fa664bd478"),
             new CompatibilityFixture("active-turn-v34", "c4943c8bcde31801dfea043af5021500548a0a4e3f0b898a84968a9200f32e9c"),
             new CompatibilityFixture("pending-choice-v34", "f4b71ff95bc7e891f427e6be6130ab129fb507c8d351d159c2c10caf2728c1f6"),
-            new CompatibilityFixture("end-of-round-v34", "bd55fb07c5c30374f05d28369cf3134dd77b80092d39599aa93f8654714ec250"),
-            new CompatibilityFixture("pending-minion-battle-v34", "29259edf0a824771da64fdf3877fa0730bb82c52962b62e5133b17af773ca5ed"),
+            new CompatibilityFixture("end-of-round-v34", "3a3f4f1d6c8b9a048679a1696ab4c7fc949e6e225c969337bfbb4f0fae5fa7d2"),
+            new CompatibilityFixture("pending-minion-battle-v34", "635df59a9a0fdda8c2a9c7f4d2b7420b6aff4cd583f8349ba2795de3db4bc42f"),
             new CompatibilityFixture("placed-token-v34", "83af23ddf9ae27bbdd59470ede1632c007462737a2734cdf7c02cecbc439deae"),
             new CompatibilityFixture("attached-marker-v34", "560c0f2cf9b967e2a90066bba5d7832d86065dfd8eb3751ca5876282b7553575"),
             new CompatibilityFixture("pending-correction-v34", "b5d6ca6ab1c1b5408c898f7f6f06064b6affc5cd00af137a85b4c37a1be1ad98"),
-            new CompatibilityFixture("paused-level-up-v34", "582293f00a56249006a41b9971d5454b9784c7ac11d8dfbf5270d943e927ffb8"),
+            new CompatibilityFixture("paused-level-up-v34", "3996cbf8d3b02c0baa82fc038b27e0099004c965fd90afc813f09221a2de8844"),
             new CompatibilityFixture("ended-match-v34", "4dc8c854023346c8e0e3fa57b3b98bc294525ae97c26bd25effd43c73737bfa0"),
             new CompatibilityFixture("verified-hand-setup-v34", "90a8e1952dda4771988beab2709caf758ef39de996f119305c61c3e36ad31685"),
             new CompatibilityFixture("paused-orbit-repeat-v34", "570d08a1721333bd13f9619359255c38d08b44135472503d28fe91fa3b2cb64b"),

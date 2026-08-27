@@ -164,6 +164,82 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications);
         }
 
+        /// <summary>
+        /// Milestone 8.25e. Whether a repeated Movement could start from the board as it now stands,
+        /// without starting one.
+        ///
+        /// <para>Rulebook p.10's repeat is an offer, so the ability that would make it has to know
+        /// whether there is an instance to offer, and the commonest reason there is not is a live
+        /// restriction: p.11 says effects which prevent you from performing a Movement action are
+        /// checked at the start of the movement action, and a second instance is a second start. The
+        /// gate is <see cref="StartMovementResolution"/>'s own, read here without committing the
+        /// session it would build.</para>
+        /// </summary>
+        public bool CanStartRepeatedMovement(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            RuleModificationSet modifications)
+        {
+            if (pendingResolution != null || definitions == null || instances == null ||
+                !offer.IsAvailable)
+            {
+                return false;
+            }
+
+            var materializedDefinitions = definitions.ToArray();
+            var actionDefinition = ActionOfferQuery.FindActionDefinition(
+                offer, materializedDefinitions);
+            if (actionDefinition.Kind != ActionKind.Movement ||
+                !adjacentMoveAuthority.Occupancies.Any(
+                    occupancy => occupancy.HeroId.Equals(offer.ActorId)))
+            {
+                return false;
+            }
+
+            return !MovementStartRestrictionFor(offer, materializedDefinitions, modifications)
+                .PreventsAction;
+        }
+
+        /// <summary>
+        /// The one restriction a Movement action starts under, composed from both families that can
+        /// declare one. Milestone 8.25e extracted it so the start and
+        /// <see cref="CanStartRepeatedMovement"/> ask the same question.
+        ///
+        /// <para>Milestone 7.2a. p.16's item bonus is composed onto the printed Movement before
+        /// anything reads it, so the value the start restriction judges and the value the session
+        /// spends are the one Movement Total this card has. Composing after the restriction would let a
+        /// prevented action be re-enabled by an item, which is a different rule than the page states.
+        /// Milestone 8.19c moved the composition into <c>MovementValueQuery</c> when a source became a
+        /// second contributor to it; the ordering this describes is stated there and is
+        /// unchanged.</para>
+        ///
+        /// <para>Milestone 8.20. Two families can now answer this: the composed evaluator seam, and a
+        /// declared <c>limit-activity@1</c> - Arien's Slippery Ground and Deluge, "cannot ... move more
+        /// than 1 space with a movement action". They are combined into the one restriction the session
+        /// is built from rather than consulted in turn, so nothing downstream has two answers to choose
+        /// between. The cap is read after the Movement Total is composed, which is what makes it a cap
+        /// rather than a contribution: p.16's item raises the total and the sentence still holds it to
+        /// the number it names.</para>
+        /// </summary>
+        private MovementActionStartRestriction MovementStartRestrictionFor(
+            ActionOffer offer,
+            IReadOnlyList<CardDefinition> materializedDefinitions,
+            RuleModificationSet modifications) =>
+            MovementActionStartRestriction.Tightest(
+                actionStartRestrictions.Evaluate(new MovementActionStartContext(
+                    offer.ActorId,
+                    offer.SourceCardInstanceId,
+                    offer.ActionDefinitionId,
+                    offer.InvocationContext,
+                    MovementValueQuery.Calculate(
+                        offer, materializedDefinitions, heroItems, modifications).Total)),
+                modifications != null &&
+                modifications.TryGetActivityLimit(
+                    RuleObject.ForHero(offer.ActorId), RuleActivity.Movement, out var declaredMaximum)
+                    ? MovementActionStartRestriction.LimitTo(declaredMaximum)
+                    : MovementActionStartRestriction.None);
+
         private CardActionResolutionResult StartMovementResolution(
             ActionResolutionId resolutionId,
             ActionOffer offer,
@@ -223,34 +299,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     pendingChoice);
             }
 
-            // Milestone 7.2a. p.16's item bonus is composed onto the printed Movement before anything
-            // reads it, so the value the start restriction judges and the value the session spends are
-            // the one Movement Total this card has. Composing after the restriction would let a
-            // prevented action be re-enabled by an item, which is a different rule than the page states.
-            // Milestone 8.19c moved the composition into MovementValueQuery when a source became a
-            // second contributor to it; the ordering this comment describes is stated there and is
-            // unchanged.
             var movementValue = MovementValueQuery.Calculate(
                 offer, materializedDefinitions, heroItems, modifications);
-            // Milestone 8.20. Two families can now answer this: the composed evaluator seam, and a
-            // declared `limit-activity@1` - Arien's Slippery Ground and Deluge, "cannot ... move more
-            // than 1 space with a movement action". They are combined into the one restriction the
-            // session is built from rather than consulted in turn, so nothing downstream has two
-            // answers to choose between. The cap is read after the Movement Total is composed, which
-            // is what makes it a cap rather than a contribution: p.16's item raises the total and the
-            // sentence still holds it to the number it names.
-            var restriction = MovementActionStartRestriction.Tightest(
-                actionStartRestrictions.Evaluate(new MovementActionStartContext(
-                    offer.ActorId,
-                    offer.SourceCardInstanceId,
-                    offer.ActionDefinitionId,
-                    offer.InvocationContext,
-                    movementValue.Total)),
-                modifications != null &&
-                modifications.TryGetActivityLimit(
-                    RuleObject.ForHero(offer.ActorId), RuleActivity.Movement, out var declaredMaximum)
-                    ? MovementActionStartRestriction.LimitTo(declaredMaximum)
-                    : MovementActionStartRestriction.None);
+            var restriction = MovementStartRestrictionFor(
+                offer, materializedDefinitions, modifications);
             if (restriction.PreventsAction)
             {
                 return CardActionResolutionResult.Reject(

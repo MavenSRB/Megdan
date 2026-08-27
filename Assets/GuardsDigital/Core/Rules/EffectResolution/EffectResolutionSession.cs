@@ -213,6 +213,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     /// <summary>Everything the resolver needs that is not part of the frame's own state.</summary>
     public sealed class EffectResolutionContext
     {
+        private readonly Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed;
+
         public EffectResolutionContext(
             EffectDefinition definition,
             EffectCapabilityCatalog catalog,
@@ -229,10 +231,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EnclosingAttackFacts enclosingAttack = default,
             EffectRosterState rosterState = null,
             bool watchesAppliedPushes = false,
-            bool repeatIsUnavailable = false)
+            bool repeatIsUnavailable = false,
+            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null)
         {
             WatchesAppliedPushes = watchesAppliedPushes;
             RepeatIsUnavailable = repeatIsUnavailable;
+            this.repeatCanBePerformed = repeatCanBePerformed;
             EnclosingAttack = enclosingAttack;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
                 enclosingActionKind == ActionKind.None)
@@ -279,6 +283,28 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// player confirms - is the one outcome a `may` must never produce.</para>
         /// </summary>
         public bool RepeatIsUnavailable { get; }
+
+        /// <summary>
+        /// Milestone 8.25e. Whether a <see cref="EffectNodeKind.RepeatAction"/> node asking for the
+        /// binding it declares would produce an instance that can actually be performed.
+        ///
+        /// <para><b>Why the offer has to ask, and why it asks with the binding.</b>
+        /// <see cref="RepeatIsUnavailable"/> is a fact about the action that <em>ended</em>. Whether a
+        /// second instance can start is a fact about the board as it now stands, and about what this
+        /// particular node would ask for: Tigerclaw's Cloak and Daggers prints "if you repeat an
+        /// attack action, you cannot target the same unit", and an exclusion the ability declares is
+        /// part of what the instance it offers would have to satisfy. Asked without it, the offer
+        /// admits strictly more than the answer can perform - which is the whole defect this milestone
+        /// closes, and it is invisible to a driver that only checks that commands are accepted.</para>
+        ///
+        /// <para>Null for every frame that is not an after-action ability standing over a held
+        /// subject - a Skill's own printed repeat, and card text repeating the attack it runs inside,
+        /// are both bounded by their own frame and by nothing here - so those keep exactly the walk
+        /// they had.</para>
+        /// </summary>
+        public bool RepeatIsUnavailableFor(GuardsDigital.Core.Effects.RepeatTargetBinding binding) =>
+            RepeatIsUnavailable ||
+            (repeatCanBePerformed != null && !repeatCanBePerformed(binding));
 
         /// <summary>
         /// Milestone 8.19c1. Whether any live rule source has declared that it runs after one of
@@ -910,7 +936,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         // outside the action it repeats can be reached with nothing repeatable -
                         // p.10 forbids repeating a repeat - and skipping in silence is what that
                         // costs, exactly as running out of declared repeats does.
-                        if (!RepeatedActionQuery.CanRepeat(frame, node) || context.RepeatIsUnavailable)
+                        // Milestone 8.25e added the third half, and it is the half that makes the
+                        // offer honest: "you may perform the entire action again" is an offer, so a
+                        // second instance that cannot be performed from the board as it now stands -
+                        // under this node's own declared binding - is one this node has nothing to
+                        // offer. Skipping it in silence is what p.10 already does with a repeat it
+                        // does not owe; offering it and then dropping it is what it never does.
+                        if (!RepeatedActionQuery.CanRepeat(frame, node) ||
+                            context.RepeatIsUnavailableFor(node.RepeatTargetBinding))
                         {
                             Pop(continuation);
                             Record(outcomes, events, node.Id,

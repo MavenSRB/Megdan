@@ -76,7 +76,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             MatchParticipants participants,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
-            IEnumerable<ContinuousTriggeredEffectSource> continuousSources = null)
+            IEnumerable<ContinuousTriggeredEffectSource> continuousSources = null,
+            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null)
         {
             if (PendingResolution != null)
                 throw new InvalidOperationException("A paused triggered effect must be answered before another checkpoint is visited.");
@@ -129,7 +130,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     components: components,
                     heroItems: heroItems,
                     rosterState: rosterState,
-                    repeatIsUnavailable: candidate.RepeatIsUnavailable);
+                    repeatIsUnavailable: candidate.RepeatIsUnavailable,
+                    // Milestone 8.25e. Only an occurrence derived from a completed action can ask
+                    // whether that action could be performed again, so the probe travels with the
+                    // candidate that has one rather than with the checkpoint.
+                    repeatCanBePerformed: candidate.TriggeringBasicAction.IsDefined
+                        ? repeatCanBePerformed
+                        : null);
                 var step = EffectResolutionSession.Start(
                     new EffectResolutionId(
                         $"trigger-{candidate.SourceId}-{checkpoint.Checkpoint}-{checkpoint.RoundIndex}-{checkpoint.TurnIndex}"),
@@ -201,11 +208,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
             /// <summary>
             /// Whether a repeat node in this occurrence has something to repeat. Rulebook p.10 forbids
-            /// repeating a repeated action, and an occurrence derived from no completed action has no
-            /// subject at all.
+            /// repeating a repeated action, an occurrence derived from no completed action has no
+            /// subject at all, and milestone 8.25e added the third case the page states: two of the
+            /// kinds p.9 counts as basic have no second instance the page will make. All three live on
+            /// <see cref="PerformedBasicAction.CanBeRepeated"/>, which is the one place the question is
+            /// answered.
+            ///
+            /// <para>What this cannot say is whether the second instance could be <em>performed</em>
+            /// from the board as it now stands, because that is not a fact about the action that
+            /// ended. The authority holding the subject answers that one, through
+            /// <see cref="EffectResolutionContext.RepeatIsUnavailableFor"/>.</para>
             /// </summary>
-            public bool RepeatIsUnavailable =>
-                !TriggeringBasicAction.IsDefined || TriggeringBasicAction.WasRepeatedInstance;
+            public bool RepeatIsUnavailable => !TriggeringBasicAction.CanBeRepeated;
 
             public static TriggerCandidate FromActive(
                 ActiveEffectInstance source,
