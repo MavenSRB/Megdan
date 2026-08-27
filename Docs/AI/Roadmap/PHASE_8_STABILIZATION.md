@@ -1,8 +1,10 @@
-# Phase 8 - Roster-complete stabilization gate
+# Phase 8 - Roster-complete stabilization and corrective route
 
-Canonical active roadmap shard for the truth, architecture, validation, and governing-documentation review between the verified roster and further integration. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
+Canonical active roadmap shard for the truth, architecture, validation, and governing-documentation review between the verified roster and further integration, plus the user-scheduled corrective route that followed the review. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
 
-## Phase 8 - Roster-complete stabilization gate
+## Phase 8 - Roster-complete stabilization and corrective route
+
+**Corrective scheduling amendment, 2026-08-27, user approved.** Milestones 8.25e2-8.25e5 and the three-part 8.25e6 governance-design study are scheduled from 8.25e1's finding dispositions. Scheduling is not implementation authorization: each milestone still requires exact approval. The shortest route to real card faces is **8.25e2 -> 8.25e3 -> 8.25e5 -> 8.25f**. Milestone 8.25e4 may run once 8.25e3 closes and is additionally required before 8.26, not before art-only 8.25f. Milestones 8.25e6a-8.25e6c are non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and must close before the first post-pitch hero batch. If 8.25e5 finds a discrepancy, 8.25f and 8.26 remain blocked through its separately approved correction and a separately numbered, approved fresh-task independent verification milestone scheduled after the last correction.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
@@ -38,3 +40,133 @@ Non-goals: No runtime, rules, test, launcher, harness, asset or toolchain implem
 Hard gate: milestones 8.25f and 8.26 do not begin until 8.25e1 is complete, the user has approved a disposition for every gate-blocking finding, and each approved gate-blocking correction has closed on its required failing-then-passing evidence or separately numbered verification review. Every correction and any governance migration remain separately approved micro-milestones.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e1-independently-audit-roster-complete-truth-architecture-validation-and-governance-fitness-completion-evidence).
+
+### [ ] 8.25e2 Restore operative documentation to roster-complete truth
+
+Blocked by: milestone 8.25e1, which inventoried the exact stale leaves and named `EveryOperativeClaimHasCurrentEvidenceOrExplicitStatus` as F-DOC-01's closing check.
+
+Observable outcome: the active corpus no longer describes implemented roster-complete behavior as absent, deferred, synthetic, or one-versus-one. Every F-DOC-01 correction is source-checked, canonically owned, and either supported by current evidence or explicitly historical, deferred, or unresolved.
+
+Acceptance checks:
+
+- Reconcile the exact **27** semantic leaves remaining after 8.25e1: `CARD_EFFECT_CAPABILITIES.md`, `DOCUMENTATION_GOVERNANCE.md`, and `RULES_LEDGER.md`; `Card-System/BOARD_CAPABILITIES.md`, `CORE_MODEL.md`, `RESOLUTION_AND_EFFECTS.md`, `STATE_CAPABILITIES.md`, `TIMING_AND_TRANSITIONS.md`, and `VALIDATION_AND_EXTENSION.md`; `Project/ARCHITECTURE.md`, `BOARD_OPERATIONS.md`, `COMBAT_AND_CONSEQUENCES.md`, `CONFIGURED_PRESENTATION.md`, `CURRENT_IMPLEMENTATION.md`, `HERO_PROGRESSION.md`, `RULE_MODIFICATIONS.md`, and `WORKFLOW_AND_TERMS.md`; `Rules/BOARD_OBJECT_SYSTEMS.md`, `CARD_COVERAGE.md`, `HERO_ARIEN.md`, `HERO_TIGERCLAW.md`, `HERO_WASP.md`, `HERO_XARGATHA.md`, `ROSTER_CAPABILITY_MATRIX.md`, and `RULE_SYSTEMS.md`; plus `Testing/PLAYMODE_AND_SUITES.md` and `Testing/POLICY.md`. The completion evidence carries the full F-DOC claim map so an omitted leaf cannot disappear behind a summary count.
+- For each stale claim, record one stable claim ID, canonical owner, pre-correction meaning, corrected status, exact source/test/roadmap/rule evidence, and live reassessment or expiry trigger. Active documents retain current authority and necessary routes; the detailed correction map belongs in the completion evidence or one validator-readable ledger, not as copied chronology in every leaf.
+- Consolidate contradictory compound summaries rather than appending another status paragraph. `Project/CURRENT_IMPLEMENTATION.md` states only the official six-player setup with six distinct hero sets and five Lives; `Testing/POLICY.md` distinguishes the covered six-player setup from still-uncovered complete six-hero director/full-match and networking work; the hero, rule, card-system, presentation, progression, and governance shards stop scheduling behavior the current source and tests already implement.
+- Hero shards may state that definitions and tests exist, but may not imply that code-to-document mirrors independently verify the private fronts. F-SOURCE-01 remains owned by milestone 8.25e5.
+- Route misplaced completed narrative losslessly to an indexed archive destination only where required to make the active statement unambiguous, leaving a short backlink. Do not rewrite append-only history, and do not move precise current authority merely to clear a threshold.
+- Add the validator closing check `EveryOperativeClaimHasCurrentEvidenceOrExplicitStatus`. Its validator-readable inventory requires unique IDs, one canonical owner, an allowed explicit status, a resolvable evidence locator, and a live reassessment/expiry trigger. State the guarantee honestly: it covers the complete F-DOC-01 inventory and subsequently registered claims, not arbitrary English prose.
+- Observe that closing check failing against the unchanged pre-correction revision on the 27 known leaves, then passing after correction. Its self-tests reject a deliberate superseded/deferred claim, missing evidence, duplicate owner, stale owner, orphan marker, and empty inventory so the check cannot pass vacuously.
+- Repeat 8.25e1's drift search. Any newly demonstrated documentation-only contradiction joins this milestone; any discrepancy requiring runtime work or a new rule interpretation stops for separate authorization.
+- Documentation/tooling validation runs the focused validator self-tests, the complete living-document validator, link/anchor and status/dependency checks, then `git diff --check`. No Unity suite runs because no game, test, scene, asset, launcher, or Unity-facing path changes.
+
+Non-goals: No runtime, rule, automated game-test, launcher, asset, schema, or active-access-model redesign; no independent private-front verification; no claim that every positive prose sentence has been mechanically proved.
+
+### [!] 8.25e3 Make Unity validation require fresh green evidence
+
+Blocked by: milestone 8.25e2, so the testing policy and current setup claims are true before the launcher is made to enforce them. This milestone closes B2/F-VALIDATION-01.
+
+Observable outcome: `Tools/Invoke-UnityValidation.ps1` succeeds only when its own run recreates both designated outputs, discovers tests, produces parseable all-green NUnit XML, and leaves a fresh log without compilation or import failure evidence.
+
+Acceptance checks:
+
+- Preserve the fixed parameterless launcher and project-local request schema. No alternate production entry point or test-only request field is introduced, and every result/log path remains resolved beneath `tmp/`.
+- After both output paths resolve, invalidate exactly those prior XML/log targets and verify they are absent immediately before Unity starts. Exit zero without recreating either artifact is a failure.
+- Require XML with a `<test-run>` root, numeric result counts, `result="Passed"`, `total > 0`, `passed == total`, and zero failed, skipped, and inconclusive cases. Unity's NUnit 3.5 folds errors into `failed` rather than emitting a numeric `error` attribute, so also reject any descendant `result="Failed"` or error label. Reject missing attributes, malformed XML, wrong roots, contradictory counts, non-green child results, or an XML file not created by the current run.
+- Require a recreated log and reject the precise compilation/import failure signatures documented in `Testing/POLICY.md`; do not reject arbitrary expected test output merely because it contains the word `exception`.
+- A nonzero Unity process exit always fails. Exit zero is necessary but never sufficient. Failure diagnostics identify the invalid artifact and reason while preserving fresh outputs for inspection.
+- Production and tests share one parser/evidence contract. A controllable fake process may be injected only below the parameterless production entry point and never through request JSON or another caller-accessible bypass.
+- The exact closing check is `Test-UnityValidationLauncher::RejectsStaleMissingMalformedAndNonGreenResults`. It covers pre-existing green XML plus exit zero/no writes; missing XML or log; malformed or wrong-root XML; zero discovery; failed or error-labelled descendants; skipped or inconclusive results; contradictory counts; nonzero exit; compile/import log failure; and one fresh nonempty green XML plus clean log success.
+- Observe that check failing against the pre-fix launcher—at minimum its stale-green/no-write case is wrongly accepted—and passing after correction. A deliberate post-fix parser violation proves the check non-vacuous.
+- Update testing policy and launcher documentation to describe the enforced contract. Reassess `RISK-VALIDATION-001` and retain its distinct NUnit-API, merged-assembly visibility, and Unity/Presentation exclusion exposures unless separately closed.
+- This is shared validation infrastructure and therefore T3: run the focused fake-process contract first, then both complete unfiltered Unity suites serially through the corrected parameterless launcher at the final revision, followed by the living-document validator and `git diff --check`.
+
+Non-goals: No NUnit alignment, split-assembly experiment, harness-exclusion reduction, gameplay or test-content change, licensing-policy redesign, direct Unity invocation, accepted skip/inconclusive result, or output outside `tmp/`.
+
+### [!] 8.25e4 Close decision-family ownership and removal-prevention reachability
+
+Blocked by: milestone 8.25e3, so this shared test-infrastructure correction closes on Unity evidence the launcher has proved fresh and parseable. It is independent of 8.25e5 and blocks 8.26, not art-only 8.25f.
+
+Observable outcome: one test-owned decision-family inventory, distinct from the player-journey `PlayerInteractionShape` vocabulary, binds every projected player-choice member to exactly one semantic family and every legal answer shape to its projected invocation, visible answering surface, exact `DirectorCommand`, and accepted result. Removal prevention is no longer absent from the transition matrix, family detector, or deterministic match driver.
+
+Acceptance checks:
+
+- `ConfiguredPendingChoiceProjectionTests.EveryChoiceProjectionMemberMapsToExactlyOneDecisionFamilyAndAnswerRows` reflects over the projection's `Pending*` properties, classifies each exactly once as a player choice or companion envelope, and requires one unambiguous family/answer row for every choice. Observe it failing at the pre-correction revision on `PendingRemovalPrevention`, then passing after its payment/decline rows and family branch exist.
+- Keep the ten current pending families semantically distinct and record commitments, ordinary action selection, Hold, Fast Travel, Clear, and end-of-round advance separately as non-`Pending*` offers. Do not force unlike rules operations through `EffectChoice` or claim a closed production enum/compile guarantee.
+- A bounded deliberate eleventh-family probe fails until projection, answering-surface, and answer-command ownership are all supplied; a companion envelope or already-classified member cannot satisfy it.
+- `DeterministicMatchLoop.EnumerateLegalCommands` gives a standing configured Brogan removal-prevention prompt exactly one `AnswerRemovalPrevention` command per projected payment, in projected order, plus decline and no unrelated command. Existing documented deselect churn may remain excluded, but no answer that can advance the family is omitted.
+- Equivalent configured Brogan pauses exercise every projected payment and decline independently. Each offered invocation is accepted exactly once; payment spends the named eligible card, completes the decision, and leaves the already-defeated minion on the board; decline spends nothing, completes the decision, and removes it. Reusing the consumed invocation is refused with a byte-identical authoritative snapshot and unchanged immutable projection.
+- Existing Brogan journeys retain attack-origin and effect-invoked removal-prevention, player input, Undo, restore, payment, and decline coverage. Content-derived hero-path coverage plus a fixed-seed deterministic run prove that registered Brogan content can reach and drive the family without a stall.
+- Scope the exhaustiveness claim to the declared projection/answer families and bounded fixtures/seeds, never all theoretically reachable match states.
+- T3 validation runs the new family fixture first; then directly affected configured-projection, prompt-reachability, Brogan removal-prevention, deterministic-loop/replay/Undo, and Brogan player-path fixtures; then both complete unfiltered Edit Mode and Play Mode suites through the parameterless launcher. Record the named check's failing-then-passing revisions and deliberate-family knockout.
+
+Non-goals: No gameplay-rule, removal/prevention, reward, card-lifecycle, command/wire, snapshot/schema, projection, presenter, or HUD behavior change; no production `PlayerInteractionShape`, universal choice base class, blanket `EffectChoice` migration, presenter split, hero/card-name runtime branch, unbounded state-space claim, or duplicate Play Mode permutation matrix. If the stronger guard demonstrates a runtime defect, stop and propose its separate correction.
+
+### [!] 8.25e5 Independently verify the six pitch heroes' 114 private fronts
+
+Blocked by: milestone 8.25e2, so the fresh reviewer compares private sources against corrected current hero and rule authority. It is independent of 8.25e4. F-SOURCE-01 remains a global blocker for 8.25f and 8.26 until this review finds no unresolved discrepancy.
+
+Observable outcome: a fresh-task reviewer who performed none of milestones 8.1 or 8.18a-8.18e and did not compose the six verified content sets independently reads all nineteen private action-card fronts for each of Wasp, Arien, Brogan, Sabina, Tigerclaw, and Xargatha, then reconciles those observations against the canonical hero ledgers, production definitions, and verified-content tests without tracking or distributing private source material.
+
+Acceptance checks:
+
+- Before consulting tracked transcriptions, inventory exactly 114 stable source-relative front identities—nineteen per hero—and record SHA-256 per front plus one deterministic aggregate-manifest digest. Completion evidence records the identities/hashes, audited source and code revisions, reviewer/task identity, and date; active hero shards retain compact verification status and a completion backlink.
+- Perform a blind first pass from each whole face and enlarged local regions, not from OCR, filenames, hero shards, production definitions, or copied test tables. For every front temporarily record each printed field, with explicit not-applicable status per absent field, covering display name; colour; Basic/non-Basic/Ultimate/Handicap and Tier; Initiative; every printed action/icon/value including Range/Radius; exact card and reminder text; item icon; and source-set membership. Include the six Handicap fronts even though setup returns them to the box and 8.25f renders only the 108 deck faces.
+- Only after that pass, reconcile each observation field by field with the owning `Rules/HERO_<NAME>.md` row, same-colour upgrade/set-aside relationships, `CardSourceContent`, production verified-content definition, and corresponding `*VerifiedContentTests`. Keep literal transcription, rulebook reproduction, approved interpretation, source conflict, and open question distinct; never guess an absent or ambiguous field.
+- Keep blind worksheets, enlarged regions, and source-side exact readings local and ignored. Tracked evidence records stable face identity/hash, the mismatched field and classification, and its disposition without reproducing private wording that is not already authorized and tracked. Hash identity alone is not closure evidence; the independent visual comparison is.
+- Record every mismatch, including punctuation/reminder differences, and classify whether it affects literal source text, executable definition data, rules interpretation, setup membership, or only non-authoritative presentation metadata.
+- If all 114 reconcile, update the six hero shards and `RULES_LEDGER.md` with independent verification and close F-SOURCE-01. If any discrepancy or unreadable field remains, the review may complete its inventory but the gate stays closed: propose separately approved source/rule/content corrections and schedule a separately numbered, separately approved fresh-task independent verification milestone after the last correction; implement no correction here.
+- Existing six `*VerifiedContentTests` may run through the off-Unity harness only as supporting definition/schema diagnostics after the independent comparison; their passing never substitutes for the visual source review.
+- Source-review validation includes the 114-entry count/hash reconciliation, living-document validation, `git diff --check`, and staged/tracked-file inspection proving that no private corpus, prepared pixel, blind worksheet, enlargement, or temporary source-side transcription entered Git. No Unity suite runs for this analysis-only review.
+
+Non-goals: No card-rule decision, transcription correction, definition/test/runtime change, OCR-derived authority, runtime image analysis, 8.25f preparation/catalog work, source-image mutation, dashboard/profile/back/component re-audit except to disambiguate an already-recorded front question, distribution-rights conclusion, public upload, asset staging, or publication of private pixels. A later higher-authority source still supersedes this review.
+
+### [!] 8.25e6a Build the complete lossless governance source/body manifest
+
+Blocked by: milestone 8.25e2, so the map begins from corrected operative truth. This and the next two milestones are non-gating for 8.25f/8.26 and are due before the first post-pitch hero batch.
+
+Observable outcome: a revision-pinned, explicitly non-authoritative machine-readable manifest accounts for every governed source body, indexed historical body, and registered operative claim without changing current authority.
+
+Acceptance checks:
+
+- Enumerate the validator-discovered governed corpus and indexed phase/archive bodies dynamically; do not pin 8.25e1's counts as permanent structure.
+- Cover each source file's raw UTF-8 preamble and heading-delimited body exactly once, recording source revision, path, byte range, and body hash. Bind every stable operative-claim ID created by 8.25e2 exactly once.
+- Record classification, canonical owner, status, evidence/source locator, expiry or reassessment trigger, route tags, and either explicit retention or a lossless candidate destination for every entry. Uncertainty remains explicit.
+- Balance source/body counts and reconstruct every mapped source byte. Reject omitted, overlapping, duplicate, unknown, or hash-stale bodies and missing or multiply bound claims.
+- Observe `CompleteSourceDestinationManifestCoversEveryGovernedBody` failing on a deliberate omission and passing on the complete map; companion self-tests reject overlap, duplicate destination, stale hash, and unregistered source fixtures.
+- Validation runs the focused manifest check and its violations, the complete living-document validator, source/body balance and link/orphan checks, then `git diff --check`. No Unity suite runs.
+
+Non-goals: No migration, deletion, paraphrase, archive rewrite, canonical-home/router change, generated active authority, candidate selection, or weakening of exact rules, contracts, evidence, privacy, rights, or history.
+
+### [!] 8.25e6b Prototype and measure competing active-access models off-path
+
+Blocked by: milestone 8.25e6a, whose balanced map is the only input to this experiment.
+
+Observable outcome: reproducible non-authoritative prototypes compare the strengthened current model against at least one claim-record/generated-task-manifest model without selecting either or changing the route agents actually use.
+
+Acceptance checks:
+
+- Source-hash drift against 8.25e6a invalidates the experiment. Generated artifacts identify their one canonical owner, source revision/body hashes, and expiry state and are visibly non-authoritative.
+- Compare at least the current shards plus aggregate working-set enforcement against claim records plus generated task-context manifests. For each, record maintenance cost, failure modes, exact-authority compatibility, dual-read transition, cutover gate, and rollback requirements.
+- Generate equivalent authorization, rule, card/effect, configured-presentation, testing, and cross-cutting/privacy bundles. Measure words, bytes, governed files or claim groups, routing hops, missing authority, unnecessary material, duplicate ownership, and update cost.
+- Evaluate rather than preselect the 8.25e1 budget hypotheses: brief at most 1,200 words/10 KiB; ordinary task at most 15,000 words/120 KiB/four governed files/three hops; cross-cutting task at most 60,000 words/450 KiB/twenty claim groups/four hops.
+- Focused integrity checks reject deliberate over-budget, over-hop, duplicate-owner, expired-evidence, stale-source, and orphan-body fixtures. The prototype cannot pass by omitting a source or weakening an answer.
+- Validation runs the focused generation, budget, integrity, and deliberate-violation checks; repeats the measured bundles; runs the complete living-document validator; and finishes with `git diff --check`. No Unity suite runs.
+
+Non-goals: No current-router, brief, AGENTS, or canonical-home change; no migration, deletion, candidate selection, cutover, publication-boundary change, or claim that a smaller bundle is necessarily correct.
+
+### [!] 8.25e6c Independently verify retrieval parity and recommend a governance direction
+
+Blocked by: milestone 8.25e6b. Run in a fresh task by an agent that did not implement 8.25e6a or 8.25e6b.
+
+Observable outcome: independent probes establish whether any candidate preserves exact authority while reducing measured retrieval cost, then recommend retaining the current model, proposing a later replacement, or deferring a decision. The recommendation authorizes no migration or cutover.
+
+Acceptance checks:
+
+- Establish expected answers from the corrected canonical route before inspecting candidate outputs. Probe current authorization/milestone, rule authority, card/effect contracts, presentation ownership, validation routing, and cross-cutting privacy/rights.
+- Run equivalent cold-start probes against every candidate and record answer accuracy, missing authority, unnecessary material, words, bytes, files or claim groups, hops, maintenance cost, and failure modes.
+- Never credit a smaller candidate when an answer differs, weakens authority, misses evidence, loses a body, or exposes private paths/material. Record a decision matrix covering parity, budgets, maintenance, transition, rollback, and the deliberate failures from 8.25e6b.
+- If replacement is recommended, use 8.25e6a's complete map to propose a later separately approved migration sequence with dual-read, parity, cutover, and rollback gates. Do not schedule or execute that migration here. If retaining or deferring, record the concrete controls and next reassessment trigger.
+- Record the F-GOV-01/F-CONTEXT-01 disposition and next reassessment in completion evidence and any affected active risk entry without claiming a risk closed merely because the study ended.
+- T0 review validation runs the living-document validator and `git diff --check`; diagnostic probe/tool runs are recorded exactly, and no Unity suite runs merely because governance direction was reviewed.
+
+Non-goals: No migration, deletion, archive rewrite, canonical-home/router/AGENTS/brief cutover, generated active authority, gameplay/rule/test/presentation change, or automatic acceptance of the smallest candidate.

@@ -434,11 +434,13 @@ Non-goals: No change to Attack, Skill or Movement repeats, to the after-action h
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e-perform-the-repeat-that-was-offered-or-stop-offering-it-completion-evidence).
 
-Milestone **8.25e1** is defined in the dedicated [roster-complete stabilization shard](PHASE_8_STABILIZATION.md). It is a truth-first fresh-task independent review after 8.25e and a hard gate before 8.25f or 8.26; the review implements no correction or documentation migration.
+Milestones **8.25e1-8.25e6c** are in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). From the completed review's findings, the user scheduled truth, validation, reachability, source-verification, and governance-design work; none is authorized for execution.
 
 ### [!] 8.25f Replace generated complete card faces with the verified private faces
 
-Proposed at the user's direction on 2026-08-26. The six configured heroes already have 108 verified definitions and one shared `CardFootprint`, but every complete face the UI draws is still reconstructed from typed content by `ConfiguredCardFaceView.Build`. The private Tabletopia corpus has nineteen front images for each configured hero: one non-card hero/dashboard face and the eighteen playable card faces. This milestone uses the latter 108 as presentation without making private source material tracked authority or making the rules read pixels.
+Blocked by: 8.25e2, 8.25e3, and 8.25e5 finding no unresolved private-source discrepancy; any discrepancy requires a separately approved correction followed by a separately numbered, approved fresh-task verification milestone.
+
+Proposed at the user's direction on 2026-08-26. The six configured heroes already have 108 verified definitions and one shared `CardFootprint`, but every complete face the UI draws is still reconstructed from typed content by `ConfiguredCardFaceView.Build`. The private Tabletopia corpus has nineteen action-card fronts for each configured hero: the eighteen-card deck plus the p.20 Handicap card that setup returns to the box. This milestone uses the former 108 deck faces as presentation without making private source material tracked authority or making the rules read pixels.
 
 Observable outcome: when the verified private artwork is prepared locally, every complete identity-known card face for Wasp, Xargatha, Tigerclaw, Arien, Brogan and Sabina shows that definition's real front image at the shared footprint; when private artwork is absent, the same surface shows the current generated face and remains fully playable.
 
@@ -457,6 +459,8 @@ Acceptance checks:
 Non-goals: No card-rule, definition, printed-text, action, command, projection, persistence, replay or network change. No OCR, runtime reading of artwork, mutation of source scans, public asset package, distribution or authorization expansion. No redesign of compact rail lifecycle icons, neutral facedown commitments, hero/dashboard faces, card backs, items, or the fixed card footprint, and no removal of the generated clean-checkout fallback.
 
 ### [!] 8.26 Integrate six-hero director control and team interactions
+
+Blocked by: 8.25e2-8.25e5, subject to 8.25e5 finding no unresolved private-source discrepancy. 8.25e4 blocks this driver milestone, not art-only 8.25f.
 
 Observable outcome: One director can play and resolve a complete turn for all six independently owned heroes while the rules preserve normal 3v3 ownership, Initiative, target, assist, reaction, and team relationships.
 

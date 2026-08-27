@@ -14,9 +14,9 @@ The project has completed roadmap milestones through **8.25e1**. **The match a p
 
 - Current completed milestone: **8.25e1**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.25f**.
+- Next proposed milestone: **8.25e2**.
 
-Milestone **8.25e1** completed on 2026-08-27, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). The fresh review confirmed three global blockers: stale operative claims across the active corpus, a Unity launcher that does not enforce the policy's fresh parseable-result contract, and six hero transcriptions whose code-to-document mirrors do not constitute independent private-source verification. A central offer/answer coverage omission for removal prevention separately blocks 8.26. Proposed corrections 8.25e2-8.25e5 and a later governance redesign study remain unscheduled until a user-approved roadmap amendment dispositions them; the existing next marker therefore remains 8.25f, but the hard gate is closed and its roadmap status is `[!]`.
+Milestone **8.25e1** completed on 2026-08-27, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). It confirmed global blockers in operative truth, Unity-result integrity, and independent source evidence, plus an 8.26-only removal-prevention reachability gap. The user scheduled 8.25e2-8.25e5 and 8.25e6a-8.25e6c; 8.25e2 is next, no implementation is authorized, and 8.25f/8.26 remain `[!]` until their exact blockers close.
 
 Milestone **8.25e** completed on 2026-08-27. A repeat p.10 offers is one the answer performs: p.12's Hold has a second instance, while p.11's Fast Travel and p.13's Clear do not. Edit Mode **1934**, Play Mode **229**; schema stayed v34 and three payload-identical event-log digests moved. Its evidence is addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md).
 
@@ -34,11 +34,11 @@ Milestones **8.1-8.16** dealt all nineteen verified Wasp faces through ordinary 
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1-7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed the 7.9a review's findings.
 
-The remaining **Phase 8** route is blocked before real card faces at 8.25f or six-hero director control at 8.26 until 8.25e1's gate-blocking findings receive user-approved dispositions and close on their named evidence. The retained 3v3/URP/online gates and unscheduled 8.16b remain. Each implementation, correction, scheduling amendment or review requires exact approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
+The remaining **Phase 8** route runs 8.25e2, 8.25e3 and the fresh-source review 8.25e5 before real card faces at 8.25f; 8.25e4 additionally closes before six-hero director control at 8.26. The non-gating 8.25e6a-8.25e6c governance study is due before the first post-pitch hero batch. The retained 3v3/URP/online gates and unscheduled 8.16b remain. Each scheduled milestone still requires exact implementation approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
-Roadmap amendment, 2026-08-26, at the user's direction: **8.25f** replaces every complete generated card face with its verified private front when locally prepared, retains the generated clean-checkout fallback and identity-free facedown commitment, and keeps private pixels ignored and outside rules authority. It awaits scheduling after 8.25e1's stabilization gate.
+Roadmap amendment, 2026-08-26, at the user's direction: **8.25f** replaces every complete generated card face with its verified private front when locally prepared, retains the generated clean-checkout fallback and identity-free facedown commitment, and keeps private pixels ignored and outside rules authority. It remains proposed behind the corrective blockers named above.
 
 Roadmap amendment, 2026-08-25: heroes beyond this roster are taken **in batches of about five rather than one at a time**, and [Roadmap/POST_PITCH.md](Roadmap/POST_PITCH.md) owns why and what a batch owes first. It changed nothing inside this roster.
 
