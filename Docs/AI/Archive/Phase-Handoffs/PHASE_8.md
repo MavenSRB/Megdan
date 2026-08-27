@@ -379,3 +379,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e5 | A clean fresh-task reviewer visually read and hash-pinned all 114 private fronts before consulting tracked content, with nineteen per hero and zero unreadable fields. Wasp, Arien, and Brogan reconcile completely. Twelve source fields remain affected across Sabina, Tigerclaw, and Xargatha: eleven bounded literal ledger and/or production-provenance differences plus one source-internal Tigerclaw Handicap membership-mark conflict. Typed gameplay, values, setup membership, and same-colour progression remain unchanged, but nine production strings are player-visible and F-SOURCE-01 stays open. Separately approvable milestones 8.25e5a-8.25e5c own authority disposition, correction, and fresh verification; no correction or private artifact entered this review. | `a0894b91` |
+
+## Milestone 8.25e5a Resolve Nimble Strike's conflicting printed membership mark completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25e5a | Rulebook p.9 makes Nimble Strike's yellow/Gold design determinative, maps Gold to `D` and Green to `G`, and makes Gold cards Basic; pp.6 and 20 independently preserve its `H` Handicap classification and setup replacement relationship. Reinspection found the other eighteen Tigerclaw icons agree with their design, so Nimble Strike is canonically a Gold Basic Handicap and its lone printed `G` is a source printing error. No code, content, test, setup, progression, artwork, or private source changed; F-SOURCE-01 remains open for 8.25e5b correction and 8.25e5c fresh verification. |  |

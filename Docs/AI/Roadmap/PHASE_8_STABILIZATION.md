@@ -4,7 +4,7 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization and corrective route
 
-**Corrective scheduling amendments, 2026-08-27.** The user scheduled milestones 8.25e2-8.25e5, targeted hardening 8.25e4a-8.25e4b, and the three-part 8.25e6 governance-design study after 8.25e1. Milestone 8.25e5 completed with twelve affected source fields, so its approved conditional route now schedules separately approvable 8.25e5a-8.25e5c; scheduling is not implementation authorization. The shortest route to real card faces is **8.25e5a -> 8.25e5b -> 8.25e5c -> 8.25f**. Milestone 8.25e4 is ready and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline.
+**Corrective scheduling amendments, 2026-08-27.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a has resolved the authority question from published source. Scheduling is not implementation authorization. The shortest remaining route to real card faces is **8.25e5b -> 8.25e5c -> 8.25f**. Milestone 8.25e4 is ready and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
@@ -168,7 +168,7 @@ Non-goals: No card-rule decision, transcription correction, definition/test/runt
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence).
 
-### [ ] 8.25e5a Resolve Nimble Strike's conflicting printed membership mark
+### [x] 8.25e5a Resolve Nimble Strike's conflicting printed membership mark
 
 Blocked by: milestone 8.25e5, whose sealed blind review is the independent observation this authority decision must disposition. This milestone requires separate exact approval and blocks 8.25e5b.
 
@@ -184,11 +184,13 @@ Acceptance checks:
 
 Non-goals: No card text, definition, content revision, test, snapshot, runtime, setup, progression, artwork, or source-image change; no decision about another hero or card; no OCR-derived authority; and no claim that a current code value resolves a source conflict.
 
-### [!] 8.25e5b Correct the eleven literal transcriptions and apply the approved Nimble Strike disposition
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5a-resolve-nimble-strikes-conflicting-printed-membership-mark-completion-evidence).
 
-Blocked by: milestone 8.25e5a, so every correction is made against a recorded source/authority answer. This milestone requires separate exact approval and blocks 8.25e5c.
+### [ ] 8.25e5b Correct the eleven literal transcriptions and apply the approved Nimble Strike disposition
 
-Observable outcome: the twelve fields identified at 8.25e5 have one exact tracked representation: eleven literal source strings agree across their owning ledger and `CardSourceContent`, and Nimble Strike's membership/classification data agrees with the approved 8.25e5a disposition. Typed gameplay behavior is unchanged.
+Depends on completed milestone 8.25e5a, so every correction is made against its recorded source answer: Nimble Strike is a Gold Basic Handicap and the printed `G` colour icon is a source printing error. This milestone requires separate exact approval and blocks 8.25e5c.
+
+Observable outcome: the twelve fields identified at 8.25e5 have one exact tracked representation: eleven literal source strings agree across their owning ledger and `CardSourceContent`, and Nimble Strike remains explicitly Gold, Basic, Handicap and normally setup-excluded while its observed source icon stays recorded as the `G` printing error dispositioned at 8.25e5a. Typed gameplay behavior is unchanged.
 
 Acceptance checks:
 
