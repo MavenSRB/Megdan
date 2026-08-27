@@ -434,7 +434,7 @@ Non-goals: No change to Attack, Skill or Movement repeats, to the after-action h
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e-perform-the-repeat-that-was-offered-or-stop-offering-it-completion-evidence).
 
-Milestones **8.25e1-8.25e6c** are in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). From the completed review's findings, the user scheduled truth, validation, reachability, source-verification, and governance-design work; none is authorized for execution.
+Milestones **8.25e1-8.25e6c** are defined in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). The user scheduled truth, validation, reachability, decision/foundation hardening, source verification, and governance design; none is authorized for execution.
 
 ### [!] 8.25f Replace generated complete card faces with the verified private faces
 
