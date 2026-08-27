@@ -650,6 +650,67 @@ function Test-DuplicateBodies([string[]] $Bodies, [string] $ActiveCorpus) {
     return $true
 }
 
+# Code-truth check 8 (milestone 8.25e2): the finite F-DOC-01 inventory and every claim later
+# registered through the same ledger must name one live owner, explicit status, evidence, and
+# reassessment trigger. The marker lives in the canonical owner so a ledger row cannot silently
+# outlive, duplicate, or replace the prose it claims to govern. This proves the registered
+# inventory, not arbitrary English prose.
+function Read-OperativeClaimLedger([string[]] $Lines) {
+    $entries = New-Object System.Collections.Generic.List[object]
+    foreach ($line in $Lines) {
+        $trimmed = $line.Trim()
+        if ($trimmed -eq '' -or $trimmed.StartsWith('#')) { continue }
+        $parts = $line -split "`t", 6
+        if ($parts.Count -ne 6) {
+            $entries.Add([pscustomobject]@{ Id = ''; Owner = ''; Status = ''; Evidence = ''; Trigger = ''; Marker = ''; Malformed = $true })
+            continue
+        }
+        $entries.Add([pscustomobject]@{
+            Id = $parts[0].Trim(); Owner = $parts[1].Trim(); Status = $parts[2].Trim()
+            Evidence = $parts[3].Trim(); Trigger = $parts[4].Trim(); Marker = $parts[5].Trim(); Malformed = $false
+        })
+    }
+    return $entries.ToArray()
+}
+
+function Test-EvidenceLocator([string] $Locator, [string] $Root) {
+    if ([string]::IsNullOrWhiteSpace($Locator)) { return $false }
+    $parts = $Locator -split '#', 2
+    $path = Join-Path $Root $parts[0]
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $false }
+    if ($parts.Count -eq 1) { return $true }
+    if ([string]::IsNullOrWhiteSpace($parts[1])) { return $false }
+    return (Get-Headings (Read-Utf8 $path)).ContainsKey($parts[1])
+}
+
+function Get-OperativeClaimIssues($Entries, [hashtable] $OwnerTexts, [string] $Root) {
+    $found = New-Object System.Collections.Generic.List[string]
+    $allowed = @{ CurrentDemonstrated = $true; CurrentUnverifiedSource = $true; Historical = $true; Deferred = $true; Unresolved = $true }
+    if (@($Entries).Count -eq 0) { $found.Add('empty-inventory'); return $found.ToArray() }
+
+    $ids = @{}
+    foreach ($entry in $Entries) {
+        if ($entry.Malformed -or [string]::IsNullOrWhiteSpace($entry.Id)) { $found.Add('malformed-entry'); continue }
+        if ($ids.ContainsKey($entry.Id)) { $found.Add("duplicate-owner:$($entry.Id)") } else { $ids[$entry.Id] = $true }
+        if (-not $allowed.ContainsKey($entry.Status)) { $found.Add("invalid-status:$($entry.Id)") }
+        if ([string]::IsNullOrWhiteSpace($entry.Trigger)) { $found.Add("missing-trigger:$($entry.Id)") }
+        if (-not (Test-EvidenceLocator $entry.Evidence $Root)) { $found.Add("missing-evidence:$($entry.Id)") }
+        if (-not $OwnerTexts.ContainsKey($entry.Owner)) { $found.Add("stale-owner:$($entry.Id)"); continue }
+        $expectedMarker = "<!-- operative-claim:$($entry.Id) status:$($entry.Status) -->"
+        if ($entry.Marker -ne $expectedMarker) { $found.Add("malformed-marker:$($entry.Id)") }
+        $count = ([regex]::Matches($OwnerTexts[$entry.Owner], [regex]::Escape($entry.Marker))).Count
+        if ($count -eq 0) { $found.Add("missing-marker:$($entry.Id)") }
+        elseif ($count -gt 1) { $found.Add("duplicate-owner:$($entry.Id)") }
+    }
+
+    foreach ($owner in $OwnerTexts.Keys) {
+        foreach ($match in [regex]::Matches($OwnerTexts[$owner], '<!-- operative-claim:([A-Za-z0-9-]+) status:[A-Za-z]+ -->')) {
+            if (-not $ids.ContainsKey($match.Groups[1].Value)) { $found.Add("orphan-marker:$($match.Groups[1].Value)") }
+        }
+    }
+    return $found.ToArray()
+}
+
 function Invoke-SelfTests {
     $failed = New-Object System.Collections.Generic.List[string]
     $script:selfTestCount = 0
@@ -683,6 +744,27 @@ function Invoke-SelfTests {
     $archivedBody = 'This archived handoff body is deliberately longer than eighty characters so exact duplicate detection exercises the production rule.'
     Expect 'duplicate historical body' (-not (Test-DuplicateBodies @($archivedBody) "active prefix $archivedBody suffix"))
     Expect 'archived body kept out of active docs' (Test-DuplicateBodies @($archivedBody) 'active documentation links to the archive instead of copying it')
+
+    $claimRoot = [System.IO.Path]::GetTempPath()
+    $evidenceName = 'operative-claim-self-test-evidence.md'
+    $evidencePath = Join-Path $claimRoot $evidenceName
+    [System.IO.File]::WriteAllText($evidencePath, "# Evidence`n", $utf8NoBom)
+    try {
+        $validMarker = '<!-- operative-claim:F-DOC-T status:CurrentDemonstrated -->'
+        $validClaim = [pscustomobject]@{ Id = 'F-DOC-T'; Owner = 'OWNER.md'; Status = 'CurrentDemonstrated'; Evidence = "$evidenceName#evidence"; Trigger = 'Reassess on owner change.'; Marker = $validMarker; Malformed = $false }
+        Expect 'valid operative claim' (@(Get-OperativeClaimIssues @($validClaim) @{ 'OWNER.md' = $validMarker } $claimRoot).Count -eq 0)
+        $superseded = $validClaim.PSObject.Copy(); $superseded.Status = 'Superseded'; $superseded.Marker = '<!-- operative-claim:F-DOC-T status:Superseded -->'
+        Expect 'superseded operative claim is rejected' (@(Get-OperativeClaimIssues @($superseded) @{ 'OWNER.md' = $superseded.Marker } $claimRoot) -contains 'invalid-status:F-DOC-T')
+        $deferredWithoutEvidence = $validClaim.PSObject.Copy(); $deferredWithoutEvidence.Status = 'Deferred'; $deferredWithoutEvidence.Evidence = ''; $deferredWithoutEvidence.Marker = '<!-- operative-claim:F-DOC-T status:Deferred -->'
+        Expect 'deferred operative claim needs evidence' (@(Get-OperativeClaimIssues @($deferredWithoutEvidence) @{ 'OWNER.md' = $deferredWithoutEvidence.Marker } $claimRoot) -contains 'missing-evidence:F-DOC-T')
+        $missingEvidence = $validClaim.PSObject.Copy(); $missingEvidence.Evidence = 'missing.md#evidence'
+        Expect 'missing operative evidence is rejected' (@(Get-OperativeClaimIssues @($missingEvidence) @{ 'OWNER.md' = $validMarker } $claimRoot) -contains 'missing-evidence:F-DOC-T')
+        Expect 'duplicate operative owner is rejected' (@(Get-OperativeClaimIssues @($validClaim, $validClaim.PSObject.Copy()) @{ 'OWNER.md' = $validMarker } $claimRoot) -contains 'duplicate-owner:F-DOC-T')
+        Expect 'stale operative owner is rejected' (@(Get-OperativeClaimIssues @($validClaim) @{} $claimRoot) -contains 'stale-owner:F-DOC-T')
+        Expect 'orphan operative marker is rejected' (@(Get-OperativeClaimIssues @($validClaim) @{ 'OWNER.md' = "$validMarker`n<!-- operative-claim:F-DOC-ORPHAN status:CurrentDemonstrated -->" } $claimRoot) -contains 'orphan-marker:F-DOC-ORPHAN')
+        Expect 'empty operative inventory is rejected' (@(Get-OperativeClaimIssues @() @{} $claimRoot) -contains 'empty-inventory')
+    }
+    finally { Remove-Item -LiteralPath $evidencePath -ErrorAction SilentlyContinue }
 
     $declared = @{ 'RealAuthority' = $true }
     # Literal backticks inside a double-quoted PowerShell string must be doubled; `n stays a newline.
@@ -1006,6 +1088,11 @@ foreach ($historySite in (Get-TestingHistorySites $testingShardTexts $script:tes
 $docRelativeTexts = @{}
 foreach ($file in $activeFiles) {
     $docRelativeTexts[(Get-RelativePath $projectRoot $file.FullName).Replace('Docs/AI/', '')] = Read-Utf8 $file.FullName
+}
+$operativeClaimLedgerPath = Join-Path $PSScriptRoot 'OperativeClaims.tsv'
+$operativeClaimEntries = if (Test-Path -LiteralPath $operativeClaimLedgerPath) { @(Read-OperativeClaimLedger ([IO.File]::ReadAllLines($operativeClaimLedgerPath))) } else { @() }
+foreach ($claimIssue in (Get-OperativeClaimIssues $operativeClaimEntries $docRelativeTexts $projectRoot)) {
+    Add-Issue 'ERROR' 'operative-claim-status' "EveryOperativeClaimHasCurrentEvidenceOrExplicitStatus: $claimIssue. The registered F-DOC-01 inventory must have one current canonical owner, allowed explicit status, resolvable evidence, live trigger, and matching owner marker."
 }
 $shardFamilies = Get-ShardFamilies
 $governedShardPaths = @($docRelativeTexts.Keys | Where-Object { $rel = $_; @($shardFamilies | Where-Object { $rel -like $_.Pattern }).Count -gt 0 })

@@ -1,5 +1,7 @@
 # Six-Hero Roster Capability Matrix
 
+<!-- operative-claim:F-DOC-024 status:CurrentDemonstrated -->
+
 Canonical planning map for milestone 8.19. Return to [CARD_COVERAGE.md](CARD_COVERAGE.md). Source truth and
 exact face text remain in the six hero shards; this file owns only capability classification, effect-node
 contracts, dependency order, and source-linked scenario IDs for the five heroes added after Wasp.
@@ -24,24 +26,14 @@ include the enclosing combat outcome arms; Active effects include creation, appl
 expiry, and p.17 ordering; repeated actions include decline, bound, changed-board, and target-exclusion
 arms. These inherited cases are part of every bracketed scenario even when the short ID omits them.
 
-Shared capability identities used below are stable planned contracts. Existing IDs retain their current
+Shared capability identities used below are stable implemented contracts unless a row explicitly says otherwise. Existing IDs retain their current
 revision: `synthetic-direct-move@1`, `synthetic-object-push@3`, `synthetic-place@2`,
 `synthetic-swap@1`, `synthetic-swap-actor@1`, `synthetic-remove@1`, `synthetic-defeat-hero@1`,
 `synthetic-defeat-minion@1`, `synthetic-discard-chosen-card@1/@2`, `synthetic-give-marker@1`,
 `synthetic-range-target@1`, `synthetic-radius-target@1`, `synthetic-choose-target@1`, and
-`repeat-action@1`. New or refined planned identities are named in the tables and are introduced only by
-the dependency slice assigned in [Phase 8](../Roadmap/PHASE_8.md).
+`repeat-action@1`. New or refined identities must be introduced by an approved dependency slice and registered before verified content can use them.
 
-Implementation status through milestone 8.21: dependency steps 1-4a below are complete, and step 5's
-first two heroes are composed, dealt and gated through the player path. Arien's nineteen faces landed at
-milestone 8.20 and Brogan's at 8.21, so the contracts their cards name are registered in the default
-production catalog: Arien brought `choose-target@2`, `behind-target-line@1` and `was-adjacent@1`, and
-Brogan brought twelve more - milestone 8.19b's remaining roster ones, the three his modal Ranged Attacks
-needed minted (`discard-owned-card@1`, `owned-card-present@1`, `synthetic-range-unit-target@1`), and his
-four Active effects. The step-3 and step-4 handlers no printed face has reached still execute in bounded
-synthetic catalogs over hero-shaped consumers, because the catalog rejects a registration no printed card
-can start and each is waiting for the hero whose face names it. Snapshot schema is v29, and its cause is
-that pinned registration list itself rather than any new field.
+Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v34 and pins the complete registered contract set used by restore.
 
 **The block's own prerequisite claim needs qualifying, and this is now three heroes running:** each of
 8.20, 8.20a and 8.21 found printed sentences needing vocabulary no 8.19 slice built - a restriction

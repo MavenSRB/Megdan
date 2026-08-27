@@ -1,5 +1,7 @@
 # Guards Digital - State Effect Capabilities
 
+<!-- operative-claim:F-DOC-007 status:CurrentDemonstrated -->
+
 Canonical effect-capability shard. Return to the [Card Effect Capabilities index](../CARD_EFFECT_CAPABILITIES.md).
 
 ## Tokens, markers, obstacles, and terrain
@@ -129,7 +131,7 @@ Other typed state changes include gain/spend coins, spend Lives, flip/remove Wav
 
 Milestone 5.5 implements the pure coin-gain subset for Defeat outcomes. Each outcome carries a stable outcome/target identity, defeated team, acting hero, and already-verified Defeat/Assist amounts. Accounting validates the participant graph and enemy team, awards the acting hero first and every other friendly hero in stable participant order, and emits typed operations containing source, recipient hero/team, Defeat-versus-Assist kind, positive amount, zero minimum, reject-without-mutation behavior, and before/after balances. The entire recipient batch is planned before mutation, duplicate outcomes reject, and a separately typed removed/removal-prevented result cannot reverse the reward. Milestone 7.4 owns exact hero Level/lowest-Tier derivation; spending and presentation remain with their owning milestones.
 
-Milestone 5.6 supplies the verified minion values, integrates the acting-hero-only award with minion Attack, and persists balances plus awarded-outcome identity in snapshot schema v4. Exact hero Level/lowest-Tier derivation remains milestone 7.4; spending and presentation remain deferred.
+The configured match derives minion rewards, hero Level and lowest non-Basic Tier, persists balances and awarded-outcome identity, performs Level spending and upgrades, and projects each hero's balance, items, Level, and progression choices.
 
 Milestone 8.19b adds `gain-resource@1` and `transfer-resource@1` to the same `HeroCoinLedger`. A positive card-effect grant validates the recipient and overflow before committing. Transfer names source, recipient, exact chooser, and a bounded positive amount choice; feasibility and resumption rederive balances and admitted amounts, and `TryTransfer` plans the debit and credit together before either is written. Unknown heroes, self-transfer, insufficient funds, overflow, forged/stale amounts, and wrong-chooser answers leave both balances unchanged. The live ledger already persists, so no snapshot field is added.
 

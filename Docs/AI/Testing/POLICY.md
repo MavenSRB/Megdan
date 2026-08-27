@@ -1,12 +1,14 @@
 # Testing Policy and Evidence Contract
 
+<!-- operative-claim:F-DOC-027 status:CurrentDemonstrated -->
+
 Canonical active shard. Return to [../TESTING.md](../TESTING.md).
 
 ## Scope
 
 This shard is the current testing policy and evidence contract. It states what must be validated and how evidence is recorded. It is not a record of what each past milestone covered.
 
-Automated coverage currently spans the pure hex/board foundation, card definitions and owned instances, typed actions/offers/values, Movement including segmented waypoint routes and Fast Travel, Attack and Defense including minion contributions, the general Clear replacement, timing and Active-effect lifecycles, Defeat-reward accounting, the end-of-round Minion Battle, token and marker instances with finite supplies, placement/attachment, token-owned persistent properties, and token clearance before a validated Spawn-point commit, the general typed modifier, restriction, permission, immunity, and effective-characteristic contracts with their canonical ordering, schema-versioned snapshots with a versioned compatibility corpus, deterministic replay and retained-prefix Undo, the configured passive presentation and saved-scene paths, mechanical architecture-boundary conformance, Wasp's verified content through configured player journeys, and all SIX dealt heroes' verified content at the engine and projection tiers and through the permanent hero player-path completion gate - a content-derived face/component matrix bound to real-input journeys, which milestone 8.20b applied retroactively to Wasp so no hero carries a grandfathered exception, and which found five defects in shipped code on the first hero it gated and three on the third, and none on the other four. The mapped pitch roster is complete as of milestone 8.24; the six-player setup and networking are not yet covered. The player-build smoke gate added at 6.1d is a standing check, run whenever a build-affecting surface changes per [FUTURE_GATES.md](FUTURE_GATES.md).
+Automated coverage spans the pure rules/action/effect foundation, schema-versioned snapshots and compatibility corpus, deterministic replay/Undo, configured presentation, all six heroes' verified content and permanent player-path gates, and the official six-player Quick Game setup: seats/spawns, three Waves, five Lives, twelve minions, Tie Breaker, six distinct 18-card sets, assignments, snapshot round trip, six rails, and scaled runtime baseline. It does not yet cover one director resolving a complete six-hero turn/full match, six-human networking, or production online recovery; those remain owned by their roadmap gates. The player-build smoke gate remains a standing affectedness check under [FUTURE_GATES.md](FUTURE_GATES.md).
 
 The milestone-by-milestone record of what each completed milestone added, including its tier decision and rationale, is historical evidence rather than current policy. It is preserved verbatim in [Archive/TESTING_HISTORY.md](../Archive/TESTING_HISTORY.md#milestone-coverage-narrative-through-61b). Do not reconstruct that chronology in this shard.
 

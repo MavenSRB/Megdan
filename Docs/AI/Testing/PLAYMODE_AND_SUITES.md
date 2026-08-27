@@ -1,5 +1,7 @@
 # Play Mode, Complete Suites, and Test Ownership
 
+<!-- operative-claim:F-DOC-026 status:Historical -->
+
 Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md).
 
 ## Placeholder-grid focused Play Mode test
@@ -34,6 +36,8 @@ Expected result: all discovered cases pass after loading the complete 292-space 
 Run both unfiltered suites only for T3 validation: a final implementation milestone of a phase, an explicit hard gate, shared test/package/assembly infrastructure, the pre-build regression gate, or a change promoted because its blast radius cannot be enumerated. Resolve focused failures before spending time on these suites. These commands intentionally omit `-testFilter`.
 
 ### Known-good complete-suite baseline
+
+The baseline table and milestone-qualified paragraphs in this section are historical run evidence, not current applicability policy or a live test-total promise. Current tier selection and coverage ownership live in [POLICY.md](POLICY.md); new milestone evidence belongs in its commit body and archive row.
 
 The most recent green unfiltered totals, so a task can tell a regression it introduced from a pre-existing failure without re-running anything first. This is a current reference point, not historical evidence; replace it whenever a milestone legitimately changes a total, and state in that milestone's evidence why the total moved.
 

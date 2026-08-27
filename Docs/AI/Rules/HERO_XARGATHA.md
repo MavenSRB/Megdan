@@ -1,5 +1,7 @@
 # Guards Digital - Xargatha Rules Shard
 
+<!-- operative-claim:F-DOC-023 status:CurrentUnverifiedSource -->
+
 Canonical active shard. Return to [../RULES_LEDGER.md](../RULES_LEDGER.md).
 
 Xargatha the Changed holds a Red roster slot on the pitch line-up milestone 8.17 approved. This shard owns
@@ -11,8 +13,7 @@ and a deviation or open question affecting more than one hero stays in
 
 ## Xargatha content ledger
 
-The pitch requires Xargatha's complete progression. Before verified Xargatha definitions or effects are
-implemented, the inventory must be implementation-grade, containing at least:
+The pitch uses Xargatha's complete progression. Its implementation-grade inventory contains:
 
 - Stable definition ID and content revision.
 - Display name, source image path/face, edition, and starting hand/deck/set-aside membership.
@@ -30,13 +31,7 @@ implemented, the inventory must be implementation-grade, containing at least:
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **source-verified at 8.18e and capability-mapped at 8.19 (2026-08-23)**. Every printed value, icon and word on the
-nineteen action faces below is transcribed here, read twice - once from the whole face and again from the
-value/icon and text regions. The dashboard, profile, common backs, and manifest-owned standee art were also
-inspected. The roster-wide [capability matrix](ROSTER_CAPABILITY_MATRIX.md#xargatha) now assigns every
-face/component, typed binding, policy, checkpoint, and source-linked scenario family. No Xargatha
-definition, effect, component, or test exists in the build; milestones 8.19a, 8.19a1 and 8.19b-8.19c own
-the shared dependencies and 8.24 owns composition.
+Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. These mirrors do not independently verify the private fronts; F-SOURCE-01 remains owned by milestone 8.25e5.
 
 ## Xargatha source faces and components
 
@@ -228,6 +223,4 @@ rules data. p.21 calls these bars selection metadata; no rule consumes them.
 
 ## Xargatha open questions
 
-No Xargatha-scoped source or rule question blocks definition work. The roster-wide official-errata search
-remains [ledger question 2](../RULES_LEDGER.md#open-source-and-rules-questions), and milestone 8.19 still owes
-the typed capability mapping and source-linked test matrix.
+No Xargatha-scoped source or rule question blocks the implemented definitions. The roster-wide official-errata search remains [ledger question 2](../RULES_LEDGER.md#open-source-and-rules-questions); her typed capability mapping and source-linked test matrix are complete.

@@ -1,5 +1,7 @@
 # Core Architecture Constraints
 
+<!-- operative-claim:F-DOC-010 status:CurrentDemonstrated -->
+
 Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).
 
 ## Core architecture constraints
@@ -20,7 +22,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Logical hexes use integer axial `(q, r)` coordinates; generic adjacency is the six standard axial offsets exposed as named directions.
 - The model uses collections and stable IDs for teams, players, heroes, cards, units, spaces, zones, and effects.
 - Executable setup configuration declares its required immutable `MapId` plus content revision. Every configured external space/spawn reference composes that `MapId` with the map-local child ID, and setup authority resolves all placements only against the exact selected definition before exposing immutable team resources and unit state.
-- The staged mirrored-Wasp 1v1 Quick Game setup creates reusable stable minion identity, team, type, spawn, occupied-space, and coordinate data. Later minion obstacle, Defense, battle, removal, respawn, and Lane behavior extends that one representation rather than creating parallel setup-only units.
+- The default official six-player Quick Game and named staged fixtures share stable unit identity, team, type, spawn, occupied-space, and coordinate data; obstacle, Defense, battle, removal, respawn, and Lane behavior all use that one representation.
 - The model must support exactly three independently owned heroes per team for the pitch without hard-coding that team size into general rule APIs.
 - Authoritative state must be serializable and schema-versioned.
 
@@ -81,6 +83,6 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Phase 2 proves extension by opening a basic Attack, pausing for the target hero's Defense reaction, discarding one owned card or declining, and resuming the unmodified comparison through the same authority.
 - Phase 3 proves generic card lifecycle, director hands, play/reveal, Initiative and tied Initiative, Hold, Movement and Attack inside turns, the four-turn round skeleton, an extensible repeated-round transition with limited synthetic retrieval, snapshots, Undo/restart, and event logging with synthetic definitions.
 - Phases 4 through 7 prove the official map, core full-map actions and combat, minions, tokens, Lane Push, exact end-of-round order, defeat/respawn, progression, victory, and a deterministic complete match with synthetic definitions.
-- The complete Wasp card inventory and Wasp-specific card implementation wait until Phase 8, after milestone 7.9 proves the synthetic core match. Milestone 8.2 may re-baseline Wasp-specific work and add verified capability deltas, but it does not gate or redesign the already-proven general core loop.
+- All six configured heroes' complete playable inventories compose through the shared core loop and typed extension seams; the permanent player-path gate rejects hero-name rule branches.
 - Complete Wasp verification remains an intermediate integration gate. Only afterward are five additional heroes selected, inventoried, capability-mapped, implemented, and integrated into the official-setup 3v3 pitch match.
 - Add reusable primitives only when a verified rule or card requires them. Later discoveries may require a localized capability, handler, or explicit schema migration, but must not silently rewrite ownership, action context, UI authority, or continuation semantics.

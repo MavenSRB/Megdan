@@ -1,5 +1,7 @@
 # Guards Digital - Tigerclaw Rules Shard
 
+<!-- operative-claim:F-DOC-021 status:CurrentUnverifiedSource -->
+
 Canonical active shard. Return to [../RULES_LEDGER.md](../RULES_LEDGER.md).
 
 Tigerclaw the Cutpurse holds a Red roster slot on the pitch line-up milestone 8.17 approved. This shard
@@ -11,7 +13,7 @@ refers to Tigerclaw as "he"; this shard follows the source.
 
 ## Tigerclaw content ledger
 
-The pitch requires Tigerclaw's complete progression. Before verified Tigerclaw definitions or effects are implemented, the inventory must be implementation-grade, containing at least:
+The pitch uses Tigerclaw's complete progression. Its implementation-grade inventory contains:
 
 - Stable definition ID and content revision.
 - Display name, source image path/face, edition, and starting hand/deck/set-aside membership.
@@ -29,13 +31,7 @@ The pitch requires Tigerclaw's complete progression. Before verified Tigerclaw d
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **source-verified at 8.18d and capability-mapped at 8.19 (2026-08-23)**. Every printed value, icon and word on the
-nineteen faces below is transcribed here, read twice - once from the whole face and again from
-icon-region and text-region enlargements. The Poison marker's own extracted atlas art and manifest entry
-were also inspected. The roster-wide [capability matrix](ROSTER_CAPABILITY_MATRIX.md#tigerclaw) now assigns
-every face/component, typed binding, policy, checkpoint, and source-linked scenario family. No Tigerclaw
-definition, effect, marker, or test exists in the build; milestones 8.19a, 8.19a1 and 8.19b-8.19c own
-the shared dependencies and 8.23 owns composition.
+Current status: **all nineteen faces and the Poison marker are transcribed and capability-mapped; eighteen playable definitions plus the marker are composed, dealt, and pass Tigerclaw's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. These mirrors do not independently verify the private fronts; F-SOURCE-01 remains owned by milestone 8.25e5.
 
 ## Tigerclaw source faces
 

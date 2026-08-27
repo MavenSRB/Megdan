@@ -1,5 +1,7 @@
 # Guards Digital - Configured Presentation Surfaces
 
+<!-- operative-claim:F-DOC-013 status:CurrentDemonstrated -->
+
 Canonical active shard. The configured passive views, presenters, and board cues built on the presentation boundary, and what each one renders from an authoritative projection. Split out of [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md) at milestone 6.1aq, which is the response governance names for sustained growth: move precise active authority to an indexed shard rather than compress it.
 
 The architectural presentation contract stays in [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md) - that presentation is passive, forwards only projected typed invocations, and withholds what the authority would refuse. This shard owns the configured surfaces that contract produces. Milestone 7.8a moved the player-facing HUD out to [MATCH_HUD.md](MATCH_HUD.md), which owns the panel, the standing status strip, the hero overview rails, the `DIRECTOR` drawer, the card tray, and the one contextual region every decision is asked in; what stays here is the board-facing side of the same contract. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).
@@ -46,7 +48,7 @@ Milestone 8.5a frames the board into the viewport the HUD leaves it rather than 
 
 Milestone 8.11b draws each hero as the official circular token when a prepared face is present. It replaces the view's own mesh and materials rather than adding an object, so the `HeroId` everything binds to, the target cue, movement, Defeat and respawn visibility, Undo, restore and replay are untouched by the swap, and the collider follows whichever piece was built, so picking stays what a player sees. The face is selected by projected content identity and authoritative team, never read; `Tools/Prepare-HeroTokens.ps1` settled which source face is which off-line. Those faces carry the source set's team colours, so the piece states the team again in a generated rim in this project's own board Red or Blue. The artwork is private and ignored; a checkout without it keeps the prism.
 
-Milestone 8.21 lets a configuration deal a seat the scene authors no view for: composition generates a `PrimitiveHeroView` and a `PrimitiveHeroPointerSelector` for each one at the map's own outer radius - configuring a view lays it out immediately - and deactivates any authored view no configured hero claims. The generated object carries no artwork of its own, so a generated seat and an authored one are the same piece drawn the same way; milestone 8.25's six-player setup needs this mechanism.
+A configuration may deal a seat the scene authors no view for: composition generates a `PrimitiveHeroView` and `PrimitiveHeroPointerSelector` at the map's outer radius and deactivates authored views no configured hero claims. Generated and authored seats draw through the same path; the default official six-player setup uses this mechanism.
 
 ## Maintenance rule
 

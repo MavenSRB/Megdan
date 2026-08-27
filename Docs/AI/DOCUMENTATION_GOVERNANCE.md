@@ -4,6 +4,10 @@
 
 This contract keeps routine context bounded without limiting the complete authoritative corpus. Current authority may be split across indexed subject shards, and completed history may move to indexed archives, but neither operation may delete, weaken, paraphrase, or silently change rules, sources, deviations, open questions, milestone acceptance/non-goal checks, exact active test recipes, validation evidence, rights/privacy boundaries, or Git history.
 
+<!-- operative-claim:F-DOC-002 status:CurrentDemonstrated -->
+
+`Tools/OperativeClaims.tsv` is a non-authoritative validator inventory for the complete F-DOC-01 correction set and claims registered after it. Its stable IDs bind one canonical owner to an allowed explicit status, resolvable evidence locator, live reassessment trigger, and matching owner marker. `EveryOperativeClaimHasCurrentEvidenceOrExplicitStatus` proves that finite inventory and does not claim to understand arbitrary prose.
+
 Every fact has exactly one canonical active home. Other active documents use a short routing summary and a stable link. Historical evidence has exactly one lossless destination: for new milestone evidence, the commit body indexed by its phase-archive row; for other history, an indexed append-only archive file. The pre-governance baseline is preservation evidence, not current authority.
 
 ## Ownership matrix

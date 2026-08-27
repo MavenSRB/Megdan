@@ -1,5 +1,9 @@
 # Card Resolution and Effect Contracts
 
+<!-- operative-claim:F-DOC-006 status:CurrentDemonstrated -->
+
+The current resolver composes every playable face of all six configured heroes, including bounded repeated action instances, resumable pre-action/card-text/interrupt continuations, and typed completion results. A repeat the authority offers is performable; Hold may repeat, while Fast Travel and Clear cannot be repeated under p.10.
+
 Canonical active shard. Return to [../CARD_SYSTEM_ARCHITECTURE.md](../CARD_SYSTEM_ARCHITECTURE.md).
 
 ## Action offers and invocation context

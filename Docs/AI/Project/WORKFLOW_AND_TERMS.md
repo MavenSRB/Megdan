@@ -1,5 +1,7 @@
 # Development Workflow, References, and Terminology
 
+<!-- operative-claim:F-DOC-017 status:CurrentDemonstrated -->
+
 Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).
 
 ## Development workflow
@@ -19,7 +21,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - The early board/card foundation proceeds in separate steps: adjacent selection, an authoritative adjacent-move command/event, presentation hookup, a larger placeholder grid, movement of multiple spaces, obstacle blocking immediately afterward, definition/instance separation, action definitions/runtime offers and typed values, resumable card-action choices, then visible card-driven movement.
 - Both the primitive scene session and pure placeholder card resolver treat the player's selected reachable destination with its projected deterministic route as the explicit choice, record every internal adjacent step, allow zero movement through Stop, and reject entering or passing through generic placeholder obstacles.
 - Before Phase 1 ends, the selected test action offer's typed printed-value query must be the sole source of movement allowance.
-- Fast Travel, movement from card text, and movement-limiting effects remain later rule milestones rather than being folded into the early board test.
+- Fast Travel, card-text movement, and movement-limiting effects are implemented through their distinct typed action/effect paths; the early placeholder board fixture remains a deliberately narrow foundation test.
 - Mechanics are completed with primitives and debug UI before production art begins. Milestone 8.28 establishes URP as the accepted rendering baseline, and milestones 8.29-8.36 prove the invite-only online flow and full friends playtest before any production visual asset is introduced.
 - Phase 5 did not begin until the post-setup Phase 4 architecture track had established the match-session port, typed action handler decomposition (then expressed as the strategy registry milestone 6.1h later removed in favor of direct backend composition), passive-view MVP, explicit Unity resource ownership, robust diagnostic-envelope parsing, warning-clean supported object discovery, and a recorded prototype performance baseline, after which milestone 4.4e independently reviewed that accumulated baseline with every gate-blocking finding receiving an approved disposition.
 - Independent engineering review milestones run in fresh tasks after selected accumulation gates; the authoritative list of analysis-only review gates is maintained in [Testing/POLICY.md](../Testing/POLICY.md). Reviews inspect actual implementation and diagnostic evidence, record preserved strengths as well as classified findings, and never implement their proposed corrections in the same milestone.
@@ -71,12 +73,12 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ## Current explicit non-goals
 
-- Card execution beyond the completed synthetic Hold/Movement/Attack/Defense and repeated-round slices, including hero Attack consequences, resolve-without-action, the concrete end-of-round systems beyond retrieval and the implemented Minion Battle, or verified Wasp content before their exact milestone approval.
+- Card execution outside the six configured heroes' 108 playable definitions, any seventh pitch hero, and unapproved future capability/content work.
 - Public distribution or commercialization.
 - Public online play, public server discovery, or production live-service operation.
 - AI opponents.
 - Pass-and-play.
-- Any seventh pitch hero or hero content not selected through the post-Wasp roster milestone.
+- Any seventh pitch hero or post-pitch batch not separately selected and approved.
 - A universal card-text parser.
 - Production visuals before the primitive game loop, milestone 8.28 URP migration gate, and milestone 8.36 private online playtest gate have passed.
 - Music, voice, tutorials, accounts, public matchmaking, cloud saves, or telemetry.

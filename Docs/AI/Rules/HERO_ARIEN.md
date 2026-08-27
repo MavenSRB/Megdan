@@ -1,5 +1,7 @@
 # Guards Digital - Arien Rules Shard
 
+<!-- operative-claim:F-DOC-020 status:CurrentUnverifiedSource -->
+
 Canonical active shard. Return to [../RULES_LEDGER.md](../RULES_LEDGER.md).
 
 Arien the Tidemaster holds a Blue roster slot on the pitch line-up milestone 8.17 approved. This shard owns
@@ -11,7 +13,7 @@ refers to Arien as "he"; this shard follows the source.
 
 ## Arien content ledger
 
-The pitch requires Arien's complete progression. Before verified Arien definitions or effects are implemented, the inventory must be implementation-grade, containing at least:
+The pitch uses Arien's complete progression. Its implementation-grade inventory contains:
 
 - Stable definition ID and content revision.
 - Display name, source image path/face, edition, and starting hand/deck/set-aside membership.
@@ -29,12 +31,7 @@ The pitch requires Arien's complete progression. Before verified Arien definitio
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **source-verified at 8.18a and capability-mapped at 8.19 (2026-08-23)**. Every printed value, icon and word on the
-nineteen faces below is transcribed here, read twice - once from the whole face and again from
-icon-region and text-region enlargements built for the purpose. The roster-wide
-[capability matrix](ROSTER_CAPABILITY_MATRIX.md#arien) now assigns every face/component, typed binding,
-policy, checkpoint, and source-linked scenario family. No Arien definition, effect, or test exists in the
-build; milestones 8.19a, 8.19a1 and 8.19b-8.19c own the shared dependencies and 8.20 owns composition.
+Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Arien's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. These code/document mirrors are supporting evidence, not an independent reread of the private fronts; F-SOURCE-01 remains owned by milestone 8.25e5.
 
 ## Arien source faces
 

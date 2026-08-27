@@ -1,5 +1,7 @@
 # Guards Digital - Wasp Rules Shard
 
+<!-- operative-claim:F-DOC-022 status:CurrentUnverifiedSource -->
+
 Canonical active shard. Return to [../RULES_LEDGER.md](../RULES_LEDGER.md).
 
 Hero-scoped rule authority lives one shard per approved hero, named `Rules/HERO_<NAME>.md`. A hero shard
@@ -14,7 +16,7 @@ with itself as soon as one copy is edited. A shard exists only for a hero with a
 the five heroes joining Wasp are selected at milestone 8.17, and each gets its shard then, not before.
 ## Wasp content ledger
 
-The pitch requires Wasp's complete progression. Before verified Wasp definitions or effects are implemented, create an implementation-grade inventory containing at least:
+The pitch uses Wasp's complete progression. Its implementation-grade inventory contains:
 
 - Stable definition ID and content revision.
 - Display name, source image path/face, edition, and starting hand/deck/set-aside membership.
@@ -34,7 +36,7 @@ The pitch requires Wasp's complete progression. Before verified Wasp definitions
 
 Current status: **source-verified at 8.1, capability-mapped at 8.2, defined at 8.3, dealt at 8.4, every configured face composed through High Voltage at 8.13, her whole p.15/p.16 progression run at 8.14, every composed behavior verified through the real player pipeline at 8.15 - live HUD controls and board pointer clicks at each p.15 stage - and the deterministic mirror integration gate closed at 8.16, where the mirror plays itself from p.5's setup to each of the rulebook's three endings; only the uninstantiated Handicap face retains its named deferral**. Everything below is read from the extracted faces named under [Wasp source faces](#wasp-source-faces) and cross-checked against the second-printing rulebook; the [capability matrix](#wasp-capability-matrix) maps every action onto the implemented contracts and names each delta with its owning milestone.
 
-Milestone 8.3 supplied the stable verified definitions and exact transcriptions. The effect-node IDs and typed bindings live in `WaspEffectContent`: 8.6 composed the five telekinetic Skills, 8.8 the two kinetic ones, 8.9 the two basics, 8.10 the Attacks, 8.11 the Blocks, and 8.13 High Voltage. The basic cards' Active-effect declarations remain in `WaspActiveEffectContent`; the Ultimate is a continuous triggered source. The milestone column of the [capability matrix](#wasp-capability-matrix) records that assignment. Other heroes remain outside the pitch inventory.
+The stable definitions and typed bindings live in `WaspEffectContent`; basic-card Active effects remain in `WaspActiveEffectContent`, and the Ultimate is a continuous triggered source. Wasp's eighteen playable definitions are one of six distinct configured sets and pass the permanent player-path gate. The production mirrors do not independently verify the private fronts; F-SOURCE-01 remains owned by milestone 8.25e5.
 
 ## Wasp source faces
 

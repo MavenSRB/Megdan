@@ -1,5 +1,9 @@
 # Guards Digital - Hero Progression
 
+<!-- operative-claim:F-DOC-015 status:CurrentDemonstrated -->
+
+All six configured heroes carry their complete Tier/colour relationships, p.15 Level spending and upgrades, p.16 items and item bonuses, and unlocked Ultimate sources through snapshot, projection, replay, Undo, and player-facing choices.
+
 Canonical active shard. What the engine does now for the content a hero owns and how that content grows: every definition's colour, classification, Tier and Item icon, p.6's whole deck per hero, an authoritative Level, p.16's dashboard slots and items, p.8's mandatory Level Up with p.15's table, the Pity Coin that closes the round, and the Ultimate an unlock places. Split out of [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md) at milestone 7.8e, which is the response governance names for sustained growth: move precise active authority to an indexed shard rather than compress it.
 
 This shard owns what the engine implements. The declared content model and its refusals stay in [../Card-System/CORE_MODEL.md](../Card-System/CORE_MODEL.md) and [../Card-System/STATE_CAPABILITIES.md](../Card-System/STATE_CAPABILITIES.md); the leveling transition's own ordering stays in [../Card-System/TIMING_AND_TRANSITIONS.md](../Card-System/TIMING_AND_TRANSITIONS.md); the coins it spends are awarded by the ledger in [COMBAT_AND_CONSEQUENCES.md](COMBAT_AND_CONSEQUENCES.md); what a player sees of it stays in [MATCH_HUD.md](MATCH_HUD.md). Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).

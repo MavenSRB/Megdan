@@ -1,5 +1,7 @@
 # Card Validation and Extension Contracts
 
+<!-- operative-claim:F-DOC-009 status:CurrentDemonstrated -->
+
 Canonical active shard. Return to [../CARD_SYSTEM_ARCHITECTURE.md](../CARD_SYSTEM_ARCHITECTURE.md).
 
 ## Required test layers
@@ -30,7 +32,7 @@ The first card slice should implement only:
 - A data-shaped pending resolution/choice protocol.
 - The minimum structured Movement action needed to select disclosed destination/route segments, accumulate their already-tested adjacent steps, and Stop or continue within one allowance.
 
-Phase 2 then proves that the same foundation can open an Attack, pause for a Defense reaction from the correct hand, discard exactly one card or decline, calculate the unmodified result, and resume. Phase 3 proves generic lifecycle, Initiative, turns, rounds, snapshots, and internal tools with synthetic definitions. Phase 4 establishes the complete configured map/setup shape; milestone 4.4a interposes the application-service port, milestone 4.4b routes Movement and Attack/Defense through stable typed strategy identities and one generic registry dispatch seam, and corrective milestone 4.4g assigns production Movement and Attack/Defense algorithms plus pending state to distinct concrete backends while retaining cross-action invariants in the dispatcher. Milestones 4.4c-4.4d complete passive-view MVP and the architecture/runtime gate before Phase 5 expands action/effect behavior. Milestone 5.1 proves exact-map segmented Movement plus a one-time typed action-start restriction checkpoint; 5.2 adds Fast Travel as a separate typed replacement backend; and 5.3 binds the existing configured minions into board occupancy and the typed Defense contribution query. Direct Move remains unimplemented. Phases 5 through 7 extend that synthetic foundation through the complete general core match loop. The complete Wasp card inventory and Wasp-specific card implementation begin only in Phase 8 after the milestone 7.9 core-match gate; Wasp verification may add localized capability deltas but does not own or block the general rules foundation. After the Wasp integration gate, five additional user-approved heroes each enter through source inventory and capability-delta mapping before the six distinct heroes are integrated into the official-setup director-mode 3v3 pitch match. The later private-online track transports the same typed commands, ordered events, serializable pending choices, immutable projections, and versioned snapshots through a host-authoritative session; transport callbacks and client projections do not become card-resolution authority.
+The verified foundation now covers the official map, exact Movement/Fast Travel/Direct Move, Attack/Defense, board operations, effects, progression, and all 108 playable definitions for the six configured heroes. Each hero passes the permanent content-derived player-path gate without name-specific resolver branches. The later six-hero director/full-match and private-online tracks reuse these typed commands, ordered events, serializable pending choices, immutable projections, and versioned snapshots; transport callbacks and client projections never become card-resolution authority.
 
 The foundation is succeeding when:
 

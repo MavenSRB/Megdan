@@ -1,5 +1,7 @@
 # Guards Digital - Board Effect Capabilities
 
+<!-- operative-claim:F-DOC-004 status:CurrentDemonstrated -->
+
 Canonical effect-capability shard. Return to the [Card Effect Capabilities index](../CARD_EFFECT_CAPABILITIES.md).
 
 ## Spatial and object query capabilities
@@ -49,7 +51,7 @@ Zone adjacency follows the board rule: two zones are adjacent when there is an a
 
 `PerformMovementAction` uses the selected action offer's typed Movement value and checks action-start movement limits/restrictions once. The Phase 1 shell creates an immutable pending choice of currently reachable destinations, each bound to one disclosed deterministic adjacent route and cost. Selecting a destination revalidates that candidate, commits each route step through the adjacent-move authority, spends one allowance per step, and completes the `up to` action; Stop selects zero movement. Each step enters an adjacent empty legal space and respects obstacles.
 
-Each segmented destination choice intentionally projects one deterministic shortest route per currently offered destination. After a partial segment, the same action preserves cumulative route facts and ordered step events, subtracts the segment cost, and offers another choice from the new position. Waypoints therefore let the player construct deliberately longer/non-shortest cumulative routes without pre-enumerating every possible complete route. Milestone 5.1 integrates and source-tests this interaction on the official topology: a typed action-start evaluator receives the actor, source card, action, invocation context, and typed Movement value exactly once; prevention rejects atomically, while a distance cap becomes the captured session allowance used by every later segment and recovery path. Concrete persistent restriction sources and lifetimes remain deferred.
+Each segmented destination choice projects one deterministic shortest route per offered destination. After a partial segment, the same action preserves cumulative route facts and ordered step events, subtracts the segment cost, and offers another choice from the new position, so waypoints can construct longer cumulative routes without pre-enumeration. The action-start evaluator receives actor, source card, action, invocation context, and typed Movement value exactly once; prevention rejects atomically, while a distance cap becomes the captured allowance used by later segments and recovery. Configured persistent restriction sources and lifetimes feed this evaluator, including action-start Movement limits and actor-qualified restrictions.
 
 Primary/Secondary context controls card-text application. Milestone 5.2 implements the Fast Travel replacement as a separate value-free typed action: a current replaceable printed Movement offer supplies the replaced-action identity, while the replacement invocation suppresses source-card text. It atomically relocates to an empty space in the same or a shared-border adjacent zone only when neither endpoint zone contains an enemy hero or minion, requires no empty-space path, and emits ordered replacement/relocation/completion facts. Ordinary Movement continues to emit action, step, and completion events while leaving presentation timing separate.
 
@@ -158,7 +160,7 @@ Milestone 6.6b gives the minion removal stage its prevention consumer. Until the
 
 ### Prevent removal and Block
 
-`PreventRemovalEffect` intercepts the removal stage; it does not undo defeat or reward unless exact card text says otherwise. Since milestone 6.6b there is one removal stage to intercept rather than two readings of one, so a source implemented here reaches p.19's standalone Remove and p.13's Defeat together; the source family itself remains unimplemented for want of verified card text and a minion-scoped declaration no source can yet supply.
+`PreventRemovalEffect` intercepts the one shared removal stage used by p.19 Remove and p.13 Defeat; it does not undo Defeat or reward unless exact card text says otherwise. Brogan's verified Bolster definitions supply the configured minion-scoped prevention source and immutable payment-or-decline decision at both entry altitudes.
 
 `BlockResult` is a Defense-specific conditional result override that prevents an Attack according to its condition. It is not a large numeric Defense value and does not share `PreventRemovalEffect` semantics.
 
@@ -177,18 +179,18 @@ The table names broad reusable query contracts. A row can remain broader than an
 | Contract | State | Owning milestone |
 | --- | --- | --- |
 | `PresenceQuery` | Roster-specific effective-unit/relation/distance/count slice implemented as `RosterPresenceQuery` at 8.19b; broader contract remains specified | 8.19b bounded slice |
-| `AdjacentSpaceQuery` | Specified, not implemented | 6.4 |
-| `AdjacentObjectQuery` | Specified, not implemented | 6.4 |
+| `AdjacentSpaceQuery` | Implemented by shared board adjacency derivations; no universal type with this exact name is required | 6.4 onward |
+| `AdjacentObjectQuery` | Implemented by typed board-object candidate derivations | 6.4 onward |
 | `RangeQuery` | Implemented across offer-bound target queries; 8.19b adds live dynamic-Range contributions before target derivation, with no universal type carrying this contract name | 6.8 and 8.19b |
 | `RadiusQuery` | Implemented at 7.2b | 7.2b |
-| `DirectionQuery` | Specified, not implemented | 6.4 |
-| `DistanceQuery` | Specified, not implemented | 6.4 |
-| `FartherQuery` | Specified, not implemented | 6.4 |
-| `FarthestQuery` | Specified, not implemented | 6.4 |
-| `SameZoneQuery` | Specified, not implemented | 6.8 |
-| `AdjacentZoneQuery` | Specified, not implemented | 6.8 |
-| `EmptySpaceQuery` | Specified, not implemented | 6.5 |
-| `EmptySpawnPointQuery` | Specified, not implemented | 6.5 |
+| `DirectionQuery` | Implemented through straight-line and displacement derivations | 6.4 onward |
+| `DistanceQuery` | Implemented through board distance and Range/Radius derivations | 6.4 onward |
+| `FartherQuery` | Implemented by source-relative destination policy | 6.4 onward |
+| `FarthestQuery` | Implemented by bounded roster target derivation | 8.19b onward |
+| `SameZoneQuery` | Implemented against official map zones | 4.3 onward |
+| `AdjacentZoneQuery` | Implemented against official map borders | 4.3 onward |
+| `EmptySpaceQuery` | Implemented by displacement, Place, Spawn, and respawn derivations | 6.5 onward |
+| `EmptySpawnPointQuery` | Implemented by Spawn and hero/minion respawn derivations | 6.5 onward |
 | `StraightLineQuery` as a reusable typed query | Implemented at 8.6. p.19's sentence is now stated whole - `IsStraightLine` accepts an ordered file and the single space the page calls out by name, and `AreInStraightLine` answers true for a space and itself, which `TryGetDirection` deliberately does not: membership of a file and which of the six files to walk are different questions, and a line of one space names no file for p.18's Push. `FilterOutStraightLine` is the complement, and it drops the origin for exactly that reason. Consumed by the printed-Range selection at 8.6 for Telekinesis and Mass Telekinesis; both Boomerangs compose the same filter at 8.10. | Implemented |
 | Equidistant (orbit) destination policy on Direct Move | Implemented at 8.6 as `DirectMoveDestinationPolicy`, which replaced milestone 6.4's `towardActor` boolean with three declared readings and retired direct Move to revision 3. `EquidistantFromActor` admits only spaces neither closer to nor farther from the acting hero than the mover's own, and `EquidistantQuery` gets there by asking `CloserQuery` twice - once each way round - so the obstacle-inclusive distance stays stated once. Both narrowings need the actor's position and report impossible without one; the unrestricted reading does not. | Implemented |
 | Board-sourced `PlacePolicy` declaration | Implemented at 8.6 over the existing `PlaceOperation`, which already had p.18's board arm. What the card was missing is now declared: `PlaceEligiblePieceKind.UnitOrToken` for its own words rather than the page's `game piece`, and `PlaceDestinationAnchor` so `into a space adjacent to you` is measured from the acting hero rather than from the piece. The anchor is checked against the declaration rather than trusted, so a caller measuring from the wrong space is refused as `DestinationAnchorMismatch`; the supply arm refuses a placed-piece anchor outright, because a piece from the supply came off no space. The source filter is the selection's, not the Place's. | Implemented |

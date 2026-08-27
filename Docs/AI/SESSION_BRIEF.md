@@ -8,15 +8,15 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through **8.25e1**. **The match a player loads is rulebook p.5's official six-player Quick Game setup**: three Red heroes and three Blue on the six declared spawn points, three Waves, five Lives a side, the normal Tie Breaker flip, setup step 10's twelve minions and 108 card instances of 108 definitions, no two seats sharing a printed set. Each of the six passes the permanent hero player-path completion gate, whose content-derived matrix binds every printed interaction shape to a real-input Play Mode journey and every verified face to one shared card footprint. The status line names whatever the match is asking, and each hero's full-height side rail carries their coins, p.16's items and held p.18 markers. An action an ability may repeat is held open across that decision, so p.10's second instance runs on the same card under the same hero, that instance says it is a repeat, and a repeat the page cannot perform - a second Fast Travel, a second Clear - is not offered at all. The current schema v34 persists every pause, typed round record and bound-actor reading, and pins the registered contract set a restore is read back against. The exact behavior, setup, boundaries and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
+The project has completed roadmap milestones through **8.25e2**. **The match a player loads is rulebook p.5's official six-player Quick Game setup**: three Red heroes and three Blue on the six declared spawn points, three Waves, five Lives a side, the Tie Breaker flip, twelve minions, and 108 distinct playable definitions/instances. All six heroes pass the permanent player-path gate and share one card footprint; the HUD names each decision and shows each hero's coins, items, and held markers. p.10 repeats remain on the same card and hero and are offered only when performable. The current schema v34 persists every pause and pins the registered contract set. The 27-leaf F-DOC-01 inventory now states this roster-complete truth or an explicit historical/source-unverified status through one checked owner/evidence/trigger record per leaf. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.25e1**.
+- Current completed milestone: **8.25e2**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.25e2**.
+- Next proposed milestone: **8.25e3**.
 
-Milestone **8.25e1** completed on 2026-08-27, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). It confirmed global blockers in operative truth, Unity-result integrity, and independent source evidence, plus an 8.26-only removal-prevention reachability gap. The user scheduled 8.25e2-8.25e5, 8.25e4a-8.25e4b, and 8.25e6a-8.25e6c; 8.25e2 is next, no implementation is authorized, and 8.25f/8.26 remain `[!]` until their exact blockers close.
+Milestone **8.25e2** completed on 2026-08-27, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). It closed F-DOC-01 over all 27 named leaves and added `EveryOperativeClaimHasCurrentEvidenceOrExplicitStatus`; 8.25e3 is next, and 8.25f/8.26 remain `[!]` behind their remaining validation, source, and reachability blockers.
 
 Milestone **8.25e** completed on 2026-08-27. A repeat p.10 offers is one the answer performs: p.12's Hold has a second instance, while p.11's Fast Travel and p.13's Clear do not. Edit Mode **1934**, Play Mode **229**; schema stayed v34 and three payload-identical event-log digests moved. Its evidence is addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md).
 

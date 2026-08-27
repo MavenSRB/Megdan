@@ -1,5 +1,9 @@
 # Guards Digital - Rule Modifications
 
+<!-- operative-claim:F-DOC-016 status:CurrentDemonstrated -->
+
+The configured roster consumes the reusable modifier, restriction, permission, immunity, and effective-characteristic vocabulary across independent heroes and action shapes; new members still require typed registration and evidence rather than hero-name branches.
+
 Canonical active shard. The implemented contract by which sources declare typed rules - modifiers, restrictions, permissions, immunity, and `Counts As` - and by which queries consume them, together with the obstacle classification those rules qualify and the per-activation identity every effect source mints. Split out of [CURRENT_IMPLEMENTATION.md](CURRENT_IMPLEMENTATION.md) at milestone 6.1ar, which is the response governance names for sustained growth: move precise active authority to an indexed shard rather than compress it.
 
 This shard owns what the engine implements. Per-rule source status, primary sources, verification notes, and open rules questions stay in [../Rules/RULE_SYSTEMS.md](../Rules/RULE_SYSTEMS.md); the capability and query contracts these rules are consumed through stay in [../CARD_EFFECT_CAPABILITIES.md](../CARD_EFFECT_CAPABILITIES.md). Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md).

@@ -41,7 +41,7 @@ Hard gate: milestones 8.25f and 8.26 do not begin until 8.25e1 is complete, the 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e1-independently-audit-roster-complete-truth-architecture-validation-and-governance-fitness-completion-evidence).
 
-### [ ] 8.25e2 Restore operative documentation to roster-complete truth
+### [x] 8.25e2 Restore operative documentation to roster-complete truth
 
 Blocked by: milestone 8.25e1, which inventoried the exact stale leaves and named `EveryOperativeClaimHasCurrentEvidenceOrExplicitStatus` as F-DOC-01's closing check.
 
@@ -61,7 +61,9 @@ Acceptance checks:
 
 Non-goals: No runtime, rule, automated game-test, launcher, asset, schema, or active-access-model redesign; no independent private-front verification; no claim that every positive prose sentence has been mechanically proved.
 
-### [!] 8.25e3 Make Unity validation require fresh green evidence
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e2-restore-operative-documentation-to-roster-complete-truth-completion-evidence).
+
+### [ ] 8.25e3 Make Unity validation require fresh green evidence
 
 Blocked by: milestone 8.25e2, so the testing policy and current setup claims are true before the launcher is made to enforce them. This milestone closes B2/F-VALIDATION-01.
 
@@ -143,7 +145,7 @@ Acceptance checks:
 
 Non-goals: No runtime, rule, effect, capability, command, projection, presenter, hero, card, snapshot/schema, or scene change; no retroactive audit of every helper; no requirement that two names imply two shapes; no rejection of an explicitly narrow unique capability; no future-batch implementation or guarantee that independent evidence proves every possible interaction.
 
-### [!] 8.25e5 Independently verify the six pitch heroes' 114 private fronts
+### [ ] 8.25e5 Independently verify the six pitch heroes' 114 private fronts
 
 Blocked by: milestone 8.25e2, so the fresh reviewer compares private sources against corrected current hero and rule authority. It is independent of 8.25e4. F-SOURCE-01 remains a global blocker for 8.25f and 8.26 until this review finds no unresolved discrepancy.
 
@@ -162,7 +164,7 @@ Acceptance checks:
 
 Non-goals: No card-rule decision, transcription correction, definition/test/runtime change, OCR-derived authority, runtime image analysis, 8.25f preparation/catalog work, source-image mutation, dashboard/profile/back/component re-audit except to disambiguate an already-recorded front question, distribution-rights conclusion, public upload, asset staging, or publication of private pixels. A later higher-authority source still supersedes this review.
 
-### [!] 8.25e6a Build the complete lossless governance source/body manifest
+### [ ] 8.25e6a Build the complete lossless governance source/body manifest
 
 Blocked by: milestone 8.25e2, so the map begins from corrected operative truth. This and the next two milestones are non-gating for 8.25f/8.26 and are due before the first post-pitch hero batch.
 
