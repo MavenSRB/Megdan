@@ -36,7 +36,7 @@ icon-region and text-region enlargements built for the purpose. The roster-wide
 [capability matrix](ROSTER_CAPABILITY_MATRIX.md#brogan) assigns every face/component, typed binding,
 policy, checkpoint, and source-linked scenario family.
 
-Milestone 8.25e5 independently reread all nineteen private fronts and reconciled every field without a Brogan discrepancy; 8.25e5c recomputed the unchanged 114-front manifest, so those clean results carry forward without a reread. The reviews are addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5c-freshly-verify-the-corrected-twelve-source-fields-completion-evidence). A later higher-authority source still supersedes that result.
+Milestone 8.25e5 independently reread all nineteen private fronts and reconciled every field without a Brogan discrepancy; 8.25e5c and 8.25e5e each recomputed the unchanged 114-front manifest, so those clean results carry forward and F-SOURCE-01 is closed. The final verification is addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5e-freshly-verify-the-corrected-constrict-ledger-field-and-close-f-source-01-completion-evidence). A later higher-authority source still supersedes that result.
 
 Milestone 8.21 turned that inventory into verified content at revision `brogan-8-21-rev-1` - four files
 beside Wasp's and Arien's - and into a staged match that deals him the Blue seat. Every face below is

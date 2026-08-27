@@ -4,7 +4,7 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization and corrective route
 
-**Corrective scheduling amendments, 2026-08-27.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the intended corrections. Fresh verification 8.25e5c found that Constrict's ledger reminder spacing was missed even though production and its exact regression are correct; 8.25e5d has corrected that one field, and separately approvable 8.25e5e owns its fresh verification. Scheduling is not implementation authorization. The shortest remaining route to real card faces is **8.25e5e -> 8.25f**. Milestone 8.25e4 is ready and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline.
+**Corrective scheduling amendments, 2026-08-27.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the intended corrections. Fresh verification 8.25e5c found that Constrict's ledger reminder spacing was missed even though production and its exact regression were correct; 8.25e5d corrected that one field, and 8.25e5e freshly verified it and closed F-SOURCE-01. The shortest remaining route to real card faces is **8.25f**. Milestone 8.25e4 is ready and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
@@ -240,7 +240,7 @@ Non-goals: No other ledger or source correction, production or existing-test exp
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5d-correct-constricts-remaining-ledger-transcription-completion-evidence).
 
-### [ ] 8.25e5e Freshly verify the corrected Constrict ledger field and close F-SOURCE-01
+### [x] 8.25e5e Freshly verify the corrected Constrict ledger field and close F-SOURCE-01
 
 Depends on completed milestone 8.25e5d. Run in a fresh task by a reviewer who performed none of 8.25e5 or 8.25e5a-8.25e5d and did not receive their source reading before sealing this pass. This milestone requires separate exact approval and blocks 8.25f.
 
@@ -256,6 +256,8 @@ Acceptance checks:
 - T0 validation includes living-document validation, `git diff --check`, manifest/hash reconciliation, and staged/tracked inspection proving that no private pixel, worksheet, enlargement, or source-side transcription entered Git. No Unity suite runs.
 
 Non-goals: No correction, rule decision, definition/test/runtime change, OCR-derived authority, re-audit of fields supported by unchanged hashes, source-image mutation, artwork preparation, publication, distribution-rights conclusion, or claim that a later higher-authority source cannot supersede the result.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5e-freshly-verify-the-corrected-constrict-ledger-field-and-close-f-source-01-completion-evidence).
 
 ### [ ] 8.25e6a Build the complete lossless governance source/body manifest
 

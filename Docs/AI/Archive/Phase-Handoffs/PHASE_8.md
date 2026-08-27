@@ -403,3 +403,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e5d | Constrict's hero-ledger reminder now preserves the spaces immediately inside its parentheses exactly as production `CardSourceContent` does. A raw-row conformance regression uniquely locates the Markdown row, removes only its declared emphasis markers, and compares the result to production; it failed on the unchanged `e2547dfd` row and passes after the correction. Production content, typed behavior, revisions, schema, compatibility digests, presentation, and private source files are unchanged; F-SOURCE-01 remains open for 8.25e5e's independent fresh verification. | `9479462` |
+
+## Milestone 8.25e5e Freshly verify the corrected Constrict ledger field and close F-SOURCE-01 completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25e5e | A fresh isolated source-first pass read Constrict's whole face and enlarged text regions without OCR, then matched its complete fields across the corrected Xargatha ledger, production provenance/profile, and exact tests. Its canonical hash and the byte-identical 114-front manifest remain unchanged, so every carried result stays current; F-SOURCE-01 is closed and 8.25f is unblocked. No correction, executable content, private pixel, source mutation, artwork preparation, or rights conclusion entered the review. | `PENDING` |
