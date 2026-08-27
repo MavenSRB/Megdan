@@ -4,7 +4,7 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization and corrective route
 
-**Corrective scheduling amendments, 2026-08-27.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the corrections. Scheduling is not implementation authorization. The shortest remaining route to real card faces is **8.25e5c -> 8.25f**. Milestone 8.25e4 is ready and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline.
+**Corrective scheduling amendments, 2026-08-27.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the intended corrections. Fresh verification 8.25e5c found that Constrict's ledger reminder spacing was missed even though production and its exact regression are correct, so separately approvable 8.25e5d-8.25e5e now own that one correction and its fresh verification. Scheduling is not implementation authorization. The shortest remaining route to real card faces is **8.25e5d -> 8.25e5e -> 8.25f**. Milestone 8.25e4 is ready and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
@@ -204,7 +204,9 @@ Non-goals: No gameplay-rule, action/effect, numeric value, candidate, setup memb
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5b-correct-the-eleven-literal-transcriptions-completion-evidence).
 
-### [ ] 8.25e5c Freshly verify the corrected twelve source fields and close F-SOURCE-01
+Post-completion finding: milestone 8.25e5c found that Constrict's production string and regression were corrected but its owning ledger row was not; 8.25e5d-8.25e5e own that remaining correction and fresh verification.
+
+### [x] 8.25e5c Freshly verify the corrected twelve source fields and close F-SOURCE-01
 
 Depends on completed milestone 8.25e5b. Run in a fresh task by a reviewer who performed none of 8.25e5, 8.25e5a, or 8.25e5b and did not receive their source readings before sealing this pass. This milestone requires separate exact approval.
 
@@ -218,6 +220,40 @@ Acceptance checks:
 - Existing exact and six hero verified-content tests may run through the off-Unity harness only after the source-first pass as supporting diagnostics. T0 validation includes living-document validation, `git diff --check`, manifest/hash reconciliation, and staged/tracked inspection proving that no private pixel, worksheet, enlargement, or source-side transcription entered Git. No Unity suite runs.
 
 Non-goals: No correction, rule decision, definition/test/runtime change, OCR-derived authority, source-image mutation, artwork preparation, publication, distribution-rights conclusion, or re-audit of the 102 unchanged fronts when their exact 8.25e5 hashes still match. A later higher-authority source still supersedes the result.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5c-freshly-verify-the-corrected-twelve-source-fields-completion-evidence).
+
+### [ ] 8.25e5d Correct Constrict's remaining ledger transcription
+
+Depends on completed milestone 8.25e5c, whose fresh source-first pass reconciled eleven affected faces and found one remaining tracked mismatch: Xargatha's Constrict reminder has the correct source spacing in `CardSourceContent` and its exact regression, but not in its owning hero ledger. This milestone requires separate exact approval and blocks 8.25e5e.
+
+Observable outcome: Constrict's reminder has one exact tracked literal across its source-sealed hero-ledger row, production provenance, and exact regression, without changing executable content or typed behavior.
+
+Acceptance checks:
+
+- Correct only Constrict's reminder spacing in `Rules/HERO_XARGATHA.md`; preserve every other literal, value, icon, classification, capability, relationship, source image, and approved rule reading.
+- Add `SourceTranscriptionRegressionTests.ConstrictLedgerReminderMatchesProductionSourceContent`, which locates exactly one raw Markdown ledger row, removes only its declared Markdown emphasis markers, and compares the resulting literal to the production `CardSourceContent`. The check must be observed failing at revision `e2547dfd533de29d6efb462a102ec323cf063f39` for the missing spaces and passing after the correction, with a uniqueness/vacuity guard.
+- Production definitions, existing test expectations, content revisions, schema v34, compatibility fixtures, and runtime behavior remain byte-for-byte unchanged; only the new ledger-conformance regression changes executable test code. Run it through the cross-platform harness and Windows Edit Mode launcher because its test file is Unity-facing; no Play Mode path changed.
+- Keep F-SOURCE-01 and 8.25f blocked until 8.25e5e independently verifies the corrected row. Finish with living-document validation, `git diff --check`, and staged/tracked inspection proving that no private pixel or review artifact entered Git.
+
+Non-goals: No other ledger or source correction, production or existing-test expectation change, rule or authority decision, content revision, schema/digest move, runtime/presentation change, source-image mutation, artwork preparation, OCR, publication, or distribution-rights conclusion.
+
+### [ ] 8.25e5e Freshly verify the corrected Constrict ledger field and close F-SOURCE-01
+
+Depends on completed milestone 8.25e5d. Run in a fresh task by a reviewer who performed none of 8.25e5 or 8.25e5a-8.25e5d and did not receive their source reading before sealing this pass. This milestone requires separate exact approval and blocks 8.25f.
+
+Observable outcome: an independent source-first reread proves whether Constrict now agrees with its ledger, production provenance, and exact regression; F-SOURCE-01 closes only on a clean result.
+
+This is an analysis-only T0 review under `Testing/POLICY.md`.
+
+Acceptance checks:
+
+- Before tracked comparison, inventory Constrict's stable source-relative identity and SHA-256, visually read the whole face plus enlarged local regions without OCR, and seal the worksheet. Then compare its complete fields against Xargatha's ledger, `CardSourceContent`, production profile, and exact tests.
+- Recompute all 114 hashes and the aggregate manifest digest. If they remain identical to the 8.25e5 and 8.25e5c manifests, carry forward 8.25e5c's other eleven affected-face results and the 102 unaffected results; disposition any drift explicitly.
+- Record every mismatch or unreadable field. On a clean result, update the six hero statuses and `RULES_LEDGER.md`, close F-SOURCE-01, and unblock 8.25f; 8.26 remains independently blocked by 8.25e4. Otherwise keep the gate open and schedule another separately approved correction and verification.
+- T0 validation includes living-document validation, `git diff --check`, manifest/hash reconciliation, and staged/tracked inspection proving that no private pixel, worksheet, enlargement, or source-side transcription entered Git. No Unity suite runs.
+
+Non-goals: No correction, rule decision, definition/test/runtime change, OCR-derived authority, re-audit of fields supported by unchanged hashes, source-image mutation, artwork preparation, publication, distribution-rights conclusion, or claim that a later higher-authority source cannot supersede the result.
 
 ### [ ] 8.25e6a Build the complete lossless governance source/body manifest
 

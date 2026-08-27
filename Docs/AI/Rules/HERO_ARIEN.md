@@ -31,7 +31,7 @@ The pitch uses Arien's complete progression. Its implementation-grade inventory 
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Arien's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5 independently reread all nineteen private fronts and reconciled every field without an Arien discrepancy; the hash-pinned review is addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence). A later higher-authority source still supersedes that result.
+Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Arien's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5 independently reread all nineteen private fronts and reconciled every field without an Arien discrepancy; 8.25e5c recomputed the unchanged 114-front manifest, so those clean results carry forward without a reread. The reviews are addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5c-freshly-verify-the-corrected-twelve-source-fields-completion-evidence). A later higher-authority source still supersedes that result.
 
 ## Arien source faces
 

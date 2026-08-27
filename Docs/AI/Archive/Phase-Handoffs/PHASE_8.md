@@ -391,3 +391,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e5b | Eleven independently found literal fields now agree across their owning hero ledgers and `CardSourceContent`; Sabina, Tigerclaw, and Xargatha advanced content revisions together. Nimble Strike remains Gold, Basic, Handicap and setup-excluded with its printed `G` recorded as the approved source error. Typed gameplay, schema v34, compatibility/invariance digests, and private source files are unchanged; F-SOURCE-01 remains open only for 8.25e5c's fresh verification. | `a82e86b` |
+
+## Milestone 8.25e5c Freshly verify the corrected twelve source fields completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25e5c | A fresh isolated reviewer sealed whole-face and enlarged-region readings for all twelve affected fronts before tracked comparison, with zero unreadable fields. Eleven reconcile across source, ledger, production, disposition, and exact tests; Constrict alone retains a ledger-spacing mismatch while production and its regression match the face. All 114 source identities and hashes remain unchanged, so the 102 unaffected results carry forward. F-SOURCE-01 stays open; separately approvable 8.25e5d-8.25e5e own the one correction and fresh verification before 8.25f. No private artifact, source image, rule decision, executable definition/test, or runtime change entered this review. | `PENDING` |
