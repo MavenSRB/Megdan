@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -199,6 +200,33 @@ namespace GuardsDigital.Tests.EditMode
                 definition.ActionDefinitions.Any(action => action.Kind == ActionKind.Movement),
                 Is.False,
                 "The lower-right 3 is the Ranged primary's Range, not a Movement action.");
+        }
+
+        [Test]
+        public void SirensCall_DeclaresIfAbleSeparatelyFromItsPositiveUpToThreeBudget()
+        {
+            var effect = XargathaEffectContent.SkillEffectFor(
+                XargathaCardContent.SirensCall, XargathaCardContent.ContentRevision);
+            var optional = effect.Nodes.Single(node => node.Id.Value == "siren-move-if-able");
+            var move = effect.Nodes.Single(node => node.Id.Value == "siren-move");
+
+            Assert.That(optional.Kind, Is.EqualTo(EffectNodeKind.Optional));
+            Assert.That(optional.FailurePolicy, Is.EqualTo(EffectFailurePolicy.IfAble),
+                "'if able' decides whether an infeasible move is skipped; it does not define distance.");
+            Assert.That(optional.ChildNodeIds, Is.EqualTo(new[] { move.Id }));
+
+            Assert.That(move.Kind, Is.EqualTo(EffectNodeKind.Capability));
+            Assert.That(move.Capability, Is.EqualTo(SyntheticDisplacementCapabilities.DirectMoveV3));
+            Assert.That(move.FailurePolicy, Is.EqualTo(EffectFailurePolicy.UpTo),
+                "'up to 3 spaces' is the movement budget and must admit shorter legal paths.");
+            Assert.That(
+                move.Inputs.Single(input => input.ParameterName ==
+                    SyntheticDisplacementCapabilities.LeastDistanceParameterName).Literal.IntegerValue,
+                Is.EqualTo(1),
+                "The selected target begins non-adjacent, so zero spaces cannot meet the endpoint.");
+            Assert.That(
+                move.Inputs.Single(input => input.ParameterName == "distance").Literal.IntegerValue,
+                Is.EqualTo(3));
         }
 
         /// <summary>

@@ -31,7 +31,7 @@ The pitch uses Xargatha's complete progression. Its implementation-grade invento
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. Milestones 8.25e5b-8.25e5e corrected and verified the previously identified literal fields, but the user's later runtime report exposed one field that those reviews had declared clean: Siren's Call prints Defense 3 and no Movement, not the transposed reading in the ledger and production. Milestone 8.25e5f corrects that face at `xargatha-8-25e5f-rev-1`, preserves its Initiative 3 and Range 3 Skill primary, and reopens F-SOURCE-01 only for a separately approved fresh verification of this correction; the other 113 unchanged source results carry forward.
+Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. Milestones 8.25e5b-8.25e5e corrected and verified the previously identified literal fields, but the user's later runtime report exposed one field that those reviews had declared clean: Siren's Call prints Defense 3 and no Movement, not the transposed reading in the ledger and production. Milestone 8.25e5f corrected those values; milestone 8.25e5f1 then corrected its movement from exactly three spaces to every legal positive path up to three, with `if able` skipping only an infeasible move. Xargatha is now at `xargatha-8-25e5f1-rev-1`; F-SOURCE-01 remains reopened only for separately approved fresh verification, and the other 113 unchanged source results carry forward.
 
 ## Xargatha source faces and components
 
@@ -167,7 +167,10 @@ to calculate Range. p.18 makes immunity irrelevant to a presence check, so an im
 contributes to those counts and to Metamorphosis even when it cannot be targeted.
 
 Siren's Call and the three Green Movement primaries use direct Move in card text, so the moved minion or
-enemy unit follows path and obstacle rules and cannot Fast Travel. Charm, Control and Dominate expressly
+enemy unit follows path and obstacle rules and cannot Fast Travel. Siren's Call composes its clauses
+separately: an `IfAble` wrapper silently skips an infeasible move, while the direct Move carries an `UpTo`
+three-space budget with a positive one-space floor and a final adjacent-to-Xargatha destination policy.
+Charm, Control and Dominate expressly
 let Xargatha choose whether that direct move happens before or after her own primary Movement, overriding
 p.11's default before-Movement timing. Dominate is the only one that overrides Heavy minion immunity.
 

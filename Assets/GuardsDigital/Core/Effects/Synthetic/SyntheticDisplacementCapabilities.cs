@@ -163,7 +163,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>
         /// The printed-least-distance parameter's name, spelled once so a definition cannot mistype it.
         /// A card naming one distance declares the same number here; Kinetic Blast's "3 or 4 spaces"
-        /// declares 3 beside a distance of 4.
+        /// declares 3 beside a distance of 4. Direct Move also reads the optional floor when a card's
+        /// destination clause makes standing still incapable of satisfying its printed instruction.
         /// </summary>
         public const string LeastDistanceParameterName = "leastDistance";
 
@@ -273,7 +274,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter(
                         MovesThroughObstaclesParameterName,
                         EffectValueKind.Boolean,
-                        isRequired: false)
+                        isRequired: false),
+                    new EffectCapabilityParameter(
+                        LeastDistanceParameterName, EffectValueKind.Integer, isRequired: false)
                 },
                 new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) });
 
@@ -405,8 +408,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // reading that admitted only the largest of those would refuse the shorter charges the
                 // same card offers.
                 var namesASpace = destinationPolicy == DirectMoveDestinationPolicy.NamedSpace;
+                var leastDistanceInput = context.Input(LeastDistanceParameterName);
+                var leastDistance = leastDistanceInput.Kind == EffectValueKind.Integer
+                    ? leastDistanceInput.IntegerValue
+                    : 0;
+                if (leastDistance < 0 || leastDistance > distance)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
                 var admitted = AdmittedDistances.ForDeclared(
-                    namesASpace ? EffectFailurePolicy.UpTo : context.FailurePolicy, distance);
+                    namesASpace ? EffectFailurePolicy.UpTo : context.FailurePolicy,
+                    distance,
+                    leastDistance);
                 var namedDestination = context.Input(NamedDestinationParameterName);
                 var actorRadius = context.Input(ActorRadiusParameterName);
 

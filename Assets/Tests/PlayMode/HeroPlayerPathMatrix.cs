@@ -773,8 +773,15 @@ namespace GuardsDigital.Tests.PlayMode
         {
             // "may" and "up to" are the two printed words that open a decision; `if able` and a
             // mandatory step do not, which is the distinction EffectFailurePolicy exists to keep.
+            // Direct Move expresses its up-to distance inside the destination-space selection itself:
+            // it never opens a separate confirm-or-decline control. Milestone 8.25e5f1 made that
+            // distinction observable by separating Siren's Call's IfAble wrapper from its UpTo move.
             if (node.FailurePolicy == EffectFailurePolicy.May ||
-                node.FailurePolicy == EffectFailurePolicy.UpTo)
+                (node.FailurePolicy == EffectFailurePolicy.UpTo &&
+                    (!node.Capability.IsDefined || !string.Equals(
+                        node.Capability.CapabilityId.Value,
+                        SyntheticDisplacementCapabilities.DirectMove.Value,
+                        StringComparison.Ordinal))))
             {
                 shapes.Add(PlayerInteractionShape.ConfirmOrDecline);
             }

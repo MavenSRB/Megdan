@@ -274,18 +274,21 @@ namespace GuardsDigital.Core.Cards.Verified
         ///
         /// <para><b>"if able" is on the movement alone.</b> A unit with no legal space beside her, or
         /// one that cannot be moved at all, is still a legal choice: the sentence selects first and
-        /// moves second, and only the second half is qualified. <see cref="EffectFailurePolicy.IfAble"/>
-        /// is what silently skips an infeasible step without failing the card.</para>
+        /// moves second, and only the second half is qualified. An enclosing
+        /// <see cref="EffectNodeKind.Optional"/> with <see cref="EffectFailurePolicy.IfAble"/> is what
+        /// silently skips an infeasible move without changing how far a feasible move may travel.</para>
         ///
-        /// <para><b>"up to 3 spaces" is a budget, not a distance.</b> The mover may cross fewer, and a
-        /// unit already beside her that the actor names is moved zero - which is what "up to" means
-        /// everywhere else in this build.</para>
+        /// <para><b>"up to 3 spaces" is a budget, not a distance.</b> The capability therefore carries
+        /// <see cref="EffectFailurePolicy.UpTo"/> separately from the enclosing "if able". Its least
+        /// distance is one: the target selection excludes adjacent units, so standing still cannot
+        /// satisfy the final requirement to end beside her.</para>
         /// </summary>
         private static EffectDefinition CreateSirensCall(
             CardDefinitionId cardId, string contentRevision)
         {
             var root = new EffectNodeId("siren-root");
             var target = new EffectNodeId("siren-target");
+            var moveIfAble = new EffectNodeId("siren-move-if-able");
             var move = new EffectNodeId("siren-move");
 
             return new EffectDefinition(
@@ -296,7 +299,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 {
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { target, move }),
+                        childNodeIds: new[] { target, moveIfAble }),
                     new EffectNodeDefinition(
                         target, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticTargetingCapabilities.RangeUnitTargetV1,
@@ -324,7 +327,10 @@ namespace GuardsDigital.Core.Cards.Verified
                                 EffectValueKind.Coordinate)
                         }),
                     new EffectNodeDefinition(
-                        move, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        moveIfAble, EffectNodeKind.Optional, EffectFailurePolicy.IfAble,
+                        childNodeIds: new[] { move }),
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
                         SyntheticDisplacementCapabilities.DirectMoveV3,
                         inputs: new[]
                         {
@@ -333,6 +339,9 @@ namespace GuardsDigital.Core.Cards.Verified
                                 SyntheticTargetingCapabilities.ChosenMinionSpaceOutputName,
                                 EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.LeastDistanceParameterName,
+                                EffectValue.Integer(1)),
                             EffectInputBinding.FromLiteral(
                                 SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
                                 EffectValue.Integer(

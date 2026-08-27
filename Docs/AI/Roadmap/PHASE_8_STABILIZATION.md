@@ -4,7 +4,7 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization and corrective route
 
-**Corrective scheduling amendments, 2026-08-27 through 2026-08-28.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the intended corrections. Fresh verification 8.25e5c found that Constrict's ledger reminder spacing was missed even though production and its exact regression were correct; 8.25e5d corrected that one field, and 8.25e5e freshly verified it. A later user report disproved the clean audit for Siren's Call: 8.25e5f corrected its Defense/Movement values, 8.25e5f1 is proposed for the separately demonstrated "up to 3" execution defect, and fresh-task 8.25e5g is proposed to reclose F-SOURCE-01 only after both corrections. Milestones 8.25f-8.25f2 completed the real-card-face route and its accepted HUD before that later finding. Milestone 8.25e4 follows the corrective source sequence; it and independent 8.25e7 remain required before 8.26. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline. The user-approved reassessment closes the never-scheduled 8.16b proposal without pretending its surviving findings were implemented: 8.25e7 now owns the current content-contract and compatibility corrections and joins 8.25e4 as a blocker for 8.26; 8.27 owns the official-six-player runtime capture already inside its full-match scale gate.
+**Corrective scheduling amendments, 2026-08-27 through 2026-08-28.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the intended corrections. Fresh verification 8.25e5c found that Constrict's ledger reminder spacing was missed even though production and its exact regression were correct; 8.25e5d corrected that one field, and 8.25e5e freshly verified it. A later user report disproved the clean audit for Siren's Call: 8.25e5f corrected its Defense/Movement values, 8.25e5f1 corrected the separately demonstrated "up to 3" execution defect, and fresh-task 8.25e5g is proposed to reclose F-SOURCE-01 only after both corrections. Milestones 8.25f-8.25f2 completed the real-card-face route and its accepted HUD before that later finding. Milestone 8.25e4 follows the corrective source sequence; it and independent 8.25e7 remain required before 8.26. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline. The user-approved reassessment closes the never-scheduled 8.16b proposal without pretending its surviving findings were implemented: 8.25e7 now owns the current content-contract and compatibility corrections and joins 8.25e4 as a blocker for 8.26; 8.27 owns the official-six-player runtime capture already inside its full-match scale gate.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
@@ -294,7 +294,7 @@ HUD/layout, networking, governance migration, or fresh independent verification 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5f-correct-sirens-calls-transposed-secondary-values-completion-evidence).
 
-### [ ] 8.25e5f1 Make Siren's Call honor "move ... up to 3 spaces"
+### [x] 8.25e5f1 Make Siren's Call honor "move ... up to 3 spaces"
 
 Depends on completed milestone 8.25e5f. The user reported the destination picker requiring exactly three
 spaces while that correction was validating; direct inspection confirmed that Siren's Call declares
@@ -324,6 +324,8 @@ Acceptance checks:
 
 Non-goals: No Defense/static-value change, other Xargatha effect correction, global optional-step cleanup,
 unrelated movement/push change, source-image mutation, HUD redesign, networking, or fresh source review.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5f1-sirens-call-up-to-three-movement-completion-evidence).
 
 ### [ ] 8.25e5g Freshly verify Siren's Call and reclose F-SOURCE-01
 

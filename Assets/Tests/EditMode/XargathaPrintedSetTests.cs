@@ -188,6 +188,67 @@ namespace GuardsDigital.Tests.EditMode
                 "not merely by how far the unit may travel.");
         }
 
+        /// <summary>
+        /// "Up to 3 spaces" offers every positive legal travel distance inside that budget. It is
+        /// neither an exact-three instruction nor permission to leave the target where it stands.
+        /// </summary>
+        [Test]
+        public void SirensCall_OffersLegalOneTwoAndThreeSpaceLandings_ButNotStandingStill()
+        {
+            var fixture = Create(minionPlacements: At("red-melee-01", TwoAway));
+            var called = fixture.MinionAt(TwoAway);
+
+            fixture.StartPrimary(XargathaCardContent.SirensCall);
+            fixture.Select(called);
+            fixture.Confirm();
+
+            var destinations = fixture.CandidateSpaces(fixture.Choice);
+            var distances = destinations
+                .Select(destination => HexDistanceQuery.Calculate(TwoAway, destination))
+                .Distinct()
+                .OrderBy(distance => distance)
+                .ToArray();
+
+            Assert.That(distances, Is.EqualTo(new[] { 1, 2, 3 }),
+                "The printed budget admits shorter legal paths as well as a three-space path.");
+            Assert.That(destinations, Has.No.Member(TwoAway),
+                "The card says to move the target to a space beside Xargatha; zero spaces cannot " +
+                "satisfy that destination clause from the non-adjacent target set.");
+            Assert.That(destinations.All(destination =>
+                    HexDistanceQuery.Calculate(destination, HeroAt) == 1),
+                Is.True,
+                "Every offered endpoint must still satisfy 'to a space adjacent to you'.");
+        }
+
+        /// <summary>
+        /// "If able" skips only the move when every space beside Xargatha is occupied. The already
+        /// legal target choice remains legal and no empty movement prompt is exposed.
+        /// </summary>
+        [Test]
+        public void SirensCall_WithNoLegalAdjacentLanding_SilentlySkipsTheMove()
+        {
+            var fixture = Create(
+                minionPlacements: new Dictionary<string, HexCoordinate>
+                {
+                    ["red-melee-01"] = TwoAway,
+                    ["red-melee-02"] = FirstAdjacent,
+                    ["red-melee-03"] = SecondAdjacent,
+                    ["red-melee-04"] = ThirdAdjacent,
+                    ["blue-melee-02"] = FourthAdjacent
+                },
+                clearHerNeighbourhood: false);
+            var called = fixture.MinionAt(TwoAway);
+
+            fixture.StartPrimary(XargathaCardContent.SirensCall);
+            fixture.Select(called);
+            fixture.Confirm();
+
+            Assert.That(fixture.Choice, Is.Null,
+                "An impossible if-able move is skipped without asking the player an empty question.");
+            Assert.That(fixture.SpaceOf(called), Is.EqualTo(TwoAway),
+                "Skipping the infeasible move leaves the selected target where it stood.");
+        }
+
         // -----------------------------------------------------------------------------------------
         // "Next turn: Enemy heroes in radius count as both heroes and terrain, and cannot perform
         // movement actions"

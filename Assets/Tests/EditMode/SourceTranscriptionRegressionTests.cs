@@ -158,7 +158,7 @@ namespace GuardsDigital.Tests.EditMode
             TigerclawCardContent.ContentRevision)]
         [TestCase(
             "xargatha-cleave",
-            "xargatha-8-25e5b-rev-1",
+            "xargatha-8-25e5f-rev-1",
             XargathaCardContent.ContentRevision)]
         public void OfficialSixPlayerContent_UsesTheAdvancedRevisionAndRejectsTheSupersededOne(
             string stableDefinitionId,

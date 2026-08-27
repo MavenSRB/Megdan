@@ -157,6 +157,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(chosen, Is.Not.Null,
                 "This journey names a minion, so one of the offered pieces has to be one. " +
                 Remaining(runtime));
+            var calledFrom = chosen.Occupancy.Coordinate;
             var selection = StandingNode(runtime);
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, chosen.transform.position), Is.True,
                 "The target is named by clicking the miniature where it stands.");
@@ -173,10 +174,18 @@ namespace GuardsDigital.Tests.PlayMode
                         "\"to a space adjacent to you\" - every destination the move offers is " +
                         "beside her, which is the bound p.16's items never widen because it is " +
                         "written in the card's text rather than printed as an icon.");
+                    Assert.That(HexDistanceQuery.Calculate(calledFrom, space),
+                        Is.InRange(1, 3),
+                        "'up to 3 spaces' admits only positive paths inside the printed budget.");
                 }
 
+                var shorter = destinations.Where(space =>
+                    HexDistanceQuery.Calculate(calledFrom, space) < 3).ToArray();
+                Assert.That(shorter, Is.Not.Empty,
+                    "The live board exposes at least one legal shorter path; requiring exactly three " +
+                    "spaces was the demonstrated player-facing defect.");
                 var move = StandingNode(runtime);
-                var landing = FirstClickableSpace(pointerInput, destinations);
+                var landing = FirstClickableSpace(pointerInput, shorter);
                 Assert.That(
                     UiPlayer.ClickBoard(pointerInput, hud, Tile(landing).transform.position), Is.True);
                 yield return null;

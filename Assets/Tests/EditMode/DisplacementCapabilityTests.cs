@@ -442,6 +442,45 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void AnUpToDirectMove_WithAPositiveLeastDistance_OffersOneThroughTheBudgetOnly()
+        {
+            var board = CreateLineBoard(otherAt: new HexCoordinate(3, 0));
+            var moverAt = new HexCoordinate(3, 0);
+            var context = BuildContext(
+                board,
+                EffectFailurePolicy.UpTo,
+                RuleModificationSet.Empty,
+                new Dictionary<string, EffectValue>
+                {
+                    ["mover"] = EffectValue.Space(moverAt),
+                    ["distance"] = EffectValue.Integer(2),
+                    [SyntheticDisplacementCapabilities.LeastDistanceParameterName] =
+                        EffectValue.Integer(1),
+                    [SyntheticDisplacementCapabilities.DestinationPolicyParameterName] =
+                        EffectValue.Integer((int)DirectMoveDestinationPolicy.Unrestricted)
+                });
+
+            var offered = Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(context);
+            var distances = offered.Choice.Candidates
+                .Select(candidate => HexDistanceQuery.Calculate(moverAt, candidate.Coordinate))
+                .Distinct()
+                .OrderBy(distance => distance)
+                .ToArray();
+
+            Assert.That(distances, Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(
+                offered.Choice.Candidates.Select(candidate => candidate.Coordinate),
+                Has.No.Member(moverAt),
+                "A positive typed floor removes standing still without changing ordinary up-to moves.");
+            Assert.That(
+                Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Schema.Parameters
+                    .Single(parameter => parameter.Name ==
+                        SyntheticDisplacementCapabilities.LeastDistanceParameterName).IsRequired,
+                Is.False,
+                "Older Direct Move declarations omit the compatible floor and retain zero as before.");
+        }
+
+        [Test]
         public void ChoosingTheMoversOwnSpace_RelocatesNothingAndIsAnAppliedResult()
         {
             // The same distinction p.18's zero-space push already draws: standing still is a legal
