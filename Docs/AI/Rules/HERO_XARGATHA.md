@@ -1,6 +1,6 @@
 # Guards Digital - Xargatha Rules Shard
 
-<!-- operative-claim:F-DOC-023 status:CurrentUnverifiedSource -->
+<!-- operative-claim:F-DOC-023 status:Unresolved -->
 
 Canonical active shard. Return to [../RULES_LEDGER.md](../RULES_LEDGER.md).
 
@@ -31,7 +31,7 @@ The pitch uses Xargatha's complete progression. Its implementation-grade invento
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. These mirrors do not independently verify the private fronts; F-SOURCE-01 remains owned by milestone 8.25e5.
+Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5 independently reread all nineteen private fronts: twelve reconcile, while Cleave, Dangerous Slash, Stone Gaze, Petrifying Stare, Turn Into Statues, Constrict, and Final Embrace carry literal ledger and/or production-provenance differences. Typed rule behavior is unaffected, but five production transcriptions also make formatting notation player-visible. F-SOURCE-01 stays open through milestones 8.25e5a-8.25e5c; the hash-pinned findings are addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence).
 
 ## Xargatha source faces and components
 

@@ -36,6 +36,8 @@ icon-region and text-region enlargements built for the purpose. The roster-wide
 [capability matrix](ROSTER_CAPABILITY_MATRIX.md#brogan) assigns every face/component, typed binding,
 policy, checkpoint, and source-linked scenario family.
 
+Milestone 8.25e5 independently reread all nineteen private fronts and reconciled every field without a Brogan discrepancy; the hash-pinned review is addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence). A later higher-authority source still supersedes that result.
+
 Milestone 8.21 turned that inventory into verified content at revision `brogan-8-21-rev-1` - four files
 beside Wasp's and Arien's - and into a staged match that deals him the Blue seat. Every face below is
 resolved through the ordinary player pipeline and carries a guarded row in

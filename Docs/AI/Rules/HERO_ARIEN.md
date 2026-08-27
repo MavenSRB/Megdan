@@ -1,6 +1,6 @@
 # Guards Digital - Arien Rules Shard
 
-<!-- operative-claim:F-DOC-020 status:CurrentUnverifiedSource -->
+<!-- operative-claim:F-DOC-020 status:CurrentDemonstrated -->
 
 Canonical active shard. Return to [../RULES_LEDGER.md](../RULES_LEDGER.md).
 
@@ -31,7 +31,7 @@ The pitch uses Arien's complete progression. Its implementation-grade inventory 
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Arien's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. These code/document mirrors are supporting evidence, not an independent reread of the private fronts; F-SOURCE-01 remains owned by milestone 8.25e5.
+Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Arien's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5 independently reread all nineteen private fronts and reconciled every field without an Arien discrepancy; the hash-pinned review is addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence). A later higher-authority source still supersedes that result.
 
 ## Arien source faces
 

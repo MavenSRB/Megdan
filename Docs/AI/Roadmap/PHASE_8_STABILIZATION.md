@@ -4,7 +4,7 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization and corrective route
 
-**Corrective scheduling amendments, 2026-08-27, user approved.** Milestones 8.25e2-8.25e5, targeted hardening 8.25e4a-8.25e4b, and the three-part 8.25e6 governance-design study are scheduled from the user's dispositions after 8.25e1. Scheduling is not implementation authorization: each milestone still requires exact approval. With 8.25e2-8.25e3 closed, the shortest remaining route to real card faces is **8.25e5 -> 8.25f**. Milestone 8.25e4 is now unblocked and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline. If 8.25e5 finds a discrepancy, 8.25f and 8.26 remain blocked through its separately approved correction and a separately numbered, approved fresh-task independent verification milestone scheduled after the last correction.
+**Corrective scheduling amendments, 2026-08-27.** The user scheduled milestones 8.25e2-8.25e5, targeted hardening 8.25e4a-8.25e4b, and the three-part 8.25e6 governance-design study after 8.25e1. Milestone 8.25e5 completed with twelve affected source fields, so its approved conditional route now schedules separately approvable 8.25e5a-8.25e5c; scheduling is not implementation authorization. The shortest route to real card faces is **8.25e5a -> 8.25e5b -> 8.25e5c -> 8.25f**. Milestone 8.25e4 is ready and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
@@ -86,7 +86,7 @@ Non-goals: No NUnit alignment, split-assembly experiment, harness-exclusion redu
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e3-make-unity-validation-require-fresh-green-evidence-completion-evidence).
 
-### [!] 8.25e4 Close decision-family ownership and removal-prevention reachability
+### [ ] 8.25e4 Close decision-family ownership and removal-prevention reachability
 
 Blocked by: milestone 8.25e3, so this shared test-infrastructure correction closes on Unity evidence the launcher has proved fresh and parseable. It is independent of 8.25e5 and blocks 8.26, not art-only 8.25f.
 
@@ -147,7 +147,7 @@ Acceptance checks:
 
 Non-goals: No runtime, rule, effect, capability, command, projection, presenter, hero, card, snapshot/schema, or scene change; no retroactive audit of every helper; no requirement that two names imply two shapes; no rejection of an explicitly narrow unique capability; no future-batch implementation or guarantee that independent evidence proves every possible interaction.
 
-### [ ] 8.25e5 Independently verify the six pitch heroes' 114 private fronts
+### [x] 8.25e5 Independently verify the six pitch heroes' 114 private fronts
 
 Blocked by: milestone 8.25e2, so the fresh reviewer compares private sources against corrected current hero and rule authority. It is independent of 8.25e4. F-SOURCE-01 remains a global blocker for 8.25f and 8.26 until this review finds no unresolved discrepancy.
 
@@ -165,6 +165,55 @@ Acceptance checks:
 - Source-review validation includes the 114-entry count/hash reconciliation, living-document validation, `git diff --check`, and staged/tracked-file inspection proving that no private corpus, prepared pixel, blind worksheet, enlargement, or temporary source-side transcription entered Git. No Unity suite runs for this analysis-only review.
 
 Non-goals: No card-rule decision, transcription correction, definition/test/runtime change, OCR-derived authority, runtime image analysis, 8.25f preparation/catalog work, source-image mutation, dashboard/profile/back/component re-audit except to disambiguate an already-recorded front question, distribution-rights conclusion, public upload, asset staging, or publication of private pixels. A later higher-authority source still supersedes this review.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence).
+
+### [ ] 8.25e5a Resolve Nimble Strike's conflicting printed membership mark
+
+Blocked by: milestone 8.25e5, whose sealed blind review is the independent observation this authority decision must disposition. This milestone requires separate exact approval and blocks 8.25e5b.
+
+Observable outcome: Tigerclaw's Handicap face has one recorded, authority-backed membership/classification reading despite its printed mark conflicting with its yellow/Gold presentation and the tracked Gold convention; no source-internal conflict is silently resolved by whichever value production already carries.
+
+Acceptance checks:
+
+- Reinspect the complete face and the equivalent mark location across Tigerclaw's other eighteen fronts, then read the exact second-printing rulebook clauses governing card colour, Basic cards, Handicaps, setup replacement, and any reproduced Tigerclaw component. Search applicable published official correction sources under the ledger's authority hierarchy. Filename, existing code, tests, and the prior ledger are comparison evidence, never the deciding source.
+- Keep four facts distinct: the face's visible colour, its printed membership mark, its `H` Handicap classification, and its setup relationship to the Basic card it replaces. Record which authority decides each and whether the conflict is a source printing error, a misunderstood mark, or still unresolved.
+- If published authority decides the conflict, record the exact source and resulting canonical value. If it does not, stop for the user's explicit temporary interpretation and record that decision under the ledger hierarchy, with a later official correction as the supersession trigger. Do not infer an answer from current runtime behavior.
+- Update `RULES_LEDGER.md`, Tigerclaw's shard, and the exact 8.25e5b correction map with the disposition. No other 8.25e5 transcription finding is corrected here.
+- This is an analysis-only T0 authority milestone. Run living-document validation and `git diff --check`; no Unity suite runs and no private source material enters Git.
+
+Non-goals: No card text, definition, content revision, test, snapshot, runtime, setup, progression, artwork, or source-image change; no decision about another hero or card; no OCR-derived authority; and no claim that a current code value resolves a source conflict.
+
+### [!] 8.25e5b Correct the eleven literal transcriptions and apply the approved Nimble Strike disposition
+
+Blocked by: milestone 8.25e5a, so every correction is made against a recorded source/authority answer. This milestone requires separate exact approval and blocks 8.25e5c.
+
+Observable outcome: the twelve fields identified at 8.25e5 have one exact tracked representation: eleven literal source strings agree across their owning ledger and `CardSourceContent`, and Nimble Strike's membership/classification data agrees with the approved 8.25e5a disposition. Typed gameplay behavior is unchanged.
+
+Acceptance checks:
+
+- Correct only the affected fields: Sabina's Point Blank Shot; Tigerclaw's Blink Strike, Backstab, Blend Into Shadows, and Nimble Strike disposition; and Xargatha's Cleave, Dangerous Slash, Stone Gaze, Petrifying Stare, Turn Into Statues, Constrict, and Final Embrace. Preserve every already-correct name, colour, Tier, action/icon/value, item, setup membership, relationship, effect tree, and rule interpretation.
+- For the eleven literal fields, correct punctuation, reminder formatting, typographic quotation representation, and presentation-only emphasis notation exactly where the source requires. `CardSourceContent` remains plain verbatim text with only line-break joining; do not add a Markdown parser, source-text normalizer, per-card display patch, or broader rewrite.
+- Add one table-driven exact full-string regression over all eleven literal fields and a separate assertion for the approved Nimble Strike disposition. Observe the literal check failing against the pre-correction production revision and passing after the correction; each row names its stable definition and fails independently.
+- Advance the Sabina, Tigerclaw, and Xargatha content revisions together with their changed definitions. Schema remains v34, superseded content revisions are rejected, the fifteen compatibility-corpus fixtures and nine aggregate-scenario digest pairs are re-pinned only to their measured deltas, and equality groups plus authoritative rule-event meaning remain unchanged.
+- T2 validation runs the complete cross-platform .NET harness, directly affected content/definition/serializer/compatibility/invariance checks, focused Windows Edit Mode and Play Mode filters through the parameterless launcher, and a targeted Game View inspection of representative corrected generated faces. Promote suite breadth only under the testing policy's affectedness or observed-failure rules; finish with living-document validation, `git diff --check`, and private/staged-file inspection.
+
+Non-goals: No gameplay-rule, action/effect, numeric value, candidate, setup membership beyond the approved Nimble disposition, command/event, projection, snapshot schema, scene-layout, real-art preparation, source-image, or unrelated transcription change; no blanket punctuation/formatting normalizer; and no claim that passing mirrors replace visual verification.
+
+### [!] 8.25e5c Freshly verify the corrected twelve source fields and close F-SOURCE-01
+
+Blocked by: milestone 8.25e5b. Run in a fresh task by a reviewer who performed none of 8.25e5, 8.25e5a, or 8.25e5b and did not receive their source readings before sealing this pass. This milestone requires separate exact approval.
+
+Observable outcome: an independent source-first reread proves whether all twelve affected faces now agree with their ledger, production provenance, definition data, and exact regressions; F-SOURCE-01 closes only on a clean result.
+
+Acceptance checks:
+
+- Before tracked comparison, inventory the twelve affected stable source-relative identities and SHA-256 values, visually read every field on each whole face plus enlarged local regions without OCR, and seal the worksheet. Then compare all fields against the corrected ledgers, `CardSourceContent`, production profiles, approved Nimble disposition, and exact tests.
+- Recompute all 114 hashes and the aggregate manifest digest from 8.25e5. If every source hash is unchanged, the 102 unaffected clean-face results carry forward; any source drift invalidates only what the changed identities can no longer support and must be dispositioned explicitly rather than assumed away.
+- Record every remaining mismatch or unreadable field. If all twelve reconcile and the 114-front source is unchanged, update the six hero statuses and `RULES_LEDGER.md`, close F-SOURCE-01, and unblock 8.25f; 8.26 remains independently blocked by 8.25e4. If any discrepancy remains, keep the gate open and schedule another separately approved correction plus fresh verification.
+- Existing exact and six hero verified-content tests may run through the off-Unity harness only after the source-first pass as supporting diagnostics. T0 validation includes living-document validation, `git diff --check`, manifest/hash reconciliation, and staged/tracked inspection proving that no private pixel, worksheet, enlargement, or source-side transcription entered Git. No Unity suite runs.
+
+Non-goals: No correction, rule decision, definition/test/runtime change, OCR-derived authority, source-image mutation, artwork preparation, publication, distribution-rights conclusion, or re-audit of the 102 unchanged fronts when their exact 8.25e5 hashes still match. A later higher-authority source still supersedes the result.
 
 ### [ ] 8.25e6a Build the complete lossless governance source/body manifest
 

@@ -8,15 +8,15 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through **8.25e3**. **The match a player loads is rulebook p.5's official six-player Quick Game setup**: three Red heroes and three Blue on the six declared spawn points, three Waves, five Lives a side, the Tie Breaker flip, twelve minions, and 108 distinct playable definitions/instances. All six heroes pass the permanent player-path gate and share one card footprint; the HUD names each decision and shows each hero's coins, items, and held markers. p.10 repeats remain on the same card and hero and are offered only when performable. The current schema v34 persists every pause and pins the registered contract set. The 27-leaf F-DOC-01 inventory now states this roster-complete truth or an explicit historical/source-unverified status through one checked owner/evidence/trigger record per leaf. The fixed Unity launcher accepts only fresh, discovered, parseable all-green evidence recreated by its own successful run. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
+The project has completed roadmap milestones through **8.25e5**. **The match a player loads is rulebook p.5's official six-player Quick Game setup**: three Red heroes and three Blue on the six declared spawn points, three Waves, five Lives a side, the Tie Breaker flip, twelve minions, and 108 distinct playable definitions/instances. All six heroes pass the permanent player-path gate and share one card footprint; the HUD names each decision and shows each hero's coins, items, and held markers. p.10 repeats remain on the same card and hero and are offered only when performable. The current schema v34 persists every pause and pins the registered contract set. The clean independent review read and hash-pinned all 114 private fronts: Wasp, Arien, and Brogan reconcile completely; eleven literal fields plus one Tigerclaw source-internal membership conflict across the other three heroes keep F-SOURCE-01 open. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.25e3**.
+- Current completed milestone: **8.25e5**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.25e5**.
+- Next proposed milestone: **8.25e5a**.
 
-Milestones **8.25e2-8.25e3** completed on 2026-08-27, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). F-DOC-01 is closed over all 27 named leaves, and the Unity launcher now rejects stale, missing, malformed, contradictory, non-green, compilation-failed, and import-failed evidence. The fresh-source review 8.25e5 is next on the shortest route to 8.25f; 8.25e4 is additionally ready for separate approval and remains required before 8.26.
+Milestones **8.25e2-8.25e5** completed on 2026-08-27, addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). F-DOC-01 is closed over all 27 named leaves, and the Unity launcher rejects stale or invalid evidence. Milestone 8.25e5's fresh reviewer read all 114 fronts with zero unreadable fields: Wasp, Arien, and Brogan are clean; twelve fields across Sabina, Tigerclaw, and Xargatha require disposition. The shortest source route is **8.25e5a -> 8.25e5b -> 8.25e5c -> 8.25f**; each step awaits exact approval. Milestone 8.25e4 is separately ready and remains required before 8.26.
 
 Milestone **8.25e** completed on 2026-08-27. A repeat p.10 offers is one the answer performs: p.12's Hold has a second instance, while p.11's Fast Travel and p.13's Clear do not. Edit Mode **1934**, Play Mode **229**; schema stayed v34 and three payload-identical event-log digests moved. Its evidence is addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md).
 
@@ -34,7 +34,7 @@ Milestones **8.1-8.16** dealt all nineteen verified Wasp faces through ordinary 
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1-7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed the 7.9a review's findings.
 
-The remaining **Phase 8** route runs the fresh-source review 8.25e5 before real card faces at 8.25f; 8.25e4 additionally closes before six-hero director control at 8.26. Non-gating hardening 8.25e4a-8.25e4b and governance study 8.25e6a-8.25e6c are due before the first post-pitch hero batch. The retained 3v3/URP/online gates and unscheduled 8.16b remain. Each scheduled milestone still requires exact implementation approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
+The remaining **Phase 8** source route resolves the one source-internal authority conflict at 8.25e5a, corrects the bounded source fields at 8.25e5b, and independently reverifies them at 8.25e5c before real card faces at 8.25f. Milestone 8.25e4 additionally closes before six-hero director control at 8.26. Non-gating hardening 8.25e4a-8.25e4b and governance study 8.25e6a-8.25e6c are due before the first post-pitch hero batch. The retained 3v3/URP/online gates and unscheduled 8.16b remain. Each scheduled milestone still requires exact implementation approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 

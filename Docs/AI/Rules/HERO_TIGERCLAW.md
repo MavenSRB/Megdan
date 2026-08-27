@@ -1,6 +1,6 @@
 # Guards Digital - Tigerclaw Rules Shard
 
-<!-- operative-claim:F-DOC-021 status:CurrentUnverifiedSource -->
+<!-- operative-claim:F-DOC-021 status:Unresolved -->
 
 Canonical active shard. Return to [../RULES_LEDGER.md](../RULES_LEDGER.md).
 
@@ -31,7 +31,7 @@ The pitch uses Tigerclaw's complete progression. Its implementation-grade invent
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces and the Poison marker are transcribed and capability-mapped; eighteen playable definitions plus the marker are composed, dealt, and pass Tigerclaw's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. These mirrors do not independently verify the private fronts; F-SOURCE-01 remains owned by milestone 8.25e5.
+Current status: **all nineteen faces and the Poison marker are transcribed and capability-mapped; eighteen playable definitions plus the marker are composed, dealt, and pass Tigerclaw's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5 independently reread all nineteen private fronts: fifteen reconcile, while Blink Strike, Backstab, and Blend Into Shadows carry literal transcription/provenance differences and Nimble Strike's printed membership mark conflicts with its yellow/Gold face and the tracked Gold convention. The latter is an unresolved source-internal authority question, not proof that runtime `CardColor.Gold` is wrong. Typed rule behavior is unaffected, but F-SOURCE-01 stays open through milestones 8.25e5a-8.25e5c; the hash-pinned findings are addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence).
 
 ## Tigerclaw source faces
 
