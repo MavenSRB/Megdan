@@ -4,7 +4,7 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization gate
 
-### [ ] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
+### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
 Blocked by: milestone 8.25e, so the review examines the complete six-hero rules baseline with every known repeat defect closed.
 
@@ -36,3 +36,5 @@ Acceptance checks:
 Non-goals: No runtime, rules, test, launcher, harness, asset or toolchain implementation; no card-face work; no six-hero director integration; no deletion, migration or replacement of governing authority during the review; no automatic acceptance of the external review; no broad refactor; no silent rule/scope reinterpretation; and no scheduling or execution of corrective work without separate user approval.
 
 Hard gate: milestones 8.25f and 8.26 do not begin until 8.25e1 is complete, the user has approved a disposition for every gate-blocking finding, and each approved gate-blocking correction has closed on its required failing-then-passing evidence or separately numbered verification review. Every correction and any governance migration remain separately approved micro-milestones.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e1-independently-audit-roster-complete-truth-architecture-validation-and-governance-fitness-completion-evidence).

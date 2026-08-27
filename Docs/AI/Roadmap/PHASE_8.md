@@ -436,7 +436,7 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 
 Milestone **8.25e1** is defined in the dedicated [roster-complete stabilization shard](PHASE_8_STABILIZATION.md). It is a truth-first fresh-task independent review after 8.25e and a hard gate before 8.25f or 8.26; the review implements no correction or documentation migration.
 
-### [ ] 8.25f Replace generated complete card faces with the verified private faces
+### [!] 8.25f Replace generated complete card faces with the verified private faces
 
 Proposed at the user's direction on 2026-08-26. The six configured heroes already have 108 verified definitions and one shared `CardFootprint`, but every complete face the UI draws is still reconstructed from typed content by `ConfiguredCardFaceView.Build`. The private Tabletopia corpus has nineteen front images for each configured hero: one non-card hero/dashboard face and the eighteen playable card faces. This milestone uses the latter 108 as presentation without making private source material tracked authority or making the rules read pixels.
 
