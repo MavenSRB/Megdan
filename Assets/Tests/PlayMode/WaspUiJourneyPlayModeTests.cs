@@ -31,6 +31,21 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     public sealed class WaspUiJourneyPlayModeTests
     {
+        private System.IDisposable generatedCardFallbackScope;
+
+        [SetUp]
+        public void UseGeneratedCardsForLegacyPlayerPathGeometry()
+        {
+            generatedCardFallbackScope = ConfiguredCardArtwork.UseTextureLoader(_ => null);
+        }
+
+        [TearDown]
+        public void RestoreConfiguredCardArtworkLoader()
+        {
+            generatedCardFallbackScope?.Dispose();
+            generatedCardFallbackScope = null;
+        }
+
         [UnityTest]
         public IEnumerator Scene_CommitsBothHandsThroughTheRealTrayControlsAndResolvesTheTiedReveal()
         {

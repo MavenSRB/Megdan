@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using GuardsDigital.Core.Cards;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -125,9 +124,9 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// The one complete-card builder. It draws prepared verified artwork when present and otherwise
-    /// leaves the existing generated face visible, at the same fixed footprint and with the same state
-    /// treatments in either case.
+    /// The one complete-card builder. A prepared verified front is the whole visible card at its
+    /// source aspect; when it is unavailable, the readable generated face remains the per-card
+    /// fallback.
     /// </summary>
     public static class ConfiguredCardFaceView
     {
@@ -136,70 +135,85 @@ namespace GuardsDigital.Presentation.Match
             if (surface == null) throw new ArgumentNullException(nameof(surface));
             if (card == null) throw new ArgumentNullException(nameof(card));
 
-            CardFootprint.Apply(surface);
             surface.userData = card.DefinitionReference;
             surface.style.flexDirection = FlexDirection.Column;
             surface.style.alignItems = Align.Stretch;
             surface.style.justifyContent = Justify.FlexStart;
-            surface.style.backgroundColor = MatchHudTheme.Face(card.Color);
             surface.style.overflow = Overflow.Hidden;
             HudElements.Padding(surface, 0f);
-            HudElements.Border(surface, MatchHudTheme.PanelBorder, 3f, 8f);
 
-            var frame = DirectorHandsUnityView.BuildGeneratedCardFrame(card);
             if (ConfiguredCardArtwork.TryLoadTexture(
                     card.DefinitionReference,
                     out var texture,
                     out _))
             {
-                ApplyArtwork(frame, card, texture);
+                BuildArtwork(surface, card, texture);
+            }
+            else
+            {
+                BuildGeneratedFallback(surface, card);
             }
 
-            surface.Add(frame);
             return surface;
         }
 
-        private static void ApplyArtwork(
-            VisualElement generatedFrame,
+        private static void BuildArtwork(
+            VisualElement surface,
             TrayCardViewModel card,
             Texture2D texture)
         {
-            // Keep the generated construction in this same builder as the per-card fallback and as the
-            // assistive typed reading, but remove its four printed regions from layout while artwork is
-            // available. The lifecycle band stays below the aspect-contained image, in the vertical
-            // letterbox space the fixed 186x420 footprint leaves around a 372x520 source, so no printed
-            // value or sentence is covered by a state label.
-            foreach (var child in generatedFrame.Children()
-                         .Where(element => element.name != "gd-card-history")
-                         .ToArray())
-            {
-                child.style.display = DisplayStyle.None;
-            }
+            CardFootprint.ApplyArtwork(surface);
+            surface.style.backgroundColor = Color.clear;
+            HudElements.Border(surface, Color.clear, 0f, 0f);
 
-            generatedFrame.style.justifyContent = Justify.FlexEnd;
-            var artwork = new VisualElement
+            var artwork = new Image
             {
                 name = "gd-card-artwork",
+                image = texture,
+                scaleMode = ScaleMode.ScaleToFit,
+                tintColor = Color.white,
                 pickingMode = PickingMode.Ignore,
                 focusable = false,
                 tooltip = card.AssistiveLabel,
                 userData = card.DefinitionReference
             };
-            artwork.style.position = Position.Absolute;
-            artwork.style.left = 0f;
-            artwork.style.top = 0f;
-            artwork.style.right = 0f;
-            artwork.style.bottom = 0f;
-            artwork.style.backgroundImage = new StyleBackground(texture);
-            artwork.style.backgroundSize =
-                new StyleBackgroundSize(new BackgroundSize(BackgroundSizeType.Contain));
-            artwork.style.backgroundPositionX =
-                new StyleBackgroundPosition(
-                    new BackgroundPosition(BackgroundPositionKeyword.Center));
-            artwork.style.backgroundPositionY =
-                new StyleBackgroundPosition(
-                    new BackgroundPosition(BackgroundPositionKeyword.Center));
-            generatedFrame.Insert(0, artwork);
+            artwork.style.width = Length.Percent(100f);
+            artwork.style.height = Length.Percent(100f);
+            artwork.style.minWidth = Length.Percent(100f);
+            artwork.style.minHeight = Length.Percent(100f);
+            artwork.style.maxWidth = Length.Percent(100f);
+            artwork.style.maxHeight = Length.Percent(100f);
+            artwork.style.flexGrow = 0f;
+            artwork.style.flexShrink = 0f;
+            surface.Add(artwork);
+
+            if (card.IsSelected)
+            {
+                var selection = new VisualElement
+                {
+                    name = "gd-card-selection-outline",
+                    pickingMode = PickingMode.Ignore,
+                    focusable = false
+                };
+                selection.style.position = Position.Absolute;
+                selection.style.left = 0f;
+                selection.style.top = 0f;
+                selection.style.right = 0f;
+                selection.style.bottom = 0f;
+                HudElements.Border(selection, MatchHudTheme.SelectedOutline, 3f, 0f);
+                surface.Add(selection);
+            }
+        }
+
+        private static void BuildGeneratedFallback(
+            VisualElement surface,
+            TrayCardViewModel card)
+        {
+            CardFootprint.Apply(surface);
+            surface.style.backgroundColor = MatchHudTheme.Face(card.Color);
+            HudElements.Border(surface, MatchHudTheme.PanelBorder, 3f, 8f);
+            surface.Add(DirectorHandsUnityView.BuildGeneratedCardFrame(card));
+            HudElements.MarkSelectedWithoutResizing(surface, card.IsSelected);
         }
     }
 }

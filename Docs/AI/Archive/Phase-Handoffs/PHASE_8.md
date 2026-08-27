@@ -415,3 +415,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25f | One validated catalog bijectively maps the configured 108 definition references to six private eighteen-front inventories; one local command prepares the ignored Resources set atomically, and one artwork-aware builder serves every complete-face consumer. Prepared fronts are aspect-contained at the unchanged footprint with typed state/lifecycle treatments, while missing, unloadable, clean-checkout, synthetic and facedown paths retain their generated or neutral fallbacks. T2 source, Edit, Play and 2048-by-1152 visual evidence passed; no private pixel, rule, command, schema, revision or compatibility digest moved. | `9339ac9` |
+
+## Milestone 8.25f1 Remove the generated shell from prepared card fronts completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25f1 | Prepared private fronts now import at their native 372-by-520 dimensions and stand alone at the matching 186-by-260 source ratio on every complete-face surface, with no generated plate, frame, padding, border or lifecycle strip. Selection remains a non-layout overlay and typed state remains reachable; only a genuinely absent or unloadable resource takes the readable 186-by-420 generated fallback. The 108-file inventory, T2 Edit/Play regressions and ordinary-tray visual evidence passed; private pixels and captures remain ignored, and rules, commands, schema and compatibility are unchanged. | `PENDING` |

@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
-    /// The one outer size a complete hero-card face is drawn at, on every surface that draws one.
+    /// The declared sizes for a complete hero-card face.
     ///
     /// <para>Milestone 8.20c. Before it, a card's width was shared and its height was not: the tray
     /// gave every face a floor and let the row stretch all five to the tallest one's <em>content</em>,
@@ -14,13 +14,12 @@ namespace GuardsDigital.Presentation.Match
     /// heroes are configured now and a third is next, so "how tall is a card" had to stop being
     /// answered by the content.</para>
     ///
-    /// <para><b>What this contract fixes and what it leaves alone.</b> It fixes the face's outer box:
-    /// <see cref="Width"/> by <see cref="Height"/>, whatever the hero, the printed words, the current
-    /// hand, the interaction state, or the surface. It says nothing about the frame a surface puts
-    /// around that box - a Defense offer's inset, an upgrade option's, the tray slot's Active-effect
-    /// gutter are each that surface's own business and may differ - and nothing about how the face
-    /// arranges its bands inside the box, which stays
-    /// <see cref="DirectorHandsUnityView.BuildStandaloneCard"/>'s.</para>
+    /// <para><b>Milestone 8.25f1.</b> A prepared front is already the complete printed card and keeps
+    /// its verified 372-by-520 proportions at <see cref="Width"/> by
+    /// <see cref="ArtworkHeight"/>. The taller <see cref="Height"/> remains the generated fallback's
+    /// text-fit box, so an ignored private resource can be absent without making its typed face
+    /// unreadable. Every consumer still receives one of these two explicitly pinned shapes from the
+    /// one complete-face builder; content and interaction state never choose a third size.</para>
     ///
     /// <para><b>Why a stated constant rather than a measurement.</b> A height derived from the tallest
     /// verified face would be exactly the content-driven size this milestone removes: the next hero's
@@ -42,8 +41,20 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Compatibility name for the standard width.</summary>
         public const float Width = StandardWidth;
 
+        /// <summary>The verified private front's native pixel width.</summary>
+        public const float ArtworkSourceWidth = 372f;
+
+        /// <summary>The verified private front's native pixel height.</summary>
+        public const float ArtworkSourceHeight = 520f;
+
         /// <summary>
-        /// Every complete card face is this tall - an exact height, not a floor.
+        /// A prepared complete front at the shared width, preserving 372:520 exactly.
+        /// </summary>
+        public const float ArtworkHeight =
+            StandardWidth * ArtworkSourceHeight / ArtworkSourceWidth;
+
+        /// <summary>
+        /// Every generated fallback face is this tall - an exact height, not a floor.
         ///
         /// <para><b>Where the number comes from.</b> Measured, once, on the live panel at the validated
         /// 1920x1080 viewport: the thirty-eight verified faces the two configured heroes print settled
@@ -75,8 +86,7 @@ namespace GuardsDigital.Presentation.Match
         public const float Height = StandardHeight;
 
         /// <summary>
-        /// The one way a full-card surface takes this footprint: the exact box, pinned at both ends,
-        /// and neither growing nor shrinking with whatever it is laid out beside.
+        /// Applies the generated fallback footprint.
         ///
         /// <para>The minimum and the maximum are set as well as the size, because a size alone is only
         /// a preference in a flex layout - a parent that stretches its children, or a row too narrow
@@ -86,6 +96,20 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public static void Apply(VisualElement face)
         {
+            ApplyPinned(face, Height);
+        }
+
+        /// <summary>
+        /// Applies the prepared-front footprint. Its height is derived from the verified source
+        /// dimensions, so scaling changes size without changing the card's proportions.
+        /// </summary>
+        public static void ApplyArtwork(VisualElement face)
+        {
+            ApplyPinned(face, ArtworkHeight);
+        }
+
+        private static void ApplyPinned(VisualElement face, float height)
+        {
             if (face == null)
             {
                 return;
@@ -94,9 +118,9 @@ namespace GuardsDigital.Presentation.Match
             face.style.width = Width;
             face.style.minWidth = Width;
             face.style.maxWidth = Width;
-            face.style.height = Height;
-            face.style.minHeight = Height;
-            face.style.maxHeight = Height;
+            face.style.height = height;
+            face.style.minHeight = height;
+            face.style.maxHeight = height;
             face.style.flexGrow = 0f;
             face.style.flexShrink = 0f;
 

@@ -492,12 +492,16 @@ namespace GuardsDigital.Presentation.Match
             var left = onLeft
                 ? anchor.xMax + 10f
                 : anchor.xMin - CardFootprint.Width - 10f;
+            var face = preview.Children().SingleOrDefault();
+            var faceHeight = face == null
+                ? CardFootprint.Height
+                : face.style.height.value.value;
             preview.style.left = Mathf.Max(0f, left);
             preview.style.top = Mathf.Max(
                 0f,
                 Mathf.Min(
                     anchor.yMin - 40f,
-                    Mathf.Max(0f, height - CardFootprint.Height - 8f)));
+                    Mathf.Max(0f, height - faceHeight - 8f)));
         }
 
         public void Layout(Rect red, Rect blue, Rect playfield)
@@ -1416,18 +1420,13 @@ namespace GuardsDigital.Presentation.Match
             };
             button.text = string.Empty;
 
-            // Milestone 8.20c: one size for every card in the game, stated once and pinned at both
-            // ends. What stood here before was a width, a minimum height and a flex-grow, which made a
-            // card's height whatever the tallest content in its own row needed - so five cards matched
-            // each other and matched nothing else, and a hand of longer sentences was a taller hand.
-            // The rules panel takes the slack inside the box instead, which is what keeps the bands of
-            // five cards lined up without the box itself moving.
+            // The shared builder owns both complete-face shapes: a prepared printed front at its
+            // verified source aspect, or the taller typed generated fallback when no resource exists.
             ConfiguredCardFaceView.Build(button, card);
             button.style.marginLeft = 0f;
             button.style.marginRight = 0f;
             button.style.marginTop = 0f;
             button.style.marginBottom = 0f;
-            HudElements.MarkSelectedWithoutResizing(button, card.IsSelected);
 
             // Milestone 8.5b: the card sits in a slot, and the slot is what carries the Active-effect
             // outline. It has to be outside the card because the card's own border is the shared

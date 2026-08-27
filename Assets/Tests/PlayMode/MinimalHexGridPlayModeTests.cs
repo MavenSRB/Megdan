@@ -590,6 +590,8 @@ namespace GuardsDigital.Tests.PlayMode
         [UnityTest]
         public IEnumerator Scene_DrawsTheVerifiedCardFacesInTheTrayAndCapturesThemForInspection()
         {
+            using var generatedFallback =
+                ConfiguredCardArtwork.UseTextureLoader(_ => null);
             yield return LoadScene();
             var root = Root();
             var hud = root.Hud;
@@ -649,9 +651,11 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(bounds.xMin, Is.GreaterThanOrEqualTo(tray.worldBound.xMin - 0.5f));
                 Assert.That(bounds.xMax, Is.LessThanOrEqualTo(tray.worldBound.xMax + 0.5f),
                     "and no card runs out through the side of the tray.");
-                Assert.That(bounds.height, Is.EqualTo(CardFootprint.Height).Within(0.5f),
+                Assert.That(bounds.height,
+                    Is.EqualTo(CardFootprint.Height).Within(UiPlayer.PixelSnapping()),
                     "and every card in the live tray is the standard footprint, so the tallest " +
-                    "verified face's wrapped rules text no longer decides how tall a hand is.");
+                    "verified face's wrapped rules text no longer decides how tall a hand is; the " +
+                    "only tolerance is one snapped panel pixel.");
             }
 
             // One row: the cards share a top edge. Checked only where the viewport is actually wide
@@ -723,11 +727,18 @@ namespace GuardsDigital.Tests.PlayMode
 
                     AssertCompleteFaceArtwork(
                         runtime.HandsView.Root, "gd-card-choice", 5, true, "the ordinary hand");
+                    Assert.That(Descendants(runtime.HandsView.Root)
+                        .Any(element => element.name == "gd-card-selection-outline"), Is.False,
+                        "An unselected prepared hand has no permanent synthetic outline.");
                     var selected = Hand(runtime, TeamSide.Red).TrayCards.First(card => card.IsSelectable);
                     Assert.That(runtime.SelectCommitmentCard(selected.CardInstanceId), Is.True,
                         "The art child leaves the ordinary card control reachable.");
                     AssertCompleteFaceArtwork(
                         runtime.HandsView.Root, "gd-card-choice", 5, true, "the selected hand");
+                    Assert.That(Descendants(runtime.HandsView.Root)
+                        .Count(element => element.name == "gd-card-selection-outline"),
+                        Is.EqualTo(1),
+                        "Only the selected prepared card receives the non-layout overlay.");
 
                     RenderArtworkDefenseChoices(runtime);
                     AssertCompleteFaceArtwork(
@@ -808,12 +819,12 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Milestone 8.25f's one non-batch 2048x1152 inspection. It puts one real prepared front from
-        /// each configured hero side by side through the production complete-face builder, over the
-        /// official six-player match the user loads.
+        /// Milestone 8.25f1's non-batch 2048x1152 inspection. It checks one imported front from every
+        /// configured hero, then captures the ordinary production tray the user reported rather than
+        /// a presentation-only gallery.
         /// </summary>
         [UnityTest]
-        public IEnumerator Scene_CapturesPreparedRepresentativeCardArtworkForAllSixHeroesAt2048By1152()
+        public IEnumerator Scene_CapturesBorderlessNativeAspectArtworkInTheOrdinaryTrayAt2048By1152()
         {
             if (UnityEngine.Application.isBatchMode)
             {
@@ -834,101 +845,52 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(Screen.width, Is.EqualTo(2048));
                 Assert.That(Screen.height, Is.EqualTo(1152));
 
-                var root = Root();
-                root.Runtime.HandsView.SetHidden(true);
-                root.Runtime.RoundView.Root.style.display = DisplayStyle.None;
-
-                var gallery = new VisualElement { name = "gd-six-hero-card-gallery" };
-                gallery.style.position = Position.Absolute;
-                gallery.style.flexDirection = FlexDirection.Column;
-                gallery.style.alignItems = Align.Center;
-                gallery.style.paddingLeft = 18f;
-                gallery.style.paddingRight = 18f;
-                gallery.style.paddingTop = 14f;
-                gallery.style.paddingBottom = 18f;
-                gallery.style.backgroundColor = new Color(0.018f, 0.026f, 0.038f, 0.96f);
-                gallery.style.borderTopLeftRadius = 12f;
-                gallery.style.borderTopRightRadius = 12f;
-                gallery.style.borderBottomLeftRadius = 12f;
-                gallery.style.borderBottomRightRadius = 12f;
-                gallery.pickingMode = PickingMode.Ignore;
-
-                var heading = new Label("VERIFIED PRIVATE FRONTS · SIX CONFIGURED HEROES");
-                heading.style.fontSize = 18f;
-                heading.style.unityFontStyleAndWeight = FontStyle.Bold;
-                heading.style.color = MatchHudTheme.PrimaryText;
-                heading.style.marginBottom = 10f;
-                gallery.Add(heading);
-
-                var row = new VisualElement { name = "gd-six-hero-card-row" };
-                row.style.flexDirection = FlexDirection.Row;
-                row.style.alignItems = Align.FlexStart;
                 var representatives = new[]
                 {
-                    (Hero: "WASP", Definition: WaspCardContent.Definition(WaspCardContent.Shock)),
-                    (Hero: "XARGATHA", Definition: XargathaCardContent.Definition(XargathaCardContent.StoneGaze)),
-                    (Hero: "TIGERCLAW", Definition: TigerclawCardContent.Definition(TigerclawCardContent.Dodge)),
-                    (Hero: "ARIEN", Definition: ArienCardContent.Definition(ArienCardContent.LiquidLeap)),
-                    (Hero: "BROGAN", Definition: BroganCardContent.Definition(BroganCardContent.BrutalJab)),
-                    (Hero: "SABINA", Definition: SabinaCardContent.Definition(SabinaCardContent.Quickdraw))
+                    WaspCardContent.Definition(WaspCardContent.Shock),
+                    XargathaCardContent.Definition(XargathaCardContent.StoneGaze),
+                    TigerclawCardContent.Definition(TigerclawCardContent.Dodge),
+                    ArienCardContent.Definition(ArienCardContent.LiquidLeap),
+                    BroganCardContent.Definition(BroganCardContent.BrutalJab),
+                    SabinaCardContent.Definition(SabinaCardContent.Quickdraw)
                 };
-
                 foreach (var representative in representatives)
                 {
-                    var column = new VisualElement();
-                    column.style.flexDirection = FlexDirection.Column;
-                    column.style.alignItems = Align.Center;
-                    column.style.marginRight = representative.Hero == "SABINA" ? 0f : 12f;
-                    var hero = new Label(representative.Hero);
-                    hero.style.fontSize = 12f;
-                    hero.style.unityFontStyleAndWeight = FontStyle.Bold;
-                    hero.style.color = MatchHudTheme.PrimaryText;
-                    hero.style.marginBottom = 5f;
-                    column.Add(hero);
-                    column.Add(DirectorHandsUnityView.BuildStandaloneCard(
-                        CurrentRoundCards.DeckCard(
-                            new CardInstanceId(
-                                $"visual-{representative.Definition.Id.Value}"),
-                            representative.Definition)));
-                    row.Add(column);
+                    Assert.That(ConfiguredCardArtwork.TryLoadTexture(
+                        representative.Reference, out var imported, out _), Is.True,
+                        $"The prepared representative {representative.Reference} did not load.");
+                    Assert.That(imported.width, Is.EqualTo((int)CardFootprint.ArtworkSourceWidth));
+                    Assert.That(imported.height, Is.EqualTo((int)CardFootprint.ArtworkSourceHeight),
+                        $"Unity resampled {representative.Reference} away from 372x520.");
                 }
 
-                gallery.Add(row);
-                var galleryWidth = (representatives.Length * CardFootprint.StandardWidth) +
-                    ((representatives.Length - 1) * 12f) + 36f;
-                gallery.style.width = galleryWidth;
-                gallery.style.left =
-                    (ConfiguredMatchHudRenderer.PanelViewport.x - galleryWidth) * 0.5f;
-                gallery.style.top = 92f;
-                root.Hud.RootElement.Add(gallery);
-
+                var root = Root();
+                root.Runtime.RefreshAll();
                 yield return null;
                 yield return null;
-                var faces = Descendants(gallery)
-                    .Where(element => element.name == "gd-card-preview")
+                var faces = Descendants(root.Runtime.HandsView.Root)
+                    .Where(element => element.name == "gd-card-choice")
                     .ToArray();
-                Assert.That(faces, Has.Length.EqualTo(6));
+                Assert.That(faces, Has.Length.EqualTo(5),
+                    "The ordinary p.6 hand is the view being inspected.");
                 Assert.That(
                     faces.All(face => Descendants(face)
                         .Count(element => element.name == "gd-card-artwork") == 1),
                     Is.True,
-                    "The preparation command must have supplied one real front for every hero before " +
-                    "this inspection runs.");
+                    "Every ordinary tray card uses its prepared front.");
                 Assert.That(
                     faces.All(face =>
                         Mathf.Abs(face.worldBound.width - CardFootprint.StandardWidth) < 1.1f &&
-                        Mathf.Abs(face.worldBound.height - CardFootprint.StandardHeight) < 1.1f),
+                        Mathf.Abs(face.worldBound.height - CardFootprint.ArtworkHeight) < 1.1f),
                     Is.True,
-                    "Every real front keeps the production footprint at the live 2048x1152 scale.");
-                Assert.That(gallery.worldBound.xMin, Is.GreaterThanOrEqualTo(0f));
-                Assert.That(gallery.worldBound.yMin, Is.GreaterThanOrEqualTo(0f));
-                Assert.That(gallery.worldBound.xMax,
-                    Is.LessThanOrEqualTo(ConfiguredMatchHudRenderer.PanelViewport.x + 1f));
-                Assert.That(gallery.worldBound.yMax,
-                    Is.LessThanOrEqualTo(ConfiguredMatchHudRenderer.PanelViewport.y + 1f),
-                    "The six-card inspection gallery is wholly visible and unclipped.");
+                    "Every real front preserves the 372:520 footprint at live panel scale.");
+                Assert.That(faces.All(face => !Descendants(face).Any(element =>
+                        element.name == "gd-card-frame" || element.name == "gd-card-history")),
+                    Is.True, "No generated shell or lifecycle strip surrounds the real fronts.");
+                Assert.That(faces.All(face => face.style.borderTopWidth.value == 0f), Is.True,
+                    "The ordinary unselected cards have no permanent outer frame.");
 
-                yield return Capture("tmp/milestone-8-25f-six-hero-card-artwork.png");
+                yield return Capture("tmp/milestone-8-25f1-borderless-native-aspect-tray.png");
             }
             finally
             {
@@ -1382,20 +1344,32 @@ namespace GuardsDigital.Tests.PlayMode
                     Descendants(face).Count(element => element.name == "gd-card-artwork"),
                     Is.EqualTo(expectedArtwork ? 1 : 0),
                     $"{surface} did not take the selected artwork/fallback arm.");
-                var generatedRules = Descendants(face)
-                    .Single(element => element.name == "gd-card-rules");
                 Assert.That(
-                    generatedRules.style.display.value,
-                    expectedArtwork ? Is.EqualTo(DisplayStyle.None) : Is.Not.EqualTo(DisplayStyle.None),
-                    $"{surface} must retain exactly one generated per-card fallback.");
+                    Descendants(face).Count(element => element.name == "gd-card-frame"),
+                    Is.EqualTo(expectedArtwork ? 0 : 1),
+                    $"{surface} did not choose exactly one visible face arm.");
+                Assert.That(
+                    Descendants(face).Count(element => element.name == "gd-card-rules"),
+                    Is.EqualTo(expectedArtwork ? 0 : 1),
+                    $"{surface} did not keep the generated rules exclusive to fallback.");
                 Assert.That(
                     face.style.width.value.value,
                     Is.EqualTo(CardFootprint.StandardWidth),
                     $"{surface} changed the shared card width.");
                 Assert.That(
                     face.style.height.value.value,
-                    Is.EqualTo(CardFootprint.StandardHeight),
-                    $"{surface} changed the shared card height.");
+                    Is.EqualTo(expectedArtwork
+                        ? CardFootprint.ArtworkHeight
+                        : CardFootprint.StandardHeight),
+                    $"{surface} changed its selected face-arm height.");
+                if (expectedArtwork)
+                {
+                    var artwork = Descendants(face).OfType<Image>()
+                        .Single(element => element.name == "gd-card-artwork");
+                    Assert.That(artwork.scaleMode, Is.EqualTo(ScaleMode.ScaleToFit));
+                    Assert.That(face.style.borderTopWidth.value, Is.Zero,
+                        $"{surface} put a permanent frame around prepared artwork.");
+                }
                 Assert.That(face.focusable,
                     Is.EqualTo(faceName == "gd-card-choice"),
                     "The artwork child adds no focus stop and the outer interaction surface keeps its " +

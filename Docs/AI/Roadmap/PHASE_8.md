@@ -460,6 +460,24 @@ Non-goals: No card-rule, definition, printed-text, action, command, projection, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f-replace-generated-complete-card-faces-with-the-verified-private-faces-completion-evidence).
 
+### [x] 8.25f1 Remove the generated shell from prepared card fronts
+
+Authorized directly by the user's 2026-08-27 correction after inspecting the ordinary tray produced by 8.25f. The prepared 372-by-520 front was being drawn inside the older 186-by-420 generated-face box, while Unity's default non-power-of-two import could resample that source away from its original dimensions. The result was a second coloured frame, a lifecycle strip below the printed face, and visibly distorted artwork.
+
+Observable outcome: whenever a prepared configured front exists, the complete-face surface is only that uncropped front at the source's 372:520 proportions - 186 by 260 reference units - with no generated frame, coloured plate, padding, border or lifecycle band around it. When a prepared front is genuinely unavailable, the existing readable 186-by-420 generated fallback remains playable.
+
+Acceptance checks:
+
+- One scoped Editor importer preserves every PNG beneath ignored `Assets/Resources/Private/Cards/` at its native non-power-of-two dimensions, disables mipmaps that can bleed the printed edge, and changes no other asset folder. The six-hero private inspection proves each loaded representative is still 372 by 520 in Unity rather than a power-of-two resample.
+- The shared complete-face builder chooses its arm before constructing the visible face. Its artwork arm pins 186 by 260, uses an `Image` with aspect-preserving scale-to-fit, draws no synthetic background, border, padding, generated frame or generated lifecycle band, and leaves the source image whole and uncropped. Its fallback arm retains the existing 186-by-420 generated construction.
+- Every complete-face consumer still uses that one builder. The artwork image adds no pointer or keyboard stop; the existing outer card control remains the hit/focus surface. Selection is a conditional overlay that does not resize the image, unavailable cards retain their typed disabled treatment, Active source remains available through the existing tray-slot treatment, and the full typed lifecycle/state reading remains in the tooltip without placing a band over or around the printed face.
+- Focused Edit Mode coverage distinguishes the native-aspect artwork footprint from the generated fallback footprint, proves an unselected prepared card has no synthetic frame, proves selection does not add layout size, and checks all complete-face consumers. The permanent hero conformance check validates the prepared image arm by source aspect and bounds, while retaining its full generated-text fit checks for fallback.
+- Focused Play Mode crosses an ordinary hand, selected card, Defense choice, upgrade choice and rail preview through both injected-art and absent-art arms. One targeted non-batch 2048-by-1152 capture inspects the ordinary production tray with real prepared cards rather than a presentation-only gallery.
+
+Non-goals: No card rule, definition, printed text, lifecycle, action, command, projection, schema, replay, networking or private-source change. No public asset distribution. No removal of the generated clean-checkout fallback, neutral facedown back, compact rail icons, decision-control affordances, selected/Active/unavailable meaning, or source-image border printed in the artwork itself.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f1-remove-the-generated-shell-from-prepared-card-fronts-completion-evidence).
+
 ### [!] 8.26 Integrate six-hero director control and team interactions
 
 Blocked by: milestones 8.25e4 and 8.25e7. F-SOURCE-01 closed at 8.25e5e; the two corrective milestones block this driver milestone, not art-only 8.25f.

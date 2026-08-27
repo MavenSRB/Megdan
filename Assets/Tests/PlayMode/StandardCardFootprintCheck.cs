@@ -22,15 +22,11 @@ namespace GuardsDigital.Tests.PlayMode
     /// added after the mapped pitch roster gets the same measurement as the two that shipped before
     /// the check existed.</para>
     ///
-    /// <para><b>What it proves, and why each half is needed.</b> The footprint half asserts that a
-    /// face is exactly <see cref="CardFootprint"/> once the panel has laid it out - resolved, not
-    /// declared, because a declared width is only a preference until a container overrules it, and
-    /// containers had. The fit half asserts that nothing meaningful is lost inside that box: the five
-    /// bands stay in order and do not overlap, every drawn label is inside the card's own bounds, and
-    /// every label is at least as tall as the text it holds needs at the width it was given. The last
-    /// one is the one that catches the failure mode a fixed height introduces - a rules panel squeezed
-    /// by a card too short for its sentence clips the words silently, because the card's frame is
-    /// <c>overflow: hidden</c> and a clipped label still reports the text it was asked to draw.</para>
+    /// <para><b>What it proves, and why each half is needed.</b> A prepared front is exactly the
+    /// 186-by-260 native-aspect image with no synthetic frame; a generated fallback is exactly the
+    /// 186-by-420 typed face. Both are measured after panel layout, because a declared size is only a
+    /// preference until a container overrules it. For the fallback, the fit half additionally asserts
+    /// that its five bands stay in order and every typed word fits inside the box.</para>
     ///
     /// <para>Failures are collected and reported together rather than thrown at the first face. A hero
     /// whose set does not fit is one fact about that set, and reading it one card per run would take
@@ -130,8 +126,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(measured, Is.EqualTo(definitions.Count),
                 $"Every one of {heroDisplayName}'s verified faces is measured.");
             Assert.That(failures, Is.Empty,
-                $"{heroDisplayName}'s faces must all be exactly {CardFootprint.Width} by " +
-                $"{CardFootprint.Height} and show their content whole:" + Environment.NewLine +
+                $"{heroDisplayName}'s prepared fronts must be exactly {CardFootprint.Width} by " +
+                $"{CardFootprint.ArtworkHeight}, or their generated fallbacks exactly " +
+                $"{CardFootprint.Width} by {CardFootprint.Height}, and remain whole:" +
+                Environment.NewLine +
                 string.Join(Environment.NewLine, failures));
         }
 
@@ -150,6 +148,12 @@ namespace GuardsDigital.Tests.PlayMode
                 yield break;
             }
 
+            var artwork = Descendants(face).OfType<Image>()
+                .SingleOrDefault(element => element.name == "gd-card-artwork");
+            var expectedHeight = artwork == null
+                ? CardFootprint.Height
+                : CardFootprint.ArtworkHeight;
+
             // Milestone 8.25c: to within the panel's own pixel grid. A face is declared in reference
             // units and drawn on a scaled panel, so its laid-out size is the declared one snapped to
             // the nearer device pixel - see `UiPlayer.PixelSnapping`. The gate is still an exact-size
@@ -161,11 +165,20 @@ namespace GuardsDigital.Tests.PlayMode
                     $"{CardFootprint.Width}.";
             }
 
-            if (Mathf.Abs(box.height - CardFootprint.Height) > snapping)
+            if (Mathf.Abs(box.height - expectedHeight) > snapping)
             {
                 yield return $"{name}: {box.height} tall, and the standard footprint is " +
-                    $"{CardFootprint.Height} - a difference of " +
-                    $"{box.height - CardFootprint.Height}.";
+                    $"{expectedHeight} - a difference of {box.height - expectedHeight}.";
+            }
+
+            if (artwork != null)
+            {
+                foreach (var violation in InspectArtwork(name, face, artwork))
+                {
+                    yield return violation;
+                }
+
+                yield break;
             }
 
             var bounds = face.worldBound;
@@ -203,6 +216,52 @@ namespace GuardsDigital.Tests.PlayMode
             foreach (var violation in InspectDrawnText(name, card, face, bounds))
             {
                 yield return violation;
+            }
+        }
+
+        private static IEnumerable<string> InspectArtwork(
+            string name, VisualElement face, Image artwork)
+        {
+            if (!(artwork.image is Texture2D texture))
+            {
+                yield return $"{name}: its artwork is not a loaded Texture2D.";
+            }
+            else if (texture.width != CardFootprint.ArtworkSourceWidth ||
+                     texture.height != CardFootprint.ArtworkSourceHeight)
+            {
+                yield return $"{name}: Unity imported its artwork at {texture.width}x" +
+                    $"{texture.height}, not the source 372x520.";
+            }
+
+            if (artwork.scaleMode != ScaleMode.ScaleToFit)
+            {
+                yield return $"{name}: its artwork is not using aspect-preserving ScaleToFit.";
+            }
+
+            if (Descendants(face).Any(element => element.name == "gd-card-frame" ||
+                    element.name == "gd-card-history"))
+            {
+                yield return $"{name}: a generated frame or lifecycle strip surrounds its artwork.";
+            }
+
+            var faceBounds = face.worldBound;
+            var artworkBounds = artwork.worldBound;
+            if (Mathf.Abs(faceBounds.width - artworkBounds.width) > EdgeTolerance ||
+                Mathf.Abs(faceBounds.height - artworkBounds.height) > EdgeTolerance ||
+                Mathf.Abs(faceBounds.xMin - artworkBounds.xMin) > EdgeTolerance ||
+                Mathf.Abs(faceBounds.yMin - artworkBounds.yMin) > EdgeTolerance)
+            {
+                yield return $"{name}: its artwork does not fill the exact native-aspect face box.";
+            }
+
+            var style = face.resolvedStyle;
+            if (style.borderTopWidth > EdgeTolerance ||
+                style.borderRightWidth > EdgeTolerance ||
+                style.borderBottomWidth > EdgeTolerance ||
+                style.borderLeftWidth > EdgeTolerance ||
+                style.backgroundColor.a > 0.001f)
+            {
+                yield return $"{name}: its prepared front still has a synthetic plate or border.";
             }
         }
 

@@ -35,6 +35,21 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class MatchHudPresentationTests
     {
+        private IDisposable generatedCardFallbackScope;
+
+        [SetUp]
+        public void UseGeneratedCardsUnlessATestExplicitlySelectsArtwork()
+        {
+            generatedCardFallbackScope = ConfiguredCardArtwork.UseTextureLoader(_ => null);
+        }
+
+        [TearDown]
+        public void RestoreConfiguredCardArtworkLoader()
+        {
+            generatedCardFallbackScope?.Dispose();
+            generatedCardFallbackScope = null;
+        }
+
         // -------------------------------------------------------------------------------------------
         // The rail's Ultimate marker (milestone 8.15)
         // -------------------------------------------------------------------------------------------
@@ -2151,9 +2166,18 @@ namespace GuardsDigital.Tests.EditMode
                             "artwork/fallback decision.");
                         Assert.That(
                             Descendants(face).Count(element => element.name == "gd-card-frame"),
-                            Is.EqualTo(1),
+                            Is.EqualTo(hasConfiguredArtwork ? 0 : 1),
                             $"{surface.Name} bypassed or duplicated the shared face construction.");
-                        AssertIsTheStandardFootprint(face, surface.Name);
+                        if (hasConfiguredArtwork)
+                        {
+                            AssertIsTheArtworkFootprint(face, surface.Name);
+                            Assert.That(face.style.borderTopWidth.value, Is.Zero,
+                                $"{surface.Name} put a synthetic border around the printed front.");
+                        }
+                        else
+                        {
+                            AssertIsTheStandardFootprint(face, surface.Name);
+                        }
                         if (hasConfiguredArtwork)
                         {
                             artworkCount++;
@@ -2176,7 +2200,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ArtworkFaces_KeepSelectionUnavailableActiveAndLifecycleTreatmentsReadable()
+        public void ArtworkFaces_KeepStateReadableWithoutReintroducingAPermanentFrame()
         {
             var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
             try
@@ -2194,10 +2218,15 @@ namespace GuardsDigital.Tests.EditMode
                     var selected = Descendants(selectedView.Root)
                         .Single(element => element.name == "gd-card-choice" &&
                             element.tooltip.Contains(selectedCard.DisplayName));
-                    Assert.That(selected.style.borderTopColor.value,
+                    Assert.That(selected.style.borderTopWidth.value, Is.Zero,
+                        "The prepared front itself has no synthetic frame.");
+                    var selection = Descendants(selected).Single(element =>
+                        element.name == "gd-card-selection-outline");
+                    Assert.That(selection.style.borderTopColor.value,
                         Is.EqualTo(MatchHudTheme.SelectedOutline));
-                    Assert.That(selected.style.borderTopWidth.value, Is.EqualTo(3f),
-                        "Selection changes colour, never the fixed artwork footprint.");
+                    Assert.That(selection.style.borderTopWidth.value, Is.EqualTo(3f),
+                        "Selection is an overlay and never changes the artwork footprint.");
+                    AssertIsTheArtworkFootprint(selected, "the selected tray card");
 
                     var discardedView = new DirectorHandsUnityView();
                     new DirectorHandsPresenter(
@@ -2211,8 +2240,10 @@ namespace GuardsDigital.Tests.EditMode
                     Assert.That(unavailable.enabledSelf, Is.False);
                     Assert.That(unavailable.style.opacity.value, Is.EqualTo(0.45f));
                     Assert.That(Descendants(unavailable)
-                        .Single(element => element.name == "gd-card-history"), Is.Not.Null,
-                        "The disabled treatment leaves its lifecycle word on the artwork face.");
+                        .Any(element => element.name == "gd-card-history"), Is.False,
+                        "Lifecycle remains in the typed tooltip rather than a generated strip.");
+                    Assert.That(unavailable.tooltip, Does.Contain(unavailableCard.HistoryLabel));
+                    AssertIsTheArtworkFootprint(unavailable, "the unavailable tray card");
                 }
             }
             finally
@@ -2436,6 +2467,23 @@ namespace GuardsDigital.Tests.EditMode
                 $"A card face on {where} still grows with the space it is given.");
             Assert.That(face.style.flexShrink.value, Is.EqualTo(0f),
                 $"A card face on {where} still shrinks with the space it is given.");
+        }
+
+        private static void AssertIsTheArtworkFootprint(VisualElement face, string where)
+        {
+            Assert.That(face.style.width.value.value, Is.EqualTo(CardFootprint.Width).Within(0.01f),
+                $"A prepared card face on {where} is not the shared width.");
+            Assert.That(face.style.height.value.value,
+                Is.EqualTo(CardFootprint.ArtworkHeight).Within(0.01f),
+                $"A prepared card face on {where} does not preserve 372:520.");
+            Assert.That(face.style.minHeight.value.value,
+                Is.EqualTo(CardFootprint.ArtworkHeight).Within(0.01f),
+                $"A prepared card face on {where} may still be squeezed shorter.");
+            Assert.That(face.style.maxHeight.value.value,
+                Is.EqualTo(CardFootprint.ArtworkHeight).Within(0.01f),
+                $"A prepared card face on {where} may still be stretched taller.");
+            Assert.That(face.style.flexGrow.value, Is.Zero);
+            Assert.That(face.style.flexShrink.value, Is.Zero);
         }
 
         /// <summary>
