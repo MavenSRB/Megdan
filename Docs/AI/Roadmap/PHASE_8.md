@@ -90,9 +90,11 @@ Hard gate: Additional pitch-hero inventory and implementation do not begin until
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816a-independently-review-wasp-driven-card-engine-extensibility-completion-evidence).
 
+**8.16b disposition - closed without implementation, 2026-08-27.** The user-approved roadmap reassessment withdraws the never-scheduled 8.16a corrective bundle rather than marking unperformed work complete. Later evidence changed its boundaries: the permanent Wasp player-path matrix supersedes F-TEST-08's incidental mirror-seed coverage; real Brogan and Sabina declarations exercise `SourceTeamRelation.AlliedWithSource`, while the remaining relation-vocabulary disposition joins the contract correction below; and Xargatha's Cleave now proves a live repeated-Attack exclusion survives restore, though the compatibility corpus still lacks that arm. F-CORE-10's mis-aimed complete-match capture belongs to milestone 8.27, which is the existing official-six-player full-match and scale gate. The surviving F-CARD-10, F-CARD-11, F-CARD-13, F-TEST-07, and residual F-TEST-09 work is re-baselined at milestone 8.25e7. This disposition closes the obsolete proposal ID, not any surviving finding, and changes no code, rule, content, schema, test, or validation evidence.
+
 ### [x] 8.16c Answer blocked Lane-Push respawn placement on the board
 
-Inserted 2026-08-23 at the user's direction after the running match exposed a missed acceptance defect from milestones 8.11a and 8.15a. Milestone 8.16b remains reserved for the independent review's proposed architecture and evidence corrections.
+Inserted 2026-08-23 at the user's direction after the running match exposed a missed acceptance defect from milestones 8.11a and 8.15a. The reserved 8.16b proposal is now closed by the disposition above; 8.25e7 and 8.27 own its surviving work.
 
 Observable outcome: when a non-token obstacle blocks a minion Spawn point during a Lane Push, every equally-nearest empty destination is lit on the board and the owning team answers by clicking one of those spaces; the HUD explains the mandatory placement but presents no destination button.
 
@@ -434,7 +436,7 @@ Non-goals: No change to Attack, Skill or Movement repeats, to the after-action h
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e-perform-the-repeat-that-was-offered-or-stop-offering-it-completion-evidence).
 
-Milestones **8.25e1-8.25e6c** are defined in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). Completed review 8.25e5c found one missed Constrict ledger field; 8.25e5d corrected it and 8.25e5e freshly verified it, closing F-SOURCE-01.
+Milestones **8.25e1-8.25e7** are defined in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). Completed review 8.25e5c found one missed Constrict ledger field; 8.25e5d corrected it and 8.25e5e freshly verified it, closing F-SOURCE-01. Milestone 8.25e7 re-baselines the surviving 8.16a contract and compatibility findings without reviving the obsolete 8.16b bundle.
 
 ### [ ] 8.25f Replace generated complete card faces with the verified private faces
 
@@ -458,7 +460,7 @@ Non-goals: No card-rule, definition, printed-text, action, command, projection, 
 
 ### [!] 8.26 Integrate six-hero director control and team interactions
 
-Blocked by: milestone 8.25e4. F-SOURCE-01 closed at 8.25e5e; 8.25e4 blocks this driver milestone, not art-only 8.25f.
+Blocked by: milestones 8.25e4 and 8.25e7. F-SOURCE-01 closed at 8.25e5e; the two corrective milestones block this driver milestone, not art-only 8.25f.
 
 Observable outcome: One director can play and resolve a complete turn for all six independently owned heroes while the rules preserve normal 3v3 ownership, Initiative, target, assist, reaction, and team relationships.
 
@@ -485,6 +487,7 @@ Acceptance checks:
 - Automated configuration and integration checks prove that staged one-hero-per-team, mirrored-definition, fixed-two-response, and controller-as-game-entity assumptions are absent: six distinct heroes map to six distinct controlling player/seats, exactly three heroes belong to each team, and director tooling remains outside match authority.
 - Undo, restart, snapshots, event log, and Tie Breaker override remain deterministic across the complete 3v3 loop.
 - A broader source-linked six-hero integration suite passes.
+- Close 8.16a's F-CORE-10 on `CompleteMatchRuntimeCaptureTests.MeasuresTheOfficialSixHeroCompleteMatch`: observe the check failing at the pre-fix revision because `CreateCompleteMatchSession` still composes the internal two-seat synthetic configuration, then passing after the capture uses the same official six-player configuration and deterministic full-match driver this gate proves. Re-derive the time, allocation, captured-byte-growth, and Undo lines from that run; retain the prior figures beside the new baseline and disposition every crossing rather than silently widening a threshold.
 - `RISK-SCALE-001` is reassessed in full and then retired with its recorded 3v3 bound or its residuals explicitly accepted. This is the first milestone whose acceptance checks reach repeated rounds and progression with six heroes, so it is the first at which rulebook p.15's simultaneous Level Up can be observed as the serialized one-question-at-a-time step the continuation contract makes it, and the first at which the leveling stage's per-round derivation can be sampled against the standing thresholds rather than reasoned about.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
 
