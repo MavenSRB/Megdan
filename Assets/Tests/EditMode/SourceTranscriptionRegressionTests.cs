@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
@@ -8,12 +10,16 @@ using NUnit.Framework;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 8.25e5b. Exact source-provenance checks for the eleven literal fields found by the
-    /// independent 114-front review. These expectations are transcribed from that review's sealed
-    /// source-first readings rather than derived from production definitions.
+    /// Milestone 8.25e5b's exact source-provenance checks for the eleven literal fields found by the
+    /// independent 114-front review, plus milestone 8.25e5d's raw-ledger conformance guard. The
+    /// literal expectations are transcribed from sealed source-first readings rather than derived
+    /// from production definitions.
     /// </summary>
     public sealed class SourceTranscriptionRegressionTests
     {
+        private const string XargathaLedgerRelativePath =
+            "Docs/AI/Rules/HERO_XARGATHA.md";
+
         private static readonly TestCaseData[] LiteralSourceFields =
         {
             Literal(
@@ -95,6 +101,53 @@ namespace GuardsDigital.Tests.EditMode
                 "The Handicap remains behaviorally deferred until an odd-player configuration.");
         }
 
+        [Test]
+        public void ConstrictLedgerReminderMatchesProductionSourceContent()
+        {
+            const string rowPrefix = "| Constrict | ";
+            const string rowSuffix = " |";
+            const string timingEmphasis = "**End of round:**";
+            const string reminderEmphasisOpening = "*(";
+            const string reminderEmphasisClosing = ")*";
+
+            var ledgerPath = FindProjectFile(XargathaLedgerRelativePath);
+            var rows = File.ReadAllLines(ledgerPath)
+                .Where(line => line.StartsWith(rowPrefix, StringComparison.Ordinal))
+                .ToArray();
+
+            Assert.That(
+                rows,
+                Has.Length.EqualTo(1),
+                "The Xargatha ledger must contain exactly one raw Constrict row.");
+            Assert.That(
+                rows[0],
+                Does.EndWith(rowSuffix),
+                "The raw Constrict row must retain the expected two-column Markdown shape.");
+
+            var markdownLiteral = rows[0].Substring(
+                rowPrefix.Length,
+                rows[0].Length - rowPrefix.Length - rowSuffix.Length);
+
+            Assert.That(CountOccurrences(markdownLiteral, timingEmphasis), Is.EqualTo(1));
+            Assert.That(CountOccurrences(markdownLiteral, reminderEmphasisOpening), Is.EqualTo(1));
+            Assert.That(CountOccurrences(markdownLiteral, reminderEmphasisClosing), Is.EqualTo(1));
+
+            var sourceLiteral = markdownLiteral
+                .Replace(timingEmphasis, "End of round:")
+                .Replace(reminderEmphasisOpening, "(")
+                .Replace(reminderEmphasisClosing, ")");
+            var productionLiteral = XargathaCardContent
+                .Definition(XargathaCardContent.Constrict)
+                .SourceContent.PrintedText;
+
+            Assert.That(productionLiteral, Is.Not.Null.And.Not.Empty);
+            Assert.That(
+                sourceLiteral,
+                Is.EqualTo(productionLiteral),
+                "Constrict's raw hero-ledger literal must match production source content after " +
+                "removing only its declared Markdown emphasis markers.");
+        }
+
         [TestCase(
             "sabina-point-blank-shot",
             "sabina-8-22-rev-1",
@@ -135,6 +188,46 @@ namespace GuardsDigital.Tests.EditMode
         private static TestCaseData Literal(string stableDefinitionId, string printedText) =>
             new TestCaseData(stableDefinitionId, printedText).SetName(
                 "LiteralSourceField_" + stableDefinitionId);
+
+        private static int CountOccurrences(string value, string fragment)
+        {
+            var count = 0;
+            var index = 0;
+            while ((index = value.IndexOf(fragment, index, StringComparison.Ordinal)) >= 0)
+            {
+                count++;
+                index += fragment.Length;
+            }
+
+            return count;
+        }
+
+        private static string FindProjectFile(string relativePath)
+        {
+            var roots = new[]
+            {
+                Directory.GetCurrentDirectory(),
+                TestContext.CurrentContext.TestDirectory
+            };
+
+            foreach (var root in roots)
+            {
+                var directory = new DirectoryInfo(root);
+                while (directory != null)
+                {
+                    var candidate = Path.Combine(directory.FullName, relativePath);
+                    if (File.Exists(candidate))
+                    {
+                        return candidate;
+                    }
+
+                    directory = directory.Parent;
+                }
+            }
+
+            Assert.Fail("Could not locate project file " + relativePath + ".");
+            return null;
+        }
 
         private static IEnumerable<CardDefinition> AllAffectedDefinitions() =>
             SabinaCardContent.AllDefinitions

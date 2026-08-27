@@ -31,7 +31,7 @@ The pitch uses Xargatha's complete progression. Its implementation-grade invento
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5b corrected the intended seven ledger and/or provenance strings at `xargatha-8-25e5b-rev-1`, removing literal presentation notation without changing typed behavior. Fresh review 8.25e5c reconciled six affected faces and carried the other twelve clean results forward on unchanged hashes, but found that Constrict's ledger row still omits the spaces immediately inside its reminder parentheses even though production and the exact regression match the face. F-SOURCE-01 therefore remains open through 8.25e5d's one-field correction and 8.25e5e's fresh verification; the finding is addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5c-freshly-verify-the-corrected-twelve-source-fields-completion-evidence).
+Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5b corrected the intended seven ledger and/or provenance strings at `xargatha-8-25e5b-rev-1`, removing literal presentation notation without changing typed behavior. Fresh review 8.25e5c reconciled six affected faces and carried the other twelve clean results forward on unchanged hashes, but found that Constrict's ledger row still omitted the spaces immediately inside its reminder parentheses even though production and the exact regression matched the face. Milestone 8.25e5d corrected that one ledger field and added a raw-row conformance regression; production content and typed behavior remain unchanged. F-SOURCE-01 remains open only for 8.25e5e's fresh verification; the correction is addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5d-correct-constricts-remaining-ledger-transcription-completion-evidence).
 
 ## Xargatha source faces and components
 
@@ -129,7 +129,7 @@ sentence it is written here as the bracketed word the icon stands for.
 | Devoted Followers | If you are adjacent to an enemy unit, you may retrieve a discarded card. |
 | Charm | You may move an enemy ranged minion in radius up to 2 spaces before or after movement. |
 | Control | You may move an enemy ranged or melee minion in radius up to 2 spaces before or after movement. |
-| Constrict | **End of round:** Defeat an enemy melee minion adjacent to you. *(Before the end of round minion battle.)* |
+| Constrict | **End of round:** Defeat an enemy melee minion adjacent to you. *( Before the end of round minion battle. )* |
 | Dominate | You may move an enemy minion in radius up to 2 spaces before or after movement; ignore heavy minion's immunity. |
 | Final Embrace | **End of round:** Defeat an enemy melee or ranged minion adjacent to you. |
 | Metamorphosis | Gain +1 [Movement] Movement and +1 [Initiative] Initiative for each enemy unit adjacent to you. You may move through obstacles. |
