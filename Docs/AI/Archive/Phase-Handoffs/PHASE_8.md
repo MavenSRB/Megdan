@@ -390,4 +390,4 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.25e5b | Eleven independently found literal fields now agree across their owning hero ledgers and `CardSourceContent`; Sabina, Tigerclaw, and Xargatha advanced content revisions together. Nimble Strike remains Gold, Basic, Handicap and setup-excluded with its printed `G` recorded as the approved source error. Typed gameplay, schema v34, compatibility/invariance digests, and private source files are unchanged; F-SOURCE-01 remains open only for 8.25e5c's fresh verification. | `PENDING` |
+| 8.25e5b | Eleven independently found literal fields now agree across their owning hero ledgers and `CardSourceContent`; Sabina, Tigerclaw, and Xargatha advanced content revisions together. Nimble Strike remains Gold, Basic, Handicap and setup-excluded with its printed `G` recorded as the approved source error. Typed gameplay, schema v34, compatibility/invariance digests, and private source files are unchanged; F-SOURCE-01 remains open only for 8.25e5c's fresh verification. | `a82e86b` |
