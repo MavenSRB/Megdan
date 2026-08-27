@@ -366,6 +366,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| 8.25e3 | The fixed Unity launcher invalidates prior targets and succeeds only on fresh, discovered, parseable all-green XML plus a recreated clean log under one production/test evidence contract. | `834752e` |
 
 ## Milestone 8.25e Perform the repeat that was offered, or stop offering it completion evidence
 
