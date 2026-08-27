@@ -14,7 +14,11 @@ The project has completed roadmap milestones through **8.25f2**. **The loaded ma
 
 - Current completed milestone: **8.25f2**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.25e4**.
+- Next proposed milestone: **8.25e5f1**.
+
+That correction awaits exact approval; fresh-task **8.25e5g** follows it, and **8.25e4** resumes after the corrective source sequence.
+
+Milestone **8.25e5f** completed on 2026-08-28 and is addressed from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). Siren's Call now offers its printed Defense 3 and no Movement/Fast Travel while retaining Initiative 3 and its Range 3 Ranged Skill; Xargatha content is revisioned at `xargatha-8-25e5f-rev-1`. The user's second report demonstrated that its effect currently requires exactly three movement spaces despite printing "up to 3"; separately approvable **8.25e5f1** owns that typed movement correction, and fresh-task **8.25e5g** then owns source-first verification before F-SOURCE-01 can close again. The other 113 unchanged source results carry forward.
 
 Milestone **8.25f2** completed on 2026-08-28 and is addressed from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). Complete faces share the 372:520 source ratio at approximately 300.46 by 420; the ordinary five-card hand overlaps without frame or scrollbar, keeps every card clickable, reveals one topmost full face and leaves the board clickable outside its painted footprint. Full-screen artwork surrounds 210 playable hexes fitted into the HUD's L-shaped safe surface; `DIRECTOR`, a fixed largest-state status/action dock and the one-row action strip use the dead lane below the third Red rail without resizing across awaiting, confirmation and action states. Rules, commands, schema, revisions, digests and private-source boundaries did not move. **8.25e4** is next; 8.25e7 remains its fellow blocker before 8.26.
 

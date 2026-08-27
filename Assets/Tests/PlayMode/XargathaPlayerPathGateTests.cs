@@ -90,7 +90,7 @@ namespace GuardsDigital.Tests.PlayMode
             "Charm_AsksWhichSideOfHerMovementItRunsOnAndWalksTheRangedMinion";
 
         private const string NumericDefense =
-            "SecondaryDefense_IsSpentOnItsOwnNumericFaceAndXargathaSurvivesTheAttack";
+            "SirensCall_IsOfferedForItsPrintedDefenseThreeAndXargathaSurvivesTheAttack";
 
         private const string DefeatAndRespawn =
             "Xargatha_IsDefeatedByAnAttackAndRespawnsOnHerOwnSpawnByAClick";
@@ -155,17 +155,16 @@ namespace GuardsDigital.Tests.PlayMode
                     "p.20 brings it back only for an odd player count, which no configuration of " +
                     "this build composes - and its text composition carries a named deferral besides"),
 
-                // Her Silver basic, her only Ranged Skill, and the only face of hers printing Movement
-                // without Defense - which is why this row carries no Defense offer where every other
-                // dealt face does. Its text names a unit and then a space, so a player answers it
-                // twice on the board.
+                // Her Silver basic and only Ranged Skill. Its left-ribbon shield is Defense 3; the
+                // lower-right 3 belongs to the primary's Range, and the face prints no Movement. Its
+                // text names a unit and then a space, so a player answers it twice on the board.
                 Face(XargathaCardContent.SirensCall, "Siren's Call", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(PrimarySkillControl, SirensCallJourney),
                         Prove(BoardUnitSelection, SirensCallJourney),
                         Prove(BoardSpaceSelection, SirensCallJourney),
-                        Prove(SecondaryMovementDestination, TrayCommitAndWalk)
+                        Prove(SecondaryDefenseOffer, NumericDefense)
                     },
                     new[]
                     {

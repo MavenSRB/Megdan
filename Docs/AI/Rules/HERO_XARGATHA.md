@@ -31,7 +31,7 @@ The pitch uses Xargatha's complete progression. Its implementation-grade invento
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5b corrected the intended seven ledger and/or provenance strings at `xargatha-8-25e5b-rev-1`, removing literal presentation notation without changing typed behavior. Fresh review 8.25e5c reconciled six affected faces and carried the other twelve clean results forward on unchanged hashes, but found that Constrict's ledger row still omitted the spaces immediately inside its reminder parentheses even though production and the exact regression matched the face. Milestone 8.25e5d corrected that one ledger field and added a raw-row conformance regression; production content and typed behavior remain unchanged. Milestone 8.25e5e then freshly reread Constrict's whole face and enlarged text regions before tracked comparison, matched every field across the ledger, production provenance/profile, and exact tests, and recomputed the byte-identical 114-front manifest. F-SOURCE-01 is closed; the verification is addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5e-freshly-verify-the-corrected-constrict-ledger-field-and-close-f-source-01-completion-evidence).
+Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. Milestones 8.25e5b-8.25e5e corrected and verified the previously identified literal fields, but the user's later runtime report exposed one field that those reviews had declared clean: Siren's Call prints Defense 3 and no Movement, not the transposed reading in the ledger and production. Milestone 8.25e5f corrects that face at `xargatha-8-25e5f-rev-1`, preserves its Initiative 3 and Range 3 Skill primary, and reopens F-SOURCE-01 only for a separately approved fresh verification of this correction; the other 113 unchanged source results carry forward.
 
 ## Xargatha source faces and components
 
@@ -75,7 +75,7 @@ and with Attack respectively.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `xargatha` | 7679536 | Cleave | Gold `D` | basic | 11 | 2 | 1 | Basic Attack | Attack 4 | - | - |
 | `xargatha19` | 7576067 | Desperate Cleave | Gold `D` | `H` | 10 | 1 | 1 | Basic Attack | Attack 3 | - | - |
-| `xargatha2` | 7632831 | Siren's Call | Silver `S` | basic | 3 | - | 3 | Basic Skill - Ranged | - | Range 3 | - |
+| `xargatha2` | 7632831 | Siren's Call | Silver `S` | basic | 3 | 3 | - | Basic Skill - Ranged | - | Range 3 | - |
 | `xargatha3` | 7679537 | Dangerous Slash | Red `R` | I | 7 | 6 | 5 | Attack | Attack 5+ | - | - |
 | `xargatha4` | 7439587 | Deadly Swipe | Red `R` | II | 8 | 7 | 5 | Attack | Attack 5+ | - | Initiative |
 | `xargatha5` | 7643642 | Long Thrust | Red `R` | II | 8 | 4 | 4 | Attack - Ranged | Attack 3 | Range 1+ | Defense |
@@ -97,14 +97,14 @@ Supertype follows p.9 without exception: Cleave and Siren's Call are basic, as i
 replaces the Gold card; every Tiered card is non-basic. Xargatha's only basic Skill action is Siren's Call's
 primary and her only basic Attack is Cleave's, Desperate Cleave's when handicapped.
 
-Every card also offers p.12's iconless Hold. Every one of the eighteen non-Ultimate cards prints a Movement
-icon, so every one offers p.11's Fast Travel replacement; the three Green Movement primaries apply no card
-text when replaced. p.13's Clear can replace only the seven Attack primaries, six in the normal deck.
-Seventeen cards can be discarded to perform a Defense action - every non-Ultimate except Siren's Call.
+Every card also offers p.12's iconless Hold. Seventeen non-Ultimate cards print a Movement icon, so every
+one except Siren's Call offers p.11's Fast Travel replacement; the three Green Movement primaries apply no
+card text when replaced. p.13's Clear can replace only the seven Attack primaries, six in the normal deck.
+All eighteen non-Ultimate cards can be discarded to perform a Defense action.
 
 **Xargatha prints no Defense primary and no Block.** Every Red card is an Attack, every Blue card is a Skill,
-and the Green branch splits three Movement primaries from two Skills. Siren's Call is the only card in the
-set with Movement but no Defense, and it is also her only Ranged Skill.
+and the Green branch splits three Movement primaries from two Skills. Siren's Call is her only Ranged Skill;
+its lower-right 3 is that primary's Range, while its left-ribbon shield is Defense 3 and it prints no Movement.
 
 ## Xargatha exact rules text
 
@@ -166,7 +166,7 @@ enemy units, excluding their target. Long Thrust and Rapid Thrusts instead count
 to calculate Range. p.18 makes immunity irrelevant to a presence check, so an immune Heavy minion still
 contributes to those counts and to Metamorphosis even when it cannot be targeted.
 
-Siren's Call and the three Green Movement primaries use p.11 movement in card text, so the moved minion or
+Siren's Call and the three Green Movement primaries use direct Move in card text, so the moved minion or
 enemy unit follows path and obstacle rules and cannot Fast Travel. Charm, Control and Dominate expressly
 let Xargatha choose whether that direct move happens before or after her own primary Movement, overriding
 p.11's default before-Movement timing. Dominate is the only one that overrides Heavy minion immunity.
@@ -189,9 +189,9 @@ the printed icons rather than by the item card's own action type:
 | Item | Slot | Xargatha cards carrying that icon |
 | --- | --- | --- |
 | +1 Attack | 1 | 7 - both Gold cards and all five Red cards, six once Desperate Cleave is boxed |
-| +1 Defense | 2 | 17 - every non-Ultimate card except Siren's Call, sixteen in the normal deck |
+| +1 Defense | 2 | 18 - every non-Ultimate card, seventeen in the normal deck |
 | +1 Initiative | 3 | 18 - every non-Ultimate card |
-| +1 Movement | 4 | 18 - every non-Ultimate card |
+| +1 Movement | 4 | 17 - every non-Ultimate card except Siren's Call, sixteen in the normal deck |
 | +1 Range | 4 | 3 - Siren's Call, Long Thrust and Rapid Thrusts |
 | +1 Radius | 4 | 6 - the three petrification cards and the three Green Movement primaries |
 

@@ -40,7 +40,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             "xargatha-cleave|Cleave|Init 11|SecDef 2|SecMov 1|primary-attack Attack NonRanged [Attack 4]|Gold Basic|item -",
             "xargatha-desperate-cleave|Desperate Cleave|Init 10|SecDef 1|SecMov 1|primary-attack Attack NonRanged [Attack 3]|Gold Basic|item -",
-            "xargatha-sirens-call|Siren's Call|Init 3|SecDef -|SecMov 3|primary-skill Skill None [Range 3]|Silver Basic|item -",
+            "xargatha-sirens-call|Siren's Call|Init 3|SecDef 3|SecMov -|primary-skill Skill None [Range 3]|Silver Basic|item -",
             "xargatha-dangerous-slash|Dangerous Slash|Init 7|SecDef 6|SecMov 5|primary-attack Attack NonRanged [Attack 5]|Red I|item -",
             "xargatha-deadly-swipe|Deadly Swipe|Init 8|SecDef 7|SecMov 5|primary-attack Attack NonRanged [Attack 5]|Red II|item Initiative",
             "xargatha-long-thrust|Long Thrust|Init 8|SecDef 4|SecMov 4|primary-ranged-attack Attack Ranged [Attack 3, Range 1]|Red II|item Defense",
@@ -171,9 +171,34 @@ namespace GuardsDigital.Tests.EditMode
                     .Count(definition => definition.ActionDefinitions.Any(action =>
                         action.Kind == ActionKind.Defense &&
                         action.Origin == ActionDefinitionOrigin.Reaction)),
-                Is.EqualTo(17),
-                "Seventeen faces can be discarded to perform a Defense action - every non-Ultimate " +
-                "except Siren's Call, which is the only card in her set printing Movement without it.");
+                Is.EqualTo(18),
+                "Every non-Ultimate face can be discarded to perform its printed Defense action.");
+        }
+
+        [Test]
+        public void SirensCall_OffersItsPrintedDefenseThreeAndNoSecondaryMovement()
+        {
+            var configuration = MatchConfiguration.CreateStagedXargathaForInternalTest(TeamSide.Red);
+            var instance = configuration.CardInstances.Single(card =>
+                card.DefinitionReference.DefinitionId.Equals(XargathaCardContent.SirensCall));
+            var definition = XargathaCardContent.Definition(XargathaCardContent.SirensCall);
+
+            var defense = DefenseOfferQuery.Offers(
+                    configuration.CardDefinitions,
+                    configuration.CardInstances,
+                    instance.OwnerId,
+                    RuleModificationSet.Empty)
+                .Single(offer => offer.SourceCardInstanceId.Equals(instance.Id));
+
+            Assert.That(
+                PrintedValueQuery.CalculatePrintedValue(
+                    defense, configuration.CardDefinitions, PrintedValueChannel.Defense).Total,
+                Is.EqualTo(3),
+                "The left-ribbon shield prints Defense 3 and must produce a p.14 reaction offer.");
+            Assert.That(
+                definition.ActionDefinitions.Any(action => action.Kind == ActionKind.Movement),
+                Is.False,
+                "The lower-right 3 is the Ranged primary's Range, not a Movement action.");
         }
 
         /// <summary>

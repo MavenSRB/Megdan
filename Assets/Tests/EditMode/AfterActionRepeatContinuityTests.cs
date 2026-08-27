@@ -410,15 +410,18 @@ namespace GuardsDigital.Tests.EditMode
         /// The nodes whose two answers this sweep has observed to be the same state, and which this
         /// milestone deliberately leaves as they are.
         ///
-        /// <para><b>Eight nodes across five heroes, all one mechanism, and none of them p.10's
-        /// repeat.</b> The check found them on its first runs. Every one is an optional card-text step
-        /// - a printed "you may" - whose body begins with a mandatory selection: Wasp's
+        /// <para><b>Nine nodes across five heroes, all one mechanism, and none of them p.10's
+        /// repeat.</b> Eight were found on this check's first runs; Brogan's <c>shove-push</c> became
+        /// reachable when milestone 8.25e5f corrected Siren's Call's secondary values. Every one is
+        /// an optional card-text step - a printed "you may" or "up to" - whose body begins with a
+        /// mandatory selection: Wasp's
         /// <c>high-voltage-may</c> and <c>kinetic-push</c>, Brogan's <c>shove-move</c> and
-        /// <c>throw-discard</c>, Arien's <c>wave-push</c>, Tigerclaw's <c>theft-opening-move</c>, and
-        /// Xargatha's <c>green-may</c> and <c>converts-may</c>. Where the board leaves that selection
-        /// nothing to name, taking the offer reaches the step, cannot complete it, and rulebook p.10's
-        /// Mandatory and Optional Steps stops the action exactly where declining leaves it. Observed on
-        /// both boards, on six seeds each.</para>
+        /// <c>shove-push</c> and <c>throw-discard</c>, Arien's <c>wave-push</c>, Tigerclaw's
+        /// <c>theft-opening-move</c>, and Xargatha's <c>green-may</c> and <c>converts-may</c>. Where the
+        /// board leaves that selection nothing to name, taking the offer reaches the step, cannot
+        /// complete it, and rulebook p.10's Mandatory and Optional Steps stops the action exactly
+        /// where declining leaves it. The original eight were observed on both boards on six seeds
+        /// each; <c>shove-push</c> is observed on the official board on seeds 2 and 5.</para>
         ///
         /// <para><b>Why they are recorded rather than fixed here.</b> The repeat family this milestone
         /// owns is closed by asking one authority whether the instance it would start can start, and
@@ -433,8 +436,8 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static readonly string[] IndistinguishableAnswersThisMilestoneDoesNotOwn =
         {
-            "high-voltage-may", "kinetic-push", "shove-move", "throw-discard", "wave-push",
-            "theft-opening-move", "green-may", "converts-may"
+            "high-voltage-may", "kinetic-push", "shove-move", "shove-push", "throw-discard",
+            "wave-push", "theft-opening-move", "green-may", "converts-may"
         };
 
         /// <summary>

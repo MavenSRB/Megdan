@@ -4,7 +4,7 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization and corrective route
 
-**Corrective scheduling amendments, 2026-08-27.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the intended corrections. Fresh verification 8.25e5c found that Constrict's ledger reminder spacing was missed even though production and its exact regression were correct; 8.25e5d corrected that one field, 8.25e5e freshly verified it and closed F-SOURCE-01, 8.25f completed the real-card-face route, 8.25f1 removed its generated shells, and 8.25f2 enlarged and recomposed the accepted hand/map/fixed-dock HUD. Milestone 8.25e4 is ready and is the next proposal; it and independent 8.25e7 remain required before 8.26. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline. The user-approved reassessment closes the never-scheduled 8.16b proposal without pretending its surviving findings were implemented: 8.25e7 now owns the current content-contract and compatibility corrections and joins 8.25e4 as a blocker for 8.26; 8.27 owns the official-six-player runtime capture already inside its full-match scale gate.
+**Corrective scheduling amendments, 2026-08-27 through 2026-08-28.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the intended corrections. Fresh verification 8.25e5c found that Constrict's ledger reminder spacing was missed even though production and its exact regression were correct; 8.25e5d corrected that one field, and 8.25e5e freshly verified it. A later user report disproved the clean audit for Siren's Call: 8.25e5f corrected its Defense/Movement values, 8.25e5f1 is proposed for the separately demonstrated "up to 3" execution defect, and fresh-task 8.25e5g is proposed to reclose F-SOURCE-01 only after both corrections. Milestones 8.25f-8.25f2 completed the real-card-face route and its accepted HUD before that later finding. Milestone 8.25e4 follows the corrective source sequence; it and independent 8.25e7 remain required before 8.26. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline. The user-approved reassessment closes the never-scheduled 8.16b proposal without pretending its surviving findings were implemented: 8.25e7 now owns the current content-contract and compatibility corrections and joins 8.25e4 as a blocker for 8.26; 8.27 owns the official-six-player runtime capture already inside its full-match scale gate.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
@@ -258,6 +258,101 @@ Acceptance checks:
 Non-goals: No correction, rule decision, definition/test/runtime change, OCR-derived authority, re-audit of fields supported by unchanged hashes, source-image mutation, artwork preparation, publication, distribution-rights conclusion, or claim that a later higher-authority source cannot supersede the result.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5e-freshly-verify-the-corrected-constrict-ledger-field-and-close-f-source-01-completion-evidence).
+
+### [x] 8.25e5f Correct Siren's Call's transposed secondary values
+
+Authorized after the user's runtime report and direct inspection of `xargatha2__7632831__front.png`
+showed that the completed source audit, ledger, production definition, and tests had transposed the face's
+secondary Defense 3 into Movement 3. This correction is independent of 8.25e4 and blocks further
+source-completeness claims until its verification disposition is recorded.
+
+Observable outcome: Siren's Call offers its printed Defense 3 response from hand, offers no secondary
+Movement or Fast Travel, and retains Initiative 3 plus its Basic Skill - Ranged primary at Range 3.
+
+Acceptance checks:
+
+- Correct the Xargatha source ledger and production profile from Defense absent / Movement 3 to Defense
+  3 / Movement absent. Preserve its primary Skill text, Range 3, setup membership, colour, and every other
+  face unchanged.
+- Advance Xargatha's immutable content revision and every current configured-artwork reference together;
+  current content rejects the immediately superseded revision rather than silently reinterpreting it.
+- `XargathaVerifiedContentTests.SirensCall_OffersItsPrintedDefenseThreeAndNoSecondaryMovement` is the
+  closing regression. It proves the real in-hand reaction offer carries printed Defense 3 and that the
+  definition contains no Movement action. The Xargatha player-path row and live Defense journey must name
+  and click Siren's Call itself.
+- Reconcile affected source, definition, artwork-catalog, player-path, content-identity, snapshot/
+  compatibility, and current-implementation claims. Because the earlier independent 114-front review
+  declared this incorrect field clean, reopen its source-completeness conclusion and propose a separately
+  approved fresh verification rather than treating this correction as independent review.
+- T2 validation runs the focused Xargatha/source/content-identity and compatibility Edit Mode regressions,
+  the directly affected Xargatha Play Mode journey/player-path gate, the cross-platform harness, living-
+  documentation validation, and `git diff --check`. Inspect the unchanged private source face directly;
+  no private pixel, source mutation, schema change, unrelated rule, or other card value enters the commit.
+
+Non-goals: No other card correction, rule interpretation, effect, command, resolver, schema, source-image,
+HUD/layout, networking, governance migration, or fresh independent verification inside this correction.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5f-correct-sirens-calls-transposed-secondary-values-completion-evidence).
+
+### [ ] 8.25e5f1 Make Siren's Call honor "move ... up to 3 spaces"
+
+Depends on completed milestone 8.25e5f. The user reported the destination picker requiring exactly three
+spaces while that correction was validating; direct inspection confirmed that Siren's Call declares
+`IfAble`, whose current admitted-distance rule means exactly the declared distance. This milestone requires
+separate exact approval and blocks 8.25e5g.
+
+Observable outcome: after a legal non-adjacent target is chosen, Siren's Call offers every legal movement
+path of one, two, or three spaces whose endpoint is adjacent to Xargatha; it does not require exactly three,
+offer zero or more than three, or leave the target non-adjacent. If no such path exists, `if able` skips the
+move without opening an empty or false choice.
+
+Acceptance checks:
+
+- Express the printed one-through-three distance interval through the typed direct-move contract and its
+  authoritative query. Do not use a Xargatha/card-name branch, parse printed text, or conflate `if able`
+  with `up to`; the naïve current `UpTo` route is insufficient because it admits a zero-space answer before
+  the destination policy is applied.
+- Preserve Siren's Call's enemy/non-adjacent/Range 3 target restrictions, ordinary movement path and
+  obstacle rules, Heavy immunity, final adjacency-to-Xargatha condition, and mandatory target selection.
+- Add focused failing-then-passing regressions proving legal endpoints at path lengths one, two, and three,
+  excluding zero/four/non-adjacent endpoints, and silently skipping the `if able` move when none exists.
+  Update the existing real-pointer Siren journey so a player can choose a nearer legal destination.
+- Advance Xargatha's immutable content revision and configured artwork references together because the
+  referenced effect semantics change. Re-run the directly affected content identity, effect, snapshot/
+  compatibility, player-path, and live-journey gates under T2 policy; schema changes only if persisted
+  contract shape genuinely changes.
+
+Non-goals: No Defense/static-value change, other Xargatha effect correction, global optional-step cleanup,
+unrelated movement/push change, source-image mutation, HUD redesign, networking, or fresh source review.
+
+### [ ] 8.25e5g Freshly verify Siren's Call and reclose F-SOURCE-01
+
+Blocked by: milestone 8.25e5f1, so the reviewer checks the final corrected static and effect authority rather
+than a revision already known to need another change. Run in a fresh task by a reviewer who performed none
+of 8.25e5f or 8.25e5f1 and did not receive their source readings before sealing the source-first pass. This
+milestone requires separate exact approval.
+
+Observable outcome: an independent source-first review either confirms Siren's Call's complete face across
+source, ledger, production definition/effect provenance, exact regressions, and current content identity and
+recloses F-SOURCE-01, or records every remaining mismatch and keeps the gate open.
+
+Acceptance checks:
+
+- Directly read the whole unchanged Siren's Call front and enlarged stat/text regions without OCR, recording
+  Initiative, Defense, Movement absence, colour/supertype, primary kind, Range, exact rules text, Tier/item/
+  Handicap marks, legibility, source identity, byte count, and SHA-256 before tracked comparison.
+- Compare the sealed reading against the Xargatha ledger, production profile and provenance, typed effect,
+  exact source regression, player-path row, content revision, and configured artwork catalog. Explicitly
+  verify Defense 3 / no Movement and "move the target up to 3 spaces to a space adjacent to you."
+- Recompute the 114-front manifest. If byte-identical, carry forward the other 113 verified results; otherwise
+  disposition every changed identity. Close F-SOURCE-01 only on zero unresolved mismatches or unreadable
+  fields, and update all six hero/source-completeness claims consistently.
+- Finish with T0 source/document validation, the exact source-to-tracked conformance regressions, living-
+  documentation validation, `git diff --check`, and staged/tracked inspection proving no private pixel or
+  review artifact entered Git.
+
+Non-goals: No correction, rule decision, executable behavior change, source mutation, OCR-derived authority,
+artwork preparation, rights conclusion, unrelated front review, or 8.25e4/8.25e7 work.
 
 ### [ ] 8.25e6a Build the complete lossless governance source/body manifest
 

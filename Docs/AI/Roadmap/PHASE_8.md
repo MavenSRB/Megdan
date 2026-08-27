@@ -500,7 +500,7 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 
 ### [!] 8.26 Integrate six-hero director control and team interactions
 
-Blocked by: milestones 8.25e4 and 8.25e7. F-SOURCE-01 closed at 8.25e5e; the two corrective milestones block this driver milestone, not art-only 8.25f.
+Blocked by: milestones 8.25e5f1, 8.25e5g, 8.25e4, and 8.25e7. The user's later Siren's Call reports reopened F-SOURCE-01 after 8.25e5e; 8.25e5f corrected its static values, while 8.25e5f1 and fresh-task 8.25e5g own the remaining effect correction and source closure. Art-only 8.25f-8.25f2 remain complete.
 
 Observable outcome: One director can play and resolve a complete turn for all six independently owned heroes while the rules preserve normal 3v3 ownership, Initiative, target, assist, reaction, and team relationships.
 

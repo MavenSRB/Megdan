@@ -323,7 +323,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator SecondaryDefense_IsSpentOnItsOwnNumericFaceAndXargathaSurvivesTheAttack()
+        public IEnumerator SirensCall_IsOfferedForItsPrintedDefenseThreeAndXargathaSurvivesTheAttack()
         {
             yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedXargatha);
             var root = Root();
@@ -339,8 +339,10 @@ namespace GuardsDigital.Tests.PlayMode
             yield return YieldUntilNobodyIsActing(runtime);
             yield return AdvanceToNextTurn(runtime);
 
-            // The enemy attacks, and her Defense is answered on the live surface.
-            CommitSoTheNamedSeatActs(runtime, enemyId, WaspCardContent.MagneticDagger);
+            // The enemy's Initiative 12 Attack beats Cleave's 11 while Siren's Call stays in hand
+            // and can therefore answer the reaction window on the live surface.
+            Commit(runtime, enemyId, WaspCardContent.MagneticDagger);
+            Commit(runtime, xargathaId, XargathaCardContent.Cleave);
             yield return YieldUntilTheNamedSeatActs(runtime, enemyId);
             Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True,
                 "The enemy's Attack is setup for this journey. " + Remaining(runtime));
@@ -358,9 +360,21 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
             }
 
-            var surviving = SurvivingDefense(runtime);
+            var sirensCallInstance = runtime.Cards.Single(card =>
+                card.DefinitionReference.DefinitionId.Equals(XargathaCardContent.SirensCall));
+            var surviving = runtime.RoundView.Model.DefenseChoices.SingleOrDefault(choice =>
+                choice.DefenseBreakdown != null &&
+                choice.DefenseBreakdown.CardInstanceId.HasValue &&
+                choice.DefenseBreakdown.CardInstanceId.Value.Equals(sirensCallInstance.Id));
             Assert.That(surviving, Is.Not.Null,
-                "One of her numeric Defense faces has to answer this attack. " + Remaining(runtime));
+                "Siren's Call has to be offered for its printed Defense 3. " + Remaining(runtime));
+            var defenseOffer = runtime.PendingDefenseChoice.LegalDefenseOffers.Single(offer =>
+                offer.SourceCardInstanceId.Equals(sirensCallInstance.Id));
+            Assert.That(
+                PrintedValueQuery.CalculatePrintedValue(
+                    defenseOffer, runtime.Definitions, PrintedValueChannel.Defense).Total,
+                Is.EqualTo(3),
+                "The response must use the shield value, not the primary's Range 3.");
 
             // A Defense is offered as a WHOLE FACE named `gd-defense-card`, never as a labelled
             // button - the same contract milestone 8.15a set for every card-valued choice.

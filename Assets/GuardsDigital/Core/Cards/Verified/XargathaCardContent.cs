@@ -44,7 +44,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <see cref="TigerclawCardContent.ContentRevision"/> has: it moves when Xargatha's content
         /// does.
         /// </summary>
-        public const string ContentRevision = "xargatha-8-25e5b-rev-1";
+        public const string ContentRevision = "xargatha-8-25e5f-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat
@@ -236,11 +236,12 @@ namespace GuardsDigital.Core.Cards.Verified
                 PrintedTextComposition.DeferredUntil("first odd-player-count configuration"),
                 targetableUnits: AttackTargetableUnits.HeroesOnly),
 
-            // Her Silver basic, her only Ranged Skill, and the only card in her set that prints
-            // Movement without Defense. Its text moves the target TO her rather than away, which is
-            // why the movement clause is bounded by a destination rather than by a direction.
+            // Her Silver basic and her only Ranged Skill. The lower-right 3 belongs to the primary's
+            // printed Range; the left-ribbon shield is Defense 3, and the face prints no Movement.
+            // Its text moves the target TO her rather than away, which is why the movement clause is
+            // bounded by a destination rather than by a direction.
             new XargathaCardProfile(
-                SirensCall, "Siren's Call", 3, 0, 3,
+                SirensCall, "Siren's Call", 3, 3, 0,
                 XargathaPrimaryKind.Skill, 0, PrintedValueChannel.Range, 3,
                 CardProgressionProfile.BasicCard(CardColor.Silver),
                 "Target an enemy unit not adjacent to you and in range; if able, move the target up " +
@@ -460,7 +461,7 @@ namespace GuardsDigital.Core.Cards.Verified
             // A dash in the shard's Sec Mov or Sec Def column means the face prints no such icon, so
             // that secondary action is unavailable from this card - expressed by the action not
             // existing rather than by a zero value, exactly as the five earlier sets express it. Her
-            // dashes are Siren's Call's Defense column, the three Green Movement primaries' Movement
+            // dashes are Siren's Call's Movement column, the three Green Movement primaries' Movement
             // column - where the icon is the primary's - and the Ultimate's whole row.
             if (profile.SecondaryMovement > 0)
             {
