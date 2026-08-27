@@ -25,6 +25,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Tests.PlayMode
 {
@@ -697,6 +698,245 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 8.25f's tracked Play Mode path. One representative injected texture and a forced
+        /// absent provider each cross the ordinary hand, a Defense choice, an upgrade choice, and the
+        /// rail's shared full-face preview. Private files can be present or absent without deciding the
+        /// result.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_ArtworkAwareCompleteFacesUseInjectedTextureAndGeneratedFallbackAcrossPlayerSurfaces()
+        {
+            var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            try
+            {
+                var requested = new List<string>();
+                using (ConfiguredCardArtwork.UseTextureLoader(path =>
+                       {
+                           requested.Add(path);
+                           return texture;
+                       }))
+                {
+                    yield return LoadScene();
+                    var runtime = Root().Runtime;
+                    runtime.RefreshAll();
+                    yield return null;
+
+                    AssertCompleteFaceArtwork(
+                        runtime.HandsView.Root, "gd-card-choice", 5, true, "the ordinary hand");
+                    var selected = Hand(runtime, TeamSide.Red).TrayCards.First(card => card.IsSelectable);
+                    Assert.That(runtime.SelectCommitmentCard(selected.CardInstanceId), Is.True,
+                        "The art child leaves the ordinary card control reachable.");
+                    AssertCompleteFaceArtwork(
+                        runtime.HandsView.Root, "gd-card-choice", 5, true, "the selected hand");
+
+                    RenderArtworkDefenseChoices(runtime);
+                    AssertCompleteFaceArtwork(
+                        runtime.RoundView.Root, "gd-card-preview", 4, true, "the Defense choice");
+                    var defense = runtime.RoundView.Model.DefenseChoices.First(choice => choice.Card != null);
+                    TypedInvocationViewModel submitted = null;
+                    runtime.RoundView.InvocationSubmitted += value => submitted = value;
+                    runtime.RoundView.ForwardInvocation(defense);
+                    Assert.That(submitted, Is.SameAs(defense),
+                        "The artwork adds no interception between the card control and its invocation.");
+
+                    RenderArtworkUpgradeChoices(runtime);
+                    AssertCompleteFaceArtwork(
+                        runtime.RoundView.Root, "gd-card-preview", 6, true, "the upgrade choice");
+
+                    runtime.HeroOverviewsView.ForwardDiscardCardHighlight(
+                        Hand(runtime, TeamSide.Red).TrayCards[0]);
+                    AssertCompleteFaceArtwork(
+                        runtime.HeroOverviewsView.Root,
+                        "gd-card-preview",
+                        1,
+                        true,
+                        "the rail preview");
+                }
+
+                Assert.That(requested, Is.Not.Empty);
+                Assert.That(
+                    requested.All(path => path.StartsWith(
+                        "Private/Cards/", System.StringComparison.Ordinal)),
+                    Is.True);
+
+                using (ConfiguredCardArtwork.UseTextureLoader(_ => null))
+                {
+                    var runtime = Root().Runtime;
+                    runtime.RefreshAll();
+                    var fallbackSelection = Hand(runtime, TeamSide.Red).TrayCards
+                        .Last(card => card.IsSelectable);
+                    Assert.That(
+                        runtime.SelectCommitmentCard(fallbackSelection.CardInstanceId),
+                        Is.True,
+                        "A second ordinary selection rebuilds the cached hand through its real " +
+                        "player path before the forced fallback is inspected.");
+                    yield return null;
+                    AssertCompleteFaceArtwork(
+                        runtime.HandsView.Root, "gd-card-choice", 5, false, "the fallback hand");
+
+                    RenderArtworkDefenseChoices(runtime);
+                    AssertCompleteFaceArtwork(
+                        runtime.RoundView.Root,
+                        "gd-card-preview",
+                        4,
+                        false,
+                        "the fallback Defense choice");
+
+                    RenderArtworkUpgradeChoices(runtime);
+                    AssertCompleteFaceArtwork(
+                        runtime.RoundView.Root,
+                        "gd-card-preview",
+                        6,
+                        false,
+                        "the fallback upgrade choice");
+
+                    runtime.HeroOverviewsPresenter.Refresh();
+                    runtime.HeroOverviewsView.ForwardDiscardCardHighlight(
+                        Hand(runtime, TeamSide.Red).TrayCards[0]);
+                    AssertCompleteFaceArtwork(
+                        runtime.HeroOverviewsView.Root,
+                        "gd-card-preview",
+                        1,
+                        false,
+                        "the fallback rail preview");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(texture);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.25f's one non-batch 2048x1152 inspection. It puts one real prepared front from
+        /// each configured hero side by side through the production complete-face builder, over the
+        /// official six-player match the user loads.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_CapturesPreparedRepresentativeCardArtworkForAllSixHeroesAt2048By1152()
+        {
+            if (UnityEngine.Application.isBatchMode)
+            {
+                yield break;
+            }
+
+            var restoreGameView = SelectFixedGameViewResolution(2048, 1152);
+            try
+            {
+                yield return LoadOfficialSixPlayerScene();
+                for (var frame = 0;
+                     frame < 120 && (Screen.width != 2048 || Screen.height != 1152);
+                     frame++)
+                {
+                    yield return null;
+                }
+
+                Assert.That(Screen.width, Is.EqualTo(2048));
+                Assert.That(Screen.height, Is.EqualTo(1152));
+
+                var root = Root();
+                root.Runtime.HandsView.SetHidden(true);
+                root.Runtime.RoundView.Root.style.display = DisplayStyle.None;
+
+                var gallery = new VisualElement { name = "gd-six-hero-card-gallery" };
+                gallery.style.position = Position.Absolute;
+                gallery.style.flexDirection = FlexDirection.Column;
+                gallery.style.alignItems = Align.Center;
+                gallery.style.paddingLeft = 18f;
+                gallery.style.paddingRight = 18f;
+                gallery.style.paddingTop = 14f;
+                gallery.style.paddingBottom = 18f;
+                gallery.style.backgroundColor = new Color(0.018f, 0.026f, 0.038f, 0.96f);
+                gallery.style.borderTopLeftRadius = 12f;
+                gallery.style.borderTopRightRadius = 12f;
+                gallery.style.borderBottomLeftRadius = 12f;
+                gallery.style.borderBottomRightRadius = 12f;
+                gallery.pickingMode = PickingMode.Ignore;
+
+                var heading = new Label("VERIFIED PRIVATE FRONTS · SIX CONFIGURED HEROES");
+                heading.style.fontSize = 18f;
+                heading.style.unityFontStyleAndWeight = FontStyle.Bold;
+                heading.style.color = MatchHudTheme.PrimaryText;
+                heading.style.marginBottom = 10f;
+                gallery.Add(heading);
+
+                var row = new VisualElement { name = "gd-six-hero-card-row" };
+                row.style.flexDirection = FlexDirection.Row;
+                row.style.alignItems = Align.FlexStart;
+                var representatives = new[]
+                {
+                    (Hero: "WASP", Definition: WaspCardContent.Definition(WaspCardContent.Shock)),
+                    (Hero: "XARGATHA", Definition: XargathaCardContent.Definition(XargathaCardContent.StoneGaze)),
+                    (Hero: "TIGERCLAW", Definition: TigerclawCardContent.Definition(TigerclawCardContent.Dodge)),
+                    (Hero: "ARIEN", Definition: ArienCardContent.Definition(ArienCardContent.LiquidLeap)),
+                    (Hero: "BROGAN", Definition: BroganCardContent.Definition(BroganCardContent.BrutalJab)),
+                    (Hero: "SABINA", Definition: SabinaCardContent.Definition(SabinaCardContent.Quickdraw))
+                };
+
+                foreach (var representative in representatives)
+                {
+                    var column = new VisualElement();
+                    column.style.flexDirection = FlexDirection.Column;
+                    column.style.alignItems = Align.Center;
+                    column.style.marginRight = representative.Hero == "SABINA" ? 0f : 12f;
+                    var hero = new Label(representative.Hero);
+                    hero.style.fontSize = 12f;
+                    hero.style.unityFontStyleAndWeight = FontStyle.Bold;
+                    hero.style.color = MatchHudTheme.PrimaryText;
+                    hero.style.marginBottom = 5f;
+                    column.Add(hero);
+                    column.Add(DirectorHandsUnityView.BuildStandaloneCard(
+                        CurrentRoundCards.DeckCard(
+                            new CardInstanceId(
+                                $"visual-{representative.Definition.Id.Value}"),
+                            representative.Definition)));
+                    row.Add(column);
+                }
+
+                gallery.Add(row);
+                var galleryWidth = (representatives.Length * CardFootprint.StandardWidth) +
+                    ((representatives.Length - 1) * 12f) + 36f;
+                gallery.style.width = galleryWidth;
+                gallery.style.left =
+                    (ConfiguredMatchHudRenderer.PanelViewport.x - galleryWidth) * 0.5f;
+                gallery.style.top = 92f;
+                root.Hud.RootElement.Add(gallery);
+
+                yield return null;
+                yield return null;
+                var faces = Descendants(gallery)
+                    .Where(element => element.name == "gd-card-preview")
+                    .ToArray();
+                Assert.That(faces, Has.Length.EqualTo(6));
+                Assert.That(
+                    faces.All(face => Descendants(face)
+                        .Count(element => element.name == "gd-card-artwork") == 1),
+                    Is.True,
+                    "The preparation command must have supplied one real front for every hero before " +
+                    "this inspection runs.");
+                Assert.That(
+                    faces.All(face =>
+                        Mathf.Abs(face.worldBound.width - CardFootprint.StandardWidth) < 1.1f &&
+                        Mathf.Abs(face.worldBound.height - CardFootprint.StandardHeight) < 1.1f),
+                    Is.True,
+                    "Every real front keeps the production footprint at the live 2048x1152 scale.");
+                Assert.That(gallery.worldBound.xMin, Is.GreaterThanOrEqualTo(0f));
+                Assert.That(gallery.worldBound.yMin, Is.GreaterThanOrEqualTo(0f));
+                Assert.That(gallery.worldBound.xMax,
+                    Is.LessThanOrEqualTo(ConfiguredMatchHudRenderer.PanelViewport.x + 1f));
+                Assert.That(gallery.worldBound.yMax,
+                    Is.LessThanOrEqualTo(ConfiguredMatchHudRenderer.PanelViewport.y + 1f),
+                    "The six-card inspection gallery is wholly visible and unclipped.");
+
+                yield return Capture("tmp/milestone-8-25f-six-hero-card-artwork.png");
+            }
+            finally
+            {
+                restoreGameView();
+            }
+        }
+
+        /// <summary>
         /// Milestone 8.5b in the running scene: the card that sourced a live Active effect is outlined
         /// and labelled, a card can be selected and active at once, and both go when the effect ends.
         ///
@@ -1058,6 +1298,108 @@ namespace GuardsDigital.Tests.PlayMode
                     upgraded.DisplayName,
                     setAside.Progression.ItemIcon,
                     setAside.DisplayName);
+            }
+        }
+
+        private static void RenderArtworkDefenseChoices(ConfiguredMatchSceneRuntime runtime)
+        {
+            var hand = Hand(runtime, TeamSide.Red);
+            var invocations = hand.TrayCards
+                .Where(card => hand.Cards.Any(instance =>
+                    instance.Id.Equals(card.CardInstanceId)))
+                .OrderByDescending(card => card.Face.PrimaryActionLabel.Contains("BLOCK"))
+                .Take(4)
+                .Select(card => new TypedInvocationViewModel(
+                    $"DISCARD {card.DisplayName.ToUpperInvariant()}\n{card.Face.ValueLine}",
+                    DirectorCommand.ChooseDefenseCard(card.CardInstanceId),
+                    null,
+                    card))
+                .ToArray();
+            Assert.That(invocations, Has.Length.EqualTo(4));
+            var model = runtime.RoundView.Model;
+            runtime.RoundView.Render(new RoundActionViewModel(
+                model.Version + 100,
+                model.RoundIndex,
+                model.TurnIndex,
+                model.Phase,
+                "Choose a Defense card.",
+                System.Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                System.Array.Empty<TypedInvocationViewModel>(),
+                invocations));
+        }
+
+        private static void RenderArtworkUpgradeChoices(ConfiguredMatchSceneRuntime runtime)
+        {
+            var current = runtime.RoundView.Model;
+            var upgrade = new SystemTransitionPromptViewModel(
+                GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind.LevelUpUpgrade,
+                "LEVEL UP",
+                "RED WASP REACHED LEVEL 2 - UPGRADE A CARD",
+                "PAID 1 COIN - 1 REMAINING",
+                UpgradeOptions(
+                        WaspCardContent.LiftUp,
+                        WaspCardContent.ControlGravity,
+                        WaspCardContent.KineticRepulse)
+                    .Concat(UpgradeOptions(
+                        WaspCardContent.Shock,
+                        WaspCardContent.Electrocute,
+                        WaspCardContent.ChargedBoomerang))
+                    .Concat(UpgradeOptions(
+                        WaspCardContent.StopProjectiles,
+                        WaspCardContent.DeflectProjectiles,
+                        WaspCardContent.Telekinesis)));
+            runtime.RoundView.Render(new RoundActionViewModel(
+                current.Version + 200,
+                current.RoundIndex,
+                current.TurnIndex,
+                current.Phase,
+                "End of round - rulebook p.15 is waiting on an upgrade.",
+                System.Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                System.Array.Empty<TypedInvocationViewModel>(),
+                System.Array.Empty<TypedInvocationViewModel>(),
+                systemTransitionPrompt: upgrade));
+        }
+
+        private static void AssertCompleteFaceArtwork(
+            VisualElement root,
+            string faceName,
+            int expectedFaces,
+            bool expectedArtwork,
+            string surface)
+        {
+            var faces = Descendants(root)
+                .Where(element => element.name == faceName)
+                .ToArray();
+            Assert.That(faces, Has.Length.EqualTo(expectedFaces),
+                $"{surface} was not reached at its expected complete-face count.");
+            foreach (var face in faces)
+            {
+                Assert.That(
+                    Descendants(face).Count(element => element.name == "gd-card-artwork"),
+                    Is.EqualTo(expectedArtwork ? 1 : 0),
+                    $"{surface} did not take the selected artwork/fallback arm.");
+                var generatedRules = Descendants(face)
+                    .Single(element => element.name == "gd-card-rules");
+                Assert.That(
+                    generatedRules.style.display.value,
+                    expectedArtwork ? Is.EqualTo(DisplayStyle.None) : Is.Not.EqualTo(DisplayStyle.None),
+                    $"{surface} must retain exactly one generated per-card fallback.");
+                Assert.That(
+                    face.style.width.value.value,
+                    Is.EqualTo(CardFootprint.StandardWidth),
+                    $"{surface} changed the shared card width.");
+                Assert.That(
+                    face.style.height.value.value,
+                    Is.EqualTo(CardFootprint.StandardHeight),
+                    $"{surface} changed the shared card height.");
+                Assert.That(face.focusable,
+                    Is.EqualTo(faceName == "gd-card-choice"),
+                    "The artwork child adds no focus stop and the outer interaction surface keeps its " +
+                    "existing keyboard role.");
             }
         }
 

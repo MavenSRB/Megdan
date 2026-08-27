@@ -438,7 +438,7 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 
 Milestones **8.25e1-8.25e7** are defined in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). Completed review 8.25e5c found one missed Constrict ledger field; 8.25e5d corrected it and 8.25e5e freshly verified it, closing F-SOURCE-01. Milestone 8.25e7 re-baselines the surviving 8.16a contract and compatibility findings without reviving the obsolete 8.16b bundle.
 
-### [ ] 8.25f Replace generated complete card faces with the verified private faces
+### [x] 8.25f Replace generated complete card faces with the verified private faces
 
 Proposed at the user's direction on 2026-08-26. The six configured heroes already have 108 verified definitions and one shared `CardFootprint`, but every complete face the UI draws is still reconstructed from typed content by `ConfiguredCardFaceView.Build`. The private Tabletopia corpus has nineteen action-card fronts for each configured hero: the eighteen-card deck plus the p.20 Handicap card that setup returns to the box. This milestone uses the former 108 deck faces as presentation without making private source material tracked authority or making the rules read pixels.
 
@@ -457,6 +457,8 @@ Acceptance checks:
 - T2 validation includes running the private preparation inventory against all six configured heroes and one targeted 2048-by-1152 Game View inspection showing representative cards from all six heroes without clipping or interaction regression. The completion evidence records that private pixels remained ignored and unstaged; no compatibility digest or schema version moves because presentation resources are not authoritative state.
 
 Non-goals: No card-rule, definition, printed-text, action, command, projection, persistence, replay or network change. No OCR, runtime reading of artwork, mutation of source scans, public asset package, distribution or authorization expansion. No redesign of compact rail lifecycle icons, neutral facedown commitments, hero/dashboard faces, card backs, items, or the fixed card footprint, and no removal of the generated clean-checkout fallback.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f-replace-generated-complete-card-faces-with-the-verified-private-faces-completion-evidence).
 
 ### [!] 8.26 Integrate six-hero director control and team interactions
 

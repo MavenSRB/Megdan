@@ -1422,22 +1422,12 @@ namespace GuardsDigital.Presentation.Match
             // each other and matched nothing else, and a hand of longer sentences was a taller hand.
             // The rules panel takes the slack inside the box instead, which is what keeps the bands of
             // five cards lined up without the box itself moving.
-            CardFootprint.Apply(button);
-            button.style.flexDirection = FlexDirection.Column;
-            button.style.alignItems = Align.Stretch;
-            button.style.justifyContent = Justify.FlexStart;
-            // Milestone 8.5a: the bands run to the card's own edge exactly as a printed card's do, so
-            // the padding that used to inset every line is gone and each band states its own.
-            HudElements.Padding(button, 0f);
+            ConfiguredCardFaceView.Build(button, card);
             button.style.marginLeft = 0f;
             button.style.marginRight = 0f;
             button.style.marginTop = 0f;
             button.style.marginBottom = 0f;
-            button.style.backgroundColor = MatchHudTheme.Face(card.Color);
-            HudElements.Border(button, MatchHudTheme.PanelBorder, 1f, 8f);
             HudElements.MarkSelectedWithoutResizing(button, card.IsSelected);
-
-            button.Add(BuildCardFrame(card));
 
             // Milestone 8.5b: the card sits in a slot, and the slot is what carries the Active-effect
             // outline. It has to be outside the card because the card's own border is the shared
@@ -1502,14 +1492,8 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentNullException(nameof(card));
             }
 
-            var element = new VisualElement { name = "gd-card-preview" };
-            CardFootprint.Apply(element);
-            element.style.flexDirection = FlexDirection.Column;
-            element.style.alignItems = Align.Stretch;
-            element.style.backgroundColor = MatchHudTheme.Face(card.Color);
-            // The same three-pixel edge a tray card wears, so one card does not read as two.
-            HudElements.Border(element, MatchHudTheme.PanelBorder, 3f, 8f);
-            element.Add(BuildCardFrame(card));
+            var element = ConfiguredCardFaceView.Build(
+                new VisualElement { name = "gd-card-preview" }, card);
             element.tooltip = card.AssistiveLabel;
             return element;
         }
@@ -1521,7 +1505,7 @@ namespace GuardsDigital.Presentation.Match
         /// It is a wrapper rather than a second border on the card itself, because on a tray card that
         /// border is the shared selection treatment and must stay free to become the selected outline.
         /// </summary>
-        private static VisualElement BuildCardFrame(TrayCardViewModel card)
+        internal static VisualElement BuildGeneratedCardFrame(TrayCardViewModel card)
         {
             var ink = MatchHudTheme.FaceText(card.Color);
             var frame = new VisualElement { name = "gd-card-frame" };

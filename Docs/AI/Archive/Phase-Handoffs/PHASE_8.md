@@ -409,3 +409,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e5e | A fresh isolated source-first pass read Constrict's whole face and enlarged text regions without OCR, then matched its complete fields across the corrected Xargatha ledger, production provenance/profile, and exact tests. Its canonical hash and the byte-identical 114-front manifest remain unchanged, so every carried result stays current; F-SOURCE-01 is closed and 8.25f is unblocked. No correction, executable content, private pixel, source mutation, artwork preparation, or rights conclusion entered the review. | `44ad27d` |
+
+## Milestone 8.25f Replace generated complete card faces with the verified private faces completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25f | One validated catalog bijectively maps the configured 108 definition references to six private eighteen-front inventories; one local command prepares the ignored Resources set atomically, and one artwork-aware builder serves every complete-face consumer. Prepared fronts are aspect-contained at the unchanged footprint with typed state/lifecycle treatments, while missing, unloadable, clean-checkout, synthetic and facedown paths retain their generated or neutral fallbacks. T2 source, Edit, Play and 2048-by-1152 visual evidence passed; no private pixel, rule, command, schema, revision or compatibility digest moved. | `PENDING` |

@@ -695,7 +695,15 @@ namespace GuardsDigital.Tests.EditMode
         {
             var session = ConfiguredMatchFixtures.CreateSessionWithAFacedownCommitment(out var heroId);
             var view = new HeroOverviewsUnityView();
-            new HeroOverviewsPresenter(session, view).Refresh();
+            var artworkLoads = 0;
+            using (ConfiguredCardArtwork.UseTextureLoader(_ =>
+                   {
+                       artworkLoads++;
+                       return null;
+                   }))
+            {
+                new HeroOverviewsPresenter(session, view).Refresh();
+            }
 
             var committed = view.Model.Heroes.Single(hero => hero.HeroId.Equals(heroId));
             var waiting = view.Model.Heroes.Single(hero => !hero.HeroId.Equals(heroId));
@@ -710,6 +718,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(committed.TurnSlots.Any(slot => slot.IsOccupied), Is.False,
                 "and a commitment is not a resolved turn.");
             Assert.That(waiting.CurrentCard, Is.Null, "The hero who has not responded has nothing yet.");
+            Assert.That(artworkLoads, Is.Zero,
+                "A facedown projection carries no definition identity, so presentation never asks " +
+                "the artwork catalog what front it might be.");
 
             // The committed card really is a card this presenter could have found by location, and its
             // name really is in the director's definition list, so the absence above is a decision.
@@ -2034,6 +2045,181 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
         // The standard card footprint (milestone 8.20c)
         // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void EveryCompleteFaceConsumer_UsesTheOneArtworkAwareBuilder()
+        {
+            var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            try
+            {
+                var requested = new List<string>();
+                var surfaces = new List<(string Name, VisualElement Root, string Control)>();
+                using (ConfiguredCardArtwork.UseTextureLoader(path =>
+                       {
+                           requested.Add(path);
+                           return texture;
+                       }))
+                {
+                    var tray = new DirectorHandsUnityView();
+                    new DirectorHandsPresenter(
+                        ConfiguredMatchFixtures.CreateVerifiedMirrorSession(), tray).Refresh();
+                    surfaces.Add(("the ordinary tray", tray.Root, "gd-card-choice"));
+
+                    var preview = new VisualElement();
+                    preview.Add(DirectorHandsUnityView.BuildStandaloneCard(
+                        CurrentRoundCards.DeckCard(
+                            new CardInstanceId("artwork-preview"),
+                            WaspCardContent.Definition(WaspCardContent.Shock))));
+                    surfaces.Add(("a direct complete-face preview", preview, "gd-card-preview"));
+
+                    var defense = new RoundActionUnityView();
+                    new RoundActionPresenter(
+                        ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse(), defense)
+                        .Refresh();
+                    surfaces.Add(("p.14's Defense response", defense.Root, "gd-defense-card"));
+
+                    var upgrade = new RoundActionUnityView();
+                    new RoundActionPresenter(
+                        ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _),
+                        upgrade).Refresh();
+                    surfaces.Add(("p.15's Upgrade a Card", upgrade.Root, "gd-upgrade-option"));
+
+                    var chooser = new RoundActionUnityView();
+                    new RoundActionPresenter(SessionAwaitingACardValuedEffectChoice(), chooser)
+                        .Refresh();
+                    surfaces.Add(("a card-valued effect choice", chooser.Root, "gd-effect-card"));
+
+                    var resolvedSession =
+                        ConfiguredMatchFixtures.CreateSessionWithADiscardedCard(out _);
+                    var turnSlot = new HeroOverviewsUnityView();
+                    new HeroOverviewsPresenter(resolvedSession, turnSlot).Refresh();
+                    turnSlot.ForwardTurnSlotHighlight(turnSlot.Model.Heroes
+                        .SelectMany(hero => hero.TurnSlots).First(slot => slot.IsOccupied));
+                    surfaces.Add(("a revealed turn-slot preview", turnSlot.Root, "gd-turn-slot-preview"));
+
+                    var discard = new HeroOverviewsUnityView();
+                    new HeroOverviewsPresenter(resolvedSession, discard).Refresh();
+                    discard.ForwardDiscardCardHighlight(discard.Model.Heroes
+                        .SelectMany(hero => hero.DiscardCards).First());
+                    surfaces.Add(("a discard-entry preview", discard.Root, "gd-turn-slot-preview"));
+
+                    var current = new HeroOverviewsUnityView();
+                    new HeroOverviewsPresenter(
+                        ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn(), current)
+                        .Refresh();
+                    current.ForwardCurrentCardHighlight(current.Model.Heroes
+                        .Select(hero => hero.CurrentCard).First(card => card != null));
+                    surfaces.Add(("a current-card preview", current.Root, "gd-turn-slot-preview"));
+
+                    var ultimate = new HeroOverviewsUnityView();
+                    new HeroOverviewsPresenter(
+                        ConfiguredMatchFixtures.CreateVerifiedMirrorInRadiusOfAMinion(
+                            MatchConfiguration.CreateVerifiedTierThreeMirrorForInternalTest(
+                                TeamSide.Red),
+                            out _, out _, out _),
+                        ultimate).Refresh();
+                    ultimate.ForwardDiscardCardHighlight(ultimate.Model.Heroes
+                        .Select(hero => hero.UltimateCard).First(card => card != null));
+                    surfaces.Add(("an unlocked-Ultimate preview", ultimate.Root, "gd-turn-slot-preview"));
+                }
+
+                var artworkCount = 0;
+                foreach (var surface in surfaces)
+                {
+                    Assert.That(
+                        Descendants(surface.Root).Any(element => element.name == surface.Control),
+                        Is.True,
+                        $"{surface.Name} was not actually reached, so its artwork path is unproved.");
+                    var faces = Descendants(surface.Root)
+                        .Where(element =>
+                            element.name == "gd-card-choice" ||
+                            element.name == "gd-card-preview")
+                        .ToArray();
+                    Assert.That(faces, Is.Not.Empty, $"{surface.Name} draws no complete face.");
+                    foreach (var face in faces)
+                    {
+                        Assert.That(face.userData, Is.TypeOf<CardDefinitionReference>(),
+                            $"{surface.Name} did not carry the stable identity consumed by the one " +
+                            "complete-face builder.");
+                        var reference = (CardDefinitionReference)face.userData;
+                        var hasConfiguredArtwork =
+                            ConfiguredCardArtworkCatalog.Catalog.TryGet(reference, out _);
+                        Assert.That(
+                            Descendants(face).Count(element => element.name == "gd-card-artwork"),
+                            Is.EqualTo(hasConfiguredArtwork ? 1 : 0),
+                            $"{surface.Name} bypassed or duplicated the shared per-card " +
+                            "artwork/fallback decision.");
+                        Assert.That(
+                            Descendants(face).Count(element => element.name == "gd-card-frame"),
+                            Is.EqualTo(1),
+                            $"{surface.Name} bypassed or duplicated the shared face construction.");
+                        AssertIsTheStandardFootprint(face, surface.Name);
+                        if (hasConfiguredArtwork)
+                        {
+                            artworkCount++;
+                        }
+                    }
+                }
+
+                Assert.That(requested, Has.Count.EqualTo(artworkCount),
+                    "Each complete face performs one identity-to-resource lookup, with no second " +
+                    "surface-specific artwork path.");
+                Assert.That(
+                    requested.All(path => path.StartsWith(
+                        "Private/Cards/", StringComparison.Ordinal)),
+                    Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
+        public void ArtworkFaces_KeepSelectionUnavailableActiveAndLifecycleTreatmentsReadable()
+        {
+            var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            try
+            {
+                using (ConfiguredCardArtwork.UseTextureLoader(_ => texture))
+                {
+                    var selectedSession = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+                    var selectedView = new DirectorHandsUnityView();
+                    var selectedPresenter = new DirectorHandsPresenter(selectedSession, selectedView);
+                    selectedPresenter.Refresh();
+                    var selectedCard = selectedView.Model.ViewedHand.TrayCards.First(card =>
+                        card.IsSelectable);
+                    Assert.That(selectedPresenter.SelectCommitmentCard(selectedCard.CardInstanceId),
+                        Is.True);
+                    var selected = Descendants(selectedView.Root)
+                        .Single(element => element.name == "gd-card-choice" &&
+                            element.tooltip.Contains(selectedCard.DisplayName));
+                    Assert.That(selected.style.borderTopColor.value,
+                        Is.EqualTo(MatchHudTheme.SelectedOutline));
+                    Assert.That(selected.style.borderTopWidth.value, Is.EqualTo(3f),
+                        "Selection changes colour, never the fixed artwork footprint.");
+
+                    var discardedView = new DirectorHandsUnityView();
+                    new DirectorHandsPresenter(
+                        ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn(),
+                        discardedView).Refresh();
+                    var unavailableCard = discardedView.Model.ViewedHand.TrayCards.First(card =>
+                        !card.IsSelectable && !card.IsResolving);
+                    var unavailable = Descendants(discardedView.Root)
+                        .Where(element => element.name == "gd-card-choice")
+                        .Single(element => element.tooltip.Contains(unavailableCard.DisplayName));
+                    Assert.That(unavailable.enabledSelf, Is.False);
+                    Assert.That(unavailable.style.opacity.value, Is.EqualTo(0.45f));
+                    Assert.That(Descendants(unavailable)
+                        .Single(element => element.name == "gd-card-history"), Is.Not.Null,
+                        "The disabled treatment leaves its lifecycle word on the artwork face.");
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
 
         /// <summary>
         /// Every surface that draws a complete card face draws it at the one shared footprint.

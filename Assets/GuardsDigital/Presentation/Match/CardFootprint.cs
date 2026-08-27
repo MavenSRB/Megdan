@@ -37,7 +37,10 @@ namespace GuardsDigital.Presentation.Match
         /// Milestone 8.5a's width, unchanged: five of these plus their gutters leave the tray's
         /// 1280-pixel bound comfortable, which is what p.6's five-card hand needs from a single row.
         /// </summary>
-        public const float Width = 186f;
+        public const float StandardWidth = 186f;
+
+        /// <summary>Compatibility name for the standard width.</summary>
+        public const float Width = StandardWidth;
 
         /// <summary>
         /// Every complete card face is this tall - an exact height, not a floor.
@@ -66,7 +69,10 @@ namespace GuardsDigital.Presentation.Match
         /// real and is now a matter of the window's <em>shape</em> - a panel shorter than about 913
         /// reference units cannot hold a whole face - rather than of its pixel count.</para>
         /// </summary>
-        public const float Height = 420f;
+        public const float StandardHeight = 420f;
+
+        /// <summary>Compatibility name for the standard height.</summary>
+        public const float Height = StandardHeight;
 
         /// <summary>
         /// The one way a full-card surface takes this footprint: the exact box, pinned at both ends,

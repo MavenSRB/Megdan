@@ -216,6 +216,7 @@ namespace GuardsDigital.Presentation.Match
     {
         public TrayCardViewModel(
             CardInstanceId cardInstanceId,
+            CardDefinitionReference definitionReference,
             string displayName,
             CardColor color,
             TrayCardFaceViewModel face,
@@ -244,6 +245,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             CardInstanceId = cardInstanceId;
+            DefinitionReference = definitionReference;
             DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
             Color = color;
             Face = face ?? throw new ArgumentNullException(nameof(face));
@@ -276,6 +278,13 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public CardInstanceId CardInstanceId { get; }
+
+        /// <summary>
+        /// The immutable projected identity that selects optional presentation artwork. It does not
+        /// replace any typed face content and may be undefined only for the existing missing-definition
+        /// fallback shape.
+        /// </summary>
+        public CardDefinitionReference DefinitionReference { get; }
         public string DisplayName { get; }
         public CardColor Color { get; }
         public string ColorName { get; }
@@ -1143,6 +1152,7 @@ namespace GuardsDigital.Presentation.Match
                 .FirstOrDefault(value => value.Reference.Equals(card.DefinitionReference));
             return new TrayCardViewModel(
                 card.Id,
+                card.DefinitionReference,
                 definition?.DisplayName ?? card.Id.Value,
                 definition?.Progression.Color ?? CardColor.None,
                 ReadFace(definition),
@@ -1170,6 +1180,7 @@ namespace GuardsDigital.Presentation.Match
             CardInstanceId cardInstanceId, CardDefinition definition) =>
             new TrayCardViewModel(
                 cardInstanceId,
+                definition?.Reference ?? default,
                 definition?.DisplayName ?? cardInstanceId.Value,
                 definition?.Progression.Color ?? CardColor.None,
                 ReadFace(definition),
