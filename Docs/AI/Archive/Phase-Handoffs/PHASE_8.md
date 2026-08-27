@@ -362,6 +362,11 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.25e2 | The 27-leaf F-DOC-01 inventory states roster-complete truth or explicit historical/source-unverified status, and one non-vacuous validator check binds every registered claim to its owner, evidence, and reassessment trigger. | `bd9c81f` |
 
+## Milestone 8.25e3 Make Unity validation require fresh green evidence completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+
 ## Milestone 8.25e Perform the repeat that was offered, or stop offering it completion evidence
 
 | ID | Outcome | Commit |

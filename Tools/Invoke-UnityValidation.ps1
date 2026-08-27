@@ -3,6 +3,8 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
+. (Join-Path $PSScriptRoot 'UnityValidationEvidence.ps1')
+
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $requestPath = [System.IO.Path]::Combine($projectRoot, 'tmp', 'unity-validation-request.json')
 
@@ -108,6 +110,9 @@ if ($request.platform -notin @('EditMode', 'PlayMode')) {
 
 $resultsPath = Resolve-ProjectOutputPath -RelativePath ([string] $request.results) -FieldName 'results'
 $logPath = Resolve-ProjectOutputPath -RelativePath ([string] $request.log) -FieldName 'log'
+if ([string]::Equals($resultsPath, $logPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw 'results and log must resolve to different files.'
+}
 $filter = [string] $request.filter
 $batchMode = -not ($request.PSObject.Properties.Name -contains 'batchMode') -or [bool] $request.batchMode
 
@@ -160,8 +165,12 @@ if (-not [string]::IsNullOrWhiteSpace($filter)) {
     $unityArguments += @('-testFilter', $filter)
 }
 
-$process = Start-Process -FilePath $unityPath -ArgumentList $unityArguments -Wait -PassThru -WindowStyle Hidden
+$process = Invoke-UnityValidationProcessAndRequireEvidence `
+    -UnityPath $unityPath `
+    -UnityArguments $unityArguments `
+    -ResultsPath $resultsPath `
+    -LogPath $logPath
 Write-Output "Unity validation exit code: $($process.ExitCode)"
 Write-Output "Results: $resultsPath"
 Write-Output "Log: $logPath"
-exit $process.ExitCode
+exit 0

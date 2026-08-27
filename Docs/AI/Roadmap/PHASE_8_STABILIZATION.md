@@ -4,7 +4,7 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization and corrective route
 
-**Corrective scheduling amendments, 2026-08-27, user approved.** Milestones 8.25e2-8.25e5, targeted hardening 8.25e4a-8.25e4b, and the three-part 8.25e6 governance-design study are scheduled from the user's dispositions after 8.25e1. Scheduling is not implementation authorization: each milestone still requires exact approval. The shortest route to real card faces remains **8.25e2 -> 8.25e3 -> 8.25e5 -> 8.25f**. Milestone 8.25e4 may run once 8.25e3 closes and is additionally required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline. If 8.25e5 finds a discrepancy, 8.25f and 8.26 remain blocked through its separately approved correction and a separately numbered, approved fresh-task independent verification milestone scheduled after the last correction.
+**Corrective scheduling amendments, 2026-08-27, user approved.** Milestones 8.25e2-8.25e5, targeted hardening 8.25e4a-8.25e4b, and the three-part 8.25e6 governance-design study are scheduled from the user's dispositions after 8.25e1. Scheduling is not implementation authorization: each milestone still requires exact approval. With 8.25e2-8.25e3 closed, the shortest remaining route to real card faces is **8.25e5 -> 8.25f**. Milestone 8.25e4 is now unblocked and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline. If 8.25e5 finds a discrepancy, 8.25f and 8.26 remain blocked through its separately approved correction and a separately numbered, approved fresh-task independent verification milestone scheduled after the last correction.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
@@ -63,7 +63,7 @@ Non-goals: No runtime, rule, automated game-test, launcher, asset, schema, or ac
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e2-restore-operative-documentation-to-roster-complete-truth-completion-evidence).
 
-### [ ] 8.25e3 Make Unity validation require fresh green evidence
+### [x] 8.25e3 Make Unity validation require fresh green evidence
 
 Blocked by: milestone 8.25e2, so the testing policy and current setup claims are true before the launcher is made to enforce them. This milestone closes B2/F-VALIDATION-01.
 
@@ -83,6 +83,8 @@ Acceptance checks:
 - This is shared validation infrastructure and therefore T3: run the focused fake-process contract first, then both complete unfiltered Unity suites serially through the corrected parameterless launcher at the final revision, followed by the living-document validator and `git diff --check`.
 
 Non-goals: No NUnit alignment, split-assembly experiment, harness-exclusion reduction, gameplay or test-content change, licensing-policy redesign, direct Unity invocation, accepted skip/inconclusive result, or output outside `tmp/`.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e3-make-unity-validation-require-fresh-green-evidence-completion-evidence).
 
 ### [!] 8.25e4 Close decision-family ownership and removal-prevention reachability
 
