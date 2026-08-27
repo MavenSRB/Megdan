@@ -47,7 +47,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="BroganCardContent.ContentRevision"/> has: it moves when Sabina's content changes.
         /// </summary>
-        public const string ContentRevision = "sabina-8-22-rev-1";
+        public const string ContentRevision = "sabina-8-25e5b-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat
@@ -215,7 +215,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 SabinaPrimaryKind.RangedAttack, 2, PrintedValueChannel.Range, 1,
                 CardProgressionProfile.BasicCard(CardColor.Gold),
                 "Target a unit in range. After the attack: If the target is adjacent to you, push it " +
-                "1 space. ( A unit pushed into an obstacle will stop. This is a valid push. )",
+                "1 space. (A unit pushed into an obstacle will stop. This is a valid push.)",
                 PrintedTextComposition.None),
 
             // p.20's Handicap card, deferred exactly as Wasp's Crackling Dagger, Arien's Ceremonial

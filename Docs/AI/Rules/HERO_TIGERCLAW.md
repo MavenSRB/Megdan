@@ -31,7 +31,7 @@ The pitch uses Tigerclaw's complete progression. Its implementation-grade invent
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces and the Poison marker are transcribed and capability-mapped; eighteen playable definitions plus the marker are composed, dealt, and pass Tigerclaw's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5 independently reread all nineteen private fronts: fifteen reconcile, while Blink Strike, Backstab, and Blend Into Shadows carry literal transcription/provenance differences and Nimble Strike's printed colour icon conflicts with its yellow/Gold design. Milestone 8.25e5a resolved only that authority question: pp.9 and 20 make Nimble Strike a Gold Basic Handicap and its printed `G` a source printing error. Typed rule behavior is unaffected, but F-SOURCE-01 stays open through milestones 8.25e5b-8.25e5c; the hash-pinned findings are addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence).
+Current status: **all nineteen faces and the Poison marker are transcribed and capability-mapped; eighteen playable definitions plus the marker are composed, dealt, and pass Tigerclaw's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5b corrected Blink Strike, Backstab, and Blend Into Shadows at `tigerclaw-8-25e5b-rev-1` and applied 8.25e5a's authority answer without changing typed behavior: Nimble Strike remains a Gold Basic Handicap whose printed `G` is recorded as a source error. F-SOURCE-01 stays open only for 8.25e5c's fresh verification; the hash-pinned findings are addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence).
 
 ## Tigerclaw source faces
 
@@ -112,12 +112,12 @@ written as bracketed words.
 
 | Card | Printed text |
 | --- | --- |
-| Blink Strike | Before the attack: Move 2 spaces in a straight line through an enemy unit; target that unit. *(If you cannot make this move, you cannot attack.)* |
+| Blink Strike | Before the attack: Move 2 spaces in a straight line through an enemy unit; target that unit. *(If you cannot make this move, you cannot attack).* |
 | Nimble Strike | Before the attack: Move 2 spaces in a straight line through an enemy hero; target that hero. |
 | Blend Into Shadows | If you are adjacent to terrain, place yourself into a space in radius; if you do, **Next turn:** You are immune to enemy attack actions. |
 | Hit and Run | Target a unit adjacent to you. After the attack: You may move 1 space. |
 | Combat Reflexes | Before the attack: You may move 1 space. Target a unit adjacent to you. After the attack: If you did not move before the attack, you may move 1 space. |
-| Backstab | Target a unit adjacent to you; If a friendly unit is adjacent to the target, +2 [Attack] Attack. *(A "friendly unit" is another hero or a minion on your team.)* |
+| Backstab | Target a unit adjacent to you; If a friendly unit is adjacent to the target, +2 [Attack] Attack. *(A “friendly unit” is another hero or a minion on your team).* |
 | Leaping Strike | Before the attack: You may move 1 space. Target a unit adjacent to you. After the attack: You may move 1 space. |
 | Backstab with a Ballista | Target a unit in range; If a friendly unit is adjacent to the target +2 [Attack] Attack and the target cannot perform a primary action to defend. |
 | Dodge | Block a ranged attack. |

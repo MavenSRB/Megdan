@@ -4,7 +4,7 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization and corrective route
 
-**Corrective scheduling amendments, 2026-08-27.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a has resolved the authority question from published source. Scheduling is not implementation authorization. The shortest remaining route to real card faces is **8.25e5b -> 8.25e5c -> 8.25f**. Milestone 8.25e4 is ready and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline.
+**Corrective scheduling amendments, 2026-08-27.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the corrections. Scheduling is not implementation authorization. The shortest remaining route to real card faces is **8.25e5c -> 8.25f**. Milestone 8.25e4 is ready and remains required before 8.26, not before art-only 8.25f. Milestones 8.25e4a-8.25e4b then harden the decision seam and future foundation claims; they do not gate 8.25f or 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.25f and 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
@@ -186,7 +186,7 @@ Non-goals: No card text, definition, content revision, test, snapshot, runtime, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5a-resolve-nimble-strikes-conflicting-printed-membership-mark-completion-evidence).
 
-### [ ] 8.25e5b Correct the eleven literal transcriptions and apply the approved Nimble Strike disposition
+### [x] 8.25e5b Correct the eleven literal transcriptions and apply the approved Nimble Strike disposition
 
 Depends on completed milestone 8.25e5a, so every correction is made against its recorded source answer: Nimble Strike is a Gold Basic Handicap and the printed `G` colour icon is a source printing error. This milestone requires separate exact approval and blocks 8.25e5c.
 
@@ -202,9 +202,11 @@ Acceptance checks:
 
 Non-goals: No gameplay-rule, action/effect, numeric value, candidate, setup membership beyond the approved Nimble disposition, command/event, projection, snapshot schema, scene-layout, real-art preparation, source-image, or unrelated transcription change; no blanket punctuation/formatting normalizer; and no claim that passing mirrors replace visual verification.
 
-### [!] 8.25e5c Freshly verify the corrected twelve source fields and close F-SOURCE-01
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5b-correct-the-eleven-literal-transcriptions-completion-evidence).
 
-Blocked by: milestone 8.25e5b. Run in a fresh task by a reviewer who performed none of 8.25e5, 8.25e5a, or 8.25e5b and did not receive their source readings before sealing this pass. This milestone requires separate exact approval.
+### [ ] 8.25e5c Freshly verify the corrected twelve source fields and close F-SOURCE-01
+
+Depends on completed milestone 8.25e5b. Run in a fresh task by a reviewer who performed none of 8.25e5, 8.25e5a, or 8.25e5b and did not receive their source readings before sealing this pass. This milestone requires separate exact approval.
 
 Observable outcome: an independent source-first reread proves whether all twelve affected faces now agree with their ledger, production provenance, definition data, and exact regressions; F-SOURCE-01 closes only on a clean result.
 

@@ -43,7 +43,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="SabinaCardContent.ContentRevision"/> has: it moves when Tigerclaw's content does.
         /// </summary>
-        public const string ContentRevision = "tigerclaw-8-23-rev-1";
+        public const string ContentRevision = "tigerclaw-8-25e5b-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat
@@ -214,7 +214,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 TigerclawPrimaryKind.Attack, 3, PrintedValueChannel.None, 0,
                 CardProgressionProfile.BasicCard(CardColor.Gold),
                 "Before the attack: Move 2 spaces in a straight line through an enemy unit; target " +
-                "that unit. ( If you cannot make this move, you cannot attack. )",
+                "that unit. (If you cannot make this move, you cannot attack).",
                 PrintedTextComposition.None,
                 bindsTargetInCardText: true),
 
@@ -242,7 +242,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 TigerclawPrimaryKind.Skill, 0, PrintedValueChannel.Radius, 2,
                 CardProgressionProfile.BasicCard(CardColor.Silver),
                 "If you are adjacent to terrain, place yourself into a space in radius; if you do, " +
-                "**Next turn:** You are immune to enemy attack actions.",
+                "Next turn: You are immune to enemy attack actions.",
                 PrintedTextComposition.None),
 
             // The Red line. Hit and Run, Combat Reflexes and Leaping Strike are one family of optional
@@ -278,7 +278,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Red, CardTier.II, PrintedValueChannel.Defense,
                     LeapingStrike, BackstabWithABallista),
                 "Target a unit adjacent to you; If a friendly unit is adjacent to the target, +2 " +
-                "[Attack] Attack. ( A \"friendly unit\" is another hero or a minion on your team. )",
+                "[Attack] Attack. (A “friendly unit” is another hero or a minion on your team).",
                 PrintedTextComposition.None,
                 raisedAttack: 2),
 

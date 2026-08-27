@@ -434,11 +434,11 @@ Non-goals: No change to Attack, Skill or Movement repeats, to the after-action h
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e-perform-the-repeat-that-was-offered-or-stop-offering-it-completion-evidence).
 
-Milestones **8.25e1-8.25e6c** are defined in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). Milestone 8.25e5 scheduled its authority, correction, and fresh-verification route; 8.25e5a resolved authority, while 8.25e5b-8.25e5c remain pending and approvable.
+Milestones **8.25e1-8.25e6c** are defined in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). Milestone 8.25e5 scheduled its authority, correction, and fresh-verification route; 8.25e5a resolved authority and 8.25e5b applied the corrections, while 8.25e5c remains pending and approvable.
 
 ### [!] 8.25f Replace generated complete card faces with the verified private faces
 
-Blocked by: F-SOURCE-01 remains open on twelve fields. Milestones 8.25e5b-8.25e5c must apply the authority disposition, correct them, and independently reverify them before this art milestone.
+Blocked by: F-SOURCE-01 remains open pending 8.25e5c's independent verification of the twelve corrected/dispositioned fields.
 
 Proposed at the user's direction on 2026-08-26. The six configured heroes already have 108 verified definitions and one shared `CardFootprint`, but every complete face the UI draws is still reconstructed from typed content by `ConfiguredCardFaceView.Build`. The private Tabletopia corpus has nineteen action-card fronts for each configured hero: the eighteen-card deck plus the p.20 Handicap card that setup returns to the box. This milestone uses the former 108 deck faces as presentation without making private source material tracked authority or making the rules read pixels.
 
@@ -460,7 +460,7 @@ Non-goals: No card-rule, definition, printed-text, action, command, projection, 
 
 ### [!] 8.26 Integrate six-hero director control and team interactions
 
-Blocked by: 8.25e4 and F-SOURCE-01. Milestones 8.25e5b-8.25e5c own the remaining source correction and verification; 8.25e4 blocks this driver milestone, not art-only 8.25f.
+Blocked by: 8.25e4 and F-SOURCE-01. Milestone 8.25e5c owns the remaining fresh source verification; 8.25e4 blocks this driver milestone, not art-only 8.25f.
 
 Observable outcome: One director can play and resolve a complete turn for all six independently owned heroes while the rules preserve normal 3v3 ownership, Initiative, target, assist, reaction, and team relationships.
 

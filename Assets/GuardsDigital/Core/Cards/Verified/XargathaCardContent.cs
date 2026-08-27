@@ -44,7 +44,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <see cref="TigerclawCardContent.ContentRevision"/> has: it moves when Xargatha's content
         /// does.
         /// </summary>
-        public const string ContentRevision = "xargatha-8-24-rev-1";
+        public const string ContentRevision = "xargatha-8-25e5b-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat
@@ -321,8 +321,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Blue, CardTier.I, PrintedValueChannel.None,
                     PetrifyingStare, FreshConverts),
-                "**Next turn:** Enemy heroes in radius count as both heroes and terrain, and cannot " +
-                "perform movement actions. ( If you move, the radius \"moves\" with you. )",
+                "Next turn: Enemy heroes in radius count as both heroes and terrain, and cannot " +
+                "perform movement actions. ( If you move, the radius “moves” with you. )",
                 PrintedTextComposition.None),
 
             new XargathaCardProfile(
@@ -331,7 +331,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Blue, CardTier.II, PrintedValueChannel.Defense,
                     TurnIntoStatues, DevotedFollowers),
-                "**Next turn:** Enemy heroes in radius count as both heroes and terrain, and cannot " +
+                "Next turn: Enemy heroes in radius count as both heroes and terrain, and cannot " +
                 "perform movement actions.",
                 PrintedTextComposition.None),
 
@@ -351,7 +351,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 XargathaPrimaryKind.Skill, 0, PrintedValueChannel.Radius, 4,
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Blue, CardTier.III, PrintedValueChannel.Defense),
-                "**Next turn:** Enemy heroes in radius count as both heroes and terrain, and cannot " +
+                "Next turn: Enemy heroes in radius count as both heroes and terrain, and cannot " +
                 "perform movement actions.",
                 PrintedTextComposition.None),
 
@@ -396,7 +396,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Green, CardTier.II, PrintedValueChannel.Initiative,
                     Dominate, FinalEmbrace),
-                "**End of round:** Defeat an enemy melee minion adjacent to you. ( Before the end of " +
+                "End of round: Defeat an enemy melee minion adjacent to you. ( Before the end of " +
                 "round minion battle. )",
                 PrintedTextComposition.None),
 
@@ -414,7 +414,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 XargathaPrimaryKind.Skill, 0, PrintedValueChannel.None, 0,
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Green, CardTier.III, PrintedValueChannel.Initiative),
-                "**End of round:** Defeat an enemy melee or ranged minion adjacent to you.",
+                "End of round: Defeat an enemy melee or ranged minion adjacent to you.",
                 PrintedTextComposition.None),
 
             // p.16's permanent ability, and the first verified Ultimate that is a standing declaration

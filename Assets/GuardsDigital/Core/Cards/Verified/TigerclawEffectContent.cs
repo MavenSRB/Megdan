@@ -299,7 +299,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// line and then a unit that is not on it.</para>
         ///
         /// <para><b>Every step is mandatory, and the printed reminder is why that matters.</b> Blink
-        /// Strike prints "( If you cannot make this move, you cannot attack. )", which is p.10's own
+        /// Strike prints "(If you cannot make this move, you cannot attack).", which is p.10's own
         /// rule for a mandatory step restated rather than an exception - so the reminder composes to
         /// nothing and the policy carries the meaning. A board with no such line stops the action at
         /// this step, and p.10 skips the rest, which is the Attack.</para>

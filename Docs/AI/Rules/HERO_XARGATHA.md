@@ -31,7 +31,7 @@ The pitch uses Xargatha's complete progression. Its implementation-grade invento
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5 independently reread all nineteen private fronts: twelve reconcile, while Cleave, Dangerous Slash, Stone Gaze, Petrifying Stare, Turn Into Statues, Constrict, and Final Embrace carry literal ledger and/or production-provenance differences. Typed rule behavior is unaffected, but five production transcriptions also make formatting notation player-visible. F-SOURCE-01 stays open through milestones 8.25e5b-8.25e5c; the hash-pinned findings are addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence).
+Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Xargatha's permanent player-path gate**. Production definitions, components, and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5b corrected the seven independently found ledger and/or provenance strings at `xargatha-8-25e5b-rev-1`, removing literal presentation notation without changing typed behavior. F-SOURCE-01 stays open only for 8.25e5c's fresh verification; the hash-pinned findings are addressed from the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5-independently-verify-the-six-pitch-heroes-114-private-fronts-completion-evidence).
 
 ## Xargatha source faces and components
 
@@ -114,15 +114,15 @@ sentence it is written here as the bracketed word the icon stands for.
 
 | Card | Printed text |
 | --- | --- |
-| Cleave | Target a unit adjacent to you. After the attack: May repeat once on a different enemy hero. *(You may repeat even if the original target was a minion.)* |
+| Cleave | Target a unit adjacent to you. After the attack: May repeat once on a different enemy hero. *( You may repeat even if the original target was a minion. )* |
 | Desperate Cleave | Target a hero adjacent to you. After the attack: May repeat once on a different enemy hero. |
 | Siren's Call | Target an enemy unit not adjacent to you and in range; if able, move the target up to 3 spaces to a space adjacent to you. |
-| Dangerous Slash | Target a unit adjacent to you. +1 [Attack] Attack for each other enemy unit adjacent to you. *(Do not count the target when calculating the attack bonus.)* |
+| Dangerous Slash | Target a unit adjacent to you. +1 [Attack] Attack for each other enemy unit adjacent to you. *( Do not count the target when calculating the attack bonus. )* |
 | Deadly Swipe | Target a unit adjacent to you. +2 [Attack] Attack for each other enemy unit adjacent to you. |
 | Long Thrust | Target a unit in range; +1 [Range] Range for each enemy unit adjacent to you. |
 | Lethal Spin | Target a unit adjacent to you. +3 [Attack] Attack for each other enemy unit adjacent to you. |
 | Rapid Thrusts | Target a unit in range; +1 [Range] Range for each enemy unit adjacent to you. May repeat once on a different enemy hero. |
-| Stone Gaze | **Next turn:** Enemy heroes in radius count as both heroes and terrain, and cannot perform movement actions. *(If you move, the radius "moves" with you.)* |
+| Stone Gaze | **Next turn:** Enemy heroes in radius count as both heroes and terrain, and cannot perform movement actions. *( If you move, the radius “moves” with you. )* |
 | Petrifying Stare | **Next turn:** Enemy heroes in radius count as both heroes and terrain, and cannot perform movement actions. |
 | Fresh Converts | If you are adjacent to an enemy minion, you may retrieve a discarded card. |
 | Turn Into Statues | **Next turn:** Enemy heroes in radius count as both heroes and terrain, and cannot perform movement actions. |

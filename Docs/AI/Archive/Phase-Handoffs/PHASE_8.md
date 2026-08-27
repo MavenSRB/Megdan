@@ -385,3 +385,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e5a | Rulebook p.9 makes Nimble Strike's yellow/Gold design determinative, maps Gold to `D` and Green to `G`, and makes Gold cards Basic; pp.6 and 20 independently preserve its `H` Handicap classification and setup replacement relationship. Reinspection found the other eighteen Tigerclaw icons agree with their design, so Nimble Strike is canonically a Gold Basic Handicap and its lone printed `G` is a source printing error. No code, content, test, setup, progression, artwork, or private source changed; F-SOURCE-01 remains open for 8.25e5b correction and 8.25e5c fresh verification. | `0df6fd7` |
+
+## Milestone 8.25e5b Correct the eleven literal transcriptions completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25e5b | Eleven independently found literal fields now agree across their owning hero ledgers and `CardSourceContent`; Sabina, Tigerclaw, and Xargatha advanced content revisions together. Nimble Strike remains Gold, Basic, Handicap and setup-excluded with its printed `G` recorded as the approved source error. Typed gameplay, schema v34, compatibility/invariance digests, and private source files are unchanged; F-SOURCE-01 remains open only for 8.25e5c's fresh verification. | `PENDING` |
