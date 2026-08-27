@@ -420,7 +420,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.25e5f1 | Siren's Call now separates its silent `IfAble` wrapper from a positive `UpTo` direct-move budget, offering every legal one-, two-, and three-space path ending adjacent and skipping when no landing exists. Xargatha advances to `xargatha-8-25e5f1-rev-1`; focused Edit/live gates and the complete harness pass without a schema move or fresh source claim. | `pending` |
+| 8.25e5f1 | Siren's Call now separates its silent `IfAble` wrapper from a positive `UpTo` direct-move budget, offering every legal one-, two-, and three-space path ending adjacent and skipping when no landing exists. Xargatha advances to `xargatha-8-25e5f1-rev-1`; focused Edit/live gates and the complete harness pass without a schema move or fresh source claim. | `93925ec` |
 
 ## Milestone 8.25f Replace generated complete card faces with the verified private faces completion evidence
 
