@@ -71,14 +71,16 @@ namespace GuardsDigital.Tests.EditMode
                     panel.x, panel.y, TeamSide.Red);
                 var blue = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
                     panel.x, panel.y, TeamSide.Blue);
+                var statusDock = ConfiguredMatchHudRenderer.CalculateStatusDockRect(panel.x, panel.y);
                 var regions = new (string Name, Rect Rect)[]
                 {
                     ("the status strip",
                         ConfiguredMatchHudRenderer.CalculateStatusBarRect(panel.x, panel.y)),
                     ("the Tie Breaker chip",
                         ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(panel.x, panel.y)),
-                    ("the card tray",
-                        ConfiguredMatchHudRenderer.CalculateCardPanelRect(panel.x, panel.y)),
+                    ("the compact card hand",
+                        ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(panel.x, panel.y)),
+                    ("the fixed status/action dock", statusDock),
                     ("the Red rail column", red),
                     ("the Blue rail column", blue)
                 };
@@ -99,12 +101,15 @@ namespace GuardsDigital.Tests.EditMode
                     }
                 }
 
-                // The other half: the band of board between the two columns, under the status strip and
-                // above the tray, is the player's own surface and nothing on the HUD may take a click
-                // there.
+                // The other half: the band of board to the right of the fixed Director/status lane,
+                // between the two columns, under the status strip and above the tray, is the player's
+                // own surface and nothing on the HUD may take a click there.
                 var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(panel.x, panel.y);
                 var open = Rect.MinMaxRect(
-                    red.xMax, ConfiguredMatchHudRenderer.StatusBarHeight, blue.xMin, tray.yMin);
+                    Mathf.Max(red.xMax, statusDock.xMax),
+                    ConfiguredMatchHudRenderer.StatusBarHeight,
+                    blue.xMin,
+                    tray.yMin);
                 Assert.That(open.width, Is.GreaterThan(0f), $"{device} leaves no board between the rails.");
                 Assert.That(open.height, Is.GreaterThan(0f), $"{device} leaves no board under the strip.");
                 foreach (var point in Interior(open))
@@ -117,6 +122,28 @@ namespace GuardsDigital.Tests.EditMode
                         Is.False,
                         $"At {device} the HUD takes the click at screen position {screenPosition}, " +
                         $"which is panel point {point} - open board between the two rail columns.");
+                }
+
+                // The ordinary tray reserves the full width only for layout. Its empty right side is
+                // visibly map, and therefore must remain map input too. This is the exact lower-screen
+                // path through which the Blue heroes became unreachable when the cards moved left.
+                var fullTray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(panel.x, panel.y);
+                var transparentTray = Rect.MinMaxRect(
+                    ConfiguredMatchHudRenderer.CompactHandRightEdge,
+                    fullTray.yMin,
+                    blue.xMin,
+                    fullTray.yMax);
+                Assert.That(transparentTray.width, Is.GreaterThan(0f));
+                foreach (var point in Interior(transparentTray))
+                {
+                    var screenPosition =
+                        MatchHudPanelScaling.PanelPointToScreen(point, device.x, device.y);
+                    Assert.That(
+                        ConfiguredMatchHudRenderer.StandingRegionsBlockPointerAt(
+                            screenPosition, device.x, device.y),
+                        Is.False,
+                        $"At {device} the transparent right side of the card layout band swallows " +
+                        $"screen position {screenPosition}, panel point {point}.");
                 }
             }
         }
@@ -216,14 +243,36 @@ namespace GuardsDigital.Tests.EditMode
             var red = ConfiguredMatchHudRenderer.CalculateHeroRailRect(width, height, TeamSide.Red);
             var blue = ConfiguredMatchHudRenderer.CalculateHeroRailRect(width, height, TeamSide.Blue);
 
-            // Milestone 8.20c's footprint. One whole card face stands inside the tray region, and five
-            // of them stand on one row - rulebook p.6's hand - which is what the 186 was chosen for.
+            // Milestone 8.25f2's readable footprint. One whole card face stands inside the reserved
+            // bottom band, and rulebook p.6's five-card hand fits one row without horizontal travel.
             Assert.That(CardFootprint.Height, Is.LessThan(tray.height),
                 "A whole card face stands inside the tray at the reference viewport.");
             Assert.That(
-                (5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap)) - DirectorHandsUnityView.CardGap,
+                ConfiguredMatchHudRenderer.CompactHandRightEdge,
                 Is.LessThanOrEqualTo(tray.width),
-                "and p.6's five-card hand still stands on one row of it.");
+                "and the overlapped five-card hand fits inside it without a horizontal scrollbar.");
+
+            var playfield = ConfiguredMatchHudRenderer.CalculatePlayfieldRect(width, height);
+            Assert.That(playfield.yMax, Is.LessThanOrEqualTo(tray.yMin),
+                "The reserved card band starts only after the board playfield ends.");
+            Assert.That(playfield.width,
+                Is.EqualTo(playfield.height * ConfiguredMatchHudRenderer.BoardViewportAspect)
+                    .Within(0.01f),
+                "The map keeps its compact native framing instead of stretching across the whole " +
+                "middle band.");
+            Assert.That(playfield.xMax, Is.LessThanOrEqualTo(blue.xMin - 12f + 0.01f),
+                "The square map is restored to the upper-right corner immediately before the Blue rail.");
+            Assert.That(playfield.xMin, Is.GreaterThan(red.xMax + 12f),
+                "The map leaves the former Director-side area open for round and hand status.");
+            Assert.That(DirectorHandsUnityView.CardGap, Is.LessThanOrEqualTo(6f),
+                "The readable hand uses only a tight gutter between adjacent cards.");
+            Assert.That(tray.height,
+                Is.EqualTo(CardFootprint.Height + 40f).Within(0.01f),
+                "The card band spends 40 reference units on chrome; the hand's " +
+                "status belongs in the open playfield-side dock rather than in a second tray row.");
+            Assert.That(playfield.height, Is.GreaterThanOrEqualTo(900f),
+                "At the reference viewport the separated hand must leave a materially sized board, " +
+                "not merely a positive postage-stamp viewport.");
 
             // Milestone 8.23a's rail width, and the standing product rule that bounds it: both rails
             // together stay under half the panel, so the board remains the dominant surface. It is a
@@ -241,16 +290,13 @@ namespace GuardsDigital.Tests.EditMode
                     $"Both rails together take less than half the panel at {device}.");
             }
 
-            // Milestone 8.25's rail column: the whole screen edge from under the status strip to the
-            // bottom margin, which is where rulebook p.6's three heroes a side came from. 1000 at the
-            // reference viewport, as 8.25 measured it, and now that number at every screen of this
-            // shape rather than only on a 1080-line one.
+            // Milestone 8.25f2's rail column: the edge under the status strip and above the reserved
+            // card band. The measured three-rail stack needs about 733 reference units.
             Assert.That(red.height,
-                Is.EqualTo(height - ConfiguredMatchHudRenderer.StatusBarHeight - 24f).Within(0.01f));
-            Assert.That(red.height, Is.EqualTo(1360f).Within(0.01f),
-                "Three rails draw 733 into this column, so it holds rulebook p.6's three a side with " +
-                "room over. The 1000 milestone 8.25 quoted was the same column on a 1080-line screen, " +
-                "which is the size milestone 8.25c found the layout does not fit at.");
+                Is.EqualTo(tray.yMin - (ConfiguredMatchHudRenderer.StatusBarHeight + 24f))
+                    .Within(0.01f));
+            Assert.That(red.height, Is.GreaterThan(733f),
+                "Three measured rails still fit above the enlarged hand.");
             Assert.That(red.height, Is.EqualTo(blue.height).Within(0.01f));
 
             // The status strip is a reference unit too, and the tray clears it.

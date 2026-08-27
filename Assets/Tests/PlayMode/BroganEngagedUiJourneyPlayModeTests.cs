@@ -366,15 +366,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "The performed Basic Skill is the live source of the printed radius lock.");
             yield return PointTrayAt(root, broganId);
             yield return null;
-            var slots = UiPlayer.Descendants(hud.RootElement)
-                .Where(element => element.name == "gd-card-slot" &&
-                    UiPlayer.Descendants(element).Any(child =>
-                        child.name == "gd-card-name" &&
-                        child is UnityEngine.UIElements.Label label && label.text == "BULWARK"))
-                .ToArray();
-            Assert.That(slots, Has.Length.EqualTo(1),
-                "Brogan's own tray must draw the played Bulwark exactly once.");
-            Assert.That(slots[0].resolvedStyle.borderTopColor.a, Is.GreaterThan(0.5f),
+            var slot = UiPlayer.NamedElementWithText(hud, "gd-card-slot", "BULWARK");
+            Assert.That(slot.resolvedStyle.borderTopColor.a, Is.GreaterThan(0.5f),
                 "The card's slot wears the Active-effect outline while the lock lives.");
         }
 

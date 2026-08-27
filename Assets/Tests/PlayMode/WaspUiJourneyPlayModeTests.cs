@@ -489,28 +489,31 @@ namespace GuardsDigital.Tests.PlayMode
                 "The click must have picked the card up, or this proves nothing about selection.");
             AssertEveryTrayCardIsTheStandardFootprint(hud, "the hand with a card picked up");
             var selected = TrayCard(hud, InitiativeEightCardOf(runtime, waspHeroId));
-            Assert.That(selected.worldBound.size, Is.EqualTo(beforeSelection.size),
-                "Selecting a card must not change its size.");
+            Assert.That(selected.worldBound.width,
+                Is.EqualTo(beforeSelection.width).Within(UiPlayer.PixelSnapping()),
+                "Selecting a card must not change its width.");
+            Assert.That(selected.worldBound.height,
+                Is.EqualTo(beforeSelection.height).Within(UiPlayer.PixelSnapping()),
+                "Selecting a card must not change its height.");
 
             selected.Focus();
             yield return null;
-            Assert.That(
-                TrayCard(hud, InitiativeEightCardOf(runtime, waspHeroId)).worldBound.size,
-                Is.EqualTo(beforeSelection.size),
-                "and neither must focusing it.");
+            var focused = TrayCard(hud, InitiativeEightCardOf(runtime, waspHeroId)).worldBound;
+            Assert.That(focused.width,
+                Is.EqualTo(beforeSelection.width).Within(UiPlayer.PixelSnapping()),
+                "Focusing a card must not change its width.");
+            Assert.That(focused.height,
+                Is.EqualTo(beforeSelection.height).Within(UiPlayer.PixelSnapping()),
+                "Focusing a card must not change its height.");
         }
 
         /// <summary>
-        /// Milestone 8.20c's bounded short-viewport fallback, on the live surface: at a short supported
-        /// desktop screen the region holding the cards scrolls and the cards keep their size.
+        /// Milestone 8.25f2's short-landscape proof on the live surface: the reserved full-width band
+        /// keeps all five cards visible at their readable size without a horizontal scrollbar.
         ///
-        /// <para>It is the other half of the standard footprint's bargain. One fixed height for every
-        /// card in the game is only supportable if some screens can show less of the tray rather than a
-        /// smaller card, and this is the screen where that happens: at the short viewport the tray
-        /// region is shorter than one card, so the region's own scroll view is what keeps every card
-        /// reachable - which the journey proves by scrolling to the last card and clicking it.
-        /// Milestone 8.25c changed which window that is and nothing about the rule; see
-        /// <see cref="ShortViewportWidth"/>.</para>
+        /// <para>The fixed card remains the bargain: the panel reserves its height rather than scaling
+        /// it. A wide-short desktop still has ample horizontal room, so the full hand fits one row and
+        /// the last card is reachable without scrolling; see <see cref="ShortViewportWidth"/>.</para>
         ///
         /// <para><b>Why the assertions come after the viewport is restored.</b> This is the one journey
         /// in the suite that shrinks the play view, and every other journey reads its geometry from
@@ -520,7 +523,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// the geometry every later journey runs at.</para>
         /// </summary>
         [UnityTest]
-        public IEnumerator Scene_KeepsTheCardFootprintAtAShortViewportAndScrollsTheRegion()
+        public IEnumerator Scene_KeepsTheCardFootprintAndFitsTheHandAtAShortViewport()
         {
             yield return LoadScene();
             var root = Root();
@@ -552,23 +555,18 @@ namespace GuardsDigital.Tests.PlayMode
                 .Single();
             var content = scroll.contentContainer.worldBound.height;
             var viewport = scroll.contentViewport.worldBound.height;
+            var cardRow = UiPlayer.Descendants(hud.RootElement)
+                .Single(element => element.name == "gd-card-buttons");
             var sizes = UiPlayer.Descendants(hud.RootElement)
                 .Where(element => element.name == "gd-card-choice")
                 .Select(element => element.worldBound.size)
                 .ToArray();
 
-            // Reachability, before anything is judged: the last card in the row is scrolled to and
-            // clicked through the real panel, which is what "bounded scrolling keeps every card
-            // reachable" means when the region cannot show them all at once.
             var last = UiPlayer.Descendants(hud.RootElement)
                 .Last(element => element.name == "gd-card-choice");
-            UiPlayer.EnsureVisible(last);
-            yield return null;
-            var reached = UiPlayer.Descendants(hud.RootElement)
-                .Last(element => element.name == "gd-card-choice");
-            var reachedIsClickable = UiPlayer.IsShown(reached) && reached.enabledInHierarchy;
+            var reachedIsClickable = UiPlayer.IsShown(last) && last.enabledInHierarchy;
 
-            yield return UiPlayer.CaptureGameView("8-20c", "short-viewport-scrolls-rather-than-resizing");
+            yield return UiPlayer.CaptureGameView("8-25f2", "short-viewport-fits-without-horizontal-scroll");
 
             UiPlayer.SetPlayerViewport(
                 restoreWidth, restoreHeight, "8.20c restore the viewport this session was running at");
@@ -589,14 +587,21 @@ namespace GuardsDigital.Tests.PlayMode
                     "and the same height - what gives on a short screen is the region, not the card.");
             }
 
-            Assert.That(region.height, Is.LessThan(CardFootprint.Height + 40f),
-                "The short viewport is the case this rule is about: the region cannot comfortably " +
-                "hold a whole card.");
-            Assert.That(content, Is.GreaterThan(viewport),
-                "so its scroll view has more content than it can show, which is the bounded scroll " +
-                "that replaces resizing the cards.");
+            Assert.That(region.height,
+                Is.EqualTo(CardFootprint.Height + 40f).Within(UiPlayer.PixelSnapping()),
+                "The reserved short-landscape band comfortably holds a whole card.");
+            Assert.That(scroll.mode, Is.EqualTo(UnityEngine.UIElements.ScrollViewMode.Vertical),
+                "No horizontal scrollbar or horizontal scrolling path is present.");
+            Assert.That(scroll.horizontalScrollerVisibility,
+                Is.EqualTo(UnityEngine.UIElements.ScrollerVisibility.Hidden));
+            Assert.That(scroll.verticalScrollerVisibility,
+                Is.EqualTo(UnityEngine.UIElements.ScrollerVisibility.Hidden));
+            Assert.That(content, Is.LessThanOrEqualTo(viewport + UiPlayer.PixelSnapping()),
+                "The ordinary hand does not need vertical travel at this supported short viewport.");
+            Assert.That(cardRow.worldBound.xMax, Is.LessThanOrEqualTo(region.xMax + 0.5f),
+                "All five cards fit inside the full-width band.");
             Assert.That(reachedIsClickable, Is.True,
-                "and the last card in the row is still shown and pressable after scrolling to it.");
+                "and the last card in the row is shown and pressable without scrolling to it.");
             Assert.That((uint)Screen.width, Is.EqualTo(restoreWidth),
                 "The viewport this session was running at is restored before this journey ends, " +
                 "because every other journey reads its geometry from whatever size is left behind.");
@@ -617,7 +622,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// window resolve to the same rectangle.</para>
         ///
         /// <para>The facts are collected before the viewport is restored and judged afterwards, for the
-        /// reason <see cref="Scene_KeepsTheCardFootprintAtAShortViewportAndScrollsTheRegion"/> gives:
+        /// reason <see cref="Scene_KeepsTheCardFootprintAndFitsTheHandAtAShortViewport"/> gives:
         /// every other journey reads its geometry from whatever size this one leaves behind.</para>
         /// </summary>
         [UnityTest]
@@ -687,16 +692,15 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// The short supported desktop viewport milestone 8.20c states the bounded-scroll fallback at.
+        /// The short supported landscape desktop viewport used to prove the reserved band.
         ///
         /// <para><b>Milestone 8.25c moved it, because the rule it is for stopped being about a pixel
         /// count.</b> It was 1280x720 - the smallest screen this project's HUD arithmetic used to be
         /// written against - and under a scaled panel every 16:9 window resolves to the reference
         /// rectangle, where a whole card face fits comfortably. The case 8.20c's rule is about is a
-        /// panel too short to hold one, and on a scaled panel that is a fact about the window's
-        /// <em>shape</em>: 2560x540 is a short window on a wide monitor, it resolves to a panel about
-        /// 3724 by 785, and 0.46 of 785 is under the 420 a card face needs. The rule is unchanged;
-        /// what changed is which window reaches it.</para>
+        /// wide-short <em>shape</em>: 2560x540 resolves to a panel about 3724 by 785. Milestone 8.25f2
+        /// reserves a fixed 470-unit band there: one readable 420-unit face plus card chrome, with hand
+        /// and round metadata in the unused lane beside all five cards.</para>
         /// </summary>
         private const uint ShortViewportWidth = 2560;
 

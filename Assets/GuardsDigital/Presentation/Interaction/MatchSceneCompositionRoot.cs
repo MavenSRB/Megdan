@@ -592,6 +592,8 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 hud = gameObject.AddComponent<ConfiguredMatchHudRenderer>();
             }
+            hud.PlayfieldLayoutChanged -= mapView.ConfigureCameraViewport;
+            hud.PlayfieldLayoutChanged += mapView.ConfigureCameraViewport;
 
             runtime = new ConfiguredMatchSceneRuntime(
                 map,
@@ -868,6 +870,10 @@ namespace GuardsDigital.Presentation.Interaction
             if (mapView != null)
             {
                 mapView.ConfiguredMinionViewsChanged -= RebindConfiguredMinionViews;
+                if (hud != null)
+                {
+                    hud.PlayfieldLayoutChanged -= mapView.ConfigureCameraViewport;
+                }
             }
             runtime = null;
             highlightOwner?.Dispose();

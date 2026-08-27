@@ -34,7 +34,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// overflow their scroll, and the 52-pixel board band sits entirely behind the tray, so every
         /// journey assertion about what a player can reach would fail against geometry no player
         /// meets. 1920 by 1080 is the smallest common desktop viewport and comfortably above
-        /// milestone 5.1c's 1280-pixel tray bound. The resize goes through
+        /// the configured HUD's supported desktop viewport. The resize goes through
         /// <c>UnityEditor.PlayModeWindow</c> by reflection because a Play Mode test assembly cannot
         /// reference the Editor assembly; in a built player the type is absent and the viewport is
         /// whatever the player's window is, which is the honest answer there.</para>
@@ -210,16 +210,18 @@ namespace GuardsDigital.Tests.PlayMode
                     : button.text.Replace('\n', ' ')));
 
         /// <summary>
-        /// The shown element named <paramref name="name"/> whose subtree contains a label reading
+        /// The shown element named <paramref name="name"/> whose face or assistive reading carries
         /// <paramref name="text"/> - how a card-shaped control (a tray card, a Defense offer, an
-        /// upgrade candidate) is addressed, since the face carries no single button label.
+        /// upgrade candidate) is addressed, since the face carries no single button label. A generated
+        /// face exposes labels; prepared artwork deliberately exposes the same identity through its
+        /// tooltip instead, so the driver reads either representation without preferring one.
         /// </summary>
         public static VisualElement NamedElementWithText(
             ConfiguredMatchHudRenderer hud, string name, string text)
         {
             var matches = Descendants(hud.RootElement)
                 .Where(candidate => candidate.name == name && IsShown(candidate) &&
-                    Descendants(candidate).OfType<Label>().Any(label => label.text == text))
+                    CarriesText(candidate, text))
                 .ToArray();
             Assert.That(matches, Has.Length.EqualTo(1),
                 $"Expected exactly one shown '{name}' element carrying the text '{text}'.");
@@ -228,11 +230,11 @@ namespace GuardsDigital.Tests.PlayMode
 
         /// <summary>
         /// Clicks one live control exactly as a pointer does: the element must be shown, enabled, and
-        /// laid out; the panel must pick this element (or a child of it) at its own centre, so a
-        /// control covered by something else fails here rather than passing by direct dispatch; and
-        /// the pointer-down/pointer-up pair is then sent through the panel targeted at the picked
-        /// leaf, which is the element hardware input would target, bubbling up through the control's
-        /// own registered callbacks.
+        /// laid out; the panel must pick this element (or a child of it) at a painted point inside its
+        /// bounds, so a completely covered control fails here rather than passing by direct dispatch.
+        /// The centre is tried first; an overlapped physical-hand card then uses its exposed strip,
+        /// exactly where a player can point. The pointer-down/pointer-up pair is sent through the panel
+        /// targeted at that picked leaf, bubbling through the control's own callbacks.
         /// </summary>
         public static void Click(VisualElement element)
         {
@@ -250,15 +252,16 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(bounds.width, Is.GreaterThan(0f));
             Assert.That(bounds.height, Is.GreaterThan(0f));
 
-            var center = bounds.center;
-            var picked = element.panel.Pick(center);
-            Assert.That(picked, Is.Not.Null,
-                $"Nothing is pickable at {center}, where the control's own centre is.");
-            Assert.That(IsSelfOrDescendantOf(picked, element), Is.True,
-                $"The pointer at {center} would reach '{DescribeElement(picked)}', not the " +
-                $"requested '{DescribeElement(element)}' - something is drawn over the control.");
+            if (!TryFindReachablePoint(element, out var point, out var picked))
+            {
+                var obstruction = element.panel.Pick(bounds.center);
+                Assert.Fail(
+                    $"No sampled painted point inside '{DescribeElement(element)}' reaches that " +
+                    "control. Its centre reaches '" +
+                    (obstruction == null ? "nothing" : DescribeElement(obstruction)) + "'.");
+            }
 
-            SendPointerClick(picked, center);
+            SendPointerClick(picked, point);
         }
 
         /// <summary>
@@ -268,12 +271,8 @@ namespace GuardsDigital.Tests.PlayMode
         public static void PointAt(VisualElement element)
         {
             Assert.That(element?.panel, Is.Not.Null);
-            var center = element.worldBound.center;
-            var picked = element.panel.Pick(center);
-            Assert.That(picked, Is.Not.Null);
-            Assert.That(IsSelfOrDescendantOf(picked, element), Is.True,
-                $"The pointer at {center} would rest on '{DescribeElement(picked)}', not on the " +
-                $"requested '{DescribeElement(element)}'.");
+            Assert.That(TryFindReachablePoint(element, out _, out _), Is.True,
+                $"No painted point remains exposed on '{DescribeElement(element)}'.");
             using (var enter = PointerEnterEvent.GetPooled())
             {
                 enter.target = element;
@@ -287,10 +286,8 @@ namespace GuardsDigital.Tests.PlayMode
         ///
         /// <para><b>Milestone 8.25c, and it is a property of a scaled panel rather than a fudge.</b>
         /// UI Toolkit snaps every laid-out edge to the device pixel grid. While the panel drew one
-        /// point per pixel that was invisible - a 186-point card was 186 pixels and measured 186 - but
-        /// at any other scale a declared size lands between two pixels and the layout takes the nearer
-        /// one. At the reference's 0.75 pixels per point a 186-point card is 139.5 pixels, is drawn at
-        /// 140, and measures back as 186.667. So a live measurement in reference units is its declared
+        /// point per pixel that was invisible, but at any other scale a declared size lands between two
+        /// pixels and the layout takes the nearer one. So a live measurement in reference units is its declared
         /// value to within one device pixel per edge, and a column of stacked boxes to within one per
         /// box.</para>
         ///
@@ -353,6 +350,49 @@ namespace GuardsDigital.Tests.PlayMode
                 }
             }
 
+            return false;
+        }
+
+        private static bool CarriesText(VisualElement element, string text)
+        {
+            var comparison = System.StringComparison.OrdinalIgnoreCase;
+            return Descendants(element).OfType<Label>()
+                    .Any(label => string.Equals(label.text, text, comparison)) ||
+                Descendants(element).Prepend(element)
+                    .Any(candidate => !string.IsNullOrEmpty(candidate.tooltip) &&
+                        candidate.tooltip.IndexOf(text, comparison) >= 0);
+        }
+
+        /// <summary>
+        /// Finds a real pointer target inside the part of a control that is still painted. The compact
+        /// hand exposes roughly the left third of every non-final card, while ordinary controls remain
+        /// reachable at their centre; sampling both proves the requested control is not fully covered.
+        /// </summary>
+        private static bool TryFindReachablePoint(
+            VisualElement element,
+            out Vector2 point,
+            out VisualElement picked)
+        {
+            var bounds = element.worldBound;
+            var horizontal = new[] { 0.5f, 0.18f, 0.32f, 0.68f, 0.82f, 0.06f, 0.94f };
+            var vertical = new[] { 0.5f, 0.25f, 0.75f, 0.1f, 0.9f };
+            foreach (var y in vertical)
+            {
+                foreach (var x in horizontal)
+                {
+                    point = new Vector2(
+                        Mathf.Lerp(bounds.xMin, bounds.xMax, x),
+                        Mathf.Lerp(bounds.yMin, bounds.yMax, y));
+                    picked = element.panel.Pick(point);
+                    if (picked != null && IsSelfOrDescendantOf(picked, element))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            point = bounds.center;
+            picked = null;
             return false;
         }
 

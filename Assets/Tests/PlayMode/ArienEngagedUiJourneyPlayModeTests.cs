@@ -67,20 +67,8 @@ namespace GuardsDigital.Tests.PlayMode
             // pointed back at him the way a player would - by clicking his piece.
             yield return PointTrayAt(root, arienId);
             yield return null;
-            var slots = UiPlayer.Descendants(hud.RootElement)
-                .Where(element => element.name == "gd-card-slot" &&
-                    UiPlayer.Descendants(element).Any(child =>
-                        child.name == "gd-card-name" &&
-                        child is UnityEngine.UIElements.Label label &&
-                        label.text == "SPELL BREAK"))
-                .ToArray();
-            Assert.That(slots, Has.Length.EqualTo(1),
-                "Arien's own tray must draw the played Spell Break exactly once. Card names on " +
-                "screen: " + string.Join(", ", UiPlayer.Descendants(hud.RootElement)
-                    .Where(element => element.name == "gd-card-name")
-                    .OfType<UnityEngine.UIElements.Label>()
-                    .Select(label => label.text)));
-            Assert.That(slots[0].resolvedStyle.borderTopColor.a, Is.GreaterThan(0.5f),
+            var slot = UiPlayer.NamedElementWithText(hud, "gd-card-slot", "SPELL BREAK");
+            Assert.That(slot.resolvedStyle.borderTopColor.a, Is.GreaterThan(0.5f),
                 "The card's slot wears the Active-effect outline while the lock lives.");
 
             // Arien's turn ends; the enemy's begins inside the same turn, and this is where the

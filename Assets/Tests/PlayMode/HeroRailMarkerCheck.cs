@@ -86,9 +86,9 @@ namespace GuardsDigital.Tests.PlayMode
         ///
         /// <para><b>That was a fact about that arrangement, not about the roster</b>, and milestone
         /// 8.25 changed the arrangement on the user's 2026-08-26 decision rather than the rail: the
-        /// rail columns took the whole screen edge and the tray took the band between them, so the
-        /// rect is about 1000 at 1920x1080 and the budget about 325 against the same 239. The formula
-        /// is unchanged and is now met; it is asserted rather than only recorded, by
+        /// rail columns now run from the status strip to the compact reserved tray, so the reference
+        /// rect is about 878 units and the budget about 285 against the same 239. The formula is
+        /// unchanged and is now met; it is asserted rather than only recorded, by
         /// <c>TigerclawProgressedUiJourneyPlayModeTests</c>.</para>
         /// </summary>
         internal static float ThreeUpBudget(float railRectHeight) => (railRectHeight / 3f) - 8f;
@@ -97,9 +97,9 @@ namespace GuardsDigital.Tests.PlayMode
         /// The height a rail holding a marker actually draws in this build, as a ceiling.
         ///
         /// <para>A regression guard rather than a target: <see cref="ThreeUpBudget"/> is the target and
-        /// this build does not meet it, so what the gate can honestly hold is that the rail does not
-        /// grow back past what the recomposition achieved. Measured at 239 and recorded at 245 to
-        /// leave the runtime theme's own rounding alone.</para>
+        /// this build meets it, while this ceiling independently keeps a rail from growing back past
+        /// what the recomposition achieved. Measured at 239 and recorded at 245 to leave the runtime
+        /// theme's own rounding alone.</para>
         /// </summary>
         internal const float RecordedRailCeiling = 245f;
 

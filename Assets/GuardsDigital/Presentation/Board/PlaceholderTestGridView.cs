@@ -8,6 +8,33 @@ using UnityEngine;
 
 namespace GuardsDigital.Presentation.Board
 {
+    /// <summary>
+    /// The two pieces of screen space in which whole playable hexes may stand. The upper region is
+    /// the ordinary board area between the HUD columns. The lower-right region is the otherwise dead
+    /// space beneath the resolved Blue rail and to the right of the five-card hand. Their overlap makes
+    /// one L-shaped safe surface; decorative artwork is deliberately not constrained to either piece.
+    /// Rectangles use UI Toolkit's top-left panel coordinates.
+    /// </summary>
+    public readonly struct BoardCameraSafeLayout
+    {
+        public BoardCameraSafeLayout(Rect upperRegion, Rect lowerRightRegion, Vector2 panelViewport)
+        {
+            UpperRegion = upperRegion;
+            LowerRightRegion = lowerRightRegion;
+            PanelViewport = panelViewport;
+        }
+
+        public Rect UpperRegion { get; }
+        public Rect LowerRightRegion { get; }
+        public Vector2 PanelViewport { get; }
+
+        public bool IsValid =>
+            PanelViewport.x > 0f &&
+            PanelViewport.y > 0f &&
+            UpperRegion.width > 0f &&
+            UpperRegion.height > 0f;
+    }
+
     [ExecuteAlways]
     [DisallowMultipleComponent]
     public sealed class PlaceholderTestGridView : MonoBehaviour
@@ -29,21 +56,12 @@ namespace GuardsDigital.Presentation.Board
         [SerializeField] private float cameraPadding = 1.5f;
 
         /// <summary>
-        /// The share of the viewport's width the framing keeps clear along the left edge, where the card
-        /// tray stands.
-        ///
-        /// Milestone 8.5a, by the user's 2026-08-21 decision. A tray card carries its whole printed face
-        /// now, so the tray is taller than it was, and a map centred in the viewport sat squarely behind
-        /// it. The map is framed into the band this share leaves instead: the camera moves left, and it
-        /// widens only if the map no longer fits. It usually does not have to - the official map is close
-        /// to square and the viewport is 16:9, so the width it was never using is most of what the tray
-        /// needs.
-        ///
-        /// The value is a judgement about where the board should sit rather than the one that would
-        /// clear the tray outright, so a little of the map is still behind the cards' corner. Zero
-        /// restores the plain centred framing.
+        /// Extra world-space air beyond the exact projected hex vertices in the HUD-aware fit. Visible
+        /// UI already keeps a four-unit screen gutter; this smaller allowance protects antialiased
+        /// edges without forfeiting the lower-right room the notched layout exists to use.
         /// </summary>
-        [SerializeField] private float reservedLeftViewportShare = 0.32f;
+        public const float ReservedPlayfieldCameraPadding = 0.02f;
+
         [SerializeField] private Camera sceneCamera;
         [SerializeField] private PrimitiveHeroView[] heroViews;
 
@@ -62,6 +80,20 @@ namespace GuardsDigital.Presentation.Board
         private Mesh generatedTileMesh;
         private MapDefinitionReference materialMapReference;
         private OfficialBoardUnderlayView underlayView;
+        private BoardCameraSafeLayout configuredCameraLayout;
+        private bool hasConfiguredCameraViewport;
+        private Camera cachedFrameCamera;
+        private BoardMapDefinition cachedFrameDefinition;
+        private BoardCameraSafeLayout cachedFrameLayout;
+        private bool cachedFrameUsedConfiguredLayout;
+        private bool cachedFrameUsedUnderlay;
+        private float cachedFrameOuterRadius;
+        private float cachedFramePadding;
+        private float cachedFrameAspect;
+        private float cachedFrameOrthographicSize;
+        private Vector3 cachedFramePosition;
+        private Quaternion cachedFrameRotation;
+        private bool hasCachedCameraFrame;
 
         public float OuterRadius => outerRadius;
         public BoardMapDefinition RenderedDefinition => renderedDefinition;
@@ -119,6 +151,37 @@ namespace GuardsDigital.Presentation.Board
                 .Where(value => value != null)
                 .Distinct()
                 .ToArray();
+        }
+
+        /// <summary>
+        /// Gives the full-screen board camera the HUD's L-shaped safe surface. The fit is made from the
+        /// actual hex inventory rather than the artwork's square: broad rows remain above the cards,
+        /// while the board's tapered lower end may grow into the empty area to their right. Artwork may
+        /// extend anywhere behind the HUD; only complete hexes are constrained.
+        /// </summary>
+        public void ConfigureCameraViewport(BoardCameraSafeLayout layout)
+        {
+            if (sceneCamera == null || !layout.IsValid)
+            {
+                return;
+            }
+
+            var fullCameraRect = new Rect(0f, 0f, 1f, 1f);
+
+            if (hasConfiguredCameraViewport &&
+                Approximately(configuredCameraLayout, layout) &&
+                Approximately(sceneCamera.rect, fullCameraRect))
+            {
+                return;
+            }
+
+            configuredCameraLayout = layout;
+            hasConfiguredCameraViewport = true;
+            sceneCamera.rect = fullCameraRect;
+            if (renderedDefinition != null)
+            {
+                FrameWholeMap(sceneCamera, renderedDefinition);
+            }
         }
 
         public void Rebuild(BoardMapDefinition definition)
@@ -620,8 +683,41 @@ namespace GuardsDigital.Presentation.Board
             // the same basis is what keeps every space inside the viewport either way.
             var screenRight = IsUnderlayActive ? OfficialBoardArtwork.BoardRightInWorld : Vector3.right;
             var screenUp = ScreenUpInWorld;
+            var aspect = hasConfiguredCameraViewport && configuredCameraLayout.PanelViewport.y > 0f
+                ? configuredCameraLayout.PanelViewport.x / configuredCameraLayout.PanelViewport.y
+                : targetCamera.aspect > 0f ? targetCamera.aspect : 16f / 9f;
 
-            var positions = definition.Spaces.Select(space => HexWorldLayout.ToWorld(space.Coordinate, outerRadius)).ToArray();
+            // A map rebuild changes tile views, not the immutable map geometry or the HUD reservation.
+            // Re-solving the exact notched fit for the same inputs turns that ordinary refresh into
+            // millions of interval intersections. Reapply the already proven camera frame instead;
+            // any map instance, viewport, artwork basis, radius, padding or aspect change misses this
+            // key and calculates a fresh frame below.
+            if (hasCachedCameraFrame &&
+                ReferenceEquals(cachedFrameCamera, targetCamera) &&
+                ReferenceEquals(cachedFrameDefinition, definition) &&
+                cachedFrameUsedConfiguredLayout == hasConfiguredCameraViewport &&
+                (!hasConfiguredCameraViewport ||
+                    Approximately(cachedFrameLayout, configuredCameraLayout)) &&
+                cachedFrameUsedUnderlay == IsUnderlayActive &&
+                Mathf.Approximately(cachedFrameOuterRadius, outerRadius) &&
+                Mathf.Approximately(cachedFramePadding, cameraPadding) &&
+                Mathf.Approximately(cachedFrameAspect, aspect))
+            {
+                targetCamera.orthographic = true;
+                targetCamera.orthographicSize = cachedFrameOrthographicSize;
+                targetCamera.farClipPlane = 100f;
+                targetCamera.transform.position = cachedFramePosition;
+                targetCamera.transform.rotation = cachedFrameRotation;
+                return;
+            }
+
+            var positions = definition.Spaces
+                .Select(space => HexWorldLayout.ToWorld(space.Coordinate, outerRadius))
+                .ToArray();
+            var playablePositions = definition.Spaces
+                .Where(space => space.Kind == BoardMapSpaceKind.Playable)
+                .Select(space => HexWorldLayout.ToWorld(space.Coordinate, outerRadius))
+                .ToArray();
             var minimumX = positions.Min(position => Vector3.Dot(position, screenRight)) - outerRadius;
             var maximumX = positions.Max(position => Vector3.Dot(position, screenRight)) + outerRadius;
             var minimumZ = positions.Min(position => Vector3.Dot(position, screenUp)) - outerRadius;
@@ -629,25 +725,383 @@ namespace GuardsDigital.Presentation.Board
             var center = (screenRight * ((minimumX + maximumX) * 0.5f)) +
                 (screenUp * ((minimumZ + maximumZ) * 0.5f)) +
                 new Vector3(0f, 60f, 0f);
-            var aspect = targetCamera.aspect > 0f ? targetCamera.aspect : 16f / 9f;
             var halfWidth = (maximumX - minimumX) * 0.5f;
             var halfDepth = (maximumZ - minimumZ) * 0.5f;
-            // The map is framed into the band left over once the tray's share of the width is reserved,
-            // so the size below is what fits that band rather than what fits the whole viewport.
-            var reserved = Mathf.Clamp(reservedLeftViewportShare, 0f, 0.6f);
+            // Milestone 8.25f2 separates the surface the camera draws from the space hexes may use.
+            // A rectangle above the whole hand was safe but left the lower-right visibly empty. The
+            // notched fit below uses every inventoried hex and the two safe rectangles the HUD reports:
+            // the broad body stays above the cards and the tapered end grows into the open space beside
+            // them. The camera remains full-screen, so the square artwork is free to pass behind UI.
             targetCamera.orthographic = true;
-            targetCamera.orthographicSize =
-                Mathf.Max(halfDepth, halfWidth / (aspect * (1f - reserved))) + cameraPadding;
-            targetCamera.farClipPlane = 100f;
+            if (hasConfiguredCameraViewport &&
+                TryCalculateNotchedFrame(
+                    playablePositions,
+                    screenRight,
+                    screenUp,
+                    configuredCameraLayout,
+                    outerRadius,
+                    out var pixelsPerWorld,
+                    out var projectedOrigin))
+            {
+                var panel = configuredCameraLayout.PanelViewport;
+                targetCamera.orthographicSize = panel.y / (2f * pixelsPerWorld);
+                var cameraRightCoordinate = ((panel.x * 0.5f) - projectedOrigin.x) /
+                    pixelsPerWorld;
+                var cameraUpCoordinate = (projectedOrigin.y - (panel.y * 0.5f)) /
+                    pixelsPerWorld;
+                center = (screenRight * cameraRightCoordinate) +
+                    (screenUp * cameraUpCoordinate) +
+                    new Vector3(0f, 60f, 0f);
+            }
+            else
+            {
+                targetCamera.orthographicSize =
+                    Mathf.Max(halfDepth, halfWidth / aspect) + cameraPadding;
+            }
 
-            // The camera looks straight down with world +Z up, so its screen right is world +X: moving
-            // it left moves the map right, out from behind the tray. Half the reserved width centres the
-            // map in the band that is left, which is what keeps every space inside the viewport - the
-            // property `Scene_LoadsCompleteSelectedMapPresentationUnderFramedFixedCamera` measures.
-            var shift = reserved * targetCamera.orthographicSize * aspect;
-            targetCamera.transform.position = center - (screenRight * shift);
+            targetCamera.farClipPlane = 100f;
+            targetCamera.transform.position = center;
             targetCamera.transform.rotation = Quaternion.LookRotation(Vector3.down, screenUp);
+
+            cachedFrameCamera = targetCamera;
+            cachedFrameDefinition = definition;
+            cachedFrameLayout = configuredCameraLayout;
+            cachedFrameUsedConfiguredLayout = hasConfiguredCameraViewport;
+            cachedFrameUsedUnderlay = IsUnderlayActive;
+            cachedFrameOuterRadius = outerRadius;
+            cachedFramePadding = cameraPadding;
+            cachedFrameAspect = aspect;
+            cachedFrameOrthographicSize = targetCamera.orthographicSize;
+            cachedFramePosition = targetCamera.transform.position;
+            cachedFrameRotation = targetCamera.transform.rotation;
+            hasCachedCameraFrame = true;
         }
+
+        /// <summary>
+        /// Finds the largest uniform screen scale at which every complete hex fits in either half of
+        /// the L-shaped safe layout. For a fixed scale and vertical origin, each hex contributes one or
+        /// two legal horizontal intervals; intersecting those unions gives an exact placement answer.
+        /// Candidate vertical origins come from the interval boundaries themselves, so this does not
+        /// depend on a resolution-sensitive sampling grid.
+        /// </summary>
+        private static bool TryCalculateNotchedFrame(
+            IReadOnlyList<Vector3> positions,
+            Vector3 screenRight,
+            Vector3 screenUp,
+            BoardCameraSafeLayout layout,
+            float radius,
+            out float pixelsPerWorld,
+            out Vector2 projectedOrigin)
+        {
+            pixelsPerWorld = 0f;
+            projectedOrigin = default;
+            if (positions == null || positions.Count == 0 || !layout.IsValid)
+            {
+                return false;
+            }
+
+            var projected = positions
+                .Select(position => new Vector2(
+                    Vector3.Dot(position, screenRight),
+                    Vector3.Dot(position, screenUp)))
+                .ToArray();
+            CalculateHexScreenExtents(
+                screenRight,
+                screenUp,
+                radius,
+                out var halfRight,
+                out var halfUp);
+
+            var rightSpan = (projected.Max(point => point.x) - projected.Min(point => point.x)) +
+                (2f * halfRight);
+            var upSpan = (projected.Max(point => point.y) - projected.Min(point => point.y)) +
+                (2f * halfUp);
+            var high = Mathf.Min(
+                layout.PanelViewport.x / Mathf.Max(0.001f, rightSpan),
+                layout.PanelViewport.y / Mathf.Max(0.001f, upSpan));
+            var low = 0f;
+            var bestOrigin = default(Vector2);
+            for (var iteration = 0; iteration < 20; iteration++)
+            {
+                var candidate = (low + high) * 0.5f;
+                if (TryPlaceAtScale(
+                    projected,
+                    layout,
+                    halfRight * candidate,
+                    halfUp * candidate,
+                    candidate,
+                    out var origin))
+                {
+                    low = candidate;
+                    bestOrigin = origin;
+                }
+                else
+                {
+                    high = candidate;
+                }
+            }
+
+            if (low <= 0f || !TryPlaceAtScale(
+                    projected,
+                    layout,
+                    halfRight * low,
+                    halfUp * low,
+                    low,
+                    out bestOrigin))
+            {
+                return false;
+            }
+
+            pixelsPerWorld = low;
+            projectedOrigin = bestOrigin;
+            return true;
+        }
+
+        private static void CalculateHexScreenExtents(
+            Vector3 screenRight,
+            Vector3 screenUp,
+            float radius,
+            out float halfRight,
+            out float halfUp)
+        {
+            halfRight = 0f;
+            halfUp = 0f;
+            for (var side = 0; side < 6; side++)
+            {
+                var angle = Mathf.Deg2Rad * (30f + (side * 60f));
+                var vertex = new Vector3(
+                    Mathf.Cos(angle) * radius,
+                    0f,
+                    Mathf.Sin(angle) * radius);
+                halfRight = Mathf.Max(halfRight, Mathf.Abs(Vector3.Dot(vertex, screenRight)));
+                halfUp = Mathf.Max(halfUp, Mathf.Abs(Vector3.Dot(vertex, screenUp)));
+            }
+
+            // The safe rectangles already retain a four-unit screen gutter from visible HUD. This
+            // small world-space allowance prevents antialiased hex edges from consuming that boundary.
+            halfRight += ReservedPlayfieldCameraPadding * radius;
+            halfUp += ReservedPlayfieldCameraPadding * radius;
+        }
+
+        private static bool TryPlaceAtScale(
+            IReadOnlyList<Vector2> projected,
+            BoardCameraSafeLayout layout,
+            float halfWidth,
+            float halfHeight,
+            float scale,
+            out Vector2 origin)
+        {
+            origin = default;
+            var verticalCandidates = new List<float>(projected.Count * 4);
+            foreach (var point in projected)
+            {
+                AddVerticalBoundaries(verticalCandidates, layout.UpperRegion, point, halfHeight, scale);
+                if (layout.LowerRightRegion.width > 0f && layout.LowerRightRegion.height > 0f)
+                {
+                    AddVerticalBoundaries(
+                        verticalCandidates,
+                        layout.LowerRightRegion,
+                        point,
+                        halfHeight,
+                        scale);
+                }
+            }
+
+            verticalCandidates.Sort();
+            var firstIntervals = new Vector2[(projected.Count * 4) + 2];
+            var secondIntervals = new Vector2[firstIntervals.Length];
+            for (var index = 0; index < verticalCandidates.Count; index++)
+            {
+                if (TryFindHorizontalOrigin(
+                    projected,
+                    layout,
+                    halfWidth,
+                    halfHeight,
+                    scale,
+                    verticalCandidates[index],
+                    firstIntervals,
+                    secondIntervals,
+                    out var horizontal))
+                {
+                    origin = new Vector2(horizontal, verticalCandidates[index]);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AddVerticalBoundaries(
+            ICollection<float> candidates,
+            Rect region,
+            Vector2 point,
+            float halfHeight,
+            float scale)
+        {
+            candidates.Add(region.yMin + halfHeight + (scale * point.y));
+            candidates.Add(region.yMax - halfHeight + (scale * point.y));
+        }
+
+        private static bool TryFindHorizontalOrigin(
+            IReadOnlyList<Vector2> projected,
+            BoardCameraSafeLayout layout,
+            float halfWidth,
+            float halfHeight,
+            float scale,
+            float verticalOrigin,
+            Vector2[] firstBuffer,
+            Vector2[] secondBuffer,
+            out float horizontalOrigin)
+        {
+            var feasible = firstBuffer;
+            var intersections = secondBuffer;
+            feasible[0] = new Vector2(float.NegativeInfinity, float.PositiveInfinity);
+            var feasibleCount = 1;
+            foreach (var point in projected)
+            {
+                var centerY = verticalOrigin - (scale * point.y);
+                var hasUpper = TryBuildHorizontalInterval(
+                    layout.UpperRegion,
+                    point,
+                    centerY,
+                    halfWidth,
+                    halfHeight,
+                    scale,
+                    out var upper);
+                var lower = default(Vector2);
+                var hasLower = layout.LowerRightRegion.width > 0f &&
+                    layout.LowerRightRegion.height > 0f &&
+                    TryBuildHorizontalInterval(
+                        layout.LowerRightRegion,
+                        point,
+                        centerY,
+                        halfWidth,
+                        halfHeight,
+                        scale,
+                        out lower);
+
+                if (!hasUpper && !hasLower)
+                {
+                    horizontalOrigin = 0f;
+                    return false;
+                }
+
+                var intersectionCount = 0;
+                for (var feasibleIndex = 0; feasibleIndex < feasibleCount; feasibleIndex++)
+                {
+                    if (hasUpper)
+                    {
+                        AddIntersection(
+                            feasible[feasibleIndex], upper, intersections, ref intersectionCount);
+                    }
+
+                    if (hasLower)
+                    {
+                        AddIntersection(
+                            feasible[feasibleIndex], lower, intersections, ref intersectionCount);
+                    }
+                }
+
+                if (intersectionCount == 0)
+                {
+                    horizontalOrigin = 0f;
+                    return false;
+                }
+
+                // At most two intervals normally survive (one per arm), but sorting and merging makes
+                // the operation exact even when differently shifted gaps briefly create more.
+                for (var sortIndex = 1; sortIndex < intersectionCount; sortIndex++)
+                {
+                    var value = intersections[sortIndex];
+                    var before = sortIndex - 1;
+                    while (before >= 0 && intersections[before].x > value.x)
+                    {
+                        intersections[before + 1] = intersections[before];
+                        before--;
+                    }
+
+                    intersections[before + 1] = value;
+                }
+
+                feasibleCount = 0;
+                for (var intersectionIndex = 0;
+                     intersectionIndex < intersectionCount;
+                     intersectionIndex++)
+                {
+                    var value = intersections[intersectionIndex];
+                    if (feasibleCount > 0 && value.x <= feasible[feasibleCount - 1].y)
+                    {
+                        var previous = feasible[feasibleCount - 1];
+                        feasible[feasibleCount - 1] =
+                            new Vector2(previous.x, Mathf.Max(previous.y, value.y));
+                    }
+                    else
+                    {
+                        feasible[feasibleCount++] = value;
+                    }
+                }
+            }
+
+            var widest = feasible[0];
+            for (var index = 1; index < feasibleCount; index++)
+            {
+                if (feasible[index].y - feasible[index].x > widest.y - widest.x)
+                {
+                    widest = feasible[index];
+                }
+            }
+
+            horizontalOrigin = (widest.x + widest.y) * 0.5f;
+            return true;
+        }
+
+        private static bool TryBuildHorizontalInterval(
+            Rect region,
+            Vector2 point,
+            float centerY,
+            float halfWidth,
+            float halfHeight,
+            float scale,
+            out Vector2 interval)
+        {
+            if (centerY - halfHeight < region.yMin - 0.001f ||
+                centerY + halfHeight > region.yMax + 0.001f)
+            {
+                interval = default;
+                return false;
+            }
+
+            var minimum = region.xMin + halfWidth - (scale * point.x);
+            var maximum = region.xMax - halfWidth - (scale * point.x);
+            interval = new Vector2(minimum, maximum);
+            return minimum <= maximum;
+        }
+
+        private static void AddIntersection(
+            Vector2 left,
+            Vector2 right,
+            Vector2[] intersections,
+            ref int count)
+        {
+            var minimum = Mathf.Max(left.x, right.x);
+            var maximum = Mathf.Min(left.y, right.y);
+            if (minimum <= maximum)
+            {
+                intersections[count++] = new Vector2(minimum, maximum);
+            }
+        }
+
+        private static bool Approximately(Rect left, Rect right) =>
+            Mathf.Approximately(left.x, right.x) &&
+            Mathf.Approximately(left.y, right.y) &&
+            Mathf.Approximately(left.width, right.width) &&
+            Mathf.Approximately(left.height, right.height);
+
+        private static bool Approximately(BoardCameraSafeLayout left, BoardCameraSafeLayout right) =>
+            Approximately(left.UpperRegion, right.UpperRegion) &&
+            Approximately(left.LowerRightRegion, right.LowerRightRegion) &&
+            Mathf.Approximately(left.PanelViewport.x, right.PanelViewport.x) &&
+            Mathf.Approximately(left.PanelViewport.y, right.PanelViewport.y);
 
         private static void DestroyObject(GameObject target)
         {

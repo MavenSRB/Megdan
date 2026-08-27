@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Presentation.Board;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -133,8 +134,31 @@ namespace GuardsDigital.Presentation.Match
         // the same share of every screen instead of the same count of its pixels.
         // `MatchHudPanelScaling` is the declaration and says why that size and not a smaller one.
         private const float Margin = 12f;
-        private const float CardPanelWidth = 1280f;
-        private const float CardPanelHeight = 360f;
+        // The ordinary tray is visually only its cards. Redistributing its standing 24-unit vertical
+        // inset puts the unused space above the faces instead of below them, so the faces sit closer
+        // to the screen edge and the board can use the newly exposed strip above them.
+        public const float TrayHorizontalPadding = 0f;
+        public const float TrayCardTopPadding = 0f;
+        public const float TrayBottomPadding = 0f;
+        // The card row is relatively lowered without increasing its layout height. The 470-unit tray
+        // already contained this unused space beneath a 420-unit face; spending it this way exposes a
+        // larger strip above the cards without creating vertical scrolling.
+        public const float OrdinaryCardDownshift = 20f;
+        // Complete playable hexes retain this small visible moat from HUD content. The old general
+        // 12-unit page margin was unnecessarily conservative here: artwork may pass behind the HUD,
+        // and the fitter separately protects the antialiased edge of every playable hex.
+        public const float BoardHexUiGap = 4f;
+        // A card already has five units of reserved Active-effect outline outside its printed edge.
+        // Two more units keep a visible separation without also reserving the fifth slot's unused
+        // trailing gutter.
+        public const float BoardCardHexUiGap = 2f;
+        // Milestone 8.25f2. The resting hand uses five full source-ratio faces overlapped like a
+        // physical hand; hovering or focusing one redraws that same complete face above its siblings.
+        // Mandatory card decisions continue to use the separately calculated tall tray.
+        public const float CardPanelHeight = DirectorHandsUnityView.PeekCardHeight + 40f;
+        // Keeps UI Toolkit border/pixel snapping from turning two mathematically adjacent rectangles
+        // into a live one-pixel overlap at non-identity panel scales.
+        private const float BoardTraySeparation = 2f;
         private const float TieBreakerWidth = 200f;
         private const float EventLogPreferredWidth = 720f;
         private const float EventLogPreferredHeight = 360f;
@@ -143,6 +167,32 @@ namespace GuardsDigital.Presentation.Match
         /// The standing status strip's height, in reference units. The Tie Breaker chip sits inside it.
         /// </summary>
         public const float StatusBarHeight = 56f;
+
+        /// <summary>
+        /// The fixed height of the ordinary round/hand status dock below `DIRECTOR`. It is the height
+        /// required by the revealed action state, so awaiting-card and confirmation states keep the
+        /// same footprint instead of resizing the HUD as the player clicks.
+        /// </summary>
+        public const float StatusDockHeight = 128f;
+
+        /// <summary>
+        /// The fixed width of the ordinary round/hand status dock. The widest routine action row fits
+        /// this surface, and every smaller state deliberately retains the same width.
+        /// </summary>
+        public const float StatusDockWidth = 720f;
+
+        /// <summary>
+        /// The right edge shared by the compact bottom-left hand and the Director-side information
+        /// lane. The upper hex-safe arm begins <see cref="BoardHexUiGap"/> units after it.
+        /// </summary>
+        public const float CompactHandRightEdge = Margin + StatusDockWidth;
+
+        /// <summary>
+        /// The compact board camera's width-to-height ratio. The official playable footprint is wider
+        /// than it is tall; 6:5 keeps its original whole-map scale while avoiding the much wider empty
+        /// camera surface that previously centred it across the entire playfield band.
+        /// </summary>
+        public const float BoardViewportAspect = 6f / 5f;
 
         /// <summary>
         /// A hero overview rail's width.
@@ -156,9 +206,9 @@ namespace GuardsDigital.Presentation.Match
         /// what makes the same readings fit in a third of the height.</para>
         ///
         /// <para>Milestone 8.25 found the rest of that room without touching this number:
-        /// <see cref="CalculateHeroRailRect"/> gives the column the whole screen edge instead of the
-        /// band above the tray. Three rails of the height 8.23a achieved need about 733 and the column
-        /// has about 1000 at 1920x1080, so the recomposition and the taller column together are what
+        /// <see cref="CalculateHeroRailRect"/> gives the column the screen edge down to the reserved
+        /// tray. Three rails of the height 8.23a achieved need about 733 and the compact band now leaves
+        /// about 878 reference units, so the recomposition and the taller column together are what
         /// hold p.6's three a side.</para>
         ///
         /// <para>192 rather than more, because the widening is bounded by a standing product rule
@@ -179,13 +229,24 @@ namespace GuardsDigital.Presentation.Match
 
         private const float DirectorToggleWidth = 122f;
         private const float DirectorToggleHeight = 30f;
+        // The fixed largest-state dock needs these compact seams to fit below three Red rails without
+        // taking height from the cards. Both remain visible at the reference scale, and `DIRECTOR`
+        // still reads as the rail's next control rather than as a detached panel.
+        private const float DirectorRailGap = 2f;
+        private const float DirectorStatusGap = 3f;
         private const float DirectorDrawerWidth = 134f;
         private const float DirectorDrawerHeight = 112f;
+        private const int OrdinaryHandCardCount = 5;
 
         private UIDocument document;
         private PanelSettings panelSettings;
         private VisualElement root;
         private VisualElement trayRegion;
+        private ScrollView trayScroll;
+        private VisualElement trayFlow;
+        private VisualElement traySidebar;
+        private VisualElement statusDock;
+        private bool contextUsesTray;
 
         /// <summary>
         /// Whether the last layout gave the tray region the taller bound p.15's upgrade grid needs.
@@ -203,6 +264,13 @@ namespace GuardsDigital.Presentation.Match
         private MinionChoiceUnityView minionChoice;
         private HeroOverviewsUnityView heroOverviews;
         private MatchHudHeaderViewModel header;
+
+        /// <summary>
+        /// Raised whenever layout assigns the playable hexes their safe L-shaped surface. The board
+        /// camera renders full-screen behind the HUD and constrains only complete hexes; decorative
+        /// artwork may extend outside both regions into otherwise dead space.
+        /// </summary>
+        public event Action<BoardCameraSafeLayout> PlayfieldLayoutChanged;
 
         /// <summary>
         /// The rectangle this HUD lays out into, in the reference units milestone 8.25c made every
@@ -225,6 +293,7 @@ namespace GuardsDigital.Presentation.Match
             CalculateHeroRailRect(PanelViewport.x, PanelViewport.y, TeamSide.Red);
         public Rect BlueHeroRailRect =>
             CalculateHeroRailRect(PanelViewport.x, PanelViewport.y, TeamSide.Blue);
+        public BoardCameraSafeLayout CameraSafeLayout { get; private set; }
 
         /// <summary>Whether the compact `DIRECTOR` drawer is open. Local state; it changes no match state.</summary>
         public bool IsDirectorDrawerOpen { get; private set; }
@@ -241,11 +310,21 @@ namespace GuardsDigital.Presentation.Match
             HeroOverviewsUnityView heroOverviewsView = null)
         {
             hands = handsView ?? throw new ArgumentNullException(nameof(handsView));
+            hands.SetCompactPeekMode(true);
             round = roundView ?? throw new ArgumentNullException(nameof(roundView));
             undoRestart = undoRestartView ?? throw new ArgumentNullException(nameof(undoRestartView));
             diagnostics = diagnosticView ?? throw new ArgumentNullException(nameof(diagnosticView));
             minionChoice = minionChoiceView ?? throw new ArgumentNullException(nameof(minionChoiceView));
+            if (heroOverviews != null)
+            {
+                heroOverviews.ColumnGeometryChanged -= LayoutResolvedHudGeometry;
+            }
+
             heroOverviews = heroOverviewsView;
+            if (heroOverviews != null)
+            {
+                heroOverviews.ColumnGeometryChanged += LayoutResolvedHudGeometry;
+            }
             Build();
         }
 
@@ -288,7 +367,12 @@ namespace GuardsDigital.Presentation.Match
             var panelPosition = MatchHudPanelScaling.ScreenToPanelPoint(
                 screenPosition, Screen.width, Screen.height);
             var tray = TryLiveRect(trayRegion, out var liveTray) ? liveTray : GetCardPanelRect();
-            if (tray.Contains(panelPosition) ||
+            var trayBlocksPointer = trayUsesTallContext
+                ? tray.Contains(panelPosition)
+                : CalculateCompactHandPointerRect(viewport.x, viewport.y).Contains(panelPosition);
+            if (trayBlocksPointer ||
+                (TryLiveRect(statusDock, out var liveStatusDock) &&
+                    liveStatusDock.Contains(panelPosition)) ||
                 GetTieBreakerIndicatorRect().Contains(panelPosition) ||
                 CalculateStatusBarRect(viewport.x, viewport.y).Contains(panelPosition) ||
                 GetDirectorToggleRect().Contains(panelPosition) ||
@@ -315,7 +399,7 @@ namespace GuardsDigital.Presentation.Match
         ///
         /// <para>Milestone 8.25c. It is the same question <see cref="BlocksPointerAt"/> answers, for
         /// the five regions that are drawn at every viewport whatever the match is doing - the status
-        /// strip, the Tie Breaker chip, the card tray and both hero-rail columns - so that the mapping
+        /// strip, the Tie Breaker chip, the compact hand and both hero-rail columns - so that the mapping
         /// from a screen pixel to the panel can be checked at a scale other than 1 without a running
         /// scene. <see cref="BlocksPointerAt"/> adds what depends on live state: the tray's own laid-out
         /// box, the rails' laid-out boxes, the `DIRECTOR` toggle and drawer, and an expanded event
@@ -329,7 +413,8 @@ namespace GuardsDigital.Presentation.Match
             var panel = MatchHudPanelScaling.ReferenceViewport(viewportWidth, viewportHeight);
             return CalculateStatusBarRect(panel.x, panel.y).Contains(panelPosition) ||
                 CalculateTieBreakerIndicatorRect(panel.x, panel.y).Contains(panelPosition) ||
-                CalculateCardPanelRect(panel.x, panel.y).Contains(panelPosition) ||
+                CalculateCompactHandPointerRect(panel.x, panel.y).Contains(panelPosition) ||
+                CalculateStatusDockRect(panel.x, panel.y).Contains(panelPosition) ||
                 CalculateHeroRailRect(panel.x, panel.y, TeamSide.Red).Contains(panelPosition) ||
                 CalculateHeroRailRect(panel.x, panel.y, TeamSide.Blue).Contains(panelPosition);
         }
@@ -460,6 +545,23 @@ namespace GuardsDigital.Presentation.Match
                 root.Add(heroOverviews.Root);
             }
 
+            statusDock = HudElements.Panel(MatchHudTheme.PanelBackground);
+            statusDock.name = "gd-status-dock";
+            statusDock.style.position = Position.Absolute;
+            statusDock.style.flexDirection = FlexDirection.Column;
+            statusDock.style.alignItems = Align.FlexStart;
+            statusDock.style.width = StatusDockWidth;
+            statusDock.style.minWidth = StatusDockWidth;
+            statusDock.style.maxWidth = StatusDockWidth;
+            statusDock.style.height = StatusDockHeight;
+            statusDock.style.minHeight = StatusDockHeight;
+            statusDock.style.maxHeight = StatusDockHeight;
+            // This is one stable label/control dock, not another broad HUD band. Eight units keep the
+            // largest action state off its edge while the smaller commitment states retain its frame.
+            HudElements.Padding(statusDock, 8f);
+            HudElements.Border(statusDock, MatchHudTheme.PanelBorder, 1f, 4f);
+            root.Add(statusDock);
+
             directorToggle = HudElements.Control("DIRECTOR", ToggleDirectorDrawer, DirectorToggleHeight);
             directorToggle.name = "gd-director-toggle";
             directorToggle.style.position = Position.Absolute;
@@ -477,20 +579,67 @@ namespace GuardsDigital.Presentation.Match
             root.Add(directorDrawer);
             root.Add(diagnostics.PanelRoot);
 
-            trayRegion = HudElements.Panel(MatchHudTheme.PanelBackground);
+            // The tray is a layout reservation, not a visible card frame. The imported cards already
+            // carry their complete printed edges; drawing a panel around the whole hand adds a second
+            // outline the user explicitly rejected.
+            trayRegion = new VisualElement();
             trayRegion.name = "gd-tray-region";
             trayRegion.style.position = Position.Absolute;
             trayRegion.style.flexDirection = FlexDirection.Column;
-            HudElements.Padding(trayRegion, 12f);
-            HudElements.Border(trayRegion, MatchHudTheme.PanelBorder, 1f, 4f);
-            var scroll = new ScrollView(ScrollViewMode.Vertical);
-            scroll.style.flexGrow = 1f;
-            scroll.Add(round.Root);
-            scroll.Add(minionChoice.Root);
-            scroll.Add(hands.Root);
-            trayRegion.Add(scroll);
+            trayRegion.style.paddingLeft = TrayHorizontalPadding;
+            trayRegion.style.paddingRight = TrayHorizontalPadding;
+            trayRegion.style.paddingTop = TrayCardTopPadding;
+            trayRegion.style.paddingBottom = TrayBottomPadding;
+            trayScroll = new ScrollView(ScrollViewMode.Vertical)
+            {
+                name = "gd-tray-scroll"
+            };
+            trayScroll.style.flexGrow = 1f;
+            trayScroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            trayScroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+
+            // Milestone 8.25f2's compact ordinary composition. Five native-ratio cards overlap like
+            // a physical hand inside the bottom-left of this transparent full-width band. Round status, actions, hand identity and
+            // commitment controls live in the open dock beside the Red rail, above the band. When a
+            // mandatory decision hides the hand, those contextual views return here and receive the
+            // full tray width, preserving the pre-existing decision layouts.
+            trayFlow = new VisualElement { name = "gd-tray-flow" };
+            trayFlow.style.flexDirection = FlexDirection.Row;
+            trayFlow.style.flexWrap = Wrap.NoWrap;
+            trayFlow.style.alignItems = Align.FlexEnd;
+            trayFlow.style.width = Length.Percent(100f);
+
+            traySidebar = new VisualElement { name = "gd-tray-sidebar" };
+            traySidebar.style.flexDirection = FlexDirection.Column;
+            traySidebar.style.flexGrow = 1f;
+            traySidebar.style.flexShrink = 1f;
+            traySidebar.style.minWidth = 0f;
+            traySidebar.style.marginLeft = 0f;
+
+            hands.HeaderRoot.RemoveFromHierarchy();
+            hands.Root.style.flexShrink = 0f;
+            hands.Root.style.top = OrdinaryCardDownshift;
+            round.Root.style.flexShrink = 0f;
+            hands.HeaderRoot.style.flexShrink = 0f;
+            hands.HeaderRoot.style.marginTop = 6f;
+            hands.HeaderRoot.style.marginBottom = 0f;
+            trayFlow.Add(hands.Root);
+            trayFlow.Add(traySidebar);
+            HostContextViewsInTray(false);
+            trayScroll.Add(trayFlow);
+            trayRegion.Add(trayScroll);
             root.Add(trayRegion);
+            hands.HoverPreviewRoot.RemoveFromHierarchy();
+            root.Add(hands.HoverPreviewRoot);
             root.Add(round.PreviewRoot);
+            if (heroOverviews != null)
+            {
+                // Only the revealed face leaves the rail layer. Keeping the rail columns where they
+                // are while putting this one pointer-transparent card last in paint order prevents
+                // Director and the status dock from cutting across the face being read.
+                heroOverviews.HoverPreviewRoot.RemoveFromHierarchy();
+                root.Add(heroOverviews.HoverPreviewRoot);
+            }
 
             ApplyDirectorDrawerState();
             Layout();
@@ -528,23 +677,29 @@ namespace GuardsDigital.Presentation.Match
             var height = viewport.y;
             var bar = CalculateStatusBarRect(width, height);
             statusBar?.Layout(bar, GetTieBreakerIndicatorRect());
-            // The tray is anchored to the bottom edge and grows upward only as far as its content
-            // needs, bounded by the region it may occupy. A fixed height would reserve the whole
-            // 360 pixels for a commitment row that uses two hundred of them, and every pixel it did
-            // not use would be board it covered for nothing.
-            // The tray is anchored to the bottom-left corner of the region it may occupy and sized to
-            // its own content in both directions, bounded by that region. A fixed 1280-by-360 box was
-            // reserving the whole of it for a commitment row that needs a third of the width and half
-            // the height, and every pixel it did not use was board it covered for nothing. The bound is
-            // what keeps milestone 5.1c's guarantee: four content-sized Defense choices plus Decline
-            // still have 1280 pixels to lay out in before anything has to scroll.
-            var tray = GetCardPanelRect();
+            // Milestone 8.25f2. The tray is a transparent full-width layout band. Its fixed ordinary
+            // height fits one 420-unit face plus only card chrome, while the five faces overlap inside
+            // the compact left footprint. Metadata sits in the separate status dock to the map's left.
+            trayUsesTallContext = round?.HasUpgradeCardGrid == true;
+            if (trayScroll != null)
+            {
+                trayScroll.verticalScrollerVisibility = trayUsesTallContext
+                    ? ScrollerVisibility.Auto
+                    : ScrollerVisibility.Hidden;
+            }
+            if (hands?.Root != null)
+            {
+                hands.Root.style.top = trayUsesTallContext ? 0f : OrdinaryCardDownshift;
+            }
+            var tray = trayUsesTallContext
+                ? CalculateTallCardPanelRect(width, height)
+                : GetCardPanelRect();
             trayRegion.style.left = tray.x;
-            trayRegion.style.top = StyleKeyword.Auto;
+            trayRegion.style.top = tray.y;
             trayRegion.style.right = StyleKeyword.Auto;
-            trayRegion.style.width = StyleKeyword.Auto;
-            trayRegion.style.height = StyleKeyword.Auto;
-            trayRegion.style.bottom = Mathf.Max(0f, height - tray.yMax);
+            trayRegion.style.bottom = StyleKeyword.Auto;
+            trayRegion.style.width = tray.width;
+            trayRegion.style.height = tray.height;
             trayRegion.style.maxWidth = tray.width;
             // Milestone 8.8a: p.15's upgrade prompt draws whole card faces in two rows, which is taller
             // than the share a tray of one row may take. It is allowed the whole space under the status
@@ -552,24 +707,15 @@ namespace GuardsDigital.Presentation.Match
             // mandatory decision, and the board's own framing is computed from the ordinary bound below,
             // so the map does not move when the prompt opens and closes. The region still sizes to its
             // own content, so a prompt that fits the ordinary bound occupies no more than it did.
-            trayUsesTallContext = round?.HasUpgradeCardGrid == true;
-            trayRegion.style.maxHeight = trayUsesTallContext
-                ? Mathf.Max(tray.height, CalculateTallContextHeight(height))
-                : tray.height;
-            var playfield = CalculatePlayfieldRect(width, height);
+            trayRegion.style.maxHeight = tray.height;
+            var playfield = CalculatePlayfieldRect(width, height, tray);
             heroOverviews?.Layout(
-                CalculateHeroRailRect(width, height, TeamSide.Red),
-                CalculateHeroRailRect(width, height, TeamSide.Blue),
+                CalculateHeroRailRect(width, height, TeamSide.Red, tray.yMin),
+                CalculateHeroRailRect(width, height, TeamSide.Blue, tray.yMin),
                 playfield);
-            var toggle = GetDirectorToggleRect();
-            directorToggle.style.left = toggle.x;
-            directorToggle.style.top = toggle.y;
-            directorToggle.style.width = toggle.width;
-            var drawer = GetDirectorDrawerRect();
-            directorDrawer.style.left = drawer.x;
-            directorDrawer.style.top = drawer.y;
-            directorDrawer.style.width = drawer.width;
+            LayoutDirectorControls();
             diagnostics?.Layout(GetRuleEventLogRect());
+            PublishCameraSafeLayout(tray, playfield, viewport);
         }
 
         /// <summary>
@@ -584,16 +730,42 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            hands.SetHidden(round.HasExclusiveDecision || minionChoice?.Model != null);
+            var usesTray = round.HasExclusiveDecision || minionChoice?.Model != null;
+            var hostChanged = usesTray != contextUsesTray;
+            if (hostChanged)
+            {
+                HostContextViewsInTray(usesTray);
+            }
+
+            hands.SetHidden(usesTray);
 
             // Milestone 8.8a. The tray's own bound depends on what the contextual region is drawing, and
             // that can change without the header changing - a paused prompt is rendered into the region
             // by its own presenter. Re-laying out only on the transition keeps this a two-state answer
             // rather than twenty style writes a frame.
-            if (round.HasUpgradeCardGrid != trayUsesTallContext)
+            if (hostChanged || round.HasUpgradeCardGrid != trayUsesTallContext)
             {
                 Layout();
             }
+        }
+
+        private void HostContextViewsInTray(bool useTray)
+        {
+            if (traySidebar == null || statusDock == null)
+            {
+                return;
+            }
+
+            var host = useTray ? traySidebar : statusDock;
+            round.Root.RemoveFromHierarchy();
+            minionChoice.Root.RemoveFromHierarchy();
+            hands.HeaderRoot.RemoveFromHierarchy();
+            host.Add(round.Root);
+            host.Add(minionChoice.Root);
+            host.Add(hands.HeaderRoot);
+            traySidebar.style.display = useTray ? DisplayStyle.Flex : DisplayStyle.None;
+            statusDock.style.display = useTray ? DisplayStyle.None : DisplayStyle.Flex;
+            contextUsesTray = useTray;
         }
 
         private void ApplyDirectorDrawerState()
@@ -615,6 +787,11 @@ namespace GuardsDigital.Presentation.Match
 
         private void OnDestroy()
         {
+            if (heroOverviews != null)
+            {
+                heroOverviews.ColumnGeometryChanged -= LayoutResolvedHudGeometry;
+            }
+
             if (panelSettings != null)
             {
                 Destroy(panelSettings);
@@ -626,51 +803,48 @@ namespace GuardsDigital.Presentation.Match
             new Rect(0f, 0f, Mathf.Max(0f, panelWidth), Mathf.Min(StatusBarHeight, Mathf.Max(0f, panelHeight)));
 
         /// <summary>
-        /// The share of a tall viewport the tray may use when its content needs it.
+        /// The tray's full-width reserved bottom band.
         ///
-        /// <see cref="CardPanelHeight"/> alone is milestone 5.1c's number, chosen so a Defense row of
-        /// four cards plus Decline fits. p.15's Upgrade a Card is a different shape - up to two options
-        /// per upgradable card - and six of them ran past 360 on a 1440-pixel screen, putting a whole
-        /// row of a mandatory choice behind a scrollbar with most of the screen empty above it. So 360
-        /// is the floor rather than the ceiling, and the ceiling follows the viewport. The tray still
-        /// sizes to its own content, so nothing here makes a small tray larger.
-        ///
-        /// Milestone 8.5a raised the share from a third to 0.46. A tray card now carries its face's
-        /// whole printed text, and the longest of Wasp's starting five - Static Barrier's two sentences
-        /// about radius - needs six wrapped lines that a third of a 1080-line viewport could not hold
-        /// without putting a row of five cards behind a scrollbar. The board keeps well over half the
-        /// screen at every validated viewport, and the small-viewport case is unaffected: below roughly
-        /// 860 lines the floor and the space under the status strip still decide the height.
-        /// </summary>
-        private const float CardPanelTallViewportShare = 0.46f;
-
-        /// <summary>
-        /// The tray's band: everything between the two hero-rail columns.
-        ///
-        /// <para>Milestone 8.25. The tray used to start at the left margin and run under both rails,
-        /// because a rail stopped where the tray began and the corner was free. Rulebook p.5's six
-        /// seats need three rails a side, and three do not stack in the band above the tray - the
-        /// measurement was 733 needed against 491 available at 1920x1080 - so the rails take the whole
-        /// column from the status strip to the bottom margin and the tray takes what is between them.
-        /// That is where the vertical room came from: the rails stopped competing with the tray for the
-        /// same corner.</para>
-        ///
-        /// <para><b>It starts at the window's own left margin.</b> The user's 2026-08-26 decision, taken
-        /// twice on seeing the six-player HUD: first that the tray should leave the centre of the band,
-        /// then that "all the way left" means the window edge rather than the edge of the band. The rail
-        /// column keeps the whole screen edge - that is where rulebook p.6's three rails a side came
-        /// from - so the two meet in the bottom-left corner, and the tray is drawn over the rail there.
-        /// At the reference resolution that overlap is the third rail's bottom padding and nothing a
-        /// player reads; <see cref="CalculateHeroRailRect"/> states the measurement and
-        /// <c>MinimalHexGridPlayModeTests</c> asserts that every row of every rail stays clear of the
-        /// tray.</para>
+        /// <para>Milestone 8.25f2 replaces the 1280-wide overlay after the enlarged native-ratio cards
+        /// exposed both of its costs: five cards required a horizontal scrollbar and its right corner
+        /// covered the map. The band now spans the viewport inside the standing margins, while the board
+        /// camera and rail columns stop at its top edge. The metadata lane beside the five-card row keeps
+        /// the band to 470 units, leaving a 902-unit playfield and enough height for the measured
+        /// three-rail stack on each side at the 2560-by-1440 reference.</para>
         /// </summary>
         public static Rect CalculateCardPanelRect(float panelWidth, float panelHeight)
         {
-            var left = Margin;
-            var width = Mathf.Min(CardPanelWidth, Mathf.Max(0f, panelWidth - (Margin * 2f)));
+            return CalculateCardPanelRect(panelWidth, panelHeight, CardPanelHeight);
+        }
+
+        /// <summary>
+        /// The ordinary hand's actual pointer-owning footprint inside the full-width layout band.
+        /// The rest of that transparent band belongs to the board: treating the layout reservation as
+        /// a hit surface made lower Blue heroes visibly unobstructed but impossible to click.
+        /// Mandatory decisions deliberately continue to block their complete live tray instead.
+        /// </summary>
+        public static Rect CalculateCompactHandPointerRect(float panelWidth, float panelHeight)
+        {
+            var tray = CalculateCardPanelRect(panelWidth, panelHeight);
+            return new Rect(
+                tray.x,
+                tray.y,
+                Mathf.Min(tray.width, CompactHandRightEdge),
+                tray.height);
+        }
+
+        private static Rect CalculateCardPanelRect(
+            float panelWidth,
+            float panelHeight,
+            float preferredHeight)
+        {
+            // The ordinary strip is visually only its cards, so its horizontal reservation reaches
+            // the screen edge. This removes the last invisible inset on the left and gives the same
+            // width back to the lower board arm on the right.
+            var left = 0f;
+            var width = Mathf.Max(0f, panelWidth);
             var height = Mathf.Min(
-                Mathf.Max(CardPanelHeight, panelHeight * CardPanelTallViewportShare),
+                Mathf.Max(0f, preferredHeight),
                 Mathf.Max(0f, panelHeight - (Margin * 2f) - StatusBarHeight));
             return new Rect(
                 left,
@@ -679,16 +853,19 @@ namespace GuardsDigital.Presentation.Match
                 height);
         }
 
+        private static Rect CalculateTallCardPanelRect(float panelWidth, float panelHeight) =>
+            CalculateCardPanelRect(panelWidth, panelHeight, CalculateTallContextHeight(panelHeight));
+
         /// <summary>
         /// The tallest the tray region may be when the contextual region is drawing whole card faces in
         /// more than one row: everything under the status strip, less the band the `DIRECTOR` toggle
         /// moves into, inside the same margin every region keeps.
         ///
-        /// Milestone 8.8a. `CardPanelTallViewportShare` exists to stop an ordinary one-row tray covering
-        /// board nobody asked it to; two rows of whole card faces are taller than that share allows, and
-        /// they are drawn only while a mandatory decision has already hidden the tray, so the bound is
-        /// stated separately here rather than by raising the share for every tray. The reserved toggle
-        /// band is what keeps Undo reachable at the one moment this region is at its largest.
+        /// Milestone 8.8a. Two rows of whole card faces are taller than the ordinary reserved band, and
+        /// they are drawn only while a mandatory decision has already hidden the hand. The reserved
+        /// toggle band keeps Undo reachable at the one moment this region is at its largest. Milestone
+        /// 8.25f2 additionally sends this temporary bound to the board camera, so the larger context
+        /// still replaces rather than covers the visible playfield.
         /// </summary>
         public static float CalculateTallContextHeight(float panelHeight) =>
             Mathf.Max(
@@ -698,55 +875,86 @@ namespace GuardsDigital.Presentation.Match
         public static Rect CalculatePlayfieldRect(float panelWidth, float panelHeight)
         {
             var tray = CalculateCardPanelRect(panelWidth, panelHeight);
-            return new Rect(
+            return CalculatePlayfieldRect(panelWidth, panelHeight, tray);
+        }
+
+        private static Rect CalculatePlayfieldRect(
+            float panelWidth,
+            float panelHeight,
+            Rect tray)
+        {
+            var availableHeight = Mathf.Max(
                 0f,
+                tray.yMin - StatusBarHeight - BoardTraySeparation);
+            var red = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Red, tray.yMin);
+            var blue = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Blue, tray.yMin);
+            var right = Mathf.Max(0f, blue.xMin - Margin);
+            var availableWidth = Mathf.Max(0f, right - red.xMax - Margin);
+            var height = Mathf.Min(availableHeight, availableWidth / BoardViewportAspect);
+            var width = height * BoardViewportAspect;
+            return new Rect(
+                Mathf.Max(0f, right - width),
                 StatusBarHeight,
-                Mathf.Max(0f, panelWidth),
-                Mathf.Max(0f, tray.yMin - StatusBarHeight));
+                width,
+                height);
         }
 
         /// <summary>
-        /// One team's rail column: the whole screen edge from under the status strip to the bottom
-        /// margin.
-        ///
-        /// <para>Milestone 8.25. It used to stop where the tray began, which left about 491 lines at
-        /// 1920x1080 - a third of a rail short of holding rulebook p.6's three heroes a side, measured
-        /// at 8.23a. A column that runs the whole height has about 1000 there, which holds three rails
-        /// of the height 8.23a's recomposition achieved with room over.</para>
-        ///
-        /// <para><b>The column and the tray meet in the bottom corners, and the tray is drawn over the
-        /// column there.</b> That is the user's 2026-08-26 decision. At the reference resolution the
-        /// measurement is: three rails draw 733 from 68, so the third ends at 801 against a tray top
-        /// edge at 765.6 - an overlap of about 35, which is the third rail's bottom padding and border
-        /// rather than any row it draws. `gd-hero-rails` is added to the panel before `gd-tray-region`,
-        /// which is what decides the z-order, so a later change reordering those two silently reverses
-        /// it.</para>
-        ///
-        /// <para><b>Milestone 8.25c is why that overlap is now the same on every screen, and why it is
-        /// small.</b> Before it, the rails were a fixed count of device pixels and the tray's height a
-        /// share of the viewport, so the overlap was about 35 at 2560x1440 and about 230 at 1920x1080 -
-        /// which buried the whole third rail on the smaller screen. The layout is written in reference
-        /// units now and the reference is 2560x1440, so every screen gets the 35.</para>
-        ///
-        /// <para>The width bound is unchanged and is still the standing product rule - both rails
-        /// together stay under half the narrowest validated viewport, so the board remains the dominant
-        /// surface.</para>
-        ///
-        /// <para><b>Milestone 8.25c re-derived both of 8.25's accepted geometry facts.</b> Three rails
-        /// still stack a side - measured at 733 drawn into this 1360-unit column, with room over - and
-        /// the tray still meets the third one. What the re-derivation changed is that the meeting is
-        /// one number everywhere instead of a different number per screen, and that the number is the
-        /// small one. See <see cref="MatchHudPanelScaling"/> for why the reference is 2560x1440 and not
-        /// the screen the older numbers were quoted at.</para>
+        /// The ordinary round/hand information block in the open area beside the Red rail. Its fixed
+        /// largest-state right edge is the same boundary the upper hex-safe arm starts beyond, and its
+        /// bottom edge stops before the card band, so state changes move neither map nor cards.
+        /// </summary>
+        public static Rect CalculateStatusDockRect(float panelWidth, float panelHeight)
+        {
+            var tray = CalculateCardPanelRect(panelWidth, panelHeight);
+            var playfield = CalculatePlayfieldRect(panelWidth, panelHeight, tray);
+            return CalculateStatusDockRect(panelWidth, panelHeight, tray, playfield);
+        }
+
+        private static Rect CalculateStatusDockRect(
+            float panelWidth,
+            float panelHeight,
+            Rect tray,
+            Rect playfield)
+        {
+            var red = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Red, tray.yMin);
+            var left = Mathf.Min(Mathf.Max(0f, panelWidth), red.xMin);
+            var right = Mathf.Min(
+                Mathf.Max(left, panelWidth - Margin),
+                left + StatusDockWidth);
+            var height = Mathf.Min(StatusDockHeight, playfield.height);
+            return new Rect(
+                left,
+                Mathf.Max(playfield.yMin, playfield.yMax - height),
+                Mathf.Max(0f, right - left),
+                height);
+        }
+
+        /// <summary>
+        /// One team's rail column: the screen edge under the status strip and above the reserved card
+        /// band. Milestone 8.25c's 2560-by-1440 reference makes this about 878 units high with the
+        /// enlarged ordinary tray, still above the measured 733 required by three complete rails.
+        /// Milestone 8.25f2 stops the column at the tray instead of relying on z-order and hidden bottom
+        /// padding, while the unchanged width rule keeps both rails together under half the viewport.
         /// </summary>
         public static Rect CalculateHeroRailRect(float panelWidth, float panelHeight, TeamSide side)
+        {
+            var tray = CalculateCardPanelRect(panelWidth, panelHeight);
+            return CalculateHeroRailRect(panelWidth, panelHeight, side, tray.yMin);
+        }
+
+        private static Rect CalculateHeroRailRect(
+            float panelWidth,
+            float panelHeight,
+            TeamSide side,
+            float bottomBoundary)
         {
             var width = CalculateHeroRailWidth(panelWidth);
             var x = side == TeamSide.Red
                 ? Margin
                 : Mathf.Max(Margin, panelWidth - width - Margin);
             var top = StatusBarHeight + Margin;
-            return new Rect(x, top, width, Mathf.Max(0f, panelHeight - top - Margin));
+            return new Rect(x, top, width, Mathf.Max(0f, bottomBoundary - top - Margin));
         }
 
         private static float CalculateHeroRailWidth(float panelWidth) =>
@@ -774,23 +982,23 @@ namespace GuardsDigital.Presentation.Match
             CalculateTieBreakerIndicatorRect(PanelViewport.x, PanelViewport.y);
 
         /// <summary>
-        /// Where the `DIRECTOR` toggle stands: just above the tray, or - milestone 8.8a - just under the
-        /// status strip while p.15's upgrade grid has the tray region taller than its ordinary bound.
+        /// Where the `DIRECTOR` toggle stands: directly below the live third Red hero, or - milestone
+        /// 8.8a - just under the status strip while p.15's upgrade grid has the tray region taller than
+        /// its ordinary bound.
         ///
         /// The move exists because the toggle is the only way to Undo, and Undo is exactly as legitimate
         /// while a mandatory decision stands as at any other moment; leaving it under the enlarged region
         /// would have covered it. <see cref="CalculateTallContextHeight"/> reserves this band, so the
         /// toggle stays clear even when the grid takes the whole bound.
         /// </summary>
-        private Rect GetDirectorToggleRect()
+        private Rect CalculateDirectorToggleRect()
         {
-            // Beside the Red rail rather than on it: the rail owns the left edge from the status strip
-            // to the bottom margin, and the band between it and the board is the only part of this
-            // column nothing else draws in. Milestone 8.8a put the tall-context toggle here; milestone
-            // 8.25 gave the rail the rest of that column, so the ordinary toggle moves in beside it too
-            // and only the height it sits at still depends on what the contextual region is drawing.
             var viewport = PanelViewport;
-            var rail = CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Red);
+            var tray = trayUsesTallContext
+                ? CalculateTallCardPanelRect(viewport.x, viewport.y)
+                : CalculateCardPanelRect(viewport.x, viewport.y);
+            var rail = CalculateHeroRailRect(
+                viewport.x, viewport.y, TeamSide.Red, tray.yMin);
             if (trayUsesTallContext)
             {
                 return new Rect(
@@ -800,12 +1008,132 @@ namespace GuardsDigital.Presentation.Match
                     DirectorToggleHeight);
             }
 
-            var playfield = CalculatePlayfieldRect(viewport.x, viewport.y);
+            var playfield = CalculatePlayfieldRect(viewport.x, viewport.y, tray);
+            var lowestY = rail.yMin;
+            if (heroOverviews?.TryGetRedColumnBounds(out var liveRed) == true)
+            {
+                lowestY = Mathf.Max(lowestY, liveRed.yMax + DirectorRailGap);
+            }
+
             return new Rect(
-                rail.xMax + Margin,
-                Mathf.Max(Margin, playfield.yMax - DirectorToggleHeight - Margin),
-                DirectorToggleWidth,
+                rail.xMin,
+                Mathf.Min(
+                    lowestY,
+                    Mathf.Max(rail.yMin, playfield.yMax - DirectorToggleHeight - Margin)),
+                Mathf.Min(DirectorToggleWidth, rail.width),
                 DirectorToggleHeight);
+        }
+
+        private Rect GetDirectorToggleRect() =>
+            TryLiveRect(directorToggle, out var live) ? live : CalculateDirectorToggleRect();
+
+        private void LayoutResolvedHudGeometry()
+        {
+            if (root == null || trayRegion == null)
+            {
+                return;
+            }
+
+            LayoutDirectorControls();
+            var viewport = PanelViewport;
+            var tray = trayUsesTallContext
+                ? CalculateTallCardPanelRect(viewport.x, viewport.y)
+                : CalculateCardPanelRect(viewport.x, viewport.y);
+            var playfield = CalculatePlayfieldRect(viewport.x, viewport.y, tray);
+            PublishCameraSafeLayout(tray, playfield, viewport);
+        }
+
+        private void PublishCameraSafeLayout(Rect tray, Rect playfield, Vector2 viewport)
+        {
+            if (trayUsesTallContext)
+            {
+                CameraSafeLayout = new BoardCameraSafeLayout(playfield, default, viewport);
+                PlayfieldLayoutChanged?.Invoke(CameraSafeLayout);
+                return;
+            }
+
+            var red = CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Red, tray.yMin);
+            var blue = CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Blue, tray.yMin);
+            // Status and Director live on the left; Blue's rail owns the right edge. Between them the
+            // broad part of the map may use the whole remaining screen height. Compact hand previews
+            // and their full hover reveals stay wholly left of this arm.
+            var upperLeft = Mathf.Max(
+                red.xMax + BoardHexUiGap,
+                red.xMin + StatusDockWidth + BoardHexUiGap);
+            var upperRight = Mathf.Max(upperLeft, blue.xMin - BoardHexUiGap);
+            var upperTop = StatusBarHeight + BoardHexUiGap;
+            var upperBottom = Mathf.Max(upperTop, viewport.y - BoardHexUiGap);
+            var upper = new Rect(
+                upperLeft,
+                upperTop,
+                upperRight - upperLeft,
+                upperBottom - upperTop);
+
+            // Five cards occupy only the lower-left. Once the resolved Blue stack has ended, the area
+            // to their right is empty and can receive the board's tapered end. Using the live stack
+            // edge is the difference between genuinely free space and the old conservative rail rect.
+            var lowerTop = upperBottom;
+            if (heroOverviews?.TryGetBlueColumnBounds(out var liveBlue) == true)
+            {
+                lowerTop = Mathf.Min(lowerTop, liveBlue.yMax + BoardHexUiGap);
+            }
+
+            // The lower arm begins after the furthest possible full-size hover reveal: the fifth
+            // compact slot's left edge plus one standard card width. This keeps a revealed card clear
+            // of every playable hex while reclaiming the width the other four full faces used to hold.
+            var lowerLeft = CompactHandRightEdge + BoardCardHexUiGap;
+            var lowerRight = Mathf.Max(lowerLeft, viewport.x - BoardHexUiGap);
+            var lowerBottom = Mathf.Max(lowerTop, viewport.y - BoardHexUiGap);
+            var lower = new Rect(
+                lowerLeft,
+                lowerTop,
+                lowerRight - lowerLeft,
+                lowerBottom - lowerTop);
+
+            CameraSafeLayout = new BoardCameraSafeLayout(upper, lower, viewport);
+            PlayfieldLayoutChanged?.Invoke(CameraSafeLayout);
+        }
+
+        private void LayoutDirectorControls()
+        {
+            if (root == null || directorToggle == null || directorDrawer == null)
+            {
+                return;
+            }
+
+            var toggle = CalculateDirectorToggleRect();
+            directorToggle.style.left = toggle.x;
+            directorToggle.style.top = toggle.y;
+            directorToggle.style.width = toggle.width;
+            directorToggle.style.height = toggle.height;
+
+            var viewport = PanelViewport;
+            var tray = trayUsesTallContext
+                ? CalculateTallCardPanelRect(viewport.x, viewport.y)
+                : CalculateCardPanelRect(viewport.x, viewport.y);
+            var statusTop = toggle.yMax + DirectorStatusGap;
+            var statusWidth = Mathf.Min(
+                StatusDockWidth,
+                Mathf.Max(0f, viewport.x - Margin - toggle.x));
+            var statusHeight = Mathf.Min(
+                StatusDockHeight,
+                Mathf.Max(0f, tray.yMin - statusTop));
+            statusDock.style.left = toggle.x;
+            statusDock.style.top = statusTop;
+            // Pin all six bounds. Width/height alone can still be negotiated by flex layout; matching
+            // minimum and maximum values makes the largest ordinary state the invariant footprint.
+            // A genuinely smaller viewport is the only reason the declared size is bounded here.
+            statusDock.style.width = statusWidth;
+            statusDock.style.minWidth = statusWidth;
+            statusDock.style.maxWidth = statusWidth;
+            statusDock.style.height = statusHeight;
+            statusDock.style.minHeight = statusHeight;
+            statusDock.style.maxHeight = statusHeight;
+            var drawer = CalculateDirectorDrawerRect(toggle);
+            directorDrawer.style.left = drawer.x;
+            directorDrawer.style.top = drawer.y;
+            directorDrawer.style.width = drawer.width;
+            directorDrawer.style.height = drawer.height;
         }
 
         /// <summary>
@@ -815,6 +1143,11 @@ namespace GuardsDigital.Presentation.Match
         private Rect GetDirectorDrawerRect()
         {
             var toggle = GetDirectorToggleRect();
+            return CalculateDirectorDrawerRect(toggle);
+        }
+
+        private Rect CalculateDirectorDrawerRect(Rect toggle)
+        {
             return new Rect(
                 toggle.x,
                 trayUsesTallContext

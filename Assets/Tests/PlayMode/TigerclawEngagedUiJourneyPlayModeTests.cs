@@ -281,20 +281,9 @@ namespace GuardsDigital.Tests.PlayMode
             // The player reads it on his own tray, as the played card's slot wearing the outline.
             yield return PointTrayAt(root, tigerclawId);
             yield return null;
-            var slots = UiPlayer.Descendants(hud.RootElement)
-                .Where(element => element.name == "gd-card-slot" &&
-                    UiPlayer.Descendants(element).Any(child =>
-                        child.name == "gd-card-name" &&
-                        child is UnityEngine.UIElements.Label label &&
-                        label.text == "BLEND INTO SHADOWS"))
-                .ToArray();
-            Assert.That(slots, Has.Length.EqualTo(1),
-                "His own tray must draw the card that raised it exactly once. Card names on screen: " +
-                string.Join(", ", UiPlayer.Descendants(hud.RootElement)
-                    .Where(element => element.name == "gd-card-name")
-                    .OfType<UnityEngine.UIElements.Label>()
-                    .Select(label => label.text)));
-            Assert.That(slots[0].resolvedStyle.borderTopColor.a, Is.GreaterThan(0.5f),
+            var slot = UiPlayer.NamedElementWithText(
+                hud, "gd-card-slot", "BLEND INTO SHADOWS");
+            Assert.That(slot.resolvedStyle.borderTopColor.a, Is.GreaterThan(0.5f),
                 "and it wears the Active-effect outline while the shadow lasts.");
 
             yield return CaptureGameView("blend-into-shadows-places-him-and-draws-its-effect");

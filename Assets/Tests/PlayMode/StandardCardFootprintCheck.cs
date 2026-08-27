@@ -22,11 +22,11 @@ namespace GuardsDigital.Tests.PlayMode
     /// added after the mapped pitch roster gets the same measurement as the two that shipped before
     /// the check existed.</para>
     ///
-    /// <para><b>What it proves, and why each half is needed.</b> A prepared front is exactly the
-    /// 186-by-260 native-aspect image with no synthetic frame; a generated fallback is exactly the
-    /// 186-by-420 typed face. Both are measured after panel layout, because a declared size is only a
-    /// preference until a container overrules it. For the fallback, the fit half additionally asserts
-    /// that its five bands stay in order and every typed word fits inside the box.</para>
+    /// <para><b>What it proves, and why each half is needed.</b> A prepared front is exactly the shared
+    /// 420-high native-aspect image with no synthetic frame; a generated fallback uses the same outer
+    /// box. Both are measured after panel layout, because a declared size is only a preference until a
+    /// container overrules it. For the fallback, the fit half additionally asserts that its five bands
+    /// stay in order and every typed word fits inside the box.</para>
     ///
     /// <para>Failures are collected and reported together rather than thrown at the first face. A hero
     /// whose set does not fit is one fact about that set, and reading it one card per run would take

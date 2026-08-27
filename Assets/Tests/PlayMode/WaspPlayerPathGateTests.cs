@@ -150,7 +150,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// the cards scrolls and the cards keep their size.
         /// </summary>
         private const string FootprintAtAShortViewport =
-            "Scene_KeepsTheCardFootprintAtAShortViewportAndScrollsTheRegion";
+            "Scene_KeepsTheCardFootprintAndFitsTheHandAtAShortViewport";
 
         /// <summary>
         /// Milestone 8.21a: rulebook p.13's Defeat reward, paid to the acting hero through a real

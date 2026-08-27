@@ -56,11 +56,13 @@ namespace GuardsDigital.Tests.PlayMode
                 view.GetComponent<SpriteRenderer>().sprite != null));
             Assert.That(cameras, Has.Length.EqualTo(1));
             Assert.That(cameras[0].orthographic, Is.True);
-            Assert.That(tiles.All(tile =>
+            Assert.That(tiles.Where(tile => tile.IsPlayable).All(tile =>
             {
                 var viewport = cameras[0].WorldToViewportPoint(tile.transform.position);
                 return viewport.x >= 0f && viewport.x <= 1f && viewport.y >= 0f && viewport.y <= 1f;
-            }), Is.True);
+            }), Is.True,
+                "Every playable hex remains on screen; decorative terrain and artwork may extend " +
+                "behind the full-screen HUD.");
         }
 
         /// <summary>
@@ -156,15 +158,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(panel.xMax, Is.LessThanOrEqualTo(viewport.x));
             Assert.That(panel.yMax, Is.LessThanOrEqualTo(viewport.y));
             Assert.That(panel.width,
-                Is.EqualTo(Mathf.Min(1280f, Mathf.Max(0f, viewport.x - 24f))).Within(0.01f));
-            // Milestone 7.8a: the tray also clears the standing status strip, so the two never claim
-            // the same pixels and neither guaranteed surface can hide behind the other. Its height
-            // bound is 360 or a share of a tall viewport, whichever is larger, and never more than the
-            // space left below the strip. Milestone 8.5a raised that share to 0.46, because a tray card
-            // now carries its face's whole printed text.
+                Is.EqualTo(Mathf.Max(0f, viewport.x)).Within(0.01f));
+            // Milestone 8.25f2: the ordinary tray reserves exactly one readable-card band, capped only
+            // when a deliberately short panel has less room beneath the status strip.
             Assert.That(panel.height,
                 Is.EqualTo(Mathf.Min(
-                    Mathf.Max(360f, viewport.y * 0.46f),
+                    ConfiguredMatchHudRenderer.CardPanelHeight,
                     Mathf.Max(0f, viewport.y - 24f - ConfiguredMatchHudRenderer.StatusBarHeight)))
                     .Within(0.01f));
             Assert.That(panel.yMin,
@@ -292,15 +291,29 @@ namespace GuardsDigital.Tests.PlayMode
                     "and the flip that turns a bottom-left pointer position into a top-left panel " +
                     "one no longer lands where the panel's own conversion does.");
 
-                // And the boundary agrees with what is drawn, on the live panel rather than on
-                // computed rectangles: a screen pixel over the tray as it stands is blocked.
+                // And the boundary agrees with the physical hand's actual painted footprint. The
+                // tray is a full-width layout reservation, but its transparent right side belongs to
+                // the board so lower Blue heroes remain clickable.
                 var tray = Named(hud.RootElement, "gd-tray-region").worldBound;
+                var compactHand = ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(
+                    predicted.x, predicted.y);
+                Assert.That(tray.Contains(compactHand.center), Is.True,
+                    "The compact hand must remain inside the live tray reservation.");
                 Assert.That(
                     hud.BlocksPointerAt(
                         MatchHudPanelScaling.PanelPointToScreen(
-                            tray.center, deviceWidth, deviceHeight)),
+                            compactHand.center, deviceWidth, deviceHeight)),
                     Is.True,
-                    "The HUD does not consume the pointer where it draws the tray.");
+                    "The HUD does not consume the pointer where it draws the compact hand.");
+                var transparentTrayPoint = new Vector2(
+                    (compactHand.xMax + tray.xMax) * 0.5f,
+                    tray.center.y);
+                Assert.That(
+                    hud.BlocksPointerAt(
+                        MatchHudPanelScaling.PanelPointToScreen(
+                            transparentTrayPoint, deviceWidth, deviceHeight)),
+                    Is.False,
+                    "The transparent part of the tray reservation must leave the board clickable.");
             }
             finally
             {
@@ -336,7 +349,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(rails, Has.Length.EqualTo(root.Runtime.Setup.Heroes.Count),
                 "One overview per projected hero, drawn as a repeated component.");
 
-            foreach (var rect in new[] { hud.CardPanelRect, hud.TieBreakerIndicatorRect })
+            var compactHand = ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(
+                ConfiguredMatchHudRenderer.PanelViewport.x,
+                ConfiguredMatchHudRenderer.PanelViewport.y);
+            foreach (var rect in new[] { compactHand, hud.TieBreakerIndicatorRect })
             {
                 Assert.That(
                     hud.BlocksPointerAt(
@@ -345,6 +361,16 @@ namespace GuardsDigital.Tests.PlayMode
                     Is.True,
                     $"The HUD consumes the pointer over {rect}.");
             }
+
+            var openTrayPoint = new Vector2(
+                (compactHand.xMax + hud.CardPanelRect.xMax) * 0.5f,
+                hud.CardPanelRect.center.y);
+            Assert.That(
+                hud.BlocksPointerAt(
+                    MatchHudPanelScaling.PanelPointToScreen(
+                        openTrayPoint, Screen.width, Screen.height)),
+                Is.False,
+                "The tray's unpainted right side remains available to board clicks.");
 
             Assert.That(hud.IsDirectorDrawerOpen, Is.False);
             var acceptedBefore = root.Runtime.AcceptedCommands.Count;
@@ -362,11 +388,9 @@ namespace GuardsDigital.Tests.PlayMode
         /// Milestone 8.25: the scene a player loads composes rulebook p.5's six seats, and the HUD
         /// draws all six of them.
         ///
-        /// <para>Three rails a side did not fit in the band the rails used to have - milestone 8.23a
-        /// measured 733 needed against 491 available at 1920x1080 - so the rail column now runs the
-        /// whole screen edge and the tray takes what is between the two columns. What this asks is that
-        /// the arrangement actually holds it: six rails, three per column, every one of them inside its
-        /// own column's rectangle, and the tray clear of both columns rather than under them.</para>
+        /// <para>Milestone 8.25f2 makes the tray a reserved full-width bottom band. What this asks is
+        /// that the remaining edge columns still hold all six rails: three per side, every one inside
+        /// its own rectangle, and both columns ending above the tray.</para>
         ///
         /// <para>It reads the live element bounds rather than the deterministic rects, because a rail's
         /// height follows its content and the question is whether the content fits.</para>
@@ -427,18 +451,8 @@ namespace GuardsDigital.Tests.PlayMode
                 }
             }
 
-            // MILESTONE 8.25c: A RAIL THE HUD DRAWS IS A RAIL A PLAYER CAN READ.
-            //
-            // This is the check whose absence let milestone 8.25 ship a HUD with two of its six rails
-            // invisible. Every assertion above is about rectangles - three rails fit inside the column
-            // the renderer reserved, and they did - while the tray was drawn over the bottom 230 units
-            // of that 1000-unit column, which is where the third rail is. The overlap was recorded as
-            // a `TestContext.WriteLine` and as a deliberate decision, so nothing failed.
-            //
-            // 8.25 recorded the cost as the third rail's "discard row and the last turn slots". The
-            // measurement 8.25c took is that three rails draw 733 from 68, so the third occupies 562
-            // to 801 against a tray top edge at 571.2: nine readable units out of 239. The tray moved
-            // into the band between the columns, and this asserts the result rather than reporting it.
+            // A rail the HUD draws is a rail a player can read. The reserved column itself now ends at
+            // the tray, so the geometry and every readable row agree without relying on z-order.
             var tray = hud.CardPanelRect;
             var redColumn = Named(hud.RootElement, "gd-hero-rail-red").worldBound;
             var referencePanel = ConfiguredMatchHudRenderer.PanelViewport;
@@ -450,15 +464,10 @@ namespace GuardsDigital.Tests.PlayMode
                     " pixels per unit), three rails draw " + redColumn.height + " into the " +
                     hud.RedHeroRailRect.height + "-unit column, and the tray is " + tray + ".");
 
-            // EVERY ROW OF EVERY RAIL IS CLEAR OF THE TRAY AS IT IS DRAWN - which is the claim, rather
-            // than that the boxes do not touch. Two things make the drawn box the right one to measure
-            // against. The rail's own box runs about 35 units under the tray's reserved rect at the
-            // reference resolution, and that band is the rail's bottom padding and border rather than
-            // anything a player reads. And the tray region is anchored to the bottom and sized to its
-            // own content inside that rect, so the rect is the space it MAY take and the drawn box is
-            // the space it does - which is what actually covers anything, and what
-            // `ConfiguredMatchHudRenderer.BlocksPointerAt` itself prefers.
+            // Every row and the declared rail column are clear of the tray as drawn.
             var drawnTray = Named(hud.RootElement, "gd-tray-region").worldBound;
+            Assert.That(redColumn.yMax, Is.LessThanOrEqualTo(drawnTray.yMin + 0.5f),
+                "The rail column ends before the reserved card band.");
             var readableRows = new[]
             {
                 "gd-hero-icon", "gd-bonus-strip", "gd-item-chips", "gd-hero-coins",
@@ -588,6 +597,52 @@ namespace GuardsDigital.Tests.PlayMode
         /// definition's; this proves the cards fit.
         /// </summary>
         [UnityTest]
+        public IEnumerator Scene_KeepsEveryPlayableHexClearWhileBoardArtworkUsesTheFullScreen()
+        {
+            yield return LoadOfficialSixPlayerScene();
+            yield return null;
+            yield return null;
+
+            var hud = Root().Hud;
+            var tray = Named(hud.RootElement, "gd-tray-region").worldBound;
+            var camera = Object.FindAnyObjectByType<Camera>();
+            var panelViewport = ConfiguredMatchHudRenderer.PanelViewport;
+            Assert.That(camera.rect.x, Is.Zero.Within(0.0001f));
+            Assert.That(camera.rect.y, Is.Zero.Within(0.0001f));
+            Assert.That(camera.rect.width, Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(camera.rect.height, Is.EqualTo(1f).Within(0.0001f),
+                "The camera draws the decorative board across the dead space behind the HUD.");
+            var mapView = Object.FindAnyObjectByType<PlaceholderTestGridView>();
+            var safe = hud.CameraSafeLayout;
+            Assert.That(safe.IsValid, Is.True);
+            Assert.That(safe.LowerRightRegion.xMin, Is.GreaterThan(tray.xMin));
+            Assert.That(safe.LowerRightRegion.yMax, Is.GreaterThan(tray.yMin));
+            Assert.That(safe.UpperRegion.yMax,
+                Is.EqualTo(panelViewport.y - ConfiguredMatchHudRenderer.BoardHexUiGap).Within(0.6f),
+                "The broad safe arm uses the complete screen height; only actual hex containment, " +
+                "not decorative artwork, is reserved.");
+            Assert.That(safe.LowerRightRegion.xMin,
+                Is.EqualTo(
+                    ConfiguredMatchHudRenderer.CompactHandRightEdge +
+                    ConfiguredMatchHudRenderer.BoardCardHexUiGap).Within(0.6f),
+                "The lower safe edge follows the furthest full hover face, not five side-by-side " +
+                "card slots.");
+            var projectedHexes = mapView.CurrentTiles
+                .Where(tile => tile.IsPlayable)
+                .Select(tile => ProjectedPanelBounds(tile, camera, panelViewport, mapView.OuterRadius))
+                .ToArray();
+            Assert.That(projectedHexes, Has.Length.EqualTo(210));
+            Assert.That(projectedHexes.All(bounds =>
+                    ContainsBounds(safe.UpperRegion, bounds) ||
+                    ContainsBounds(safe.LowerRightRegion, bounds)),
+                Is.True,
+                "Every complete hex fits one safe arm; no card, status block or rail touches it.");
+            Assert.That(projectedHexes.Any(bounds => bounds.yMax > tray.yMin + 0.5f), Is.True,
+                "At least one playable hex uses the reclaimed strip beside the hand; the camera did " +
+                "not fall back to the old rectangle above the tray.");
+        }
+
+        [UnityTest]
         public IEnumerator Scene_DrawsTheVerifiedCardFacesInTheTrayAndCapturesThemForInspection()
         {
             using var generatedFallback =
@@ -635,6 +690,23 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the words on screen are the verified transcriptions, whole and unabbreviated.");
 
             var tray = Named(hud.RootElement, "gd-tray-region");
+            Assert.That(tray.resolvedStyle.backgroundColor.a, Is.LessThanOrEqualTo(0.001f),
+                "The layout-only tray draws no panel behind the imported card faces.");
+            Assert.That(new[]
+                {
+                    tray.resolvedStyle.borderTopWidth,
+                    tray.resolvedStyle.borderRightWidth,
+                    tray.resolvedStyle.borderBottomWidth,
+                    tray.resolvedStyle.borderLeftWidth
+                }, Has.All.EqualTo(0f).Within(0.01f),
+                "The hand has no surrounding tray outline; only the cards remain visible.");
+            var trayScroll = Descendants(hud.RootElement).OfType<ScrollView>()
+                .Single(element => element.name == "gd-tray-scroll");
+            Assert.That(trayScroll.mode, Is.EqualTo(ScrollViewMode.Vertical),
+                "The enlarged hand fits horizontally; only short-height overflow may scroll.");
+            Assert.That(trayScroll.horizontalScrollerVisibility, Is.EqualTo(ScrollerVisibility.Hidden));
+            Assert.That(trayScroll.verticalScrollerVisibility, Is.EqualTo(ScrollerVisibility.Hidden),
+                "The ordinary hand exposes no scrollbar in either direction.");
             // Milestone 8.20c replaced the vertical half of this claim, which used to be made only
             // where the viewport was tall enough to hold a card plus the tray's chrome. A card is now
             // exactly `CardFootprint` tall on every surface and no supported desktop viewport leaves
@@ -658,38 +730,79 @@ namespace GuardsDigital.Tests.PlayMode
                     "only tolerance is one snapped panel pixel.");
             }
 
-            // One row: the cards share a top edge. Checked only where the viewport is actually wide
-            // enough for five of them, so a cramped Game View reports nothing rather than a false
-            // failure - the fixed-resolution arithmetic is asserted in MatchHudPresentationTests.
-            var required = (5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap +
-                (2f * (DirectorHandsUnityView.ActiveOutlineGap +
-                    DirectorHandsUnityView.ActiveOutlineWidth)))) + 30f;
-            if (hud.CardPanelRect.width >= required)
-            {
-                Assert.That(cards.Select(card => Mathf.Round(card.worldBound.yMin)).Distinct().Count(),
-                    Is.EqualTo(1),
-                    "Five cards of one hand are one readable row, never a wrapped second line.");
-            }
-
-            // Milestone 8.5a, by the user's 2026-08-21 decision: the board framing reserves a share of
-            // the viewport's width along the left edge, where the tray stands, instead of centring the
-            // map in the whole viewport.
-            //
-            // Stated as the asymmetry it produces rather than as a pixel count, so it holds at any
-            // resolution or aspect and cannot pass by luck: under the centred framing this replaced the
-            // map's margins were equal by construction, so `min == 1 - max` exactly and this comparison
-            // is false. The reserve settled where the user wanted the board rather than at the value
-            // that would clear the tray completely, so a little of the map is behind the cards and the
-            // gain is what the reserve buys - the left band is the tray's.
-            var camera = Object.FindAnyObjectByType<Camera>();
-            var viewportX = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
-                .Select(tile => camera.WorldToViewportPoint(tile.transform.position).x)
+            var cardRow = Named(hud.RootElement, "gd-card-buttons");
+            Assert.That(cardRow.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap));
+            Assert.That(cardRow.worldBound.xMin, Is.GreaterThanOrEqualTo(tray.worldBound.xMin));
+            Assert.That(cardRow.worldBound.xMax, Is.LessThanOrEqualTo(tray.worldBound.xMax),
+                "Five readable cards fit simultaneously without sideways scrolling.");
+            Assert.That(cards.Select(card => Mathf.Round(card.worldBound.yMin)).Distinct().Count(),
+                Is.EqualTo(1),
+                "Five cards of one hand remain one ordered row.");
+            Assert.That(cards.Max(card => card.worldBound.yMax),
+                Is.LessThanOrEqualTo(tray.worldBound.yMax + 0.5f),
+                "Lowering the cards spends dead space but never clips a printed face at the screen " +
+                "edge.");
+            Assert.That(tray.resolvedStyle.paddingTop,
+                Is.EqualTo(ConfiguredMatchHudRenderer.TrayCardTopPadding).Within(0.1f));
+            Assert.That(tray.resolvedStyle.paddingBottom,
+                Is.EqualTo(ConfiguredMatchHudRenderer.TrayBottomPadding).Within(0.1f));
+            Assert.That(tray.resolvedStyle.paddingTop,
+                Is.EqualTo(tray.resolvedStyle.paddingBottom).Within(0.1f),
+                "The layout-only reservation adds no invisible inset around the cards.");
+            var handRoot = Named(hud.RootElement, "gd-card-tray");
+            Assert.That(handRoot.style.top.value.value,
+                Is.EqualTo(ConfiguredMatchHudRenderer.OrdinaryCardDownshift).Within(0.1f),
+                "The card row spends the tray's formerly dead bottom strip instead of leaving the " +
+                "faces pinned to its top.");
+            Assert.That(tray.resolvedStyle.paddingLeft,
+                Is.EqualTo(ConfiguredMatchHudRenderer.TrayHorizontalPadding).Within(0.1f),
+                "The invisible tray inset does not hold the cards away from the left edge.");
+            var statusDockElement = Named(hud.RootElement, "gd-status-dock");
+            Assert.That(statusDockElement, Is.Not.Null,
+                "Round and hand status have their own dock in the former Director-side area.");
+            var statusDock = statusDockElement.worldBound;
+            var redHeroes = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-hero-rail" &&
+                    element.parent?.name == "gd-hero-rail-red")
                 .ToArray();
-            Assert.That(viewportX.Min(), Is.GreaterThan(1f - viewportX.Max()),
-                "The map sits right of centre, leaving the viewport's left band to the card tray.");
-            Assert.That(viewportX.Min(), Is.GreaterThanOrEqualTo(0f));
-            Assert.That(viewportX.Max(), Is.LessThanOrEqualTo(1f),
-                "and it is still whole - the reserve never pushes a space out of the view.");
+            Assert.That(redHeroes, Has.Length.GreaterThanOrEqualTo(1));
+            var lastRedHero = redHeroes[redHeroes.Length - 1].worldBound;
+            var director = Named(hud.RootElement, "gd-director-toggle").worldBound;
+            Assert.That(director.xMin, Is.EqualTo(lastRedHero.xMin).Within(0.5f),
+                "DIRECTOR sits in the Red rail column, not in the card tray or status dock.");
+            Assert.That(director.xMax, Is.LessThanOrEqualTo(lastRedHero.xMax + 0.5f));
+            Assert.That(director.yMin, Is.GreaterThanOrEqualTo(lastRedHero.yMax - 0.5f),
+                "DIRECTOR is immediately below the last Red hero (the third in a six-player match).");
+            Assert.That(director.yMax, Is.LessThanOrEqualTo(tray.worldBound.yMin + 0.5f));
+
+            // Milestone 8.25f2: only playable hexes are reserved. The full camera is allowed behind
+            // transparent HUD space so decorative artwork fills the dead area.
+            var camera = Object.FindAnyObjectByType<Camera>();
+            var panelViewport = ConfiguredMatchHudRenderer.PanelViewport;
+            Assert.That(camera.rect, Is.EqualTo(new Rect(0f, 0f, 1f, 1f)),
+                "Decorative map artwork renders behind the complete HUD.");
+            var safe = hud.CameraSafeLayout;
+            Assert.That(safe.IsValid, Is.True);
+            Assert.That(statusDock.xMin, Is.EqualTo(director.xMin).Within(0.5f),
+                "Round and hand status aligns with DIRECTOR.");
+            Assert.That(statusDock.yMin, Is.GreaterThanOrEqualTo(director.yMax - 0.5f),
+                "The fixed status block sits below DIRECTOR.");
+            Assert.That(statusDock.width,
+                Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockWidth)
+                    .Within(UiPlayer.PixelSnapping()),
+                "The status block reserves the largest routine state's width from the first click.");
+            Assert.That(statusDock.height,
+                Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockHeight)
+                    .Within(UiPlayer.PixelSnapping()),
+                "The status block reserves the largest routine state's height from the first click.");
+            Assert.That(statusDock.xMax,
+                Is.LessThanOrEqualTo(safe.UpperRegion.xMin + 0.5f),
+                "The relocated status stops before the upper hex-safe arm begins.");
+            Assert.That(statusDock.yMax, Is.LessThanOrEqualTo(tray.worldBound.yMin + 0.5f),
+                "The status dock uses the former Director-side area above the card band.");
+            Assert.That(cardRow.worldBound.xMax,
+                Is.LessThanOrEqualTo(safe.LowerRightRegion.xMin + 0.5f),
+                "The lower safe arm begins only after the fifth card; artwork may run behind both.");
 
             yield return Capture("tmp/milestone-8-5a-card-tray.png");
 
@@ -699,6 +812,169 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(root.Runtime.SelectCommitmentCard(chosen.Id), Is.True);
             yield return null;
             yield return Capture("tmp/milestone-8-5a-card-tray-selected.png");
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_OverlappedHandHoverRevealDoesNotStealTheCardClick()
+        {
+            yield return LoadScene();
+            yield return null;
+            yield return null;
+
+            var root = Root();
+            var cards = Descendants(root.Hud.RootElement)
+                .Where(element => element.name == "gd-card-choice")
+                .ToArray();
+            Assert.That(cards, Has.Length.EqualTo(5));
+            var card = cards[cards.Length - 1];
+            Assert.That(card.enabledInHierarchy, Is.True,
+                "The opening commitment card must be clickable for this regression to be meaningful.");
+
+            UiPlayer.PointAt(card);
+            yield return null;
+
+            var preview = root.Runtime.HandsView.HoverPreviewRoot;
+            Assert.That(root.Runtime.HandsView.HighlightedPeekCard, Is.Not.Null,
+                "Resting the pointer on the painted card opens its complete face.");
+            Assert.That(preview.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(preview.parent, Is.SameAs(root.Hud.RootElement));
+            Assert.That(preview.parent.Children().Last(), Is.SameAs(preview),
+                "The reveal remains in the original click-safe HUD panel.");
+            Assert.That(Named(root.Hud.RootElement, "gd-status-dock").resolvedStyle.visibility,
+                Is.EqualTo(Visibility.Visible),
+                "Opening a complete hand face leaves the action and status dock visible.");
+            Assert.That(Object.FindObjectsByType<UIDocument>(FindObjectsInactive.Include),
+                Has.Length.EqualTo(1),
+                "Hover uses the existing HUD document; a second full-screen document would block " +
+                "map clicks even if its contents ignored picking.");
+            var fullFace = Descendants(preview)
+                .Single(element => element.name == "gd-card-preview");
+            Assert.That(fullFace.worldBound.width,
+                Is.EqualTo(CardFootprint.Width).Within(UiPlayer.PixelSnapping()));
+            Assert.That(fullFace.worldBound.height,
+                Is.EqualTo(CardFootprint.Height).Within(UiPlayer.PixelSnapping()));
+            Assert.That(Descendants(preview).Prepend(preview)
+                    .All(element => element.pickingMode == PickingMode.Ignore),
+                Is.True,
+                "Every layer of the reveal is pointer-transparent, not merely its outer wrapper.");
+
+            var pickedThroughPreview = card.panel.Pick(card.worldBound.center);
+            Assert.That(pickedThroughPreview, Is.Not.Null);
+            Assert.That(
+                pickedThroughPreview == card ||
+                pickedThroughPreview.GetFirstAncestorOfType<Button>() == card,
+                Is.True,
+                "The full reveal draws over the hand but the pointer still reaches the card below.");
+
+            UiPlayer.PointAway(card);
+            yield return null;
+            Assert.That(Named(root.Hud.RootElement, "gd-status-dock").resolvedStyle.visibility,
+                Is.EqualTo(Visibility.Visible),
+                "Leaving the card does not need to restore a dock that hover never hid.");
+
+            var blueHero = root.Runtime.Setup.Heroes
+                .First(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            var blueView = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Single(view => view.Occupancy.HeroId.Equals(blueHero));
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            Assert.That(UiPlayer.ClickBoard(
+                    pointerInput, root.Hud, blueView.transform.position),
+                Is.True,
+                "The Blue hero remains reachable through the configured board pointer path.");
+            yield return null;
+            Assert.That(root.Runtime.ViewedHeroId, Is.EqualTo(blueHero),
+                "Clicking the Blue hero switches the viewed hand.");
+
+            card = Descendants(root.Hud.RootElement)
+                .Last(element => element.name == "gd-card-choice");
+            UiPlayer.PointAt(card);
+            yield return null;
+            UiPlayer.Click(card);
+            yield return null;
+            Assert.That(root.Runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId.HasValue,
+                Is.True,
+                "A click made while the full hover face is visible still selects the underlying card.");
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_StacksCurrentActionControlsAboveHandStatusWithoutOverlap()
+        {
+            yield return LoadScene();
+            var root = Root();
+            yield return null;
+            yield return null;
+
+            var dockElement = Named(root.Hud.RootElement, "gd-status-dock");
+            var awaitingDock = dockElement.worldBound;
+            yield return Capture("tmp/milestone-8-25f2-status-dock-awaiting.png");
+
+            var red = Hand(root.Runtime, TeamSide.Red).Cards[0];
+            var blue = Hand(root.Runtime, TeamSide.Blue).Cards[0];
+            Assert.That(root.Runtime.SelectCommitmentCard(red.Id), Is.True);
+            yield return null;
+            yield return null;
+            var confirmationDock = dockElement.worldBound;
+            Assert.That(Descendants(dockElement).OfType<Button>()
+                    .Any(control => control.text == "CONFIRM FACEDOWN"),
+                Is.True,
+                "The middle measurement is the selected-card confirmation state.");
+            yield return Capture("tmp/milestone-8-25f2-status-dock-confirmation.png");
+
+            Assert.That(root.Runtime.ConfirmSelectedCommitment(), Is.True);
+            Assert.That(root.Runtime.SelectCommitmentCard(blue.Id), Is.True);
+            Assert.That(root.Runtime.ConfirmSelectedCommitment(), Is.True);
+            ResolveInitiativeChoice(root.Runtime);
+            yield return null;
+            yield return null;
+
+            var dock = dockElement.worldBound;
+            var snap = UiPlayer.PixelSnapping();
+            Assert.That(confirmationDock.size.x, Is.EqualTo(awaitingDock.size.x).Within(snap));
+            Assert.That(confirmationDock.size.y, Is.EqualTo(awaitingDock.size.y).Within(snap));
+            Assert.That(dock.size.x, Is.EqualTo(awaitingDock.size.x).Within(snap));
+            Assert.That(dock.size.y, Is.EqualTo(awaitingDock.size.y).Within(snap),
+                "Awaiting, confirmation and revealed action states keep one largest-state footprint.");
+            Assert.That(dock.width,
+                Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockWidth).Within(snap));
+            Assert.That(dock.height,
+                Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockHeight).Within(snap));
+            yield return Capture("tmp/milestone-8-25f2-status-dock-actions.png");
+
+            var context = Named(root.Hud.RootElement, "gd-context");
+            var actionSection = Named(context, "gd-action-section");
+            Assert.That(actionSection, Is.Not.Null);
+            Assert.That(Descendants(actionSection).OfType<Label>()
+                    .Select(label => label.text),
+                Has.None.EqualTo("ACTIONS"),
+                "The status sentence already names these as actions; no gutter repeats it.");
+            var actionControls = actionSection.Children().OfType<Button>().ToArray();
+            Assert.That(actionControls, Has.Length.GreaterThan(1));
+            var lines = actionControls
+                .GroupBy(control => Mathf.Round(control.worldBound.yMin))
+                .ToArray();
+            Assert.That(lines, Has.Length.EqualTo(1),
+                "The routine five-offer set keeps End Turn on the action row instead of leaving it " +
+                "alone on a second line.");
+            Assert.That(lines[0].Min(control => control.worldBound.xMin),
+                Is.EqualTo(actionSection.worldBound.xMin).Within(0.5f),
+                "The action row starts at the dock's content edge with no empty heading gutter.");
+            Assert.That(actionControls.Max(control => control.worldBound.xMax),
+                Is.LessThanOrEqualTo(actionSection.worldBound.xMax + 0.5f),
+                "Keeping one line does not push End Turn through the dock's safe right edge.");
+            var handHeader = Named(root.Hud.RootElement, "gd-hand-header").worldBound;
+            var contextContentBottom = Descendants(context)
+                .Where(element => UiPlayer.IsShown(element) && element.worldBound.height > 0f)
+                .Max(element => element.worldBound.yMax);
+            Assert.That(contextContentBottom, Is.LessThanOrEqualTo(handHeader.yMin - 5.5f),
+                "Wrapped action controls finish with a deliberate gap before the hand-status row.");
+            Assert.That(handHeader.yMax, Is.LessThanOrEqualTo(dock.yMax + 0.5f),
+                "The largest routine state's content fits the dock's fixed height.");
+
+            var firstCard = Descendants(root.Hud.RootElement)
+                .Where(element => element.name == "gd-card-choice")
+                .Min(element => element.worldBound.yMin);
+            Assert.That(dock.yMax, Is.LessThanOrEqualTo(firstCard + 0.5f),
+                "The fixed status dock finishes before the cards begin.");
         }
 
         /// <summary>
@@ -757,7 +1033,7 @@ namespace GuardsDigital.Tests.PlayMode
                     runtime.HeroOverviewsView.ForwardDiscardCardHighlight(
                         Hand(runtime, TeamSide.Red).TrayCards[0]);
                     AssertCompleteFaceArtwork(
-                        runtime.HeroOverviewsView.Root,
+                        runtime.HeroOverviewsView.HoverPreviewRoot,
                         "gd-card-preview",
                         1,
                         true,
@@ -805,7 +1081,7 @@ namespace GuardsDigital.Tests.PlayMode
                     runtime.HeroOverviewsView.ForwardDiscardCardHighlight(
                         Hand(runtime, TeamSide.Red).TrayCards[0]);
                     AssertCompleteFaceArtwork(
-                        runtime.HeroOverviewsView.Root,
+                        runtime.HeroOverviewsView.HoverPreviewRoot,
                         "gd-card-preview",
                         1,
                         false,
@@ -819,12 +1095,12 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Milestone 8.25f1's non-batch 2048x1152 inspection. It checks one imported front from every
-        /// configured hero, then captures the ordinary production tray the user reported rather than
+        /// Milestone 8.25f2's non-batch 2048x1152 inspection. It checks one imported front from every
+        /// configured hero, then captures the enlarged ordinary hand in its reserved band rather than
         /// a presentation-only gallery.
         /// </summary>
         [UnityTest]
-        public IEnumerator Scene_CapturesBorderlessNativeAspectArtworkInTheOrdinaryTrayAt2048By1152()
+        public IEnumerator Scene_CapturesReadableReservedCardBandAt2048By1152()
         {
             if (UnityEngine.Application.isBatchMode)
             {
@@ -890,7 +1166,69 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(faces.All(face => face.style.borderTopWidth.value == 0f), Is.True,
                     "The ordinary unselected cards have no permanent outer frame.");
 
-                yield return Capture("tmp/milestone-8-25f1-borderless-native-aspect-tray.png");
+                var tray = Named(root.Hud.RootElement, "gd-tray-region").worldBound;
+                var trayElement = Named(root.Hud.RootElement, "gd-tray-region");
+                Assert.That(trayElement.resolvedStyle.backgroundColor.a,
+                    Is.LessThanOrEqualTo(0.001f));
+                Assert.That(trayElement.resolvedStyle.borderTopWidth, Is.Zero.Within(0.01f),
+                    "The visual capture contains cards, not a frame around the card band.");
+                var row = Named(root.Hud.RootElement, "gd-card-buttons").worldBound;
+                var scroll = Descendants(root.Hud.RootElement).OfType<ScrollView>()
+                    .Single(element => element.name == "gd-tray-scroll");
+                Assert.That(scroll.mode, Is.EqualTo(ScrollViewMode.Vertical),
+                    "The ordinary readable hand exposes no horizontal scrollbar.");
+                Assert.That(row.xMax, Is.LessThanOrEqualTo(tray.xMax + 0.5f),
+                    "All five readable cards are simultaneously visible.");
+                var orderedFaces = faces.OrderBy(face => face.worldBound.xMin).ToArray();
+                for (var index = 1; index < orderedFaces.Length; index++)
+                {
+                    var gap = orderedFaces[index].worldBound.xMin -
+                        orderedFaces[index - 1].worldBound.xMax;
+                    Assert.That(gap, Is.LessThanOrEqualTo(
+                            DirectorHandsUnityView.CardGap +
+                            (2f * (DirectorHandsUnityView.ActiveOutlineGap +
+                                DirectorHandsUnityView.ActiveOutlineWidth)) + 0.5f),
+                        "Adjacent native-ratio card faces use only the tightened reserved outlines " +
+                        "and gutter.");
+                }
+
+                var camera = Object.FindAnyObjectByType<Camera>();
+                Assert.That(camera.rect, Is.EqualTo(new Rect(0f, 0f, 1f, 1f)));
+                var safe = root.Hud.CameraSafeLayout;
+                Assert.That(safe.IsValid, Is.True);
+                Assert.That(row.xMax,
+                    Is.LessThanOrEqualTo(safe.LowerRightRegion.xMin + 0.5f),
+                    "The lower-right hex-safe arm begins beyond all five cards.");
+
+                var statusDock = Named(root.Hud.RootElement, "gd-status-dock").worldBound;
+                Assert.That(statusDock.xMax,
+                    Is.LessThanOrEqualTo(safe.UpperRegion.xMin + 0.5f),
+                    "The relocated status block ends before the playable hexes begin.");
+                var redHeroes = Descendants(root.Hud.RootElement)
+                    .Where(element => element.name == "gd-hero-rail" &&
+                        element.parent?.name == "gd-hero-rail-red")
+                    .ToArray();
+                Assert.That(redHeroes, Has.Length.EqualTo(3));
+                var thirdRedHero = redHeroes[2].worldBound;
+                var director = Named(root.Hud.RootElement, "gd-director-toggle").worldBound;
+                Assert.That(director.xMin, Is.EqualTo(thirdRedHero.xMin).Within(0.5f));
+                Assert.That(director.xMax, Is.LessThanOrEqualTo(thirdRedHero.xMax + 0.5f));
+                Assert.That(director.yMin, Is.GreaterThanOrEqualTo(thirdRedHero.yMax - 0.5f),
+                    "DIRECTOR stands directly below the third Red hero rail.");
+                Assert.That(director.yMax, Is.LessThanOrEqualTo(tray.yMin + 0.5f));
+                Assert.That(statusDock.xMin, Is.EqualTo(director.xMin).Within(0.5f));
+                Assert.That(statusDock.yMin, Is.GreaterThanOrEqualTo(director.yMax - 0.5f),
+                    "The compact status block begins below DIRECTOR.");
+                Assert.That(statusDock.width,
+                    Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockWidth)
+                        .Within(UiPlayer.PixelSnapping()),
+                    "The awaiting state already reserves the largest routine dock width.");
+                Assert.That(statusDock.height,
+                    Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockHeight)
+                        .Within(UiPlayer.PixelSnapping()),
+                    "The awaiting state already reserves the largest routine dock height.");
+
+                yield return Capture("tmp/milestone-8-25f2-readable-reserved-card-band.png");
             }
             finally
             {
@@ -1163,10 +1501,18 @@ namespace GuardsDigital.Tests.PlayMode
             var occupied = resolved.TurnSlots.Single(slot => slot.IsOccupied);
             railView.ForwardTurnSlotHighlight(occupied);
             yield return null;
-            var preview = Descendants(railView.Root)
-                .Single(element => element.name == "gd-turn-slot-preview");
+            var preview = railView.HoverPreviewRoot;
             Assert.That(preview.style.display.value,
                 Is.EqualTo(UnityEngine.UIElements.DisplayStyle.Flex));
+            Assert.That(preview.parent, Is.SameAs(hud.RootElement));
+            Assert.That(preview.parent.Children().Last(), Is.SameAs(preview),
+                "A rail hover face is the HUD's top painted branch, so Director and status cannot " +
+                "cut across it.");
+            Assert.That(
+                Descendants(preview).Prepend(preview)
+                    .All(element => element.pickingMode == PickingMode.Ignore),
+                Is.True,
+                "The top-layer face reads through the pointer without creating another blocked area.");
             Assert.That(
                 Descendants(preview).Count(element => element.name == "gd-card-preview"),
                 Is.EqualTo(1),
@@ -2756,12 +3102,11 @@ namespace GuardsDigital.Tests.PlayMode
                     Descendants(face).Count(element => element.name == "gd-card-preview") == 1),
                 Is.True);
             Assert.That(
-                faces.SelectMany(face => Descendants(face).OfType<UnityEngine.UIElements.Label>())
-                    .Select(label => label.text)
-                    .Intersect(invocations.Select(value => value.Card.DisplayName.ToUpperInvariant()))
-                    .Count(),
-                Is.EqualTo(4),
-                "Each offer draws its own card's name, so the row is four different cards.");
+                invocations.All(invocation => faces.Any(face =>
+                    face.tooltip.Contains(invocation.Card.DisplayName.ToUpperInvariant()))),
+                Is.True,
+                "Each offer's whole-card control identifies its own card whether the visible arm is " +
+                "prepared artwork or the generated fallback.");
             Assert.That(
                 Descendants(runtime.RoundView.Root).OfType<UnityEngine.UIElements.Button>()
                     .Single(button => button.text == "DECLINE DEFENSE").name,
@@ -3657,6 +4002,38 @@ namespace GuardsDigital.Tests.PlayMode
 
         private static Ray DownRay(Vector3 position) =>
             new Ray(position + (Vector3.up * 2f), Vector3.down);
+
+        private static Rect ProjectedPanelBounds(
+            HexTileView tile,
+            Camera camera,
+            Vector2 panelViewport,
+            float outerRadius)
+        {
+            var mesh = tile.GetComponent<MeshFilter>()?.sharedMesh;
+            Assert.That(mesh, Is.Not.Null);
+            var points = mesh.vertices
+                .Skip(1)
+                .Select(vertex => tile.transform.TransformPoint(vertex))
+                .Select(camera.WorldToScreenPoint)
+                .Select(screen => new Vector2(
+                    (screen.x / Screen.width) * panelViewport.x,
+                    (1f - (screen.y / Screen.height)) * panelViewport.y))
+                .ToArray();
+            var pixelsPerWorld = panelViewport.y / (2f * camera.orthographicSize);
+            var clearance = PlaceholderTestGridView.ReservedPlayfieldCameraPadding *
+                outerRadius * pixelsPerWorld;
+            return Rect.MinMaxRect(
+                points.Min(point => point.x) - clearance,
+                points.Min(point => point.y) - clearance,
+                points.Max(point => point.x) + clearance,
+                points.Max(point => point.y) + clearance);
+        }
+
+        private static bool ContainsBounds(Rect region, Rect bounds) =>
+            bounds.xMin >= region.xMin - 0.5f &&
+            bounds.xMax <= region.xMax + 0.5f &&
+            bounds.yMin >= region.yMin - 0.5f &&
+            bounds.yMax <= region.yMax + 0.5f;
 
         private static int CountHighlightMaterials() =>
             Resources.FindObjectsOfTypeAll<Material>().Count(value =>

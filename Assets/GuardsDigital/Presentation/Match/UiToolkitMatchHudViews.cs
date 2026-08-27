@@ -188,6 +188,28 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// An unavailable complete card in an overlapped hand. The card remains an inert, visibly
+        /// dimmed control, but its own surface stays opaque: lowering the whole element's opacity lets
+        /// every overlapping sibling show through it and turns two spent cards into one muddled image.
+        /// A veil over an opaque face produces the same hierarchy without exposing the card below.
+        /// </summary>
+        internal static void MarkUnavailableOpaque(VisualElement element)
+        {
+            element.SetEnabled(false);
+            element.style.opacity = 1f;
+
+            var veil = new VisualElement { name = "gd-card-unavailable-veil" };
+            veil.style.position = Position.Absolute;
+            veil.style.left = 0f;
+            veil.style.top = 0f;
+            veil.style.right = 0f;
+            veil.style.bottom = 0f;
+            veil.style.backgroundColor = new Color(0.01f, 0.014f, 0.018f, 0.55f);
+            veil.pickingMode = PickingMode.Ignore;
+            element.Add(veil);
+        }
+
+        /// <summary>
         /// A control that carries no command but is not spent: inert, and drawn at full strength.
         ///
         /// Milestone 8.5b, for the card the current turn is being resolved from. It is the same
@@ -365,9 +387,22 @@ namespace GuardsDigital.Presentation.Match
             Root.Add(redColumn);
             Root.Add(blueColumn);
             Root.Add(preview);
+            redColumn.RegisterCallback<GeometryChangedEvent>(_ =>
+                ColumnGeometryChanged?.Invoke());
+            blueColumn.RegisterCallback<GeometryChangedEvent>(_ =>
+                ColumnGeometryChanged?.Invoke());
         }
 
         public VisualElement Root { get; }
+
+        /// <summary>
+        /// The one complete card face revealed from a resolved turn, current card, Ultimate, or
+        /// discard icon. It begins inside <see cref="Root"/> so the view is complete in isolation;
+        /// the configured HUD reparents only this preview to its top layer so unrelated status and
+        /// Director controls cannot paint over a card while it is being read.
+        /// </summary>
+        public VisualElement HoverPreviewRoot => preview;
+
         public HeroOverviewsViewModel Model { get; private set; }
 
         /// <summary>The two rails' current rects, for the pointer-blocking decision.</summary>
@@ -408,6 +443,43 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Milestone 8.11b: the pointed-at discard icon, on the terms of the two above.</summary>
         public event Action<TrayCardViewModel> DiscardCardHighlighted;
 
+        /// <summary>
+        /// Raised after either rail column resolves a new live bound. The configured HUD uses Red's
+        /// edge to place `DIRECTOR` immediately after the third hero, and Blue's edge to expose only
+        /// the genuinely empty lower-right area to the board fitter.
+        /// </summary>
+        public event Action ColumnGeometryChanged;
+
+        /// <summary>The live content bound of the Red hero stack, when UI Toolkit has resolved it.</summary>
+        public bool TryGetRedColumnBounds(out Rect bounds)
+        {
+            return TryGetColumnBounds(redColumn, out bounds);
+        }
+
+        /// <summary>
+        /// The live Blue stack ends well above the cards. The board fitter uses that resolved edge to
+        /// admit only the lower-right dead space beneath it, while keeping every hex clear of the rail.
+        /// </summary>
+        public bool TryGetBlueColumnBounds(out Rect bounds)
+        {
+            return TryGetColumnBounds(blueColumn, out bounds);
+        }
+
+        private static bool TryGetColumnBounds(VisualElement column, out Rect bounds)
+        {
+            bounds = default;
+            if (column.panel == null ||
+                column.resolvedStyle.display == DisplayStyle.None ||
+                column.childCount == 0)
+            {
+                return false;
+            }
+
+            bounds = column.worldBound;
+            return !float.IsNaN(bounds.width) && !float.IsNaN(bounds.height) &&
+                bounds.width > 0f && bounds.height > 0f;
+        }
+
         /// <summary>Reports a pointed-at slot directly, for a driver with no pointer.</summary>
         public void ForwardTurnSlotHighlight(HeroTurnSlotViewModel slot) =>
             // An empty slot has no card to show, so resting on one is the same as resting on nothing.
@@ -440,9 +512,12 @@ namespace GuardsDigital.Presentation.Match
             }
             else
             {
-                preview.Add(DirectorHandsUnityView.BuildStandaloneCard(card));
+                var face = DirectorHandsUnityView.BuildStandaloneCard(card);
+                DirectorHandsUnityView.IgnorePickingRecursively(face);
+                preview.Add(face);
                 preview.style.display = DisplayStyle.Flex;
                 PlacePreview(highlighted);
+                preview.BringToFront();
             }
 
             if (!ReferenceEquals(slotBefore, HighlightedTurnSlot))
@@ -485,17 +560,20 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            var face = preview.Children().SingleOrDefault();
             var anchor = element.worldBound;
             var height = Root.resolvedStyle.height;
             var width = Root.resolvedStyle.width;
-            var onLeft = anchor.center.x < width / 2f;
-            var left = onLeft
-                ? anchor.xMax + 10f
-                : anchor.xMin - CardFootprint.Width - 10f;
-            var face = preview.Children().SingleOrDefault();
+            var faceWidth = face == null
+                ? CardFootprint.Width
+                : face.style.width.value.value;
             var faceHeight = face == null
                 ? CardFootprint.Height
                 : face.style.height.value.value;
+            var onLeft = anchor.center.x < width / 2f;
+            var left = onLeft
+                ? anchor.xMax + 10f
+                : anchor.xMin - faceWidth - 10f;
             preview.style.left = Mathf.Max(0f, left);
             preview.style.top = Mathf.Max(
                 0f,
@@ -509,10 +587,9 @@ namespace GuardsDigital.Presentation.Match
             Root.style.left = 0f;
             Root.style.top = 0f;
             Root.style.width = Mathf.Max(playfield.width + playfield.x, Mathf.Max(red.xMax, blue.xMax));
-            // Milestone 8.25: a rail column now runs past the playfield's bottom edge, because rulebook
-            // p.6's three heroes a side need the whole screen edge rather than the band above the tray.
-            // The container has to cover them, or the reveal below places a card face against a height
-            // the rails are no longer inside.
+            // Milestone 8.25f2: the playfield and both rail columns end at the reserved card band. The
+            // container follows the furthest of those declared edges so a reveal is clamped to the same
+            // non-overlapping space.
             Root.style.height = Mathf.Max(playfield.height + playfield.y, Mathf.Max(red.yMax, blue.yMax));
             Place(redColumn, red);
             Place(blueColumn, blue);
@@ -1291,7 +1368,7 @@ namespace GuardsDigital.Presentation.Match
         /// <c>Add</c> resolves to the instance method - so a gutter written there is a gutter that is
         /// never drawn.
         /// </summary>
-        public const float CardGap = 12f;
+        public const float CardGap = 6f;
 
         /// <summary>
         /// Milestone 8.5b: the Active-effect outline's width, and the gap between it and the card's own
@@ -1302,14 +1379,44 @@ namespace GuardsDigital.Presentation.Match
 
         public const float ActiveOutlineGap = 3f;
 
+        /// <summary>
+        /// The configured match's resting-hand footprint. The screenshot-approved safe area is tall
+        /// enough for the standard card, so the resting cards keep that full source-ratio size. Five
+        /// cards fit its width by overlapping horizontally, like a physical hand; hover/focus draws
+        /// the pointed card on top so every part of its face is readable.
+        /// </summary>
+        public const float PeekCardWidth = CardFootprint.StandardWidth;
+        public const float PeekCardHeight = CardFootprint.StandardHeight;
+
+        /// <summary>
+        /// One complete tray slot including the always-reserved Active outline and the inter-card
+        /// gutter. Milestone 8.25f2 uses five of these to size the full-width reserved tray band, so
+        /// the complete hand stays one row without wrapping, shrinking, or sideways scrolling.
+        /// </summary>
+        public const float CardSlotFootprint = CardFootprint.Width + CardGap +
+            (2f * (ActiveOutlineGap + ActiveOutlineWidth));
+
+        public const float PeekCardOuterWidth = PeekCardWidth +
+            (2f * (ActiveOutlineGap + ActiveOutlineWidth));
+
+        /// <summary>The left-to-left step of two cards in the overlapped resting hand.</summary>
+        public const float PeekCardSlotFootprint =
+            (ConfiguredMatchHudRenderer.CompactHandRightEdge - PeekCardOuterWidth) / 4f;
+
+        public const float PeekCardOverlap = PeekCardOuterWidth - PeekCardSlotFootprint;
+
         private readonly VisualElement header;
         private readonly VisualElement cards;
+        private readonly VisualElement hoverPreview;
+        private bool compactPeekMode;
+        private TrayCardViewModel highlightedPeekCard;
 
         public DirectorHandsUnityView()
         {
             Root = new VisualElement { name = "gd-card-tray" };
             Root.style.flexDirection = FlexDirection.Column;
             header = HudElements.Row(12f);
+            header.name = "gd-hand-header";
             header.style.justifyContent = Justify.SpaceBetween;
             header.style.marginBottom = 8f;
             cards = HudElements.Row(8f);
@@ -1317,21 +1424,63 @@ namespace GuardsDigital.Presentation.Match
             // card's content set the height of every card on the line - which is exactly the
             // content-driven sizing the standard footprint replaces.
             cards.style.alignItems = Align.FlexStart;
+            cards.style.flexWrap = Wrap.NoWrap;
+            cards.style.flexGrow = 0f;
+            cards.style.flexShrink = 0f;
             // Room for the raise, so a still-playable card lifts into space of its own rather than into
             // the label above it.
             cards.style.marginTop = AvailableCardRaise;
             cards.name = "gd-card-buttons";
+            hoverPreview = new VisualElement { name = "gd-hand-hover-preview" };
+            hoverPreview.style.position = Position.Absolute;
+            hoverPreview.style.display = DisplayStyle.None;
+            hoverPreview.pickingMode = PickingMode.Ignore;
             Root.Add(header);
             Root.Add(cards);
         }
 
         public VisualElement Root { get; }
 
+        /// <summary>
+        /// The viewed hand's identity, commitment state and controls. It begins inside
+        /// <see cref="Root"/> so this view remains complete in isolation; the configured HUD reparents
+        /// it into the open status dock beside the Red rail, keeping the ordinary card band compact.
+        /// </summary>
+        public VisualElement HeaderRoot => header;
+
+        /// <summary>
+        /// The complete face opened from a compact resting-hand card. The configured HUD reparents it
+        /// to the main panel root so neither the short hand band nor its scroller can clip it, and the
+        /// preview brings itself to the front without hiding the status or action controls beneath it.
+        /// </summary>
+        public VisualElement HoverPreviewRoot => hoverPreview;
+
+        public TrayCardViewModel HighlightedPeekCard => highlightedPeekCard;
+
         public DirectorHandsViewModel Model { get; private set; }
 
         public event Action<CardInstanceId> CardSelected;
         public event Action ConfirmRequested;
         public event Action<HeroId> PassRequested;
+
+        /// <summary>
+        /// Overlaps five full source-ratio faces into the configured hand's compact horizontal
+        /// footprint. Isolated/shared view users retain the standard side-by-side row.
+        /// </summary>
+        public void SetCompactPeekMode(bool enabled)
+        {
+            if (compactPeekMode == enabled)
+            {
+                return;
+            }
+
+            compactPeekMode = enabled;
+            ClearPeekPreview();
+            if (Model != null)
+            {
+                Rebuild();
+            }
+        }
 
         public void Render(DirectorHandsViewModel model)
         {
@@ -1351,11 +1500,20 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public void SetHidden(bool hidden)
         {
-            Root.style.display = hidden ? DisplayStyle.None : DisplayStyle.Flex;
+            if (hidden)
+            {
+                ClearPeekPreview();
+            }
+
+            var display = hidden ? DisplayStyle.None : DisplayStyle.Flex;
+            Root.style.display = display;
+            // In the configured HUD the header is a sibling of Root, so exclusivity must hide both.
+            HeaderRoot.style.display = display;
         }
 
         private void Rebuild()
         {
+            ClearPeekPreview();
             header.Clear();
             cards.Clear();
             var hand = Model.ViewedHand;
@@ -1363,6 +1521,20 @@ namespace GuardsDigital.Presentation.Match
             {
                 return;
             }
+
+            // In the overlapped configured hand, the final card is the only one whose complete face
+            // is visible at rest. The card currently being resolved belongs there: putting it first
+            // buried the action the turn is actually performing under all four siblings. `OrderBy` is
+            // stable, so moving that one state to the end does not disturb any other card's order.
+            var drawnCards = compactPeekMode
+                ? hand.TrayCards.OrderBy(card => card.IsResolving ? 1 : 0).ToArray()
+                : hand.TrayCards.ToArray();
+            var rowWidth = compactPeekMode
+                ? ConfiguredMatchHudRenderer.CompactHandRightEdge
+                : drawnCards.Length * CardSlotFootprint;
+            cards.style.width = rowWidth;
+            cards.style.minWidth = rowWidth;
+            cards.style.maxWidth = rowWidth;
 
             header.Add(HudElements.Text(
                 $"{hand.HeaderLabel} · {hand.CommitmentLabel.Replace("\n", " · ")}",
@@ -1400,13 +1572,15 @@ namespace GuardsDigital.Presentation.Match
 
             header.Add(actions);
 
-            foreach (var card in hand.TrayCards)
+            for (var index = 0; index < drawnCards.Length; index++)
             {
-                cards.Add(BuildCard(card));
+                cards.Add(BuildCard(
+                    drawnCards[index],
+                    compactPeekMode && index == drawnCards.Length - 1));
             }
         }
 
-        private VisualElement BuildCard(TrayCardViewModel card)
+        private VisualElement BuildCard(TrayCardViewModel card, bool isLastPeekCard = false)
         {
             var button = new Button(() =>
             {
@@ -1427,6 +1601,10 @@ namespace GuardsDigital.Presentation.Match
             button.style.marginRight = 0f;
             button.style.marginTop = 0f;
             button.style.marginBottom = 0f;
+            if (compactPeekMode)
+            {
+                ApplyPeekFootprint(button);
+            }
 
             // Milestone 8.5b: the card sits in a slot, and the slot is what carries the Active-effect
             // outline. It has to be outside the card because the card's own border is the shared
@@ -1437,6 +1615,11 @@ namespace GuardsDigital.Presentation.Match
             slot.style.flexDirection = FlexDirection.Column;
             slot.style.alignItems = Align.Stretch;
             slot.style.marginRight = CardGap;
+            if (compactPeekMode)
+            {
+                slot.style.marginRight = isLastPeekCard ? 0f : -PeekCardOverlap;
+                slot.style.flexShrink = 0f;
+            }
             HudElements.Padding(slot, ActiveOutlineGap);
             HudElements.Border(
                 slot,
@@ -1465,7 +1648,14 @@ namespace GuardsDigital.Presentation.Match
                 }
                 else
                 {
-                    HudElements.MarkUnavailable(button);
+                    if (compactPeekMode)
+                    {
+                        HudElements.MarkUnavailableOpaque(button);
+                    }
+                    else
+                    {
+                        HudElements.MarkUnavailable(button);
+                    }
                 }
             }
 
@@ -1474,7 +1664,75 @@ namespace GuardsDigital.Presentation.Match
                 : card.Face.EmptyTextLabel;
             button.tooltip = $"{card.AssistiveLabel} - {printed}";
             slot.Add(button);
+            if (compactPeekMode)
+            {
+                // The button, not its overlapping layout slot, owns the pointer. Enter/leave events
+                // are targeted at the painted card and an overlapped slot is not the hit surface a
+                // player sees. The reveal itself is recursively pointer-transparent below, so it can
+                // draw on top without taking either this hover or the subsequent click away.
+                HudElements.OnPointedAt(
+                    button,
+                    pointedAt => SetPeekPreview(pointedAt ? card : null, slot));
+            }
             return slot;
+        }
+
+        private static void ApplyPeekFootprint(VisualElement card)
+        {
+            card.style.width = PeekCardWidth;
+            card.style.minWidth = PeekCardWidth;
+            card.style.maxWidth = PeekCardWidth;
+            card.style.height = PeekCardHeight;
+            card.style.minHeight = PeekCardHeight;
+            card.style.maxHeight = PeekCardHeight;
+        }
+
+        private void SetPeekPreview(TrayCardViewModel card, VisualElement anchor)
+        {
+            if (!compactPeekMode || card == null)
+            {
+                ClearPeekPreview();
+                return;
+            }
+
+            highlightedPeekCard = card;
+            hoverPreview.Clear();
+            var face = BuildStandaloneCard(card);
+            IgnorePickingRecursively(face);
+            hoverPreview.Add(face);
+            hoverPreview.style.display = DisplayStyle.Flex;
+            hoverPreview.BringToFront();
+            var viewport = ConfiguredMatchHudRenderer.PanelViewport;
+            var bounds = anchor.worldBound;
+            hoverPreview.style.left = Mathf.Clamp(
+                bounds.xMin,
+                0f,
+                Mathf.Max(
+                    0f,
+                    Mathf.Min(
+                        viewport.x,
+                        ConfiguredMatchHudRenderer.CompactHandRightEdge) -
+                    CardFootprint.Width));
+            hoverPreview.style.top = Mathf.Clamp(
+                bounds.yMin,
+                ConfiguredMatchHudRenderer.StatusBarHeight + 4f,
+                Mathf.Max(0f, viewport.y - CardFootprint.Height - 4f));
+        }
+
+        private void ClearPeekPreview()
+        {
+            highlightedPeekCard = null;
+            hoverPreview.Clear();
+            hoverPreview.style.display = DisplayStyle.None;
+        }
+
+        internal static void IgnorePickingRecursively(VisualElement element)
+        {
+            element.pickingMode = PickingMode.Ignore;
+            foreach (var child in element.Children())
+            {
+                IgnorePickingRecursively(child);
+            }
         }
 
         /// <summary>
@@ -1863,16 +2121,17 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>
         /// The frame an upgrade option's card sits in: enough for the shared selection outline and a
         /// little air, on every side. Milestone 8.8a. Three of these plus their gutters and the section's
-        /// own label are well inside the tray's 1280 bound, which is the constraint the grid has to
-        /// respect - two rows of full-height cards are taller than the tray, and the tray already scrolls.
+        /// own label are well inside the full-width tray, which is the constraint the grid has to
+        /// respect - two rows of full-height cards are taller than the ordinary band, so the exclusive
+        /// context receives the renderer's taller bound.
         /// </summary>
         private const float UpgradeOptionInset = 6f;
 
         /// <summary>
         /// The frame a legal Defense card sits in, on the same terms as
         /// <see cref="UpgradeOptionInset"/>. Milestone 8.11b. Four of these plus `DECLINE DEFENSE`, the
-        /// section's own gutter label and their spacing come to well under the tray's 1280 bound, which
-        /// is milestone 5.1c's constraint on this row and the one this milestone must not break.
+        /// section's own gutter label and their spacing come to well under the full-width tray, which
+        /// is the standing no-horizontal-travel constraint on this row.
         /// </summary>
         private const float DefenseCardInset = 6f;
 
@@ -2181,7 +2440,10 @@ namespace GuardsDigital.Presentation.Match
         {
             foreach (var section in rows.Children())
             {
-                section.style.display = section.childCount > 1 ? DisplayStyle.Flex : DisplayStyle.None;
+                var contentCount = section.name == "gd-action-section"
+                    ? section.childCount
+                    : section.childCount - 1;
+                section.style.display = contentCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
             }
         }
 
@@ -2190,6 +2452,17 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The space between two controls in one section.</summary>
         public const float SectionGap = 6f;
+
+        /// <summary>
+        /// The tighter spacing used only by the unlabelled standing action row. Five ordinary offers
+        /// are the widest routine set; spending less chrome between them keeps End Turn on that same
+        /// line without abbreviating any rule-facing label.
+        /// </summary>
+        public const float ActionControlGap = 3f;
+
+        public const float ActionControlHorizontalPadding = 6f;
+
+        public const float ActionControlFontSize = 11f;
 
         private VisualElement Section(string gutter)
         {
@@ -2564,6 +2837,7 @@ namespace GuardsDigital.Presentation.Match
         private void BuildDefense()
         {
             var section = Section("DEFENSE");
+            section.style.flexWrap = Wrap.NoWrap;
             foreach (var choice in Model.DefenseChoices)
             {
                 var control = choice.Card == null
@@ -2636,16 +2910,27 @@ namespace GuardsDigital.Presentation.Match
             // one heading that said `ACTIONS`.
             BuildEffectChoiceSection();
 
-            var section = Section("ACTIONS");
-            AddInvocation(section, Model.ContinueEndOfRoundInvocation);
+            // The status line already says that the controls are actions. Keeping a 96-unit ACTIONS
+            // gutter repeated that fact and forced the final controls onto a staggered second line in
+            // the compact Director-side dock. This unlabelled row spends its whole width on the actual
+            // choices. The controls may flex narrower and wrap their own words, but the action row
+            // itself never wraps: End Turn belongs beside the actions, not alone beneath them.
+            var section = HudElements.Row(ActionControlGap);
+            section.name = "gd-action-section";
+            section.style.alignItems = Align.Stretch;
+            section.style.flexWrap = Wrap.NoWrap;
+            section.style.flexShrink = 1f;
+            section.style.width = Length.Percent(100f);
+            rows.Add(section);
+            AddActionInvocation(section, Model.ContinueEndOfRoundInvocation);
             foreach (var choice in Model.InitiativeChoices)
             {
-                AddInvocation(section, choice);
+                AddActionInvocation(section, choice);
             }
 
             foreach (var action in Model.Actions)
             {
-                AddInvocation(section, action);
+                AddActionInvocation(section, action);
             }
 
             // Milestone 6.5af: an action the authority judged unstartable is drawn beside the ones that
@@ -2654,12 +2939,12 @@ namespace GuardsDigital.Presentation.Match
             {
                 var control = HudElements.Control(unavailable.Label, null);
                 HudElements.MarkUnavailable(control);
-                section.Add(control);
+                AddActionControl(section, control);
             }
 
             foreach (var fastTravel in Model.FastTravelOffers)
             {
-                section.Add(HudElements.Control(
+                AddActionControl(section, HudElements.Control(
                     fastTravel.Label, () => ForwardFastTravelSelection(fastTravel)));
             }
 
@@ -2681,7 +2966,7 @@ namespace GuardsDigital.Presentation.Match
                     HudElements.MarkUnavailable(control);
                 }
 
-                section.Add(control);
+                AddActionControl(section, control);
             }
 
             // Milestone 8.11a, at the user's request: each Respawn destination is a space, so it is
@@ -2691,7 +2976,7 @@ namespace GuardsDigital.Presentation.Match
 
             // Milestone 8.11a: declining to respawn has no space on the board, so it stays a control
             // even though every destination it sits beside has become a click on the map.
-            AddInvocation(section, Model.ResolveWithoutRespawn);
+            AddActionInvocation(section, Model.ResolveWithoutRespawn);
 
             // Milestone 6.5c drew one control per target the choice names, while a destination
             // candidate had none - the lit board was its control.
@@ -2707,9 +2992,40 @@ namespace GuardsDigital.Presentation.Match
             {
                 var endTurn = HudElements.Control(
                     Model.EndTurnInvocation.Label, () => ForwardInvocation(Model.EndTurnInvocation));
-                endTurn.style.marginLeft = 18f;
-                section.Add(endTurn);
+                AddActionControl(section, endTurn);
             }
+
+            // A trailing gap is useful only between controls. Keeping it after End Turn was the last
+            // few units that pushed that otherwise-fitting control onto a second line.
+            var last = section.Children().LastOrDefault();
+            if (last != null)
+            {
+                last.style.marginRight = 0f;
+            }
+        }
+
+        private void AddActionInvocation(
+            VisualElement section,
+            TypedInvocationViewModel invocation)
+        {
+            if (invocation != null)
+            {
+                AddActionControl(
+                    section,
+                    HudElements.Control(invocation.Label, () => ForwardInvocation(invocation)));
+            }
+        }
+
+        private static void AddActionControl(VisualElement section, VisualElement control)
+        {
+            control.style.marginLeft = 0f;
+            control.style.marginRight = ActionControlGap;
+            control.style.paddingLeft = ActionControlHorizontalPadding;
+            control.style.paddingRight = ActionControlHorizontalPadding;
+            control.style.fontSize = ActionControlFontSize;
+            control.style.flexShrink = 1f;
+            control.style.minWidth = 56f;
+            section.Add(control);
         }
 
         /// <summary>
@@ -2735,6 +3051,10 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var section = Section(prompt.SectionLabel);
+            if (Model.EffectChoices.Any(choice => choice.Card != null))
+            {
+                section.style.flexWrap = Wrap.NoWrap;
+            }
             foreach (var effectChoice in Model.EffectChoices)
             {
                 // Milestone 8.15a, at the user's direction: a choice that is about a card is drawn

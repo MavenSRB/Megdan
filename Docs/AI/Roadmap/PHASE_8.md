@@ -478,6 +478,26 @@ Non-goals: No card rule, definition, printed text, lifecycle, action, command, p
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f1-remove-the-generated-shell-from-prepared-card-fronts-completion-evidence).
 
+### [x] 8.25f2 Enlarge complete card faces to a readable source-ratio footprint
+
+Authorized directly through the user's 2026-08-27 and 2026-08-28 live inspection sequence after 8.25f1. The source-ratio enlargement exposed the ordinary side-by-side tray's cost to board space; the approved outcome therefore includes the physical-hand composition, the reclaimed map surface and the interaction fixes required to keep both playable.
+
+Observable outcome: every complete card face is approximately 300.46 by 420 reference units. Prepared artwork keeps the exact 372:520 source ratio with no generated shell, crop or distortion, and the generated clean-checkout fallback uses the same outer footprint. Five ordinary cards overlap like a physical hand at the existing bottom-left anchor; each remains clickable and reveals its complete face on hover/focus. Board artwork fills the screen while every playable hex stays clear of the hand, rails and status/action lane.
+
+Acceptance checks:
+
+- `CardFootprint` derives the shared width from the verified 372:520 source ratio and the existing 420-unit readable height. Prepared and generated arms pin that same minimum, preferred and maximum size with no flex growth or shrink, and all complete-face consumers continue through the shared builder.
+- The ordinary hand occupies the panel's bottom-left x=0..732 footprint with five stable ordered, overlapping faces and no tray frame or scrollbar. Every resting card retains a real exposed pointer target; hover/focus reveals exactly one complete face above all HUD siblings without moving the row, blocking the board, obscuring the action dock or changing the click command. The resolving card is stable-sorted rightmost, and unavailable overlapping cards use one opaque local veil rather than stacking translucent faces.
+- Only the painted compact hand blocks board input. The transparent remainder of its full-width layout reservation leaves board pieces - including the lower Blue heroes - clickable. Rail and hand hover previews share the one HUD document, are pointer-transparent and render above status, rail and tray content.
+- The Red rail's third hero is followed by `DIRECTOR`, then one fixed 720-by-128 round/current-card/status dock sized for the largest routine revealed-action state. Awaiting-card, selected-card confirmation and revealed-action states retain that exact footprint instead of resizing as the player clicks. Ordinary action and stop controls occupy one hard no-wrap row with no redundant `ACTIONS` heading; the whole row remains visible while a hand card is hovered. Both three-hero rail stacks remain clear of the cards.
+- The camera renders the decorative board artwork over the full screen. An exact fit places all 210 complete playable hexes in the union of the broad upper safe arm and the reclaimed lower-right arm, preserving the declared visible gap from actual HUD content while allowing artwork and decorative terrain behind it. Repeated rebuilds reuse an unchanged solved frame and remain under the recorded Phase 4 map-rebuild threshold.
+- Ordinary tray scrollers stay hidden. Mandatory multi-card contexts retain the full-width bounded tall tray and vertical `Auto` overflow without horizontal scrolling or card shrink. Prepared and fallback identity remains available to pointer drivers through the outer control's typed tooltip even when the face itself is a single image.
+- Focused Edit Mode covers the shared footprint, artwork/fallback consumers, overlap arithmetic, state treatments and safe-layout geometry. Directly affected Play Mode covers live five-card reachability and hover, resolving/unavailable overlap, the invariant status-dock footprint across awaiting/confirmation/action states, action-strip persistence, topmost rail previews, Blue-hero board clicks, all playable-hex containment, absent scrollbars, short mandatory context and the Phase 4 timing threshold. Targeted non-batch captures inspect the production composition with real prepared cards and the three stable ordinary dock states.
+
+Non-goals: No card rule, definition, printed text, lifecycle, action, command, projection, schema, replay, networking, private source or import-contract change. No return of the generated shell, crop or stretch; no removal of the clean-checkout fallback; no redesign of contextual decision meanings, rail icons, facedown back or state meanings beyond the accepted layout, pointer and preview behavior.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f2-enlarge-complete-card-faces-to-a-readable-source-ratio-footprint-completion-evidence).
+
 ### [!] 8.26 Integrate six-hero director control and team interactions
 
 Blocked by: milestones 8.25e4 and 8.25e7. F-SOURCE-01 closed at 8.25e5e; the two corrective milestones block this driver milestone, not art-only 8.25f.

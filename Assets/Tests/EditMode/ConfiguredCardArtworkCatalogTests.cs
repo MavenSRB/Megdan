@@ -250,6 +250,39 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ArtworkFace_UsesReadableStandardHeightAndDerivesWidthFromSourceAspect()
+        {
+            var definition = WaspCardContent.Definition(WaspCardContent.Shock);
+            var card = CurrentRoundCards.DeckCard(
+                new CardInstanceId("readable-artwork-shock"), definition);
+            var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            try
+            {
+                VisualElement face;
+                using (ConfiguredCardArtwork.UseTextureLoader(_ => texture))
+                {
+                    face = DirectorHandsUnityView.BuildStandaloneCard(card);
+                }
+
+                var expectedHeight = CardFootprint.StandardHeight;
+                var expectedWidth = expectedHeight * CardFootprint.ArtworkSourceWidth /
+                    CardFootprint.ArtworkSourceHeight;
+                Assert.That(face.style.height.value.value, Is.EqualTo(expectedHeight),
+                    "The printed front keeps the established readable card height.");
+                Assert.That(face.style.width.value.value, Is.EqualTo(expectedWidth).Within(0.001f),
+                    "Its width is enlarged from that height at the exact 372:520 source ratio.");
+                Assert.That(face.style.minWidth.value.value, Is.EqualTo(expectedWidth).Within(0.001f));
+                Assert.That(face.style.maxWidth.value.value, Is.EqualTo(expectedWidth).Within(0.001f));
+                Assert.That(face.style.minHeight.value.value, Is.EqualTo(expectedHeight));
+                Assert.That(face.style.maxHeight.value.value, Is.EqualTo(expectedHeight));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
         public void CompleteFace_FallsBackPerCardWhenArtworkIsAbsentOrUnloadable()
         {
             var definition = WaspCardContent.Definition(WaspCardContent.Shock);
@@ -349,14 +382,17 @@ namespace GuardsDigital.Tests.EditMode
 
         private static void AssertArtworkFootprint(VisualElement face)
         {
-            Assert.That(CardFootprint.ArtworkHeight, Is.EqualTo(260f));
+            Assert.That(CardFootprint.ArtworkHeight, Is.EqualTo(CardFootprint.StandardHeight));
+            Assert.That(CardFootprint.ArtworkWidth, Is.EqualTo(
+                CardFootprint.StandardHeight * CardFootprint.ArtworkSourceWidth /
+                CardFootprint.ArtworkSourceHeight).Within(0.001f));
             Assert.That(
-                CardFootprint.StandardWidth / CardFootprint.ArtworkHeight,
+                CardFootprint.ArtworkWidth / CardFootprint.ArtworkHeight,
                 Is.EqualTo(CardFootprint.ArtworkSourceWidth /
                     CardFootprint.ArtworkSourceHeight).Within(0.0001f));
-            Assert.That(face.style.width.value.value, Is.EqualTo(CardFootprint.StandardWidth));
-            Assert.That(face.style.minWidth.value.value, Is.EqualTo(CardFootprint.StandardWidth));
-            Assert.That(face.style.maxWidth.value.value, Is.EqualTo(CardFootprint.StandardWidth));
+            Assert.That(face.style.width.value.value, Is.EqualTo(CardFootprint.ArtworkWidth));
+            Assert.That(face.style.minWidth.value.value, Is.EqualTo(CardFootprint.ArtworkWidth));
+            Assert.That(face.style.maxWidth.value.value, Is.EqualTo(CardFootprint.ArtworkWidth));
             Assert.That(face.style.height.value.value, Is.EqualTo(CardFootprint.ArtworkHeight));
             Assert.That(face.style.minHeight.value.value, Is.EqualTo(CardFootprint.ArtworkHeight));
             Assert.That(face.style.maxHeight.value.value, Is.EqualTo(CardFootprint.ArtworkHeight));

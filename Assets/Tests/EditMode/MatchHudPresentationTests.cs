@@ -491,29 +491,36 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheFiveCardHand_FitsOneRowInsideTheTrayAtTheValidationResolution()
+        public void TheFiveCardHand_FitsOneReadableRowWithoutHorizontalScrolling()
         {
-            // 1920x1080 is the project's declared default screen size and the resolution the targeted
-            // Game View inspection runs at.
-            var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(1920f, 1080f);
-            const float trayPadding = 12f * 2f;
-            const float trayBorder = 1f * 2f;
-            const float scrollbarAllowance = 16f;
-            var available = tray.width - trayPadding - trayBorder - scrollbarAllowance;
-            var row = 5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap +
-                (2f * (DirectorHandsUnityView.ActiveOutlineGap +
-                    DirectorHandsUnityView.ActiveOutlineWidth)));
+            // Every 16:9 desktop resolves to the panel's 2560x1440 reference rectangle, regardless of
+            // device-pixel count. Layout arithmetic is therefore asserted in that coordinate space.
+            var panelWidth = MatchHudPanelScaling.ReferenceWidth;
+            var panelHeight = MatchHudPanelScaling.ReferenceHeight;
+            var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(panelWidth, panelHeight);
+            var available = tray.width;
+            var requiredWidth = ConfiguredMatchHudRenderer.CompactHandRightEdge;
 
-            Assert.That(row, Is.LessThanOrEqualTo(available),
-                "p.6's five cards are one row inside the tray, with their gutters, and never wrap.");
-            Assert.That(tray.height, Is.GreaterThanOrEqualTo(480f),
-                "and the tray is tall enough for the longest verified face's wrapped rules text.");
+            Assert.That(requiredWidth, Is.LessThanOrEqualTo(available),
+                "The readable source-ratio hand fits the reserved band without horizontal travel.");
+            var view = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(ConfiguredMatchFixtures.CreateVerifiedMirrorSession(), view)
+                .Refresh();
+            view.SetCompactPeekMode(true);
+            var row = Descendants(view.Root).Single(element => element.name == "gd-card-buttons");
+            Assert.That(row.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap));
+            Assert.That(row.style.width.value.value, Is.EqualTo(requiredWidth).Within(0.01f),
+                "All five ordered slots remain on one declared row inside the tray.");
+            Assert.That(tray.height,
+                Is.EqualTo(CardFootprint.Height + 40f).Within(0.01f),
+                "and the tray spends only 40 reference units beyond the complete face; hand metadata " +
+                "lives in the Director-side status dock.");
             Assert.That(
-                CardFootprint.Height,
-                Is.GreaterThanOrEqualTo(CardFootprint.Width * 1.5f),
-                "A card is drawn as a card: portrait, at roughly the approved mockup's proportions, " +
-                "and never as a wide tile with a paragraph squeezed into it.");
-            Assert.That(ConfiguredMatchHudRenderer.CalculatePlayfieldRect(1920f, 1080f).height,
+                CardFootprint.Width / CardFootprint.Height,
+                Is.EqualTo(CardFootprint.ArtworkSourceWidth /
+                    CardFootprint.ArtworkSourceHeight).Within(0.0001f),
+                "The enlarged card remains exactly as portrait as its verified source.");
+            Assert.That(ConfiguredMatchHudRenderer.CalculatePlayfieldRect(panelWidth, panelHeight).height,
                 Is.GreaterThan(tray.height),
                 "while the board stays the larger of the two surfaces.");
         }
@@ -658,6 +665,11 @@ namespace GuardsDigital.Tests.EditMode
             var preview = Descendants(view.Root)
                 .Single(element => element.name == "gd-turn-slot-preview");
             Assert.That(preview.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(
+                Descendants(preview).Prepend(preview)
+                    .All(element => element.pickingMode == PickingMode.Ignore),
+                Is.True,
+                "Every painted layer of a rail hover face is pointer-transparent.");
             Assert.That(
                 Descendants(preview).OfType<Label>().Any(label =>
                     label.text == played.PlayedCard.DisplayName.ToUpperInvariant()),
@@ -1223,6 +1235,39 @@ namespace GuardsDigital.Tests.EditMode
             {
                 Assert.That(other.style.opacity.value, Is.LessThan(1f),
                     "while a card that carries no command and is not in play still reads as unavailable.");
+            }
+
+            view.SetCompactPeekMode(true);
+            var overlappedButtons = Descendants(view.Root)
+                .Where(element => element.name == "gd-card-choice")
+                .OfType<Button>()
+                .ToArray();
+            var overlappedOrder = overlappedButtons
+                .Select(button => button.tooltip.Split(
+                    new[] { " - " }, StringSplitOptions.None)[0])
+                .ToArray();
+            var expectedOrder = hand.TrayCards
+                .Where(card => !card.IsResolving)
+                .Select(card => card.DisplayName)
+                .Concat(new[] { resolving.DisplayName })
+                .ToArray();
+            Assert.That(overlappedOrder, Is.EqualTo(expectedOrder),
+                "The configured overlapped hand moves only the resolving card to its fully visible " +
+                "rightmost position and preserves every sibling's relative order.");
+            Assert.That(overlappedButtons.Last().style.opacity.value, Is.EqualTo(1f));
+            Assert.That(Descendants(overlappedButtons.Last())
+                    .Any(element => element.name == "gd-card-unavailable-veil"),
+                Is.False,
+                "The resolving card remains undimmed at the visible end of the hand.");
+            foreach (var spent in overlappedButtons.Take(overlappedButtons.Length - 1))
+            {
+                Assert.That(spent.style.opacity.value, Is.EqualTo(1f),
+                    "Overlapped spent cards keep an opaque surface, so siblings cannot bleed through.");
+                var veil = Descendants(spent).Single(element =>
+                    element.name == "gd-card-unavailable-veil");
+                Assert.That(veil.style.backgroundColor.value.a, Is.GreaterThan(0f),
+                    "A card-local veil still makes the unavailable state visibly dim.");
+                Assert.That(veil.pickingMode, Is.EqualTo(PickingMode.Ignore));
             }
         }
 
@@ -2021,7 +2066,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void FourDefenseCardFacesPlusDecline_FitTheValidatedGameViewWithoutSidewaysScrolling()
+        public void FourDefenseCardFacesPlusDecline_FitOneReadableRowWithoutHorizontalScrolling()
         {
             var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
             var view = new RoundActionUnityView();
@@ -2045,8 +2090,11 @@ namespace GuardsDigital.Tests.EditMode
                 (RoundActionUnityView.SectionGap * cards.Length) +
                 RoundActionUnityView.SectionGutterWidth;
             Assert.That(tray.width - occupied, Is.GreaterThan(120f),
-                "Four whole faces, their gutters and the section label leave DECLINE DEFENSE room on " +
-                "the same row at the validated desktop viewport.");
+                "Four enlarged whole faces, their gutters, and DECLINE DEFENSE fit without sideways " +
+                "scrolling.");
+            var section = cards[0].parent;
+            Assert.That(section.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap),
+                "Defense order remains one row instead of wrapping into a second card stack.");
             Assert.That(CardFootprint.Height, Is.LessThan(tray.height),
                 "and one row of them stands inside the tray's ordinary bound, so this response needs " +
                 "no taller context than it has always had.");
@@ -2377,11 +2425,11 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The tray region scrolls at a short supported desktop viewport rather than shrinking the
-        /// cards inside it, which is what makes one fixed footprint supportable on every screen.
+        /// The reserved band keeps the whole readable hand at a short landscape desktop viewport
+        /// without shrinking a card or introducing horizontal travel.
         /// </summary>
         [Test]
-        public void AtAShortViewport_TheRegionScrollsAndTheCardKeepsItsFootprint()
+        public void AtAShortDesktopViewport_TheReservedBandKeepsTheWholeReadableHand()
         {
             // Milestone 8.25c: both are PANEL rectangles in reference units. The reference is what a
             // 16:9 window of any pixel count resolves to, so the window that reaches the short case is
@@ -2396,49 +2444,36 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(CardFootprint.Height, Is.LessThan(tray.height),
                 "One card stands inside the tray region at the reference resolution.");
             Assert.That(CardFootprint.Height,
-                Is.GreaterThanOrEqualTo(CardFootprint.Width * 1.5f),
-                "A card is drawn as a card: portrait, at roughly the approved mockup's proportions, " +
-                "and never as a wide tile with a paragraph squeezed into it.");
+                Is.EqualTo(CardFootprint.StandardHeight),
+                "Every complete face keeps the readable height.");
 
-            // The tray region's own padding and border, which the cards inside it never get.
-            const float regionChrome = (12f * 2f) + (1f * 2f);
             var shortViewport = ConfiguredMatchHudRenderer.CalculateCardPanelRect(
                 shortPanel.x, shortPanel.y);
-            Assert.That(shortViewport.height - regionChrome, Is.LessThan(CardFootprint.Height),
-                "The short panel is the case this rule is about: the region cannot hold a whole card, " +
-                "and what gives is the region rather than the card.");
+            Assert.That(shortViewport.height, Is.GreaterThan(CardFootprint.Height),
+                "The short landscape panel still reserves enough height for the readable card.");
 
             var view = new DirectorHandsUnityView();
             new DirectorHandsPresenter(ConfiguredMatchFixtures.CreateVerifiedMirrorSession(), view)
                 .Refresh();
+            view.SetCompactPeekMode(true);
             foreach (var card in Descendants(view.Root)
                 .Where(element => element.name == "gd-card-choice"))
             {
                 AssertIsTheStandardFootprint(card, "the short viewport");
             }
 
-            // The card is the same card there, and the region it stands in is what takes the
-            // difference. That the region actually scrolls is a fact about the live composition, so
-            // it is asserted on the live panel by
-            // WaspUiJourneyPlayModeTests.Scene_KeepsEveryTrayCardTheSameSizeWhenTheMapPointerSwitchesHeroes
-            // rather than guessed at here.
-            Assert.That(
-                shortViewport.width,
-                Is.GreaterThanOrEqualTo(
-                    (5f * (CardFootprint.Width + DirectorHandsUnityView.CardGap)) - 30f),
-                "and the short panel still holds p.6's five cards on one row, so the scroll it " +
-                "needs is vertical only.");
+            Assert.That(ConfiguredMatchHudRenderer.CompactHandRightEdge,
+                Is.LessThan(shortViewport.width),
+                "The wide-short desktop panel fits the complete hand without horizontal travel.");
 
-            // Milestone 8.25: what keeps that true now that the rails take a screen edge each. The
-            // tray was not moved out from under them - it keeps the window's own left margin and its
-            // full width, by the user's decision - so the row it can hold is exactly the row it could
-            // hold before, and neither the rail's width nor the card's footprint gives at any panel.
+            // The tray keeps the window margins and takes the full width at both shapes; neither the
+            // rail width nor the card footprint gives.
             foreach (var panel in new[] { shortPanel, referencePanel })
             {
                 Assert.That(
                     ConfiguredMatchHudRenderer.CalculateCardPanelRect(panel.x, panel.y).x,
-                    Is.EqualTo(12f),
-                    $"The tray keeps the window's left margin at {panel}.");
+                    Is.Zero,
+                    $"The card reservation reaches the bottom-left anchor at {panel}.");
                 Assert.That(
                     ConfiguredMatchHudRenderer.CalculateHeroRailRect(panel.x, panel.y, TeamSide.Red).width,
                     Is.EqualTo(ConfiguredMatchHudRenderer.HeroRailWidth),
@@ -2471,7 +2506,8 @@ namespace GuardsDigital.Tests.EditMode
 
         private static void AssertIsTheArtworkFootprint(VisualElement face, string where)
         {
-            Assert.That(face.style.width.value.value, Is.EqualTo(CardFootprint.Width).Within(0.01f),
+            Assert.That(face.style.width.value.value,
+                Is.EqualTo(CardFootprint.ArtworkWidth).Within(0.01f),
                 $"A prepared card face on {where} is not the shared width.");
             Assert.That(face.style.height.value.value,
                 Is.EqualTo(CardFootprint.ArtworkHeight).Within(0.01f),

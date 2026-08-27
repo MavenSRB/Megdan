@@ -14,12 +14,11 @@ namespace GuardsDigital.Presentation.Match
     /// heroes are configured now and a third is next, so "how tall is a card" had to stop being
     /// answered by the content.</para>
     ///
-    /// <para><b>Milestone 8.25f1.</b> A prepared front is already the complete printed card and keeps
-    /// its verified 372-by-520 proportions at <see cref="Width"/> by
-    /// <see cref="ArtworkHeight"/>. The taller <see cref="Height"/> remains the generated fallback's
-    /// text-fit box, so an ignored private resource can be absent without making its typed face
-    /// unreadable. Every consumer still receives one of these two explicitly pinned shapes from the
-    /// one complete-face builder; content and interaction state never choose a third size.</para>
+    /// <para><b>Milestones 8.25f1-8.25f2.</b> A prepared front is already the complete printed card.
+    /// It stands alone and keeps its verified 372-by-520 proportions, now at the established readable
+    /// <see cref="Height"/> rather than at the old narrow <see cref="Width"/>. The width is derived from
+    /// that height, so enlarging the card cannot distort it. The generated fallback takes the same
+    /// outer box: resource availability changes the face, never its size.</para>
     ///
     /// <para><b>Why a stated constant rather than a measurement.</b> A height derived from the tallest
     /// verified face would be exactly the content-driven size this milestone removes: the next hero's
@@ -30,17 +29,6 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public static class CardFootprint
     {
-        /// <summary>
-        /// Every complete card face is this wide.
-        ///
-        /// Milestone 8.5a's width, unchanged: five of these plus their gutters leave the tray's
-        /// 1280-pixel bound comfortable, which is what p.6's five-card hand needs from a single row.
-        /// </summary>
-        public const float StandardWidth = 186f;
-
-        /// <summary>Compatibility name for the standard width.</summary>
-        public const float Width = StandardWidth;
-
         /// <summary>The verified private front's native pixel width.</summary>
         public const float ArtworkSourceWidth = 372f;
 
@@ -48,13 +36,7 @@ namespace GuardsDigital.Presentation.Match
         public const float ArtworkSourceHeight = 520f;
 
         /// <summary>
-        /// A prepared complete front at the shared width, preserving 372:520 exactly.
-        /// </summary>
-        public const float ArtworkHeight =
-            StandardWidth * ArtworkSourceHeight / ArtworkSourceWidth;
-
-        /// <summary>
-        /// Every generated fallback face is this tall - an exact height, not a floor.
+        /// Every complete card face is this tall - an exact height, not a floor.
         ///
         /// <para><b>Where the number comes from.</b> Measured, once, on the live panel at the validated
         /// 1920x1080 viewport: the thirty-eight verified faces the two configured heroes print settled
@@ -64,26 +46,37 @@ namespace GuardsDigital.Presentation.Match
         /// slightly longer one still does. It is a ceiling and not a target: a face is drawn at this
         /// height whether its words need 344 or 401, and the rules panel takes the difference.</para>
         ///
-        /// <para>It stays portrait at these proportions for milestone 8.5a's reason, and one of these
-        /// stands inside the tray region's own height at the validated viewport. A shorter supported
-        /// viewport scrolls the region that holds the cards - the tray region has always been a
-        /// <see cref="ScrollView"/> - rather than shrinking the cards inside it, so a card is the same
-        /// size on every screen this project supports.</para>
+        /// <para>It stays portrait at these proportions for milestone 8.5a's reason. The ordinary
+        /// physical hand never shrinks or scrolls: it overlaps five faces inside its fixed bottom-left
+        /// footprint. A mandatory multi-card decision may instead use the tray's bounded tall context
+        /// and vertical scroller, still without resizing a face, so a card is the same size on every
+        /// screen this project supports.</para>
         ///
-        /// <para><b>Milestone 8.25c: 186 by 420 are reference units.</b> They keep the exact meaning
-        /// milestone 8.20c gave them, and no verified face changes which side of the ceiling it falls
-        /// on, because the measurement was in <em>panel points</em> to begin with: UI Toolkit lays text
-        /// out in points at a stated font size, so the 344-to-401 range those thirty-eight faces
-        /// settled into is the same range whatever the panel is scaled to. What changes is only how
-        /// many device pixels a point is drawn across. "The same size on every screen" is now literally
-        /// true rather than true of the pixel count. The short case the bounded scroll is for is still
-        /// real and is now a matter of the window's <em>shape</em> - a panel shorter than about 913
-        /// reference units cannot hold a whole face - rather than of its pixel count.</para>
+        /// <para><b>Milestone 8.25c: 420 is a reference-unit height.</b> UI Toolkit lays text out in
+        /// points at a stated font size, so the 344-to-401 range those thirty-eight generated faces
+        /// settled into is the same whatever the panel scale. Milestone 8.25f2 retains that readable
+        /// height for the real fronts instead of reducing them to fit the old 186-unit width.</para>
         /// </summary>
         public const float StandardHeight = 420f;
 
         /// <summary>Compatibility name for the standard height.</summary>
         public const float Height = StandardHeight;
+
+        /// <summary>
+        /// The shared complete-card width, derived from the verified front's source ratio at the
+        /// established readable height.
+        /// </summary>
+        public const float StandardWidth =
+            StandardHeight * ArtworkSourceWidth / ArtworkSourceHeight;
+
+        /// <summary>Compatibility name for the standard width.</summary>
+        public const float Width = StandardWidth;
+
+        /// <summary>The prepared front uses the shared source-ratio width.</summary>
+        public const float ArtworkWidth = StandardWidth;
+
+        /// <summary>The prepared front uses the shared readable height.</summary>
+        public const float ArtworkHeight = StandardHeight;
 
         /// <summary>
         /// Applies the generated fallback footprint.
@@ -96,7 +89,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public static void Apply(VisualElement face)
         {
-            ApplyPinned(face, Height);
+            ApplyPinned(face, Width, Height);
         }
 
         /// <summary>
@@ -105,19 +98,19 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public static void ApplyArtwork(VisualElement face)
         {
-            ApplyPinned(face, ArtworkHeight);
+            ApplyPinned(face, ArtworkWidth, ArtworkHeight);
         }
 
-        private static void ApplyPinned(VisualElement face, float height)
+        private static void ApplyPinned(VisualElement face, float width, float height)
         {
             if (face == null)
             {
                 return;
             }
 
-            face.style.width = Width;
-            face.style.minWidth = Width;
-            face.style.maxWidth = Width;
+            face.style.width = width;
+            face.style.minWidth = width;
+            face.style.maxWidth = width;
             face.style.height = height;
             face.style.minHeight = height;
             face.style.maxHeight = height;

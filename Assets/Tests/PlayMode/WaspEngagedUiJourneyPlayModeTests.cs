@@ -340,12 +340,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, redHeroView.transform.position), Is.True);
             yield return null;
-            var slot = UiPlayer.Descendants(hud.RootElement)
-                .Single(element => element.name == "gd-card-slot" &&
-                    UiPlayer.Descendants(element).Any(child =>
-                        child.name == "gd-card-name" &&
-                        child is UnityEngine.UIElements.Label label &&
-                        label.text == "MAGNETIC DAGGER"));
+            var slot = UiPlayer.NamedElementWithText(
+                hud, "gd-card-slot", "MAGNETIC DAGGER");
             Assert.That(slot.resolvedStyle.borderTopColor.a, Is.GreaterThan(0.5f),
                 "The card's slot wears the Active-effect outline while the pin lives.");
 

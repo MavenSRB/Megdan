@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-08-27
+Last updated: 2026-08-28
 
 ## Purpose and authority
 
@@ -8,15 +8,15 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The project has completed roadmap milestones through **8.25f1**. **The loaded match is rulebook p.5's six-player Quick Game**: three Red and three Blue heroes, six spawns, three Waves, five Lives a side, the Tie Breaker, twelve minions, and 108 playable cards. All six heroes pass the permanent player-path gate. Prepared fronts stand alone at 186 by 260, preserving their verified 372:520 ratio; an absent private resource uses the readable 186-by-420 fallback, and facedown stays neutral. The HUD names each decision and shows coins, items, and held markers. p.10 repeats stay on the same card and hero and are offered only when performable. The current schema v34 persists every pause and pins the contract set. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
+The project has completed roadmap milestones through **8.25f2**. **The loaded match is rulebook p.5's six-player Quick Game**: three Red and three Blue heroes, six spawns, three Waves, five Lives a side, the Tie Breaker, twelve minions, and 108 playable cards. All six heroes pass the permanent player-path gate. Prepared and fallback faces share the readable approximately 300.46-by-420 source-ratio footprint; five overlap in a clickable borderless bottom-left hand while full-screen board artwork fits every playable hex clear of actual HUD content. The adjacent status/action dock keeps one fixed largest-state footprint across card selection and reveal. Facedown stays neutral. The HUD names each decision and shows coins, items, and held markers. p.10 repeats stay on the same card and hero and are offered only when performable. The current schema v34 persists every pause and pins the contract set. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.25f1**.
+- Current completed milestone: **8.25f2**.
 - Active authorized milestone: **none**.
 - Next proposed milestone: **8.25e4**.
 
-Milestone **8.25f1** completed on 2026-08-27, correcting 8.25f's presentation and addressed from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). A scoped importer preserves each ignored PNG at 372 by 520; the shared builder draws it alone at 186 by 260, without generated shell or distortion. Only an absent or unloadable resource uses the typed 186-by-420 fallback. All six local eighteen-card inventories are present. T2 validation covered the 108-file inventory, 85 focused Edit tests, 10 focused Play tests, and a passing non-batch ordinary-tray capture at 2048 by 1152. Private pixels and the capture remained ignored; rules, commands, schema, revisions, digests and authoritative state did not move. **8.25e4** is next; 8.25e7 remains its fellow blocker before 8.26.
+Milestone **8.25f2** completed on 2026-08-28 and is addressed from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md). Complete faces share the 372:520 source ratio at approximately 300.46 by 420; the ordinary five-card hand overlaps without frame or scrollbar, keeps every card clickable, reveals one topmost full face and leaves the board clickable outside its painted footprint. Full-screen artwork surrounds 210 playable hexes fitted into the HUD's L-shaped safe surface; `DIRECTOR`, a fixed largest-state status/action dock and the one-row action strip use the dead lane below the third Red rail without resizing across awaiting, confirmation and action states. Rules, commands, schema, revisions, digests and private-source boundaries did not move. **8.25e4** is next; 8.25e7 remains its fellow blocker before 8.26.
 
 Milestone **8.25e** completed on 2026-08-27. A repeat p.10 offers is one the answer performs: p.12's Hold has a second instance, while p.11's Fast Travel and p.13's Clear do not. Edit Mode **1934**, Play Mode **229**; schema stayed v34 and three payload-identical event-log digests moved. Its evidence is addressed by SHA from the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md).
 
@@ -38,7 +38,7 @@ The remaining **Phase 8** gate route resumes at 8.25e4 after the completed art m
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
-Roadmap amendments, 2026-08-26 and 2026-08-27: **8.25f** uses each locally prepared private front, and **8.25f1** removes its generated shell and preserves its ratio. Clean-checkout fallback and identity-free facedown remain; private pixels stay ignored and outside rules authority.
+Roadmap amendments, 2026-08-26 through 2026-08-28: **8.25f** uses each locally prepared private front, **8.25f1** removes its generated shell, and **8.25f2** enlarges the shared source-ratio face and composes the accepted physical hand/full-screen map HUD with one fixed largest-state status/action footprint. Clean-checkout fallback and identity-free facedown remain; private pixels stay ignored and outside rules authority.
 
 Roadmap amendment, 2026-08-25: heroes beyond this roster are taken **in batches of about five rather than one at a time**, and [Roadmap/POST_PITCH.md](Roadmap/POST_PITCH.md) owns why and what a batch owes first. It changed nothing inside this roster.
 

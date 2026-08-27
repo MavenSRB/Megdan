@@ -34,17 +34,12 @@ namespace GuardsDigital.Tests.EditMode
             // cannot both claim the same pixels on a short viewport and hide one of two guaranteed
             // surfaces behind the other.
             //
-            // Milestone 8.25 left this rect exactly where it was. The rail columns took the whole
-            // screen edge, but the tray kept the window's own left margin and its full width by the
-            // user's decision, so the two meet in the bottom corners rather than the tray moving out
-            // of them.
-            //
             // Milestone 8.25c: 778 by 300 is now a PANEL rectangle in reference units rather than a
             // screen in device pixels, and the assertions below are unchanged because the arithmetic
             // this measures is unchanged - what moved is which viewport reaches it. A panel this small
             // is reached by a window whose shape is this extreme rather than by one whose pixel count
             // is, which is the whole point of the scaled panel.
-            Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(12f, 68f, 754f, 220f)));
+            Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(0f, 68f, 778f, 220f)));
             Assert.That(panel.xMax, Is.LessThanOrEqualTo(778f));
             Assert.That(panel.yMax, Is.LessThanOrEqualTo(300f));
             Assert.That(
@@ -60,28 +55,17 @@ namespace GuardsDigital.Tests.EditMode
         {
             var panel = ConfiguredMatchHudRenderer.CalculateCardPanelRect(2048f, 1152f);
 
-            // Milestone 5.1c's 1280 is still the width the Defense row was sized against. The height is
-            // 360 as a floor rather than a ceiling since milestone 7.8a: p.15's Upgrade a Card can ask
-            // six options at once, and on a tall screen the tray takes a share of it rather than
-            // putting a row of a mandatory choice behind a scrollbar. Milestone 8.5a raised that share
-            // to 0.46 for the printed rules text a tray card now carries. The tray sizes to its
-            // content, so this is the region it may use and not the region it does use.
-            // Milestone 8.25: the tray keeps the window's own left margin and its full width, by the
-            // user's decision, even though the rail columns now run the whole screen edge. The two
-            // therefore meet in the bottom corners and the tray is drawn over the rail there, which
-            // is what this pair of assertions records - it is a deliberate overlap rather than a
-            // layout that happens not to have been checked. What is under there is the rail's bottom
-            // padding; that every row a player reads stays clear of the tray is milestone 8.25c's,
-            // asserted on the live panel by `MinimalHexGridPlayModeTests`.
-            Assert.That(panel.width, Is.EqualTo(1280f));
-            Assert.That(panel.x, Is.EqualTo(12f));
+            // Milestone 8.25f2 reserves the whole bottom width and enough height for one readable
+            // 420-unit face plus its tray header and chrome. The rail columns end above that band.
+            Assert.That(panel.width, Is.EqualTo(2048f));
+            Assert.That(panel.x, Is.Zero);
             Assert.That(
-                panel.xMin,
-                Is.LessThan(
-                    ConfiguredMatchHudRenderer.CalculateHeroRailRect(2048f, 1152f, TeamSide.Red).xMax),
-                "The tray starts inside the Red rail column's own strip, and is drawn over it.");
-            Assert.That(panel.height, Is.GreaterThanOrEqualTo(360f));
-            Assert.That(panel.height, Is.EqualTo(1152f * 0.46f).Within(0.01f));
+                ConfiguredMatchHudRenderer.CalculateHeroRailRect(
+                    2048f, 1152f, TeamSide.Red).yMax,
+                Is.LessThanOrEqualTo(panel.yMin),
+                "The Red rail column ends before the reserved tray begins.");
+            Assert.That(panel.height,
+                Is.EqualTo(ConfiguredMatchHudRenderer.CardPanelHeight).Within(0.01f));
             Assert.That(panel.yMax, Is.EqualTo(1152f - 12f).Within(0.01f));
             Assert.That(panel.yMin,
                 Is.GreaterThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));

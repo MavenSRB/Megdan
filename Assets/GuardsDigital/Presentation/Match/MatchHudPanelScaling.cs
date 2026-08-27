@@ -8,8 +8,8 @@ namespace GuardsDigital.Presentation.Match
     ///
     /// <para><b>Milestone 8.25c.</b> Until this milestone the panel was
     /// <see cref="PanelScaleMode.ConstantPixelSize"/> at <c>scale = 1</c>, so every layout number in
-    /// this namespace was a literal device pixel: a hero rail was 192 pixels and a card face 186 by
-    /// 420 on a 1280-wide screen and on a 2560-wide one alike, and the HUD took half its designed
+    /// this namespace was a literal device pixel: a hero rail was 192 pixels and a card face roughly
+    /// 300.46 by 420 on a 1280-wide screen and on a 2560-wide one alike, and the HUD took half its designed
     /// share of the second. The panel now scales with the viewport, and every number here - a rail's
     /// width, a card's footprint, the status strip's height, every margin - is a <em>reference unit</em>
     /// rather than a pixel. One reference unit is one device pixel at
