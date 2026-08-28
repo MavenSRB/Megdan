@@ -8,6 +8,8 @@ This contract keeps routine context bounded without limiting the complete author
 
 `Tools/OperativeClaims.tsv` is a non-authoritative validator inventory for the complete F-DOC-01 correction set and claims registered after it. Its stable IDs bind one canonical owner to an allowed explicit status, resolvable evidence locator, live reassessment trigger, and matching owner marker. `EveryOperativeClaimHasCurrentEvidenceOrExplicitStatus` proves that finite inventory and does not claim to understand arbitrary prose.
 
+[`Tools/GovernanceSourceBodyManifest.json`](../../Tools/GovernanceSourceBodyManifest.json) is likewise non-authoritative: it revision-pins the dynamically discovered governed Markdown corpus and indexed archive as exact raw UTF-8 preambles and heading-delimited byte ranges, binds each registered operative claim once, and marks every body for explicit retention. [`Validate-GovernanceSourceBodyManifest.ps1`](../../Tools/Validate-GovernanceSourceBodyManifest.ps1) reconstructs every source byte and rejects source drift, gaps, overlap, duplicates, unknown bodies, stale hashes, unindexed sources, and incomplete claim bindings. Its corpus SHA-256 is an inventory revision, not a replacement authority or permission to migrate; canonical truth remains in the recorded source.
+
 Every fact has exactly one canonical active home. Other active documents use a short routing summary and a stable link. Historical evidence has exactly one lossless destination: for new milestone evidence, the commit body indexed by its phase-archive row; for other history, an indexed append-only archive file. The pre-governance baseline is preservation evidence, not current authority.
 
 ## Ownership matrix

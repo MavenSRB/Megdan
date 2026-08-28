@@ -481,3 +481,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e4b | One test-owned claim catalog records stable IDs, exact production/evidence locators, status, material shape axes, and expansion triggers. Its first real entry classifies the pending-decision contract from independent family/lifecycle and deliberate-violation shapes; equivalent-name, missing-locator, unregistered-delta, and unbounded-narrow probes fail while valid general and narrow claims pass. Runtime and schema v34 are unchanged. | `9bbfd464` |
+
+## Milestone 8.25e6a Build the complete lossless governance source/body manifest completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25e6a | A non-authoritative corpus-hash manifest dynamically covers every governed and indexed archive Markdown source as exact UTF-8 preambles and heading bodies, binds every registered operative claim once, and rejects loss, overlap, duplication, unknown or stale bodies, and incomplete claim bindings. Every entry explicitly retains its source; canonical authority and the active router are unchanged. | `a60beb3e` |

@@ -4,9 +4,9 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization and corrective route
 
-Milestone 8.25e4a's real-family proof exposed one pre-existing paused-repeat snapshot defect and stopped as required. The separately approved 8.25e4a1 correction closed that defect without widening the parent milestone; resumed 8.25e4a and its 8.25e4b foundation-claim guard are now complete, no milestone is in progress, and 8.25e6a is the next stabilization proposal.
+Milestone 8.25e4a's real-family proof exposed one pre-existing paused-repeat snapshot defect and stopped as required. The separately approved 8.25e4a1 correction closed that defect without widening the parent milestone; resumed 8.25e4a, its 8.25e4b foundation-claim guard, and the 8.25e6a lossless governance map are now complete, no milestone is in progress, and 8.25e6b is the next stabilization proposal.
 
-**Corrective scheduling amendments, 2026-08-27 through 2026-08-28.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the intended corrections. Fresh verification 8.25e5c found that Constrict's ledger reminder spacing was missed even though production and its exact regression were correct; 8.25e5d corrected that one field, and 8.25e5e freshly verified it. A later user report disproved the clean audit for Siren's Call: 8.25e5f corrected its Defense/Movement values, 8.25e5f1 corrected the separately demonstrated "up to 3" execution defect, and fresh-task 8.25e5g reclosed F-SOURCE-01 after independently verifying both corrections. Milestones 8.25f-8.25f2 completed the real-card-face route and its accepted HUD before that later finding, and test-only correction 8.25f2a closed the stale fallback-camera assertion exposed by 8.25e4's first complete run. Milestones 8.25e4, 8.25e4a-8.25e4b, and independent 8.25e7 are complete; 8.26 remains unblocked on the gate route, while 8.25e6a is now the next stabilization proposal. Milestones 8.25e4a-8.25e4b harden the decision seam and future foundation claims; they do not gate 8.26 but are closed before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline. The user-approved reassessment closes the never-scheduled 8.16b proposal without pretending its surviving findings were implemented: 8.25e7 closed the current content-contract and compatibility corrections; 8.27 owns the official-six-player runtime capture already inside its full-match scale gate.
+**Corrective scheduling amendments, 2026-08-27 through 2026-08-28.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the intended corrections. Fresh verification 8.25e5c found that Constrict's ledger reminder spacing was missed even though production and its exact regression were correct; 8.25e5d corrected that one field, and 8.25e5e freshly verified it. A later user report disproved the clean audit for Siren's Call: 8.25e5f corrected its Defense/Movement values, 8.25e5f1 corrected the separately demonstrated "up to 3" execution defect, and fresh-task 8.25e5g reclosed F-SOURCE-01 after independently verifying both corrections. Milestones 8.25f-8.25f2 completed the real-card-face route and its accepted HUD before that later finding, and test-only correction 8.25f2a closed the stale fallback-camera assertion exposed by 8.25e4's first complete run. Milestones 8.25e4, 8.25e4a-8.25e4b, 8.25e6a, and independent 8.25e7 are complete; 8.26 remains unblocked on the gate route, while 8.25e6b is now the next stabilization proposal. Milestones 8.25e4a-8.25e4b harden the decision seam and future foundation claims; they do not gate 8.26 but are closed before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline. The user-approved reassessment closes the never-scheduled 8.16b proposal without pretending its surviving findings were implemented: 8.25e7 closed the current content-contract and compatibility corrections; 8.27 owns the official-six-player runtime capture already inside its full-match scale gate.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
 
@@ -384,7 +384,7 @@ artwork preparation, rights conclusion, unrelated front review, or 8.25e4/8.25e7
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e5g-freshly-verify-sirens-call-and-reclose-f-source-01-completion-evidence).
 
-### [ ] 8.25e6a Build the complete lossless governance source/body manifest
+### [x] 8.25e6a Build the complete lossless governance source/body manifest
 
 Blocked by: milestone 8.25e2, so the map begins from corrected operative truth. This and the next two milestones are non-gating for 8.25f/8.26 and are due before the first post-pitch hero batch.
 
@@ -401,7 +401,9 @@ Acceptance checks:
 
 Non-goals: No migration, deletion, paraphrase, archive rewrite, canonical-home/router change, generated active authority, candidate selection, or weakening of exact rules, contracts, evidence, privacy, rights, or history.
 
-### [!] 8.25e6b Prototype and measure competing active-access models off-path
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e6a-build-the-complete-lossless-governance-sourcebody-manifest-completion-evidence).
+
+### [ ] 8.25e6b Prototype and measure competing active-access models off-path
 
 Blocked by: milestone 8.25e6a, whose balanced map is the only input to this experiment.
 

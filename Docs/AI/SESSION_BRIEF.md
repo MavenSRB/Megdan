@@ -12,9 +12,11 @@ The current gate route has completed **8.25e7**, with source verification throug
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.25e4b**.
+- Current completed milestone: **8.25e6a**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.25e6a**.
+- Next proposed milestone: **8.25e6b**.
+
+Milestone **8.25e6a** completed on 2026-08-28. A non-authoritative corpus-hash manifest accounts for every discovered governed or indexed historical Markdown source, its raw preamble and heading bodies, and each registered operative claim exactly once. Byte reconstruction, hashes, metadata, explicit retention, and deliberate violations pass without changing the active router or canonical authority. **8.25e6b** is next proposed.
 
 Milestone **8.25e4b** completed on 2026-08-28. A test-owned machine-checkable claim catalog now gives each deliberately registered shared foundation one stable identity, exact production-member and evidence locators, status, material shape axes, and an expansion trigger. Its first real entry classifies 8.25e4a's pending-decision contract against the ten-family/thirty-answer inventory, configured acceptance/stale-refusal lifecycle, and deliberate unregistered-family/surface/command violations. General claims require independent production shapes or boundary-plus-violator evidence; unique work may remain explicitly narrow only with exact scope and a trigger. A future batch delta missing from the catalog fails the same guard. Runtime, rules, presentation, content, commands, and schema v34 are unchanged.
 
@@ -38,7 +40,7 @@ Milestones **8.1-8.16** dealt all nineteen verified Wasp faces through ordinary 
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1-7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed the 7.9a review's findings.
 
-The remaining **Phase 8** gate route still proposes six-hero director control at 8.26, while the stabilization route next proposes 8.25e6a. Milestone 8.25e7 closed the surviving content-contract and compatibility work from the closed, never-scheduled 8.16b proposal. Non-gating 8.25e4b is complete; governance study 8.25e6a-8.25e6c remains due before the first post-pitch hero batch. Milestone 8.27 owns 8.16a's mis-aimed runtime capture because it is already the official-six-player full-match and scale gate. The retained 3v3/URP/online gates remain. Each scheduled milestone still requires exact implementation approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
+The remaining **Phase 8** gate route still proposes six-hero director control at 8.26, while the stabilization route next proposes 8.25e6b. Milestone 8.25e7 closed the surviving content-contract and compatibility work from the closed, never-scheduled 8.16b proposal. Non-gating 8.25e4b and 8.25e6a are complete; governance study 8.25e6b-8.25e6c remains due before the first post-pitch hero batch. Milestone 8.27 owns 8.16a's mis-aimed runtime capture because it is already the official-six-player full-match and scale gate. The retained 3v3/URP/online gates remain. Each scheduled milestone still requires exact implementation approval. Phase 6 is complete at its 6.13 T3 gate, with 6.1y discharged.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 

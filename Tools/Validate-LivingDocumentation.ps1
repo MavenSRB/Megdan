@@ -943,6 +943,22 @@ function Invoke-SelfTests {
 
 if (-not $SkipSelfTests) { Invoke-SelfTests }
 
+# Governance source/body balance (milestone 8.25e6a): the non-authoritative manifest pins every
+# validator-discovered active source, every indexed archive source, each raw UTF-8 preamble and
+# heading-delimited body, and every registered operative claim. Keep this as a separate focused
+# validator so its deliberate-violation probes can run without the unrelated living-document pass,
+# while the ordinary handoff command still enforces it.
+$sourceBodyManifestValidator = Join-Path $PSScriptRoot 'Validate-GovernanceSourceBodyManifest.ps1'
+if (-not (Test-Path -LiteralPath $sourceBodyManifestValidator -PathType Leaf)) {
+    Add-Issue 'ERROR' 'missing-source-body-manifest-validator' 'Tools/Validate-GovernanceSourceBodyManifest.ps1 is missing.'
+}
+else {
+    try { & $sourceBodyManifestValidator -SkipSelfTests }
+    catch {
+        Add-Issue 'ERROR' 'source-body-manifest' $_.Exception.Message
+    }
+}
+
 # Active leaf thresholds. AGENTS.md is the mandatory project-root process leaf, so include it in
 # every active-corpus check rather than merely declaring an unreachable Get-Limit case.
 $activeFiles = @(Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName.Replace('\', '/') -notlike '*/Archive/*' })
