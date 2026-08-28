@@ -12,7 +12,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.29a | Six edge rails are contained 264-unit character plaques with dynamically bounded width, 50-unit official hero portraits in team medallions, prominent 16-point names, shaped frames and quieter detail bands. Every prior fact and interaction remains; the recorded pre-fix hierarchy failure, focused T2 geometry/presentation gates and two-resolution Game View inspection close without changing rules, projection, input, schema, networking or private-art boundaries. | `0000000` |
+| 8.29a | Six edge rails are contained 264-unit character plaques with dynamically bounded width, 50-unit official hero portraits in team medallions, prominent 16-point names, shaped frames and quieter detail bands. Every prior fact and interaction remains; the recorded pre-fix hierarchy failure, focused T2 geometry/presentation gates and two-resolution Game View inspection close without changing rules, projection, input, schema, networking or private-art boundaries. | `98fcae5` |
 
 ## Milestone 8.27 Complete and prove the deterministic six-hero 3v3 pitch match completion evidence
 
