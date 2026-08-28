@@ -121,12 +121,6 @@ namespace GuardsDigital.Tests.EditMode
                     "The disc holds a portrait and nothing written; a letter here is the badge this " +
                     "milestone replaced, drawn again as a fallback.");
 
-                // Its footprint is the badge's, to the unit: a hero rail's height is under a measured
-                // ceiling and a three-up budget that rulebook p.6's three heroes a side depend on, so
-                // the change deliberately buys no height.
-                Assert.That(disc.style.width.value.value, Is.EqualTo(30f).Within(0.01f));
-                Assert.That(disc.style.height.value.value, Is.EqualTo(30f).Within(0.01f));
-
                 Assert.That(disc.tooltip, Is.Not.Null.And.Not.Empty,
                     "and it reads as words to a pointer and to an assistive reader, because a surface " +
                     "whose only statement is a picture states nothing to a reader who cannot use one.");
@@ -145,6 +139,59 @@ namespace GuardsDigital.Tests.EditMode
                     Is.GreaterThanOrEqualTo(0),
                     "The team is in the words too, so neither the picture nor the accent colour is " +
                     "the only place it is stated.");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.29a's closing identity-hierarchy check. The portrait and written name are the
+        /// first reading of every hero plaque, while the same complete secondary match information
+        /// remains present beneath them.
+        /// </summary>
+        [Test]
+        public void TheSixHeroPlaques_MakePortraitAndNameThePrimaryIdentity()
+        {
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(CreateOfficialSixPlayerSession(), view).Refresh();
+
+            var rails = Descendants(view.Root)
+                .Where(element => element.name == "gd-hero-rail")
+                .ToArray();
+            Assert.That(rails, Has.Length.EqualTo(6));
+
+            foreach (var rail in rails)
+            {
+                var identityPlate = rail.Children()
+                    .SingleOrDefault(element => element.name == "gd-hero-identity-plate");
+                Assert.That(identityPlate, Is.Not.Null,
+                    "The hero identity leads in its own layered plate rather than floating in a box.");
+
+                var medallion = Descendants(identityPlate)
+                    .SingleOrDefault(element => element.name == "gd-hero-medallion");
+                var portrait = Descendants(identityPlate)
+                    .SingleOrDefault(element => element.name == "gd-hero-icon");
+                Assert.That(medallion, Is.Not.Null, "The portrait has a team-rimmed medallion.");
+                Assert.That(portrait, Is.Not.Null, "Every plaque keeps the official hero portrait.");
+                Assert.That(portrait.style.width.value.value, Is.GreaterThanOrEqualTo(48f));
+                Assert.That(portrait.style.height.value.value, Is.GreaterThanOrEqualTo(48f));
+
+                var level = Descendants(identityPlate).OfType<Label>()
+                    .SingleOrDefault(label => label.name == "gd-hero-level");
+                var name = Descendants(identityPlate).OfType<Label>()
+                    .SingleOrDefault(label => label.name == "gd-hero-name");
+                Assert.That(level, Is.Not.Null, "The level remains in the identity plate.");
+                Assert.That(name, Is.Not.Null, "The full written hero name remains in the plaque.");
+                Assert.That(name.style.fontSize.value.value, Is.GreaterThanOrEqualTo(15f));
+                Assert.That(name.style.unityFontStyleAndWeight.value, Is.EqualTo(FontStyle.Bold));
+
+                foreach (var secondary in new[]
+                {
+                    "gd-current-card-slot", "gd-bonus-strip", "gd-item-chips", "gd-hero-coins",
+                    "gd-turn-slots", "gd-discard"
+                })
+                {
+                    Assert.That(Descendants(rail).Any(element => element.name == secondary), Is.True,
+                        $"The artistic hierarchy must not remove {secondary}'s match information.");
+                }
             }
         }
 

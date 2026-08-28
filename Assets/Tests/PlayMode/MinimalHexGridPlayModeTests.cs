@@ -448,6 +448,20 @@ namespace GuardsDigital.Tests.PlayMode
                 foreach (var rail in railsInColumn)
                 {
                     Assert.That(rail.worldBound.width, Is.LessThanOrEqualTo(column.Rect.width + 0.5f));
+                    Assert.That(rail.worldBound.xMin, Is.GreaterThanOrEqualTo(bounds.xMin - 0.5f),
+                        "A plaque may not protrude past the outside of its assigned side column.");
+                    Assert.That(rail.worldBound.xMax, Is.LessThanOrEqualTo(bounds.xMax + 0.5f),
+                        "A plaque may not protrude into the board from its assigned side column.");
+                    foreach (var readable in Descendants(rail).Where(element =>
+                        element.visible && element.resolvedStyle.display != DisplayStyle.None))
+                    {
+                        Assert.That(readable.worldBound.xMin,
+                            Is.GreaterThanOrEqualTo(rail.worldBound.xMin - 0.5f),
+                            readable.name + " protrudes through the plaque's outside edge.");
+                        Assert.That(readable.worldBound.xMax,
+                            Is.LessThanOrEqualTo(rail.worldBound.xMax + 0.5f),
+                            readable.name + " protrudes through the plaque's board-side edge.");
+                    }
                 }
             }
 

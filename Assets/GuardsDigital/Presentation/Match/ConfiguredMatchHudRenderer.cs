@@ -211,21 +211,14 @@ namespace GuardsDigital.Presentation.Match
         /// about 878 reference units, so the recomposition and the taller column together are what
         /// hold p.6's three a side.</para>
         ///
-        /// <para>192 rather than more, because the widening is bounded by a standing product rule
-        /// rather than by taste: two rails together must stay under half the narrowest validated
-        /// viewport so the board remains the dominant surface, which
-        /// <c>MatchHudPresentationTests.TheStandingLayout_KeepsEveryRegionInsideBothValidatedViewports</c>
-        /// measures. 208 broke it at 416 against a 389 limit and was reduced rather than the rule
-        /// being loosened.</para>
-        ///
-        /// <para><b>Milestone 8.25c restates it rather than re-measuring it.</b> 192 is now 192
-        /// <em>reference units</em> - the same panel points 8.23a measured, since a rail's rows are
-        /// laid out in points and not in pixels - so the number keeps exactly the meaning that
-        /// milestone gave it, and the product rule above becomes a fact about every screen rather than
-        /// about whichever one was narrowest. What changes is that a rail is 192 pixels on a
-        /// 2560-wide screen and 144 on a 1920-wide one, which is the same share of both.</para>
+        /// <para><b>Milestone 8.29a.</b> 264 reference units gives a character plaque enough room for
+        /// its portrait, full written name, and current-card marker to read as one header. It is a
+        /// preference, not permission to crowd the map: <see cref="CalculateHeroRailWidth"/> narrows
+        /// both sides symmetrically before their combined footprint reaches half a short viewport.
+        /// Supported desktop layouts receive the full 264; the extreme-shape geometry gates exercise
+        /// the yielding branch.</para>
         /// </summary>
-        public const float HeroRailWidth = 192f;
+        public const float HeroRailWidth = 264f;
 
         private const float DirectorToggleWidth = 122f;
         private const float DirectorToggleHeight = 30f;
@@ -958,7 +951,9 @@ namespace GuardsDigital.Presentation.Match
         }
 
         private static float CalculateHeroRailWidth(float panelWidth) =>
-            Mathf.Min(HeroRailWidth, Mathf.Max(0f, (panelWidth / 2f) - (Margin * 2f)));
+            // One plaque gets at most a quarter of the panel minus its outside margin. Two plaques
+            // therefore remain strictly below half even when the preferred 264 cannot fit.
+            Mathf.Min(HeroRailWidth, Mathf.Max(0f, (panelWidth / 4f) - Margin));
 
         private static Rect GetCardPanelRect() =>
             CalculateCardPanelRect(PanelViewport.x, PanelViewport.y);

@@ -592,6 +592,27 @@ Decision and re-baseline: [the version-controlled private-online architecture re
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829-select-the-minimum-private-online-architecture-and-re-baseline-the-track-completion-evidence).
 
+### [x] 8.29a Recompose and contain the side hero trays
+
+Approved by the user on 2026-08-29 as the bounded UI correction before transport work resumes.
+
+Observable outcome: The six side hero trays become contained, artistic character plaques whose hero portrait and written name lead the hierarchy while every existing match fact and interaction remains available.
+
+Acceptance checks:
+
+- Each team column uses a wider 264-reference-unit preferred plaque at supported desktop layouts, but dynamically yields before the opposite column can meet it; both columns together remain under half the panel so the board stays dominant.
+- Every rendered plaque and readable descendant stays inside its assigned side column and above the card tray at the 2560x1440 reference Game View and the supported short desktop layout, with no horizontal protrusion or clipped identity.
+- The official hero-token face is presented in a portrait disc at least 48 reference units across, and the full written hero name is a bold, high-contrast label at least 15 reference units tall.
+- A layered identity plate, team-coloured medallion and edge, shaped outer frame, and quieter secondary compartments replace the flat box treatment without importing new art or making colour the only carrier of identity.
+- Level, coins, item bonuses, held markers, Ultimate, current card, four resolved-turn slots, discard cards, tooltips, hover previews, mirroring, selection, and pointer blocking retain their existing projected meanings and interactions.
+- The focused Edit Mode presentation/scaling checks and focused Play Mode six-rail geometry/input checks pass, followed by targeted non-batch Game View inspection at 2560x1440.
+
+Closing check: `HeroRailPortraitTests.TheSixHeroPlaques_MakePortraitAndNameThePrimaryIdentity` is recorded failing on the pre-fix flat 30-unit-disc/12-point-name rail and passing after the recomposition; the live six-rail Play Mode check closes containment against each assigned column and the tray.
+
+Non-goals: No rule, match-state, projection, serialization, input-command, networking, board, card-face, tray, prompt-flow, animation, or imported-art change; no broader production-HUD or accessibility suite.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829a-recompose-and-contain-the-side-hero-trays-completion-evidence).
+
 ### [ ] 8.30 Move match authority behind a transport-neutral session boundary
 
 Observable outcome: The existing local director adapter and a future network host can submit the same typed commands to, and consume the same ordered events and snapshots from, one authoritative match session without moving rules into Unity views or transport callbacks.

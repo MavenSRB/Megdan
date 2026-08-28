@@ -641,15 +641,24 @@ namespace GuardsDigital.Presentation.Match
             rail.name = "gd-hero-rail";
             rail.style.marginBottom = 8f;
             HudElements.Padding(rail, 9f);
+            rail.style.paddingTop = 8f;
+            rail.style.paddingBottom = 8f;
             var accent = MatchHudTheme.TeamFace(hero.TeamSide);
+            var frame = Color.Lerp(MatchHudTheme.PanelBorder, accent, 0.34f);
+            var body = Color.Lerp(MatchHudTheme.PanelBackground, accent, 0.055f);
+            body.a = 0.97f;
+            rail.style.backgroundColor = body;
+            rail.style.overflow = Overflow.Hidden;
+            rail.style.flexShrink = 0f;
+            HudElements.Border(rail, frame, 1f, 12f);
             if (hero.TeamSide == TeamSide.Red)
             {
-                rail.style.borderLeftWidth = 4f;
+                rail.style.borderLeftWidth = 5f;
                 rail.style.borderLeftColor = accent;
             }
             else
             {
-                rail.style.borderRightWidth = 4f;
+                rail.style.borderRightWidth = 5f;
                 rail.style.borderRightColor = accent;
             }
 
@@ -673,25 +682,46 @@ namespace GuardsDigital.Presentation.Match
             // inner one. `LVL n` moves above the name rather than standing beside it, because the space
             // it used to take at the row's edge is the space the marker now occupies.
             var head = HudElements.Row(0f);
+            head.name = "gd-hero-identity-plate";
             head.style.flexWrap = Wrap.NoWrap;
             head.style.justifyContent = Justify.SpaceBetween;
-            head.style.alignItems = Align.FlexStart;
+            head.style.alignItems = Align.Center;
+            head.style.minWidth = 0f;
+            head.style.paddingLeft = 5f;
+            head.style.paddingRight = 5f;
+            head.style.paddingTop = 0f;
+            head.style.paddingBottom = 0f;
+            var identityFace = Color.Lerp(MatchHudTheme.RailBackground, accent, 0.18f);
+            identityFace.a = 0.98f;
+            head.style.backgroundColor = identityFace;
+            HudElements.Border(head, frame, 1f, 9f);
+            head.style.borderTopWidth = 2f;
+            head.style.borderTopColor = accent;
             var icon = BuildHeroPortrait(hero, accent);
             var identity = HudElements.Column(0f);
             identity.style.flexShrink = 1f;
+            identity.style.flexGrow = 1f;
+            identity.style.minWidth = 0f;
             identity.style.overflow = Overflow.Hidden;
             identity.style.alignItems = mirrored ? Align.FlexEnd : Align.FlexStart;
-            var level = HudElements.Text(hero.LevelLabel, 9f, MatchHudTheme.MutedText, FontStyle.Bold);
+            var level = HudElements.Text(hero.LevelLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold);
+            level.name = "gd-hero-level";
             level.style.unityTextAlign = outward;
+            level.style.letterSpacing = 0.8f;
             identity.Add(level);
             var displayName = HudElements.Text(
-                hero.HeroDisplayName, 12f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+                hero.HeroDisplayName, 16f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            displayName.name = "gd-hero-name";
             displayName.style.unityTextAlign = outward;
+            displayName.style.flexShrink = 1f;
+            displayName.style.marginTop = 1f;
             identity.Add(displayName);
             var who = HudElements.Row(0f);
             who.style.flexWrap = Wrap.NoWrap;
             who.style.alignItems = Align.Center;
             who.style.flexShrink = 1f;
+            who.style.flexGrow = 1f;
+            who.style.minWidth = 0f;
             if (mirrored)
             {
                 identity.style.marginRight = 7f;
@@ -727,6 +757,10 @@ namespace GuardsDigital.Presentation.Match
             bonuses.style.flexWrap = Wrap.NoWrap;
             bonuses.style.alignItems = Align.Center;
             bonuses.style.justifyContent = Justify.SpaceBetween;
+            bonuses.style.paddingLeft = 5f;
+            bonuses.style.paddingRight = 5f;
+            bonuses.style.backgroundColor = new Color(0.115f, 0.132f, 0.145f, 0.96f);
+            HudElements.Border(bonuses, new Color(frame.r, frame.g, frame.b, 0.72f), 1f, 7f);
 
             var itemChips = HudElements.Row(6f);
             itemChips.name = "gd-item-chips";
@@ -863,6 +897,10 @@ namespace GuardsDigital.Presentation.Match
             slots.style.marginTop = 7f;
             slots.style.flexWrap = Wrap.NoWrap;
             slots.style.alignItems = Align.Stretch;
+            slots.style.paddingLeft = 4f;
+            slots.style.paddingRight = 4f;
+            slots.style.backgroundColor = new Color(0.065f, 0.076f, 0.085f, 0.92f);
+            HudElements.Border(slots, new Color(frame.r, frame.g, frame.b, 0.58f), 1f, 7f);
             var first = true;
             foreach (var slot in hero.TurnSlots)
             {
@@ -923,8 +961,8 @@ namespace GuardsDigital.Presentation.Match
             discard.name = "gd-discard";
             discard.style.marginTop = 6f;
             HudElements.Padding(discard, 5f);
-            discard.style.backgroundColor = new Color(0.129f, 0.149f, 0.161f, 1f);
-            HudElements.Border(discard, MatchHudTheme.PanelBorder, 1f, 4f);
+            discard.style.backgroundColor = new Color(0.115f, 0.132f, 0.145f, 0.96f);
+            HudElements.Border(discard, new Color(frame.r, frame.g, frame.b, 0.72f), 1f, 7f);
 
             // Milestone 8.23a put the caption on the pile's own line, by the user's 2026-08-26
             // decision, and it is the idiom the Ultimate row above already uses: a short fixed word
@@ -1018,14 +1056,16 @@ namespace GuardsDigital.Presentation.Match
         /// of it.</para>
         ///
         /// <para>It is composed rather than imported: a filled circle, a rim a shade darker, and a
-        /// centred label, from the same three primitives the 30px hero disc in the header is built
+        /// centred label, from the same primitives the hero medallion in the header is built
         /// from. That is what keeps it inside this milestone's own non-goal against imported art, and
         /// what keeps it looking like this HUD on every platform the project declares. The word
         /// `COINS` is not lost - it is in the tooltip and the assistive reading as `3 coins`, which is
         /// where this HUD names everything it draws as a shape.</para>
         /// </summary>
-        /// <summary>The hero disc's footprint. Milestone 8.25c keeps the badge's own 30 exactly.</summary>
-        private const float HeroPortraitSize = 30f;
+        /// <summary>Milestone 8.29a's readable official hero face inside its team medallion.</summary>
+        private const float HeroPortraitSize = 50f;
+
+        private const float HeroMedallionSize = 56f;
 
         /// <summary>
         /// The rail's hero disc: this hero's own official token face, in a disc rimmed in their team's
@@ -1044,11 +1084,10 @@ namespace GuardsDigital.Presentation.Match
         /// pixel. No rule and no control ownership is decided by the image - this is a background on a
         /// disc that answers no pointer.</para>
         ///
-        /// <para><b>Its footprint is the badge's, to the unit.</b> A hero rail's height is under a
-        /// measured ceiling and a three-up budget that rulebook p.6's three heroes a side depend on, so
-        /// this milestone deliberately buys no height with the change. What it does buy is scale: at 30
-        /// reference units the disc is 30 pixels on a 1920-wide screen and 40 on the 2560-wide one that
-        /// prompted the milestone, where before it was 30 on both.</para>
+        /// <para><b>Milestone 8.29a makes the face the anchor.</b> The official token face grows to 50
+        /// reference units inside a 56-unit team medallion. The reserved column already has the
+        /// measured vertical headroom for three such plaques; the live six-rail gate verifies that the
+        /// larger identity does not escape that budget.</para>
         ///
         /// <para><b>There is no letter fallback.</b> The private artwork is ignored by Git and a clean
         /// checkout resolves none, exactly as the board's own face does; the disc is then the team
@@ -1058,6 +1097,15 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private static VisualElement BuildHeroPortrait(HeroOverviewViewModel hero, Color accent)
         {
+            var medallion = new VisualElement { name = "gd-hero-medallion" };
+            medallion.style.width = HeroMedallionSize;
+            medallion.style.height = HeroMedallionSize;
+            medallion.style.flexShrink = 0f;
+            medallion.style.alignItems = Align.Center;
+            medallion.style.justifyContent = Justify.Center;
+            medallion.style.backgroundColor = Color.Lerp(MatchHudTheme.PanelBackground, accent, 0.30f);
+            HudElements.Border(medallion, accent, 2f, HeroMedallionSize / 2f);
+
             var icon = new VisualElement { name = "gd-hero-icon" };
             icon.style.width = HeroPortraitSize;
             icon.style.height = HeroPortraitSize;
@@ -1065,7 +1113,15 @@ namespace GuardsDigital.Presentation.Match
             icon.style.justifyContent = Justify.Center;
             icon.style.backgroundColor = accent;
             icon.style.overflow = Overflow.Hidden;
-            HudElements.Border(icon, accent, 1f, HeroPortraitSize / 2f);
+            HudElements.Border(
+                icon,
+                new Color(
+                    MatchHudTheme.PrimaryText.r,
+                    MatchHudTheme.PrimaryText.g,
+                    MatchHudTheme.PrimaryText.b,
+                    0.72f),
+                1f,
+                HeroPortraitSize / 2f);
 
             if (!string.IsNullOrEmpty(hero.PortraitResourcePath))
             {
@@ -1094,7 +1150,9 @@ namespace GuardsDigital.Presentation.Match
             // all - the disc's whole statement is now a picture, and a picture states nothing to a
             // reader who cannot use one.
             icon.tooltip = hero.PortraitAssistiveLabel;
-            return icon;
+            medallion.tooltip = hero.PortraitAssistiveLabel;
+            medallion.Add(icon);
+            return medallion;
         }
 
         private static VisualElement BuildCoinDisc(HeroOverviewViewModel hero)
