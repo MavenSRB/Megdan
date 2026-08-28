@@ -426,7 +426,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.25e5g | A fresh source-first pass independently read Siren's Call's complete unchanged face, reconciled its static values and distinct `IfAble`/positive-`UpTo` effect clauses across every tracked consumer, and found the 114-front manifest byte-identical. The other 113 results carry forward, F-SOURCE-01 is closed, and no executable or private artifact changed. | `pending` |
+| 8.25e5g | A fresh source-first pass independently read Siren's Call's complete unchanged face, reconciled its static values and distinct `IfAble`/positive-`UpTo` effect clauses across every tracked consumer, and found the 114-front manifest byte-identical. The other 113 results carry forward, F-SOURCE-01 is closed, and no executable or private artifact changed. | `928359c` |
 
 ## Milestone 8.25f Replace generated complete card faces with the verified private faces completion evidence
 
