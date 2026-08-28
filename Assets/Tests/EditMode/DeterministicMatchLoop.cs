@@ -240,167 +240,19 @@ namespace GuardsDigital.Tests.EditMode
 
             var candidates = new List<DirectorCommand>();
 
-            var defense = projection.PendingDefenseChoice;
-            if (defense != null)
+            if (projection.DecisionContract != null)
             {
-                foreach (var offer in defense.LegalDefenseOffers)
-                {
-                    candidates.Add(DirectorCommand.ChooseDefenseCard(
-                        defense.ResolutionId, defense.ChoiceId, offer.SourceCardInstanceId));
-                }
-
-                if (defense.CanDecline)
-                {
-                    candidates.Add(DirectorCommand.DeclineDefense(defense.ResolutionId, defense.ChoiceId));
-                }
-
-                return candidates;
-            }
-
-            var attackTarget = projection.PendingAttackTargetChoice;
-            if (attackTarget != null)
-            {
-                foreach (var hero in attackTarget.LegalTargetHeroIds)
-                {
-                    candidates.Add(DirectorCommand.ChooseAttackTarget(
-                        attackTarget.ResolutionId, attackTarget.ChoiceId, hero));
-                }
-
-                foreach (var minion in attackTarget.LegalTargetMinionIds)
-                {
-                    candidates.Add(DirectorCommand.ChooseAttackTarget(
-                        attackTarget.ResolutionId, attackTarget.ChoiceId, minion));
-                }
-
-                return candidates;
-            }
-
-            var movement = projection.PendingMovementChoice;
-            if (movement != null)
-            {
-                foreach (var destination in movement.LegalDestinations)
-                {
-                    candidates.Add(DirectorCommand.ChooseMovementDestination(
-                        movement.ResolutionId, movement.ChoiceId, destination.Destination));
-                }
-
-                if (movement.CanStop)
-                {
-                    candidates.Add(DirectorCommand.StopMovement(movement.ResolutionId, movement.ChoiceId));
-                }
-
-                return candidates;
-            }
-
-            var removalPrevention = projection.PendingRemovalPrevention;
-            if (removalPrevention != null)
-            {
-                foreach (var payment in removalPrevention.Payments)
-                {
-                    candidates.Add(DirectorCommand.AnswerRemovalPrevention(payment.Invocation));
-                }
-
-                candidates.Add(DirectorCommand.AnswerRemovalPrevention(
-                    removalPrevention.DeclineInvocation));
-                return candidates;
-            }
-
-            var effectChoice = projection.PendingEffectChoice;
-            if (effectChoice != null)
-            {
-                foreach (var invocation in effectChoice.SelectInvocations)
-                {
-                    candidates.Add(DirectorCommand.AnswerEffectChoice(invocation));
-                }
-
-                if (effectChoice.ConfirmInvocation != null)
-                {
-                    candidates.Add(DirectorCommand.AnswerEffectChoice(effectChoice.ConfirmInvocation));
-                }
-
-                if (effectChoice.DeclineInvocation != null)
-                {
-                    candidates.Add(DirectorCommand.AnswerEffectChoice(effectChoice.DeclineInvocation));
-                }
-
-                if (effectChoice.StopInvocation != null)
-                {
-                    candidates.Add(DirectorCommand.AnswerEffectChoice(effectChoice.StopInvocation));
-                }
-
-                return candidates;
-            }
-
-            var correction = projection.PendingDisplacedMinionCorrection;
-            if (correction != null)
-            {
-                foreach (var invocation in correction.SelectInvocations)
-                {
-                    candidates.Add(invocation.Kind == GuardsDigital.Core.Rules.Displacement
-                            .DisplacedMinionCorrectionCommandKind.SelectSubject
-                        ? DirectorCommand.ChooseCorrectionSubject(invocation)
-                        : DirectorCommand.ChooseCorrectionDestination(invocation));
-                }
-
-                return candidates;
-            }
-
-            var respawn = projection.PendingHeroRespawnChoice;
-            if (respawn != null)
-            {
-                foreach (var invocation in respawn.RespawnInvocations)
-                {
-                    candidates.Add(DirectorCommand.RespawnHero(invocation));
-                }
-
-                candidates.Add(DirectorCommand.ResolveCardWithoutRespawn(respawn.DeclineInvocation));
-                return candidates;
-            }
-
-            var transitionStep = projection.PendingSystemTransitionStep;
-            if (transitionStep != null)
-            {
-                foreach (var invocation in transitionStep.Invocations)
-                {
-                    candidates.Add(DirectorCommand.AnswerSystemTransitionStep(invocation));
-                }
-
-                return candidates;
-            }
-
-            var battle = projection.PendingMinionBattleChoice;
-            if (battle != null)
-            {
-                foreach (var invocation in battle.SelectInvocations)
-                {
-                    candidates.Add(DirectorCommand.SelectMinionBattleRemoval(invocation));
-                }
-
-                // p.8 makes the short team remove the difference, so the confirmation is offered only
-                // once the selection is the size the battle asks for. The choice states that itself;
-                // this driver reads it rather than counting minions.
-                if (battle.CanConfirm)
-                {
-                    candidates.Add(DirectorCommand.ConfirmMinionBattleRemovals(battle.ConfirmInvocation));
-                }
-
+                candidates.AddRange(projection.DecisionContract.Commands.Where(command =>
+                    command.Kind != DirectorCommandKind.DeselectMinionBattleRemoval &&
+                    !(command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                        command.EffectChoice.Kind ==
+                            GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommandKind.Deselect)));
                 return candidates;
             }
 
             if (projection.Phase == RoundResolutionPhase.EndOfRound)
             {
                 candidates.Add(DirectorCommand.AdvanceEndOfRound());
-                return candidates;
-            }
-
-            var initiative = projection.PendingInitiativeChoice;
-            if (initiative != null)
-            {
-                foreach (var card in initiative.CandidateCardInstanceIds)
-                {
-                    candidates.Add(DirectorCommand.ChooseTiedActor(initiative.OwningSide, card));
-                }
-
                 return candidates;
             }
 

@@ -1,6 +1,6 @@
 # Guards Digital
 
-For the active handoff route, the project has completed milestones through **8.25e4a1**; the broader gate route remains complete through 8.25e7 while parent milestone 8.25e4a is in progress.
+For the current handoff route, the project has completed milestones through **8.25e4a**; the broader gate route remains complete through 8.25e7, and 8.25e4b is the next proposed milestone.
 
 A public source repository for a private, noncommercial digital prototype of the board game **Guards of Atlantis II** (2nd printing), built in Unity.
 

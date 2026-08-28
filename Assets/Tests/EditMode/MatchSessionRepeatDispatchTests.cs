@@ -441,6 +441,33 @@ namespace GuardsDigital.Tests.EditMode
             Accept(session, DirectorCommand.ChooseCorrectionDestination(pending.SelectInvocations[0]));
         }
 
+        /// <summary>
+        /// Milestone 8.25e4a's cross-family contract fixture enters the real repeat decision without
+        /// copying this synthetic card's setup or its effect-node route.
+        /// </summary>
+        internal static MatchSession CreateRepeatDecisionPause()
+        {
+            var session = StartRepeatSkill();
+            ChooseOption(session, PushBranch);
+            Assert.That(session.Projection.PendingEffectChoice?.Kind,
+                Is.EqualTo(EffectChoiceKind.ConfirmOrDecline));
+            return session;
+        }
+
+        /// <summary>
+        /// The same configured Skill one instance later, where every mode is genuinely unavailable
+        /// and the projected Stop is the only answer.
+        /// </summary>
+        internal static MatchSession CreateStopDecisionPause()
+        {
+            var session = StartRepeatSkill();
+            ChooseOption(session, PushBranch);
+            Confirm(session);
+            AnswerCorrection(session);
+            Assert.That(session.Projection.PendingEffectChoice?.StopInvocation, Is.Not.Null);
+            return session;
+        }
+
         private static RestoredAuthoritativeMatch Deserialize(MatchSession session) =>
             AuthoritativeSnapshotSerializer.Deserialize(
                 MatchContentCatalogs.ForThisBuild(),

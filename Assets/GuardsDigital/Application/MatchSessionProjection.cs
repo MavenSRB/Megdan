@@ -443,6 +443,272 @@ namespace GuardsDigital.Application
         public CardInstanceId? RevealedCardInstanceId { get; }
     }
 
+    /// <summary>
+    /// Stable semantic identity of one genuine pending player-decision family.
+    ///
+    /// <para>This is deliberately narrower than presentation's player-journey vocabulary and is not
+    /// a universal choice kind. A family identifies which established typed pending object is asking;
+    /// its exact answer payloads remain the distinct <see cref="DirectorCommand"/> instances carried
+    /// by <see cref="PendingDecisionContract"/>.</para>
+    /// </summary>
+    public readonly struct PendingDecisionFamilyId : IEquatable<PendingDecisionFamilyId>
+    {
+        public PendingDecisionFamilyId(string value)
+        {
+            Value = string.IsNullOrWhiteSpace(value)
+                ? throw new ArgumentException(
+                    "A pending-decision family ID must not be blank.", nameof(value))
+                : value;
+        }
+
+        public string Value { get; }
+        public bool IsDefined => !string.IsNullOrWhiteSpace(Value);
+
+        public bool Equals(PendingDecisionFamilyId other) =>
+            string.Equals(Value, other.Value, StringComparison.Ordinal);
+
+        public override bool Equals(object obj) =>
+            obj is PendingDecisionFamilyId other && Equals(other);
+
+        public override int GetHashCode() =>
+            StringComparer.Ordinal.GetHashCode(Value ?? string.Empty);
+
+        public override string ToString() => Value ?? string.Empty;
+    }
+
+    /// <summary>The bounded production identities for the ten configured pending-decision families.</summary>
+    public static class PendingDecisionFamilies
+    {
+        public static readonly PendingDecisionFamilyId Initiative =
+            new PendingDecisionFamilyId("initiative");
+        public static readonly PendingDecisionFamilyId Movement =
+            new PendingDecisionFamilyId("movement");
+        public static readonly PendingDecisionFamilyId AttackTarget =
+            new PendingDecisionFamilyId("attack-target");
+        public static readonly PendingDecisionFamilyId Defense =
+            new PendingDecisionFamilyId("defense");
+        public static readonly PendingDecisionFamilyId Effect =
+            new PendingDecisionFamilyId("effect");
+        public static readonly PendingDecisionFamilyId Correction =
+            new PendingDecisionFamilyId("correction");
+        public static readonly PendingDecisionFamilyId MinionBattle =
+            new PendingDecisionFamilyId("minion-battle");
+        public static readonly PendingDecisionFamilyId HeroRespawn =
+            new PendingDecisionFamilyId("hero-respawn");
+        public static readonly PendingDecisionFamilyId SystemTransition =
+            new PendingDecisionFamilyId("system-transition");
+        public static readonly PendingDecisionFamilyId RemovalPrevention =
+            new PendingDecisionFamilyId("removal-prevention");
+    }
+
+    /// <summary>
+    /// One immutable application answer contract for the genuine pending player decision standing in
+    /// a <see cref="MatchSessionProjection"/>.
+    ///
+    /// <para>It carries only semantic family identity and the ordered exact commands already implied
+    /// by the existing typed pending object. A command is an answer token, not pre-authorization:
+    /// <see cref="MatchSession.Execute"/> remains the sole legality and result authority and revalidates
+    /// every submission.</para>
+    /// </summary>
+    public sealed class PendingDecisionContract
+    {
+        internal PendingDecisionContract(
+            PendingDecisionFamilyId familyId,
+            IEnumerable<DirectorCommand> commands)
+        {
+            if (!familyId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A pending-decision contract requires a stable family ID.", nameof(familyId));
+            }
+
+            var materialized = (commands ?? throw new ArgumentNullException(nameof(commands))).ToArray();
+            if (materialized.Length == 0 || materialized.Any(command => command == null))
+            {
+                throw new ArgumentException(
+                    "A standing pending decision requires at least one exact command and no nulls.",
+                    nameof(commands));
+            }
+
+            if (materialized.Distinct().Count() != materialized.Length)
+            {
+                throw new ArgumentException(
+                    "A pending-decision contract cannot publish a duplicate command.", nameof(commands));
+            }
+
+            FamilyId = familyId;
+            Commands = Array.AsReadOnly(materialized);
+        }
+
+        public PendingDecisionFamilyId FamilyId { get; }
+        public IReadOnlyList<DirectorCommand> Commands { get; }
+
+        internal static PendingDecisionContract Create(
+            PendingInitiativeChoice initiative,
+            PendingMovementChoice movement,
+            PendingAttackTargetChoice attackTarget,
+            PendingDefenseResponseChoice defense,
+            PendingEffectChoice effect,
+            GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection correction,
+            PendingMinionBattleChoice minionBattle,
+            PendingHeroRespawnChoice heroRespawn,
+            GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep systemTransition,
+            RemovalPreventionPrompt removalPrevention)
+        {
+            var standing = new List<PendingDecisionContract>();
+            if (initiative != null)
+            {
+                standing.Add(new PendingDecisionContract(
+                    PendingDecisionFamilies.Initiative,
+                    initiative.CandidateCardInstanceIds.Select(cardId =>
+                        DirectorCommand.ChooseTiedActor(initiative.OwningSide, cardId))));
+            }
+
+            if (movement != null)
+            {
+                var commands = movement.LegalDestinations
+                    .Select(destination => DirectorCommand.ChooseMovementDestination(
+                        movement.ResolutionId, movement.ChoiceId, destination.Destination))
+                    .ToList();
+                if (movement.CanStop)
+                {
+                    commands.Add(DirectorCommand.StopMovement(
+                        movement.ResolutionId, movement.ChoiceId));
+                }
+
+                standing.Add(new PendingDecisionContract(PendingDecisionFamilies.Movement, commands));
+            }
+
+            if (attackTarget != null)
+            {
+                standing.Add(new PendingDecisionContract(
+                    PendingDecisionFamilies.AttackTarget,
+                    attackTarget.LegalTargetHeroIds.Select(heroId =>
+                            DirectorCommand.ChooseAttackTarget(
+                                attackTarget.ResolutionId, attackTarget.ChoiceId, heroId))
+                        .Concat(attackTarget.LegalTargetMinionIds.Select(minionId =>
+                            DirectorCommand.ChooseAttackTarget(
+                                attackTarget.ResolutionId, attackTarget.ChoiceId, minionId)))));
+            }
+
+            if (defense != null)
+            {
+                var commands = defense.LegalDefenseOffers
+                    .Select(offer => DirectorCommand.ChooseDefenseCard(
+                        defense.ResolutionId, defense.ChoiceId, offer.SourceCardInstanceId))
+                    .ToList();
+                if (defense.CanDecline)
+                {
+                    commands.Add(DirectorCommand.DeclineDefense(
+                        defense.ResolutionId, defense.ChoiceId));
+                }
+
+                standing.Add(new PendingDecisionContract(PendingDecisionFamilies.Defense, commands));
+            }
+
+            if (effect != null)
+            {
+                var commands = effect.SelectInvocations
+                    .Select(DirectorCommand.AnswerEffectChoice)
+                    .Concat(effect.DeselectInvocations.Select(DirectorCommand.AnswerEffectChoice))
+                    .ToList();
+                if (effect.ConfirmInvocation != null)
+                {
+                    commands.Add(DirectorCommand.AnswerEffectChoice(effect.ConfirmInvocation));
+                }
+
+                if (effect.DeclineInvocation != null)
+                {
+                    commands.Add(DirectorCommand.AnswerEffectChoice(effect.DeclineInvocation));
+                }
+
+                if (effect.StopInvocation != null)
+                {
+                    commands.Add(DirectorCommand.AnswerEffectChoice(effect.StopInvocation));
+                }
+
+                standing.Add(new PendingDecisionContract(PendingDecisionFamilies.Effect, commands));
+            }
+
+            if (correction != null)
+            {
+                standing.Add(new PendingDecisionContract(
+                    PendingDecisionFamilies.Correction,
+                    correction.SelectInvocations.Select(invocation =>
+                    {
+                        switch (invocation.Kind)
+                        {
+                            case GuardsDigital.Core.Rules.Displacement
+                                .DisplacedMinionCorrectionCommandKind.SelectSubject:
+                                return DirectorCommand.ChooseCorrectionSubject(invocation);
+                            case GuardsDigital.Core.Rules.Displacement
+                                .DisplacedMinionCorrectionCommandKind.SelectDestination:
+                                return DirectorCommand.ChooseCorrectionDestination(invocation);
+                            default:
+                                throw new InvalidOperationException(
+                                    "A correction projected an unsupported command kind.");
+                        }
+                    })));
+            }
+
+            if (minionBattle != null)
+            {
+                var commands = minionBattle.SelectInvocations
+                    .Select(DirectorCommand.SelectMinionBattleRemoval)
+                    .Concat(minionBattle.DeselectInvocations.Select(
+                        DirectorCommand.DeselectMinionBattleRemoval))
+                    .ToList();
+                if (minionBattle.CanConfirm)
+                {
+                    commands.Add(DirectorCommand.ConfirmMinionBattleRemovals(
+                        minionBattle.ConfirmInvocation));
+                }
+
+                standing.Add(new PendingDecisionContract(
+                    PendingDecisionFamilies.MinionBattle, commands));
+            }
+
+            if (heroRespawn != null)
+            {
+                standing.Add(new PendingDecisionContract(
+                    PendingDecisionFamilies.HeroRespawn,
+                    heroRespawn.RespawnInvocations.Select(DirectorCommand.RespawnHero)
+                        .Concat(new[]
+                        {
+                            DirectorCommand.ResolveCardWithoutRespawn(heroRespawn.DeclineInvocation)
+                        })));
+            }
+
+            if (systemTransition != null)
+            {
+                standing.Add(new PendingDecisionContract(
+                    PendingDecisionFamilies.SystemTransition,
+                    systemTransition.Invocations.Select(DirectorCommand.AnswerSystemTransitionStep)));
+            }
+
+            if (removalPrevention != null)
+            {
+                standing.Add(new PendingDecisionContract(
+                    PendingDecisionFamilies.RemovalPrevention,
+                    removalPrevention.Payments.Select(payment =>
+                            DirectorCommand.AnswerRemovalPrevention(payment.Invocation))
+                        .Concat(new[]
+                        {
+                            DirectorCommand.AnswerRemovalPrevention(
+                                removalPrevention.DeclineInvocation)
+                        })));
+            }
+
+            if (standing.Count > 1)
+            {
+                throw new InvalidOperationException(
+                    "One immutable match projection cannot publish multiple pending player decisions.");
+            }
+
+            return standing.SingleOrDefault();
+        }
+    }
+
     public sealed class MatchSessionProjection
     {
         private readonly Lazy<string> diagnosticSnapshot;
@@ -621,6 +887,18 @@ namespace GuardsDigital.Application
                     nameof(pendingSystemTransitionDescription));
             }
 
+            DecisionContract = PendingDecisionContract.Create(
+                PendingInitiativeChoice,
+                PendingMovementChoice,
+                PendingAttackTargetChoice,
+                PendingDefenseChoice,
+                PendingEffectChoice,
+                PendingDisplacedMinionCorrection,
+                PendingMinionBattleChoice,
+                PendingHeroRespawnChoice,
+                PendingSystemTransitionStep,
+                PendingRemovalPrevention);
+
             if (outcome.HasEnded != (phase == RoundResolutionPhase.GameEnded))
             {
                 throw new ArgumentException(
@@ -711,6 +989,13 @@ namespace GuardsDigital.Application
         public PendingAttackResolution PendingAttackResolution { get; }
         public PendingAttackTargetChoice PendingAttackTargetChoice { get; }
         public PendingDefenseResponseChoice PendingDefenseChoice { get; }
+
+        /// <summary>
+        /// The one genuine pending player decision standing in this projection, with the exact ordered
+        /// commands its real surfaces may submit, or <c>null</c> when no such decision stands. Companion
+        /// resolution envelopes and non-pending offers remain outside this algebra.
+        /// </summary>
+        public PendingDecisionContract DecisionContract { get; }
 
         /// <summary>
         /// The Skill effect currently resolving, and the decision it is waiting on. Presentation reads

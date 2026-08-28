@@ -353,21 +353,26 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(description, Is.Not.Null);
             Assert.That(description.Kind, Is.EqualTo(SystemTransitionPromptKind.LanePushRespawnPlace));
 
-            var destinations = BoardInteractionPresenter.CreateSystemTransitionDestinations(description);
+            var contract = new PendingDecisionContract(
+                PendingDecisionFamilies.SystemTransition,
+                description.PendingStep.Invocations.Select(
+                    DirectorCommand.AnswerSystemTransitionStep));
+
+            var destinations = BoardInteractionPresenter.CreateSystemTransitionDestinations(
+                description, contract);
             Assert.That(destinations.Select(value => value.Destination),
                 Is.EqualTo(description.Options.Select(value => value.Destination)),
                 "Every offered destination is projected in the continuation's own order.");
-            Assert.That(destinations.Select(value => value.Invocation),
-                Is.EqualTo(description.Options.Select(option =>
-                    description.PendingStep.Invocations.Single(invocation =>
-                        invocation.OptionId.Equals(option.OptionId)))),
-                "Each space carries the exact typed invocation paired to that option; presentation " +
-                "does not reconstruct one from the coordinate or option id.");
+            Assert.That(destinations.Select(value => value.Command),
+                Is.EqualTo(contract.Commands),
+                "Each space carries the exact application command paired to that option; " +
+                "presentation does not reconstruct one from the coordinate or option id.");
 
             var prompt = RoundActionPresenter.CreateSystemTransitionPrompt(
                 description,
                 Array.Empty<CardDefinition>(),
-                Array.Empty<QuickGameHeroSetupState>());
+                Array.Empty<QuickGameHeroSetupState>(),
+                contract);
             var view = new RoundActionUnityView();
             view.Render(new RoundActionViewModel(
                 1,

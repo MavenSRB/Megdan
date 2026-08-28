@@ -351,6 +351,33 @@ namespace GuardsDigital.Tests.EditMode
                     fact.Kind == CardActionResolutionEventKind.DisplacedMinionCorrectionCompleted)
                 .ToArray();
 
+        internal static MatchSession CreateSubjectDecisionPause()
+        {
+            var session = CreateSession(
+                TeamSide.Red,
+                Reposition(
+                    ("red-melee-01", DisplacedRedAt),
+                    ("red-melee-02", new HexCoordinate(-1, -3))),
+                new[] { OtherEntry });
+            CommitBothSides(session);
+            Accept(session, DirectorCommand.StartAction(InstantSkill));
+            Assert.That(session.Projection.PendingDisplacedMinionCorrection?.Stage,
+                Is.EqualTo(DisplacedMinionCorrectionStage.SelectSubject));
+            return session;
+        }
+
+        internal static MatchSession CreateDestinationDecisionPause()
+        {
+            var session = CreateSession(
+                TeamSide.Red,
+                Reposition("red-melee-01", DisplacedRedAt));
+            CommitBothSides(session);
+            Accept(session, DirectorCommand.StartAction(InstantSkill));
+            Assert.That(session.Projection.PendingDisplacedMinionCorrection?.Stage,
+                Is.EqualTo(DisplacedMinionCorrectionStage.SelectDestination));
+            return session;
+        }
+
         private static (string, HexCoordinate)[] Reposition(string minionId, HexCoordinate at) =>
             new[] { (minionId, at) };
 

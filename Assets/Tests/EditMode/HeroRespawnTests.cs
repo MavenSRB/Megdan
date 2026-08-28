@@ -163,6 +163,14 @@ namespace GuardsDigital.Tests.EditMode
             return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
         }
 
+        internal static MatchSession CreatePendingRespawnSession()
+        {
+            var session = CreateSessionWithBlueHeroOffBoard();
+            CommitBlueFirstTurn(session);
+            Assert.That(session.Projection.PendingHeroRespawnChoice, Is.Not.Null);
+            return session;
+        }
+
         private static void CommitBlueFirstTurn(MatchSession session)
         {
             var red = session.Projection.Cards.Single(card =>

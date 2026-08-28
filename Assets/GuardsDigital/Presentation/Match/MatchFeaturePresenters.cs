@@ -485,26 +485,27 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// One space-valued answer to a paused system transition. The destination and the continuation's
-    /// own invocation travel together, so a board click never reconstructs an option identity from a
-    /// coordinate.
+    /// One space-valued answer to a paused system transition. The destination and the standing
+    /// application's exact command travel together, so a board click never reconstructs an option
+    /// identity or answer payload from a coordinate.
     /// </summary>
     public sealed class SystemTransitionDestinationViewModel
     {
         public SystemTransitionDestinationViewModel(
             HexCoordinate destination,
-            SystemTransitionChoiceCommand invocation)
+            DirectorCommand command)
         {
             Destination = destination;
-            Invocation = invocation.IsDefined
-                ? invocation
+            Command = command != null &&
+                command.Kind == DirectorCommandKind.AnswerSystemTransitionStep
+                ? command
                 : throw new ArgumentException(
-                    "A system-transition board destination requires its projected invocation.",
-                    nameof(invocation));
+                    "A system-transition board destination requires its exact projected command.",
+                    nameof(command));
         }
 
         public HexCoordinate Destination { get; }
-        public SystemTransitionChoiceCommand Invocation { get; }
+        public DirectorCommand Command { get; }
     }
 
     public sealed class BoardInteractionViewModel
@@ -578,11 +579,11 @@ namespace GuardsDigital.Presentation.Match
             if (SystemTransitionDestinations.Any(value => value == null) ||
                 SystemTransitionDestinations.Select(value => value.Destination).Distinct().Count() !=
                     SystemTransitionDestinations.Count ||
-                SystemTransitionDestinations.Select(value => value.Invocation).Distinct().Count() !=
+                SystemTransitionDestinations.Select(value => value.Command).Distinct().Count() !=
                     SystemTransitionDestinations.Count)
             {
                 throw new ArgumentException(
-                    "Each system-transition option maps one distinct destination to one distinct invocation.",
+                    "Each system-transition option maps one distinct destination to one exact command.",
                     nameof(systemTransitionDestinations));
             }
             EffectChoiceTargetSpace = effectChoiceTargetSpace;
@@ -678,6 +679,45 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
+    /// Resolves a visible answer to the exact command object carried by the standing application
+    /// contract. Predicates identify an already-typed answer; this helper never constructs one.
+    /// </summary>
+    internal static class PendingDecisionCommandBinding
+    {
+        public static DirectorCommand Require(
+            MatchSessionProjection projection,
+            PendingDecisionFamilyId familyId,
+            Func<DirectorCommand, bool> matches) =>
+            Require(projection?.DecisionContract, familyId, matches);
+
+        public static DirectorCommand Require(
+            PendingDecisionContract contract,
+            PendingDecisionFamilyId familyId,
+            Func<DirectorCommand, bool> matches)
+        {
+            if (contract == null || !contract.FamilyId.Equals(familyId))
+            {
+                throw new InvalidOperationException(
+                    $"The standing surface requires the {familyId.Value} pending-decision contract.");
+            }
+
+            if (matches == null)
+            {
+                throw new ArgumentNullException(nameof(matches));
+            }
+
+            var commands = contract.Commands.Where(matches).ToArray();
+            if (commands.Length != 1)
+            {
+                throw new InvalidOperationException(
+                    $"The {familyId.Value} surface resolved {commands.Length} exact commands; expected one.");
+            }
+
+            return commands[0];
+        }
+    }
+
+    /// <summary>
     /// Milestone 6.5c: how an effect-choice selection reaches its end.
     ///
     /// An exactly-one choice - `Choose one`, one target, one destination - is finished the moment the
@@ -710,7 +750,11 @@ namespace GuardsDigital.Presentation.Match
                 return null;
             }
 
-            return DirectorCommand.AnswerEffectChoice(choice.ConfirmInvocation);
+            return PendingDecisionCommandBinding.Require(
+                projection,
+                PendingDecisionFamilies.Effect,
+                command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    ReferenceEquals(command.EffectChoice, choice.ConfirmInvocation));
         }
     }
 
@@ -815,8 +859,7 @@ namespace GuardsDigital.Presentation.Match
                     highlightedRespawnSpace,
                     projection.PendingHeroRespawnChoice?.Destinations
                         .Select(destination => destination.Coordinate),
-                    CreateSystemTransitionDestinations(
-                        projection.PendingSystemTransitionDescription));
+                    CreateSystemTransitionDestinations(projection));
             }
 
             view.Render(lastViewModel);
@@ -1219,14 +1262,12 @@ namespace GuardsDigital.Presentation.Match
             // though it lives in the shared system-transition continuation. Resolve the click from
             // the current description and forward its exact invocation; never decode an option id
             // from the coordinate, and never trust a model retained from an older projection.
-            var transitionDestinations = CreateSystemTransitionDestinations(
-                session.Projection.PendingSystemTransitionDescription);
+            var transitionDestinations = CreateSystemTransitionDestinations(session.Projection);
             if (transitionDestinations.Count > 0)
             {
                 var option = transitionDestinations.SingleOrDefault(value =>
                     value.Destination.Equals(destination));
-                return option != null && Execute(
-                    DirectorCommand.AnswerSystemTransitionStep(option.Invocation));
+                return option != null && Execute(option.Command);
             }
 
             // Milestone 6.4b: a correction destination is selectable straight off the board. The
@@ -1237,8 +1278,19 @@ namespace GuardsDigital.Presentation.Match
             {
                 var invocation = correction.SelectInvocations.SingleOrDefault(value =>
                     value.Destination.Equals(destination));
-                return invocation != null &&
-                    Execute(DirectorCommand.ChooseCorrectionDestination(invocation));
+                if (invocation == null)
+                {
+                    return false;
+                }
+
+                return Execute(PendingDecisionCommandBinding.Require(
+                    session.Projection,
+                    PendingDecisionFamilies.Correction,
+                    command => command.Kind == DirectorCommandKind.ChooseCorrectionDestination &&
+                        command.ResolutionId.Equals(invocation.ResolutionId) &&
+                        command.ChoiceId.Equals(invocation.ChoiceId) &&
+                        command.MinionId.Equals(invocation.MinionId) &&
+                        command.Coordinate.Equals(invocation.Destination)));
             }
 
             // Milestone 6.5c: a lit effect-choice space is answered from the board alone. Same
@@ -1265,7 +1317,12 @@ namespace GuardsDigital.Presentation.Match
                     value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
                     value.Candidate.Value.Kind == EffectValueKind.Coordinate &&
                     value.Candidate.Value.Coordinate.Equals(destination));
-                return selection != null && SubmitEffectChoiceSelection(selection);
+                return selection != null && SubmitEffectChoiceSelection(
+                    PendingDecisionCommandBinding.Require(
+                        session.Projection,
+                        PendingDecisionFamilies.Effect,
+                        command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            ReferenceEquals(command.EffectChoice, selection)));
             }
 
             var choice = session.Projection.PendingMovementChoice;
@@ -1282,10 +1339,13 @@ namespace GuardsDigital.Presentation.Match
                     destination));
             }
 
-            return Execute(DirectorCommand.ChooseMovementDestination(
-                choice.ResolutionId,
-                choice.ChoiceId,
-                destination));
+            return Execute(PendingDecisionCommandBinding.Require(
+                session.Projection,
+                PendingDecisionFamilies.Movement,
+                command => command.Kind == DirectorCommandKind.ChooseMovementDestination &&
+                    command.ResolutionId.Equals(choice.ResolutionId) &&
+                    command.ChoiceId.Equals(choice.ChoiceId) &&
+                    command.Coordinate.Equals(destination)));
         }
 
         /// <summary>
@@ -1293,7 +1353,15 @@ namespace GuardsDigital.Presentation.Match
         /// remains a card-faced HUD decision, and an absent or unknown description has no board surface.
         /// </summary>
         public static IReadOnlyList<SystemTransitionDestinationViewModel>
-            CreateSystemTransitionDestinations(SystemTransitionStepDescription description)
+            CreateSystemTransitionDestinations(MatchSessionProjection projection) =>
+            CreateSystemTransitionDestinations(
+                projection?.PendingSystemTransitionDescription,
+                projection?.DecisionContract);
+
+        public static IReadOnlyList<SystemTransitionDestinationViewModel>
+            CreateSystemTransitionDestinations(
+                SystemTransitionStepDescription description,
+                PendingDecisionContract contract)
         {
             if (description == null || description.Kind != SystemTransitionPromptKind.LanePushRespawnPlace)
             {
@@ -1301,10 +1369,17 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return Array.AsReadOnly(description.Options.Select(option =>
-                new SystemTransitionDestinationViewModel(
+            {
+                var invocation = description.PendingStep.Invocations.Single(candidate =>
+                    candidate.OptionId.Equals(option.OptionId));
+                return new SystemTransitionDestinationViewModel(
                     option.Destination,
-                    description.PendingStep.Invocations.Single(invocation =>
-                        invocation.OptionId.Equals(option.OptionId)))).ToArray());
+                    PendingDecisionCommandBinding.Require(
+                        contract,
+                        PendingDecisionFamilies.SystemTransition,
+                        command => command.Kind == DirectorCommandKind.AnswerSystemTransitionStep &&
+                            command.SystemTransitionChoice.Equals(invocation)));
+            }).ToArray());
         }
 
         public bool SubmitHero(HeroId heroId)
@@ -1320,10 +1395,13 @@ namespace GuardsDigital.Presentation.Match
                 return occupancy.HeroId.IsDefined && SubmitEffectChoiceAtSpace(occupancy.Coordinate);
             }
 
-            return Execute(DirectorCommand.ChooseAttackTarget(
-                choice.ResolutionId,
-                choice.ChoiceId,
-                heroId));
+            return Execute(PendingDecisionCommandBinding.Require(
+                session.Projection,
+                PendingDecisionFamilies.AttackTarget,
+                command => command.Kind == DirectorCommandKind.ChooseAttackTarget &&
+                    command.ResolutionId.Equals(choice.ResolutionId) &&
+                    command.ChoiceId.Equals(choice.ChoiceId) &&
+                    command.HeroId.Equals(heroId)));
         }
 
         /// <summary>
@@ -1355,7 +1433,12 @@ namespace GuardsDigital.Presentation.Match
             var selection = effectChoice.SelectInvocations.SingleOrDefault(value =>
                 value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
                 value.Candidate.Value.Equals(standing[0]));
-            return selection != null && SubmitEffectChoiceSelection(selection);
+            return selection != null && SubmitEffectChoiceSelection(
+                PendingDecisionCommandBinding.Require(
+                    session.Projection,
+                    PendingDecisionFamilies.Effect,
+                    command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                        ReferenceEquals(command.EffectChoice, selection)));
         }
 
         public bool SubmitMinion(MinionId minionId)
@@ -1370,26 +1453,35 @@ namespace GuardsDigital.Presentation.Match
                 return occupancy != null && SubmitEffectChoiceAtSpace(occupancy.Coordinate);
             }
 
-            return Execute(DirectorCommand.ChooseAttackTarget(
-                choice.ResolutionId,
-                choice.ChoiceId,
-                minionId));
+            return Execute(PendingDecisionCommandBinding.Require(
+                session.Projection,
+                PendingDecisionFamilies.AttackTarget,
+                command => command.Kind == DirectorCommandKind.ChooseAttackTarget &&
+                    command.ResolutionId.Equals(choice.ResolutionId) &&
+                    command.ChoiceId.Equals(choice.ChoiceId) &&
+                    command.MinionId.Equals(minionId)));
         }
 
         /// <summary>
         /// Forwards one projected select invocation and, for an exactly-one choice, the confirm the
         /// authority offers immediately afterwards. Both are the authority's own commands.
         /// </summary>
-        private bool SubmitEffectChoiceSelection(EffectChoiceCommand selection)
+        private bool SubmitEffectChoiceSelection(DirectorCommand command)
         {
-            var result = session.Execute(DirectorCommand.AnswerEffectChoice(selection));
+            if (command == null || command.Kind != DirectorCommandKind.AnswerEffectChoice)
+            {
+                return false;
+            }
+
+            var result = session.Execute(command);
             if (!result.Accepted)
             {
                 return false;
             }
 
             SessionProjectionChanged?.Invoke(result.Projection);
-            var confirm = EffectChoiceCompletion.FindImmediateConfirm(result.Projection, selection);
+            var confirm = EffectChoiceCompletion.FindImmediateConfirm(
+                result.Projection, command.EffectChoice);
             if (confirm != null)
             {
                 Execute(confirm);
@@ -2979,9 +3071,12 @@ namespace GuardsDigital.Presentation.Match
                 : projection.PendingInitiativeChoice.CandidateCardInstanceIds
                     .Select(cardId => new TypedInvocationViewModel(
                         $"ACT WITH {GetCardDisplayName(projection, cardId)}",
-                        DirectorCommand.ChooseTiedActor(
-                            projection.PendingInitiativeChoice.OwningSide,
-                            cardId)))
+                        PendingDecisionCommandBinding.Require(
+                            projection,
+                            PendingDecisionFamilies.Initiative,
+                            command => command.Kind == DirectorCommandKind.ChooseTiedActor &&
+                                command.TeamSide == projection.PendingInitiativeChoice.OwningSide &&
+                                command.CardInstanceId.Equals(cardId))))
                     .ToArray();
             var defenseChoices = CreateDefenseChoices(projection);
             var fastTravelOffers = hasPendingResolution
@@ -3025,7 +3120,14 @@ namespace GuardsDigital.Presentation.Match
                             ? $"RESPAWN NEAR SPAWN #{index + 1}"
                             : $"RESPAWN AT SPAWN #{index + 1}",
                         destination.Coordinate,
-                        DirectorCommand.RespawnHero(respawn.RespawnInvocations[index])))
+                        PendingDecisionCommandBinding.Require(
+                            projection,
+                            PendingDecisionFamilies.HeroRespawn,
+                            command => command.Kind == DirectorCommandKind.RespawnHero &&
+                                command.HeroId.Equals(respawn.RespawnInvocations[index].HeroId) &&
+                                command.CardInstanceId.Equals(
+                                    respawn.RespawnInvocations[index].CardInstanceId) &&
+                                command.Coordinate.Equals(destination.Coordinate))))
                     .ToArray();
 
             return new RoundActionViewModel(
@@ -3056,7 +3158,14 @@ namespace GuardsDigital.Presentation.Match
                     ? null
                     : new TypedInvocationViewModel(
                         "RESOLVE WITHOUT ACTION",
-                        DirectorCommand.ResolveCardWithoutRespawn(respawn.DeclineInvocation)),
+                        PendingDecisionCommandBinding.Require(
+                            projection,
+                            PendingDecisionFamilies.HeroRespawn,
+                            command => command.Kind ==
+                                    DirectorCommandKind.ResolveCardWithoutRespawn &&
+                                command.HeroId.Equals(respawn.DeclineInvocation.HeroId) &&
+                                command.CardInstanceId.Equals(
+                                    respawn.DeclineInvocation.CardInstanceId))),
                 unavailableEffectChoices,
                 unavailableActions,
                 clearOffers,
@@ -3099,11 +3208,19 @@ namespace GuardsDigital.Presentation.Match
                 prompt.Payments.Select(payment => new TypedInvocationViewModel(
                     FindCardName(projection, payment.PaymentCardInstanceId) ??
                         payment.PaymentCardInstanceId.Value,
-                    DirectorCommand.AnswerRemovalPrevention(payment.Invocation),
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.RemovalPrevention,
+                        command => command.Kind == DirectorCommandKind.AnswerRemovalPrevention &&
+                            ReferenceEquals(command.RemovalPrevention, payment.Invocation)),
                     card: CreateCardFace(projection, payment.PaymentCardInstanceId))),
                 new TypedInvocationViewModel(
                     RemovalPreventionPromptLabels.DeclineLabel,
-                    DirectorCommand.AnswerRemovalPrevention(prompt.DeclineInvocation)));
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.RemovalPrevention,
+                        command => command.Kind == DirectorCommandKind.AnswerRemovalPrevention &&
+                            ReferenceEquals(command.RemovalPrevention, prompt.DeclineInvocation))));
         }
 
         /// <summary>
@@ -3120,12 +3237,14 @@ namespace GuardsDigital.Presentation.Match
             CreateSystemTransitionPrompt(
                 projection?.PendingSystemTransitionDescription,
                 projection?.Definitions,
-                projection?.Setup?.Heroes);
+                projection?.Setup?.Heroes,
+                projection?.DecisionContract);
 
         public static SystemTransitionPromptViewModel CreateSystemTransitionPrompt(
             GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription description,
             IReadOnlyList<CardDefinition> definitions,
-            IReadOnlyList<QuickGameHeroSetupState> heroes)
+            IReadOnlyList<QuickGameHeroSetupState> heroes,
+            PendingDecisionContract contract)
         {
             if (description == null || description.Options.Count == 0)
             {
@@ -3147,7 +3266,12 @@ namespace GuardsDigital.Presentation.Match
                         $"UPGRADE {DefinitionName(definitions, option.UpgradedCard)} " +
                             $"INTO {DefinitionName(definitions, option.TakenCard)}",
                         FormatUpgradeDetail(definitions, option),
-                        DirectorCommand.AnswerSystemTransitionStep(Invocation(description, option)),
+                        PendingDecisionCommandBinding.Require(
+                            contract,
+                            PendingDecisionFamilies.SystemTransition,
+                            command => command.Kind == DirectorCommandKind.AnswerSystemTransitionStep &&
+                                command.SystemTransitionChoice.Equals(
+                                    Invocation(description, option))),
                         DefinitionColor(definitions, option.UpgradedCard),
                         option.UpgradedCardInstanceId,
                         // Milestone 8.8a: the candidate itself, as a whole printed face. A definition the
@@ -3171,7 +3295,12 @@ namespace GuardsDigital.Presentation.Match
                 description.Options.Select(option => new SystemTransitionOptionViewModel(
                     $"PLACE AT {option.DestinationSpaceId.Value}",
                     $"({option.Destination.Q}, {option.Destination.R})",
-                    DirectorCommand.AnswerSystemTransitionStep(Invocation(description, option)))));
+                    PendingDecisionCommandBinding.Require(
+                        contract,
+                        PendingDecisionFamilies.SystemTransition,
+                        command => command.Kind == DirectorCommandKind.AnswerSystemTransitionStep &&
+                            command.SystemTransitionChoice.Equals(
+                                Invocation(description, option))))));
         }
 
         private static GuardsDigital.Core.Rules.Transitions.SystemTransitionChoiceCommand Invocation(
@@ -3359,7 +3488,12 @@ namespace GuardsDigital.Presentation.Match
             foreach (var invocation in choice.SelectInvocations)
             {
                 var candidate = invocation.Candidate;
-                var command = DirectorCommand.AnswerEffectChoice(invocation);
+                var command = PendingDecisionCommandBinding.Require(
+                    projection,
+                    PendingDecisionFamilies.Effect,
+                    candidateCommand => candidateCommand.Kind ==
+                            DirectorCommandKind.AnswerEffectChoice &&
+                        ReferenceEquals(candidateCommand.EffectChoice, invocation));
 
                 // Milestone 6.5b: a value candidate can also name a piece that is not on the board at
                 // all - a Spawn draws from the supply - and such a candidate is a control like a mode,
@@ -3450,21 +3584,33 @@ namespace GuardsDigital.Presentation.Match
                 invocations.Add(new TypedInvocationViewModel(
                     EffectChoiceLabels.DeselectLabel(
                         invocation.Candidate.OptionNodeId, ordinals[invocation.Candidate]),
-                    DirectorCommand.AnswerEffectChoice(invocation)));
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.Effect,
+                        command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            ReferenceEquals(command.EffectChoice, invocation))));
             }
 
             if (choice.ConfirmInvocation != null)
             {
                 invocations.Add(new TypedInvocationViewModel(
                     EffectChoiceLabels.ConfirmLabel,
-                    DirectorCommand.AnswerEffectChoice(choice.ConfirmInvocation)));
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.Effect,
+                        command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            ReferenceEquals(command.EffectChoice, choice.ConfirmInvocation))));
             }
 
             if (choice.DeclineInvocation != null)
             {
                 invocations.Add(new TypedInvocationViewModel(
                     EffectChoiceLabels.DeclineLabel,
-                    DirectorCommand.AnswerEffectChoice(choice.DeclineInvocation)));
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.Effect,
+                        command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            ReferenceEquals(command.EffectChoice, choice.DeclineInvocation))));
             }
 
             controls = invocations;
@@ -3607,7 +3753,12 @@ namespace GuardsDigital.Presentation.Match
             {
                 return new TypedInvocationViewModel(
                     "END TURN",
-                    DirectorCommand.StopMovement(movementChoice.ResolutionId, movementChoice.ChoiceId));
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.Movement,
+                        command => command.Kind == DirectorCommandKind.StopMovement &&
+                            command.ResolutionId.Equals(movementChoice.ResolutionId) &&
+                            command.ChoiceId.Equals(movementChoice.ChoiceId)));
             }
 
             // Milestone 6.5ae: the same contextual control on the decision family that had lacked it.
@@ -3619,7 +3770,11 @@ namespace GuardsDigital.Presentation.Match
             {
                 return new TypedInvocationViewModel(
                     "END TURN",
-                    DirectorCommand.AnswerEffectChoice(effectChoice.StopInvocation));
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.Effect,
+                        command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            ReferenceEquals(command.EffectChoice, effectChoice.StopInvocation)));
             }
 
             if (!projection.IsTurnActive || !projection.SelectedActor.IsDefined ||
@@ -3673,10 +3828,13 @@ namespace GuardsDigital.Presentation.Match
                                 : "BLOCK - CONDITION NOT MET");
                     return new TypedInvocationViewModel(
                         label,
-                        DirectorCommand.ChooseDefenseCard(
-                            choice.ResolutionId,
-                            choice.ChoiceId,
-                            offer.SourceCardInstanceId),
+                        PendingDecisionCommandBinding.Require(
+                            projection,
+                            PendingDecisionFamilies.Defense,
+                            command => command.Kind == DirectorCommandKind.ChooseDefenseCard &&
+                                command.ResolutionId.Equals(choice.ResolutionId) &&
+                                command.ChoiceId.Equals(choice.ChoiceId) &&
+                                command.CardInstanceId.Equals(offer.SourceCardInstanceId)),
                         CreateDefenseBreakdown(projection.Version, preview, choicePreview),
                         CreateCardFace(projection, offer.SourceCardInstanceId));
                 })
@@ -3686,7 +3844,12 @@ namespace GuardsDigital.Presentation.Match
                 var declinePreview = preview.Choices.Single(value => value.IsDecline);
                 values.Add(new TypedInvocationViewModel(
                     "DECLINE DEFENSE",
-                    DirectorCommand.DeclineDefense(choice.ResolutionId, choice.ChoiceId),
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.Defense,
+                        command => command.Kind == DirectorCommandKind.DeclineDefense &&
+                            command.ResolutionId.Equals(choice.ResolutionId) &&
+                            command.ChoiceId.Equals(choice.ChoiceId)),
                     CreateDefenseBreakdown(projection.Version, preview, declinePreview)));
             }
 
@@ -4294,9 +4457,20 @@ namespace GuardsDigital.Presentation.Match
 
                 var isSelected = deselect != null;
                 var ordinal = index + 1;
-                var command = isSelected
-                    ? DirectorCommand.DeselectMinionBattleRemoval(deselect)
-                    : DirectorCommand.SelectMinionBattleRemoval(select);
+                var typedInvocation = isSelected ? deselect : select;
+                var expectedKind = isSelected
+                    ? DirectorCommandKind.DeselectMinionBattleRemoval
+                    : DirectorCommandKind.SelectMinionBattleRemoval;
+                var command = PendingDecisionCommandBinding.Require(
+                    projection,
+                    PendingDecisionFamilies.MinionBattle,
+                    candidateCommand => candidateCommand.Kind == expectedKind &&
+                        candidateCommand.TeamSide == typedInvocation.ChoosingSide &&
+                        candidateCommand.MinionId.Equals(typedInvocation.MinionId) &&
+                        candidateCommand.HeroId.Equals(typedInvocation.HeroId) &&
+                        candidateCommand.EndOfRoundResolutionId.Equals(
+                            typedInvocation.ResolutionId) &&
+                        candidateCommand.EndOfRoundChoiceId.Equals(typedInvocation.ChoiceId));
                 var label = candidate.HeroId.IsDefined
                     ? $"{(isSelected ? "KEEP" : "REMOVE")} " +
                         $"{MinionChoiceLabels.TeamLabel(choice.ChoosingSide)} HERO {candidate.HeroId.Value.ToUpperInvariant()}"
@@ -4321,7 +4495,16 @@ namespace GuardsDigital.Presentation.Match
                 choice.CanConfirm
                     ? new TypedInvocationViewModel(
                         choice.RequiredRemovalCount == 1 ? "CONFIRM REMOVAL" : "CONFIRM REMOVALS",
-                        DirectorCommand.ConfirmMinionBattleRemovals(choice.ConfirmInvocation))
+                        PendingDecisionCommandBinding.Require(
+                            projection,
+                            PendingDecisionFamilies.MinionBattle,
+                            command => command.Kind ==
+                                    DirectorCommandKind.ConfirmMinionBattleRemovals &&
+                                command.TeamSide == choice.ConfirmInvocation.ChoosingSide &&
+                                command.EndOfRoundResolutionId.Equals(
+                                    choice.ConfirmInvocation.ResolutionId) &&
+                                command.EndOfRoundChoiceId.Equals(
+                                    choice.ConfirmInvocation.ChoiceId)))
                     : null);
         }
 
@@ -4356,7 +4539,14 @@ namespace GuardsDigital.Presentation.Match
                         $"RETURN {MinionChoiceLabels.CandidateLabel(occupancy.TeamSide, occupancy.MinionType, ordinal)}",
                         ordinal,
                         false,
-                        DirectorCommand.ChooseCorrectionSubject(invocation)));
+                        PendingDecisionCommandBinding.Require(
+                            projection,
+                            PendingDecisionFamilies.Correction,
+                            command => command.Kind == DirectorCommandKind.ChooseCorrectionSubject &&
+                                command.TeamSide == invocation.ChoosingSide &&
+                                command.MinionId.Equals(invocation.MinionId) &&
+                                command.ResolutionId.Equals(invocation.ResolutionId) &&
+                                command.ChoiceId.Equals(invocation.ChoiceId))));
                 }
 
                 return MinionChoiceViewModel.ForCorrection(
@@ -4386,7 +4576,15 @@ namespace GuardsDigital.Presentation.Match
                     $"{verb} ({candidate.Destination.Q},{candidate.Destination.R})",
                     ordinal,
                     false,
-                    DirectorCommand.ChooseCorrectionDestination(invocation),
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.Correction,
+                        command => command.Kind == DirectorCommandKind.ChooseCorrectionDestination &&
+                            command.TeamSide == invocation.ChoosingSide &&
+                            command.MinionId.Equals(invocation.MinionId) &&
+                            command.Coordinate.Equals(invocation.Destination) &&
+                            command.ResolutionId.Equals(invocation.ResolutionId) &&
+                            command.ChoiceId.Equals(invocation.ChoiceId)),
                     candidate.Destination));
             }
 

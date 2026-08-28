@@ -4,6 +4,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
+using GuardsDigital.Core.Rules.EffectResolution;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Interaction
@@ -208,117 +209,65 @@ namespace GuardsDigital.Presentation.Interaction
         private static DirectorCommand NextCommand(
             MatchSessionProjection projection, ref int pauses, ref int battles)
         {
-            var defense = projection.PendingDefenseChoice;
-            if (defense != null)
+            var decision = projection.DecisionContract;
+            if (decision != null)
             {
-                return defense.LegalDefenseOffers.Count > 0
-                    ? DirectorCommand.ChooseDefenseCard(
-                        defense.ResolutionId, defense.ChoiceId,
-                        defense.LegalDefenseOffers[0].SourceCardInstanceId)
-                    : DirectorCommand.DeclineDefense(defense.ResolutionId, defense.ChoiceId);
-            }
-
-            var attack = projection.PendingAttackTargetChoice;
-            if (attack != null)
-            {
-                return attack.LegalTargetHeroIds.Count > 0
-                    ? DirectorCommand.ChooseAttackTarget(
-                        attack.ResolutionId, attack.ChoiceId, attack.LegalTargetHeroIds[0])
-                    : attack.LegalTargetMinionIds.Count > 0
-                        ? DirectorCommand.ChooseAttackTarget(
-                            attack.ResolutionId, attack.ChoiceId, attack.LegalTargetMinionIds[0])
-                        : null;
-            }
-
-            var movement = projection.PendingMovementChoice;
-            if (movement != null)
-            {
-                return movement.CanStop
-                    ? DirectorCommand.StopMovement(movement.ResolutionId, movement.ChoiceId)
-                    : DirectorCommand.ChooseMovementDestination(
-                        movement.ResolutionId, movement.ChoiceId,
-                        movement.LegalDestinations[0].Destination);
-            }
-
-            var effect = projection.PendingEffectChoice;
-            if (effect != null)
-            {
-                if (effect.StopInvocation != null)
+                if (decision.FamilyId.Equals(PendingDecisionFamilies.SystemTransition))
                 {
-                    return DirectorCommand.AnswerEffectChoice(effect.StopInvocation);
+                    var step = projection.PendingSystemTransitionStep;
+                    pauses++;
+                    Debug.Log($"{MarkerPrefix} PAUSE_ANSWERED transition={step.DefinitionId.Value} " +
+                        $"step={step.StepId.Value} options={step.Options.Count}");
                 }
 
-                if (effect.SelectInvocations.Count > 0)
+                if (decision.FamilyId.Equals(PendingDecisionFamilies.MinionBattle))
                 {
-                    return DirectorCommand.AnswerEffectChoice(effect.SelectInvocations[0]);
+                    var confirm = decision.Commands.FirstOrDefault(command =>
+                        command.Kind == DirectorCommandKind.ConfirmMinionBattleRemovals);
+                    if (confirm != null)
+                    {
+                        battles++;
+                        Debug.Log($"{MarkerPrefix} MINION_BATTLE removals=" +
+                            $"{projection.PendingMinionBattleChoice.SelectedMinionIds.Count}");
+                        return confirm;
+                    }
+
+                    return decision.Commands.FirstOrDefault(command =>
+                        command.Kind == DirectorCommandKind.SelectMinionBattleRemoval);
                 }
 
-                if (effect.ConfirmInvocation != null)
+                if (decision.FamilyId.Equals(PendingDecisionFamilies.Movement))
                 {
-                    return DirectorCommand.AnswerEffectChoice(effect.ConfirmInvocation);
+                    return decision.Commands.FirstOrDefault(command =>
+                            command.Kind == DirectorCommandKind.StopMovement) ??
+                        decision.Commands.FirstOrDefault();
                 }
 
-                return effect.DeclineInvocation != null
-                    ? DirectorCommand.AnswerEffectChoice(effect.DeclineInvocation)
-                    : null;
-            }
-
-            var correction = projection.PendingDisplacedMinionCorrection;
-            if (correction != null)
-            {
-                if (correction.SelectInvocations.Count == 0)
+                if (decision.FamilyId.Equals(PendingDecisionFamilies.Effect))
                 {
-                    return null;
+                    return decision.Commands.FirstOrDefault(command =>
+                            command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            command.EffectChoice.Kind == EffectChoiceCommandKind.Stop) ??
+                        decision.Commands.FirstOrDefault(command =>
+                            command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            command.EffectChoice.Kind == EffectChoiceCommandKind.Select) ??
+                        decision.Commands.FirstOrDefault(command =>
+                            command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm) ??
+                        decision.Commands.FirstOrDefault(command =>
+                            command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
                 }
 
-                var invocation = correction.SelectInvocations[0];
-                return invocation.Kind == DisplacedMinionCorrectionCommandKind.SelectSubject
-                    ? DirectorCommand.ChooseCorrectionSubject(invocation)
-                    : DirectorCommand.ChooseCorrectionDestination(invocation);
-            }
-
-            var respawn = projection.PendingHeroRespawnChoice;
-            if (respawn != null)
-            {
-                return respawn.RespawnInvocations.Count > 0
-                    ? DirectorCommand.RespawnHero(respawn.RespawnInvocations[0])
-                    : DirectorCommand.ResolveCardWithoutRespawn(respawn.DeclineInvocation);
-            }
-
-            var step = projection.PendingSystemTransitionStep;
-            if (step != null)
-            {
-                pauses++;
-                Debug.Log($"{MarkerPrefix} PAUSE_ANSWERED transition={step.DefinitionId.Value} " +
-                    $"step={step.StepId.Value} options={step.Options.Count}");
-                return DirectorCommand.AnswerSystemTransitionStep(step.Invocations[0]);
-            }
-
-            var battle = projection.PendingMinionBattleChoice;
-            if (battle != null)
-            {
-                if (battle.CanConfirm)
-                {
-                    battles++;
-                    Debug.Log($"{MarkerPrefix} MINION_BATTLE removals={battle.SelectedMinionIds.Count}");
-                    return DirectorCommand.ConfirmMinionBattleRemovals(battle.ConfirmInvocation);
-                }
-
-                return battle.SelectInvocations.Count > 0
-                    ? DirectorCommand.SelectMinionBattleRemoval(battle.SelectInvocations[0])
-                    : null;
+                return decision.Commands.FirstOrDefault(command =>
+                    command.Kind != DirectorCommandKind.DeselectMinionBattleRemoval &&
+                    !(command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                        command.EffectChoice.Kind == EffectChoiceCommandKind.Deselect));
             }
 
             if (projection.Phase == RoundResolutionPhase.EndOfRound)
             {
                 return DirectorCommand.AdvanceEndOfRound();
-            }
-
-            var initiative = projection.PendingInitiativeChoice;
-            if (initiative != null)
-            {
-                return DirectorCommand.ChooseTiedActor(
-                    initiative.OwningSide, initiative.CandidateCardInstanceIds[0]);
             }
 
             if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)

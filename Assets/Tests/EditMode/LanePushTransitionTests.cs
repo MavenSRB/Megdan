@@ -459,6 +459,13 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
+        /// Reuses the real blocked-Spawn pause for cross-family application/surface conformance.
+        /// The setup and rule-driving path stay owned here rather than being copied by each consumer.
+        /// </summary>
+        internal static MatchSession CreatePausedLanePushPlaceSession() =>
+            StartRemoveSkillAgainstTheLastMinion(blockBlueApproachSpawnPoints: true);
+
+        /// <summary>
         /// A played turn in which the Red hero's Skill removes the one Blue minion left in the Battle
         /// Zone, which is p.8's second mid-turn sentence and the cause milestone 6.9 already emits.
         ///

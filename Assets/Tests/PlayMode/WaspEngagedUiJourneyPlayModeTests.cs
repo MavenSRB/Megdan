@@ -691,7 +691,7 @@ namespace GuardsDigital.Tests.PlayMode
             var destinations = runtime.BoardView.Model.SystemTransitionDestinations;
             Assert.That(destinations, Has.Count.EqualTo(prompt.Options.Count),
                 "Every equally-nearest empty space is projected before the pointer moves.");
-            Assert.That(destinations.Select(value => value.Invocation),
+            Assert.That(destinations.Select(value => value.Command.SystemTransitionChoice),
                 Is.EqualTo(prompt.Options.Select(option => option.Command.SystemTransitionChoice)),
                 "Each lit space keeps the exact continuation invocation it answers.");
             Assert.That(destinations, Is.Not.Empty);
@@ -750,7 +750,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.AcceptedCommands.Last().Kind,
                 Is.EqualTo(DirectorCommandKind.AnswerSystemTransitionStep));
             Assert.That(runtime.AcceptedCommands.Last().SystemTransitionChoice,
-                Is.EqualTo(chosenDestination.Invocation),
+                Is.EqualTo(chosenDestination.Command.SystemTransitionChoice),
                 "The click forwarded the exact invocation paired with the chosen space.");
             Assert.That(runtime.BoardView.Model.Minions.Any(minion =>
                     !minionsBefore.Contains(minion.MinionId) &&

@@ -281,121 +281,16 @@ namespace GuardsDigital.Presentation.Match
                 return candidates;
             }
 
-            var defense = projection.PendingDefenseChoice;
-            if (defense != null)
+            if (projection.DecisionContract != null)
             {
-                candidates.AddRange(defense.LegalDefenseOffers.Select(offer =>
-                    DirectorCommand.ChooseDefenseCard(
-                        defense.ResolutionId, defense.ChoiceId, offer.SourceCardInstanceId)));
-                if (defense.CanDecline)
-                {
-                    candidates.Add(DirectorCommand.DeclineDefense(
-                        defense.ResolutionId, defense.ChoiceId));
-                }
-
-                return candidates;
-            }
-
-            var attack = projection.PendingAttackTargetChoice;
-            if (attack != null)
-            {
-                candidates.AddRange(attack.LegalTargetHeroIds.Select(hero =>
-                    DirectorCommand.ChooseAttackTarget(attack.ResolutionId, attack.ChoiceId, hero)));
-                candidates.AddRange(attack.LegalTargetMinionIds.Select(minion =>
-                    DirectorCommand.ChooseAttackTarget(attack.ResolutionId, attack.ChoiceId, minion)));
-                return candidates;
-            }
-
-            var movement = projection.PendingMovementChoice;
-            if (movement != null)
-            {
-                candidates.AddRange(movement.LegalDestinations.Select(value =>
-                    DirectorCommand.ChooseMovementDestination(
-                        movement.ResolutionId, movement.ChoiceId, value.Destination)));
-                if (movement.CanStop)
-                {
-                    candidates.Add(DirectorCommand.StopMovement(
-                        movement.ResolutionId, movement.ChoiceId));
-                }
-
-                return candidates;
-            }
-
-            var effect = projection.PendingEffectChoice;
-            if (effect != null)
-            {
-                candidates.AddRange(effect.SelectInvocations.Select(
-                    DirectorCommand.AnswerEffectChoice));
-                if (effect.ConfirmInvocation != null)
-                {
-                    candidates.Add(DirectorCommand.AnswerEffectChoice(effect.ConfirmInvocation));
-                }
-
-                if (effect.DeclineInvocation != null)
-                {
-                    candidates.Add(DirectorCommand.AnswerEffectChoice(effect.DeclineInvocation));
-                }
-
-                if (effect.StopInvocation != null)
-                {
-                    candidates.Add(DirectorCommand.AnswerEffectChoice(effect.StopInvocation));
-                }
-
-                return candidates;
-            }
-
-            var correction = projection.PendingDisplacedMinionCorrection;
-            if (correction != null)
-            {
-                candidates.AddRange(correction.SelectInvocations.Select(invocation =>
-                    invocation.Kind == GuardsDigital.Core.Rules.Displacement
-                            .DisplacedMinionCorrectionCommandKind.SelectSubject
-                        ? DirectorCommand.ChooseCorrectionSubject(invocation)
-                        : DirectorCommand.ChooseCorrectionDestination(invocation)));
-                return candidates;
-            }
-
-            var respawn = projection.PendingHeroRespawnChoice;
-            if (respawn != null)
-            {
-                candidates.AddRange(respawn.RespawnInvocations.Select(DirectorCommand.RespawnHero));
-                candidates.Add(DirectorCommand.ResolveCardWithoutRespawn(respawn.DeclineInvocation));
-                return candidates;
-            }
-
-            var transition = projection.PendingSystemTransitionStep;
-            if (transition != null)
-            {
-                candidates.AddRange(transition.Invocations.Select(
-                    DirectorCommand.AnswerSystemTransitionStep));
-                return candidates;
-            }
-
-            var battle = projection.PendingMinionBattleChoice;
-            if (battle != null)
-            {
-                candidates.AddRange(battle.SelectInvocations.Select(
-                    DirectorCommand.SelectMinionBattleRemoval));
-                if (battle.CanConfirm)
-                {
-                    candidates.Add(DirectorCommand.ConfirmMinionBattleRemovals(
-                        battle.ConfirmInvocation));
-                }
-
+                candidates.AddRange(projection.DecisionContract.Commands.Where(
+                    IsProgressingPendingAnswer));
                 return candidates;
             }
 
             if (projection.Phase == RoundResolutionPhase.EndOfRound)
             {
                 candidates.Add(DirectorCommand.AdvanceEndOfRound());
-                return candidates;
-            }
-
-            var initiative = projection.PendingInitiativeChoice;
-            if (initiative != null)
-            {
-                candidates.AddRange(initiative.CandidateCardInstanceIds.Select(card =>
-                    DirectorCommand.ChooseTiedActor(initiative.OwningSide, card)));
                 return candidates;
             }
 
@@ -455,6 +350,11 @@ namespace GuardsDigital.Presentation.Match
 
             return candidates;
         }
+
+        private static bool IsProgressingPendingAnswer(DirectorCommand command) =>
+            command.Kind != DirectorCommandKind.DeselectMinionBattleRemoval &&
+            !(command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                command.EffectChoice.Kind == EffectChoiceCommandKind.Deselect);
 
         /// <summary>
         /// Submits one command obtained from <see cref="EnumerateProjectedCommands"/> and refreshes
@@ -600,8 +500,12 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            var accepted = session.Execute(
-                DirectorCommand.AnswerSystemTransitionStep(invocation.Value)).Accepted;
+            var command = PendingDecisionCommandBinding.Require(
+                session.Projection,
+                PendingDecisionFamilies.SystemTransition,
+                candidate => candidate.Kind == DirectorCommandKind.AnswerSystemTransitionStep &&
+                    candidate.SystemTransitionChoice.Equals(invocation.Value));
+            var accepted = session.Execute(command).Accepted;
             RefreshAll();
             return accepted;
         }

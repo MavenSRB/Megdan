@@ -3112,10 +3112,16 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(description.HeroId.IsDefined, Is.False,
                 "p.8's Place belongs to a team and a minion rather than to a hero.");
 
+            var contract = new PendingDecisionContract(
+                PendingDecisionFamilies.SystemTransition,
+                description.PendingStep.Invocations.Select(
+                    DirectorCommand.AnswerSystemTransitionStep));
+
             var prompt = RoundActionPresenter.CreateSystemTransitionPrompt(
                 description,
                 Array.Empty<CardDefinition>(),
-                Array.Empty<QuickGameHeroSetupState>());
+                Array.Empty<QuickGameHeroSetupState>(),
+                contract);
             Assert.That(prompt.SectionLabel, Is.EqualTo("LANE PUSH"));
             Assert.That(prompt.Options, Has.Count.EqualTo(description.Options.Count));
             for (var index = 0; index < prompt.Options.Count; index++)

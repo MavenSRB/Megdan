@@ -360,6 +360,9 @@ namespace GuardsDigital.Tests.EditMode
             MatchSessionProjection projection, CardInstanceId instanceId) =>
             projection.Cards.Single(card => card.Id.Equals(instanceId)).State.Location;
 
+        internal static MatchSession CreateConfiguredRemovalPreventionPause() =>
+            ConfiguredBroganPause.Create().Session;
+
         /// <summary>A configured Tier III Brogan match paused at Fortify's Attack-origin decision.</summary>
         private sealed class ConfiguredBroganPause
         {
