@@ -32,8 +32,8 @@ remaining private pitch through 9.16a is approximately **82-155 days** before co
 | --- | --- |
 | 8.20-8.24 | **Split shared foundations, then keep five hero completions.** The matrix exposes one cross-action schema boundary, one derived-query/value/state family, and one persistent/system family used across heroes; burying them in Arien would make later heroes retroactive dependencies. One complete milestone per hero remains the smallest end-to-end source/progression/player boundary. |
 | 8.25 | **Keep.** Six distinct content sets, 108 instances/definitions, component supplies, participant ownership, and payload measurement first meet here; none belongs in an individual hero slice. |
-| 8.26 | **Keep.** Six-owner turn flow and director/history projection are one integration boundary after setup and before the repeated-round gate. |
-| 8.27 | **Keep as the T3 deterministic 3v3 hard gate.** The matrix increases its consumer breadth but does not change its observable match-level proof. |
+| 8.26 | **Originally kept; superseded by the user-approved 2026-08-28 merge into 8.27.** Accumulated 8.25 and HUD work already delivered the visible six-owner director/history behavior, so a separate implementation boundary would repeat completed work. |
+| 8.27 | **Keep and absorb 8.26's remaining integrated proof as the T3 deterministic 3v3 hard gate.** One official repeated-round/full-match boundary now proves the already-live six-owner flow, team interactions, history/reconstruction, and match-level outcome together. |
 | 8.28-8.28a | **Keep.** URP migration and fresh analysis-only readiness review remain independent of rules composition and of each other. |
 | 8.29 | **Keep.** Provider/SDK evidence can change before execution and must re-baseline the online track only after measured 3v3/URP evidence. |
 | 8.30-8.30c | **Keep the existing split.** Session boundary, privacy/authorization, seat-scoped HUD, and local six-seat gate have distinct mutation and validation surfaces. |

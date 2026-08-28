@@ -467,29 +467,18 @@ Non-goals: No production camera, HUD, safe-layout, artwork, map, rule, command, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f2a-correct-the-stale-pre-l-shaped-fallback-framing-assertion-completion-evidence).
 
-### [ ] 8.26 Integrate six-hero director control and team interactions
+Roadmap amendment, 2026-08-28, user approved: **8.26 is merged into 8.27 and no longer exists as a separately executable milestone.** Its six-owner director flow, joint reveal, Initiative/team interactions, readable resolver/history, and reconstruction obligations were already substantially delivered by the accumulated 8.25 and HUD work. Milestone 8.27 retains every obligation as integrated official-match evidence and corrects any defect that evidence exposes; it does not reimplement behavior merely to satisfy the former boundary.
 
-Prerequisites complete: milestone 8.25e7, decision-family closure 8.25e4, Siren's Call corrections 8.25e5f-8.25e5f1, fresh source closure 8.25e5g, art-only 8.25f-8.25f2, and test correction 8.25f2a.
-
-Observable outcome: One director can play and resolve a complete turn for all six independently owned heroes while the rules preserve normal 3v3 ownership, Initiative, target, assist, reaction, and team relationships.
-
-Acceptance checks:
-
-- The director can access each hero's correct hand; for every hero with a nonempty hand the director must choose exactly one owned card, while an empty hand records a Pass. The complete turn reveals only after all six heroes have responses, then resolves every played card in Initiative order without transferring ownership.
-- Friendly/enemy queries, tied Initiative decisions, assists, reactions, hero-specific pending choices, and actor switching use authoritative team/player/hero relationships.
-- Played/revealed cards and the active resolver remain readable without requiring presentation to own turn legality.
-- A read-only primitive round-history matrix groups all three Red and all three Blue heroes and shows each hero's authoritative revealed card or empty-hand Pass for turns 1-4; current-turn Facedown commitments remain hidden until the joint reveal.
-- Every displayed history entry resolves through its stable assignment and card definition, and played or Defense-discarded cards cannot reappear merely because presentation rebuilds.
-- Undo, restart, snapshot restore, and the event log reproduce the same six-hero turn.
-
-Non-goals: No hidden-information enforcement, table-talk enforcement, networking, AI, or six separate input devices.
-
-### [!] 8.27 Complete the deterministic six-hero 3v3 pitch match
+### [ ] 8.27 Complete and prove the deterministic six-hero 3v3 pitch match
 
 Observable outcome: Wasp and the five other distinct verified heroes can start from the official six-player Quick Game setup, play repeated turns and rounds, and end through every victory path with primitive visuals and director/debug UI.
 
 Acceptance checks:
 
+- From the official configuration, one director can access each hero's correct hand and complete every turn: for every hero with a nonempty hand the director chooses exactly one owned card, while an empty hand records a Pass; reveal occurs only after all six heroes respond; and every played card resolves in Initiative order without transferring ownership.
+- Friendly/enemy queries, tied Initiative decisions, assists, reactions, hero-specific pending choices, and actor switching use authoritative team/player/hero relationships throughout the repeated-round match.
+- Played/revealed cards and the active resolver remain readable without presentation owning turn legality. The read-only primitive history groups all three Red and all three Blue heroes and shows each hero's authoritative revealed card or empty-hand Pass for turns 1-4, while current-turn Facedown commitments remain hidden until joint reveal.
+- Every displayed history entry resolves through its stable assignment and card definition; played or Defense-discarded cards cannot reappear merely because presentation rebuilds; and Undo, restart, snapshot restore, replay, and the event log reproduce the same six-hero turns.
 - Every implemented hero rule links to an authoritative source and focused tests; unresolved source or capability entries keep the gate incomplete.
 - The complete six-hero roster exercises legal team interactions, combat, minions, Lane Push, progression, defeat/respawn, and victory without card-name/hero-name branches outside isolated approved handlers.
 - The official six-player setup and only the remaining approved director/debug deviations are represented.
@@ -499,6 +488,8 @@ Acceptance checks:
 - Close 8.16a's F-CORE-10 on `CompleteMatchRuntimeCaptureTests.MeasuresTheOfficialSixHeroCompleteMatch`: observe the check failing at the pre-fix revision because `CreateCompleteMatchSession` still composes the internal two-seat synthetic configuration, then passing after the capture uses the same official six-player configuration and deterministic full-match driver this gate proves. Re-derive the time, allocation, captured-byte-growth, and Undo lines from that run; retain the prior figures beside the new baseline and disposition every crossing rather than silently widening a threshold.
 - `RISK-SCALE-001` is reassessed in full and then retired with its recorded 3v3 bound or its residuals explicitly accepted. This is the first milestone whose acceptance checks reach repeated rounds and progression with six heroes, so it is the first at which rulebook p.15's simultaneous Level Up can be observed as the serialized one-question-at-a-time step the continuation contract makes it, and the first at which the leveling stage's per-round derivation can be sampled against the standing thresholds rather than reasoned about.
 - T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
+
+Non-goals: No hidden-information enforcement, table-talk enforcement, networking, AI, six separate input devices, production presentation, or change to the approved rules.
 
 Hard gate: The networking architecture decision does not begin until the deterministic 3v3 match, URP migration, and independent readiness review at milestone 8.28a are reviewed and approved. Production visual work remains blocked through milestone 8.36a.
 
