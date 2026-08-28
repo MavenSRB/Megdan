@@ -445,3 +445,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25f2 | Complete faces now share the readable 372:520 footprint at approximately 300.46 by 420; five overlap in a borderless, scrollbar-free and fully clickable physical hand with topmost previews. Full-screen artwork surrounds 210 playable hexes fitted clear of the hand, rails and compact Director lane; its 720-by-128 status/action dock keeps the largest routine footprint across awaiting, confirmation and revealed-action states. Affected regressions, complete Play Mode, Phase 4 timing and targeted visual gates passed without changing rules, schema or private-source boundaries. | `94ded0e` |
+
+## Milestone 8.25f2a Correct the stale pre-L-shaped fallback framing assertion completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25f2a | The official-board fallback framing check now states 8.25f2's current no-HUD contract: the complete reviewed map is centered and contained in the whole viewport, while the configured L-shaped safe-layout fit remains unchanged and separately covered. Its old strict right-shift check failed at `a7a756ef`; the replacement, full artwork fixture and complete Edit Mode suite pass without a production change. | `PENDING` |

@@ -264,12 +264,13 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The framing claim, under the rotated basis the face brings: the camera is oriented by the
-        /// board's own axes so the square reads upright, and every reviewed space is still inside the
-        /// viewport and still right of centre, where the tray's reserved band leaves it.
+        /// The no-HUD fallback framing claim, under the rotated basis the face brings: the camera is
+        /// oriented by the board's own axes so the square reads upright, and every reviewed space is
+        /// centered inside the whole viewport. The configured scene supplies its separate L-shaped
+        /// safe layout before rebuilding the map.
         /// </summary>
         [Test]
-        public void TheFramingCamera_HoldsEveryReviewedSpaceInTheBandLeftByTheTray()
+        public void TheFallbackFramingCamera_CentresEveryReviewedSpaceInsideTheViewport()
         {
             RequireArtwork();
             var root = new GameObject("Official Board Framing");
@@ -297,8 +298,11 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(viewport.Min(point => point.y), Is.GreaterThanOrEqualTo(0f));
                 Assert.That(viewport.Max(point => point.y), Is.LessThanOrEqualTo(1f),
                     "Every space is inside the viewport, which is the framing claim itself.");
-                Assert.That(viewport.Min(point => point.x), Is.GreaterThan(1f - viewport.Max(point => point.x)),
-                    "and the map still sits right of centre, leaving the left band to the card tray.");
+                var leftMargin = viewport.Min(point => point.x);
+                var rightMargin = 1f - viewport.Max(point => point.x);
+                Assert.That(leftMargin, Is.EqualTo(rightMargin).Within(1e-5f),
+                    "Without a configured HUD-safe layout, the fallback centers the complete map " +
+                    "in the whole viewport rather than reserving a retired rectangular tray band.");
             }
             finally
             {
