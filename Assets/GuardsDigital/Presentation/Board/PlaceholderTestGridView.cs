@@ -651,11 +651,11 @@ namespace GuardsDigital.Presentation.Board
 
         private static Material CreateMaterial(string name, Color color)
         {
-            var shader = Shader.Find("Standard");
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
             {
                 throw new System.InvalidOperationException(
-                    $"The generated board material '{name}' requires the Standard shader.");
+                    $"The generated board material '{name}' requires the URP Lit shader.");
             }
 
             var material = new Material(shader) { name = name, color = color };
@@ -666,7 +666,7 @@ namespace GuardsDigital.Presentation.Board
         /// <summary>
         /// Milestone 8.11a. The tile fill while the artwork is underneath: present and pickable, drawn
         /// at nothing at all. <see cref="BoardOverlayMaterial"/> owns the blend state, because the
-        /// Standard shader is opaque until it is set and a low alpha alone would do nothing.
+        /// URP Lit is opaque until its surface state is set and a low alpha alone would do nothing.
         /// </summary>
         private static Material CreateTransparentMaterial(string name) =>
             BoardOverlayMaterial.Create(

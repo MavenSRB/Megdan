@@ -1,7 +1,9 @@
 {
   "name": "GuardsDigital.EditorTools",
   "rootNamespace": "GuardsDigital.EditorTools",
-  "references": [],
+  "references": [
+    "Unity.RenderPipelines.Universal.Runtime"
+  ],
   "includePlatforms": [
     "Editor"
   ],

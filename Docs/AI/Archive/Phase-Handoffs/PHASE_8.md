@@ -8,6 +8,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.27 | Official six-hero deterministic scenarios reach Life exhaustion, final-Wave, and Throne endings; the unmodified seed-5 match proves the complete 799-command/12-round loop, reconstruction controls, official-scale runtime lines, and all six serialized Level-Up choosers. Focused and complete T3 Unity suites plus the built-player launch smoke pass; `RISK-SCALE-001` retires with measured bounds and accepted director wait. | `7fd8256` |
 
+## Milestone 8.28 Render-pipeline migration gate completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.28 | URP 17.5 is the checked-in default at all six quality levels; retained authored and runtime-generated materials use URP Lit/Unlit while the complete primitive six-hero board, tokens/minions, card/HUD surfaces, highlights, pointer path, lighting and fixed camera remain readable. A review-found obsolete Built-In reflection keyword failed then passed its exact regression. Focused/affected presentation checks, two final Game View captures, both complete T3 suites, and the disposable Win64 build/launch smoke pass without changing Core/Application rules or schema v34. | `PENDING` |
+
 ## Milestone 8.16c Answer blocked Lane-Push respawn placement on the board completion evidence
 
 | ID | Outcome | Commit |

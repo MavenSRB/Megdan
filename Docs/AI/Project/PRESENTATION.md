@@ -6,6 +6,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 - The Unity scene is 3D from the beginning, with the board on the XZ plane.
 - Early implementation uses primitive meshes and a fixed camera.
+- URP 17.5 is the accepted rendering baseline: one checked-in pipeline is active globally and at all six quality levels, and retained primitive authored/runtime materials use URP Lit or URP Unlit. Built-In-only shaders, production art direction, final lighting, and post-processing remain outside the retained baseline.
 - The minimal-grid validation scene centers its fixed camera directly above the map and looks straight down.
 - Pointy-top presentation maps `q` eastward and decreasing `r` northward; the same outer-radius value defines both the regular hex mesh and its center spacing.
 - Placeholder hexes use one light-gray fill with a darker gray perimeter for separation; this styling is non-semantic and the logical origin has no unique treatment.

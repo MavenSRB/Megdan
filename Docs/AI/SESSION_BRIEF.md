@@ -8,15 +8,17 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The current gate route has completed **8.27**, with source verification through **8.25e5g**, art work through **8.25f2a**, and decision/foundation hardening through **8.25e4b** also complete. **The loaded match is rulebook p.5's six-player Quick Game**: three Red and three Blue heroes, six spawns, three Waves, five Lives a side, the Tie Breaker, twelve minions, and 108 playable cards. One deterministic director now plays that official roster through repeated turns and rounds to all three rulebook victory causes; the same official loop proves six-owner commitments, team interactions, progression, Defeat/respawn, replay, restore, retained-prefix Undo, restart, snapshots, and event logs. All six heroes pass the permanent player-path gate, and all 114 roster fronts are independently source-verified. The current schema v34 persists every pause and pins the registered content contract set. `RISK-SCALE-001` is retired after the official match exercised all six serialized Level-Up choosers with a 2.633 ms worst Unity step against 25 ms; the one-question-at-a-time director UX remains an accepted durable-continuation tradeoff. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
+The current gate route has completed **8.28**, with source verification through **8.25e5g**, art work through **8.25f2a**, and decision/foundation hardening through **8.25e4b** also complete. **The loaded match is rulebook p.5's six-player Quick Game**: three Red and three Blue heroes, six spawns, three Waves, five Lives a side, the Tie Breaker, twelve minions, and 108 playable cards. One deterministic director now plays that official roster through repeated turns and rounds to all three rulebook victory causes; the same official loop proves six-owner commitments, team interactions, progression, Defeat/respawn, replay, restore, retained-prefix Undo, restart, snapshots, and event logs. URP 17.5 is the accepted checked-in rendering baseline at every quality level; the retained primitive six-hero board/HUD and disposable Win64 smoke path are intact. All six heroes pass the permanent player-path gate, and all 114 roster fronts are independently source-verified. The current schema v34 persists every pause and pins the registered content contract set. `RISK-SCALE-001` is retired after the official match exercised all six serialized Level-Up choosers with a 2.633 ms worst Unity step against 25 ms; the one-question-at-a-time director UX remains an accepted durable-continuation tradeoff. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.27**.
+- Current completed milestone: **8.28**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.28**.
+- Next proposed milestone: **8.28a**.
 
-Milestone **8.27** completed on 2026-08-28. Three deterministic official-roster scenarios reach Life exhaustion, the final Wave, and Throne capture; the unmodified seed-5 match runs 799 commands across 12 rounds and exercises all six serialized Level-Up choosers. Official runtime capture stays below its re-derived 2 MiB allocation and 12 KiB captured-growth lines, Undo stays below 150 ms, both complete Unity suites pass, and the built Win64 smoke player now launches and reports `heroes=6 cards=108`. The four-perspective review found no remaining acceptance defect. **8.28** is next proposed.
+Milestone **8.28** completed on 2026-08-28. URP 17.5 is active globally and at all six quality levels; primitive materials use URP Lit/Unlit, and the six-hero board/HUD remains readable at 1920x1080 and 2560x1440. A review-found obsolete Built-In keyword failed then passed its regression. Focused checks, both complete Unity suites, and the disposable Win64 smoke pass; rules and schema v34 are unchanged. **8.28a** is next proposed.
+
+Milestone **8.27** completed on 2026-08-28. Three deterministic official-roster scenarios reach Life exhaustion, the final Wave, and Throne capture; the unmodified seed-5 match runs 799 commands across 12 rounds and exercises all six serialized Level-Up choosers. Official runtime capture stays below its re-derived 2 MiB allocation and 12 KiB captured-growth lines, Undo stays below 150 ms, both complete Unity suites pass, and the built Win64 smoke player now launches and reports `heroes=6 cards=108`. The four-perspective review found no remaining acceptance defect.
 
 Milestone **8.25e6c** completed on 2026-08-28. Independent probes recovered the same authority from both governance models. Because two ordinary candidate bundles still exceed budget and the experiment remains selector-defined, the current router is retained. Reassess on route/owner drift or the first post-pitch batch.
 
@@ -42,7 +44,7 @@ Milestones **8.1-8.16** dealt all nineteen verified Wasp faces through ordinary 
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1-7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed the 7.9a review's findings.
 
-The **Phase 8** route next proposes the URP migration gate at 8.28. The deterministic official 3v3 gate is complete; the retained URP/readiness/online gates remain, and each milestone still requires exact approval.
+The **Phase 8** route next proposes independent six-hero, URP, and networking-readiness review 8.28a. The deterministic official 3v3 and URP gates are complete; the retained readiness/online gates remain, and each milestone still requires exact approval.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 

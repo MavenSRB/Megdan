@@ -185,11 +185,11 @@ namespace GuardsDigital.Presentation.Board
 
         private static Material CreateDiscMaterial()
         {
-            var shader = Shader.Find("Standard");
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
             {
                 throw new System.InvalidOperationException(
-                    "The placed token view requires the Standard shader.");
+                    "The placed token view requires the URP Lit shader.");
             }
 
             return new Material(shader)

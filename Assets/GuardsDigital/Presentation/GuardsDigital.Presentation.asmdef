@@ -5,7 +5,8 @@
     "GuardsDigital.Core",
     "GuardsDigital.Core.CardState",
     "GuardsDigital.Application",
-    "Unity.InputSystem"
+    "Unity.InputSystem",
+    "Unity.RenderPipelines.Universal.Runtime"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

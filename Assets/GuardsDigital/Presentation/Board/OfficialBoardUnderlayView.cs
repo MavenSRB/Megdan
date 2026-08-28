@@ -89,7 +89,7 @@ namespace GuardsDigital.Presentation.Board
                 // Unlit, and it has to be. The face is a picture of a printed board: what it must show
                 // is its own pixels, exactly, with nothing of the scene's lighting in them.
                 //
-                // Two attempts at doing this with the Standard shader failed, and both are recorded
+                // Two attempts at doing this with a lit shader failed, and both are recorded
                 // because the second looked like it should have worked. Tinting the albedo *and* the
                 // emission with the texture doubled it. Blacking the albedo killed the diffuse term but
                 // left the broad specular and reflection response to this scene's flat blue-grey
@@ -100,11 +100,11 @@ namespace GuardsDigital.Presentation.Board
                 // always-included shaders, which is where it now is - see that file's own note. The
                 // requirement is real: without the entry the shader reaches a player build only by
                 // accident, through some other asset that happens to reference it.
-                var shader = Shader.Find("Unlit/Texture");
+                var shader = Shader.Find("Universal Render Pipeline/Unlit");
                 if (shader == null)
                 {
                     throw new System.InvalidOperationException(
-                        "The board underlay requires the Unlit/Texture shader.");
+                        "The board underlay requires the URP Unlit shader.");
                 }
 
                 generatedMaterial = new Material(shader) { name = "Owned Official Board Underlay" };

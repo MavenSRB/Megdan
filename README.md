@@ -1,6 +1,6 @@
 # Guards Digital
 
-For the current handoff route, the project has completed milestones through **8.27**, and the URP migration gate at **8.28** is next proposed.
+For the current handoff route, the project has completed milestones through **8.28**, and independent readiness review **8.28a** is next proposed.
 
 A public source repository for a private, noncommercial digital prototype of the board game **Guards of Atlantis II** (2nd printing), built in Unity.
 
@@ -10,13 +10,13 @@ The project owner states that the public repository and included rulebook are sh
 
 A rules-accurate implementation of the board game, built as a pure C# rules engine with Unity acting only as passive presentation. The current build sets up the rulebook's official six-player match on the official single-lane map - three heroes a side, each dealt their own typed printed-card definitions - with movement, attack/defense, minions, and an end-of-round minion battle. Each card's printed text is composed slice by slice, and a primary action whose text is not composed yet is offered greyed and refused rather than performed without it.
 
-Progress is tracked as numbered micro-milestones. The project has completed milestone **8.27**. The loaded match is the rulebook's six-player Quick Game with six distinct hero sets, three Waves, five Lives per team, twelve minions, and 108 playable cards. All six heroes pass the same permanent real-input completion gate, and all 114 roster fronts are independently source-verified; their reachable effect semantics are identity-covered, their enum-like integer bindings are content-load validated, and the scaled HUD identifies each hero and current decision. The typed rules engine preserves card/effect continuations, repeats, progression, board operations, replay, Undo, and schema-v34 restore. Every complete card face now uses the same readable approximately 300.46-by-420 source-ratio footprint: prepared private fronts stand alone without shell or distortion, and absent resources take the typed generated fallback. Five ordinary faces overlap in a clickable borderless hand while the full-screen board fits every playable hex around the actual HUD; the adjacent status/action dock keeps one fixed largest-state footprint as cards are selected and revealed. Facedown retains its information boundary, all private fronts remain outside tracked publication, and the fixed Unity launcher accepts only fresh parseable all-green evidence recreated by its own run.
+Progress is tracked as numbered micro-milestones. The project has completed milestone **8.28**. The loaded match is the rulebook's six-player Quick Game with six distinct hero sets, three Waves, five Lives per team, twelve minions, and 108 playable cards. All six heroes pass the same permanent real-input completion gate, and all 114 roster fronts are independently source-verified; their reachable effect semantics are identity-covered, their enum-like integer bindings are content-load validated, and the scaled HUD identifies each hero and current decision. The typed rules engine preserves card/effect continuations, repeats, progression, board operations, replay, Undo, and schema-v34 restore. Every complete card face now uses the same readable approximately 300.46-by-420 source-ratio footprint: prepared private fronts stand alone without shell or distortion, and absent resources take the typed generated fallback. Five ordinary faces overlap in a clickable borderless hand while the full-screen board fits every playable hex around the actual HUD; the adjacent status/action dock keeps one fixed largest-state footprint as cards are selected and revealed. Facedown retains its information boundary, all private fronts remain outside tracked publication, and the fixed Unity launcher accepts only fresh parseable all-green evidence recreated by its own run.
 
 ## Requirements
 
 - **Unity `6000.5.7f1`** — the exact version matters; the project is pinned to it in `ProjectSettings/ProjectVersion.txt`.
 - **Windows** for the validation tooling and for the player-build smoke gate, which targets Win64. macOS and iOS are declared target platforms but are not yet supported. The toolchain was made portable at milestone 6.1d — paths are separator-agnostic and the Unity/Hub locations come from `GUARDS_UNITY_PATH` and `GUARDS_UNITY_HUB_PATH` or platform probing — and was confirmed on a non-Windows host (Linux, PowerShell 7) at milestone 6.1l, which corrected the three portability defects the first non-Windows runs exposed.
-- Built-In Render Pipeline (not URP/HDRP). A URP migration is scheduled much later, at milestone 8.28.
+- URP 17.5, with one checked-in pipeline active globally and at every quality level.
 
 ## Getting started
 

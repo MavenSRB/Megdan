@@ -509,11 +509,11 @@ namespace GuardsDigital.Presentation.Units.Heroes
 
         private static Material CreatePlaceholderMaterial(TeamSide side)
         {
-            var shader = Shader.Find("Standard");
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
             {
                 throw new System.InvalidOperationException(
-                    "The primitive hero placeholder requires the Standard shader.");
+                    "The primitive hero placeholder requires the URP Lit shader.");
             }
 
             var material = new Material(shader)
@@ -532,11 +532,11 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// </summary>
         private static Material CreateTeamRimMaterial(TeamSide side)
         {
-            var shader = Shader.Find("Standard");
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
             {
                 throw new System.InvalidOperationException(
-                    "The hero token rim requires the Standard shader.");
+                    "The hero token rim requires the URP Lit shader.");
             }
 
             return new Material(shader)
@@ -549,16 +549,16 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// <summary>
         /// Milestone 8.11b: the official face, unlit for milestone 8.11a's reason - it is a picture of
         /// a printed token, and what it must show is its own pixels rather than this scene's ambient.
-        /// <c>Unlit/Texture</c> is declared in Graphics settings, which is what
+        /// <c>Universal Render Pipeline/Unlit</c> is declared in Graphics settings, which is what
         /// <c>RuntimeShaderResolutionTests</c> requires of a shader resolved by name.
         /// </summary>
         private static Material CreateTokenFaceMaterial(TeamSide side, Texture2D face)
         {
-            var shader = Shader.Find("Unlit/Texture");
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null)
             {
                 throw new System.InvalidOperationException(
-                    "The hero token face requires the Unlit/Texture shader.");
+                    "The hero token face requires the URP Unlit shader.");
             }
 
             return new Material(shader)

@@ -495,7 +495,7 @@ Hard gate: The networking architecture decision does not begin until the determi
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-827-complete-and-prove-the-deterministic-six-hero-3v3-pitch-match-completion-evidence).
 
-### [ ] 8.28 Render-pipeline migration gate
+### [x] 8.28 Render-pipeline migration gate
 
 Observable outcome: The complete primitive six-hero match is ported from Unity's Built-In Render Pipeline to URP, with its existing director/debug presentation and Win64 reference path intact, before production visual assets are introduced.
 
@@ -513,7 +513,9 @@ Non-goals: No production board art, hero/minion production models, animation cov
 
 Hard gate: The private-online track uses this accepted URP baseline after milestone 8.28a independently reviews its six-hero and networking-readiness implications. Phase 9 production visual milestones do not begin until milestone 8.36a is also reviewed and approved.
 
-### [!] 8.28a Independently review six-hero, URP, and networking readiness
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828-render-pipeline-migration-gate-completion-evidence).
+
+### [ ] 8.28a Independently review six-hero, URP, and networking readiness
 
 Blocked by: Milestones 8.27 and 8.28 must pass the deterministic six-hero and URP migration gates.
 

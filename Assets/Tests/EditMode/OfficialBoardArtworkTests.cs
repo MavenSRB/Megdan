@@ -372,6 +372,8 @@ namespace GuardsDigital.Tests.EditMode
                         "The rim is opaque, because it is what carries the shape.");
                     Assert.That(owner.RimMaterial.IsKeywordEnabled("_EMISSION"), Is.True,
                         "and it is emissive, so the scene's lighting cannot shade a line that has to be one colour.");
+                    Assert.That(owner.RimMaterial.IsKeywordEnabled("_ENVIRONMENTREFLECTIONS_OFF"), Is.True,
+                        "and URP environment reflections are disabled with URP's own keyword.");
                     Assert.That(owner.RimMaterial, Is.SameAs(owner.RimMaterial), "and it is owned once.");
                 }
 

@@ -425,13 +425,13 @@ namespace GuardsDigital.Tests.EditMode
                 var washMaterial = ring.GetComponent<MeshRenderer>().sharedMaterials[2];
                 Assert.That(washMaterial.renderQueue,
                     Is.EqualTo((int)UnityEngine.Rendering.RenderQueue.Transparent));
-                Assert.That(washMaterial.GetFloat("_Mode"), Is.EqualTo(3f));
+                Assert.That(washMaterial.GetFloat("_Surface"), Is.EqualTo(1f));
                 Assert.That(washMaterial.GetInt("_SrcBlend"),
                     Is.EqualTo((int)UnityEngine.Rendering.BlendMode.SrcAlpha));
                 Assert.That(washMaterial.GetInt("_DstBlend"),
                     Is.EqualTo((int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha));
                 Assert.That(washMaterial.GetInt("_ZWrite"), Is.Zero);
-                Assert.That(washMaterial.IsKeywordEnabled("_ALPHABLEND_ON"), Is.True,
+                Assert.That(washMaterial.IsKeywordEnabled("_SURFACE_TYPE_TRANSPARENT"), Is.True,
                     "The over-piece wash must be genuinely blended, not merely assigned a low alpha.");
                 StringAssert.Contains("DARK GREEN", ring.AssistiveReading);
 

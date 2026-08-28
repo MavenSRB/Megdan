@@ -86,10 +86,10 @@ namespace GuardsDigital.Presentation.Match
             {
                 if (material == null)
                 {
-                    var shader = Shader.Find("Standard");
+                    var shader = Shader.Find("Universal Render Pipeline/Lit");
                     if (shader == null)
                     {
-                        throw new InvalidOperationException("The destination highlight requires the Standard shader.");
+                        throw new InvalidOperationException("The destination highlight requires the URP Lit shader.");
                     }
 
                     material = new Material(shader)

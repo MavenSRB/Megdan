@@ -47,7 +47,8 @@ namespace GuardsDigital.Tests.PlayMode
         [UnityTest]
         public IEnumerator PlayingOwner_LeavesAnAssignedMaterialAlone()
         {
-            var assigned = new Material(Shader.Find("Standard")) { name = "Assigned Play Mode Highlight" };
+            var assigned = new Material(Shader.Find("Universal Render Pipeline/Lit"))
+                { name = "Assigned Play Mode Highlight" };
             try
             {
                 var owner = new DestinationHighlightMaterialOwner(assigned);

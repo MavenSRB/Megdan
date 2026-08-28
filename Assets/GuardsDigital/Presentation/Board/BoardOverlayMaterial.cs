@@ -4,7 +4,7 @@ using UnityEngine;
 namespace GuardsDigital.Presentation.Board
 {
     /// <summary>
-    /// Milestone 8.11a. The one place that turns a Standard material into a blended one, and the one
+    /// Milestone 8.11a. The one place that turns a URP Lit material into a blended one, and the one
     /// statement of how solid a board overlay is allowed to be.
     ///
     /// <para>Every cue this project draws on the board plane used to be opaque, which was harmless while
@@ -13,7 +13,7 @@ namespace GuardsDigital.Presentation.Board
     /// so the space they are choosing is the one space they cannot see. Overlays are drawn blended
     /// instead, at <see cref="OverlayAlpha"/>.</para>
     ///
-    /// <para>The Standard shader is opaque until its blend state is set, so a colour with a low alpha is
+    /// <para>The URP Lit shader is opaque until its surface state is set, so a colour with a low alpha is
     /// not enough on its own - that is the trap this type exists to stop each caller repeating.</para>
     /// </summary>
     public static class BoardOverlayMaterial
@@ -29,15 +29,15 @@ namespace GuardsDigital.Presentation.Board
         public const float SuppressedAlpha = 0f;
 
         /// <summary>
-        /// Generates a blended Standard material in the given colour, taking the colour's own alpha.
+        /// Generates a blended URP Lit material in the given colour, taking the colour's own alpha.
         /// </summary>
         public static Material Create(string name, Color color)
         {
-            var shader = Shader.Find("Standard");
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
             {
                 throw new InvalidOperationException(
-                    $"The generated board overlay material '{name}' requires the Standard shader.");
+                    $"The generated board overlay material '{name}' requires the URP Lit shader.");
             }
 
             var material = new Material(shader) { name = name, color = color };
@@ -47,19 +47,20 @@ namespace GuardsDigital.Presentation.Board
         }
 
         /// <summary>
-        /// Puts an existing Standard material into alpha-blended mode. Separate from
+        /// Puts an existing URP Lit material into alpha-blended mode. Separate from
         /// <see cref="Create"/> because a caller may be handed an authored material to blend rather than
         /// generating its own.
         /// </summary>
         public static void ApplyBlending(Material material)
         {
             if (material == null) throw new ArgumentNullException(nameof(material));
-            material.SetFloat("_Mode", 3f);
+            material.SetFloat("_Surface", 1f);
+            material.SetFloat("_Blend", 0f);
             material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             material.SetInt("_ZWrite", 0);
             material.DisableKeyword("_ALPHATEST_ON");
-            material.EnableKeyword("_ALPHABLEND_ON");
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
             material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
             material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
         }
@@ -76,7 +77,7 @@ namespace GuardsDigital.Presentation.Board
         /// chosen space. The rim carries the shape at full strength while the fill stays see-through, so
         /// the space is unmistakable and the artwork under it is still legible.</para>
         ///
-        /// <para>It is a Standard material, like every other generated one here, rather than an unlit
+        /// <para>It is a URP Lit material, like every other generated one here, rather than an unlit
         /// shader that would read at exactly its colour. `RuntimeShaderResolutionTests` requires every
         /// shader this project resolves by name to be listed in Graphics settings' always-included
         /// shaders, so reaching for `Unlit/Color` would mean adding it there - a build-settings change
@@ -86,11 +87,11 @@ namespace GuardsDigital.Presentation.Board
         public static Material CreateRim(string name, Color color)
         {
             var opaque = new Color(color.r, color.g, color.b, 1f);
-            var shader = Shader.Find("Standard");
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
             {
                 throw new InvalidOperationException(
-                    $"The generated board rim material '{name}' requires the Standard shader.");
+                    $"The generated board rim material '{name}' requires the URP Lit shader.");
             }
 
             // Purely emissive, for the reason the board underlay is: a lit albedo on top of the
@@ -107,11 +108,11 @@ namespace GuardsDigital.Presentation.Board
         }
 
         /// <summary>
-        /// Stops a Standard material responding to the scene's environment at all, so that what it emits
+        /// Stops a URP Lit material responding to the scene's environment at all, so that what it emits
         /// is the whole of what it shows.
         ///
         /// <para>Milestone 8.11a, and it is the second half of a fix whose first half was not enough.
-        /// Blacking the albedo kills the diffuse term, but the Standard shader still takes a broad
+        /// Blacking the albedo kills the diffuse term, but URP Lit still takes a broad
         /// specular and reflection term from the environment - and this scene's ambient is a flat
         /// light blue-grey at full intensity, which laid a wash over the whole board and left the
         /// artwork looking bleached. Smoothness zero narrows that term; switching the two paths off
@@ -120,11 +121,11 @@ namespace GuardsDigital.Presentation.Board
         public static void SuppressEnvironmentResponse(Material material)
         {
             if (material == null) throw new ArgumentNullException(nameof(material));
-            material.SetFloat("_Glossiness", 0f);
+            material.SetFloat("_Smoothness", 0f);
             material.SetFloat("_Metallic", 0f);
-            material.SetFloat("_GlossyReflections", 0f);
+            material.SetFloat("_EnvironmentReflections", 0f);
             material.SetFloat("_SpecularHighlights", 0f);
-            material.EnableKeyword("_GLOSSYREFLECTIONS_OFF");
+            material.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
             material.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
         }
     }

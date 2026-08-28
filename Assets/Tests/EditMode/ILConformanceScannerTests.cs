@@ -38,7 +38,7 @@ namespace GuardsDigital.Tests.EditMode
                     ILConformanceScanner.Method(
                         typeof(UnityEngine.Shader), nameof(UnityEngine.Shader.Find), typeof(string))),
                 Is.True,
-                "DestinationHighlightMaterialOwner.Material resolves the Standard shader by name.");
+                "DestinationHighlightMaterialOwner.Material resolves the URP Lit shader by name.");
         }
 
         [Test]
