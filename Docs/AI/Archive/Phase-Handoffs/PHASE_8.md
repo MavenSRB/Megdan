@@ -18,7 +18,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.28a1 | `F-TEST-10` closes on the exact CS0246-to-green transition after only the Unity-dependent `UrpMigrationTests.cs` fixture joins the harness exclusion list. The full Unity-free harness, the unchanged URP fixture in Unity Edit Mode, and both complete unfiltered Unity suites pass; runtime, rules, content, render settings, packages, schema, and test bodies remain unchanged while parent review 8.28a stays active. | `PENDING` |
+| 8.28a1 | `F-TEST-10` closes on the exact CS0246-to-green transition after only the Unity-dependent `UrpMigrationTests.cs` fixture joins the harness exclusion list. The full Unity-free harness, the unchanged URP fixture in Unity Edit Mode, and both complete unfiltered Unity suites pass; runtime, rules, content, render settings, packages, schema, and test bodies remain unchanged while parent review 8.28a stays active. | `5b7674f` |
 
 ## Milestone 8.16c Answer blocked Lane-Push respawn placement on the board completion evidence
 
