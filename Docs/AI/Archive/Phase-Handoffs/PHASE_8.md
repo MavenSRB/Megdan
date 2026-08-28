@@ -463,3 +463,8 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e7 | The generic effect catalog is free of verified-content dependencies; one explicit build composition root supplies all six hero declarations. An independent six-owner identity oracle covers reachable card, Ultimate, triggered and active semantics; Wasp advances after High Voltage while schema v34 rejects stale identity. Closed integer vocabularies validate typed domains before play, the finite relation inventory has one source-triggered unsupported arm, and a sixteenth corpus fixture pins a real repeated Attack's non-default excluded target through both wire forms. | `c5871ae4` |
+
+## Milestone 8.25e4a1 Constrain Object Push outcomes to each node's declared output set completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |

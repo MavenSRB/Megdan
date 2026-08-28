@@ -4,6 +4,8 @@ Canonical active roadmap shard for the truth, architecture, validation, and gove
 
 ## Phase 8 - Roster-complete stabilization and corrective route
 
+Milestone 8.25e4a's real-family proof exposed one pre-existing paused-repeat snapshot defect and stopped as required. The separately approved 8.25e4a1 correction closes that defect without widening the parent milestone; 8.25e4a remains the sole in-progress milestone.
+
 **Corrective scheduling amendments, 2026-08-27 through 2026-08-28.** Milestone 8.25e5 found twelve affected source fields and scheduled separately approvable 8.25e5a-8.25e5c; 8.25e5a resolved authority and 8.25e5b applied the intended corrections. Fresh verification 8.25e5c found that Constrict's ledger reminder spacing was missed even though production and its exact regression were correct; 8.25e5d corrected that one field, and 8.25e5e freshly verified it. A later user report disproved the clean audit for Siren's Call: 8.25e5f corrected its Defense/Movement values, 8.25e5f1 corrected the separately demonstrated "up to 3" execution defect, and fresh-task 8.25e5g reclosed F-SOURCE-01 after independently verifying both corrections. Milestones 8.25f-8.25f2 completed the real-card-face route and its accepted HUD before that later finding, and test-only correction 8.25f2a closed the stale fallback-camera assertion exposed by 8.25e4's first complete run. Milestones 8.25e4 and independent 8.25e7 are complete; 8.26 is now unblocked and next proposed. Milestones 8.25e4a-8.25e4b harden the decision seam and future foundation claims; they do not gate 8.26 but must close before the first post-pitch hero batch. Milestones 8.25e6a-8.25e6c remain non-gating for 8.26, run consecutively after corrected truth exists, and share that post-pitch deadline. The user-approved reassessment closes the never-scheduled 8.16b proposal without pretending its surviving findings were implemented: 8.25e7 closed the current content-contract and compatibility corrections; 8.27 owns the official-six-player runtime capture already inside its full-match scale gate.
 
 ### [x] 8.25e1 Independently audit roster-complete truth, architecture, validation, and governance fitness
@@ -107,7 +109,7 @@ Non-goals: No gameplay-rule, removal/prevention, reward, card-lifecycle, command
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e4-close-decision-family-ownership-and-removal-prevention-reachability-completion-evidence).
 
-### [ ] 8.25e4a Bind every pending player decision to the exact commands its real surface submits
+### [~] 8.25e4a Bind every pending player decision to the exact commands its real surface submits
 
 Blocked by: milestone 8.25e4, whose test-owned family and answer inventory supplies the measured current algebra. This milestone and 8.25e4b are non-gating for 8.25f and 8.26 but are a hard prerequisite for the first post-pitch hero batch.
 
@@ -130,6 +132,24 @@ Acceptance checks:
 - This changes the shared Application/Presentation decision boundary and production test drivers, so validation is T3: run the new contract fixture first; directly affected configured-projection, prompt-reachability, status, presenter/HUD/pointer, deterministic-loop, replay/Undo/restore, and mapped six-hero player-path fixtures; then both complete unfiltered Unity suites serially through the corrected parameterless launcher, followed by living-document validation and `git diff --check`.
 
 Non-goals: No gameplay-rule, candidate, acceptance, result, card-content, snapshot/schema/wire, or `DirectorCommandKind` change; no production `PlayerInteractionShape`; no universal choice base/payload, blanket `EffectChoice` convergence, presenter consolidation or size-only split, visual redesign, hero/card-name branch, reflection/service-locator dispatch, non-pending offer unification, or zero-bug claim.
+
+### [x] 8.25e4a1 Constrain Object Push outcomes to each node's declared output set
+
+Blocked by: the real repeat-Skill decision reached by 8.25e4a's exact closing check. Its applied Object Push recorded stop-cause facts that the repeat fixture's node did not declare, so the snapshot writer produced a payload the reader correctly refused. This correction is separately authorized and does not authorize further 8.25e4a implementation.
+
+Observable outcome: a paused effect frame persists only the outputs its trusted definition node declared, so the real Confirm/Decline repeat decision round-trips byte-identically while Object Push definitions that request stop-cause facts retain them unchanged.
+
+Acceptance checks:
+
+- Gate every Object Push result fact through `EffectCapabilityContext.Publishes`, including distance, moved count, and each independently optional stop-cause identity/boolean. Preserve the established fact order for nodes that declare the full output set.
+- Keep direct capability fixtures honest by supplying the tested handler schema as their declared node outputs rather than relying on an empty test-only context.
+- The exact closing check is `MatchSessionRepeatDispatchTests.APausedRepeatDecision_RoundTripsWhenItsPushNodeDeclaresOnlyTheOutputsItUses`. Record it failing before the correction on the refused undeclared `firstHeroWasStopped` fact and passing afterward with byte-identical restore, both repeat answers standing, and exactly `distance`/`moved` persisted.
+- Run T2 validation over Object Push capability behavior, configured kinetic/immunity consumers, Repeat/correction/displacement dispatch, effect and snapshot tampering/round-trip, replay/Undo/session atomicity, compatibility, and every directly referencing fixture. No Play Mode or visual run is required because no Unity-facing production path or visible output changes.
+- Keep schema v34, registered capability identity, card content revisions, and compatibility fixtures unchanged; this repairs what new captures write and does not reinterpret an accepted older payload.
+
+Non-goals: No Push geometry, candidate, immunity, displacement, correction, Repeat, card, rule-event meaning, command, presentation, snapshot field/schema/wire, migration, capability revision, or content-revision change; no 8.25e4a decision-contract completion.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e4a1-constrain-object-push-outcomes-to-each-nodes-declared-output-set-completion-evidence).
 
 ### [!] 8.25e4b Require independent-shape evidence before a shared foundation is called general
 

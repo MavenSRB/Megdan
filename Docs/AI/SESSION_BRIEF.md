@@ -12,9 +12,11 @@ The current gate route has completed **8.25e7**, with source verification throug
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.25e7**.
-- Active authorized milestone: **none**.
-- Next proposed milestone: **8.26**.
+- Current completed milestone: **8.25e4a1**.
+- Active authorized milestone: **8.25e4a**.
+- Next proposed milestone: **8.25e4a**.
+
+Milestone **8.25e4a1** completed on 2026-08-28. Object Push now records only the exact result facts its effect node declared, so the real repeat-Skill Confirm/Decline pause restores byte-identically with `distance` and `moved` while the verified kinetic nodes retain their requested stop-cause facts. Schema remains v34. Milestone **8.25e4a** remains the sole active authorized milestone; its broader contract work and T3 validation are not part of this correction.
 
 Milestone **8.25e7** completed on 2026-08-28. The generic Core effect catalog no longer references verified hero content; `MatchContentCatalogs` supplies all six sets at the build composition root. An independent oracle covers each hero's action roots, Ultimates, triggered effects, and reachable active definitions, moving Wasp to `wasp-8-25e7-rev-1` after High Voltage while schema stays v34 and stale v34 Wasp payloads reject rather than rebound. Every enum-like integer parameter now declares and validates its closed domain before play, the one unsupported relation arm has a source-triggered admission rule, and the sixteen-fixture compatibility corpus includes a real second Attack paused with a non-default excluded target. **8.26** is next proposed; non-gating 8.25e4a-8.25e4b and 8.25e6a-8.25e6c remain due before the first post-pitch hero batch.
 

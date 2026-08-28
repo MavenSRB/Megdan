@@ -450,6 +450,7 @@ namespace GuardsDigital.Tests.EditMode
                 board,
                 EffectFailurePolicy.UpTo,
                 RuleModificationSet.Empty,
+                SyntheticDisplacementCapabilities.DirectMoveV3,
                 new Dictionary<string, EffectValue>
                 {
                     ["mover"] = EffectValue.Space(moverAt),
@@ -1031,19 +1032,21 @@ namespace GuardsDigital.Tests.EditMode
             SourceTeamRelation relation,
             int maximumTargets,
             int leastDistance) =>
-            BuildContext(board, policy, modifications, new Dictionary<string, EffectValue>
-            {
-                ["distance"] = EffectValue.Integer(distance),
-                [SyntheticDisplacementCapabilities.LeastDistanceParameterName] =
-                    EffectValue.Integer(leastDistance),
-                ["ignoresObstacles"] = EffectValue.Boolean(false),
-                [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
-                    EffectValue.Integer((int)eligiblePiece),
-                [SyntheticDisplacementCapabilities.TargetRelationParameterName] =
-                    EffectValue.Integer((int)relation),
-                [SyntheticDisplacementCapabilities.MaximumTargetsParameterName] =
-                    EffectValue.Integer(maximumTargets)
-            });
+            BuildContext(board, policy, modifications,
+                SyntheticDisplacementCapabilities.ObjectPushV3,
+                new Dictionary<string, EffectValue>
+                {
+                    ["distance"] = EffectValue.Integer(distance),
+                    [SyntheticDisplacementCapabilities.LeastDistanceParameterName] =
+                        EffectValue.Integer(leastDistance),
+                    ["ignoresObstacles"] = EffectValue.Boolean(false),
+                    [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
+                        EffectValue.Integer((int)eligiblePiece),
+                    [SyntheticDisplacementCapabilities.TargetRelationParameterName] =
+                        EffectValue.Integer((int)relation),
+                    [SyntheticDisplacementCapabilities.MaximumTargetsParameterName] =
+                        EffectValue.Integer(maximumTargets)
+                });
 
         /// <summary>
         /// Milestone 8.8's kinetic declaration: enemy units only, a maximum the card names, and a
@@ -1060,6 +1063,7 @@ namespace GuardsDigital.Tests.EditMode
                 board,
                 EffectFailurePolicy.UpTo,
                 RuleModificationSet.Empty,
+                SyntheticDisplacementCapabilities.ObjectPushV3,
                 new Dictionary<string, EffectValue>
                 {
                     ["distance"] = EffectValue.Integer(distance),
@@ -1084,6 +1088,7 @@ namespace GuardsDigital.Tests.EditMode
             PushEligiblePieceKind eligiblePiece) =>
             BuildContext(
                 board, EffectFailurePolicy.Mandatory, RuleModificationSet.Empty,
+                SyntheticDisplacementCapabilities.PushTargetV3,
                 new Dictionary<string, EffectValue>
                 {
                     ["target"] = EffectValue.Space(target),
@@ -1115,25 +1120,29 @@ namespace GuardsDigital.Tests.EditMode
             int distance,
             DirectMoveDestinationPolicy destinationPolicy,
             RuleModificationSet modifications) =>
-            BuildContext(board, policy, modifications, new Dictionary<string, EffectValue>
-            {
-                ["mover"] = EffectValue.Space(moverAt),
-                ["distance"] = EffectValue.Integer(distance),
-                [SyntheticDisplacementCapabilities.DestinationPolicyParameterName] =
-                    EffectValue.Integer((int)destinationPolicy)
-            });
+            BuildContext(board, policy, modifications,
+                SyntheticDisplacementCapabilities.DirectMoveV3,
+                new Dictionary<string, EffectValue>
+                {
+                    ["mover"] = EffectValue.Space(moverAt),
+                    ["distance"] = EffectValue.Integer(distance),
+                    [SyntheticDisplacementCapabilities.DestinationPolicyParameterName] =
+                        EffectValue.Integer((int)destinationPolicy)
+                });
 
         private static EffectCapabilityContext BuildContext(
             AdjacentMoveAuthority board,
             EffectFailurePolicy policy,
             RuleModificationSet modifications,
+            EffectCapabilityReference capability,
             IReadOnlyDictionary<string, EffectValue> inputs) =>
-            BuildContext(board, policy, modifications, inputs, null);
+            BuildContext(board, policy, modifications, capability, inputs, null);
 
         private static EffectCapabilityContext BuildContext(
             AdjacentMoveAuthority board,
             EffectFailurePolicy policy,
             RuleModificationSet modifications,
+            EffectCapabilityReference capability,
             IReadOnlyDictionary<string, EffectValue> inputs,
             IReadOnlyList<IReadOnlyList<EffectValue>> answersAlreadyGiven) =>
             new EffectCapabilityContext(
@@ -1156,7 +1165,8 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticComponentDefinitions.CreateCatalog(), board, new MarkerAttachmentRegister(),
                     board, board, board),
                 null,
-                answersAlreadyGiven);
+                answersAlreadyGiven,
+                declaredOutputs: Handler(capability).Schema.Outputs);
 
         /// <summary>A playable East-West file (-2,0)..(6,0) with the actor at (0,0).</summary>
         private static AdjacentMoveAuthority CreateLineBoard(HexCoordinate otherAt)

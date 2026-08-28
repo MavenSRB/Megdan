@@ -1025,36 +1025,34 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// What one push publishes: how far it pushed, how many it moved, and milestone 8.8's stop
         /// causes, one pair per hero this declaration has a name for.
         ///
-        /// The boolean of a pair is always published and the hero only when there is one, because
-        /// <see cref="EffectValue.Hero"/> refuses an undefined hero and a fact naming nobody would be a
-        /// worse answer than no fact: a <see cref="EffectNodeKind.Conditional"/> reading the boolean
-        /// gets false either way, and the branch behind it is what would have consumed the hero.
+        /// A requested boolean is published even when false, while a requested hero is published only
+        /// when there is one, because <see cref="EffectValue.Hero"/> refuses an undefined hero and a
+        /// fact naming nobody would be a worse answer than no fact. Milestone 8.25e4a1 also keeps every
+        /// fact behind <see cref="EffectCapabilityContext.Publishes"/>: the node's declaration is the
+        /// exact output set a handler may persist, not merely a type-checking subset of its schema.
         /// </summary>
         private static IReadOnlyList<EffectOutcomeFact> StopCauseFacts(
             EffectCapabilityContext context, int distance, int moved, IReadOnlyList<HeroId> stopped)
         {
-            var facts = new List<EffectOutcomeFact>
-            {
-                new EffectOutcomeFact("distance", EffectValue.Integer(distance)),
-                new EffectOutcomeFact("moved", EffectValue.Integer(moved)),
-                new EffectOutcomeFact(
-                    FirstHeroWasStoppedOutputName, EffectValue.Boolean(stopped.Count > 0))
-            };
+            var facts = new List<EffectOutcomeFact>();
+            if (context.Publishes("distance"))
+                facts.Add(new EffectOutcomeFact("distance", EffectValue.Integer(distance)));
+            if (context.Publishes("moved"))
+                facts.Add(new EffectOutcomeFact("moved", EffectValue.Integer(moved)));
+            if (context.Publishes(FirstHeroWasStoppedOutputName))
+                facts.Add(new EffectOutcomeFact(
+                    FirstHeroWasStoppedOutputName, EffectValue.Boolean(stopped.Count > 0)));
 
-            if (stopped.Count > 0)
+            if (stopped.Count > 0 && context.Publishes(FirstStoppedHeroOutputName))
             {
                 facts.Add(new EffectOutcomeFact(
                     FirstStoppedHeroOutputName, EffectValue.Hero(stopped[0])));
             }
 
-            if (!PublishesASecondStopCause(context))
-            {
-                return facts;
-            }
-
-            facts.Add(new EffectOutcomeFact(
-                SecondHeroWasStoppedOutputName, EffectValue.Boolean(stopped.Count > 1)));
-            if (stopped.Count > 1)
+            if (context.Publishes(SecondHeroWasStoppedOutputName))
+                facts.Add(new EffectOutcomeFact(
+                    SecondHeroWasStoppedOutputName, EffectValue.Boolean(stopped.Count > 1)));
+            if (stopped.Count > 1 && context.Publishes(SecondStoppedHeroOutputName))
             {
                 facts.Add(new EffectOutcomeFact(
                     SecondStoppedHeroOutputName, EffectValue.Hero(stopped[1])));
@@ -1062,14 +1060,6 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             return facts;
         }
-
-        /// <summary>
-        /// Whether this declaration is the batch. Read off the parameters it was handed rather than
-        /// passed down through the routine, because the count bound is exactly what makes a push able
-        /// to stop a second hero, and the two would otherwise be two statements of one fact.
-        /// </summary>
-        private static bool PublishesASecondStopCause(EffectCapabilityContext context) =>
-            context.Inputs.ContainsKey(MaximumTargetsParameterName);
 
         /// <summary>
         /// The acting hero's space and every object it may push out of the six adjacent spaces.

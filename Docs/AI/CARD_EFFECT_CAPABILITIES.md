@@ -60,7 +60,7 @@ The runtime execution frame binds the immutable capability definition to stable 
 
 ## Effect node bindings and outcomes
 
-Every structured effect node has a stable node ID, capability ID/version, typed input bindings, typed output bindings, and failure/batch policy.
+Every structured effect node has a stable node ID, capability ID/version, typed input bindings, typed output bindings, and failure/batch policy. A handler may return only the exact output names that node declared, even when its registered capability schema permits more; `EffectCapabilityContext.Publishes` carries that per-node set. Milestone 8.25e4a1 corrected Object Push's optional stop-cause facts at this boundary, so an earlier node shape cannot write a paused outcome its own trusted definition refuses to read.
 
 Inputs may bind to explicit roles and prior results, such as `Actor`, `SourceCard`, `ChosenTarget`, `ChosenSpace`, `ChosenDirection`, a literal typed value, or the output of an earlier stable node. A literal may also name another node of the same definition, which is how a target selection says what it selects for; that is the one input kind with no runtime source, so nothing resolves it from a role and nothing publishes it. Outputs may expose target IDs, chosen path, intended/actual distance, stopping reason, placed/removed instance IDs, defeat/removal outcome, resource delta, computed value, or another capability-specific fact.
 

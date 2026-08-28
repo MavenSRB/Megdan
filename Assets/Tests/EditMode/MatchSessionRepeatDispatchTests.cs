@@ -223,6 +223,31 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void APausedRepeatDecision_RoundTripsWhenItsPushNodeDeclaresOnlyTheOutputsItUses()
+        {
+            var session = StartRepeatSkill();
+            ChooseOption(session, PushBranch);
+            Assert.That(session.Projection.PendingEffectChoice?.Kind,
+                Is.EqualTo(EffectChoiceKind.ConfirmOrDecline));
+
+            var payload = session.CaptureSnapshot();
+            var restored = StartRepeatSkill();
+            var result = restored.RestoreSnapshot(payload);
+
+            Assert.That(result.Accepted, Is.True, result.Detail);
+            Assert.That(restored.CaptureSnapshot(), Is.EqualTo(payload),
+                "The real repeat decision must restore byte-identically while its effect frame stands.");
+            Assert.That(
+                restored.Projection.PendingSkillResolution.CompletedOutcomes
+                    .Single(outcome => outcome.NodeId.Equals(PushBranch))
+                    .Outputs.Select(output => output.OutputName),
+                Is.EqualTo(new[] { "distance", "moved" }),
+                "A capability result persists only the outputs this definition node declared.");
+            Assert.That(restored.Projection.PendingEffectChoice.ConfirmInvocation, Is.Not.Null);
+            Assert.That(restored.Projection.PendingEffectChoice.DeclineInvocation, Is.Not.Null);
+        }
+
+        [Test]
         public void ACorrectionHoldingARepeat_SurvivesSnapshotRestore()
         {
             var session = StartRepeatSkill();

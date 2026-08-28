@@ -1,5 +1,7 @@
 # Guards Digital
 
+For the active handoff route, the project has completed milestones through **8.25e4a1**; the broader gate route remains complete through 8.25e7 while parent milestone 8.25e4a is in progress.
+
 A public source repository for a private, noncommercial digital prototype of the board game **Guards of Atlantis II** (2nd printing), built in Unity.
 
 The project owner states that the public repository and included rulebook are shared with the relevant permission. Builds and excluded reference material are not public releases. See [Rights and distribution](#rights-and-distribution).
