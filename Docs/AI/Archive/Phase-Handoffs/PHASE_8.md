@@ -451,3 +451,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25f2a | The official-board fallback framing check now states 8.25f2's current no-HUD contract: the complete reviewed map is centered and contained in the whole viewport, while the configured L-shaped safe-layout fit remains unchanged and separately covered. Its old strict right-shift check failed at `a7a756ef`; the replacement, full artwork fixture and complete Edit Mode suite pass without a production change. | `e233eab8` |
+
+## Milestone 8.25e4 Close decision-family ownership and removal-prevention reachability completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25e4 | One test-owned reflection inventory classifies all eighteen `Pending*` projection members as ten player-choice families or eight companion envelopes, with thirty exact answer rows and six separately recorded non-pending offers. Removal prevention now participates in the family detector and deterministic driver, and configured Brogan independently proves both payments, decline, stale refusal, persistence paths, and fixed-seed reachability. The required pre-fix miss, deliberate eleventh-family violations, affected regressions, and both complete Unity suites close without a production behavior change. | `PENDING` |

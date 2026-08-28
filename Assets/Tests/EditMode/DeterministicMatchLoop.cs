@@ -141,7 +141,8 @@ namespace GuardsDigital.Tests.EditMode
     /// than being steered around.
     ///
     /// It derives no legality of its own. Every branch below either reads projected invocations
-    /// (the effect choice, the Minion Battle, the transition step, the respawn, the Clear subsets) or
+    /// (the effect choice, removal prevention, the Minion Battle, the transition step, the respawn,
+    /// the Clear subsets) or
     /// asks the same query the presentation layer asks (<see cref="GeneralRuleActionOfferQuery"/> for
     /// the general Hold). The one ordering decision it makes is the order candidates are enumerated in,
     /// which must be stable for a seed to mean anything - and every list it enumerates is one the
@@ -288,6 +289,19 @@ namespace GuardsDigital.Tests.EditMode
                     candidates.Add(DirectorCommand.StopMovement(movement.ResolutionId, movement.ChoiceId));
                 }
 
+                return candidates;
+            }
+
+            var removalPrevention = projection.PendingRemovalPrevention;
+            if (removalPrevention != null)
+            {
+                foreach (var payment in removalPrevention.Payments)
+                {
+                    candidates.Add(DirectorCommand.AnswerRemovalPrevention(payment.Invocation));
+                }
+
+                candidates.Add(DirectorCommand.AnswerRemovalPrevention(
+                    removalPrevention.DeclineInvocation));
                 return candidates;
             }
 

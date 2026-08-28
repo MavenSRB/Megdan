@@ -469,7 +469,7 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 
 ### [!] 8.26 Integrate six-hero director control and team interactions
 
-Blocked by: milestones 8.25e4 and 8.25e7. Siren's Call corrections 8.25e5f-8.25e5f1 and fresh source closure 8.25e5g are complete; art-only 8.25f-8.25f2 and test correction 8.25f2a remain complete.
+Blocked by: milestone 8.25e7. Decision-family closure 8.25e4, Siren's Call corrections 8.25e5f-8.25e5f1, fresh source closure 8.25e5g, art-only 8.25f-8.25f2, and test correction 8.25f2a are complete.
 
 Observable outcome: One director can play and resolve a complete turn for all six independently owned heroes while the rules preserve normal 3v3 ownership, Initiative, target, assist, reaction, and team relationships.
 
