@@ -14,6 +14,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.28 | URP 17.5 is the checked-in default at all six quality levels; retained authored and runtime-generated materials use URP Lit/Unlit while the complete primitive six-hero board, tokens/minions, card/HUD surfaces, highlights, pointer path, lighting and fixed camera remain readable. A review-found obsolete Built-In reflection keyword failed then passed its exact regression. Focused/affected presentation checks, two final Game View captures, both complete T3 suites, and the disposable Win64 build/launch smoke pass without changing Core/Application rules or schema v34. | `6c23d68` |
 
+## Milestone 8.28a1 Restore the Unity-free harness after the URP test addition completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.28a1 | `F-TEST-10` closes on the exact CS0246-to-green transition after only the Unity-dependent `UrpMigrationTests.cs` fixture joins the harness exclusion list. The full Unity-free harness, the unchanged URP fixture in Unity Edit Mode, and both complete unfiltered Unity suites pass; runtime, rules, content, render settings, packages, schema, and test bodies remain unchanged while parent review 8.28a stays active. | `PENDING` |
+
 ## Milestone 8.16c Answer blocked Lane-Push respawn placement on the board completion evidence
 
 | ID | Outcome | Commit |

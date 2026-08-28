@@ -515,7 +515,7 @@ Hard gate: The private-online track uses this accepted URP baseline after milest
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828-render-pipeline-migration-gate-completion-evidence).
 
-### [ ] 8.28a Independently review six-hero, URP, and networking readiness
+### [~] 8.28a Independently review six-hero, URP, and networking readiness
 
 Blocked by: Milestones 8.27 and 8.28 must pass the deterministic six-hero and URP migration gates.
 
@@ -532,6 +532,25 @@ Acceptance checks:
 Non-goals: No provider/SDK selection, network prototype, public service, production rendering work, speculative scale target beyond the six invited players, or implementation fix.
 
 Hard gate: Milestone 8.29 does not begin until milestone 8.28a and every networking-readiness blocker are reviewed and given an approved disposition.
+
+### [x] 8.28a1 Restore the Unity-free harness after the URP test addition
+
+Corrective milestone for 8.28a finding `F-TEST-10`, approved by the user on 2026-08-28.
+
+Observable outcome: `UrpMigrationTests`, which necessarily references `UnityEditor` and `UnityEngine`, is explicitly excluded from the Unity-free .NET harness so that the harness compiles and runs its intended Core/Application majority again while the URP fixture remains owned by Unity Edit Mode.
+
+Acceptance checks:
+
+- Closing check for `F-TEST-10`: `dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj --no-restore` is recorded failing at the 8.28a review revision with CS0246 on `UrpMigrationTests.cs`, then passing after the one Unity-dependent fixture joins the harness project's explicit exclusion list.
+- The exclusion is limited to `UrpMigrationTests.cs`; no production source, test body, assertion, package, render setting, rule, content, command, projection, snapshot, or schema changes.
+- `UrpMigrationTests` remains compiled and green in Unity Edit Mode, preserving the URP gate rather than hiding it from every executable tier.
+- T3 test-infrastructure validation: the complete Unity-free harness and both complete unfiltered Unity suites pass at the corrected revision.
+
+Non-goals: No networking implementation, provider selection, harness redesign, test rewrite, runtime optimization, rendering change, or relaxation of the harness's default-include tripwire.
+
+Hard gate: `F-TEST-10` is closed at 8.28a1; milestone 8.28a remains the active review, and milestone 8.29 remains blocked until that review hands off.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828a1-restore-the-unity-free-harness-after-the-urp-test-addition-completion-evidence).
 
 ### [x] 8.28b Establish a seeded, replayable randomness seam
 

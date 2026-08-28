@@ -43,8 +43,10 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Complete Edit Mode | 1983 | 0 | 0 | 0 | `8.25e7` |
-| Complete Play Mode | 234 | 0 | 0 | 0 | `8.25e7` |
+| Complete Edit Mode | 1990 | 0 | 0 | 0 | `8.28a1` |
+| Complete Play Mode | 234 | 0 | 0 | 0 | `8.28a1` |
+
+Milestone 8.28a1 reruns the T3 boundary without adding or removing a test: Edit Mode remains 1990 and Play Mode remains 234. The seven-case Edit delta over the superseded table row was already present and green at the completed 8.28 revision; 8.28a1 restores only the Unity-free harness exclusion boundary.
 
 **Correction after 8.20, same day:** the Edit Mode baseline is 1703, not 1700. Milestone 8.20's
 block - and 8.21's through 8.24's - each require their hero to work "without an <Hero>-name branch",
