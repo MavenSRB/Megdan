@@ -486,4 +486,4 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.25e6a | A non-authoritative corpus-hash manifest dynamically covers every governed and indexed archive Markdown source as exact UTF-8 preambles and heading bodies, binds every registered operative claim once, and rejects loss, overlap, duplication, unknown or stale bodies, and incomplete claim bindings. Every entry explicitly retains its source; canonical authority and the active router are unchanged. | `a60beb3e` |
+| 8.25e6a | A non-authoritative corpus-hash manifest dynamically covers every governed and indexed archive Markdown source as exact UTF-8 preambles and heading bodies, binds every registered operative claim once, and rejects loss, overlap, duplication, unknown or stale bodies, and incomplete claim bindings. Every entry explicitly retains its source; canonical authority and the active router are unchanged. | `d21ccdd1` |
