@@ -469,7 +469,7 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 
 Roadmap amendment, 2026-08-28, user approved: **8.26 is merged into 8.27 and no longer exists as a separately executable milestone.** Its six-owner director flow, joint reveal, Initiative/team interactions, readable resolver/history, and reconstruction obligations were already substantially delivered by the accumulated 8.25 and HUD work. Milestone 8.27 retains every obligation as integrated official-match evidence and corrects any defect that evidence exposes; it does not reimplement behavior merely to satisfy the former boundary.
 
-### [ ] 8.27 Complete and prove the deterministic six-hero 3v3 pitch match
+### [x] 8.27 Complete and prove the deterministic six-hero 3v3 pitch match
 
 Observable outcome: Wasp and the five other distinct verified heroes can start from the official six-player Quick Game setup, play repeated turns and rounds, and end through every victory path with primitive visuals and director/debug UI.
 
@@ -493,7 +493,9 @@ Non-goals: No hidden-information enforcement, table-talk enforcement, networking
 
 Hard gate: The networking architecture decision does not begin until the deterministic 3v3 match, URP migration, and independent readiness review at milestone 8.28a are reviewed and approved. Production visual work remains blocked through milestone 8.36a.
 
-### [!] 8.28 Render-pipeline migration gate
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-827-complete-and-prove-the-deterministic-six-hero-3v3-pitch-match-completion-evidence).
+
+### [ ] 8.28 Render-pipeline migration gate
 
 Observable outcome: The complete primitive six-hero match is ported from Unity's Built-In Render Pipeline to URP, with its existing director/debug presentation and Win64 reference path intact, before production visual assets are introduced.
 

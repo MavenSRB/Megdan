@@ -1171,6 +1171,30 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
         }
 
+        private static IReadOnlyList<QuickGameHeroSetupState> WithOneBlueHeroBesideOneRedHero(
+            BoardMapDefinition map, QuickGameSetupState setup)
+        {
+            var redHero = setup.Heroes.First(hero => hero.TeamSide == TeamSide.Red);
+            var blueHero = setup.Heroes.First(hero => hero.TeamSide == TeamSide.Blue);
+            var occupied = new HashSet<HexCoordinate>(
+                setup.Heroes.Select(hero => hero.Coordinate)
+                    .Concat(setup.Minions.Select(minion => minion.Coordinate)));
+            var beside = redHero.Coordinate.GetNeighbors()
+                .First(coordinate => !occupied.Contains(coordinate) &&
+                    map.Spaces.Any(space =>
+                        space.Kind == BoardMapSpaceKind.Playable &&
+                        space.Coordinate.Equals(coordinate)));
+            var besideSpaceId = map.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable &&
+                space.Coordinate.Equals(beside)).Id;
+
+            return setup.Heroes.Select(hero => hero.HeroId.Equals(blueHero.HeroId)
+                ? new QuickGameHeroSetupState(
+                    hero.HeroId, hero.ContentId, hero.DisplayName, hero.TeamId, hero.TeamSide,
+                    hero.SpawnPoint, new ConfiguredSpaceReference(map.Id, besideSpaceId), beside)
+                : hero).ToArray();
+        }
+
         private static MatchSession CreateSession(
             MatchConfiguration configuration,
             BoardMapDefinition map,
@@ -1185,6 +1209,77 @@ namespace GuardsDigital.Tests.EditMode
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
                 Array.Empty<ObstacleOccupancy>());
             return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
+
+        /// <summary>
+        /// Rulebook p.5's official six-player Quick Game with DEV-005's deterministic initial Tie
+        /// Breaker side. Milestone 8.27 uses this one composition for its full-match and runtime
+        /// capture evidence so neither gate can silently fall back to a staged two-seat board.
+        /// </summary>
+        public static MatchSession CreateOfficialSixPlayerSession()
+        {
+            var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateOfficialSixPlayer(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            return CreateSession(configuration, map, setup);
+        }
+
+        /// <summary>
+        /// The official six seats and content sets with one opposing pair engaged and the stated Life
+        /// count. This keeps the complete roster and economy consumers in play while making p.13's
+        /// Life-counter ending reachable inside a bounded generated-match fixture.
+        /// </summary>
+        public static MatchSession CreateEngagedOfficialSixPlayerSession(int lifeCountersPerTeam)
+        {
+            var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateOfficialSixPlayer(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams.Select(team => new QuickGameTeamSetupState(
+                    team.TeamId, team.TeamSide, lifeCountersPerTeam, team.ThroneZoneId)).ToArray(),
+                WithOneBlueHeroBesideOneRedHero(map, setup),
+                setup.Minions));
+        }
+
+        /// <summary>
+        /// The official six seats and content sets with Blue reduced to one non-Heavy Battle-Zone
+        /// minion. The ordinary p.8 Minion Battle therefore supplies Red's repeated Lane Pushes and
+        /// makes the Throne ending reachable without staging a victory command or mutating authority.
+        /// </summary>
+        public static MatchSession CreateUncontestedOfficialSixPlayerPushSession()
+        {
+            var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateOfficialSixPlayer(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var survivor = setup.Minions.First(minion =>
+                minion.TeamSide == TeamSide.Blue &&
+                minion.MinionType != StandardMinionType.Heavy &&
+                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                    map, minion.Coordinate));
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                setup.Heroes,
+                setup.Minions.Where(minion =>
+                    minion.TeamSide != TeamSide.Blue || minion.MinionId.Equals(survivor.MinionId))
+                    .ToArray()));
         }
 
         /// <summary>The ordinary configured match on the official map, with nobody earning a coin.</summary>

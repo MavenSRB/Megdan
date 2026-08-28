@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.27 Complete and prove the deterministic six-hero 3v3 pitch match completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.27 | Official six-hero deterministic scenarios reach Life exhaustion, final-Wave, and Throne endings; the unmodified seed-5 match proves the complete 799-command/12-round loop, reconstruction controls, official-scale runtime lines, and all six serialized Level-Up choosers. Focused and complete T3 Unity suites plus the built-player launch smoke pass; `RISK-SCALE-001` retires with measured bounds and accepted director wait. | `pending local milestone commit` |
+
 ## Milestone 8.16c Answer blocked Lane-Push respawn placement on the board completion evidence
 
 | ID | Outcome | Commit |

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
@@ -8,6 +9,7 @@ using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Rules.Victory;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -18,8 +20,8 @@ using NUnit.Framework;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 7.9's T3 gate: the configured showcase hands playing complete matches, from setup to
-    /// one of rulebook p.8's and p.13's three endings, under fixed reported seeds.
+    /// Milestones 7.9 and 8.27's T3 gate: the official six-hero roster playing complete matches from
+    /// setup to rulebook p.8's and p.13's three endings under fixed reported seeds.
     ///
     /// Nothing here scripts a match. <see cref="DeterministicMatchLoop"/> answers whichever decision the
     /// authoritative projection is actually waiting on, choosing among that decision's own projected
@@ -52,22 +54,21 @@ namespace GuardsDigital.Tests.EditMode
         // -----------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Ends by p.13's last Life counter after 5 rounds and 109 commands.
-        ///
-        /// Re-measured at milestone 8.8b, which took one command out of the offered set - a Clear that
-        /// can remove nothing - and so moved every seed's trajectory. The rule these three are chosen
-        /// by, stated so the next re-measurement makes the same choice rather than a convenient one:
-        /// the **lowest** seed that reaches this ending inside **half** the budget. Endings stayed
-        /// plentiful either way - across seeds 1-40 the engaged scenario reached the Life-counter
-        /// ending on 22, 25 and 33 and the Wave ending on 5, 10, 12, 14, 26, 32, 37 and 40 - so no
-        /// victory path became harder to reach, only differently indexed.
+        /// Milestone 8.27: the lowest scanned seed that ends the engaged official-roster scenario by
+        /// p.13's last Life counter, after 8 rounds and 479 commands.
         /// </summary>
-        private const int LifeCounterMatchSeed = 22;
+        private const int LifeCounterMatchSeed = 4;
 
-        /// <summary>Ends by p.8's last Wave counter after 22 rounds and 565 commands. Re-measured at 8.8b.</summary>
-        private const int FinalWaveMatchSeed = 32;
+        /// <summary>
+        /// Milestone 8.27: the lowest scanned seed that takes the unmodified official six-player setup
+        /// to p.8's last Wave counter, after 12 rounds and 799 commands.
+        /// </summary>
+        private const int FinalWaveMatchSeed = 5;
 
-        /// <summary>Ends by p.8's Throne capture after 2 rounds and 41 commands, unchanged by 8.8b.</summary>
+        /// <summary>
+        /// Milestone 8.27: the lowest scanned seed that takes the official-roster uncontested-push
+        /// scenario to p.8's Throne capture, after 2 rounds and 116 commands.
+        /// </summary>
         private const int ThroneCaptureMatchSeed = 1;
 
         /// <summary>
@@ -84,11 +85,9 @@ namespace GuardsDigital.Tests.EditMode
         private const int CompleteMatchBudget = 1200;
 
         /// <summary>
-        /// The soak seeds. The scenario they run is the ordinary configured symmetric match, which has
-        /// no natural ending at all - measured at this revision, it plays past 170 rounds without one,
-        /// because a mirrored Minion Battle awards no push and two heroes that start a Lane apart rarely
-        /// meet. That is what makes it the right soak subject: it is bounded by its budget rather than
-        /// by an outcome, so every one of these runs is many rounds of ordinary play.
+        /// The official six-player soak seeds. At this revision each remains live through the bounded
+        /// 300-command window and crosses multiple round boundaries, so the fixture exercises ordinary
+        /// 3v3 play without making its value depend on which ending a longer random walk eventually finds.
         /// </summary>
         private static readonly int[] SoakSeeds = { 101, 102, 103, 104, 105, 106, 107, 108 };
 
@@ -177,6 +176,70 @@ namespace GuardsDigital.Tests.EditMode
             AssertReached(eventKinds, RoundResolutionEventKind.GameEnded);
         }
 
+        /// <summary>
+        /// `RISK-SCALE-001`'s previously unmeasured half. Rulebook p.15 says players level
+        /// simultaneously; the durable continuation deliberately presents their independent choices
+        /// one at a time. This records the actual wait shape and the cost of each authoritative step on
+        /// the same six-hero complete match, rather than estimating either from the staged 1v1 graph.
+        /// </summary>
+        [Test]
+        public void TheOfficialMatch_RecordsTheSerializedSixHeroLevelingWaitAndItsRuntimeBound()
+        {
+            const double maximumLevelingStepMilliseconds = 25.0;
+            var record = DeterministicMatchLoop.Play(
+                ConfiguredMatchFixtures.CreateOfficialSixPlayerSession(),
+                FinalWaveMatchSeed, CompleteMatchBudget);
+            var session = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
+            var promptedHeroes = new HashSet<HeroId>();
+            var levelingCommands = 0;
+            var maximumMilliseconds = 0.0;
+
+            Assert.That(session.Projection.Participants.Heroes, Has.Count.EqualTo(6));
+            Assert.That(session.Projection.Participants.Heroes
+                .GroupBy(hero => session.Projection.Participants.GetTeamForHero(hero.Id).Side)
+                .Select(group => group.Count()).OrderBy(count => count), Is.EqualTo(new[] { 3, 3 }),
+                "The measurement must be the two official teams of three, not six objects on a staged board.");
+
+            foreach (var command in record.Commands)
+            {
+                var projection = session.Projection;
+                var isLeveling = projection.Phase == RoundResolutionPhase.EndOfRound &&
+                    projection.CurrentEndOfRoundStage == EndOfRoundStage.LevelUpAndUpgrade;
+                var prompt = projection.PendingSystemTransitionDescription;
+                if (isLeveling && prompt != null &&
+                    prompt.Kind == SystemTransitionPromptKind.LevelUpUpgrade)
+                {
+                    promptedHeroes.Add(prompt.HeroId);
+                }
+
+                if (!isLeveling)
+                {
+                    var ordinary = session.Execute(command);
+                    Assert.That(ordinary.Accepted, Is.True, ordinary.Detail);
+                    continue;
+                }
+
+                var timer = Stopwatch.StartNew();
+                var measured = session.Execute(command);
+                timer.Stop();
+                Assert.That(measured.Accepted, Is.True, measured.Detail);
+                levelingCommands++;
+                maximumMilliseconds = Math.Max(maximumMilliseconds, timer.Elapsed.TotalMilliseconds);
+            }
+
+            TestContext.WriteLine(
+                "SIX_HERO_LEVELING " +
+                $"seed={record.Seed} rounds={record.RoundsReached} " +
+                $"measuredCommands={levelingCommands} promptedHeroes={promptedHeroes.Count} " +
+                $"maximumStepMs={maximumMilliseconds:F4} thresholdMs={maximumLevelingStepMilliseconds:F1}");
+            Assert.That(levelingCommands, Is.GreaterThan(0),
+                "The official match must actually execute the six-hero leveling stage.");
+            Assert.That(promptedHeroes, Has.Count.GreaterThan(1),
+                "The run must observe the serialized one-hero-at-a-time wait across more than one seat.");
+            Assert.That(maximumMilliseconds, Is.LessThanOrEqualTo(maximumLevelingStepMilliseconds),
+                "A six-hero leveling step crossed the standing 25 ms investigation threshold.");
+        }
+
         // -----------------------------------------------------------------------------------------
         // Determinism
         // -----------------------------------------------------------------------------------------
@@ -185,9 +248,11 @@ namespace GuardsDigital.Tests.EditMode
         public void TheSameSeed_ProducesTheSameCommandsAndTheSameAuthoritativeState()
         {
             var first = DeterministicMatchLoop.Play(
-                ConfiguredMatchFixtures.CreateEngagedSession(2), LifeCounterMatchSeed, CompleteMatchBudget);
+                ConfiguredMatchFixtures.CreateOfficialSixPlayerSession(),
+                FinalWaveMatchSeed, CompleteMatchBudget);
             var second = DeterministicMatchLoop.Play(
-                ConfiguredMatchFixtures.CreateEngagedSession(2), LifeCounterMatchSeed, CompleteMatchBudget);
+                ConfiguredMatchFixtures.CreateOfficialSixPlayerSession(),
+                FinalWaveMatchSeed, CompleteMatchBudget);
 
             Assert.That(second.Commands, Is.EqualTo(first.Commands),
                 "One seed names one command sequence, or a reported seed reports nothing.");
@@ -200,9 +265,10 @@ namespace GuardsDigital.Tests.EditMode
         public void TwoSeeds_ProduceTwoDifferentMatches()
         {
             var first = DeterministicMatchLoop.Play(
-                ConfiguredMatchFixtures.CreateEngagedSession(2), LifeCounterMatchSeed, CompleteMatchBudget);
+                ConfiguredMatchFixtures.CreateOfficialSixPlayerSession(),
+                FinalWaveMatchSeed, CompleteMatchBudget);
             var second = DeterministicMatchLoop.Play(
-                ConfiguredMatchFixtures.CreateEngagedSession(2), FinalWaveMatchSeed, CompleteMatchBudget);
+                ConfiguredMatchFixtures.CreateOfficialSixPlayerSession(), 32, CompleteMatchBudget);
 
             // The vacuity guard on the case above it. A driver that ignored its seed would satisfy
             // "the same seed produces the same match" perfectly and prove nothing at all.
@@ -217,11 +283,11 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AReplayedCompleteMatch_ReproducesTheLiveCommandEventAndSnapshotEvidence()
         {
-            var live = ConfiguredMatchFixtures.CreateEngagedSession(2);
-            var record = DeterministicMatchLoop.Play(live, LifeCounterMatchSeed, CompleteMatchBudget);
+            var live = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
+            var record = DeterministicMatchLoop.Play(live, FinalWaveMatchSeed, CompleteMatchBudget);
             Assert.That(record.Outcome.HasEnded, Is.True);
 
-            var replayed = ConfiguredMatchFixtures.CreateEngagedSession(2);
+            var replayed = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
             DeterministicMatchLoop.Replay(replayed, record.Commands);
 
             Assert.That(replayed.Projection.AuthoritativeSnapshot, Is.EqualTo(record.FinalSnapshot));
@@ -240,18 +306,18 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ACompleteMatchRestoredHalfwayThrough_ContinuesIntoTheSameEnding()
         {
-            var live = ConfiguredMatchFixtures.CreateEngagedSession(2);
-            var record = DeterministicMatchLoop.Play(live, LifeCounterMatchSeed, CompleteMatchBudget);
+            var live = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
+            var record = DeterministicMatchLoop.Play(live, FinalWaveMatchSeed, CompleteMatchBudget);
             Assert.That(record.Outcome.HasEnded, Is.True);
 
             // Half the match, replayed into a session of its own so the snapshot is taken from a state
             // reached the same way the live one reached it.
             var half = record.Commands.Count / 2;
-            var prefix = ConfiguredMatchFixtures.CreateEngagedSession(2);
+            var prefix = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
             DeterministicMatchLoop.Replay(prefix, record.Commands.Take(half).ToArray());
             var midpoint = prefix.CaptureSnapshot();
 
-            var restored = ConfiguredMatchFixtures.CreateEngagedSession(2);
+            var restored = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
             var restoration = restored.RestoreSnapshot(midpoint);
             Assert.That(restoration.Accepted, Is.True, restoration.Detail);
             Assert.That(restored.Projection.IsHistoryAvailable, Is.False,
@@ -267,8 +333,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AnUndoAtTheEndOfACompleteMatch_ReturnsALiveMatchThatReplaysBackIntoTheSameEnding()
         {
-            var session = ConfiguredMatchFixtures.CreateEngagedSession(2);
-            var record = DeterministicMatchLoop.Play(session, LifeCounterMatchSeed, CompleteMatchBudget);
+            var session = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
+            var record = DeterministicMatchLoop.Play(session, FinalWaveMatchSeed, CompleteMatchBudget);
             Assert.That(record.Outcome.HasEnded, Is.True);
 
             var undone = session.Undo();
@@ -289,8 +355,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ACompleteMatchRestarted_ReplaysFromSetupIntoTheSameEnding()
         {
-            var session = ConfiguredMatchFixtures.CreateEngagedSession(2);
-            var record = DeterministicMatchLoop.Play(session, LifeCounterMatchSeed, CompleteMatchBudget);
+            var session = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
+            var record = DeterministicMatchLoop.Play(session, FinalWaveMatchSeed, CompleteMatchBudget);
 
             var restart = session.Restart();
             Assert.That(restart.Accepted, Is.True, restart.Detail);
@@ -313,7 +379,7 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var seed in SoakSeeds)
             {
                 var record = DeterministicMatchLoop.Play(
-                    ConfiguredMatchFixtures.CreateConfiguredSession(), seed, SoakBudget);
+                    ConfiguredMatchFixtures.CreateOfficialSixPlayerSession(), seed, SoakBudget);
 
                 Assert.That(record.Stalled, Is.False,
                     $"Soak seed {seed} reached a live match the projection offered no legal command for, " +
@@ -334,10 +400,10 @@ namespace GuardsDigital.Tests.EditMode
         {
             foreach (var seed in SoakSeeds)
             {
-                var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+                var session = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
                 var record = DeterministicMatchLoop.Play(session, seed, SoakBudget);
 
-                var restored = ConfiguredMatchFixtures.CreateConfiguredSession();
+                var restored = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
                 var restoration = restored.RestoreSnapshot(record.FinalSnapshot);
                 Assert.That(restoration.Accepted, Is.True, $"Soak seed {seed}: {restoration.Detail}");
                 Assert.That(restored.Projection.AuthoritativeSnapshot, Is.EqualTo(record.FinalSnapshot),
@@ -347,7 +413,7 @@ namespace GuardsDigital.Tests.EditMode
                 // the rule-event log, and both are payloads a caller can be handed, so a soak state
                 // that round-trips as one and not as the other is a state this suite must not report
                 // as durable.
-                var bundled = ConfiguredMatchFixtures.CreateConfiguredSession();
+                var bundled = ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
                 var bundledRestoration = bundled.RestoreSnapshot(session.CaptureSnapshot());
                 Assert.That(bundledRestoration.Accepted, Is.True,
                     $"Soak seed {seed}: {bundledRestoration.Detail}");
@@ -384,10 +450,15 @@ namespace GuardsDigital.Tests.EditMode
 
         private IReadOnlyList<MatchLoopRecord> PlayTheThreeCompleteMatches() => new[]
         {
-            DeterministicMatchLoop.Play(ConfiguredMatchFixtures.CreateEngagedSession(2), LifeCounterMatchSeed, CompleteMatchBudget),
-            DeterministicMatchLoop.Play(ConfiguredMatchFixtures.CreateEngagedSession(2), FinalWaveMatchSeed, CompleteMatchBudget),
             DeterministicMatchLoop.Play(
-                ConfiguredMatchFixtures.CreateUncontestedPushSession(), ThroneCaptureMatchSeed, CompleteMatchBudget)
+                ConfiguredMatchFixtures.CreateEngagedOfficialSixPlayerSession(2),
+                LifeCounterMatchSeed, CompleteMatchBudget),
+            DeterministicMatchLoop.Play(
+                ConfiguredMatchFixtures.CreateOfficialSixPlayerSession(),
+                FinalWaveMatchSeed, CompleteMatchBudget),
+            DeterministicMatchLoop.Play(
+                ConfiguredMatchFixtures.CreateUncontestedOfficialSixPlayerPushSession(),
+                ThroneCaptureMatchSeed, CompleteMatchBudget)
         };
 
         private static void AssertReached<T>(IEnumerable<T> observed, T expected) =>

@@ -10,8 +10,8 @@ using NUnit.Framework;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 7.9's complete-match runtime capture, and the two open mechanisms it was scheduled to
-    /// measure rather than reason about.
+    /// Milestones 7.9 and 8.27's complete-match runtime capture, and the mechanisms each was scheduled
+    /// to measure rather than reason about.
     /// </summary>
     /// <remarks>
     /// `F-ER2-08` records that <c>Undo</c> and <c>Restart</c> reconstruct by full-prefix replay, so
@@ -30,7 +30,7 @@ namespace GuardsDigital.Tests.EditMode
     /// scene's own cost excluded so what is left is the mechanism under investigation.
     ///
     /// Wall-clock assertions are deliberately only against the standing investigation thresholds from
-    /// `Testing/FUTURE_GATES.md` - 25 ms per accepted-command refresh, 1 MiB of managed allocation per
+    /// `Testing/FUTURE_GATES.md` - 25 ms per accepted-command refresh, 2 MiB of managed allocation per
     /// sample, 150 ms for an Undo. Those are noise-tolerant by design and sit far above the measured
     /// figures, so this fixture reports a real number on every run and fails only on a real regression
     /// rather than on a busy machine. Milestone 7.9b closed both crossings this fixture was written to
@@ -67,7 +67,7 @@ namespace GuardsDigital.Tests.EditMode
         private const double MaximumUndoReplayMilliseconds = 150.0;
 
         /// <summary>
-        /// Milestone 7.9's re-baseline of a threshold that had never been measured.
+        /// Milestones 7.9 and 8.27's measured scale-sensitive baseline.
         /// </summary>
         /// <remarks>
         /// `Testing/FUTURE_GATES.md` carried "Accepted-command refresh managed allocation | Unmeasured
@@ -81,8 +81,13 @@ namespace GuardsDigital.Tests.EditMode
         /// above nothing: 1 MiB is the worst measured sample plus roughly 40% headroom, which leaves the
         /// figure able to catch a real regression while stating a number the build actually meets. The
         /// user was shown the measurement and approved this disposition on 2026-08-20.
+        ///
+        /// Milestone 8.27 then moved this exact capture from the staged two-seat scenario to the
+        /// official six-player match. The worst accepted command measured 1,592,960 B, so the standing
+        /// line is re-derived at 2 MiB: about 32% above that observed maximum, preserving the same
+        /// rationale and sensitivity at the scale the gate now owns. No allocation mechanism changed.
         /// </remarks>
-        private const long MaximumAcceptedCommandAllocationBytes = 1024 * 1024;
+        private const long MaximumAcceptedCommandAllocationBytes = 2 * 1024 * 1024;
 
         /// <summary>
         /// How far one command kind's median allocation may rise between the start of a complete match
@@ -138,13 +143,20 @@ namespace GuardsDigital.Tests.EditMode
         /// the mechanism costs at this length, so it discriminates between them with room on both
         /// sides.
         ///
+        /// Milestone 8.27 repeats that experiment at official 3v3 scale. The retained-cache build
+        /// moves 19,006 -> 24,277 bytes (+5,271), because six heroes' current cards, levels, items and
+        /// in-flight round state are larger. Deliberately replacing the aggregate's retained cache
+        /// with a fresh cache per capture moves the same medians 19,006 -> 36,458 (+17,452). Twelve
+        /// KiB is more than twice the legitimate residual and still only about seven tenths of the
+        /// deliberately reintroduced mechanism, preserving discrimination on both sides.
+        ///
         /// Its limits, stated rather than left to be discovered: a copy that never reaches the
         /// serializer - the projection's own `ToArray`, about a fifth of the original term - is
         /// invisible to this counter, and a deliberately reintroduced one was observed passing this
         /// line while failing the allocation line on the harness tier. This closes the larger half of
         /// the gap on the tiers that could measure nothing at all; it does not close all of it.
         /// </remarks>
-        private const long MaximumCapturedByteGrowthAcrossACompleteMatch = 4 * 1024;
+        private const long MaximumCapturedByteGrowthAcrossACompleteMatch = 12 * 1024;
 
         /// <summary>
         /// The history lengths each sample is taken at: empty, short, and then powers of two up to the
@@ -152,6 +164,35 @@ namespace GuardsDigital.Tests.EditMode
         /// seeded run turns out to be.
         /// </summary>
         private static readonly int[] FixedSampleLengths = { 0, 1, 4, 16, 64, 128 };
+
+        /// <summary>
+        /// Milestone 8.27, closing F-CORE-10. The capture must measure the same official six-player
+        /// match the gate proves, rather than retaining milestone 7.9's internal two-seat scenario
+        /// behind a neutral factory name.
+        /// </summary>
+        [Test]
+        public void MeasuresTheOfficialSixHeroCompleteMatch()
+        {
+            var session = CreateCompleteMatchSession();
+
+            Assert.That(session.Projection.Heroes, Has.Count.EqualTo(6),
+                "The runtime capture must start from all six official hero seats.");
+            Assert.That(session.Projection.Cards, Has.Count.EqualTo(108),
+                "The six official eighteen-card sets must be the capture's content boundary.");
+            Assert.That(session.Projection.Setup.Teams.Select(team => team.LifeCount),
+                Is.EqualTo(new[] { 5, 5 }),
+                "Rulebook p.6 gives a six-player Quick Game five Lives per team.");
+            Assert.That(session.Projection.Setup.WaveCount, Is.EqualTo(3),
+                "Rulebook p.6 gives a Quick Game three Waves.");
+
+            var record = DeterministicMatchLoop.Play(session, CaptureSeed, CaptureBudget);
+            Assert.That(record.Stalled, Is.False,
+                "The official six-hero match reached a live decision with no projected command.");
+            Assert.That(record.ExhaustedItsBudget, Is.False,
+                $"The official six-hero match did not end inside {CaptureBudget} commands.");
+            Assert.That(record.Outcome.HasEnded, Is.True,
+                "The capture must measure a complete official six-hero match.");
+        }
 
         [Test]
         public void TheAcceptedCommandRefresh_IsSampledAcrossHistoryLengthsUpToACompleteMatch()
@@ -204,7 +245,12 @@ namespace GuardsDigital.Tests.EditMode
             // length | 64 KiB/sample". The threshold was therefore declared rather than measured, and
             // this is the first run that puts a number beside it.
             var record = PlayTheCompleteMatch();
-            var samples = SampleLengths(record).Select(length => MeasureCommandAt(record, length)).ToArray();
+            var samples = SampleLengths(record)
+                .Concat(SpreadSampleIndices(record, DirectorCommandKind.CommitCard, GrowthSampleCount))
+                .Distinct()
+                .OrderBy(length => length)
+                .Select(length => MeasureCommandAt(record, length))
+                .ToArray();
             var worst = samples.OrderByDescending(sample => sample.AllocatedBytes).First();
 
             TestContext.WriteLine(
@@ -489,15 +535,15 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The same engaged scenario and the same reported seed <c>CompleteCoreMatchLoopTests</c> plays
-        /// to p.8's last Wave counter, which is the longest of the three complete matches and therefore
-        /// the one worth measuring.
+        /// Rulebook p.5's official six-player Quick Game. Milestone 8.27 moves the capture off the
+        /// internal two-seat engaged scenario so the runtime, allocation, serialization-growth, and
+        /// Undo figures describe the same roster and scale as the deterministic 3v3 hard gate.
         /// </summary>
         private static MatchSession CreateCompleteMatchSession() =>
-            ConfiguredMatchFixtures.CreateEngagedSession(2);
+            ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
 
-        /// <summary>Re-measured with the gate's own Wave seed at milestone 8.8b.</summary>
-        private const int CaptureSeed = 32;
+        /// <summary>Milestone 8.27's reported unmodified official-roster Wave-ending seed.</summary>
+        private const int CaptureSeed = 5;
         private const int CaptureBudget = 1200;
 
         /// <summary>Twelve samples of one command kind: six at the start of the match and six at the end.</summary>
