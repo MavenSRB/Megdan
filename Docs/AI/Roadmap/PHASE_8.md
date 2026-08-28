@@ -592,26 +592,13 @@ Decision and re-baseline: [the version-controlled private-online architecture re
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829-select-the-minimum-private-online-architecture-and-re-baseline-the-track-completion-evidence).
 
-### [x] 8.29a Recompose and contain the side hero trays
+### Completed correction 8.29a
 
-Approved by the user on 2026-08-29 as the bounded UI correction before transport work resumes.
+Milestone **8.29a** is complete. Its exact definition remains active authority in [the additional completed Phase 8 definitions shard](PHASE_8_COMPLETED_2.md#x-829a-recompose-and-contain-the-side-hero-trays), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829a-recompose-and-contain-the-side-hero-trays-completion-evidence).
 
-Observable outcome: The six side hero trays become contained, artistic character plaques whose hero portrait and written name lead the hierarchy while every existing match fact and interaction remains available.
+### Hands-on corrective route before 8.30
 
-Acceptance checks:
-
-- Each team column uses a wider 264-reference-unit preferred plaque at supported desktop layouts, but dynamically yields before the opposite column can meet it; both columns together remain under half the panel so the board stays dominant.
-- Every rendered plaque and readable descendant stays inside its assigned side column and above the card tray at the 2560x1440 reference Game View and the supported short desktop layout, with no horizontal protrusion or clipped identity.
-- The official hero-token face is presented in a portrait disc at least 48 reference units across, and the full written hero name is a bold, high-contrast label at least 15 reference units tall.
-- A layered identity plate, team-coloured medallion and edge, shaped outer frame, and quieter secondary compartments replace the flat box treatment without importing new art or making colour the only carrier of identity.
-- Level, coins, item bonuses, held markers, Ultimate, current card, four resolved-turn slots, discard cards, tooltips, hover previews, mirroring, selection, and pointer blocking retain their existing projected meanings and interactions.
-- The focused Edit Mode presentation/scaling checks and focused Play Mode six-rail geometry/input checks pass, followed by targeted non-batch Game View inspection at 2560x1440.
-
-Closing check: `HeroRailPortraitTests.TheSixHeroPlaques_MakePortraitAndNameThePrimaryIdentity` is recorded failing on the pre-fix flat 30-unit-disc/12-point-name rail and passing after the recomposition; the live six-rail Play Mode check closes containment against each assigned column and the tray.
-
-Non-goals: No rule, match-state, projection, serialization, input-command, networking, board, card-face, tray, prompt-flow, animation, or imported-art change; no broader production-HUD or accessibility suite.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829a-recompose-and-contain-the-side-hero-trays-completion-evidence).
+Milestones **8.29b-8.29e** are proposed and not approved for implementation. Their exact observable outcomes, acceptance checks, closing checks, and non-goals are authoritative in [the Phase 8 hands-on correction shard](PHASE_8_HANDS_ON_CORRECTIONS.md). Milestone 8.30 resumes after that sequence.
 
 ### [ ] 8.30 Move match authority behind a transport-neutral session boundary
 

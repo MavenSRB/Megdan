@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard holding additional Phase 8 milestone definitions that are complete and self-contained. Return to [ROADMAP.md](../ROADMAP.md) or the active shard [PHASE_8.md](PHASE_8.md). Historical completion evidence: [PHASE_8 handoffs](../Archive/Phase-Handoffs/PHASE_8.md).
 
-Created 2026-08-28 during milestone 8.25f2a's required warning-threshold ownership review. Milestones 8.11d and 8.11e moved here verbatim after the main Phase 8 shard reached its warning threshold. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
+Created 2026-08-28 during milestone 8.25f2a's required warning-threshold ownership review. Milestones 8.11d and 8.11e moved here verbatim after the main Phase 8 shard reached its warning threshold; milestone 8.29a followed during the 2026-08-29 ownership review. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
 
 ### [x] 8.11d Replace piece-target triangles with fitted rings and washes
 
@@ -51,3 +51,24 @@ Acceptance checks:
 Non-goals: no game-rule, verified-card, candidate, legality, action-offer, consequence, command, event, pending-choice, snapshot-schema, or content-revision change; no card/hero/display-name branch or runtime text parsing; no new prompt, error dialog, control, cue, layout, board, HUD, or other UI redesign; no public fault-injection/configuration surface, broad conversion of all in-place authorities to a new state model, replay/checkpoint redesign, networking work, or build artifact; no speculative combinations of pending states the configured authority cannot reach; and no Active-effect/continuous-trigger execution or other part of milestone 8.12.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811e-make-accepted-commands-and-their-resulting-projections-atomic-completion-evidence).
+
+### [x] 8.29a Recompose and contain the side hero trays
+
+Approved by the user on 2026-08-29 as the bounded UI correction before transport work resumes.
+
+Observable outcome: The six side hero trays become contained, artistic character plaques whose hero portrait and written name lead the hierarchy while every existing match fact and interaction remains available.
+
+Acceptance checks:
+
+- Each team column uses a wider 264-reference-unit preferred plaque at supported desktop layouts, but dynamically yields before the opposite column can meet it; both columns together remain under half the panel so the board stays dominant.
+- Every rendered plaque and readable descendant stays inside its assigned side column and above the card tray at the 2560x1440 reference Game View and the supported short desktop layout, with no horizontal protrusion or clipped identity.
+- The official hero-token face is presented in a portrait disc at least 48 reference units across, and the full written hero name is a bold, high-contrast label at least 15 reference units tall.
+- A layered identity plate, team-coloured medallion and edge, shaped outer frame, and quieter secondary compartments replace the flat box treatment without importing new art or making colour the only carrier of identity.
+- Level, coins, item bonuses, held markers, Ultimate, current card, four resolved-turn slots, discard cards, tooltips, hover previews, mirroring, selection, and pointer blocking retain their existing projected meanings and interactions.
+- The focused Edit Mode presentation/scaling checks and focused Play Mode six-rail geometry/input checks pass, followed by targeted non-batch Game View inspection at 2560x1440.
+
+Closing check: `HeroRailPortraitTests.TheSixHeroPlaques_MakePortraitAndNameThePrimaryIdentity` is recorded failing on the pre-fix flat 30-unit-disc/12-point-name rail and passing after the recomposition; the live six-rail Play Mode check closes containment against each assigned column and the tray.
+
+Non-goals: No rule, match-state, projection, serialization, input-command, networking, board, card-face, tray, prompt-flow, animation, or imported-art change; no broader production-HUD or accessibility suite.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829a-recompose-and-contain-the-side-hero-trays-completion-evidence).
