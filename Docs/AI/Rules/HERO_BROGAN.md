@@ -36,7 +36,7 @@ icon-region and text-region enlargements built for the purpose. The roster-wide
 [capability matrix](ROSTER_CAPABILITY_MATRIX.md#brogan) assigns every face/component, typed binding,
 policy, checkpoint, and source-linked scenario family.
 
-Milestone 8.25e5 independently reread all nineteen private fronts and reconciled every field without a Brogan discrepancy; those unchanged Brogan results carry forward. F-SOURCE-01 is reopened only for fresh verification of milestone 8.25e5f's Xargatha correction, not for a Brogan discrepancy. A later higher-authority source still supersedes that result.
+Milestone 8.25e5 independently reread all nineteen private fronts and reconciled every field without a Brogan discrepancy; milestone 8.25e5g confirmed the 114-front manifest byte-identical, so those Brogan results carry forward and F-SOURCE-01 is closed. A later higher-authority source still supersedes that result.
 
 Milestone 8.21 turned that inventory into verified content at revision `brogan-8-21-rev-1` - four files
 beside Wasp's and Arien's - and into a staged match that deals him the Blue seat. Every face below is

@@ -31,7 +31,7 @@ The pitch uses Arien's complete progression. Its implementation-grade inventory 
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Arien's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5 independently reread all nineteen private fronts and reconciled every field without an Arien discrepancy; those unchanged Arien results carry forward. F-SOURCE-01 is reopened only for fresh verification of milestone 8.25e5f's Xargatha correction, not for an Arien discrepancy. A later higher-authority source still supersedes that result.
+Current status: **all nineteen faces are transcribed and capability-mapped; eighteen playable definitions are composed, dealt, and pass Arien's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5 independently reread all nineteen private fronts and reconciled every field without an Arien discrepancy; milestone 8.25e5g confirmed the 114-front manifest byte-identical, so those Arien results carry forward and F-SOURCE-01 is closed. A later higher-authority source still supersedes that result.
 
 ## Arien source faces
 
