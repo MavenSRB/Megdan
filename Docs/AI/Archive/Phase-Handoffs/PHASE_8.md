@@ -474,3 +474,4 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| 8.25e4a | Each immutable projection now derives one narrow pending-decision contract for the ten declared families and thirty answer rows; every enabled HUD/card/board answer and configured driver consumes its exact command objects while authority revalidates them. The independent oracle, deliberate violations, lifecycle/atomicity checks, affected regressions, and complete T3 Unity suites pass without a gameplay, content, command-kind, wire, or schema-v34 change. | `483aded` |
