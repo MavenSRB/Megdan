@@ -20,6 +20,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.28a1 | `F-TEST-10` closes on the exact CS0246-to-green transition after only the Unity-dependent `UrpMigrationTests.cs` fixture joins the harness exclusion list. The full Unity-free harness, the unchanged URP fixture in Unity Edit Mode, and both complete unfiltered Unity suites pass; runtime, rules, content, render settings, packages, schema, and test bodies remain unchanged while parent review 8.28a stays active. | `5b7674f` |
 
+## Milestone 8.28a Independently review six-hero, URP, and networking readiness completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.28a | Fresh review finds no current six-player or URP blocker: the complete Core/Application match and bounded scene/resource evidence remain within their accepted lines, while snapshot restore is materially cheaper than full replay. It pins serialized host authority, owner-private projection, trusted submission, compatibility, payload, and recovery constraints for 8.29; `RISK-ONLINE-001` remains future-owned, `F-TEST-10` is closed by 8.28a1, and no provider or implementation is selected. | `PENDING` |
+
 ## Milestone 8.16c Answer blocked Lane-Push respawn placement on the board completion evidence
 
 | ID | Outcome | Commit |

@@ -515,7 +515,7 @@ Hard gate: The private-online track uses this accepted URP baseline after milest
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828-render-pipeline-migration-gate-completion-evidence).
 
-### [~] 8.28a Independently review six-hero, URP, and networking readiness
+### [x] 8.28a Independently review six-hero, URP, and networking readiness
 
 Blocked by: Milestones 8.27 and 8.28 must pass the deterministic six-hero and URP migration gates.
 
@@ -533,6 +533,8 @@ Non-goals: No provider/SDK selection, network prototype, public service, product
 
 Hard gate: Milestone 8.29 does not begin until milestone 8.28a and every networking-readiness blocker are reviewed and given an approved disposition.
 
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828a-independently-review-six-hero-urp-and-networking-readiness-completion-evidence).
+
 ### [x] 8.28a1 Restore the Unity-free harness after the URP test addition
 
 Corrective milestone for 8.28a finding `F-TEST-10`, approved by the user on 2026-08-28.
@@ -548,7 +550,7 @@ Acceptance checks:
 
 Non-goals: No networking implementation, provider selection, harness redesign, test rewrite, runtime optimization, rendering change, or relaxation of the harness's default-include tripwire.
 
-Hard gate: `F-TEST-10` is closed at 8.28a1; milestone 8.28a remains the active review, and milestone 8.29 remains blocked until that review hands off.
+Hard gate: `F-TEST-10` closed at 8.28a1, allowing parent milestone 8.28a to resume; milestone 8.29 remained blocked until that review handed off.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828a1-restore-the-unity-free-harness-after-the-urp-test-addition-completion-evidence).
 
@@ -571,9 +573,11 @@ Non-goals: No networking, no new randomness consumers, no rulebook deviation, no
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828b-establish-a-seeded-replayable-randomness-seam-completion-evidence).
 
-### [!] 8.29 Select the minimum private-online architecture and re-baseline the track
+### [ ] 8.29 Select the minimum private-online architecture and re-baseline the track
 
 Observable outcome: A source-backed architecture decision defines the smallest supportable way for six invited Windows players on the internet to join one private 3v3 match, with one authoritative host/session and one independently owned hero per player.
+
+Decision inputs: [Private-online decision constraints](../Project/ARCHITECTURE.md#private-online-decision-constraints) and [`RISK-ONLINE-001`](../TECHNICAL_RISKS.md#active-risks) carry milestone 8.28a's reviewed host-authority, projection-privacy, submission-identity, compatibility, payload, and recovery boundaries.
 
 Acceptance checks:
 
