@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.29 Select the minimum private-online architecture and re-baseline the track completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.29 | Source-backed comparison selects a serialized player-host authority using UGS Multiplayer Services 1.2.0 sessions, Relay-DTLS, and Unity Transport 2.6.0 under protocol `guards-private-online/1`. The decision pins owner-private projections, trusted seat binding, compatibility, bounded failure/rejection behavior, snapshot resync, terminal host loss, privacy/licensing/operational limits, removal/upgrade paths, exact future validation recipes, and a 24-41 focused-day re-baseline without installing packages or implementing networking. | `0000000` |
+
 ## Milestone 8.27 Complete and prove the deterministic six-hero 3v3 pitch match completion evidence
 
 | ID | Outcome | Commit |

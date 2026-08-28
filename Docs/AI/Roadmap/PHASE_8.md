@@ -573,7 +573,7 @@ Non-goals: No networking, no new randomness consumers, no rulebook deviation, no
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828b-establish-a-seeded-replayable-randomness-seam-completion-evidence).
 
-### [ ] 8.29 Select the minimum private-online architecture and re-baseline the track
+### [x] 8.29 Select the minimum private-online architecture and re-baseline the track
 
 Observable outcome: A source-backed architecture decision defines the smallest supportable way for six invited Windows players on the internet to join one private 3v3 match, with one authoritative host/session and one independently owned hero per player.
 
@@ -588,9 +588,11 @@ Acceptance checks:
 - The track remains private and invite-only; accounts, public matchmaking, public server browsing, telemetry, monetization, and public distribution remain out of scope.
 - Milestones 8.30-8.36, including the lettered local-UI and rehearsal slices, receive evidence-based implementation boundaries and validation commands before the first implementation milestone is authorized.
 
-Planning note: This scope amendment adds a major cross-system track rather than one playtest task. The provisional planning range is thirteen implementation/validation micro-milestones and roughly 4-8 focused engineering weeks, excluding approval latency, external-service outages, and corrective work discovered by local or real-internet testing. The added milestone boundaries isolate session/projection, player-UI, transport, and internet defects; they do not by themselves expand the intended product scope. Milestone 8.29 must replace this estimate with evidence from the selected architecture.
+Decision and re-baseline: [the version-controlled private-online architecture record](../Project/PRIVATE_ONLINE_ARCHITECTURE.md) selects one player-hosted serialized authority over UGS Multiplayer Services 1.2.0 sessions, Relay-DTLS, and Unity Transport 2.6.0, with anonymous UGS identity, protocol `guards-private-online/1`, structural owner projections, host-bound seats, snapshot resync, and terminal host loss. NGO, Photon, EOS, Steam, dedicated hosting, host migration, accounts, matchmaking, telemetry, and public distribution remain excluded. The thirteen remaining milestones retain their dependency-safe boundaries at an evidence-based **24-41 focused engineering days**, excluding approval latency, external-service outages, invited-tester scheduling, and corrective work. The exact future commands and topology live in [the private-online validation shard](../Testing/PRIVATE_ONLINE.md).
 
-### [!] 8.30 Move match authority behind a transport-neutral session boundary
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829-select-the-minimum-private-online-architecture-and-re-baseline-the-track-completion-evidence).
+
+### [ ] 8.30 Move match authority behind a transport-neutral session boundary
 
 Observable outcome: The existing local director adapter and a future network host can submit the same typed commands to, and consume the same ordered events and snapshots from, one authoritative match session without moving rules into Unity views or transport callbacks.
 

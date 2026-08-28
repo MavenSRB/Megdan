@@ -7,6 +7,7 @@ This compact index routes to the exact active validation policy, reusable launch
 - [Testing policy and evidence contract](Testing/POLICY.md)
 - [Cross-platform dotnet harness](Testing/DOTNET_HARNESS.md)
 - [Future validation gates and recipes](Testing/FUTURE_GATES.md)
+- [Private-online validation recipes](Testing/PRIVATE_ONLINE.md)
 - [Foundation focused test recipes](Testing/RECIPES_FOUNDATION.md)
 - [Turn, round, snapshot, and replay test recipes](Testing/RECIPES_TURNS.md)
 - [Combat and card-Movement test recipes](Testing/RECIPES_COMBAT_AND_MOVEMENT.md)

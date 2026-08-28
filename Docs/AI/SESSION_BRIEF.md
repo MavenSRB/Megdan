@@ -8,15 +8,15 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The current gate route has completed independent review **8.28a** after corrective **8.28a1**; source verification through **8.25e5g**, art work through **8.25f2a**, and decision/foundation hardening through **8.25e4b** are also complete. **The loaded match is rulebook p.5's six-player Quick Game**: three Red and three Blue heroes, six spawns, three Waves, five Lives a side, the Tie Breaker, twelve minions, and 108 playable cards. One deterministic director now plays that official roster through repeated turns and rounds to all three rulebook victory causes; the same official loop proves six-owner commitments, team interactions, progression, Defeat/respawn, replay, restore, retained-prefix Undo, restart, snapshots, and event logs. URP 17.5 is the accepted checked-in rendering baseline at every quality level; the retained primitive six-hero board/HUD and disposable Win64 smoke path are intact. All six heroes pass the permanent player-path gate, and all 114 roster fronts are independently source-verified. The current schema v34 persists every pause and pins the registered content contract set. `RISK-SCALE-001` is retired after the official match exercised all six serialized Level-Up choosers with a 2.633 ms worst Unity step against 25 ms; the one-question-at-a-time director UX remains an accepted durable-continuation tradeoff. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
+The current gate route has completed private-online architecture decision **8.29** after independent review **8.28a** and corrective **8.28a1**; source verification through **8.25e5g**, art work through **8.25f2a**, and decision/foundation hardening through **8.25e4b** are also complete. **The loaded match is rulebook p.5's six-player Quick Game**: three Red and three Blue heroes, six spawns, three Waves, five Lives a side, the Tie Breaker, twelve minions, and 108 playable cards. One deterministic director now plays that official roster through repeated turns and rounds to all three rulebook victory causes; the same official loop proves six-owner commitments, team interactions, progression, Defeat/respawn, replay, restore, retained-prefix Undo, restart, snapshots, and event logs. URP 17.5 is the accepted checked-in rendering baseline at every quality level; the retained primitive six-hero board/HUD and disposable Win64 smoke path are intact. All six heroes pass the permanent player-path gate, and all 114 roster fronts are independently source-verified. The current schema v34 persists every pause and pins the registered content contract set. `RISK-SCALE-001` is retired after the official match exercised all six serialized Level-Up choosers with a 2.633 ms worst Unity step against 25 ms; the one-question-at-a-time director UX remains an accepted durable-continuation tradeoff. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.28a**.
+- Current completed milestone: **8.29**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.29**.
+- Next proposed milestone: **8.30**.
 
-Milestone **8.28a** completed on 2026-08-28. Independent review finds no current six-player, URP, rules, presentation, or online-runtime defect. The future private-online boundary must keep one serialized Unity-free host, publish owner-private projections, bind caller/seat outside `DirectorCommand`, add session/submission/version/idempotency context, and pin schema/map/content/protocol compatibility. `RISK-ONLINE-001` remains the high-impact future risk; the sole actionable finding, `F-TEST-10`, is mechanically closed by **8.28a1**. No provider or implementation was selected. **8.29** is next proposed.
+Milestone **8.29** completed on 2026-08-28. The minimum private-online track uses one serialized player host over UGS Multiplayer Services 1.2.0 sessions, Relay-DTLS, and Unity Transport 2.6.0 under `guards-private-online/1`. Anonymous UGS identity binds a connection to a host-owned seat outside gameplay payloads; owner-private projections are structural, full compatible snapshots resynchronize clients, and host loss is terminal. NGO, distributed authority, dedicated hosting, accounts, matchmaking, telemetry, public distribution, and package installation remain out of scope. `RISK-ONLINE-001` stays active until implementation evidence closes its trust/privacy/recovery exposure. The re-baselined thirteen-milestone track is 24-41 focused engineering days; **8.30** is next proposed.
 
 Milestones **8.27-8.28** established the deterministic 799-command/12-round six-hero gate and accepted URP 17.5 baseline. Corrective **8.28a1** restored the Unity-free harness while retaining its Unity Edit Mode coverage; the harness passes 1,692/1,692, complete Edit Mode 1,990/1,990, and Play Mode 234/234.
 
@@ -42,7 +42,7 @@ Milestones **8.1-8.16** dealt all nineteen verified Wasp faces through ordinary 
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1-7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed the 7.9a review's findings.
 
-The **Phase 8** route has completed the deterministic official 3v3 gate, URP migration, corrective 8.28a1, and independent readiness review 8.28a. Milestone 8.29 is next proposed and still requires exact approval; no networking architecture or provider has been selected.
+The **Phase 8** route has completed the deterministic official 3v3 gate, URP migration, corrective 8.28a1, independent readiness review 8.28a, and private-online architecture decision 8.29. Milestone 8.30 is next proposed; no networking package is installed and no online runtime exists yet.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
@@ -79,6 +79,7 @@ Go straight to the shard that owns the subject when this table names it. When th
 | Implemented token/marker, displacement, Clear, Place and Spawn operations | [Project/BOARD_OPERATIONS.md](Project/BOARD_OPERATIONS.md) |
 | Product scope and durable constraints | [Project/PRODUCT.md](Project/PRODUCT.md) |
 | Core architecture constraints | [Project/ARCHITECTURE.md](Project/ARCHITECTURE.md) |
+| Selected private-online provider, protocol, trust/failure model, and track re-baseline | [Project/PRIVATE_ONLINE_ARCHITECTURE.md](Project/PRIVATE_ONLINE_ARCHITECTURE.md) |
 | Presentation and accessibility direction | [Project/PRESENTATION.md](Project/PRESENTATION.md) |
 | Workflow, references, terminology | [Project/WORKFLOW_AND_TERMS.md](Project/WORKFLOW_AND_TERMS.md) |
 | Rule authority/status/deviations/open questions | [RULES_LEDGER.md](RULES_LEDGER.md), plus exact local rulebook pages when implicated |
@@ -93,6 +94,7 @@ Go straight to the shard that owns the subject when this table names it. When th
 | Validation policy, tiers, evidence rules | [Testing/POLICY.md](Testing/POLICY.md) |
 | Exact test recipes | [Testing/RECIPES_FOUNDATION.md](Testing/RECIPES_FOUNDATION.md), [Testing/RECIPES_TURNS.md](Testing/RECIPES_TURNS.md), [Testing/RECIPES_COMBAT_AND_MOVEMENT.md](Testing/RECIPES_COMBAT_AND_MOVEMENT.md), [Testing/PLAYMODE_AND_SUITES.md](Testing/PLAYMODE_AND_SUITES.md) |
 | Future gates | [Testing/FUTURE_GATES.md](Testing/FUTURE_GATES.md) |
+| Private-online focused, fault, reconnect, and multi-client recipes | [Testing/PRIVATE_ONLINE.md](Testing/PRIVATE_ONLINE.md) |
 | Historical outcome/evidence | [Archive/README.md](Archive/README.md); do not load history for routine startup |
 
 Expand beyond targeted leaves only for a genuinely cross-cutting task, a named dependency, or a conflict.
