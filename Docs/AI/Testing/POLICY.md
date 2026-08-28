@@ -144,6 +144,7 @@ At least one pausing path unique to or first made reachable by the hero must con
 
 - For a bug fix, reproduce the failure in an automated regression test when practical, then keep the test permanently.
 - Changing a shared capability runs its conformance fixture and every known directly dependent scenario; once Wasp exists, include its source-linked consumer scenarios.
+- Every later hero-batch capability/foundation delta reconciles with the test-owned `SharedFoundationClaimCatalog` before that batch is scheduled. Each new or widened general claim resolves independent material-shape evidence; explicitly narrow work instead records its exact supported shape and reassessment trigger. Missing owners/evidence, equivalent shapes presented as independent, and unregistered deltas fail the guard.
 - A complete suite does not compensate for a missing focused regression.
 
 ## Token-efficient execution and reporting

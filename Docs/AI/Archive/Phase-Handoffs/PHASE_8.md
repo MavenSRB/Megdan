@@ -475,3 +475,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e4a | Each immutable projection now derives one narrow pending-decision contract for the ten declared families and thirty answer rows; every enabled HUD/card/board answer and configured driver consumes its exact command objects while authority revalidates them. The independent oracle, deliberate violations, lifecycle/atomicity checks, affected regressions, and complete T3 Unity suites pass without a gameplay, content, command-kind, wire, or schema-v34 change. | `483aded` |
+
+## Milestone 8.25e4b Require independent-shape evidence before a shared foundation is called general completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25e4b | One test-owned claim catalog records stable IDs, exact production/evidence locators, status, material shape axes, and expansion triggers. Its first real entry classifies the pending-decision contract from independent family/lifecycle and deliberate-violation shapes; equivalent-name, missing-locator, unregistered-delta, and unbounded-narrow probes fail while valid general and narrow claims pass. Runtime and schema v34 are unchanged. | `61710fa9` |
