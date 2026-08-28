@@ -529,11 +529,11 @@ namespace GuardsDigital.Tests.EditMode
                         SyntheticTargetingCapabilities.RadiusHeroTargetV1,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral(
-                                "activity", EffectValue.Integer((int)RuleActivity.Skill)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity", RuleActivity.Skill),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticTargetingCapabilities.TargetRelationParameterName,
-                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
+                                SourceTeamRelation.OpposingSource),
                             EffectInputBinding.FromLiteral(
                                 SyntheticTargetingCapabilities.ExcludeAdjacentParameterName,
                                 EffectValue.Boolean(false)),

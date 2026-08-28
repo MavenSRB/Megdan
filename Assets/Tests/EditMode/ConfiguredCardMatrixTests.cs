@@ -283,7 +283,7 @@ namespace GuardsDigital.Tests.EditMode
             // general contract still cannot arrive for the first time inside a verified hero's slice.
             // Wasp's two Active effects pass the second half because they run on the handler milestone
             // 6.8 proved on Red Bulwark; a new handler introduced by her content would not.
-            var catalog = SyntheticEffectCapabilities.CreateCatalog();
+            var catalog = MatchContentCatalogs.ForThisBuild().Capabilities;
             var registered = catalog.Registered;
             Assert.That(registered, Is.Not.Empty, "The catalog must register something to check.");
 

@@ -389,7 +389,7 @@ Non-goals: No change to Attack, Skill or Movement repeats, to the after-action h
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e-perform-the-repeat-that-was-offered-or-stop-offering-it-completion-evidence).
 
-Milestones **8.25e1-8.25e7** are defined in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). Completed review 8.25e5c found one missed Constrict ledger field; 8.25e5d corrected it and 8.25e5e freshly verified it. Later Siren's Call corrections 8.25e5f-8.25e5f1 were independently verified at 8.25e5g, reclosing F-SOURCE-01. Milestone 8.25e7 re-baselines the surviving 8.16a contract and compatibility findings without reviving the obsolete 8.16b bundle.
+Milestones **8.25e1-8.25e7** are defined in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). Completed review 8.25e5c found one missed Constrict ledger field; 8.25e5d corrected it and 8.25e5e freshly verified it. Later Siren's Call corrections 8.25e5f-8.25e5f1 were independently verified at 8.25e5g, reclosing F-SOURCE-01. Completed milestone 8.25e7 closed the surviving 8.16a contract and compatibility findings without reviving the obsolete 8.16b bundle.
 
 ### [x] 8.25f Replace generated complete card faces with the verified private faces
 
@@ -467,9 +467,9 @@ Non-goals: No production camera, HUD, safe-layout, artwork, map, rule, command, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f2a-correct-the-stale-pre-l-shaped-fallback-framing-assertion-completion-evidence).
 
-### [!] 8.26 Integrate six-hero director control and team interactions
+### [ ] 8.26 Integrate six-hero director control and team interactions
 
-Blocked by: milestone 8.25e7. Decision-family closure 8.25e4, Siren's Call corrections 8.25e5f-8.25e5f1, fresh source closure 8.25e5g, art-only 8.25f-8.25f2, and test correction 8.25f2a are complete.
+Prerequisites complete: milestone 8.25e7, decision-family closure 8.25e4, Siren's Call corrections 8.25e5f-8.25e5f1, fresh source closure 8.25e5g, art-only 8.25f-8.25f2, and test correction 8.25f2a.
 
 Observable outcome: One director can play and resolve a complete turn for all six independently owned heroes while the rules preserve normal 3v3 ownership, Initiative, target, assist, reaction, and team relationships.
 

@@ -187,11 +187,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             "mover", new EffectNodeId($"{rootId}-subject"), "chosen",
                             EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                        EffectInputBinding.FromLiteral(
+                        EffectInputBinding.FromClosedVocabulary(
                             SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                            EffectValue.Integer(
-                                (int)GuardsDigital.Core.Rules.Displacement
-                                    .DirectMoveDestinationPolicy.Unrestricted))
+                            GuardsDigital.Core.Rules.Displacement
+                                    .DirectMoveDestinationPolicy.Unrestricted)
                     },
                     outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) })
             };

@@ -274,21 +274,21 @@ namespace GuardsDigital.Core.Cards.Verified
                         SyntheticRosterCapabilities.ChooseTargetV2,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.OriginParameter,
-                                EffectValue.Integer((int)RosterQueryOrigin.Actor)),
+                                RosterQueryOrigin.Actor),
                             EffectInputBinding.FromLiteral(
                                 SyntheticRosterCapabilities.DistanceParameter,
                                 EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.UnitKindParameter,
-                                EffectValue.Integer((int)RosterUnitKind.Minion)),
-                            EffectInputBinding.FromLiteral(
+                                RosterUnitKind.Minion),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.RelationParameter,
-                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
-                            EffectInputBinding.FromLiteral(
+                                SourceTeamRelation.OpposingSource),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.AdmittedMinionClassParameter,
-                                EffectValue.Integer((int)admittedClass))
+                                admittedClass)
                         },
                         outputs: new[]
                         {

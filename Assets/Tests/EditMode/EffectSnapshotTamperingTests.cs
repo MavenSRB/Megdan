@@ -163,7 +163,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(result.Accepted, Is.True, result.Detail);
         }
 
-        private static EffectCapabilityCatalog Catalog() => SyntheticEffectCapabilities.CreateCatalog();
+        private static EffectCapabilityCatalog Catalog() =>
+            MatchContentCatalogs.ForThisBuild().Capabilities;
 
         private static EffectCapabilityCatalog CatalogWithout(EffectCapabilityReference omitted) =>
             new EffectCapabilityCatalog(Handlers()
@@ -192,7 +193,7 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>Every registered handler, reached through the catalog's own ordered reference list.</summary>
         private static IEnumerable<IEffectCapabilityHandler> Handlers()
         {
-            var catalog = SyntheticEffectCapabilities.CreateCatalog();
+            var catalog = MatchContentCatalogs.ForThisBuild().Capabilities;
             return catalog.Registered.Select(reference => catalog.Load(reference)).ToArray();
         }
 

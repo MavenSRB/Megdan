@@ -43,8 +43,8 @@ The most recent green unfiltered totals, so a task can tell a regression it intr
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| Complete Edit Mode | 1976 | 0 | 0 | 0 | `8.25e4` |
-| Complete Play Mode | 234 | 0 | 0 | 0 | `8.25e4` |
+| Complete Edit Mode | 1983 | 0 | 0 | 0 | `8.25e7` |
+| Complete Play Mode | 234 | 0 | 0 | 0 | `8.25e7` |
 
 **Correction after 8.20, same day:** the Edit Mode baseline is 1703, not 1700. Milestone 8.20's
 block - and 8.21's through 8.24's - each require their hero to work "without an <Hero>-name branch",

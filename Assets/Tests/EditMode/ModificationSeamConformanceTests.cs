@@ -319,6 +319,57 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.25e7 closes F-TEST-09's remaining finite vocabularies. Every non-absence arm
+        /// is either found through a real configured six-hero definition and backed by focused
+        /// behaviour evidence, or carries an explicit unsupported disposition naming the source that
+        /// would admit it. No synthetic definition is created merely to make the enum look complete.
+        /// </summary>
+        [Test]
+        public void EveryFiniteRelationVocabularyArm_HasAReachableDeclarationOrANamedExclusion()
+        {
+            var declared = ReachableVerifiedRelationDeclarations();
+            var vocabulary = Defined<SourceTeamRelation>(SourceTeamRelation.None)
+                .Select(value => $"SourceTeamRelation/{value}")
+                .Concat(Defined<RestrictedActorRelation>(RestrictedActorRelation.None)
+                    .Select(value => $"RestrictedActorRelation/{value}"))
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+
+            var namedTwice = declared.Intersect(
+                    UnsupportedRelationMembers.Keys, StringComparer.Ordinal)
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+            Assert.That(namedTwice, Is.Empty,
+                "A real configured declarer cannot also be called unsupported: " + Join(namedTwice));
+
+            var undecided = vocabulary
+                .Where(value => !declared.Contains(value, StringComparer.Ordinal) &&
+                    !UnsupportedRelationMembers.ContainsKey(value))
+                .ToArray();
+            Assert.That(undecided, Is.Empty,
+                "A finite relation arm has neither a real independently reachable declarer nor an " +
+                "explicit unsupported disposition with an admission trigger: " + Join(undecided));
+
+            var missingEvidence = declared
+                .Where(value => !RelationBehaviourEvidence.ContainsKey(value) ||
+                    string.IsNullOrWhiteSpace(RelationBehaviourEvidence[value]))
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+            Assert.That(missingEvidence, Is.Empty,
+                "A real relation declarer lacks named focused behaviour evidence: " +
+                Join(missingEvidence));
+
+            var unexplained = UnsupportedRelationMembers
+                .Where(value => string.IsNullOrWhiteSpace(value.Value) ||
+                    value.Value.IndexOf("Admit when", StringComparison.Ordinal) < 0)
+                .Select(value => value.Key)
+                .ToArray();
+            Assert.That(unexplained, Is.Empty,
+                "An unsupported arm must say which verified source would admit it: " +
+                Join(unexplained));
+        }
+
+        /// <summary>
         /// The negative half of the rule above: a probe reading a narrow query proves the query reads
         /// the member, and this proves the engine reads the query. Without it a consumer could be a
         /// production type nothing calls, which is exactly what an inert declaration is.
@@ -540,6 +591,114 @@ namespace GuardsDigital.Tests.EditMode
             Enum.GetValues(typeof(TEnum)).Cast<TEnum>()
                 .Where(value => !value.Equals(absent))
                 .ToArray();
+
+        private static IReadOnlyList<string> ReachableVerifiedRelationDeclarations()
+        {
+            var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(
+                TeamSide.Red);
+            var catalogs = MatchContentCatalogs.ForThisBuild();
+            var verifiedRevisions = new HashSet<string>(
+                configuration.CardDefinitions.Select(value => value.ContentRevision),
+                StringComparer.Ordinal);
+            var effects = configuration.CardDefinitions
+                .SelectMany(card => card.ActionDefinitions)
+                .SelectMany(action => new[] { action.EffectRoot, action.SecondCardTextRoot })
+                .Where(definition => definition != null)
+                .Concat(catalogs.TriggeredEffects.Definitions
+                    .Where(definition => verifiedRevisions.Contains(definition.ContentRevision)))
+                .GroupBy(definition => definition.Reference)
+                .Select(group => group.First())
+                .ToArray();
+
+            var sourceRelations = new HashSet<SourceTeamRelation>();
+            var activeDefinitions = new Dictionary<string, ActiveEffectDefinition>(
+                StringComparer.Ordinal);
+            var relationParameterNames = new HashSet<string>(StringComparer.Ordinal)
+            {
+                SyntheticDisplacementCapabilities.TargetRelationParameterName,
+                SyntheticRosterCapabilities.RelationParameter,
+                SyntheticTargetingCapabilities.TargetRelationParameterName
+            };
+            foreach (var effect in effects)
+            {
+                foreach (var node in effect.Nodes)
+                {
+                    foreach (var input in node.Inputs.Where(value =>
+                        value.SourceKind == EffectBindingSourceKind.Literal &&
+                        value.ValueKind == EffectValueKind.Integer &&
+                        relationParameterNames.Contains(value.ParameterName)))
+                    {
+                        var relation = (SourceTeamRelation)input.Literal.IntegerValue;
+                        if (relation != SourceTeamRelation.None &&
+                            Enum.IsDefined(typeof(SourceTeamRelation), relation))
+                        {
+                            sourceRelations.Add(relation);
+                        }
+                    }
+
+                    if (node.Capability.IsDefined &&
+                        catalogs.Capabilities.TryLoad(node.Capability, out var handler))
+                    {
+                        foreach (var definition in handler.ActiveEffectDefinitions)
+                        {
+                            activeDefinitions[definition.DefinitionId] = definition;
+                        }
+                    }
+                }
+            }
+
+            var restrictedRelations = new HashSet<RestrictedActorRelation>();
+            foreach (var definition in activeDefinitions.Values)
+            {
+                if (definition.AffectedUnitRelation != SourceTeamRelation.None)
+                {
+                    sourceRelations.Add(definition.AffectedUnitRelation);
+                }
+
+                foreach (var relation in definition.Modifications
+                    .Where(modification => modification.Kind == RuleModificationKind.Restriction)
+                    .SelectMany(modification => modification.RestrictedActors.Relations))
+                {
+                    restrictedRelations.Add(relation);
+                }
+            }
+
+            return sourceRelations.Select(value => $"SourceTeamRelation/{value}")
+                .Concat(restrictedRelations.Select(value =>
+                    $"RestrictedActorRelation/{value}"))
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private static readonly IReadOnlyDictionary<string, string> RelationBehaviourEvidence =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["SourceTeamRelation/OpposingSource"] =
+                    "ConfiguredAttackCardTests and the per-hero configured effect suites",
+                ["SourceTeamRelation/AlliedWithSource"] =
+                    "BroganAlliedHeroCardTests plus SabinaMinionCommandTests",
+                ["SourceTeamRelation/AnyTeam"] =
+                    "RosterTargetGeometryCapabilityTests and TargetQueryTests",
+                ["SourceTeamRelation/OpposingSourceOrUnaligned"] =
+                    "Brogan's configured push-card cases",
+                ["RestrictedActorRelation/AffectedObjectItself"] =
+                    "ConfiguredModificationSkillTests.MagneticDagger",
+                ["RestrictedActorRelation/HeroesOpposingSource"] =
+                    "ConfiguredModificationSkillTests and BroganAlliedHeroCardTests",
+                ["RestrictedActorRelation/AnyActor"] =
+                    "Arien's configured Spell Break restriction cases"
+            };
+
+        // Filled only by a source-backed unsupported decision. HeroesAlliedWithSource has no
+        // verified six-hero declarer: the existing relation-bearing restrictions are enemy-only.
+        private static readonly IReadOnlyDictionary<string, string> UnsupportedRelationMembers =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["RestrictedActorRelation/HeroesAlliedWithSource"] =
+                    "No verified six-hero source restricts heroes allied with its source. " +
+                    "Admit when a verified card's restriction names friendly or allied heroes as " +
+                    "actors barred from repositioning or another declared activity."
+            };
 
         /// <summary>
         /// The members no production rule reads, each with why not and where its consumer would go.

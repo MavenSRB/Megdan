@@ -139,7 +139,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter("first", EffectValueKind.Coordinate),
                     new EffectCapabilityParameter("second", EffectValueKind.Coordinate),
                     new EffectCapabilityParameter(
-                        EligiblePieceParameterName, EffectValueKind.Integer)
+                        EligiblePieceParameterName,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(
+                            SwapEligiblePieceKind.None))
                 },
                 new[]
                 {
@@ -208,7 +211,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     new EffectCapabilityParameter("subject", EffectValueKind.Coordinate),
                     new EffectCapabilityParameter(
-                        EligiblePieceParameterName, EffectValueKind.Integer)
+                        EligiblePieceParameterName,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(
+                            SwapEligiblePieceKind.None))
                 },
                 new[]
                 {
@@ -568,7 +574,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     new EffectCapabilityParameter("subject", EffectValueKind.Coordinate),
                     new EffectCapabilityParameter(
-                        EligiblePieceParameterName, EffectValueKind.Integer)
+                        EligiblePieceParameterName,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(
+                            RemoveEligiblePieceKind.None))
                 },
                 new[]
                 {

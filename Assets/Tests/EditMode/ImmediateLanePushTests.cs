@@ -875,9 +875,9 @@ namespace GuardsDigital.Tests.EditMode
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("subject", EffectValue.Space(subject)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer((int)RemoveEligiblePieceKind.GamePiece))
+                                RemoveEligiblePieceKind.GamePiece)
                         },
                         outputs: new[]
                         {

@@ -69,7 +69,14 @@ namespace GuardsDigital.Core.Effects
         /// A node declares an immunity exception its capability does not consume, or an activity the
         /// capability never asks. Ignored override semantics are rejected at content load.
         /// </summary>
-        UnsupportedImmunityOverride = 18
+        UnsupportedImmunityOverride = 18,
+
+        /// <summary>
+        /// Milestone 8.25e7. An enum-backed integer parameter has no matching typed literal, carries
+        /// a member outside the parameter's legal set, or was supplied by a different enum whose
+        /// numeric value merely happens to match.
+        /// </summary>
+        IntegerClosedVocabularyMismatch = 19
     }
 
     public readonly struct EffectDefinitionRejection
@@ -432,6 +439,10 @@ namespace GuardsDigital.Core.Effects
                         EffectDefinitionRejectionReason.IncompatibleBindingType,
                         $"Node '{node.Id}' binds '{input.ParameterName}' as {input.ValueKind}, but capability '{node.Capability}' declares {parameter.ValueKind}."));
                 }
+                else
+                {
+                    ValidateIntegerDomain(node, input, parameter, rejections);
+                }
             }
 
             var bound = new HashSet<string>(
@@ -464,6 +475,31 @@ namespace GuardsDigital.Core.Effects
                         EffectDefinitionRejectionReason.UnresolvedNodeOutput,
                         $"Node '{node.Id}' publishes '{output}', which capability '{node.Capability}' does not declare."));
                 }
+            }
+        }
+
+        private static void ValidateIntegerDomain(
+            EffectNodeDefinition node,
+            EffectInputBinding input,
+            EffectCapabilityParameter parameter,
+            ICollection<EffectDefinitionRejection> rejections)
+        {
+            if (!parameter.IntegerDomain.IsDefined && !input.IntegerVocabulary.IsDefined)
+            {
+                return;
+            }
+
+            if (!parameter.IntegerDomain.IsDefined ||
+                input.SourceKind != EffectBindingSourceKind.Literal ||
+                !input.IntegerVocabulary.IsDefined ||
+                !parameter.IntegerDomain.HasSameVocabulary(input.IntegerVocabulary) ||
+                !parameter.IntegerDomain.Contains(input.Literal.IntegerValue))
+            {
+                rejections.Add(new EffectDefinitionRejection(
+                    EffectDefinitionRejectionReason.IntegerClosedVocabularyMismatch,
+                    $"Node '{node.Id}' binds '{input.ParameterName}' with integer vocabulary " +
+                    $"'{input.IntegerVocabulary}' and value {input.Literal.IntegerValue}, but the " +
+                    $"capability declares '{parameter.IntegerDomain}'."));
             }
         }
 

@@ -266,7 +266,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter("mover", EffectValueKind.Coordinate),
                     new EffectCapabilityParameter("distance", EffectValueKind.Integer),
                     new EffectCapabilityParameter(
-                        DestinationPolicyParameterName, EffectValueKind.Integer),
+                        DestinationPolicyParameterName,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(
+                            DirectMoveDestinationPolicy.None)),
                     new EffectCapabilityParameter(
                         NamedDestinationParameterName, EffectValueKind.Coordinate, isRequired: false),
                     new EffectCapabilityParameter(
@@ -640,7 +643,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // literal: a card author declaring an eligible kind for a Push and for a Remove must not
             // be able to get one of them wrong.
             parameters.Add(new EffectCapabilityParameter(
-                SyntheticExchangeCapabilities.EligiblePieceParameterName, EffectValueKind.Integer));
+                SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                EffectValueKind.Integer,
+                integerDomain: EffectIntegerDomain.AllExcept(
+                    PushEligiblePieceKind.None)));
 
             var outputs = new List<EffectOutputBinding>
             {
@@ -658,7 +664,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // already answered both, so a count bound there would be a parameter with one legal
                 // value and a relation there would ask the same question twice.
                 parameters.Add(new EffectCapabilityParameter(
-                    TargetRelationParameterName, EffectValueKind.Integer));
+                    TargetRelationParameterName,
+                    EffectValueKind.Integer,
+                    integerDomain: EffectIntegerDomain.AllExcept(
+                        SourceTeamRelation.None)));
                 parameters.Add(new EffectCapabilityParameter(
                     MaximumTargetsParameterName, EffectValueKind.Integer));
 

@@ -67,11 +67,11 @@ namespace GuardsDigital.Core.Cards.Verified
                         SyntheticTargetingCapabilities.RadiusMinionTargetV1,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral(
-                                "activity", EffectValue.Integer((int)RuleActivity.Skill)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity", RuleActivity.Skill),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticTargetingCapabilities.TargetRelationParameterName,
-                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
+                                SourceTeamRelation.OpposingSource),
                             EffectInputBinding.FromLiteral(
                                 EffectSelectionDeclaration.ConsumerParameterName,
                                 EffectValue.Node(defeatMinion))
@@ -115,9 +115,9 @@ namespace GuardsDigital.Core.Cards.Verified
                                 chooseMinion,
                                 SyntheticTargetingCapabilities.ChosenMinionOutputName,
                                 EffectValueKind.Minion),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticTargetingCapabilities.TargetRelationParameterName,
-                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource))
+                                SourceTeamRelation.OpposingSource)
                         },
                         outputs: new[]
                         {
@@ -408,11 +408,11 @@ namespace GuardsDigital.Core.Cards.Verified
                         {
                             // The Defense action this text is printed on is what p.18 asks immunity
                             // about, exactly as an Attack's rider asks about its Attack.
-                            EffectInputBinding.FromLiteral(
-                                "activity", EffectValue.Integer((int)RuleActivity.Defense)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity", RuleActivity.Defense),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticTargetingCapabilities.TargetRelationParameterName,
-                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
+                                SourceTeamRelation.OpposingSource),
                             EffectInputBinding.FromLiteral(
                                 SyntheticTargetingCapabilities.ExcludeTheAttackerParameterName,
                                 EffectValue.Boolean(excludesTheAttacker))
@@ -483,12 +483,12 @@ namespace GuardsDigital.Core.Cards.Verified
                             // The enclosing action is the Attack this text is printed on, and p.18
                             // declares immunity per activity - so the offer asks immunity the same
                             // question the Attack itself asked.
-                            EffectInputBinding.FromLiteral(
-                                "activity", EffectValue.Integer((int)RuleActivity.Attack)),
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity", RuleActivity.Attack),
                             // "enemy", from the card's perspective, which is the acting hero's.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticTargetingCapabilities.TargetRelationParameterName,
-                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
+                                SourceTeamRelation.OpposingSource),
                             // "and not adjacent to you".
                             EffectInputBinding.FromLiteral(
                                 SyntheticTargetingCapabilities.ExcludeAdjacentParameterName,
@@ -661,8 +661,8 @@ namespace GuardsDigital.Core.Cards.Verified
                             // reading milestone 6.5b settled). Declaring the same activity the Move
                             // itself will ask immunity for is what makes the offer and the operation
                             // one answer.
-                            EffectInputBinding.FromLiteral(
-                                "activity", EffectValue.Integer((int)RuleActivity.Skill)),
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity", RuleActivity.Skill),
                             EffectInputBinding.FromLiteral(
                                 EffectSelectionDeclaration.ConsumerParameterName,
                                 EffectValue.Node(move))
@@ -676,10 +676,9 @@ namespace GuardsDigital.Core.Cards.Verified
                             EffectInputBinding.FromNodeOutput(
                                 "mover", select, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                                EffectValue.Integer(
-                                    (int)DirectMoveDestinationPolicy.EquidistantFromActor))
+                                DirectMoveDestinationPolicy.EquidistantFromActor)
                         },
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -728,8 +727,8 @@ namespace GuardsDigital.Core.Cards.Verified
                         // p.18 gives the Place keyword no activity of its own, so the immunity question
                         // is the enclosing Skill's - the same one the Place capability asks when it
                         // reaches the piece this selection named.
-                        EffectInputBinding.FromLiteral(
-                            "activity", EffectValue.Integer((int)RuleActivity.Skill)),
+                        EffectInputBinding.FromClosedVocabulary(
+                            "activity", RuleActivity.Skill),
                         EffectInputBinding.FromLiteral(
                             SyntheticTargetingCapabilities.ExcludeStraightLineParameterName,
                             EffectValue.Boolean(true)),
@@ -748,12 +747,12 @@ namespace GuardsDigital.Core.Cards.Verified
                         // `adjacent to you` is card text and p.16 never raises it, so the one is
                         // written down here rather than read off an icon.
                         EffectInputBinding.FromLiteral("radius", EffectValue.Integer(1)),
-                        EffectInputBinding.FromLiteral(
+                        EffectInputBinding.FromClosedVocabulary(
                             SyntheticPlacementCapabilities.EligiblePieceParameterName,
-                            EffectValue.Integer((int)PlaceEligiblePieceKind.UnitOrToken)),
-                        EffectInputBinding.FromLiteral(
+                            PlaceEligiblePieceKind.UnitOrToken),
+                        EffectInputBinding.FromClosedVocabulary(
                             SyntheticPlacementCapabilities.DestinationAnchorParameterName,
-                            EffectValue.Integer((int)PlaceDestinationAnchor.ActingHero))
+                            PlaceDestinationAnchor.ActingHero)
                     },
                     outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) })
             };
@@ -831,13 +830,13 @@ namespace GuardsDigital.Core.Cards.Verified
                             EffectInputBinding.FromLiteral(
                                 "ignoresObstacles", EffectValue.Boolean(false)),
                             // "units", which p.19 separates from tokens by name.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer((int)PushEligiblePieceKind.Unit)),
+                                PushEligiblePieceKind.Unit),
                             // "enemy", from the card's perspective, which is the acting hero's.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticDisplacementCapabilities.TargetRelationParameterName,
-                                EffectValue.Integer((int)SourceTeamRelation.OpposingSource)),
+                                SourceTeamRelation.OpposingSource),
                             EffectInputBinding.FromLiteral(
                                 SyntheticDisplacementCapabilities.MaximumTargetsParameterName,
                                 EffectValue.Integer(2))

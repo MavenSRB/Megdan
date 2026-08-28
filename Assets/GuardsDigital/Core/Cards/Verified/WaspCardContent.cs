@@ -39,7 +39,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// every synthetic revision in this build already has, and the reason a slice's compatibility
         /// decision is a real decision rather than a formality.
         /// </summary>
-        public const string ContentRevision = "wasp-8-11-rev-1";
+        public const string ContentRevision = "wasp-8-25e7-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity. It is not a

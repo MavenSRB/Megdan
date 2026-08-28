@@ -53,9 +53,6 @@ namespace GuardsDigital.Tests.EditMode
             (typeof(MatchContentCatalogs),
                 "declares what this build registers, which is where the triggered effects a hero's " +
                 "Ultimate runs join the one catalog a snapshot compares"),
-            (typeof(SyntheticEffectCapabilities),
-                "is that catalog's single construction site, so every hero's Active-effect handlers " +
-                "are concatenated here or nowhere"),
             (typeof(SyntheticComponentDefinitions),
                 "is the component catalog's single construction site, which milestone 8.23 made the " +
                 "same kind of site the capability catalog already was: Tigerclaw's Poison marker is " +

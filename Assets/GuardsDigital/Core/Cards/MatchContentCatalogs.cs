@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
@@ -73,7 +75,7 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public static MatchContentCatalogs ForThisBuild() =>
             new MatchContentCatalogs(
-                SyntheticEffectCapabilities.CreateCatalog(),
+                SyntheticEffectCapabilities.CreateCatalog(VerifiedCapabilityHandlers()),
                 SyntheticComponentDefinitions.CreateCatalog(),
                 new TriggeredEffectCatalog(new[]
                 {
@@ -110,5 +112,25 @@ namespace GuardsDigital.Core.Cards
                     XargathaActiveEffectContent.ConstrictTriggeredEffect.Definition,
                     XargathaActiveEffectContent.FinalEmbraceTriggeredEffect.Definition
                 }));
+
+        /// <summary>
+        /// The verified declarations this build contributes to the generic handler set. The order is
+        /// the pre-8.25e7 order exactly; <see cref="EffectCapabilityCatalog"/> still owns canonical
+        /// registration ordering and duplicate rejection, and this remains one catalog rather than a
+        /// per-hero runtime registry.
+        ///
+        /// <para>Sabina contributes no hero-owned handler: every one of her nodes uses a generic
+        /// capability, and her one triggered definition is composed above. That is an explicit empty
+        /// contribution, not a missing registration.</para>
+        /// </summary>
+        private static IEnumerable<IEffectCapabilityHandler> VerifiedCapabilityHandlers() =>
+            WaspActiveEffectContent.Handlers()
+                .Concat(ArienActiveEffectContent.Handlers())
+                .Concat(BroganActiveEffectContent.Handlers())
+                // Sabina: zero hero-owned handlers; generic handlers plus her triggered definition.
+                .Concat(Enumerable.Empty<IEffectCapabilityHandler>())
+                .Concat(TigerclawActiveEffectContent.Handlers())
+                .Concat(TigerclawComponentContent.Handlers())
+                .Concat(XargathaActiveEffectContent.Handlers());
     }
 }

@@ -410,12 +410,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new EffectCapabilityParameterSchema(
                 new[]
                 {
-                    new EffectCapabilityParameter(OriginParameter, EffectValueKind.Integer),
-                    new EffectCapabilityParameter(DistanceParameter, EffectValueKind.Integer),
-                    new EffectCapabilityParameter(UnitKindParameter, EffectValueKind.Integer),
-                    new EffectCapabilityParameter(RelationParameter, EffectValueKind.Integer),
                     new EffectCapabilityParameter(
-                        "activity", EffectValueKind.Integer, isRequired: false),
+                        OriginParameter,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(RosterQueryOrigin.None)),
+                    new EffectCapabilityParameter(DistanceParameter, EffectValueKind.Integer),
+                    new EffectCapabilityParameter(
+                        UnitKindParameter,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(RosterUnitKind.None)),
+                    new EffectCapabilityParameter(
+                        RelationParameter,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(SourceTeamRelation.None)),
+                    new EffectCapabilityParameter(
+                        "activity",
+                        EffectValueKind.Integer,
+                        isRequired: false,
+                        integerDomain: EffectIntegerDomain.AllExcept(RuleActivity.None)),
 
                     // Milestone 8.24. p.22's class adjective, where the sentence prints one:
                     // Xargatha's Constrict reaches "an enemy melee minion adjacent to you" and Final
@@ -425,7 +437,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // Optional and defaulting to every class, so every roster selection declared
                     // before this milestone keeps its exact candidate set.
                     new EffectCapabilityParameter(
-                        AdmittedMinionClassParameter, EffectValueKind.Integer, isRequired: false)
+                        AdmittedMinionClassParameter,
+                        EffectValueKind.Integer,
+                        isRequired: false,
+                        integerDomain: EffectIntegerDomain.All<RosterMinionClass>())
                 }.Concat(extra ?? Enumerable.Empty<EffectCapabilityParameter>()),
                 outputs ?? new[]
                 {
@@ -845,9 +860,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new EffectCapabilityParameterSchema(
                     new[]
                     {
-                        new EffectCapabilityParameter(OriginParameter, EffectValueKind.Integer),
+                        new EffectCapabilityParameter(
+                            OriginParameter,
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.AllExcept(
+                                RosterQueryOrigin.None)),
                         new EffectCapabilityParameter(DistanceParameter, EffectValueKind.Integer),
-                        new EffectCapabilityParameter(RelationParameter, EffectValueKind.Integer)
+                        new EffectCapabilityParameter(
+                            RelationParameter,
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.AllExcept(
+                                SourceTeamRelation.None))
                     },
                     new[]
                     {
@@ -1008,7 +1031,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     {
                         new EffectCapabilityParameter("minimumDistance", EffectValueKind.Integer),
                         new EffectCapabilityParameter("maximumDistance", EffectValueKind.Integer),
-                        new EffectCapabilityParameter(UnitKindParameter, EffectValueKind.Integer)
+                        new EffectCapabilityParameter(
+                            UnitKindParameter,
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.AllExcept(RosterUnitKind.None))
                     },
                     new[]
                     {
@@ -1141,7 +1167,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectCapabilityReference Reference => ChooseThroughTargetLineV1;
             public EffectCapabilityParameterSchema Schema { get; } =
                 new EffectCapabilityParameterSchema(
-                    new[] { new EffectCapabilityParameter(UnitKindParameter, EffectValueKind.Integer) },
+                    new[]
+                    {
+                        new EffectCapabilityParameter(
+                            UnitKindParameter,
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.AllExcept(RosterUnitKind.None))
+                    },
                     new[]
                     {
                         new EffectOutputBinding("destination", EffectValueKind.Coordinate),
@@ -1659,7 +1691,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     {
                         new EffectCapabilityParameter("owner", EffectValueKind.Hero),
                         new EffectCapabilityParameter("chooser", EffectValueKind.Hero),
-                        new EffectCapabilityParameter("kind", EffectValueKind.Integer)
+                        new EffectCapabilityParameter(
+                            "kind",
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.AllExcept(
+                                RosterCardRetrievalKind.None))
                     },
                     new[] { new EffectOutputBinding("retrieved", EffectValueKind.CardInstance) });
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
@@ -1855,7 +1891,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new[]
                     {
                         new EffectCapabilityParameter(HeroParameter, EffectValueKind.Hero),
-                        new EffectCapabilityParameter(LocationParameter, EffectValueKind.Integer)
+                        new EffectCapabilityParameter(
+                            LocationParameter,
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.AllExcept(CardLocation.None))
                     },
                     new[] { new EffectOutputBinding(PresentOutput, EffectValueKind.Boolean) });
 

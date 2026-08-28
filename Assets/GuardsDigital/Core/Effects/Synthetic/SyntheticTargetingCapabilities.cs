@@ -448,7 +448,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var parameters = new List<EffectCapabilityParameter>
                 {
-                    new EffectCapabilityParameter("activity", EffectValueKind.Integer)
+                    new EffectCapabilityParameter(
+                        "activity",
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(RuleActivity.None))
                 };
                 if (subject == PrintedIconSelectionSubject.BoardObject)
                 {
@@ -460,7 +463,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 else if (subject == PrintedIconSelectionSubject.Hero)
                 {
                     parameters.Add(new EffectCapabilityParameter(
-                        TargetRelationParameterName, EffectValueKind.Integer));
+                        TargetRelationParameterName,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(
+                            SourceTeamRelation.None)));
 
                     // Milestone 8.11. Each icon's hero selection declares the one narrowing a verified
                     // card pairs with it and no other: p.9's disk without its innermost ring for the
@@ -476,7 +482,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 else
                 {
                     parameters.Add(new EffectCapabilityParameter(
-                        TargetRelationParameterName, EffectValueKind.Integer));
+                        TargetRelationParameterName,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(
+                            SourceTeamRelation.None)));
 
                     // Milestone 8.24. The class adjective Xargatha's Green line prints, on the minion
                     // arm alone: a unit selection's sentence names heroes as well, so a minion-class
@@ -487,7 +496,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         parameters.Add(new EffectCapabilityParameter(
                             AdmittedMinionClassParameterName,
                             EffectValueKind.Integer,
-                            isRequired: false));
+                            isRequired: false,
+                            integerDomain: EffectIntegerDomain.All<RosterMinionClass>()));
                     }
 
                     // Milestone 8.24. "not adjacent to you", which the hero arm has declared since
@@ -920,7 +930,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     {
                         new EffectCapabilityParameter(MinionParameterName, EffectValueKind.Minion),
                         new EffectCapabilityParameter(
-                            TargetRelationParameterName, EffectValueKind.Integer),
+                            TargetRelationParameterName,
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.AllExcept(
+                                SourceTeamRelation.None)),
                         new EffectCapabilityParameter(
                             EffectSelectionDeclaration.ConsumerParameterName,
                             EffectValueKind.Node, isRequired: false)
@@ -1020,7 +1033,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 };
                 if (declaresActivity)
                 {
-                    parameters.Add(new EffectCapabilityParameter("activity", EffectValueKind.Integer));
+                    parameters.Add(new EffectCapabilityParameter(
+                        "activity",
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(RuleActivity.None)));
                 }
 
                 // Milestone 6.8l. Optional, because a selection whose result no single later node

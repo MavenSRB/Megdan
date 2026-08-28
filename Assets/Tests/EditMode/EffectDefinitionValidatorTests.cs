@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Modifications;
 using NUnit.Framework;
 
@@ -17,6 +19,105 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class EffectDefinitionValidatorTests
     {
+        /// <summary>
+        /// Milestone 8.25e7. Integer remains the wire/runtime representation, but a parameter that
+        /// interprets one as a closed vocabulary must state the enum and its legal members at content
+        /// load. Quantities remain ordinary integers and acquire no invented enum domain.
+        /// </summary>
+        [Test]
+        public void IntegerBackedClosedVocabulariesRejectOutOfDomainLiteralsAtContentLoad()
+        {
+            var ordinaryNumericNames = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "amount",
+                "actorRadius",
+                "distance",
+                "leastDistance",
+                "length",
+                "maximum",
+                "maximumDistance",
+                "maximumTargets",
+                "minimum",
+                "minimumDistance",
+                "radius",
+                "range",
+                "reach"
+            };
+            var catalog = MatchContentCatalogs.ForThisBuild().Capabilities;
+            var integerParameters = catalog.Registered
+                .SelectMany(reference => catalog.Load(reference).Schema.Parameters
+                    .Where(parameter => parameter.ValueKind == EffectValueKind.Integer)
+                    .Select(parameter => new
+                    {
+                        Reference = reference,
+                        Parameter = parameter
+                    }))
+                .ToArray();
+
+            var undeclaredClosedVocabularies = integerParameters
+                .Where(value => !ordinaryNumericNames.Contains(value.Parameter.Name))
+                .Where(value => !value.Parameter.IntegerDomain.IsDefined)
+                .Select(value => $"{value.Reference}/{value.Parameter.Name}")
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+            Assert.That(undeclaredClosedVocabularies, Is.Empty,
+                "Every registered integer parameter not named as an ordinary quantity must declare " +
+                "its immutable enum domain at content load: " +
+                string.Join(", ", undeclaredClosedVocabularies));
+
+            var inventedNumericDomains = integerParameters
+                .Where(value => ordinaryNumericNames.Contains(value.Parameter.Name))
+                .Where(value => value.Parameter.IntegerDomain.IsDefined)
+                .Select(value => $"{value.Reference}/{value.Parameter.Name}")
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+            Assert.That(inventedNumericDomains, Is.Empty,
+                "Counts, distances, radii, ranges and amounts remain ordinary integers: " +
+                string.Join(", ", inventedNumericDomains));
+
+            var probeCatalog = new EffectCapabilityCatalog(new IEffectCapabilityHandler[]
+            {
+                new ClosedRelationProbeHandler()
+            });
+            var invalid = new[]
+            {
+                ClosedRelationDefinition((SourceTeamRelation)(-1)),
+                ClosedRelationDefinition((SourceTeamRelation)999),
+                ClosedRelationDefinition(RuleActivity.All)
+            };
+            foreach (var definition in invalid)
+            {
+                Assert.That(
+                    EffectDefinitionValidator.Validate(definition, probeCatalog)
+                        .Select(rejection => rejection.Reason),
+                    Does.Contain(
+                        EffectDefinitionRejectionReason.IntegerClosedVocabularyMismatch),
+                    "A value below the domain, above it, or from a different enum with the same " +
+                    "integer must be refused before a match starts.");
+            }
+
+            var registeredDefinitions = MatchConfiguration
+                .CreateOfficialSixPlayerForInternalTest(TeamSide.Red)
+                .CardDefinitions
+                .SelectMany(card => card.ActionDefinitions)
+                .SelectMany(action => new[] { action.EffectRoot, action.SecondCardTextRoot })
+                .Where(definition => definition != null)
+                .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions)
+                .GroupBy(definition => definition.Reference)
+                .Select(group => group.First())
+                .ToArray();
+            Assert.That(registeredDefinitions, Is.Not.Empty,
+                "The configured definition inventory must be nonempty, or this load check proves " +
+                "nothing.");
+            foreach (var definition in registeredDefinitions)
+            {
+                var rejections = EffectDefinitionValidator.Validate(definition, catalog);
+                Assert.That(rejections, Is.Empty,
+                    $"Registered definition '{definition.Reference}' is invalid at content load: " +
+                    string.Join(", ", rejections));
+            }
+        }
+
         [Test]
         public void ValidDefinition_IsAccepted()
         {
@@ -106,10 +207,10 @@ namespace GuardsDigital.Tests.EditMode
                     EffectInputBinding.FromLiteral(
                         "mover", EffectValue.Space(new GuardsDigital.Core.Board.HexCoordinate(0, 0))),
                     EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                    EffectInputBinding.FromLiteral(
+                    EffectInputBinding.FromClosedVocabulary(
                         SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                        EffectValue.Integer((int)GuardsDigital.Core.Rules.Displacement
-                            .DirectMoveDestinationPolicy.Unrestricted))
+                        GuardsDigital.Core.Rules.Displacement
+                            .DirectMoveDestinationPolicy.Unrestricted)
                 },
                 immunityOverrides: new[] { declaration }));
 
@@ -175,11 +276,10 @@ namespace GuardsDigital.Tests.EditMode
                         EffectInputBinding.FromRole(
                             "mover", EffectRoleKind.Actor, EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                        EffectInputBinding.FromLiteral(
+                        EffectInputBinding.FromClosedVocabulary(
                         SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                        EffectValue.Integer(
-                            (int)GuardsDigital.Core.Rules.Displacement
-                                .DirectMoveDestinationPolicy.Unrestricted))
+                        GuardsDigital.Core.Rules.Displacement
+                                .DirectMoveDestinationPolicy.Unrestricted)
                     }));
 
             Assert.That(rejections.Select(rejection => rejection.Reason),
@@ -200,11 +300,10 @@ namespace GuardsDigital.Tests.EditMode
                         EffectInputBinding.FromRole(
                             "mover", EffectRoleKind.ChosenSpace, EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                        EffectInputBinding.FromLiteral(
+                        EffectInputBinding.FromClosedVocabulary(
                         SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                        EffectValue.Integer(
-                            (int)GuardsDigital.Core.Rules.Displacement
-                                .DirectMoveDestinationPolicy.Unrestricted))
+                        GuardsDigital.Core.Rules.Displacement
+                                .DirectMoveDestinationPolicy.Unrestricted)
                     }));
 
             Assert.That(rejections.Select(rejection => rejection.Reason),
@@ -254,11 +353,10 @@ namespace GuardsDigital.Tests.EditMode
                         EffectInputBinding.FromNodeOutput(
                             "mover", new EffectNodeId("select"), "chosen", EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                        EffectInputBinding.FromLiteral(
+                        EffectInputBinding.FromClosedVocabulary(
                         SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                        EffectValue.Integer(
-                            (int)GuardsDigital.Core.Rules.Displacement
-                                .DirectMoveDestinationPolicy.Unrestricted))
+                        GuardsDigital.Core.Rules.Displacement
+                                .DirectMoveDestinationPolicy.Unrestricted)
                     }));
 
             Assert.That(rejections, Is.Empty);
@@ -646,9 +744,9 @@ namespace GuardsDigital.Tests.EditMode
                 SyntheticContinuationCapabilities.AroundPrimaryActionV1,
                 inputs: new[]
                 {
-                    EffectInputBinding.FromLiteral(
+                    EffectInputBinding.FromClosedVocabulary(
                         SyntheticContinuationCapabilities.PlacementParameter,
-                        EffectValue.Integer(side))
+                        (AroundActionPlacement)side)
                 },
                 outputs: new[]
                 {
@@ -802,11 +900,10 @@ namespace GuardsDigital.Tests.EditMode
                     EffectInputBinding.FromNodeOutput(
                         "mover", new EffectNodeId(selectionId), "chosen", EffectValueKind.Coordinate),
                     EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                    EffectInputBinding.FromLiteral(
+                    EffectInputBinding.FromClosedVocabulary(
                         SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                        EffectValue.Integer(
-                            (int)GuardsDigital.Core.Rules.Displacement
-                                .DirectMoveDestinationPolicy.Unrestricted))
+                        GuardsDigital.Core.Rules.Displacement
+                                .DirectMoveDestinationPolicy.Unrestricted)
                 });
 
         private static EffectNodeDefinition Reader(string id, string sourceId) =>
@@ -818,5 +915,57 @@ namespace GuardsDigital.Tests.EditMode
                     EffectInputBinding.FromNodeOutput(
                         "hero", new EffectNodeId(sourceId), "hero", EffectValueKind.Hero)
                 });
+
+        private static EffectDefinition ClosedRelationDefinition<TEnum>(TEnum value)
+            where TEnum : struct
+        {
+            var node = new EffectNodeDefinition(
+                new EffectNodeId("closed-relation"),
+                EffectNodeKind.Capability,
+                EffectFailurePolicy.Mandatory,
+                ClosedRelationProbeHandler.Capability,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromClosedVocabulary("relation", value)
+                });
+            return new EffectDefinition(
+                new EffectDefinitionId("closed-relation-definition"),
+                "rev-1",
+                node.Id,
+                new[] { node });
+        }
+
+        private sealed class ClosedRelationProbeHandler : IEffectCapabilityHandler
+        {
+            public static EffectCapabilityReference Capability { get; } =
+                new EffectCapabilityReference(
+                    new EffectCapabilityId("closed-relation-probe"), 1);
+
+            public EffectCapabilityReference Reference => Capability;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(new[]
+                {
+                    new EffectCapabilityParameter(
+                        "relation",
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(
+                            SourceTeamRelation.None))
+                });
+
+            public IReadOnlyList<GuardsDigital.Core.Timing.ActiveEffectDefinition>
+                ActiveEffectDefinitions { get; } =
+                    Array.Empty<GuardsDigital.Core.Timing.ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
+                EffectExecutionResult.Applied();
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                EffectExecutionResult.ImpossibleMandatory();
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
+        }
     }
 }

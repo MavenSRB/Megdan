@@ -202,21 +202,21 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(action => $"{action.EffectRoot.Id.Value}@{action.EffectRoot.ContentRevision}"),
                 Is.EqualTo(new[]
                 {
-                    "wasp-magnetic-dagger-attack-text@wasp-8-11-rev-1",
-                    "wasp-static-barrier-skill@wasp-8-11-rev-1",
-                    "wasp-shock-attack-text@wasp-8-11-rev-1",
-                    "wasp-electrocute-attack-text@wasp-8-11-rev-1",
-                    "wasp-electroblast-attack-text@wasp-8-11-rev-1",
-                    "wasp-thunder-boomerang-attack-text@wasp-8-11-rev-1",
-                    "wasp-lift-up-skill@wasp-8-11-rev-1",
-                    "wasp-control-gravity-skill@wasp-8-11-rev-1",
-                    "wasp-kinetic-repulse-skill@wasp-8-11-rev-1",
-                    "wasp-center-of-mass-skill@wasp-8-11-rev-1",
-                    "wasp-kinetic-blast-skill@wasp-8-11-rev-1",
-                    "wasp-deflect-projectiles-defense-text@wasp-8-11-rev-1",
-                    "wasp-telekinesis-skill@wasp-8-11-rev-1",
-                    "wasp-reflect-projectiles-defense-text@wasp-8-11-rev-1",
-                    "wasp-mass-telekinesis-skill@wasp-8-11-rev-1"
+                    "wasp-magnetic-dagger-attack-text@wasp-8-25e7-rev-1",
+                    "wasp-static-barrier-skill@wasp-8-25e7-rev-1",
+                    "wasp-shock-attack-text@wasp-8-25e7-rev-1",
+                    "wasp-electrocute-attack-text@wasp-8-25e7-rev-1",
+                    "wasp-electroblast-attack-text@wasp-8-25e7-rev-1",
+                    "wasp-thunder-boomerang-attack-text@wasp-8-25e7-rev-1",
+                    "wasp-lift-up-skill@wasp-8-25e7-rev-1",
+                    "wasp-control-gravity-skill@wasp-8-25e7-rev-1",
+                    "wasp-kinetic-repulse-skill@wasp-8-25e7-rev-1",
+                    "wasp-center-of-mass-skill@wasp-8-25e7-rev-1",
+                    "wasp-kinetic-blast-skill@wasp-8-25e7-rev-1",
+                    "wasp-deflect-projectiles-defense-text@wasp-8-25e7-rev-1",
+                    "wasp-telekinesis-skill@wasp-8-25e7-rev-1",
+                    "wasp-reflect-projectiles-defense-text@wasp-8-25e7-rev-1",
+                    "wasp-mass-telekinesis-skill@wasp-8-25e7-rev-1"
                 }),
                 "The two basic cards, the five telekinetic Skills, the two kinetic ones and milestone " +
                 "8.10's two radius riders are composed; every other card's composition lands at its " +

@@ -216,16 +216,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 parameters.Add(new EffectCapabilityParameter(
-                    EligiblePieceParameterName, EffectValueKind.Integer));
+                    EligiblePieceParameterName,
+                    EffectValueKind.Integer,
+                    integerDomain: EffectIntegerDomain.AllExcept(
+                        PlaceEligiblePieceKind.None)));
                 parameters.Add(new EffectCapabilityParameter(
-                    DestinationAnchorParameterName, EffectValueKind.Integer));
+                    DestinationAnchorParameterName,
+                    EffectValueKind.Integer,
+                    integerDomain: EffectIntegerDomain.AllExcept(
+                        PlaceDestinationAnchor.None)));
                 if (boundChannel != PrintedValueChannel.None)
                 {
                     // Carried only by the printed arm, because only a verified card printing this
                     // reading prints the clause: a parameter nothing sets is the ambiguity the
                     // Range/Radius split exists to refuse.
                     parameters.Add(new EffectCapabilityParameter(
-                        SpawnPointExclusionParameterName, EffectValueKind.Integer));
+                        SpawnPointExclusionParameterName,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.All<PlaceSpawnPointExclusion>()));
                 }
 
                 Schema = new EffectCapabilityParameterSchema(

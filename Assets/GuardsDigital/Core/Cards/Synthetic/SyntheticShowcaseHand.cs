@@ -1443,10 +1443,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromNodeOutput(
                                 "mover", selectSubject, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted))
+                                Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted)
                         },
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -1463,17 +1462,16 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             // p.18's own breadth, restated by the fixture hand rather than narrowed:
                             // this card says every adjacent object, and a token standing beside the
                             // actor is one. It is the conservative case the batch's coverage rests on.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Displacement.PushEligiblePieceKind.UnitOrToken)),
+                                Rules.Displacement.PushEligiblePieceKind.UnitOrToken),
                             // The same breadth over the other two things milestone 8.8 lets a card
                             // narrow, and this card narrows neither: it names no side of the board,
                             // and it names no maximum, which is p.18's plain batch over every object
                             // standing beside the pusher.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticDisplacementCapabilities.TargetRelationParameterName,
-                                EffectValue.Integer((int)Rules.Modifications.SourceTeamRelation.AnyTeam)),
+                                Rules.Modifications.SourceTeamRelation.AnyTeam),
                             EffectInputBinding.FromLiteral(
                                 SyntheticDisplacementCapabilities.MaximumTargetsParameterName,
                                 EffectValue.Integer(0))
@@ -1498,14 +1496,12 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromNodeOutput(
                                 "subject", actorSpace, "space", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("radius", EffectValue.Integer(2)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticPlacementCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Placement.PlaceEligiblePieceKind.GamePiece)),
-                            EffectInputBinding.FromLiteral(
+                                Rules.Placement.PlaceEligiblePieceKind.GamePiece),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticPlacementCapabilities.DestinationAnchorParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Placement.PlaceDestinationAnchor.PlacedPiece))
+                                Rules.Placement.PlaceDestinationAnchor.PlacedPiece)
                         },
                         outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -1545,10 +1541,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                                 "first", swapActorSpace, "space", EffectValueKind.Coordinate),
                             EffectInputBinding.FromNodeOutput(
                                 "second", swapSelect, "chosen", EffectValueKind.Coordinate),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.BoardObjects.SwapEligiblePieceKind.GamePiece))
+                                Rules.BoardObjects.SwapEligiblePieceKind.GamePiece)
                         },
                         outputs: new[]
                         {
@@ -1601,10 +1596,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         {
                             EffectInputBinding.FromNodeOutput(
                                 "subject", removeSelect, "chosen", EffectValueKind.Coordinate),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.BoardObjects.RemoveEligiblePieceKind.GamePiece))
+                                Rules.BoardObjects.RemoveEligiblePieceKind.GamePiece)
                         },
                         outputs: new[]
                         {
@@ -1705,10 +1699,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromNodeOutput(
                                 "mover", selectSubject, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted))
+                                Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted)
                         },
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -1725,17 +1718,16 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             // p.18's own breadth, restated by the fixture hand rather than narrowed:
                             // this card says every adjacent object, and a token standing beside the
                             // actor is one. It is the conservative case the batch's coverage rests on.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Displacement.PushEligiblePieceKind.UnitOrToken)),
+                                Rules.Displacement.PushEligiblePieceKind.UnitOrToken),
                             // The same breadth over the other two things milestone 8.8 lets a card
                             // narrow, and this card narrows neither: it names no side of the board,
                             // and it names no maximum, which is p.18's plain batch over every object
                             // standing beside the pusher.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticDisplacementCapabilities.TargetRelationParameterName,
-                                EffectValue.Integer((int)Rules.Modifications.SourceTeamRelation.AnyTeam)),
+                                Rules.Modifications.SourceTeamRelation.AnyTeam),
                             EffectInputBinding.FromLiteral(
                                 SyntheticDisplacementCapabilities.MaximumTargetsParameterName,
                                 EffectValue.Integer(0))
@@ -1979,9 +1971,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         {
                             // p.19 keeps self and another distinct, and this card affects another unit.
                             EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 "activity",
-                                EffectValue.Integer((int)Rules.Modifications.RuleActivity.ObjectPush)),
+                                Rules.Modifications.RuleActivity.ObjectPush),
                             EffectInputBinding.FromLiteral(
                                 EffectSelectionDeclaration.ConsumerParameterName,
                                 EffectValue.Node(push))
@@ -2001,10 +1993,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                                 SyntheticDisplacementCapabilities.LeastDistanceParameterName,
                                 EffectValue.Integer(1)),
                             EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Displacement.PushEligiblePieceKind.Unit))
+                                Rules.Displacement.PushEligiblePieceKind.Unit)
                         },
                         outputs: new[]
                         {
@@ -2074,9 +2065,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
                             // Card-text direct Move has no activity of its own and reads its enclosing
                             // action's, which is this Skill.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 "activity",
-                                EffectValue.Integer((int)Rules.Modifications.RuleActivity.Skill)),
+                                Rules.Modifications.RuleActivity.Skill),
                             EffectInputBinding.FromLiteral(
                                 EffectSelectionDeclaration.ConsumerParameterName,
                                 EffectValue.Node(move))
@@ -2090,11 +2081,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromNodeOutput(
                                 "mover", selectTarget, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Displacement.DirectMoveDestinationPolicy
-                                        .EquidistantFromActor))
+                                Rules.Displacement.DirectMoveDestinationPolicy
+                                        .EquidistantFromActor)
                         },
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -2312,22 +2302,21 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         SyntheticRosterCapabilities.ChooseTargetV2,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.OriginParameter,
-                                EffectValue.Integer((int)GuardsDigital.Core.Rules.CardResolution.RosterQueryOrigin.Actor)),
+                                GuardsDigital.Core.Rules.CardResolution.RosterQueryOrigin.Actor),
                             EffectInputBinding.FromLiteral(
                                 SyntheticRosterCapabilities.DistanceParameter,
                                 EffectValue.Integer(2)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.UnitKindParameter,
-                                EffectValue.Integer((int)GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit)),
-                            EffectInputBinding.FromLiteral(
+                                GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.RelationParameter,
-                                EffectValue.Integer((int)GuardsDigital.Core.Rules.Modifications.SourceTeamRelation.AnyTeam)),
-                            EffectInputBinding.FromLiteral(
+                                GuardsDigital.Core.Rules.Modifications.SourceTeamRelation.AnyTeam),
+                            EffectInputBinding.FromClosedVocabulary(
                                 "activity",
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill))
+                                GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill)
                         },
                         outputs: new[]
                         {
@@ -2439,28 +2428,24 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         SyntheticRosterCapabilities.ChooseTargetV2,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.OriginParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.CardResolution
-                                        .RosterQueryOrigin.Actor)),
+                                GuardsDigital.Core.Rules.CardResolution
+                                        .RosterQueryOrigin.Actor),
                             EffectInputBinding.FromLiteral(
                                 SyntheticRosterCapabilities.DistanceParameter,
                                 EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.UnitKindParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.CardResolution
-                                        .RosterUnitKind.Hero)),
-                            EffectInputBinding.FromLiteral(
+                                GuardsDigital.Core.Rules.CardResolution
+                                        .RosterUnitKind.Hero),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.RelationParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.Modifications
-                                        .SourceTeamRelation.OpposingSource)),
-                            EffectInputBinding.FromLiteral(
+                                GuardsDigital.Core.Rules.Modifications
+                                        .SourceTeamRelation.OpposingSource),
+                            EffectInputBinding.FromClosedVocabulary(
                                 "activity",
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill))
+                                GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill)
                         },
                         outputs: new[]
                         {
@@ -2532,28 +2517,24 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         SyntheticRosterCapabilities.PresenceCountV1,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.OriginParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.CardResolution
-                                        .RosterQueryOrigin.Actor)),
+                                GuardsDigital.Core.Rules.CardResolution
+                                        .RosterQueryOrigin.Actor),
                             EffectInputBinding.FromLiteral(
                                 SyntheticRosterCapabilities.DistanceParameter,
                                 EffectValue.Integer(3)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.UnitKindParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.CardResolution
-                                        .RosterUnitKind.Minion)),
-                            EffectInputBinding.FromLiteral(
+                                GuardsDigital.Core.Rules.CardResolution
+                                        .RosterUnitKind.Minion),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.RelationParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.Modifications
-                                        .SourceTeamRelation.AlliedWithSource)),
-                            EffectInputBinding.FromLiteral(
+                                GuardsDigital.Core.Rules.Modifications
+                                        .SourceTeamRelation.AlliedWithSource),
+                            EffectInputBinding.FromClosedVocabulary(
                                 "activity",
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill)),
+                                GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill),
                             EffectInputBinding.FromLiteral(
                                 "excludeActor", EffectValue.Boolean(false)),
                             EffectInputBinding.FromLiteral(
@@ -2576,19 +2557,17 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         SyntheticRosterCapabilities.ChooseTargetPairV1,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.OriginParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.CardResolution
-                                        .RosterQueryOrigin.Actor)),
+                                GuardsDigital.Core.Rules.CardResolution
+                                        .RosterQueryOrigin.Actor),
                             EffectInputBinding.FromLiteral(
                                 SyntheticRosterCapabilities.DistanceParameter,
                                 EffectValue.Integer(3)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.RelationParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.Modifications
-                                        .SourceTeamRelation.AnyTeam))
+                                GuardsDigital.Core.Rules.Modifications
+                                        .SourceTeamRelation.AnyTeam)
                         },
                         outputs: new[]
                         {
@@ -2602,28 +2581,24 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         SyntheticRosterCapabilities.ChooseTargetSetV1,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.OriginParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.CardResolution
-                                        .RosterQueryOrigin.Actor)),
+                                GuardsDigital.Core.Rules.CardResolution
+                                        .RosterQueryOrigin.Actor),
                             EffectInputBinding.FromLiteral(
                                 SyntheticRosterCapabilities.DistanceParameter,
                                 EffectValue.Integer(3)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.UnitKindParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.CardResolution
-                                        .RosterUnitKind.Minion)),
-                            EffectInputBinding.FromLiteral(
+                                GuardsDigital.Core.Rules.CardResolution
+                                        .RosterUnitKind.Minion),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.RelationParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.Modifications
-                                        .SourceTeamRelation.AnyTeam)),
-                            EffectInputBinding.FromLiteral(
+                                GuardsDigital.Core.Rules.Modifications
+                                        .SourceTeamRelation.AnyTeam),
+                            EffectInputBinding.FromClosedVocabulary(
                                 "activity",
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill)),
+                                GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill),
                             EffectInputBinding.FromLiteral("minimum", EffectValue.Integer(0)),
                             EffectInputBinding.FromLiteral("maximum", EffectValue.Integer(2))
                         },
@@ -2712,11 +2687,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
                                 "owner", EffectRoleKind.Actor, EffectValueKind.Hero),
                             EffectInputBinding.FromRole(
                                 "chooser", EffectRoleKind.Actor, EffectValueKind.Hero),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 "kind",
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.CardResolution
-                                        .RosterCardRetrievalKind.OwnedDiscardedCard))
+                                GuardsDigital.Core.Rules.CardResolution
+                                        .RosterCardRetrievalKind.OwnedDiscardedCard)
                         },
                         outputs: new[]
                         {
@@ -2748,9 +2722,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromRole(
                                 SyntheticRosterCapabilities.HeroParameter,
                                 EffectRoleKind.Actor, EffectValueKind.Hero),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.LocationParameter,
-                                EffectValue.Integer((int)CardLocation.DiscardPile))
+                                CardLocation.DiscardPile)
                         },
                         outputs: new[]
                         {
@@ -2823,9 +2797,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 "activity",
-                                EffectValue.Integer((int)Rules.Modifications.RuleActivity.Skill)),
+                                Rules.Modifications.RuleActivity.Skill),
                             EffectInputBinding.FromLiteral(
                                 SyntheticTargetingCapabilities.ExcludeStraightLineParameterName,
                                 EffectValue.Boolean(true)),
@@ -2843,14 +2817,12 @@ namespace GuardsDigital.Core.Cards.Synthetic
                                 "subject", selectTarget, "chosen", EffectValueKind.Coordinate),
                             // `adjacent to you` is card text, which p.16 never raises.
                             EffectInputBinding.FromLiteral("radius", EffectValue.Integer(1)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticPlacementCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Placement.PlaceEligiblePieceKind.UnitOrToken)),
-                            EffectInputBinding.FromLiteral(
+                                Rules.Placement.PlaceEligiblePieceKind.UnitOrToken),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticPlacementCapabilities.DestinationAnchorParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Placement.PlaceDestinationAnchor.ActingHero))
+                                Rules.Placement.PlaceDestinationAnchor.ActingHero)
                         },
                         outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) })
                 });
@@ -3187,10 +3159,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         SyntheticRosterCapabilities.ChooseThroughTargetLineV1,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.UnitKindParameter,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit))
+                                GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit)
                         },
                         outputs: new[]
                         {
@@ -3215,11 +3186,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromNodeOutput(
                                 "mover", actorSpace, "space", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                                EffectValue.Integer(
-                                    (int)GuardsDigital.Core.Rules.Displacement
-                                        .DirectMoveDestinationPolicy.NamedSpace)),
+                                GuardsDigital.Core.Rules.Displacement
+                                        .DirectMoveDestinationPolicy.NamedSpace),
                             EffectInputBinding.FromNodeOutput(
                                 SyntheticDisplacementCapabilities.NamedDestinationParameterName,
                                 line, "destination", EffectValueKind.Coordinate)
@@ -3359,17 +3329,15 @@ namespace GuardsDigital.Core.Cards.Synthetic
                                     SyntheticTargetingCapabilities.RadiusHeroTargetV1,
                                     inputs: new[]
                                     {
-                                        EffectInputBinding.FromLiteral(
+                                        EffectInputBinding.FromClosedVocabulary(
                                             "activity",
-                                            EffectValue.Integer(
-                                                (int)GuardsDigital.Core.Rules.Modifications
-                                                    .RuleActivity.Attack)),
-                                        EffectInputBinding.FromLiteral(
+                                            GuardsDigital.Core.Rules.Modifications
+                                                    .RuleActivity.Attack),
+                                        EffectInputBinding.FromClosedVocabulary(
                                             SyntheticTargetingCapabilities
                                                 .TargetRelationParameterName,
-                                            EffectValue.Integer(
-                                                (int)GuardsDigital.Core.Rules.Modifications
-                                                    .SourceTeamRelation.OpposingSource)),
+                                            GuardsDigital.Core.Rules.Modifications
+                                                    .SourceTeamRelation.OpposingSource),
                                         EffectInputBinding.FromLiteral(
                                             SyntheticTargetingCapabilities
                                                 .ExcludeAdjacentParameterName,
@@ -3538,9 +3506,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 SyntheticContinuationCapabilities.AroundPrimaryActionV1,
                 inputs: new[]
                 {
-                    EffectInputBinding.FromLiteral(
+                    EffectInputBinding.FromClosedVocabulary(
                         SyntheticContinuationCapabilities.PlacementParameter,
-                        EffectValue.Integer(side))
+                        (AroundActionPlacement)side)
                 },
                 outputs: new[]
                 {
@@ -3582,10 +3550,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     {
                         EffectInputBinding.FromLiteral("minimumDistance", EffectValue.Integer(2)),
                         EffectInputBinding.FromLiteral("maximumDistance", EffectValue.Integer(3)),
-                        EffectInputBinding.FromLiteral(
+                        EffectInputBinding.FromClosedVocabulary(
                             SyntheticRosterCapabilities.UnitKindParameter,
-                            EffectValue.Integer(
-                                (int)GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit))
+                            GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit)
                     },
                     outputs: new[]
                     {
@@ -3604,11 +3571,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         EffectInputBinding.FromNodeOutput(
                             "mover", actorSpace, "space", EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
-                        EffectInputBinding.FromLiteral(
+                        EffectInputBinding.FromClosedVocabulary(
                             SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                            EffectValue.Integer(
-                                (int)GuardsDigital.Core.Rules.Displacement
-                                    .DirectMoveDestinationPolicy.NamedSpace)),
+                            GuardsDigital.Core.Rules.Displacement
+                                    .DirectMoveDestinationPolicy.NamedSpace),
                         EffectInputBinding.FromNodeOutput(
                             SyntheticDisplacementCapabilities.NamedDestinationParameterName,
                             line, "destination", EffectValueKind.Coordinate)
@@ -3675,11 +3641,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         EffectInputBinding.FromNodeOutput(
                             "mover", actorSpace, "space", EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                        EffectInputBinding.FromLiteral(
+                        EffectInputBinding.FromClosedVocabulary(
                             SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                            EffectValue.Integer(
-                                (int)GuardsDigital.Core.Rules.Displacement
-                                    .DirectMoveDestinationPolicy.NamedSpace)),
+                            GuardsDigital.Core.Rules.Displacement
+                                    .DirectMoveDestinationPolicy.NamedSpace),
                         EffectInputBinding.FromNodeOutput(
                             SyntheticDisplacementCapabilities.NamedDestinationParameterName,
                             formerSpace, "space", EffectValueKind.Coordinate)
@@ -3770,11 +3735,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectValue.Integer(1)),
                         EffectInputBinding.FromLiteral(
                             "ignoresObstacles", EffectValue.Boolean(false)),
-                        EffectInputBinding.FromLiteral(
+                        EffectInputBinding.FromClosedVocabulary(
                             SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                            EffectValue.Integer(
-                                (int)GuardsDigital.Core.Rules.Displacement
-                                    .PushEligiblePieceKind.Unit))
+                            GuardsDigital.Core.Rules.Displacement
+                                    .PushEligiblePieceKind.Unit)
                     },
                     outputs: new[]
                     {
@@ -3832,10 +3796,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             "mover", new EffectNodeId($"{rootId}-subject"), "chosen",
                             EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
-                        EffectInputBinding.FromLiteral(
+                        EffectInputBinding.FromClosedVocabulary(
                             SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                            EffectValue.Integer(
-                                (int)Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted))
+                            Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted)
                     },
                     outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) })
             };
@@ -4277,8 +4240,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         {
                             EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
                             EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
-                            EffectInputBinding.FromLiteral(
-                                "activity", EffectValue.Integer((int)Rules.Modifications.RuleActivity.ObjectPush)),
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity", Rules.Modifications.RuleActivity.ObjectPush),
                             EffectInputBinding.FromLiteral(
                                 EffectSelectionDeclaration.ConsumerParameterName,
                                 EffectValue.Node(push))
@@ -4298,10 +4261,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
                             // `unit` rather than p.18's own unit-or-token breadth, which is why an
                             // adjacent token is never among this branch's candidates.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Displacement.PushEligiblePieceKind.Unit))
+                                Rules.Displacement.PushEligiblePieceKind.Unit)
                         },
                         outputs: new[]
                         {
@@ -4340,14 +4302,12 @@ namespace GuardsDigital.Core.Cards.Synthetic
                                 cardRadius,
                                 SyntheticValueCapabilities.RadiusOutput,
                                 EffectValueKind.Integer),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticPlacementCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Placement.PlaceEligiblePieceKind.GamePiece)),
-                            EffectInputBinding.FromLiteral(
+                                Rules.Placement.PlaceEligiblePieceKind.GamePiece),
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticPlacementCapabilities.DestinationAnchorParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Placement.PlaceDestinationAnchor.PlacedPiece))
+                                Rules.Placement.PlaceDestinationAnchor.PlacedPiece)
                         },
                         outputs: new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) })
                 });
@@ -4445,10 +4405,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromNodeOutput(
                                 "mover", selectTarget, "chosen", EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted))
+                                Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted)
                         },
                         outputs: new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) }),
                     new EffectNodeDefinition(
@@ -4563,10 +4522,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                                 "subject", swapSelect, "chosen", EffectValueKind.Coordinate),
                             // `unit` rather than p.19's general object, which is why an adjacent
                             // token is never among this branch's candidates.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.BoardObjects.SwapEligiblePieceKind.Unit))
+                                Rules.BoardObjects.SwapEligiblePieceKind.Unit)
                         },
                         outputs: new[]
                         {
@@ -4601,10 +4559,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             // the last minion of a side out of the Battle Zone is one of p.8's two
                             // recognized causes, and nothing can emit that push until milestone 6.9,
                             // so no configured card may reach it.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.BoardObjects.RemoveEligiblePieceKind.Token))
+                                Rules.BoardObjects.RemoveEligiblePieceKind.Token)
                         },
                         outputs: new[]
                         {
@@ -4672,8 +4629,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         {
                             EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
                             EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
-                            EffectInputBinding.FromLiteral(
-                                "activity", EffectValue.Integer((int)Rules.Modifications.RuleActivity.ObjectPush)),
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity", Rules.Modifications.RuleActivity.ObjectPush),
                             EffectInputBinding.FromLiteral(
                                 EffectSelectionDeclaration.ConsumerParameterName,
                                 EffectValue.Node(push))
@@ -4693,10 +4650,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(false)),
                             // `unit` rather than p.18's own unit-or-token breadth, which is why an
                             // adjacent token is never among this branch's candidates.
-                            EffectInputBinding.FromLiteral(
+                            EffectInputBinding.FromClosedVocabulary(
                                 SyntheticExchangeCapabilities.EligiblePieceParameterName,
-                                EffectValue.Integer(
-                                    (int)Rules.Displacement.PushEligiblePieceKind.Unit))
+                                Rules.Displacement.PushEligiblePieceKind.Unit)
                         },
                         outputs: new[]
                         {

@@ -271,7 +271,8 @@ namespace GuardsDigital.Core.Effects
             EffectRoleKind role,
             EffectNodeId sourceNodeId,
             string sourceOutputName,
-            EffectValue literal)
+            EffectValue literal,
+            EffectIntegerDomain integerVocabulary = default)
         {
             ParameterName = parameterName;
             SourceKind = sourceKind;
@@ -280,6 +281,7 @@ namespace GuardsDigital.Core.Effects
             SourceNodeId = sourceNodeId;
             SourceOutputName = sourceOutputName;
             Literal = literal;
+            IntegerVocabulary = integerVocabulary;
         }
 
         public string ParameterName { get; }
@@ -289,6 +291,7 @@ namespace GuardsDigital.Core.Effects
         public EffectNodeId SourceNodeId { get; }
         public string SourceOutputName { get; }
         public EffectValue Literal { get; }
+        public EffectIntegerDomain IntegerVocabulary { get; }
 
         public static EffectInputBinding FromLiteral(string parameterName, EffectValue literal)
         {
@@ -302,6 +305,28 @@ namespace GuardsDigital.Core.Effects
             return new EffectInputBinding(
                 parameterName, EffectBindingSourceKind.Literal, literal.Kind,
                 EffectRoleKind.None, default, null, literal);
+        }
+
+        /// <summary>
+        /// Binds an enum-backed integer while preserving which closed vocabulary supplied it. The
+        /// resolver still receives an <see cref="EffectValueKind.Integer"/>; the extra type is
+        /// definition-time evidence consumed by <see cref="EffectDefinitionValidator"/>.
+        /// </summary>
+        public static EffectInputBinding FromClosedVocabulary<TEnum>(
+            string parameterName, TEnum value)
+            where TEnum : struct
+        {
+            RequireParameterName(parameterName);
+            var vocabulary = EffectIntegerDomain.All<TEnum>();
+            return new EffectInputBinding(
+                parameterName,
+                EffectBindingSourceKind.Literal,
+                EffectValueKind.Integer,
+                EffectRoleKind.None,
+                default,
+                null,
+                EffectValue.Integer(Convert.ToInt32(value)),
+                vocabulary);
         }
 
         public static EffectInputBinding FromRole(
@@ -389,7 +414,8 @@ namespace GuardsDigital.Core.Effects
             Role == other.Role &&
             SourceNodeId.Equals(other.SourceNodeId) &&
             string.Equals(SourceOutputName, other.SourceOutputName, StringComparison.Ordinal) &&
-            Literal.Equals(other.Literal);
+            Literal.Equals(other.Literal) &&
+            IntegerVocabulary.Equals(other.IntegerVocabulary);
 
         public override bool Equals(object obj) => obj is EffectInputBinding other && Equals(other);
 

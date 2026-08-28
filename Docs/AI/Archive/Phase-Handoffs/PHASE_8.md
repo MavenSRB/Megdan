@@ -457,3 +457,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e4 | One test-owned reflection inventory classifies all eighteen `Pending*` projection members as ten player-choice families or eight companion envelopes, with thirty exact answer rows and six separately recorded non-pending offers. Removal prevention now participates in the family detector and deterministic driver, and configured Brogan independently proves both payments, decline, stale refusal, persistence paths, and fixed-seed reachability. The required pre-fix miss, deliberate eleventh-family violations, affected regressions, and both complete Unity suites close without a production behavior change. | `4464540a` |
+
+## Milestone 8.25e7 Make the registered six-hero effect contract identity-complete and domain-safe completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25e7 | The generic effect catalog is free of verified-content dependencies; one explicit build composition root supplies all six hero declarations. An independent six-owner identity oracle covers reachable card, Ultimate, triggered and active semantics; Wasp advances after High Voltage while schema v34 rejects stale identity. Closed integer vocabularies validate typed domains before play, the finite relation inventory has one source-triggered unsupported arm, and a sixteenth corpus fixture pins a real repeated Attack's non-default excluded target through both wire forms. | `PENDING` |

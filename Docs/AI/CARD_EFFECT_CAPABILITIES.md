@@ -10,6 +10,8 @@ The baseline catalog is derived from the second-printing rulebook's action execu
 
 This catalog distinguishes implemented contracts from deliberately specified extension points. The six configured heroes now compose their complete 108-card playable inventory through the typed capability, continuation, query, state, timing, and transition contracts recorded below; `Rules/ROSTER_CAPABILITY_MATRIX.md` owns their exact mapping. A row marked specified or deferred remains outside that implemented set and names its live trigger.
 
+Milestone 8.25e7 makes the registered six-hero contract identity-complete and domain-safe. The generic Core catalog factory contains only generic handlers and accepts verified declarations from `MatchContentCatalogs`, the one build composition root. Every integer used as an enum-like closed vocabulary keeps its raw runtime value while its binding carries vocabulary-type evidence and its capability parameter declares an immutable legal domain validated at content load. An independent six-owner oracle covers reachable action, Ultimate, triggered, capability-reference, and active-effect semantics. The finite relation inventory has one explicit unsupported arm: `RestrictedActorRelation.HeroesAlliedWithSource` is admitted only when verified content names friendly or allied actors barred from an activity.
+
 ## Capability shard routing
 
 - [Timing, control flow, and system transitions](Card-System/TIMING_AND_TRANSITIONS.md) owns Active/continuous lifecycles, resumable composition nodes, and card-triggered subsystem transitions.
@@ -188,9 +190,10 @@ Minimum regression pairs include:
 5. Record atomicity, shared choices, failure behavior, triggers, and cancellation.
 6. Add a versioned reusable capability if the card reveals a general rule concept.
 7. Use a controlled custom pure handler only when the behavior is genuinely unique.
-8. Add definition validation, capability contract tests, and source-linked card scenarios.
-9. Add interaction tests for relevant immunity, Counts As, obstacles, tokens, timing, replacement, repeat, and state changes.
-10. Update this catalog and `RULES_LEDGER.md` before marking the card implemented.
+8. Declare exact domains for enum-like integer parameters and move the owning content identity whenever any reachable semantic changes.
+9. Add definition validation, capability contract tests, and source-linked card scenarios.
+10. Add interaction tests for relevant immunity, Counts As, obstacles, tokens, timing, replacement, repeat, and state changes.
+11. Update this catalog and `RULES_LEDGER.md` before marking the card implemented.
 
 ## Implementation boundary
 
@@ -204,7 +207,7 @@ The catalog is intentionally broader than the current code, but it is not author
 
 The foundation is considered successful when Object Push, source-relative direct Move, Place, tokens, or another future effect can be introduced by registering/mapping the exact capability and tests, rather than adding branches across unrelated systems.
 
-Handler composition is explicit and typed. Milestone 6.1h removed the interim strategy registry, so concrete action backends are composed directly today; milestone 6.2a's effect dispatch registers stable capability identity and declared input/output contracts because the capability reference arrives as definition data. Milestone 6.3 follows both boundaries: Clear is a statically known direct backend, while token property meaning stays trusted catalog content rather than presentation or payload data. Neither form may use reflection discovery, display-name branches, a service locator, an untyped dictionary payload, or a universal expression language. Handlers remain pure rules collaborators and never reference match-session presenters, Unity views, transport callbacks, or animation state.
+Handler composition is explicit and typed. Milestone 6.1h removed the interim strategy registry, so concrete action backends are composed directly today; milestone 6.2a's effect dispatch registers stable capability identity and declared input/output contracts because the capability reference arrives as definition data. Milestone 8.25e7 removes the remaining reverse dependency from that seam: the generic Core factory accepts content handlers without naming a verified hero, and `MatchContentCatalogs` supplies the verified declarations at the one build composition root in deterministic order. Milestone 6.3 follows both boundaries: Clear is a statically known direct backend, while token property meaning stays trusted catalog content rather than presentation or payload data. Neither form may use reflection discovery, display-name branches, a service locator, an untyped dictionary payload, or a universal expression language. Handlers remain pure rules collaborators and never reference match-session presenters, Unity views, transport callbacks, or animation state.
 
 ## Contract implementation status
 

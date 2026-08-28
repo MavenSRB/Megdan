@@ -4,6 +4,14 @@ using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Effects.Synthetic
 {
+    /// <summary>The two legal sides of an around-primary-action placement declaration.</summary>
+    public enum AroundActionPlacement
+    {
+        None = 0,
+        BeforeTheAction = 1,
+        AfterTheAction = 2
+    }
+
     /// <summary>
     /// Milestone 8.19a. The two registered capabilities the roster's resumable continuations need, and
     /// the stable identities of the two declarations that are content rather than handlers.
@@ -82,10 +90,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string PlacementOutput = "aroundActionPlacement";
 
         /// <summary>The placement value naming the side before the primary action.</summary>
-        public const int PlacementBeforeTheAction = 1;
+        public const int PlacementBeforeTheAction = (int)AroundActionPlacement.BeforeTheAction;
 
         /// <summary>The placement value naming the side after the primary action.</summary>
-        public const int PlacementAfterTheAction = 2;
+        public const int PlacementAfterTheAction = (int)AroundActionPlacement.AfterTheAction;
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers()
         {
@@ -190,7 +198,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectCapabilityReference Reference => AroundPrimaryActionV1;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                new[] { new EffectCapabilityParameter(PlacementParameter, EffectValueKind.Integer) },
+                new[]
+                {
+                    new EffectCapabilityParameter(
+                        PlacementParameter,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.AllExcept(
+                            AroundActionPlacement.None))
+                },
                 new[] { new EffectOutputBinding(PlacementOutput, EffectValueKind.Integer) });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =

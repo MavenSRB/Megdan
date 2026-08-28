@@ -11,6 +11,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
@@ -1039,6 +1040,14 @@ namespace GuardsDigital.Tests.EditMode
         // order and so asked over a turn that had already finished. Migration is not a question here:
         // no payload changes, so every v34 snapshot in the wild still loads byte-identically, and the
         // digest is re-pinned rather than the version moved.
+        // Milestone 8.25e7 keeps schema v34 and moves Wasp's content identity to cover High Voltage's
+        // later reachable triggered definition. A v34 payload naming wasp-8-11-rev-1 is rejected on
+        // the existing content-revision mismatch path rather than rebound to semantics its identity
+        // did not cover. Twelve existing fixtures stay byte-identical. The three carrying verified
+        // Wasp content move by the measured revision-string occurrences: verified-hand-setup
+        // authoritative 7463 -> 7571 and envelope 10064 -> 10208; paused-card-text 8360 -> 8474 and
+        // 13889 -> 14041; paused-block-rider 8639 -> 8755 and 14214 -> 14370. The added repeated-Attack
+        // witness is 8329 authoritative bytes and 17374 decoded envelope bytes at the new identity.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
             new CompatibilityFixture("setup-v34", "ca67434fb04a949da41160039d65eeca762c35cd0c036d7f566919fa664bd478"),
@@ -1051,10 +1060,11 @@ namespace GuardsDigital.Tests.EditMode
             new CompatibilityFixture("pending-correction-v34", "b5d6ca6ab1c1b5408c898f7f6f06064b6affc5cd00af137a85b4c37a1be1ad98"),
             new CompatibilityFixture("paused-level-up-v34", "3996cbf8d3b02c0baa82fc038b27e0099004c965fd90afc813f09221a2de8844"),
             new CompatibilityFixture("ended-match-v34", "4dc8c854023346c8e0e3fa57b3b98bc294525ae97c26bd25effd43c73737bfa0"),
-            new CompatibilityFixture("verified-hand-setup-v34", "90a8e1952dda4771988beab2709caf758ef39de996f119305c61c3e36ad31685"),
+            new CompatibilityFixture("verified-hand-setup-v34", "3122f8c535942b2d29cd8f44c1583540d69913bc66ca598557d54078a9b83592"),
             new CompatibilityFixture("paused-orbit-repeat-v34", "570d08a1721333bd13f9619359255c38d08b44135472503d28fe91fa3b2cb64b"),
-            new CompatibilityFixture("paused-card-text-v34", "baf25127837ba33743e66690617b52ec8ed932c919e015952dd40d242e4d221a"),
-            new CompatibilityFixture("paused-block-rider-v34", "2313a4b631e3b3dc5263299b166b99c8f885c68484f38687f2544fe5afdc54e3"),
+            new CompatibilityFixture("paused-card-text-v34", "6709bb7ed1e37c5bdd74a04ce1d9cc778d2f44b5e59d789ef297801ed61a0a00"),
+            new CompatibilityFixture("paused-block-rider-v34", "50fe1bb6595157197cab54099c7ad83242e589e329155db5b14fc4e2e743716c"),
+            new CompatibilityFixture("paused-repeated-attack-v34", "317091f453db10fc9e4fc09bf1aadf3ad2ff7a7115fdbceb733ee6bc5497a362"),
             new CompatibilityFixture("parked-pre-action-v34", "eac1395e22092205985ebaaf7b62c71b12a7a288a096b8ff1d941684f7024723")
         };
 
@@ -1088,6 +1098,83 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(result.Accepted, Is.True, $"{fixture.Name}: {result.Detail}");
                 Assert.That(restored.CaptureSnapshot(), Is.EqualTo(snapshot), fixture.Name);
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.25e7. Schema v34 already writes the target excluded by a repeated Attack, but
+        /// the compatibility corpus previously wrote only its default value. One real Thunder
+        /// Boomerang repeat now owns that witness, and both supported restore layers must preserve the
+        /// same repeated context, excluded hero, legal remaining minion, and accepted continuation.
+        /// </summary>
+        [Test]
+        public void RepeatedAttackExcludedTargetHasANonDefaultCorpusWitness()
+        {
+            var witnesses = CreateSupportedSnapshots()
+                .Select(entry =>
+                {
+                    var target = CreateRestoreTarget(entry.Key);
+                    Assert.That(
+                        RuleEventLogSnapshotEnvelope.TryDeserialize(
+                            entry.Value, out var envelope),
+                        Is.True,
+                        entry.Key);
+                    var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                        MatchContentCatalogs.ForThisBuild(),
+                        envelope.AuthoritativePayload,
+                        target.Projection.Definitions,
+                        new[] { target.Projection.SelectedMap },
+                        target.Projection.Setup.Minions);
+                    return new RepeatedAttackWitness(entry.Key, entry.Value, envelope, restored);
+                })
+                .Where(value =>
+                    value.Restored.CardActions.PendingAttackResolution != null &&
+                    value.Restored.CardActions.PendingAttackResolution.InvocationContext ==
+                        ActionInvocationContext.Repeated &&
+                    value.Restored.CardActions.PendingAttackResolution.ExcludedTarget.IsDefined)
+                .ToArray();
+
+            Assert.That(
+                witnesses.Select(value => value.Name),
+                Is.EqualTo(new[] { "paused-repeated-attack-v34" }),
+                "The corpus continuation inventory names the one real non-default repeated-Attack " +
+                "exclusion exactly once.");
+
+            var witness = witnesses.Single();
+            var rawResolution = witness.Restored.CardActions.PendingAttackResolution;
+            var rawChoice = witness.Restored.CardActions.PendingAttackTargetChoice;
+            Assert.That(rawResolution.InvocationContext, Is.EqualTo(ActionInvocationContext.Repeated));
+            Assert.That(rawResolution.ExcludedTarget.Kind, Is.EqualTo(AttackTargetKind.Hero));
+            Assert.That(rawChoice.LegalTargetHeroIds,
+                Has.No.Member(rawResolution.ExcludedTarget.HeroId));
+            Assert.That(rawChoice.LegalTargetMinionIds, Is.Not.Empty,
+                "Thunder Boomerang's other real target remains legal on the second Attack.");
+            var remainingMinion = rawChoice.LegalTargetMinionIds.Single();
+            Assert.That(
+                AuthoritativeSnapshotSerializer.Serialize(
+                    witness.Restored.Round, witness.Restored.Board),
+                Is.EqualTo(witness.Envelope.AuthoritativePayload),
+                "The inner authoritative wire form round-trips byte-identically.");
+
+            var rawContinuation = witness.Restored.Round.TryAnswerAttackTarget(
+                new AttackTargetChoiceCommand(
+                    rawChoice.ResolutionId, rawChoice.ChoiceId, remainingMinion));
+            Assert.That(rawContinuation.Accepted, Is.True,
+                "The raw authoritative restore accepts the remaining legal target.");
+
+            var envelopeRestore = CreateRestoreTarget(witness.Name);
+            var envelopeResult = envelopeRestore.RestoreSnapshot(witness.Snapshot);
+            Assert.That(envelopeResult.Accepted, Is.True, envelopeResult.Detail);
+            Assert.That(envelopeRestore.CaptureSnapshot(), Is.EqualTo(witness.Snapshot),
+                "The outer rule-event-log envelope round-trips byte-identically.");
+            var outerChoice = envelopeRestore.Projection.PendingAttackTargetChoice;
+            Assert.That(outerChoice.LegalTargetHeroIds,
+                Has.No.Member(rawResolution.ExcludedTarget.HeroId));
+            Assert.That(outerChoice.LegalTargetMinionIds, Is.EqualTo(new[] { remainingMinion }));
+            var outerContinuation = envelopeRestore.Execute(
+                DirectorCommand.ChooseAttackTarget(
+                    outerChoice.ResolutionId, outerChoice.ChoiceId, remainingMinion));
+            Assert.That(outerContinuation.Accepted, Is.True,
+                "The envelope restore accepts the same continuation.");
         }
 
         [Test]
@@ -1232,6 +1319,11 @@ namespace GuardsDigital.Tests.EditMode
             // but None, and a section only ever written as its zero value is protected vacuously.
             values.Add("paused-block-rider-v34", CapturePausedBlockRiderSnapshot());
 
+            // Milestone 8.25e7. The repeated-Attack wire section predates this milestone, but every
+            // corpus fixture left ExcludedTarget at its default. Thunder Boomerang is the verified
+            // source whose real second Attack both excludes the first hero and leaves a minion legal.
+            values.Add("paused-repeated-attack-v34", CapturePausedRepeatedAttackSnapshot());
+
             // Milestone 8.19a's own schema move, and the one fixture that holds both halves of it at
             // once: a frame standing outside an action, and the action it is standing outside of
             // running with a continuation of its own. No fixture above holds either, so the section
@@ -1328,6 +1420,48 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True);
             Assert.That(session.Projection.PendingEffectChoice, Is.Not.Null,
                 "The rider has to be holding the page open, or this fixture pins an ordinary defence.");
+            return session.CaptureSnapshot();
+        }
+
+        /// <summary>
+        /// A real Thunder Boomerang stopped on its repeated Attack target question. The first target
+        /// is a hero; the repeat therefore carries that non-default exclusion while retaining the
+        /// fixture's one other legal target, a minion.
+        /// </summary>
+        private static string CapturePausedRepeatedAttackSnapshot()
+        {
+            var session = ConfiguredMatchFixtures.CreateThunderBoomerangSession(out var minionId);
+            var red = HandCardOf(session, TeamSide.Red, WaspCardContent.ThunderBoomerang);
+            var blue = HandCardOf(session, TeamSide.Blue, WaspCardContent.StopProjectiles);
+            Assert.That(
+                session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted,
+                Is.True);
+            Assert.That(
+                session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted,
+                Is.True);
+
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                FindActionKind(session.Projection, offer) == ActionKind.Attack &&
+                offer.InvocationContext == ActionInvocationContext.PrintedPrimary);
+            Assert.That(
+                session.Execute(DirectorCommand.StartAction(attack.ActionDefinitionId)).Accepted,
+                Is.True);
+
+            var blueHero = session.Projection.Heroes
+                .Single(occupancy =>
+                    session.Projection.Participants.GetTeamForHero(occupancy.HeroId).Side ==
+                        TeamSide.Blue)
+                .HeroId;
+            var firstTarget = session.Projection.PendingAttackTargetChoice;
+            Assert.That(session.Execute(DirectorCommand.ChooseAttackTarget(
+                firstTarget.ResolutionId, firstTarget.ChoiceId, blueHero)).Accepted, Is.True);
+            Assert.That(session.Execute(DirectorCommand.DeclineDefense()).Accepted, Is.True);
+            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+
+            var repeatedTarget = session.Projection.PendingAttackTargetChoice;
+            Assert.That(repeatedTarget, Is.Not.Null);
+            Assert.That(repeatedTarget.LegalTargetHeroIds, Has.No.Member(blueHero));
+            Assert.That(repeatedTarget.LegalTargetMinionIds, Is.EqualTo(new[] { minionId }));
             return session.CaptureSnapshot();
         }
 
@@ -1605,6 +1739,11 @@ namespace GuardsDigital.Tests.EditMode
                     WaspCardContent.ReflectProjectiles);
             }
 
+            if (fixtureName.StartsWith("paused-repeated-attack", StringComparison.Ordinal))
+            {
+                return ConfiguredMatchFixtures.CreateThunderBoomerangSession(out _);
+            }
+
             if (fixtureName.StartsWith("parked-pre-action", StringComparison.Ordinal))
             {
                 return ConfiguredMatchFixtures.CreateContinuationSession();
@@ -1619,6 +1758,26 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateComponentSession() =>
             CreateFixtureSession(MatchConfiguration.CreateForSkillFixture(TeamSide.Blue));
+
+        private sealed class RepeatedAttackWitness
+        {
+            public RepeatedAttackWitness(
+                string name,
+                string snapshot,
+                RuleEventLogSnapshotEnvelope envelope,
+                RestoredAuthoritativeMatch restored)
+            {
+                Name = name;
+                Snapshot = snapshot;
+                Envelope = envelope;
+                Restored = restored;
+            }
+
+            public string Name { get; }
+            public string Snapshot { get; }
+            public RuleEventLogSnapshotEnvelope Envelope { get; }
+            public RestoredAuthoritativeMatch Restored { get; }
+        }
 
         /// <summary>
         /// One session from one named fixture configuration. Extracted at milestone 8.6, when the

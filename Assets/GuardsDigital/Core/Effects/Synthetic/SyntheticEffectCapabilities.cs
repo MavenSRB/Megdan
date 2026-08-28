@@ -77,11 +77,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// than forming a second catalog: a match has one registered set, and the snapshot records it as
         /// one list to compare a restore against.
         ///
-        /// Milestone 8.9's verified Active effects join it for that reason and not by exception. They
-        /// are the first entries here that carry an official card's numbers, and a second catalog for
-        /// them would mean two registration lists where the snapshot compares one.
+        /// Milestone 8.25e7 keeps the implementation set generic: the build composition supplies any
+        /// content-owned declarations after these handlers. That preserves one catalog and one
+        /// registration list without making Core.Effects depend on a verified hero.
         /// </summary>
-        public static EffectCapabilityCatalog CreateCatalog() =>
+        public static EffectCapabilityCatalog CreateCatalog(
+            IEnumerable<IEffectCapabilityHandler> contentHandlers = null) =>
             new EffectCapabilityCatalog(new IEffectCapabilityHandler[]
                 {
                     new NoteActorHandler(),
@@ -112,30 +113,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // join the one registration list a snapshot compares, and the rest keep waiting for
                 // the hero whose face names them.
                 .Concat(SyntheticRosterCapabilities.RegisteredHandlers())
-                .Concat(GuardsDigital.Core.Cards.Verified.WaspActiveEffectContent.Handlers())
-                // Milestone 8.20. Arien's five persistent texts join the one list for the reason
-                // Wasp's two did: a match registers one contract set and the snapshot records it as
-                // one. Every one of them runs on ActiveEffectCreationHandler, the shape milestone 6.8
-                // proved on synthetic content, so this slice registers a hero's declarations on an
-                // implementation the showcase already reaches rather than introducing one inside a
-                // verified hero's slice.
-                .Concat(GuardsDigital.Core.Cards.Verified.ArienActiveEffectContent.Handlers())
-                // Milestone 8.21. Brogan's four persistent texts join the same list, and three of them
-                // are the first configured content to reach milestone 8.19c1's removal prevention -
-                // the rule that milestone recorded as built and unreachable.
-                .Concat(GuardsDigital.Core.Cards.Verified.BroganActiveEffectContent.Handlers())
-                // Milestone 8.23. Tigerclaw's Blend Into Shadows declares the one Active effect his
-                // set prints, and his two Green marker cards declare the two capabilities that give
-                // the Poison marker - the first hero-owned rules component in this project.
-                .Concat(GuardsDigital.Core.Cards.Verified.TigerclawActiveEffectContent.Handlers())
-                .Concat(GuardsDigital.Core.Cards.Verified.TigerclawComponentContent.Handlers())
-                // Milestone 8.24. Xargatha's five persistent texts join the same list: the three
-                // petrification disks her Blue line lays down, and the two end-of-round sources her
-                // Green Skills leave standing. The first three are the only content in the build that
-                // adds an effective type to a hero without replacing what it already was, and the last
-                // two are the first verified content to reach milestone 8.19c1's pre-Minion-Battle
-                // window, which until now only the synthetic shape visited.
-                .Concat(GuardsDigital.Core.Cards.Verified.XargathaActiveEffectContent.Handlers()));
+                .Concat(contentHandlers ?? Enumerable.Empty<IEffectCapabilityHandler>()));
 
         /// <summary>
         /// Creates one Active effect on the actor. This is the capability that gives acceptance check 5

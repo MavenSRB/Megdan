@@ -68,9 +68,122 @@ namespace GuardsDigital.Core.Effects
         public IReadOnlyList<EffectOutputBinding> Outputs { get; }
     }
 
+    /// <summary>
+    /// The exact legal members of one enum-backed integer vocabulary.
+    ///
+    /// <para>Effect values remain the small, snapshot-stable integer union the resolver already
+    /// carries. This definition-time contract supplies the information that union deliberately does
+    /// not: which enum the integer belongs to, and which of that enum's members this parameter admits.
+    /// It is immutable so a catalog cannot validate one definition against a domain that later
+    /// changes underneath it.</para>
+    /// </summary>
+    public readonly struct EffectIntegerDomain : IEquatable<EffectIntegerDomain>
+    {
+        private readonly Type vocabularyType;
+        private readonly IReadOnlyList<int> legalValues;
+
+        private EffectIntegerDomain(Type vocabularyType, IEnumerable<int> legalValues)
+        {
+            if (vocabularyType == null || !vocabularyType.IsEnum ||
+                Enum.GetUnderlyingType(vocabularyType) != typeof(int))
+            {
+                throw new ArgumentException(
+                    "An effect integer domain requires an enum whose underlying type is Int32.",
+                    nameof(vocabularyType));
+            }
+
+            var materialized = (legalValues ?? throw new ArgumentNullException(nameof(legalValues)))
+                .Distinct()
+                .OrderBy(value => value)
+                .ToArray();
+            if (materialized.Length == 0 ||
+                materialized.Any(value => !Enum.IsDefined(vocabularyType, value)))
+            {
+                throw new ArgumentException(
+                    "An effect integer domain requires at least one defined enum member and may " +
+                    "contain only defined members.", nameof(legalValues));
+            }
+
+            this.vocabularyType = vocabularyType;
+            this.legalValues = new ReadOnlyCollection<int>(materialized);
+        }
+
+        public bool IsDefined => vocabularyType != null;
+
+        public Type VocabularyType => vocabularyType;
+
+        public IReadOnlyList<int> LegalValues => legalValues ?? Array.Empty<int>();
+
+        public static EffectIntegerDomain All<TEnum>() where TEnum : struct =>
+            Create<TEnum>(Enum.GetValues(typeof(TEnum)).Cast<TEnum>());
+
+        public static EffectIntegerDomain AllExcept<TEnum>(params TEnum[] excluded)
+            where TEnum : struct
+        {
+            RequireEnum<TEnum>();
+            var omitted = new HashSet<TEnum>(excluded ?? Array.Empty<TEnum>());
+            return Create<TEnum>(Enum.GetValues(typeof(TEnum)).Cast<TEnum>()
+                .Where(value => !omitted.Contains(value)));
+        }
+
+        public static EffectIntegerDomain Only<TEnum>(params TEnum[] legalValues)
+            where TEnum : struct =>
+            Create<TEnum>(legalValues ?? Array.Empty<TEnum>());
+
+        public bool Contains(int value) => IsDefined && LegalValues.Contains(value);
+
+        public bool HasSameVocabulary(EffectIntegerDomain other) =>
+            IsDefined && other.IsDefined && vocabularyType == other.vocabularyType;
+
+        public bool Equals(EffectIntegerDomain other) =>
+            vocabularyType == other.vocabularyType && LegalValues.SequenceEqual(other.LegalValues);
+
+        public override bool Equals(object obj) =>
+            obj is EffectIntegerDomain other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hash = vocabularyType?.GetHashCode() ?? 0;
+                foreach (var value in LegalValues)
+                {
+                    hash = (hash * 397) ^ value;
+                }
+
+                return hash;
+            }
+        }
+
+        public override string ToString() => IsDefined
+            ? $"{vocabularyType.Name}[{string.Join(",", LegalValues)}]"
+            : "undeclared";
+
+        private static EffectIntegerDomain Create<TEnum>(IEnumerable<TEnum> legalValues)
+            where TEnum : struct
+        {
+            RequireEnum<TEnum>();
+            return new EffectIntegerDomain(
+                typeof(TEnum), legalValues.Select(value => Convert.ToInt32(value)));
+        }
+
+        private static void RequireEnum<TEnum>() where TEnum : struct
+        {
+            if (!typeof(TEnum).IsEnum || Enum.GetUnderlyingType(typeof(TEnum)) != typeof(int))
+            {
+                throw new ArgumentException(
+                    $"'{typeof(TEnum).FullName}' is not an Int32-backed enum vocabulary.");
+            }
+        }
+    }
+
     public readonly struct EffectCapabilityParameter
     {
-        public EffectCapabilityParameter(string name, EffectValueKind valueKind, bool isRequired = true)
+        public EffectCapabilityParameter(
+            string name,
+            EffectValueKind valueKind,
+            bool isRequired = true,
+            EffectIntegerDomain integerDomain = default)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -83,14 +196,23 @@ namespace GuardsDigital.Core.Effects
                     "A capability parameter requires a typed value kind.", nameof(valueKind));
             }
 
+            if (integerDomain.IsDefined && valueKind != EffectValueKind.Integer)
+            {
+                throw new ArgumentException(
+                    "Only an Integer capability parameter may declare an enum-backed domain.",
+                    nameof(integerDomain));
+            }
+
             Name = name;
             ValueKind = valueKind;
             IsRequired = isRequired;
+            IntegerDomain = integerDomain;
         }
 
         public string Name { get; }
         public EffectValueKind ValueKind { get; }
         public bool IsRequired { get; }
+        public EffectIntegerDomain IntegerDomain { get; }
     }
 
     /// <summary>
