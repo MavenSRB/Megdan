@@ -12,11 +12,11 @@ The current gate route has completed **8.25e7**, with source verification throug
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.25e6b**.
+- Current completed milestone: **8.25e6c**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.25e6c**.
+- Next proposed milestone: **8.26**.
 
-Milestone **8.25e6b** completed on 2026-08-28. A deterministic non-authoritative experiment compares whole routed shards with exact-hash, owner-bound claim groups across six declared-answer bundles. It measures the standing budgets and integrity controls; card/effect and configured-presentation still exceed four groups, so no model is selected and routing is unchanged. Fresh-task review **8.25e6c** is next.
+Milestone **8.25e6c** completed on 2026-08-28. Independent probes recovered the same authority from current shards and non-authoritative claim groups without loss or private-material exposure. The candidate reduces retrieval, but card/effect and configured-presentation still exceed four groups and it remains selector-defined. The current router is retained; reassess on route/owner drift or the first post-pitch batch. **8.26** is next.
 
 Milestone **8.25e4b** completed on 2026-08-28. A test-owned machine-checkable claim catalog now gives each deliberately registered shared foundation one stable identity, exact production-member and evidence locators, status, material shape axes, and an expansion trigger. Its first real entry classifies 8.25e4a's pending-decision contract against the ten-family/thirty-answer inventory, configured acceptance/stale-refusal lifecycle, and deliberate unregistered-family/surface/command violations. General claims require independent production shapes or boundary-plus-violator evidence; unique work may remain explicitly narrow only with exact scope and a trigger. A future batch delta missing from the catalog fails the same guard. Runtime, rules, presentation, content, commands, and schema v34 are unchanged.
 
@@ -40,7 +40,7 @@ Milestones **8.1-8.16** dealt all nineteen verified Wasp faces through ordinary 
 
 **Phase 7 is complete and addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md)**, which owns the record: 7.1-7.8e built progression, items, p.13's Defeat list, p.8's end of round, the victory outcome and the runtime UI Toolkit HUD; 7.9 closed the T3 gate, 7.9b retired `RISK-PERF-001`, and 7.9c/7.9d closed the 7.9a review's findings.
 
-The **Phase 8** gate route still proposes six-hero director control at 8.26; stabilization next proposes fresh-task 8.25e6c. Milestone 8.25e7 closed the surviving content-contract and compatibility work from the closed 8.16b proposal. Non-gating 8.25e4b and 8.25e6a-8.25e6b are complete; 8.25e6c remains due before the first post-pitch hero batch. Milestone 8.27 owns 8.16a's official-six-player runtime capture. The retained 3v3/URP/online gates remain. Each milestone still requires exact approval. Phase 6 is complete at its 6.13 T3 gate.
+The **Phase 8** gate route next proposes six-hero director control at 8.26. Milestone 8.25e7 closed the surviving content-contract and compatibility work from the closed 8.16b proposal. Non-gating 8.25e4b and the complete 8.25e6a-8.25e6c study are closed before the first post-pitch hero batch; the study retains the current router and authorizes no migration. Milestone 8.27 owns 8.16a's official-six-player runtime capture. The retained 3v3/URP/online gates remain. Each milestone still requires exact approval. Phase 6 is complete at its 6.13 T3 gate.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
