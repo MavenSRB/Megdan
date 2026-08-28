@@ -498,4 +498,4 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.25e6c | Independent probes recovered exact authority from both models across authorization, rules, card/effect, presentation, testing, and privacy bundles and rejected every deliberate integrity failure. Claim records reduce retrieval but still exceed two ordinary group budgets and remain selector-defined, so the current authoritative router is retained; F-GOV-01/F-CONTEXT-01 remain active for route drift or first-batch reassessment, and no migration is scheduled. | `PENDING` |
+| 8.25e6c | Independent probes recovered exact authority from both models across authorization, rules, card/effect, presentation, testing, and privacy bundles and rejected every deliberate integrity failure. Claim records reduce retrieval but still exceed two ordinary group budgets and remain selector-defined, so the current authoritative router is retained; F-GOV-01/F-CONTEXT-01 remain active for route drift or first-batch reassessment, and no migration is scheduled. | `5829cb0` |
