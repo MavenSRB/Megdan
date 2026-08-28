@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.29b Stabilize hero selection and recompose Level Up completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.29b | All six hero plaques permanently reserve identical viewed-outline geometry, while Level Up presents the same six complete projected options as three labelled Blue/Green/Red source-card pairs in one opaque contained comparison band. Deliberate failing-then-passing outline and band checks, affected T2 fixtures, and two-resolution Game View evidence preserve all facts and invocations without moving the standing hero rails, `DIRECTOR`, or ordinary board-safe frame. | `8a9e64f` |
+
 ## Milestone 8.29 Select the minimum private-online architecture and re-baseline the track completion evidence
 
 | ID | Outcome | Commit |
