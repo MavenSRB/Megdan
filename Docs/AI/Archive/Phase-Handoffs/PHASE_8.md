@@ -468,3 +468,4 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
+| 8.25e4a1 | Object Push now emits only result facts the invoking node declared, so the real repeat-Skill Confirm/Decline pause restores byte-identically with `distance`/`moved` while full kinetic consumers retain their requested stop causes. The focused red-to-green transition and T2 affected capability/snapshot/replay coverage close without a rule, schema, wire, capability, content, or visible change; 8.25e4a remains active. | `9b09fa3` |
