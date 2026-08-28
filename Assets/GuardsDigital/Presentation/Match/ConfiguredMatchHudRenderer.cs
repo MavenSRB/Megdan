@@ -156,6 +156,10 @@ namespace GuardsDigital.Presentation.Match
         // physical hand; hovering or focusing one redraws that same complete face above its siblings.
         // Mandatory card decisions continue to use the separately calculated tall tray.
         public const float CardPanelHeight = DirectorHandsUnityView.PeekCardHeight + 40f;
+        // One horizontal Level Up comparison: a complete card, its option facts, the pair label and
+        // the prompt line. It may extend a little above the ordinary hand, but never changes the hero
+        // columns or the camera-safe board surface around the legacy near-full-height context.
+        public const float UpgradeComparisonBandHeight = CardFootprint.Height + 130f;
         // Keeps UI Toolkit border/pixel snapping from turning two mathematically adjacent rectangles
         // into a live one-pixel overlap at non-identity panel scales.
         private const float BoardTraySeparation = 2f;
@@ -242,11 +246,10 @@ namespace GuardsDigital.Presentation.Match
         private bool contextUsesTray;
 
         /// <summary>
-        /// Whether the last layout gave the tray region the taller bound p.15's upgrade grid needs.
-        /// Milestone 8.8a: it is what makes the extra layout happen once per transition instead of once
-        /// per frame.
+        /// Whether the tray is hosting p.15's one-row comparison band. It selects the bounded overlay,
+        /// side-rail clearance, and vertical-scroll fallback without changing standing HUD geometry.
         /// </summary>
-        private bool trayUsesTallContext;
+        private bool trayShowsUpgradeComparison;
         private VisualElement directorDrawer;
         private Button directorToggle;
         private MatchStatusBarUnityView statusBar;
@@ -360,7 +363,7 @@ namespace GuardsDigital.Presentation.Match
             var panelPosition = MatchHudPanelScaling.ScreenToPanelPoint(
                 screenPosition, Screen.width, Screen.height);
             var tray = TryLiveRect(trayRegion, out var liveTray) ? liveTray : GetCardPanelRect();
-            var trayBlocksPointer = trayUsesTallContext
+            var trayBlocksPointer = trayShowsUpgradeComparison
                 ? tray.Contains(panelPosition)
                 : CalculateCompactHandPointerRect(viewport.x, viewport.y).Contains(panelPosition);
             if (trayBlocksPointer ||
@@ -673,20 +676,29 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.25f2. The tray is a transparent full-width layout band. Its fixed ordinary
             // height fits one 420-unit face plus only card chrome, while the five faces overlap inside
             // the compact left footprint. Metadata sits in the separate status dock to the map's left.
-            trayUsesTallContext = round?.HasUpgradeCardGrid == true;
+            trayShowsUpgradeComparison = round?.HasUpgradeComparisonBand == true;
             if (trayScroll != null)
             {
-                trayScroll.verticalScrollerVisibility = trayUsesTallContext
+                trayScroll.verticalScrollerVisibility = trayShowsUpgradeComparison
                     ? ScrollerVisibility.Auto
                     : ScrollerVisibility.Hidden;
             }
             if (hands?.Root != null)
             {
-                hands.Root.style.top = trayUsesTallContext ? 0f : OrdinaryCardDownshift;
+                hands.Root.style.top = trayShowsUpgradeComparison ? 0f : OrdinaryCardDownshift;
             }
-            var tray = trayUsesTallContext
-                ? CalculateTallCardPanelRect(width, height)
+            var ordinaryTray = GetCardPanelRect();
+            var tray = trayShowsUpgradeComparison
+                ? CalculateUpgradeComparisonPanelRect(width, height)
                 : GetCardPanelRect();
+            if (traySidebar != null)
+            {
+                var sideClearance = trayShowsUpgradeComparison
+                    ? CalculateHeroRailWidth(width) + (Margin * 2f)
+                    : 0f;
+                traySidebar.style.marginLeft = sideClearance;
+                traySidebar.style.marginRight = sideClearance;
+            }
             trayRegion.style.left = tray.x;
             trayRegion.style.top = tray.y;
             trayRegion.style.right = StyleKeyword.Auto;
@@ -694,21 +706,25 @@ namespace GuardsDigital.Presentation.Match
             trayRegion.style.width = tray.width;
             trayRegion.style.height = tray.height;
             trayRegion.style.maxWidth = tray.width;
-            // Milestone 8.8a: p.15's upgrade prompt draws whole card faces in two rows, which is taller
-            // than the share a tray of one row may take. It is allowed the whole space under the status
-            // strip while it stands, and nothing competes for it: the ordinary tray is hidden behind a
-            // mandatory decision, and the board's own framing is computed from the ordinary bound below,
-            // so the map does not move when the prompt opens and closes. The region still sizes to its
-            // own content, so a prompt that fits the ordinary bound occupies no more than it did.
+            trayRegion.style.backgroundColor = trayShowsUpgradeComparison
+                ? MatchHudTheme.PanelBackground
+                : new Color(0f, 0f, 0f, 0f);
+            trayRegion.style.borderTopWidth = trayShowsUpgradeComparison ? 1f : 0f;
+            trayRegion.style.borderTopColor = trayShowsUpgradeComparison
+                ? MatchHudTheme.PanelBorder
+                : new Color(0f, 0f, 0f, 0f);
+            // Milestone 8.29b: the comparison band is only one card row. Its own bounded rectangle may
+            // be a little taller than the ordinary hand, while every standing surface continues to use
+            // ordinaryTray. Opening Level Up therefore never moves a plaque or reframes the board.
             trayRegion.style.maxHeight = tray.height;
-            var playfield = CalculatePlayfieldRect(width, height, tray);
+            var playfield = CalculatePlayfieldRect(width, height, ordinaryTray);
             heroOverviews?.Layout(
-                CalculateHeroRailRect(width, height, TeamSide.Red, tray.yMin),
-                CalculateHeroRailRect(width, height, TeamSide.Blue, tray.yMin),
+                CalculateHeroRailRect(width, height, TeamSide.Red, ordinaryTray.yMin),
+                CalculateHeroRailRect(width, height, TeamSide.Blue, ordinaryTray.yMin),
                 playfield);
             LayoutDirectorControls();
             diagnostics?.Layout(GetRuleEventLogRect());
-            PublishCameraSafeLayout(tray, playfield, viewport);
+            PublishCameraSafeLayout(ordinaryTray, playfield, viewport);
         }
 
         /// <summary>
@@ -736,7 +752,7 @@ namespace GuardsDigital.Presentation.Match
             // that can change without the header changing - a paused prompt is rendered into the region
             // by its own presenter. Re-laying out only on the transition keeps this a two-state answer
             // rather than twenty style writes a frame.
-            if (hostChanged || round.HasUpgradeCardGrid != trayUsesTallContext)
+            if (hostChanged || round.HasUpgradeComparisonBand != trayShowsUpgradeComparison)
             {
                 Layout();
             }
@@ -846,24 +862,9 @@ namespace GuardsDigital.Presentation.Match
                 height);
         }
 
-        private static Rect CalculateTallCardPanelRect(float panelWidth, float panelHeight) =>
-            CalculateCardPanelRect(panelWidth, panelHeight, CalculateTallContextHeight(panelHeight));
-
-        /// <summary>
-        /// The tallest the tray region may be when the contextual region is drawing whole card faces in
-        /// more than one row: everything under the status strip, less the band the `DIRECTOR` toggle
-        /// moves into, inside the same margin every region keeps.
-        ///
-        /// Milestone 8.8a. Two rows of whole card faces are taller than the ordinary reserved band, and
-        /// they are drawn only while a mandatory decision has already hidden the hand. The reserved
-        /// toggle band keeps Undo reachable at the one moment this region is at its largest. Milestone
-        /// 8.25f2 additionally sends this temporary bound to the board camera, so the larger context
-        /// still replaces rather than covers the visible playfield.
-        /// </summary>
-        public static float CalculateTallContextHeight(float panelHeight) =>
-            Mathf.Max(
-                0f,
-                panelHeight - (Margin * 3f) - StatusBarHeight - DirectorToggleHeight);
+        public static Rect CalculateUpgradeComparisonPanelRect(
+            float panelWidth, float panelHeight) =>
+            CalculateCardPanelRect(panelWidth, panelHeight, UpgradeComparisonBandHeight);
 
         public static Rect CalculatePlayfieldRect(float panelWidth, float panelHeight)
         {
@@ -977,32 +978,15 @@ namespace GuardsDigital.Presentation.Match
             CalculateTieBreakerIndicatorRect(PanelViewport.x, PanelViewport.y);
 
         /// <summary>
-        /// Where the `DIRECTOR` toggle stands: directly below the live third Red hero, or - milestone
-        /// 8.8a - just under the status strip while p.15's upgrade grid has the tray region taller than
-        /// its ordinary bound.
-        ///
-        /// The move exists because the toggle is the only way to Undo, and Undo is exactly as legitimate
-        /// while a mandatory decision stands as at any other moment; leaving it under the enlarged region
-        /// would have covered it. <see cref="CalculateTallContextHeight"/> reserves this band, so the
-        /// toggle stays clear even when the grid takes the whole bound.
+        /// Where the `DIRECTOR` toggle stands: directly below the live third Red hero. Level Up no
+        /// longer relocates it because the comparison surface is one bounded row between the rails.
         /// </summary>
         private Rect CalculateDirectorToggleRect()
         {
             var viewport = PanelViewport;
-            var tray = trayUsesTallContext
-                ? CalculateTallCardPanelRect(viewport.x, viewport.y)
-                : CalculateCardPanelRect(viewport.x, viewport.y);
+            var tray = CalculateCardPanelRect(viewport.x, viewport.y);
             var rail = CalculateHeroRailRect(
                 viewport.x, viewport.y, TeamSide.Red, tray.yMin);
-            if (trayUsesTallContext)
-            {
-                return new Rect(
-                    rail.xMax + Margin,
-                    StatusBarHeight + Margin,
-                    DirectorToggleWidth,
-                    DirectorToggleHeight);
-            }
-
             var playfield = CalculatePlayfieldRect(viewport.x, viewport.y, tray);
             var lowestY = rail.yMin;
             if (heroOverviews?.TryGetRedColumnBounds(out var liveRed) == true)
@@ -1031,22 +1015,13 @@ namespace GuardsDigital.Presentation.Match
 
             LayoutDirectorControls();
             var viewport = PanelViewport;
-            var tray = trayUsesTallContext
-                ? CalculateTallCardPanelRect(viewport.x, viewport.y)
-                : CalculateCardPanelRect(viewport.x, viewport.y);
+            var tray = CalculateCardPanelRect(viewport.x, viewport.y);
             var playfield = CalculatePlayfieldRect(viewport.x, viewport.y, tray);
             PublishCameraSafeLayout(tray, playfield, viewport);
         }
 
         private void PublishCameraSafeLayout(Rect tray, Rect playfield, Vector2 viewport)
         {
-            if (trayUsesTallContext)
-            {
-                CameraSafeLayout = new BoardCameraSafeLayout(playfield, default, viewport);
-                PlayfieldLayoutChanged?.Invoke(CameraSafeLayout);
-                return;
-            }
-
             var red = CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Red, tray.yMin);
             var blue = CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Blue, tray.yMin);
             // Status and Director live on the left; Blue's rail owns the right edge. Between them the
@@ -1103,9 +1078,7 @@ namespace GuardsDigital.Presentation.Match
             directorToggle.style.height = toggle.height;
 
             var viewport = PanelViewport;
-            var tray = trayUsesTallContext
-                ? CalculateTallCardPanelRect(viewport.x, viewport.y)
-                : CalculateCardPanelRect(viewport.x, viewport.y);
+            var tray = CalculateCardPanelRect(viewport.x, viewport.y);
             var statusTop = toggle.yMax + DirectorStatusGap;
             var statusWidth = Mathf.Min(
                 StatusDockWidth,
@@ -1145,9 +1118,7 @@ namespace GuardsDigital.Presentation.Match
         {
             return new Rect(
                 toggle.x,
-                trayUsesTallContext
-                    ? toggle.yMax + 6f
-                    : Mathf.Max(Margin, toggle.yMin - DirectorDrawerHeight - 6f),
+                Mathf.Max(Margin, toggle.yMin - DirectorDrawerHeight - 6f),
                 DirectorDrawerWidth,
                 DirectorDrawerHeight);
         }
@@ -1182,8 +1153,8 @@ namespace GuardsDigital.Presentation.Match
 
             // The band above the tray is also the `DIRECTOR` toggle's and its drawer's, and this log is
             // tall enough to cover both. It starts clear of that column, for the reason
-            // `CalculateTallContextHeight` reserves the same strip: the drawer is the only route to
-            // Undo, and a log the player opened is not a reason to lose it. Latent until milestone 8.25
+            // the drawer is the only route to Undo, and a log the player opened is not a reason to lose
+            // it. Latent until milestone 8.25
             // moved the tray left, which put the two on the same x and left `RESET` behind the log's
             // own scroll view. Measured from the drawer's column rather than from the tray's edge,
             // because since the rails took the screen edge those are no longer the same x.

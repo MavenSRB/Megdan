@@ -2,11 +2,11 @@
 
 Canonical active roadmap shard for player-reported UI and rules-offer defects found after milestone 8.29a and before private-online implementation resumes. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
 
-Documentation of these corrections is approved; implementation is not. They remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries.
+These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestone 8.29b is complete; 8.29b1 and 8.29c-8.29e remain proposed.
 
-### [ ] 8.29b Stabilize hero selection and recompose Level Up
+### [x] 8.29b Stabilize hero selection and recompose Level Up
 
-Proposed at the user's direction on 2026-08-29 after hands-on inspection of the completed 8.29a plaques and the existing Level Up prompt. Documentation of this correction is approved; implementation is not yet approved, and additional newly reported presentation defects may amend this definition or be split into a separate corrective milestone before implementation begins.
+Approved and completed at the user's direction on 2026-08-29 after hands-on inspection of the completed 8.29a plaques and the existing Level Up prompt.
 
 Observable outcome: Selecting a different hero never moves any of the six side plaques, and p.15's six-card Level Up decision becomes a contained, legible comparison surface that fits the current enlarged-card HUD instead of expanding the obsolete two-row tray across nearly the whole play area.
 
@@ -22,6 +22,28 @@ Acceptance checks:
 Closing checks: `ChangingTheViewedHero_ChangesOnlyItsReservedOutlineWithoutMovingAnyPlaque` is recorded failing at the pre-fix revision where the selected plaque alone gains one unit of top border and passing after the outline width is permanently reserved. `TheSixUpgradeChoices_AreThreeContainedPairsInOneFullWidthComparisonBand` is recorded failing against the legacy two-row/tall-context composition and passing after the Level Up recomposition; the live Game View check closes containment and standing-HUD stability at both validated desktop sizes.
 
 Non-goals: No rule, progression, coin, item, option-projection, command, serialization, board-state, card-face, ordinary-hand, networking, animation, or imported-art change; no general production-HUD or accessibility redesign.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829b-stabilize-hero-selection-and-recompose-level-up-completion-evidence).
+
+### [ ] 8.29b1 Select printed actions directly on the resolving card
+
+Proposed at the user's direction on 2026-08-29 after the completed enlarged-card HUD still presented ordinary action selection as a row of debug-like text buttons. Documentation of this correction is approved; implementation is not yet approved. The already emphasized, fully exposed resolving card becomes the ordinary printed-action surface, with luminous boxes over the exact printed regions and compact replacement chips attached to the action they replace.
+
+Observable outcome: During ordinary card resolution, a player starts each legal printed Primary or Secondary action by clicking or focusing the corresponding highlighted region on the resolving card itself; the separate action-button row is absent, while non-card controls such as End Turn remain in the contextual dock.
+
+Acceptance checks:
+
+- The action-selection projection identifies each available and unavailable printed action by source card instance, action definition, invocation context and exact typed invocation where one exists. The card view binds `PrintedPrimary` to the fixed primary-action band and each ordered Secondary action to its matching fixed icon/value region; it never reads artwork pixels, parses printed text, switches on a card or hero name, or recomputes legality.
+- Only the fully exposed card currently resolving receives action regions, and only while ordinary action selection stands. Before reveal, the whole available card retains its existing commitment selection; played history, discarded cards, previews, Defense choices, effect-card choices and Level Up candidates gain no action hotspots.
+- Every legal printed region carries a contained luminous outline visible without hover, becomes brighter on pointer hover or keyboard focus, and includes action kind, value, Primary/Secondary context and card-text applicability in its assistive reading. Shape and words preserve meaning without colour alone; the overlay changes no `CardFootprint` geometry and neither crops nor modifies prepared artwork or the generated fallback.
+- Activating a legal region forwards exactly its standing projected invocation once through the existing presenter/session path. An unavailable printed action remains visibly located on the card with a subdued inert region and no command; stale, forged, mismatched-card and mismatched-region activations execute nothing.
+- A projected Clear offer appears as a compact replacement chip attached to the exact Attack region it replaces, and a projected Fast Travel offer appears on the exact Movement region it replaces. Each chip carries only its existing typed offer and availability; presentation derives no replacement eligibility, destinations, candidates or result. Activating the printed region still means the printed action rather than silently choosing its replacement.
+- End Turn remains the one external ordinary turn-ending control because Hold and Movement Stop are presentation meanings rather than printed card regions. Continue End of Round, initiative ties, mandatory decisions, Director controls and headless access retain their existing surfaces, and no duplicate ordinary printed-action button remains in the dock.
+- Pointer and keyboard order follow the card's visible action anatomy, with replacement chips immediately after the region they qualify. Focused Edit Mode projection/view tests and focused Play Mode pointer journeys cover Primary, Secondary, unavailable, Clear and Fast Travel paths, followed by targeted non-batch Game View inspection at 2560x1440 and 2048x1152.
+
+Closing checks: `TheResolvingCardsPrintedActionRegions_ForwardOnlyTheirExactProjectedOffers` is recorded failing at the pre-fix revision where the resolving face owns no action controls and passing when its fixed typed regions forward the matching offers. `OrdinaryPrintedActions_AppearOnTheResolvingCardWithoutADuplicateDockRow` closes the live pointer, focus, replacement, containment and one-surface behavior across prepared-art and generated-fallback fixtures.
+
+Non-goals: No rule, action availability, printed value, card-text application, replacement, targeting, command, serialization, replay, Undo, card definition, source artwork, card-footprint, ordinary commitment, Defense, Level Up, effect-choice, networking, animation or general production-HUD redesign; no hotspot derived from private image analysis and no removal of End Turn or Director/headless controls.
 
 ### [ ] 8.29c Restore the Director Undo player path
 

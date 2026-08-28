@@ -2821,34 +2821,34 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheSixUpgradeChoices_AreTwoRowsOfBlueGreenRedKeepingEachPairsProjectedOrder()
+        public void TheSixUpgradeChoices_AreThreeContainedPairsInOneFullWidthComparisonBand()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
             var view = new RoundActionUnityView();
             new RoundActionPresenter(session, view).Refresh();
 
             var prompt = view.Model.SystemTransitionPrompt;
-            var rows = Descendants(view.Root)
-                .Where(element => element.name == "gd-upgrade-row")
+            var bands = Descendants(view.Root)
+                .Where(element => element.name == "gd-upgrade-comparison-band")
                 .ToArray();
-            Assert.That(rows, Has.Length.EqualTo(2), "Two candidates per card, so two rows.");
+            Assert.That(bands, Has.Length.EqualTo(1),
+                "Level Up is one full-width comparison band, not the legacy two-row grid.");
 
-            var drawn = rows
-                .Select(row => row.Children()
-                    .Where(cell => cell.name == "gd-upgrade-option")
-                    .Select(cell => Descendants(cell)
-                        .First(element => element.name == "gd-card-preview"))
-                    .ToArray())
+            var pairs = Descendants(bands[0])
+                .Where(element => element.name == "gd-upgrade-pair")
                 .ToArray();
-            foreach (var row in drawn)
+            Assert.That(pairs, Has.Length.EqualTo(3), "Blue, Green, Red are three explicit pairs.");
+            foreach (var pair in pairs)
             {
-                Assert.That(row, Has.Length.EqualTo(3), "Three colours, so three columns.");
+                Assert.That(Descendants(pair).Count(cell => cell.name == "gd-upgrade-option"),
+                    Is.EqualTo(2), "Each source card keeps its two projected candidates together.");
             }
 
             // The reading and focus order is the element order, which is what a pointer follows down a
-            // row and what keyboard focus follows through the tree.
-            var order = rows
-                .SelectMany(row => row.Children().Where(cell => cell.name == "gd-upgrade-option"))
+            // pair and what keyboard focus follows through the tree.
+            var order = pairs
+                .SelectMany(pair => Descendants(pair)
+                    .Where(cell => cell.name == "gd-upgrade-option"))
                 .ToArray();
             Assert.That(order, Has.Length.EqualTo(6));
 
@@ -2857,13 +2857,14 @@ namespace GuardsDigital.Tests.EditMode
                     control.tooltip.StartsWith(option.Label, StringComparison.Ordinal)))
                 .ToArray();
             Assert.That(
-                byControl.Take(3).Select(option => option.Color),
-                Is.EqualTo(new[] { CardColor.Blue, CardColor.Green, CardColor.Red }),
-                "The first row reads Blue, Green, Red.");
-            Assert.That(
-                byControl.Skip(3).Select(option => option.Color),
-                Is.EqualTo(new[] { CardColor.Blue, CardColor.Green, CardColor.Red }),
-                "and so does the second, so a column is one colour top to bottom.");
+                byControl.Select(option => option.Color),
+                Is.EqualTo(new[]
+                {
+                    CardColor.Blue, CardColor.Blue,
+                    CardColor.Green, CardColor.Green,
+                    CardColor.Red, CardColor.Red
+                }),
+                "The single band reads as Blue pair, Green pair, Red pair.");
 
             // The pause's own order is not Blue, Green, Red - it orders its pairs by card instance
             // identity - so the grid is doing real work here rather than being handed the answer.
@@ -2872,11 +2873,11 @@ namespace GuardsDigital.Tests.EditMode
                 Is.Not.EqualTo(new[] { CardColor.Blue, CardColor.Green, CardColor.Red }),
                 "and it is a reordering: the projected order is not already this one.");
 
-            for (var column = 0; column < 3; column++)
+            for (var pairIndex = 0; pairIndex < 3; pairIndex++)
             {
-                var pair = new[] { byControl[column], byControl[column + 3] };
+                var pair = byControl.Skip(pairIndex * 2).Take(2).ToArray();
                 Assert.That(pair[0].SourceCardInstanceId, Is.EqualTo(pair[1].SourceCardInstanceId),
-                    "A column is p.15's two answers for one upgraded card.");
+                    "A pair is p.15's two answers for one upgraded card.");
                 var projected = prompt.Options
                     .Where(option => option.SourceCardInstanceId.Equals(pair[0].SourceCardInstanceId))
                     .ToArray();
@@ -2884,6 +2885,11 @@ namespace GuardsDigital.Tests.EditMode
                     "and the two candidates keep the order the pause offered them, so presentation " +
                     "invents no choice authority.");
             }
+
+            var width = pairs.Sum(pair => pair.style.width.value.value) +
+                (DirectorHandsUnityView.CardGap * (pairs.Length - 1));
+            Assert.That(width, Is.LessThanOrEqualTo(2048f),
+                "The three complete pairs fit one validated desktop width without horizontal travel.");
         }
 
         [Test]
@@ -2995,7 +3001,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheUpgradeGrid_IsTheOnlyContextAndFitsTheValidatedViewportsTray()
+        public void TheUpgradeComparisonBand_IsTheOnlyContextAndKeepsEveryOptionReachable()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
             var view = new RoundActionUnityView();
@@ -3008,35 +3014,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(view.Model.ContinueEndOfRoundInvocation, Is.Null);
 
             var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(2048f, 1152f);
-            var row = Descendants(view.Root).First(element => element.name == "gd-upgrade-row");
-            var cells = row.Children().ToArray();
-            var width = cells.Sum(cell => cell.style.width.value.value) +
-                (DirectorHandsUnityView.CardGap * (cells.Length - 1));
-
-            // The gutter the shared section label reserves, plus the tray region's own padding and
-            // border, are what the three columns have to fit inside beside.
-            Assert.That(width + 96f + 26f, Is.LessThanOrEqualTo(tray.width),
-                "Three whole card faces and their gutters fit the tray's width at the validated " +
-                "desktop viewport, so nothing is reachable only by scrolling sideways.");
-
-            // Two rows of whole card faces are taller than the share an ordinary one-row tray may take,
-            // so the region is allowed the height under the status strip while this prompt stands.
-            Assert.That(view.HasUpgradeCardGrid, Is.True);
-            var tall = ConfiguredMatchHudRenderer.CalculateTallContextHeight(1152f);
-            Assert.That(CardFootprint.Height * 2f, Is.GreaterThan(tray.height),
-                "which the ordinary bound could not hold.");
-            Assert.That(
-                (CardFootprint.Height * 2f) + DirectorHandsUnityView.CardGap,
-                Is.LessThanOrEqualTo(tall),
-                "Both rows of card faces stand inside the viewport at the validated desktop view.");
-            Assert.That(tall, Is.GreaterThan(tray.height),
-                "and the taller bound is only reached while the prompt stands, so the ordinary tray " +
-                "covers exactly as much board as it did.");
-            Assert.That(
-                tall + ConfiguredMatchHudRenderer.StatusBarHeight,
-                Is.LessThan(1152f - 30f),
-                "The bound reserves the band the DIRECTOR toggle moves into, so Undo stays reachable " +
-                "at the one moment this region is at its largest.");
+            var band = Descendants(view.Root)
+                .Single(element => element.name == "gd-upgrade-comparison-band");
+            Assert.That(band.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap));
+            Assert.That(view.HasUpgradeComparisonBand, Is.True);
+            Assert.That(CardFootprint.Height, Is.LessThanOrEqualTo(tray.height),
+                "One row of complete faces fits the standing bottom band; no near-full-height " +
+                "context is required.");
 
             var controls = Descendants(view.Root)
                 .Where(element => element.name == "gd-upgrade-option")
@@ -3046,10 +3030,9 @@ namespace GuardsDigital.Tests.EditMode
                 "so all six stay keyboard-reachable inside the scrolled body.");
             Assert.That(controls.All(control => control.enabledSelf), Is.True,
                 "and none of them is drawn as a refusal.");
-            Assert.That(
-                Descendants(view.Root).Count(element => element.name == "gd-upgrade-gap"),
-                Is.EqualTo(0),
-                "Wasp's six fill the grid exactly, so no column reserves an empty cell.");
+            Assert.That(Descendants(view.Root)
+                    .Count(element => element.name == "gd-upgrade-pair-label"),
+                Is.EqualTo(3), "Every source-card pair is explicitly labelled.");
         }
 
         [Test]

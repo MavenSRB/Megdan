@@ -558,8 +558,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "PAID 1 COIN - 1 REMAINING",
                 // Milestone 8.8a: the six choices the configured Wasp hand actually produces, in the
                 // order the pause produces them - the Blue pair, the Red pair, the Green pair, each one
-                // upgraded card with p.15's two candidates. The grid is what turns that into two rows of
-                // Blue, Green, Red, so the capture proves the reordering rather than being handed it.
+                // upgraded card with p.15's two candidates. The comparison band reorders those into
+                // Blue, Green, Red while leaving the candidates inside each pair untouched.
                 UpgradeOptions(
                         WaspCardContent.LiftUp,
                         WaspCardContent.ControlGravity,
@@ -599,6 +599,200 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.RoundView.HasExclusiveDecision, Is.True,
                 "A paused transition is a decision the tray steps aside for.");
             yield return Capture("tmp/milestone-7-8a-leveling-prompt.png");
+        }
+
+        [UnityTest]
+        public IEnumerator ChangingTheViewedHero_ChangesOnlyItsReservedOutlineWithoutMovingAnyPlaque()
+        {
+            yield return LoadOfficialSixPlayerScene();
+            var runtime = Root().Runtime;
+            var hud = Root().Hud;
+            yield return null;
+            yield return null;
+
+            var before = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-hero-rail")
+                .ToDictionary(
+                    rail => Descendants(rail).OfType<UnityEngine.UIElements.Label>()
+                        .Single(label => label.name == "gd-hero-name").text,
+                    rail => rail.worldBound);
+            Assert.That(Descendants(hud.RootElement)
+                    .Where(element => element.name == "gd-hero-rail")
+                    .Select(rail => rail.style.borderTopWidth.value),
+                Has.All.EqualTo(2f).Within(0.01f),
+                "Every plaque permanently reserves the selected outline width.");
+            var previouslyViewed = runtime.HeroOverviewsView.Model.Heroes
+                .Single(hero => hero.IsViewed).HeroId;
+            var newlyViewed = runtime.HeroOverviewsView.Model.Heroes
+                .First(hero => !hero.HeroId.Equals(previouslyViewed)).HeroId;
+
+            Assert.That(runtime.SelectViewedHero(newlyViewed), Is.True);
+            yield return null;
+            yield return null;
+
+            var afterRails = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-hero-rail")
+                .ToArray();
+            Assert.That(afterRails, Has.Length.EqualTo(6));
+            Assert.That(afterRails.Select(rail => rail.style.borderTopWidth.value),
+                Has.All.EqualTo(2f).Within(0.01f));
+            foreach (var rail in afterRails)
+            {
+                var name = Descendants(rail).OfType<UnityEngine.UIElements.Label>()
+                    .Single(label => label.name == "gd-hero-name").text;
+                Assert.That(rail.worldBound, Is.EqualTo(before[name]),
+                    $"Changing the viewed hero must not move or resize {name}'s plaque.");
+            }
+
+            Assert.That(afterRails.Count(rail =>
+                    rail.resolvedStyle.borderTopColor == MatchHudTheme.SelectedOutline),
+                Is.EqualTo(1), "Exactly the newly viewed plaque receives the reserved outline colour.");
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_LevelUpUsesOneContainedBandWithoutMovingTheStandingHud()
+        {
+            yield return LoadOfficialSixPlayerScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            yield return null;
+            yield return null;
+
+            var standingModel = runtime.RoundView.Model;
+            var redBefore = Named(hud.RootElement, "gd-hero-rail-red").worldBound;
+            var blueBefore = Named(hud.RootElement, "gd-hero-rail-blue").worldBound;
+            var plaquesBefore = Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-hero-rail")
+                .Select(element => element.worldBound)
+                .ToArray();
+            var safeBefore = hud.CameraSafeLayout;
+
+            RenderArtworkUpgradeChoices(runtime);
+            hud.ApplyExclusiveContext();
+            yield return null;
+            yield return null;
+
+            Assert.That(Named(hud.RootElement, "gd-hero-rail-red").worldBound,
+                Is.EqualTo(redBefore));
+            Assert.That(Named(hud.RootElement, "gd-hero-rail-blue").worldBound,
+                Is.EqualTo(blueBefore));
+            Assert.That(Descendants(hud.RootElement)
+                    .Where(element => element.name == "gd-hero-rail")
+                    .Select(element => element.worldBound),
+                Is.EqualTo(plaquesBefore), "Opening Level Up relocates no hero plaque.");
+            Assert.That(hud.CameraSafeLayout.UpperRegion, Is.EqualTo(safeBefore.UpperRegion));
+            Assert.That(hud.CameraSafeLayout.LowerRightRegion,
+                Is.EqualTo(safeBefore.LowerRightRegion),
+                "The board keeps its standing safe surface instead of reframing for Level Up.");
+
+            var tray = Named(hud.RootElement, "gd-tray-region").worldBound;
+            var band = Named(hud.RootElement, "gd-upgrade-comparison-band");
+            var pairs = Descendants(band)
+                .Where(element => element.name == "gd-upgrade-pair")
+                .ToArray();
+            var cards = Descendants(band)
+                .Where(element => element.name == "gd-card-preview")
+                .ToArray();
+            Assert.That(pairs, Has.Length.EqualTo(3));
+            Assert.That(cards, Has.Length.EqualTo(6));
+            Assert.That(cards.Select(card => Mathf.Round(card.worldBound.yMin)).Distinct().Count(),
+                Is.EqualTo(1), "All six complete faces share one comparison row.");
+            Assert.That(pairs.All(pair => pair.worldBound.xMin >= tray.xMin - 0.5f &&
+                    pair.worldBound.xMax <= tray.xMax + 0.5f),
+                Is.True, "Every Blue, Green, and Red pair stays inside the full-width band.");
+            foreach (var option in Descendants(band)
+                .Where(element => element.name == "gd-upgrade-option"))
+            {
+                Assert.That(option.worldBound.yMin, Is.GreaterThanOrEqualTo(tray.yMin - 0.5f));
+                Assert.That(option.worldBound.yMax, Is.LessThanOrEqualTo(tray.yMax + 0.5f),
+                    $"A complete Level Up option, including its gained-item fact, must fit inside " +
+                    $"the comparison band. Option {option.worldBound}; band {tray}.");
+            }
+            foreach (var card in cards)
+            {
+                Assert.That(card.worldBound.width,
+                    Is.EqualTo(CardFootprint.Width).Within(UiPlayer.PixelSnapping()));
+                Assert.That(card.worldBound.height,
+                    Is.EqualTo(CardFootprint.Height).Within(UiPlayer.PixelSnapping()),
+                    "No Level Up card is shrunk or cropped into a compact substitute.");
+            }
+            var scroll = Descendants(hud.RootElement).OfType<ScrollView>()
+                .Single(element => element.name == "gd-tray-scroll");
+            Assert.That(scroll.horizontalScrollerVisibility, Is.EqualTo(ScrollerVisibility.Hidden));
+
+            runtime.RoundView.Render(standingModel);
+            hud.ApplyExclusiveContext();
+            yield return null;
+            yield return null;
+            Assert.That(Named(hud.RootElement, "gd-hero-rail-red").worldBound,
+                Is.EqualTo(redBefore));
+            Assert.That(Named(hud.RootElement, "gd-hero-rail-blue").worldBound,
+                Is.EqualTo(blueBefore), "Closing Level Up also leaves both columns standing.");
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_CapturesLevelUpComparisonAtBothValidatedDesktopSizes()
+        {
+            if (UnityEngine.Application.isBatchMode)
+            {
+                Assert.That(UnityEngine.Application.isBatchMode, Is.True,
+                    "The two-resolution capture branch is exercised by the dedicated nonbatch run.");
+                yield break;
+            }
+
+            var restoreGameView = SelectFixedGameViewResolution(2560, 1440);
+            try
+            {
+                for (var frame = 0;
+                     frame < 120 && (Screen.width != 2560 || Screen.height != 1440);
+                     frame++)
+                {
+                    yield return null;
+                }
+
+                Assert.That(Screen.width, Is.EqualTo(2560));
+                Assert.That(Screen.height, Is.EqualTo(1440));
+                yield return LoadOfficialSixPlayerScene();
+                var root = Root();
+                RenderArtworkUpgradeChoices(root.Runtime);
+                root.Hud.ApplyExclusiveContext();
+                yield return null;
+                yield return new WaitForEndOfFrame();
+                yield return Capture("tmp/milestone-8-29b-level-up-2560x1440.png");
+
+                SelectFixedGameViewResolution(2048, 1152);
+                for (var frame = 0;
+                     frame < 120 && (Screen.width != 2048 || Screen.height != 1152);
+                     frame++)
+                {
+                    yield return null;
+                }
+
+                Assert.That(Screen.width, Is.EqualTo(2048));
+                Assert.That(Screen.height, Is.EqualTo(1152));
+                root.Hud.Layout();
+                yield return null;
+                yield return new WaitForEndOfFrame();
+                var tray = Named(root.Hud.RootElement, "gd-tray-region").worldBound;
+                var cards = Descendants(Named(root.Hud.RootElement, "gd-upgrade-comparison-band"))
+                    .Where(element => element.name == "gd-card-preview")
+                    .ToArray();
+                Assert.That(cards, Has.Length.EqualTo(6));
+                Assert.That(cards.All(card => card.worldBound.xMin >= tray.xMin - 0.5f &&
+                        card.worldBound.xMax <= tray.xMax + 0.5f),
+                    Is.True, "No validated desktop size clips a Level Up face horizontally.");
+                Assert.That(Descendants(root.Hud.RootElement)
+                        .Where(element => element.name == "gd-upgrade-option")
+                        .All(option => option.worldBound.yMin >= tray.yMin - 0.5f &&
+                            option.worldBound.yMax <= tray.yMax + 0.5f),
+                    Is.True, "Every complete option and gained-item fact fits the validated view.");
+                yield return Capture("tmp/milestone-8-29b-level-up-2048x1152.png");
+            }
+            finally
+            {
+                restoreGameView?.Invoke();
+            }
         }
 
         /// <summary>

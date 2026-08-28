@@ -239,7 +239,7 @@ namespace GuardsDigital.Presentation.Match
         /// <para>Milestone 8.8a, and it is deliberately narrow. Everywhere the authority states an order
         /// - the tray's three lifecycle groups, a pause's own option list, a round's assignment history -
         /// that order is the one drawn, and this is not consulted. It exists for the one surface where a
-        /// set of options is laid out as a grid of colour columns rather than as a list: p.15's Upgrade a
+        /// set of options is laid out as labelled colour pairs rather than as a list: p.15's Upgrade a
         /// Card offers two candidates per upgradable card, the pause orders those pairs by card instance
         /// identity, and a column order taken from that identity would put the same three colours in a
         /// different left-to-right order for every hero. Choosing them nothing decides is not a fact, so

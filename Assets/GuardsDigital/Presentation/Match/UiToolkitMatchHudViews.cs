@@ -662,11 +662,13 @@ namespace GuardsDigital.Presentation.Match
                 rail.style.borderRightColor = accent;
             }
 
-            if (hero.IsViewed)
-            {
-                rail.style.borderTopWidth = 2f;
-                rail.style.borderTopColor = MatchHudTheme.SelectedOutline;
-            }
+            // Milestone 8.29b. Selection is a colour change inside permanently reserved geometry.
+            // Adding this width only to the viewed plaque made Yoga renegotiate that plaque's height
+            // and shifted the plaques below it whenever the viewed hero changed.
+            rail.style.borderTopWidth = 2f;
+            rail.style.borderTopColor = hero.IsViewed
+                ? MatchHudTheme.SelectedOutline
+                : new Color(0f, 0f, 0f, 0f);
 
             // Milestone 8.7a, by the user's 2026-08-21 decision: the rail on the right edge of the
             // screen is the one on the left mirrored, rather than the same rail repeated. Everything in
@@ -2178,12 +2180,13 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// The frame an upgrade option's card sits in: enough for the shared selection outline and a
-        /// little air, on every side. Milestone 8.8a. Three of these plus their gutters and the section's
-        /// own label are well inside the full-width tray, which is the constraint the grid has to
-        /// respect - two rows of full-height cards are taller than the ordinary band, so the exclusive
-        /// context receives the renderer's taller bound.
+        /// little air, on every side. Milestone 8.29b keeps two of these inside each explicitly labelled
+        /// colour pair, with all three pairs in one full-width comparison band.
         /// </summary>
         private const float UpgradeOptionInset = 6f;
+        private const float UpgradePairGap = 4f;
+        public const float UpgradePairWidth =
+            (CardFootprint.Width + (UpgradeOptionInset * 2f)) * 2f + UpgradePairGap;
 
         /// <summary>
         /// The frame a legal Defense card sits in, on the same terms as
@@ -2295,13 +2298,11 @@ namespace GuardsDigital.Presentation.Match
         /// context" is kept structurally rather than by discipline.
         /// </summary>
         /// <summary>
-        /// Whether the region is currently drawing p.15's upgrade choices as card faces, which is the one
-        /// thing this region draws that is taller than one row of cards.
-        ///
-        /// Milestone 8.8a. The renderer asks it so the paused prompt can use the whole height under the
-        /// status strip; every other state this region can be in fits the tray's ordinary bound.
+        /// Whether the region is drawing p.15's six card-faced upgrade choices. The renderer uses this
+        /// to select the contained comparison overlay and short-view vertical fallback while keeping
+        /// every standing HUD and board-safe rectangle on its ordinary geometry.
         /// </summary>
-        public bool HasUpgradeCardGrid =>
+        public bool HasUpgradeComparisonBand =>
             Model?.SystemTransitionPrompt != null &&
             Model.SystemTransitionPrompt.Options.All(option => option.Card != null);
 
@@ -2550,21 +2551,24 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            // Milestone 8.29b: Level Up uses the whole width between the standing side rails. Its
+            // family label joins the prompt line instead of consuming the ordinary 96-unit section
+            // gutter, leaving six unchanged CardFootprints enough room in one comparison row.
+            if (prompt.Options.All(option => option.Card != null))
+            {
+                status.Add(HudElements.Text(
+                    prompt.SectionLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold));
+                var upgradeGrid = HudElements.Column(6f);
+                upgradeGrid.style.flexGrow = 1f;
+                rows.Add(upgradeGrid);
+                BuildUpgradeComparisonBand(upgradeGrid, prompt);
+                return;
+            }
+
             var section = Section(prompt.SectionLabel);
             var grid = HudElements.Column(6f);
             grid.style.flexGrow = 1f;
             section.Add(grid);
-
-            // Milestone 8.8a: p.15's decision is a choice between cards, so it is drawn as cards. Every
-            // option of an upgrade carries the candidate's own face.
-            if (prompt.Options.All(option => option.Card != null))
-            {
-                // The gutter names the family beside the first row rather than halfway down two rows of
-                // cards, which is where a row's own vertical centring would leave it.
-                section.style.alignItems = Align.FlexStart;
-                BuildUpgradeOptionGrid(grid, prompt);
-                return;
-            }
 
             // One row per card the options are about, which p.15's own option order already groups them
             // by: the page asks which card to upgrade and which of its two next-Tier cards to take, so
@@ -2589,22 +2593,21 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// p.15's options as a grid of card faces: one column per upgradable card, one row per candidate.
+        /// p.15's options as one comparison band: Blue pair, Green pair, Red pair.
         ///
-        /// <para>Milestone 8.8a. The columns are the pairs the pause itself grouped - options for one
+        /// <para>The groups are the pairs the pause itself supplied - options for one
         /// upgraded card arrive together, so grouping them is reading the projection rather than sorting
-        /// it - and the candidates inside a column keep the order the pause offered them, which is what
-        /// decides which of p.15's two cards is drawn above the other.</para>
+        /// it - and the candidates inside a pair keep the order the pause offered them.</para>
         ///
-        /// <para>What this milestone does decide is the left-to-right order of the columns, and it takes
+        /// <para>Presentation decides only the left-to-right order of the pairs, and takes
         /// it from <see cref="MatchHudTheme.ColorReadingOrder"/> rather than from the pause. The pause
         /// orders its pairs by card instance identity, which puts the same three colours in a different
         /// order for every hero and in no order a player could learn; the colours are the one thing about
         /// this decision that is the same every time it is asked, so they are what the columns are read
-        /// by. It reorders columns and nothing else: no option is added, removed, or moved out of its own
+        /// by. It reorders pairs and nothing else: no option is added, removed, or moved out of its own
         /// pair.</para>
         /// </summary>
-        private void BuildUpgradeOptionGrid(
+        private void BuildUpgradeComparisonBand(
             VisualElement grid, SystemTransitionPromptViewModel prompt)
         {
             var columns = new List<List<SystemTransitionOptionViewModel>>();
@@ -2626,21 +2629,37 @@ namespace GuardsDigital.Presentation.Match
             var ordered = columns
                 .OrderBy(column => MatchHudTheme.ColorReadingRank(column[0].Color))
                 .ToArray();
-            var rows = ordered.Max(column => column.Count);
-            for (var rowIndex = 0; rowIndex < rows; rowIndex++)
+            var band = HudElements.Row(DirectorHandsUnityView.CardGap);
+            band.name = "gd-upgrade-comparison-band";
+            band.style.alignItems = Align.FlexStart;
+            band.style.justifyContent = Justify.FlexStart;
+            band.style.flexWrap = Wrap.NoWrap;
+            grid.Add(band);
+            foreach (var column in ordered)
             {
-                var row = HudElements.Row(DirectorHandsUnityView.CardGap);
-                row.name = "gd-upgrade-row";
-                row.style.alignItems = Align.FlexStart;
-                row.style.justifyContent = Justify.FlexStart;
-                row.style.flexWrap = Wrap.NoWrap;
-                grid.Add(row);
-                foreach (var column in ordered)
+                var pair = HudElements.Column(4f);
+                pair.name = "gd-upgrade-pair";
+                pair.style.width = UpgradePairWidth;
+                pair.style.minWidth = UpgradePairWidth;
+                pair.style.maxWidth = UpgradePairWidth;
+                pair.style.flexShrink = 0f;
+                var label = HudElements.Text(
+                    column[0].Color.ToString().ToUpperInvariant() + " PAIR",
+                    10f,
+                    MatchHudTheme.MutedText,
+                    FontStyle.Bold);
+                label.name = "gd-upgrade-pair-label";
+                pair.Add(label);
+                var choices = HudElements.Row(UpgradePairGap);
+                choices.style.alignItems = Align.FlexStart;
+                choices.style.flexWrap = Wrap.NoWrap;
+                foreach (var option in column)
                 {
-                    row.Add(rowIndex < column.Count
-                        ? BuildUpgradeOption(column[rowIndex])
-                        : BuildUpgradeOptionGap());
+                    choices.Add(BuildUpgradeOption(option));
                 }
+
+                pair.Add(choices);
+                band.Add(pair);
             }
         }
 
@@ -2738,20 +2757,6 @@ namespace GuardsDigital.Presentation.Match
             // this HUD already keeps a fact a surface stops drawing.
             facts.Add(gained);
             return facts;
-        }
-
-        /// <summary>
-        /// A column with no candidate on this row. It reserves the option's own footprint so the columns
-        /// stay aligned, and takes no focus stop and no pointer, so an absent candidate is absent rather
-        /// than being an empty control a player can reach.
-        /// </summary>
-        private static VisualElement BuildUpgradeOptionGap()
-        {
-            var gap = new VisualElement { name = "gd-upgrade-gap" };
-            gap.style.width = CardFootprint.Width + (UpgradeOptionInset * 2f);
-            gap.style.flexShrink = 0f;
-            gap.pickingMode = PickingMode.Ignore;
-            return gap;
         }
 
         /// <summary>

@@ -596,9 +596,9 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 
 Milestone **8.29a** is complete. Its exact definition remains active authority in [the additional completed Phase 8 definitions shard](PHASE_8_COMPLETED_2.md#x-829a-recompose-and-contain-the-side-hero-trays), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829a-recompose-and-contain-the-side-hero-trays-completion-evidence).
 
-### Hands-on corrective route before 8.30
+### Completed correction 8.29b and remaining hands-on route before 8.30
 
-Milestones **8.29b-8.29e** are proposed and not approved for implementation. Their exact observable outcomes, acceptance checks, closing checks, and non-goals are authoritative in [the Phase 8 hands-on correction shard](PHASE_8_HANDS_ON_CORRECTIONS.md). Milestone 8.30 resumes after that sequence.
+Milestone **8.29b** is complete; **8.29b1** and **8.29c-8.29e** remain proposed and not approved for implementation. Their exact observable outcomes, acceptance checks, closing checks, and non-goals are authoritative in [the Phase 8 hands-on correction shard](PHASE_8_HANDS_ON_CORRECTIONS.md). Milestone 8.30 resumes after that sequence.
 
 ### [ ] 8.30 Move match authority behind a transport-neutral session boundary
 
