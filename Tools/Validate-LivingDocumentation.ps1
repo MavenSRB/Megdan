@@ -959,6 +959,20 @@ else {
     }
 }
 
+# Governance access experiment (milestone 8.25e6b): keep the off-path comparison revision-pinned,
+# deterministic, non-authoritative, owner-bound, complete for its declared answer bodies, and honest
+# about the measured budget outcomes. Its focused validator owns deliberate violation probes.
+$accessExperimentValidator = Join-Path $PSScriptRoot 'Validate-GovernanceAccessExperiment.ps1'
+if (-not (Test-Path -LiteralPath $accessExperimentValidator -PathType Leaf)) {
+    Add-Issue 'ERROR' 'missing-governance-access-experiment-validator' 'Tools/Validate-GovernanceAccessExperiment.ps1 is missing.'
+}
+else {
+    try { & $accessExperimentValidator -SkipSelfTests }
+    catch {
+        Add-Issue 'ERROR' 'governance-access-experiment' $_.Exception.Message
+    }
+}
+
 # Active leaf thresholds. AGENTS.md is the mandatory project-root process leaf, so include it in
 # every active-corpus check rather than merely declaring an unreachable Get-Limit case.
 $activeFiles = @(Get-ChildItem -LiteralPath $docsRoot -Recurse -File -Filter '*.md' | Where-Object { $_.FullName.Replace('\', '/') -notlike '*/Archive/*' })

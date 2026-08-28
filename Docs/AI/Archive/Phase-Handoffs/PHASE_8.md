@@ -487,3 +487,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e6a | A non-authoritative corpus-hash manifest dynamically covers every governed and indexed archive Markdown source as exact UTF-8 preambles and heading bodies, binds every registered operative claim once, and rejects loss, overlap, duplication, unknown or stale bodies, and incomplete claim bindings. Every entry explicitly retains its source; canonical authority and the active router are unchanged. | `d21ccdd1` |
+
+## Milestone 8.25e6b Prototype and measure competing active-access models off-path completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.25e6b | A deterministic non-authoritative experiment compares current whole-shard retrieval with exact-hash owner-bound claim groups across six declared-answer bundles. It measures both models against the standing budgets, records expiry, maintenance, failure, transition and rollback obligations, and rejects nine integrity violations without selecting a model or changing the active router. | `PENDING` |

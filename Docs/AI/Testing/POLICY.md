@@ -182,6 +182,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-Governa
 
 Its maintenance-only `-WriteManifest` switch regenerates the map from the dynamically discovered current sources; use it only after all authorized source/continuity edits for that revision are present. `CompleteSourceDestinationManifestCoversEveryGovernedBody` must then reconstruct every byte, balance source/body/claim counts, and pass the deliberate-violation self-tests. The manifest is experiment input, never generated active authority.
 
+When the governance access experiment or any governed Markdown source changes, regenerate and run its focused check after regenerating the source/body manifest:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-GovernanceAccessExperiment.ps1 -WriteExperiment
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-GovernanceAccessExperiment.ps1
+```
+
+The generated bundles remain non-authoritative and off-path. Their self-tests must reject deliberate over-budget, over-hop, duplicate-owner, expired-evidence, stale-source, orphan-body, omitted-authority, and weakened-answer fixtures; a measured model may honestly exceed a hypothesis without invalidating the comparison.
+
 The validator fails when a governed active leaf, including project-root `AGENTS.md`, exceeds its hard word/byte threshold and warns at or above 85 percent; thresholds are per file, never an aggregate cap. A warning requires the same handoff to review ownership: archive duplicated or completed material losslessly, or shard irreducible current material authoritatively. A hard-threshold failure blocks handoff unless routing is corrected or the user explicitly approves a governance amendment with the corresponding validator update; deleting or weakening precise content is never a valid correction.
 
 Beyond thresholds it verifies required headings; exactly one current/active/next route with `ROADMAP.md`/`SESSION_BRIEF.md` agreement and exact `[~]` matching; mechanically checkable internal paths and anchors; documentation-graph connectivity (`orphan-shard`, `missing-evidence-backlink`, `missing-archive-destination`, added at 6.1z); completion-history containment (`completion-history-in-active-doc`, which rejects `- Milestone **...** completed` narrative bullets in the brief because its exact route marker is the sole active status statement, and separately rejects the declared historical-run patterns in testing shards); the declared-ledger semantic checks (`retired-structure-language` and `stale-retirement-owner` reading `Tools/RetiredStructures.txt`, added at 6.1ab); the one-row archive rule (`archive-narrative`); and the absence of archived bodies duplicated verbatim into active documents (`duplicate-history`). Every check uses stable text/heading rules with declared ledgers rather than heuristic semantic rewriting, cannot become passable merely by deleting content, and carries positive/negative self-tests plus a vacuity guard wherever an empty scanned corpus could otherwise produce a false pass.
