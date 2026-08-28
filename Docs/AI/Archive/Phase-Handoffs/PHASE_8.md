@@ -450,4 +450,4 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.25f2a | The official-board fallback framing check now states 8.25f2's current no-HUD contract: the complete reviewed map is centered and contained in the whole viewport, while the configured L-shaped safe-layout fit remains unchanged and separately covered. Its old strict right-shift check failed at `a7a756ef`; the replacement, full artwork fixture and complete Edit Mode suite pass without a production change. | `PENDING` |
+| 8.25f2a | The official-board fallback framing check now states 8.25f2's current no-HUD contract: the complete reviewed map is centered and contained in the whole viewport, while the configured L-shaped safe-layout fit remains unchanged and separately covered. Its old strict right-shift check failed at `a7a756ef`; the replacement, full artwork fixture and complete Edit Mode suite pass without a production change. | `e233eab8` |
