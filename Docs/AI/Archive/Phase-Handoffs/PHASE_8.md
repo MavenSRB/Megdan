@@ -24,7 +24,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.28a | Fresh review finds no current six-player or URP blocker: the complete Core/Application match and bounded scene/resource evidence remain within their accepted lines, while snapshot restore is materially cheaper than full replay. It pins serialized host authority, owner-private projection, trusted submission, compatibility, payload, and recovery constraints for 8.29; `RISK-ONLINE-001` remains future-owned, `F-TEST-10` is closed by 8.28a1, and no provider or implementation is selected. | `PENDING` |
+| 8.28a | Fresh review finds no current six-player or URP blocker: the complete Core/Application match and bounded scene/resource evidence remain within their accepted lines, while snapshot restore is materially cheaper than full replay. It pins serialized host authority, owner-private projection, trusted submission, compatibility, payload, and recovery constraints for 8.29; `RISK-ONLINE-001` remains future-owned, `F-TEST-10` is closed by 8.28a1, and no provider or implementation is selected. | `a58176d` |
 
 ## Milestone 8.16c Answer blocked Lane-Push respawn placement on the board completion evidence
 
