@@ -6,7 +6,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.29d | Attacks whose mandatory typed card text must establish the target are greyed unless a complete legal binding path exists; Brogan and Tigerclaw prove both sides, stale starts reject atomically, the saved HUD disables Mad Dash, and restore/Undo trust both declared timed roots. | `COMMIT_PENDING` |
+| 8.29d | Attacks whose mandatory typed card text must establish the target are greyed unless a complete legal binding path exists; Brogan and Tigerclaw prove both sides, stale starts reject atomically, the saved HUD disables Mad Dash, and restore/Undo trust both declared timed roots. | `745e1c8` |
 
 ## Milestone 8.29b1b Align silent printed-action highlights and preserve them on hover completion evidence
 
