@@ -274,7 +274,7 @@ namespace GuardsDigital.Application
                 case DirectorCommandKind.PerformHold:
                     return DispatchResult.From(round.TryPerformHold(command.CardInstanceId));
                 case DirectorCommandKind.StartAction:
-                    return StartAction(command.ActionDefinitionId);
+                    return StartAction(command.CardInstanceId, command.ActionDefinitionId);
                 case DirectorCommandKind.ChooseMovementDestination:
                     return AnswerMovement(command, false);
                 case DirectorCommandKind.StopMovement:
@@ -331,12 +331,26 @@ namespace GuardsDigital.Application
             }
         }
 
-        private DispatchResult StartAction(ActionDefinitionId actionDefinitionId)
+        private DispatchResult StartAction(
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId)
         {
             var turn = round.CurrentTurnAuthority;
             if (turn == null || !turn.SelectedActor.IsDefined)
             {
                 return DispatchResult.Unavailable("No current turn actor can start an action.");
+            }
+
+            // Milestone 8.29f. The identity guard every answer command here already carries, checked
+            // when the caller supplied one: an action definition id is printed on every card in the
+            // game, so a start command that named only one bound to whoever Initiative had selected
+            // when it arrived. A player pressing a printed region on a card whose action has since
+            // finished would have started the *next* hero's Movement.
+            if (sourceCardInstanceId.IsDefined &&
+                !sourceCardInstanceId.Equals(turn.SelectedActor.CardInstanceId))
+            {
+                return DispatchResult.Unavailable(
+                    "The action's source card is stale or is not the card the turn selected.");
             }
 
             var offers = ActionOfferQuery.GetAvailableTurnActionOffers(

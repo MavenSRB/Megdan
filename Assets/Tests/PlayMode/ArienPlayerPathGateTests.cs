@@ -77,6 +77,14 @@ namespace GuardsDigital.Tests.PlayMode
         private const string BehindTheTarget =
             "DangerousCurrent_MakesTheHeroBehindItsTargetDiscardOnItsOwnCardFace";
 
+        /// <summary>
+        /// Milestone 8.29f. The same face's other printed region, read after the Attack performed
+        /// from the first one has completed: rulebook p.7 has spent the card, so the Movement region
+        /// is offered by nothing and forwards nothing.
+        /// </summary>
+        private const string ActionSpent =
+            "DangerousCurrent_LeavesNoSecondActionOnItsCardOnceItsAttackHasCompleted";
+
         private const string LeapJourney =
             "LiquidLeap_PlacesArienOnAClickedSpaceAndLightsNoSpawnPoint";
 
@@ -177,7 +185,13 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(BoardUnitSelection, BehindTheTarget),
                         Prove(HandCardSelection, BehindTheTarget),
                         Prove(SecondaryMovementDestination, Walk),
-                        Prove(SecondaryDefenseOffer, DefendByFace)
+                        Prove(SecondaryDefenseOffer, DefendByFace),
+
+                        // Milestone 8.29f. A second journey over two shapes this face already
+                        // proves, which is what the gate's Distinct() over the evidence makes free -
+                        // and it is this face the reported defect was met on.
+                        Prove(CommitAndReveal, ActionSpent),
+                        Prove(AdjacentAttackTarget, ActionSpent)
                     },
                     new[]
                     {

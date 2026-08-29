@@ -289,7 +289,8 @@ namespace GuardsDigital.Tests.EditMode
 
             foreach (var offer in projection.AvailableTurnActions.Where(offer => offer.IsAvailable))
             {
-                candidates.Add(DirectorCommand.StartAction(offer.ActionDefinitionId));
+                candidates.Add(DirectorCommand.StartAction(
+                    offer.SourceCardInstanceId, offer.ActionDefinitionId));
             }
 
             foreach (var option in projection.AvailableFastTravelOptions)

@@ -3126,7 +3126,8 @@ namespace GuardsDigital.Presentation.Match
                 .Where(offer => offer.IsAvailable)
                 .Select(offer => new TypedInvocationViewModel(
                     FormatActionLabel(projection, offer),
-                    DirectorCommand.StartAction(offer.ActionDefinitionId)))
+                    DirectorCommand.StartAction(
+                        offer.SourceCardInstanceId, offer.ActionDefinitionId)))
                 .ToArray();
 
             // Milestone 6.5af: an offer the authority judged unstartable is drawn greyed rather than

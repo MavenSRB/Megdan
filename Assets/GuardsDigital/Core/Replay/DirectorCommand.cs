@@ -236,6 +236,24 @@ namespace GuardsDigital.Core.Replay
         public static DirectorCommand StartAction(ActionDefinitionId actionDefinitionId) =>
             new DirectorCommand(DirectorCommandKind.StartAction, actionDefinitionId: actionDefinitionId);
 
+        /// <summary>
+        /// Milestone 8.29f. The same start, naming the card the offer was drawn on.
+        ///
+        /// <para>An action definition id alone is not an identity: rulebook p.14 prints the same
+        /// <c>secondary-movement</c> on every card in the game, so a start command holding one binds to
+        /// whoever Initiative has selected when it arrives rather than to the card a player pressed. A
+        /// start submitted after its own action finished - the offer captured before an Attack, sent
+        /// after it - was therefore accepted as the *next* hero's Movement. This is the identity guard
+        /// every answer command in this session already carries, on the one command that had none.</para>
+        /// </summary>
+        public static DirectorCommand StartAction(
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId) =>
+            new DirectorCommand(
+                DirectorCommandKind.StartAction,
+                actionDefinitionId: actionDefinitionId,
+                cardInstanceId: sourceCardInstanceId);
+
         public static DirectorCommand RespawnHero(HeroRespawnCommand invocation)
         {
             if (invocation == null || invocation.Kind != HeroRespawnCommandKind.Respawn)

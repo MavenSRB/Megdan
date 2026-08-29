@@ -242,6 +242,7 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(arienId));
+            var arienCardId = runtime.SelectedActor.CardInstanceId;
             yield return PointTrayAt(root, arienId);
             yield return StartActionThroughControl(root, ActionKind.Attack);
 
@@ -265,8 +266,18 @@ namespace GuardsDigital.Tests.PlayMode
                 "The Attack ran straight through its own step 1 and completed.");
             Assert.That(OccupantAt(runtime, targetAt), Is.False,
                 "and it resolved against the unit it named.");
-            Assert.That(runtime.RoundView.Model.EndTurnInvocation, Is.Not.Null,
-                "The turn is Arien's to end rather than stuck on a prompt nobody could answer.");
+            // Milestone 8.29f corrected this assertion, and the old one was the defect rather than
+            // collateral: it asked for an End Turn control, and one stood only because the completed
+            // Attack had left the card unresolved with Arien still selected. p.7 spends the card on
+            // the action, so an Attack that ran straight through its own text ends the turn exactly
+            // as one that stopped to ask would have.
+            Assert.That(
+                runtime.Cards.Single(card => card.Id.Equals(arienCardId)).State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved),
+                "The Attack spent its own source card. " + Remaining(runtime));
+            Assert.That(runtime.RoundView.Model.Actions, Is.Empty,
+                "and no ordinary action is left for a player to press. Shown controls: " +
+                UiPlayer.Describe(hud));
 
             yield return CaptureGameView("noble-blade-with-nothing-to-move");
         }
@@ -488,6 +499,81 @@ namespace GuardsDigital.Tests.PlayMode
                 "Exactly the clicked card left the chosen hero's hand.");
             Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(waspId)), Is.True,
                 "and paying the price is what keeps them on the board.");
+        }
+
+        /// <summary>
+        /// Milestone 8.29f. The reported sequence, on the live surface: Dangerous Current's printed
+        /// Attack completes over an adjacent enemy minion, and the printed Movement region on that
+        /// same resolving card stops being a control that does anything.
+        ///
+        /// <para>The Movement's invocation is captured while the whole face is exposed and every
+        /// printed region bound, which is exactly the state milestone 8.29b1 draws it in - and then
+        /// submitted after the Attack, through the same presenter a click goes through. What the
+        /// player met was that submission being accepted.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator DangerousCurrent_LeavesNoSecondActionOnItsCardOnceItsAttackHasCompleted()
+        {
+            yield return LoadEngagedScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var arienId = ArienSeat(runtime).HeroId;
+            var waspId = OtherHeroId(runtime, arienId);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            Commit(runtime, arienId, ArienCardContent.DangerousCurrent);
+            Commit(runtime, waspId, WaspCardContent.StopProjectiles);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(arienId),
+                "Dangerous Current's printed Initiative 8 acts before Stop Projectiles' 3.");
+            var sourceCardId = runtime.SelectedActor.CardInstanceId;
+
+            yield return PointTrayAt(root, arienId);
+
+            // The invocation the resolving card's printed Movement region is bound to, taken while
+            // both regions are drawn. A presenter holds this across the Attack performed from the
+            // other region on the same face.
+            var movementBeforeTheAttack = runtime.RoundView.Model.Actions.Single(value =>
+                KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Movement);
+            Assert.That(movementBeforeTheAttack.Command.CardInstanceId, Is.EqualTo(sourceCardId),
+                "and it names the card it was drawn on, which is what makes it refusable later.");
+
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null);
+            var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
+            var targetAt = MinionView(targetId).Occupancy.Coordinate;
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, MinionView(targetId).transform.position),
+                Is.True, "The one legal target is chosen where it stands.");
+            yield return null;
+
+            // "Up to 1 enemy hero in any of the 2 spaces in a straight line directly behind the
+            // target" names nobody from this staged position, so p.14's step 1 asks nothing and the
+            // page runs through to the minion Defeat inside the same command.
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "The before-attack text has nobody to ask about here. " + Remaining(runtime));
+            Assert.That(OccupantAt(runtime, targetAt), Is.False,
+                "and the minion Defeat and removal completed on screen.");
+
+            // p.7 spends the card on the action, and the turn moves on.
+            Assert.That(
+                runtime.Cards.Single(card => card.Id.Equals(sourceCardId)).State.ResolutionStatus,
+                Is.EqualTo(CardResolutionStatus.Resolved),
+                "The completed Attack resolves its own source card.");
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId),
+                "and Initiative advances to the other seat.");
+
+            // So the region is inert, both as something the HUD offers and as something the
+            // presenter would forward if a stale click reached it.
+            Assert.That(
+                runtime.RoundView.Model.Actions.Any(value =>
+                    value.Command.CardInstanceId.Equals(sourceCardId)), Is.False,
+                "No printed action on the spent card is offered any more. Shown controls: " +
+                UiPlayer.Describe(hud));
+            Assert.That(runtime.RoundPresenter.Submit(movementBeforeTheAttack), Is.False,
+                "and the invocation a presenter was still holding forwards nothing.");
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId),
+                "The refusal changed nothing: the other seat is still the one acting.");
         }
 
         [UnityTest]

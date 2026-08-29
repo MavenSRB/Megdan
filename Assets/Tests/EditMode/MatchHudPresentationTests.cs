@@ -2693,8 +2693,13 @@ namespace GuardsDigital.Tests.EditMode
                     "An unavailable printed region structurally carries no command.");
                 if (region.Invocation != null)
                 {
+                    // Milestone 8.29f: the exact projected offer now includes the card it was drawn
+                    // on, which is what makes a region's command refusable once that card is spent.
+                    // An action definition id alone named no card, so a region held across the
+                    // action performed from the region beside it rebound to the next hero's.
                     Assert.That(region.Invocation.Command,
-                        Is.EqualTo(DirectorCommand.StartAction(offer.ActionDefinitionId)));
+                        Is.EqualTo(DirectorCommand.StartAction(
+                            offer.SourceCardInstanceId, offer.ActionDefinitionId)));
                 }
             }
 

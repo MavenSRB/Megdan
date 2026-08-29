@@ -332,7 +332,8 @@ namespace GuardsDigital.Presentation.Match
 
             candidates.AddRange(projection.AvailableTurnActions
                 .Where(offer => offer.IsAvailable)
-                .Select(offer => DirectorCommand.StartAction(offer.ActionDefinitionId)));
+                .Select(offer => DirectorCommand.StartAction(
+                    offer.SourceCardInstanceId, offer.ActionDefinitionId)));
             foreach (var option in projection.AvailableFastTravelOptions)
             {
                 candidates.AddRange(option.LegalDestinations.Select(destination =>

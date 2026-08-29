@@ -876,7 +876,7 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardNotSelectedForAction);
             }
 
-            if (cardActions?.HasPendingResolution == true)
+            if (TheTurnsActionIsUnderWay())
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
@@ -953,7 +953,7 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementAuthorityUnavailable);
             }
 
-            if (cardActions.HasPendingResolution)
+            if (TheTurnsActionIsUnderWay())
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
@@ -1450,7 +1450,7 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.FastTravelAuthorityUnavailable);
             }
 
-            if (cardActions.HasPendingResolution)
+            if (TheTurnsActionIsUnderWay())
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
@@ -1506,7 +1506,7 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ClearAuthorityUnavailable);
             }
 
-            if (cardActions.HasPendingResolution)
+            if (TheTurnsActionIsUnderWay())
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
@@ -1620,7 +1620,7 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillAuthorityUnavailable);
             }
 
-            if (cardActions.HasPendingResolution)
+            if (TheTurnsActionIsUnderWay())
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
@@ -1686,15 +1686,44 @@ namespace GuardsDigital.Core.Cards
         /// <summary>
         /// Whether this offer can be started at all, as the offer set reports it.
         ///
-        /// Three rules answer it, each for its own case and each returning true for the others':
+        /// Five rules answer it, each for its own case and each returning true for the others':
         /// milestone 6.5af's Skill whose effect can apply nothing, milestone 7.8a1's Attack with no
-        /// legal target, and milestone 8.4's printed primary whose card text has no composition. They
-        /// are asked together here so that adding a fourth is one more clause rather than one more
-        /// place the offer set is post-processed - which is exactly what the third one was.
+        /// legal target, milestone 8.4's printed primary whose card text has no composition, milestone
+        /// 8.7's rule that forbids this hero an action of this kind, and milestone 8.29f's rulebook
+        /// p.7: the card's one action is already under way. They are asked together here so that
+        /// adding a sixth is one more clause rather than one more place the offer set is
+        /// post-processed - which is exactly what the third one was.
         /// </summary>
         private bool CanStart(ActionOffer offer) =>
             CanStartSkill(offer) && CanStartAttack(offer) && CardTextIsComposed(offer) &&
-            ActorMayPerform(offer);
+            ActorMayPerform(offer) && !TheTurnsActionIsUnderWay();
+
+        /// <summary>
+        /// Milestone 8.29f. Whether the one action rulebook p.7 gives the selected card is already
+        /// being performed, so no further ordinary action may start on it.
+        ///
+        /// <para>Every start command has asked this since the beginning and refused with
+        /// <see cref="TurnResolutionRejectionReason.ActionAlreadyPending"/>; the offer set never did.
+        /// So an Attack standing on p.14's Defense question, or stopped inside its own card text, still
+        /// reported this card's other printed action as available - and since milestone 8.29b1 the
+        /// printed region that action lives on is a control a player can click. The two now read one
+        /// statement, which is the discipline <see cref="CanStartSkill"/> was written for: the greyed
+        /// control and the refusal that would follow a start are the same answer read at two moments
+        /// rather than two readings that could drift.</para>
+        ///
+        /// <para><c>IsCardTextPageStopped</c> is asked beside <c>HasPendingResolution</c> rather than
+        /// folded into it, because the two differ by exactly one state: a page whose own Push set off a
+        /// trigger that asked something (milestone 8.22's remainder) holds the action without holding
+        /// a resolution. An owed repeat is deliberately not here - p.10's repeat is started by the turn
+        /// itself, on paths that never pass a start command.</para>
+        ///
+        /// <para>It refuses only a <em>new</em> ordinary action. The continuations that carry an action
+        /// forward - a held Movement, an intercepted start, a repeated instance - are reached from
+        /// inside the turn rather than through a start command, and none of them is judged here.</para>
+        /// </summary>
+        private bool TheTurnsActionIsUnderWay() =>
+            cardActions != null &&
+            (cardActions.HasPendingResolution || cardActions.IsCardTextPageStopped);
 
         /// <summary>
         /// Milestone 8.7: whether a rule currently in effect bars this hero from an action of this
@@ -1896,11 +1925,9 @@ namespace GuardsDigital.Core.Cards
             // through to the end of the action here.
             if (paused.Moment == CardTextTiming.BeforeTheAttack)
             {
-                return cardActions.HasPendingResolution ||
-                    cardActions.PendingDefenseChoice != null ||
-                    cardActions.IsCardTextPageStopped
-                        ? TurnResolutionResult.Accept(events)
-                        : CompleteAttackOrStartItsRepeat(events);
+                return TheAttackIsOver()
+                    ? CompleteAttackOrStartItsRepeat(events)
+                    : TurnResolutionResult.Accept(events);
             }
 
             // What the finished text hands back differs by moment. Step 7's remainder ends the action,
@@ -1925,7 +1952,9 @@ namespace GuardsDigital.Core.Cards
                 }
             }
 
-            return CompleteAttackOrStartItsRepeat(events);
+            return TheAttackIsOver()
+                ? CompleteAttackOrStartItsRepeat(events)
+                : TurnResolutionResult.Accept(events);
         }
 
         /// <summary>
@@ -2063,7 +2092,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromAttackAction);
-            return !cardActions.IsCardTextPageStopped && !cardActions.HasPendingResolution
+            return TheAttackIsOver()
                 ? CompleteAttackOrStartItsRepeat(events)
                 : TurnResolutionResult.Accept(events);
         }
@@ -2285,7 +2314,7 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackAuthorityUnavailable);
             }
 
-            if (cardActions.HasPendingResolution)
+            if (TheTurnsActionIsUnderWay())
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.ActionAlreadyPending);
             }
@@ -2344,7 +2373,7 @@ namespace GuardsDigital.Core.Cards
             // An Attack whose own text names its target and whose text stopped on a question has not
             // reached p.14's step 2 yet; one that finished may already have run the whole page over a
             // minion and be complete.
-            return !cardActions.IsCardTextPageStopped && !cardActions.HasPendingResolution
+            return TheAttackIsOver()
                 ? CompleteAttackOrStartItsRepeat(events)
                 : TurnResolutionResult.Accept(events);
         }
@@ -2418,7 +2447,7 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(
                     TurnResolutionRejectionReason.AttackCommandRejected, result.RejectionReason);
             var targetEvents = MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction);
-            return result.MinionDefeat != null && !cardActions.IsCardTextPageStopped
+            return TheAttackIsOver()
                 ? CompleteAttackOrStartItsRepeat(targetEvents)
                 : TurnResolutionResult.Accept(targetEvents);
         }
@@ -2469,10 +2498,43 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.AddRange(MaterializeSteps(outcome.Steps, TurnResolutionEvent.FromAttackAction));
-            return cardActions.IsCardTextPageStopped
-                ? TurnResolutionResult.Accept(events)
-                : CompleteAttackOrStartItsRepeat(events);
+            return TheAttackIsOver()
+                ? CompleteAttackOrStartItsRepeat(events)
+                : TurnResolutionResult.Accept(events);
         }
+
+        /// <summary>
+        /// Milestone 8.29f. Whether the Attack a command was part of has reached rulebook p.14's end
+        /// with nothing holding it open, which is the one question every Attack path asks before it
+        /// completes.
+        ///
+        /// <para><b>Why the result the resolver returned cannot answer it.</b> A page that stops at
+        /// step 1 is handed back before its outcome exists: milestone 8.19a's
+        /// <c>AnswerAttackTarget</c> returns the moment it has emitted the Before-the-Attack text,
+        /// with no Defeat on the result, and the rest of the page is produced later - by
+        /// <see cref="MaterializeSteps"/> in the very same command when the text asks nothing. So a
+        /// caller reading <c>MinionDefeat</c> off that result read a field written before the minion
+        /// was defeated. Arien's Dangerous Current is the configured case: its text is a
+        /// Before-the-Attack rider that asks nothing when no enemy hero stands behind the target, the
+        /// whole page ran, the log recorded <c>AttackResolutionCompleted</c>, and the card stayed in
+        /// the turn area with its printed secondary Movement still offered.</para>
+        ///
+        /// <para>This asks the state instead, after the steps have been applied - which is the rule
+        /// milestone 8.25e derived on the after-action repeat path and stated there: what decides
+        /// whether the turn is still waiting is what actually stands, not what the resolver reported
+        /// before the steps ran. Stated once here so the six Attack decision points cannot disagree,
+        /// and so a seventh arrives as a call rather than as a seventh reading.</para>
+        ///
+        /// <para>An owed repeat is deliberately not one of the things that holds it: rulebook p.10's
+        /// repeat is started by <see cref="CompleteAttackOrStartItsRepeat"/>, on the other side of
+        /// this question, and <c>HasPendingResolution</c> names no owed repeat of either family.</para>
+        ///
+        /// <para>It is <see cref="TheTurnsActionIsUnderWay"/> asked from the other side, and it is
+        /// written as that one negated rather than as a second copy of the condition: an offer set and
+        /// a completion decision that disagreed about whether an action was still running is exactly
+        /// what this milestone repaired.</para>
+        /// </summary>
+        private bool TheAttackIsOver() => !TheTurnsActionIsUnderWay();
 
         /// <summary>
         /// Milestone 8.10. An Attack whose own card text asked for the Attack again does not end the

@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.29f Close a completed Attack before another action can start completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.29f | An Attack that has reached rulebook p.14's end resolves its own source card and hands Initiative on, decided from what stands after the steps were applied rather than from the outcome the resolver reported before them - so Arien's Dangerous Current no longer completes its Primary Attack and then accepts the same card's Secondary Movement. While an action is under way the offer set withholds the card's other printed actions, and a start command now names the card its offer was drawn on so a stale invocation cannot rebind to the next hero. | `pending` |
+
 ## Milestone 8.29e Stop offering impossible timed optional effects completion evidence
 
 | ID | Outcome | Commit |
