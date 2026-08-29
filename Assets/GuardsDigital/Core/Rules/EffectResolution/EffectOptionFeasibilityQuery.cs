@@ -115,6 +115,41 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         }
 
         /// <summary>
+        /// Milestone 8.29e: whether the one branch an <see cref="EffectNodeKind.Optional"/> node
+        /// governs can perform anything from the state as it stands.
+        ///
+        /// A `Choose` has asked this of each of its options since milestone 6.5ac, and an `Optional`
+        /// asked it of nothing: it opened p.10's confirm-or-decline whatever the branch behind it
+        /// could do, so "You may move another unit adjacent to the target" was a live prompt with no
+        /// unit to move, and the only answer that changed anything was the one the player was going to
+        /// give anyway. This is the same walk the option question uses, over the one child the node
+        /// governs - <see cref="EffectNodeKind.Optional"/> in <see cref="Walk"/> already reads a
+        /// declined branch as applying nothing, so the offer and the walk now read the node the same
+        /// way rather than one of them deciding twice.
+        ///
+        /// It answers about the branch alone. Whether declining is free, whether the enclosing action
+        /// continues, and what a skipped node records are the resolver's, and none of them change.
+        /// </summary>
+        public static bool CanPerformOptionalBranch(
+            EffectNodeDefinition optionalNode,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context)
+        {
+            if (optionalNode == null) throw new ArgumentNullException(nameof(optionalNode));
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+
+            var budget = MaximumNodesPerOption;
+            return Walk(
+                optionalNode.ChildNodeIds[0],
+                frame,
+                outcomes ?? Array.Empty<EffectNodeOutcome>(),
+                context,
+                ref budget) == Verdict.Performable;
+        }
+
+        /// <summary>
         /// Whether a mandatory card-text path can reach the typed operation that binds an enclosing
         /// Attack's target. Unlike <see cref="CanApplyAnything"/>, an earlier optional or otherwise
         /// performable step is not sufficient: the walk continues until a mandatory target binding is

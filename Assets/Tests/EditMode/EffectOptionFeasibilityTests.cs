@@ -563,6 +563,205 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
+        // Milestone 8.29e: the same question, asked of an `Optional` node's one branch
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The closing check. A `Choose` has refused an option it can prove does nothing since
+        /// milestone 6.5ac; an `Optional` opened p.10's confirm-or-decline whatever stood behind it,
+        /// so a player was asked a question whose two answers left the same board - and asked it at
+        /// the one moment every other control is withheld.
+        ///
+        /// <para>Skipping is not a new rule. `may`, `up to` and `if able` all treat a step nobody can
+        /// take as simply not taken, and that is what a declined optional already records; what
+        /// changed is that the reading happens before the question rather than after the answer.</para>
+        /// </summary>
+        [Test]
+        public void AnOptionalStepWhoseBranchCannotApply_CompletesWithoutOfferingAConfirmCommand()
+        {
+            var completed = Start(Optional(
+                EffectFailurePolicy.May,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory)));
+
+            Assert.That(completed.Frame, Is.Null,
+                "There is nothing here to confirm and nothing to decline, so nothing is asked and " +
+                "no frame is left standing to be answered.");
+            Assert.That(completed.IsComplete, Is.True,
+                "And the resolution is over rather than waiting on an answer nobody can give.");
+            Assert.That(Kinds(completed), Is.EqualTo(new[] { "root=DeclinedOptional" }),
+                "The node records what it always recorded for a step that was not taken, and the " +
+                "branch behind it records nothing because it never ran.");
+        }
+
+        /// <summary>
+        /// What the skipped node leaves for a replay: nothing. p.10's confirm and decline are the two
+        /// answers an <see cref="EffectChoiceRecord"/> closes on, and a question nobody was asked has
+        /// neither - the same position milestone 6.5ae's unprompted stop was in.
+        ///
+        /// <para>The second offer is what keeps the frame alive to be read, and is the other half of
+        /// the claim: skipping one branch narrows what is asked, not what may be answered.</para>
+        /// </summary>
+        [Test]
+        public void AnUnaskedOptionalStep_RecordsNoAnswerAndLeavesALaterOfferStanding()
+        {
+            var second = new EffectNodeId("second-may");
+            var performable = new EffectNodeId("performable");
+            var sequence = new EffectNodeId("sequence");
+            var paused = Start(new EffectDefinition(
+                new EffectDefinitionId("two-optionals-fixture"), "rev-1", sequence,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        sequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { Root, second }),
+                    new EffectNodeDefinition(
+                        Root, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        childNodeIds: new[] { First },
+                        chooser: EffectChooserRole.Actor),
+                    Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                    new EffectNodeDefinition(
+                        second, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        childNodeIds: new[] { performable },
+                        chooser: EffectChooserRole.Actor),
+                    Leaf(performable, SyntheticEffectCapabilities.NoteActorV1,
+                        EffectFailurePolicy.Mandatory)
+                }));
+
+            Assert.That(paused.Frame.PendingChoice, Is.Not.Null);
+            Assert.That(paused.Frame.PendingChoice.NodeId, Is.EqualTo(second),
+                "The first offer was skipped and the second one - which can do something - stands.");
+            Assert.That(paused.Frame.AcceptedChoices, Is.Empty,
+                "And the skipped one produced no answer, so a replay has none to reproduce.");
+            Assert.That(Kinds(paused), Is.EqualTo(new[] { "root=DeclinedOptional" }));
+        }
+
+        [Test]
+        public void AnOptionalStepWhoseBranchCanApply_StillOpensP10sConfirmOrDecline()
+        {
+            var paused = Start(Optional(
+                EffectFailurePolicy.May,
+                Leaf(First, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory)));
+
+            var choice = paused.Frame.PendingChoice;
+            Assert.That(choice, Is.Not.Null,
+                "A branch that can do something is a real offer, and the gate narrows what is " +
+                "asked rather than what may be answered.");
+            Assert.That(choice.Kind, Is.EqualTo(EffectChoiceKind.ConfirmOrDecline));
+            Assert.That(choice.ConfirmInvocation, Is.Not.Null);
+            Assert.That(choice.DeclineInvocation, Is.Not.Null,
+                "Declining a `may` costs nothing and is still the chooser's to give.");
+        }
+
+        /// <summary>
+        /// The rest of the action is what an optional step that was not taken leaves standing, and it
+        /// stands whether the step was declined or never offered - which is the whole reason skipping
+        /// is not a stop.
+        /// </summary>
+        [Test]
+        public void AnUnaskedOptionalStep_StopsNothingAfterIt()
+        {
+            var after = new EffectNodeId("after");
+            var sequence = new EffectNodeId("sequence");
+            var definition = new EffectDefinition(
+                new EffectDefinitionId("unasked-optional-fixture"), "rev-1", sequence,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        sequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { Root, after }),
+                    new EffectNodeDefinition(
+                        Root, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        childNodeIds: new[] { First },
+                        chooser: EffectChooserRole.Actor),
+                    Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                    Leaf(after, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory)
+                });
+
+            var completed = Start(definition);
+
+            Assert.That(completed.Frame, Is.Null, "Nothing paused.");
+            Assert.That(Kinds(completed),
+                Is.EqualTo(new[] { "root=DeclinedOptional", "after=Applied", "sequence=Applied" }),
+                "The step was not taken and the ordered step after it ran, in the definition's own " +
+                "order.");
+        }
+
+        /// <summary>
+        /// p.11's `up to` and p.10's `may` are different words for different things - one is over a
+        /// distance and the other over the whole step - but both make an impossible step one that is
+        /// simply not taken, so both read their branch the same way here.
+        /// </summary>
+        [Test]
+        public void AnUpToOptionalWhoseBranchCannotApply_IsSkippedForTheSameReasonAMayIs()
+        {
+            var completed = Start(Optional(
+                EffectFailurePolicy.UpTo,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory)));
+
+            Assert.That(completed.Frame, Is.Null);
+            Assert.That(Kinds(completed), Is.EqualTo(new[] { "root=DeclinedOptional" }));
+        }
+
+        /// <summary>
+        /// `if able` is untouched: it never asked, so there was never a prompt to withhold. It still
+        /// enters its branch and lets the step's own policy skip what cannot be taken, which is a
+        /// different record from the one an unasked `may` writes.
+        /// </summary>
+        [Test]
+        public void AnIfAbleOptional_StillEntersItsBranchRatherThanBeingDeclinedForIt()
+        {
+            var completed = Start(Optional(
+                EffectFailurePolicy.IfAble,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.IfAble)));
+
+            Assert.That(completed.Frame, Is.Null);
+            Assert.That(Kinds(completed),
+                Is.EqualTo(new[] { "first-option=DeclinedOptional", "root=Applied" }),
+                "The branch was entered and its own step is what reported it could not be taken, so " +
+                "the Optional above it applied. An unoffered `may` writes that record on the " +
+                "Optional itself and never reaches the step at all - the same word on a different " +
+                "node, which is what tells a reader which of the two happened.");
+        }
+
+        /// <summary>
+        /// A branch whose only step declines applies nothing, so there is nothing to offer - the same
+        /// reading the option walk makes, and the reason declining and being impossible are still two
+        /// different facts one node down.
+        /// </summary>
+        [Test]
+        public void AnOptionalWhoseBranchOnlyDeclines_IsNotOffered()
+        {
+            var completed = Start(Optional(
+                EffectFailurePolicy.May,
+                Leaf(First, SyntheticEffectCapabilities.DeclinedV1, EffectFailurePolicy.Mandatory)));
+
+            Assert.That(completed.Frame, Is.Null);
+            Assert.That(Kinds(completed), Is.EqualTo(new[] { "root=DeclinedOptional" }));
+        }
+
+        /// <summary>
+        /// And the mirror: a branch whose first step declines but whose second applies is worth
+        /// offering, because a declined step stops nothing after it. The gate refuses a branch it can
+        /// prove empty and never one it merely has not finished reading.
+        /// </summary>
+        [Test]
+        public void AnOptionalWhoseLaterStepApplies_IsStillOffered()
+        {
+            var declines = new EffectNodeId("declines");
+            var applies = new EffectNodeId("applies");
+            var paused = Start(Optional(
+                EffectFailurePolicy.May,
+                new EffectNodeDefinition(
+                    First, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { declines, applies }),
+                Leaf(declines, SyntheticEffectCapabilities.DeclinedV1, EffectFailurePolicy.Mandatory),
+                Leaf(applies, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory)));
+
+            Assert.That(paused.Frame.PendingChoice, Is.Not.Null);
+            Assert.That(paused.Frame.PendingChoice.NodeId, Is.EqualTo(Root));
+        }
+
+        // -------------------------------------------------------------------------------------------
         // Helpers
         // -------------------------------------------------------------------------------------------
 
@@ -600,6 +799,27 @@ namespace GuardsDigital.Tests.EditMode
         private static EffectNodeDefinition Leaf(
             EffectNodeId id, EffectCapabilityReference capability, EffectFailurePolicy policy) =>
             new EffectNodeDefinition(id, EffectNodeKind.Capability, policy, capability);
+
+        /// <summary>
+        /// A definition whose root is an `Optional` over the first node given, with any further nodes
+        /// carried along as the table that branch resolves through. Milestone 8.29e.
+        /// </summary>
+        private static EffectDefinition Optional(
+            EffectFailurePolicy policy,
+            params EffectNodeDefinition[] nodes)
+        {
+            var root = new EffectNodeDefinition(
+                Root, EffectNodeKind.Optional, policy,
+                childNodeIds: new[] { nodes[0].Id },
+                // An `if able` node opens no decision, so the definition refuses one that names a
+                // chooser - which is the declaration this fixture has to respect rather than restate.
+                chooser: policy == EffectFailurePolicy.IfAble
+                    ? EffectChooserRole.None
+                    : EffectChooserRole.Actor);
+            return new EffectDefinition(
+                new EffectDefinitionId("optional-fixture-definition"), "rev-1", Root,
+                new[] { root }.Concat(nodes));
+        }
 
         /// <summary>
         /// A definition whose root is a `Choose` over the first two nodes given, with any further

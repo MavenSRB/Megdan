@@ -177,8 +177,8 @@ namespace GuardsDigital.Tests.PlayMode
                         "TigerclawPrintedSetTests" +
                             ".BlinkStrike_OffersOnlyACrossableEnemy_AndLandsBeyondIt",
                         "TigerclawPrintedSetTests" +
-                            ".BlinkStrike_RefusesALineWhoseEndSpaceIsOccupied",
-                        "TigerclawPrintedSetTests.BlinkStrike_WithNoCrossableEnemy_AttacksNobody"
+                            ".BlinkStrike_WithAnOccupiedEndSpace_IsUnavailable",
+                        "TigerclawPrintedSetTests.BlinkStrike_WithNoCrossableEnemy_IsUnavailable"
                     }),
 
                 // p.20's Handicap card. p.6 returns it to the box and the pitch is a six-player

@@ -170,7 +170,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     SyntheticTargetingCapabilities.ChooseTargetV3,
                     inputs: new[]
                     {
-                        EffectInputBinding.FromLiteral("range", EffectValue.Integer(2)),
+                        // Milestone 8.29e widened this from 2. The radius exists only to give the
+                        // window a unit to move, and until 8.29e it did not have to reach one: the
+                        // offer above opened whatever this found, so the fixture asked its two
+                        // questions from a spawn with nothing within two spaces. An offer whose
+                        // branch can do nothing is no longer made, so a radius that reaches nothing
+                        // now removes the pause this content exists to open. Ten spans the minion
+                        // lane from either spawn on the official map, which is what makes the
+                        // question a real one wherever the setup stands the controller.
+                        EffectInputBinding.FromLiteral("range", EffectValue.Integer(10)),
                         EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
                         EffectInputBinding.FromLiteral(
                             EffectSelectionDeclaration.ConsumerParameterName,

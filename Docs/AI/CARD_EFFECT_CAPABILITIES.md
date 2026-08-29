@@ -81,7 +81,7 @@ If a later mandatory node returns `ImpossibleMandatory`, earlier `Applied` nodes
 
 1. Distinct rule terms keep distinct public capability IDs even when they share low-level occupancy helpers.
 2. Validation is side-effect free. A rejected or stale command does not partially apply an effect.
-3. A mandatory impossible step stops the remaining ordered action after preserving earlier completed steps. Optional wording follows its exact source semantics.
+3. A mandatory impossible step stops the remaining ordered action after preserving earlier completed steps. Optional wording follows its exact source semantics, and since milestone 8.29e an optional control node whose branch can apply nothing is skipped rather than offered.
 4. All player decisions become authoritative pending choices. The resolver never chooses an undisclosed target, distance, route, direction, mode, or token to remove on the player's behalf unless the rules make that choice automatic. A candidate may bind multiple disclosed facts as one choice; the Phase 1 Movement destination candidate explicitly includes the exact route and cost selected by its one destination command.
 5. Capabilities declare whether they query intrinsic representation kind or effective rules characteristics. Type-based rules normally apply `Counts As`, immunity, and continuous modifiers; explicit miniature/representation rules use intrinsic kind.
 6. A unit-affecting capability declares its exact `RuleActivity` and consults the shared immunity decision both when deriving candidates and immediately before mutation; automatically affected and multi-target units use the same contract.

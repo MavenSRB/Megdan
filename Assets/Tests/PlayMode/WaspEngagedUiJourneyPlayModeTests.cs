@@ -672,7 +672,11 @@ namespace GuardsDigital.Tests.PlayMode
             while (runtime.SystemTransitionPrompt?.Kind !=
                 SystemTransitionPromptKind.LanePushRespawnPlace)
             {
-                Assert.That(commandCount, Is.LessThan(950),
+                // Milestone 8.29e raised the bound from 950. The walk is a random one over the
+                // commands the projection offers, so withdrawing an offer whose branch can do
+                // nothing reroutes the whole trajectory rather than shortening it: seed 10 still
+                // reaches this exact pause and now takes 995 commands to get there.
+                Assert.That(commandCount, Is.LessThan(1100),
                     $"Seed 10 did not reach the blocked Lane-Push respawn pause; stopped in " +
                     $"round {runtime.RoundIndex}, turn {runtime.TurnIndex}, phase {runtime.Phase}.");
                 var offered = runtime.EnumerateProjectedCommands();

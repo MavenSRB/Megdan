@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard for player-reported UI and rules-offer defects found after milestone 8.29a and before private-online implementation resumes. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
 
-These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestones 8.29b, 8.29b1 and correctives 8.29b1a-8.29b1b are complete; 8.29c-8.29f remain proposed.
+These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestones 8.29b, 8.29b1 and correctives 8.29b1a-8.29b1b, 8.29d and 8.29e are complete; 8.29c is deferred and 8.29f remains proposed.
 
 ### [x] 8.29b Stabilize hero selection and recompose Level Up
 
@@ -126,9 +126,9 @@ Non-goals: No card wording, rule interpretation, balancing, Attack-resolution or
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829d-grey-attacks-whose-mandatory-card-text-cannot-establish-a-target-completion-evidence).
 
-### [ ] 8.29e Stop offering impossible timed optional effects
+### [x] 8.29e Stop offering impossible timed optional effects
 
-Proposed at the user's direction on 2026-08-29 after before/after-Attack effects offered choices with no valid target, with Arien observed as an additional example. Code inspection confirmed that an ordinary optional effect node pauses for confirm-or-decline before consulting the existing pure feasibility probe. Documentation of this correction is approved; implementation is not yet approved.
+Approved and completed at the user's direction on 2026-08-29 after before/after-Attack effects offered choices with no valid target, with Arien observed as an additional example. Code inspection confirmed that an ordinary optional effect node pauses for confirm-or-decline before consulting the existing pure feasibility probe. The correction is shared and content-derived: the `Optional` control node now asks its one branch the question a `Choose` has asked each of its options since milestone 6.5ac.
 
 Observable outcome: Optional before-Attack, after-Attack, and before-action card-text branches never pause or expose an enabled choice when their governed effect has no legal candidate or endpoint, while the underlying action continues whenever its mandatory requirements remain legal.
 
@@ -144,6 +144,8 @@ Acceptance checks:
 Closing check: `AnOptionalStepWhoseBranchCannotApply_CompletesWithoutOfferingAConfirmCommand` is recorded failing at the pre-fix revision where the optional node always pauses and passing after the feasibility gate. `ConfiguredTimedOptionalEffects_OfferOnlyPerformableBranches` closes the roster matrix, including Arien's observed before/after-Attack surfaces.
 
 Non-goals: No change to printed card text, Attack legality unrelated to optional text, rules timing, target queries, movement/displacement legality, triggered-effect limits, card balance, hero-specific rule branch, networking, animation, or general prompt redesign.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829e-stop-offering-impossible-timed-optional-effects-completion-evidence).
 
 ### [ ] 8.29f Close a completed Attack before another action can start
 

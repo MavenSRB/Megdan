@@ -66,6 +66,14 @@ namespace GuardsDigital.Tests.PlayMode
         private const string PauseSurvives =
             "NobleBladesBeforeAttackPause_IsAnsweredAgainAfterARestoreAndAfterAnUndo";
 
+        /// <summary>
+        /// Milestone 8.29e. The other half of the same step-1 moment: the printed `may` has nothing
+        /// adjacent to the target to move, so no confirm-or-decline is drawn at all and the Attack
+        /// runs straight through its own text.
+        /// </summary>
+        private const string NothingToOffer =
+            "NobleBladeWithNoUnitBesideItsTarget_AsksNothingAndStillCompletesItsAttack";
+
         private const string BehindTheTarget =
             "DangerousCurrent_MakesTheHeroBehindItsTargetDiscardOnItsOwnCardFace";
 
@@ -126,7 +134,9 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(SecondaryMovementDestination, Walk),
                         Prove(SecondaryDefenseOffer, DefendByFace),
                         Prove(AdjacentAttackTarget, NobleBladeJourney),
+                        Prove(AdjacentAttackTarget, NothingToOffer),
                         Prove(BeforeAttackTextPause, NobleBladeJourney),
+                        Prove(BeforeAttackTextPause, NothingToOffer),
                         Prove(ConfirmOrDecline, NobleBladeJourney),
                         Prove(BoardUnitSelection, NobleBladeJourney),
                         Prove(BoardSpaceSelection, NobleBladeJourney)

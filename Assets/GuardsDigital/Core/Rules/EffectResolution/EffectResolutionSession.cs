@@ -833,6 +833,23 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                                 continue;
                             }
 
+                            // Milestone 8.29e: an offer whose branch can do nothing is not an offer.
+                            // A `Choose` has refused an option it can prove empty since milestone
+                            // 6.5ac; this node opened p.10's confirm-or-decline without ever asking,
+                            // so a "Before the attack: you may move another unit adjacent to the
+                            // target" with no such unit stopped the Attack on a question whose two
+                            // answers left the same board. Skipping it is what `may`, `up to`, and
+                            // `if able` already do with a step they cannot take - the node is not
+                            // taken, the text is over, and the action carries on.
+                            if (!EffectOptionFeasibilityQuery.CanPerformOptionalBranch(
+                                    node, frame, outcomes, context))
+                            {
+                                Pop(continuation);
+                                Record(outcomes, events, node.Id,
+                                    EffectExecutionResultKind.DeclinedOptional);
+                                continue;
+                            }
+
                             return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
                                 frame, node, context, EffectChoiceKind.ConfirmOrDecline,
                                 Array.Empty<EffectChoiceCandidate>(), 0, 0));

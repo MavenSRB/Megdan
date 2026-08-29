@@ -192,6 +192,85 @@ namespace GuardsDigital.Tests.PlayMode
                 "The Attack resumed and completed after its before-attack text.");
         }
 
+        /// <summary>
+        /// Milestone 8.29e. The same printed sentence on a board where it has nothing to say.
+        ///
+        /// <para>The staged position puts exactly one unit beside Arien's only legal target, so the
+        /// enemy's own earlier Attack is what empties it: Magnetic Dagger's printed Initiative 12 acts
+        /// before Noble Blade's 11 and defeats that minion. What "another unit that is adjacent to the
+        /// target" then names is nobody - and until this milestone the offer opened all the same,
+        /// stopping the Attack on a question whose confirm and decline left the same board while every
+        /// other control was withheld.</para>
+        ///
+        /// <para>The position is played rather than staged on purpose: a scene composed with the
+        /// neighbour already missing would prove the fixture, and this proves the rules.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator NobleBladeWithNoUnitBesideItsTarget_AsksNothingAndStillCompletesItsAttack()
+        {
+            yield return LoadEngagedScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var arienId = ArienSeat(runtime).HeroId;
+            var waspId = OtherHeroId(runtime, arienId);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            Commit(runtime, waspId, WaspCardContent.MagneticDagger);
+            Commit(runtime, arienId, ArienCardContent.NobleBlade);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId),
+                "Magnetic Dagger's printed Initiative 12 acts before Noble Blade's 11.");
+
+            yield return PointTrayAt(root, waspId);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            var neighbourId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
+            var neighbourAt = MinionView(neighbourId).Occupancy.Coordinate;
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, MinionView(neighbourId).transform.position),
+                Is.True);
+            yield return null;
+            Assert.That(OccupantAt(runtime, neighbourAt), Is.False,
+                "The enemy's Attack removed the one unit standing beside Arien's own target. " +
+                Remaining(runtime));
+
+            if (runtime.SelectedActor.ActorId.Equals(waspId))
+            {
+                yield return PointTrayAt(root, waspId);
+                UiPlayer.Click(
+                    UiPlayer.Button(hud, runtime.RoundView.Model.EndTurnInvocation.Label));
+                yield return null;
+            }
+
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(arienId));
+            yield return PointTrayAt(root, arienId);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null,
+                "Noble Blade is still an ordinary legal Attack: only its optional text lost its " +
+                "subject. " + Remaining(runtime));
+            var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
+            var targetAt = MinionView(targetId).Occupancy.Coordinate;
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, MinionView(targetId).transform.position),
+                Is.True);
+            yield return null;
+
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "No question stands: the before-attack `may` has no unit to move, so it is not " +
+                "asked. " + Remaining(runtime));
+            Assert.That(runtime.RoundView.Model.EffectChoices, Is.Empty,
+                "and no confirm or decline control is drawn for a player to press. Shown controls: " +
+                UiPlayer.Describe(hud));
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
+                "The Attack ran straight through its own step 1 and completed.");
+            Assert.That(OccupantAt(runtime, targetAt), Is.False,
+                "and it resolved against the unit it named.");
+            Assert.That(runtime.RoundView.Model.EndTurnInvocation, Is.Not.Null,
+                "The turn is Arien's to end rather than stuck on a prompt nobody could answer.");
+
+            yield return CaptureGameView("noble-blade-with-nothing-to-move");
+        }
+
         [UnityTest]
         public IEnumerator NobleBladesBeforeAttackPause_IsAnsweredAgainAfterARestoreAndAfterAnUndo()
         {

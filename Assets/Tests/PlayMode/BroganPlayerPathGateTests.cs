@@ -88,6 +88,15 @@ namespace GuardsDigital.Tests.PlayMode
         private const string ChargeJourney =
             "MadDash_ChargesInAStraightLineAndTargetsTheUnitBesideWhereItStops";
 
+        /// <summary>
+        /// Milestone 8.29d added this journey and ran Play Mode filtered, so no row named it and the
+        /// gate stayed red until milestone 8.29e's unfiltered run. It proves the other half of the
+        /// same step-1 moment the charge journey proves: an Attack whose mandatory card text cannot
+        /// bind a target is drawn greyed rather than started and stopped.
+        /// </summary>
+        private const string ChargeWithoutABinding =
+            "MadDashWithoutACompleteChargeBinding_IsGreyedAndCannotBeStarted";
+
         private const string ShoveJourney =
             "BrutalJab_MovesOneSpaceAndPushesTheAdjacentPieceByItsOwnDistanceControls";
 
@@ -189,6 +198,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(AdjacentAttackTarget, ChargeJourney),
                         Prove(BeforeAttackTextPause, ChargeJourney),
+                        Prove(BeforeAttackTextPause, ChargeWithoutABinding),
                         Prove(BoardSpaceSelection, ChargeJourney),
                         Prove(BoardUnitSelection, ChargeJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),

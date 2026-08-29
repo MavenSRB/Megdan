@@ -86,10 +86,15 @@ namespace GuardsDigital.Tests.EditMode
             var heavy = CreateFixture(StandardMinionType.Heavy, lastEnemyMinion: false,
                 adjacentEnemyHero: true, controllerOnBoard: true);
             StartBasicSkill(heavy);
-            Assert.That(heavy.Turn.PendingEffectChoice, Is.Not.Null);
-            Answer(heavy.Turn, heavy.Turn.PendingEffectChoice.ConfirmInvocation);
+
+            // Milestone 8.29e. Until then this fixture confirmed the Ultimate's `may` and only
+            // afterwards discovered that the protected Heavy is filtered out - a question whose two
+            // answers left the same board, asked at the one moment every other control is withheld.
+            // The filtering is unchanged and is still what this case is about; what changed is that
+            // the offer now reads its own branch before opening, so the step is simply not taken.
             Assert.That(heavy.Turn.PendingEffectChoice, Is.Null,
-                "The confirmed optional step finds no legal target because the protected Heavy is filtered.");
+                "The optional step has no legal target because the protected Heavy is filtered, so " +
+                "p.10's confirm-or-decline is never opened.");
             Assert.That(heavy.Board.Minions.Any(value => value.MinionId.Equals(heavy.TargetId)), Is.True);
 
             var offBoard = CreateFixture(StandardMinionType.Melee, lastEnemyMinion: false,

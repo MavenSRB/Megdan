@@ -598,7 +598,7 @@ Milestone **8.29a** is complete. Its exact definition remains active authority i
 
 ### Completed correction 8.29b and remaining hands-on route before 8.30
 
-Milestones **8.29b**, **8.29b1**, **8.29b1a-8.29b1b**, and **8.29d** are complete; deferred **8.29c** and **8.29e-8.29f** remain proposed. Their exact observable outcomes, acceptance checks, closing checks, and non-goals are authoritative in [the Phase 8 hands-on correction shard](PHASE_8_HANDS_ON_CORRECTIONS.md). Milestone 8.30 resumes after that sequence.
+Milestones **8.29b**, **8.29b1**, **8.29b1a-8.29b1b**, **8.29d** and **8.29e** are complete; deferred **8.29c** and proposed **8.29f** remain. Their exact observable outcomes, acceptance checks, closing checks, and non-goals are authoritative in [the Phase 8 hands-on correction shard](PHASE_8_HANDS_ON_CORRECTIONS.md). Milestone 8.30 resumes after that sequence.
 
 ### [ ] 8.30 Move match authority behind a transport-neutral session boundary
 
