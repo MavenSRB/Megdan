@@ -378,6 +378,25 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         public static SceneCardContent NextComposedCardContent { get; set; }
 
+        /// <summary>
+        /// Milestone 8.30b. The development-only seat switcher: the seat the next composed match is
+        /// played from, or <c>null</c> for the Director's own runtime.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Not a player-facing control, and structurally unable to become one.</b> It names
+        /// an existing seat and nothing else: it cannot create a seat, cannot move one, and cannot
+        /// change what a seat owns, because the binding it selects from is derived from the
+        /// authoritative participant graph. Naming a seat that is not bound throws rather than
+        /// composing something half-authorized.</para>
+        /// <para>It is the same one-shot development affordance as
+        /// <see cref="NextComposedCardContent"/> above, consumed and reset by the composition, and
+        /// the same one `DEV-004` covers. A private-online client is handed one
+        /// <c>ISeatClient</c> for the connection it arrived on and never sees this type at all.</para>
+        /// <para>Switching seats therefore means composing again, not re-pointing a live surface -
+        /// which is also why no stale callback, selection or continuation can survive a switch.</para>
+        /// </remarks>
+        public static SeatId? NextComposedSeat { get; set; }
+
         public ConfiguredMatchSceneRuntime Runtime => runtime;
         public IMatchSession Session => runtime?.Session;
         public ConfiguredMatchHudRenderer Hud => hud;
@@ -614,7 +633,9 @@ namespace GuardsDigital.Presentation.Interaction
                 // Milestone 8.11a: each highlight's perimeter, in its own colour. The owners generate
                 // and dispose them beside their fills, so the pair is counted and released together.
                 highlightOwner.RimMaterial,
-                resultingSpaceHighlightOwner.RimMaterial);
+                resultingSpaceHighlightOwner.RimMaterial,
+                // Milestone 8.30b: the development-only seat selection, consumed once.
+                TakeRequestedSeat());
 
             foreach (var selector in pointerSelectors.Where(value => value != null))
             {
@@ -833,6 +854,17 @@ namespace GuardsDigital.Presentation.Interaction
         {
             var requested = NextComposedCardContent;
             NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            return requested;
+        }
+
+        /// <summary>
+        /// Milestone 8.30b. Reads <see cref="NextComposedSeat"/> and puts it back to the Director, so a
+        /// fixture that forgets to clear it cannot decide which seat a later scene load plays from.
+        /// </summary>
+        private static SeatId? TakeRequestedSeat()
+        {
+            var requested = NextComposedSeat;
+            NextComposedSeat = null;
             return requested;
         }
 

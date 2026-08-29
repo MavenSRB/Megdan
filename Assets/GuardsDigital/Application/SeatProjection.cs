@@ -7,6 +7,8 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -88,6 +90,91 @@ namespace GuardsDigital.Application
     }
 
     /// <summary>
+    /// Milestone 8.30b. The pending decisions, their companion envelopes and the offers, each scoped
+    /// to the seat that may act on it.
+    /// </summary>
+    /// <remarks>
+    /// <para>Gathered into one object so the scoping rule is stated once rather than repeated down a
+    /// twenty-parameter constructor, and so that the rule itself is readable: a decision and its
+    /// preview reach the seat that answers it, a resolution envelope also reaches the seat that is
+    /// acting, and an offer reaches only the actor and only while nothing is pending.</para>
+    /// <para>It holds no reference to the projection it was built from. Everything here was copied
+    /// out at construction, which is what keeps the full-trust read model unreachable from a seat.</para>
+    /// </remarks>
+    public sealed class SeatPendingSurface
+    {
+        internal SeatPendingSurface(
+            MatchSessionProjection source, bool ownsDecision, bool isActor)
+        {
+            var standing = source.DecisionContract != null;
+            var resolving = ownsDecision || isActor;
+            var offering = isActor && !standing;
+
+            InitiativeChoice = ownsDecision ? source.PendingInitiativeChoice : null;
+            MovementChoice = ownsDecision ? source.PendingMovementChoice : null;
+            AttackTargetChoice = ownsDecision ? source.PendingAttackTargetChoice : null;
+            DefenseChoice = ownsDecision ? source.PendingDefenseChoice : null;
+            DefensePreview = ownsDecision ? source.PendingDefensePreview : null;
+            EffectChoice = ownsDecision ? source.PendingEffectChoice : null;
+            EffectChoicePreview = ownsDecision
+                ? source.PendingEffectChoicePreview
+                : Array.Empty<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>();
+            DisplacedMinionCorrection = ownsDecision ? source.PendingDisplacedMinionCorrection : null;
+            MinionBattleChoice = ownsDecision ? source.PendingMinionBattleChoice : null;
+            HeroRespawnChoice = ownsDecision ? source.PendingHeroRespawnChoice : null;
+            SystemTransitionStep = ownsDecision ? source.PendingSystemTransitionStep : null;
+            SystemTransitionDescription = ownsDecision ? source.PendingSystemTransitionDescription : null;
+            RemovalPrevention = ownsDecision ? source.PendingRemovalPrevention : null;
+
+            MovementResolution = resolving ? source.PendingMovementResolution : null;
+            AttackResolution = resolving ? source.PendingAttackResolution : null;
+            SkillResolution = resolving ? source.PendingSkillResolution : null;
+
+            TurnActions = offering
+                ? source.AvailableTurnActions
+                : Array.Empty<ActionOffer>();
+            FastTravelOptions = offering
+                ? source.AvailableFastTravelOptions
+                : Array.Empty<FastTravelOptionProjection>();
+            ClearOptions = offering
+                ? source.AvailableClearOptions
+                : Array.Empty<ClearOptionProjection>();
+            HoldOffer = offering ? source.AvailableHoldOffer : null;
+        }
+
+        public PendingInitiativeChoice InitiativeChoice { get; }
+        public PendingMovementChoice MovementChoice { get; }
+        public PendingAttackTargetChoice AttackTargetChoice { get; }
+        public PendingDefenseResponseChoice DefenseChoice { get; }
+        public PendingDefensePreviewProjection DefensePreview { get; }
+        public PendingEffectChoice EffectChoice { get; }
+
+        public IReadOnlyList<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>
+            EffectChoicePreview { get; }
+
+        public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
+            DisplacedMinionCorrection { get; }
+
+        public PendingMinionBattleChoice MinionBattleChoice { get; }
+        public PendingHeroRespawnChoice HeroRespawnChoice { get; }
+
+        public GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
+            SystemTransitionStep { get; }
+
+        public GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
+            SystemTransitionDescription { get; }
+
+        public RemovalPreventionPrompt RemovalPrevention { get; }
+        public PendingCardActionResolution MovementResolution { get; }
+        public PendingAttackResolution AttackResolution { get; }
+        public GuardsDigital.Core.Rules.EffectResolution.PendingResolution SkillResolution { get; }
+        public IReadOnlyList<ActionOffer> TurnActions { get; }
+        public IReadOnlyList<FastTravelOptionProjection> FastTravelOptions { get; }
+        public IReadOnlyList<ClearOptionProjection> ClearOptions { get; }
+        public ActionOffer? HoldOffer { get; }
+    }
+
+    /// <summary>
     /// Milestone 8.30a. One seat's authorized view of the match.
     /// </summary>
     /// <remarks>
@@ -103,8 +190,11 @@ namespace GuardsDigital.Application
     /// projection reports, so a client never decides its own legality and the two can never
     /// disagree.</para>
     /// </remarks>
-    public sealed class SeatProjection
+    public sealed class SeatProjection : IMatchReadModel
     {
+        private readonly SeatPendingSurface pending;
+        private readonly IReadOnlyList<CardInstance> visibleCards;
+
         internal SeatProjection(
             MatchSeat seat,
             long version,
@@ -114,8 +204,12 @@ namespace GuardsDigital.Application
             IReadOnlyList<SeatHandSummary> handSummaries,
             PendingDecisionOwner decisionOwner,
             PendingDecisionContract decisionContract,
-            IReadOnlyList<DirectorCommand> authorizedCommands)
+            IReadOnlyList<DirectorCommand> authorizedCommands,
+            SeatPendingSurface pendingSurface)
         {
+            pending = pendingSurface;
+            visibleCards = Array.AsReadOnly(ownCards.Concat(publicCards).ToArray());
+            ActiveEffectSourceCardInstanceIds = source.ActiveEffectSourceCardInstanceIds;
             Seat = seat;
             Version = version;
             Setup = source.Setup;
@@ -221,6 +315,69 @@ namespace GuardsDigital.Application
         /// <summary>Whether the authority is waiting on a decision this seat does not own.</summary>
         public bool IsWaitingForAnotherSeat =>
             DecisionOwner.IsDefined && !DecisionOwner.IsOwnedBy(Seat);
+
+        /// <summary>
+        /// Milestone 8.30b. The pending decisions, envelopes and offers this seat may act on.
+        /// </summary>
+        public SeatPendingSurface Pending => pending;
+
+        // Milestone 8.30b: the rest of IMatchReadModel. Everything below is either shared state this
+        // projection already carries or a forward to the scoped pending surface, so one HUD renders
+        // the Director's view and a seat's view from the same reads.
+
+        /// <summary>
+        /// The cards this seat may name: its own, plus the ones rulebook p.4 calls open information.
+        /// Another hero's hand and deck are not in the list at all.
+        /// </summary>
+        public IReadOnlyList<CardInstance> Cards => visibleCards;
+
+        public IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds { get; }
+
+        public bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
+            ActiveEffectSourceCardInstanceIds.Contains(cardInstanceId);
+
+        public IEnumerable<MarkerAttachment> MarkersHeldBy(HeroId holderHeroId) =>
+            HeldMarkers.Where(marker => marker.HolderHeroId.Equals(holderHeroId));
+
+        public MatchCommitmentProjection GetCommitment(HeroId heroId) =>
+            Commitments.FirstOrDefault(value => value.HeroId.Equals(heroId));
+
+        public PendingInitiativeChoice PendingInitiativeChoice => pending.InitiativeChoice;
+        public PendingCardActionResolution PendingMovementResolution => pending.MovementResolution;
+        public PendingMovementChoice PendingMovementChoice => pending.MovementChoice;
+        public PendingAttackResolution PendingAttackResolution => pending.AttackResolution;
+        public PendingAttackTargetChoice PendingAttackTargetChoice => pending.AttackTargetChoice;
+        public PendingDefenseResponseChoice PendingDefenseChoice => pending.DefenseChoice;
+        public PendingDefensePreviewProjection PendingDefensePreview => pending.DefensePreview;
+
+        public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>
+            pending.SkillResolution;
+
+        public PendingEffectChoice PendingEffectChoice => pending.EffectChoice;
+
+        public IReadOnlyList<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>
+            PendingEffectChoicePreview => pending.EffectChoicePreview;
+
+        public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
+            PendingDisplacedMinionCorrection => pending.DisplacedMinionCorrection;
+
+        public PendingMinionBattleChoice PendingMinionBattleChoice => pending.MinionBattleChoice;
+        public PendingHeroRespawnChoice PendingHeroRespawnChoice => pending.HeroRespawnChoice;
+
+        public GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
+            PendingSystemTransitionStep => pending.SystemTransitionStep;
+
+        public GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
+            PendingSystemTransitionDescription => pending.SystemTransitionDescription;
+
+        public RemovalPreventionPrompt PendingRemovalPrevention => pending.RemovalPrevention;
+        public IReadOnlyList<ActionOffer> AvailableTurnActions => pending.TurnActions;
+
+        public IReadOnlyList<FastTravelOptionProjection> AvailableFastTravelOptions =>
+            pending.FastTravelOptions;
+
+        public IReadOnlyList<ClearOptionProjection> AvailableClearOptions => pending.ClearOptions;
+        public ActionOffer? AvailableHoldOffer => pending.HoldOffer;
     }
 
     /// <summary>
@@ -258,6 +415,8 @@ namespace GuardsDigital.Application
                         card.State.Location == CardLocation.Deck)))
                 .ToArray();
 
+            var isActor = source.IsTurnActive && source.SelectedActor.IsDefined &&
+                seat.Owns(source.SelectedActor.ActorId);
             return new SeatProjection(
                 seat,
                 source.Version,
@@ -267,7 +426,8 @@ namespace GuardsDigital.Application
                 Array.AsReadOnly(handSummaries),
                 owner,
                 ownsDecision ? source.DecisionContract : null,
-                AuthorizedCommands(source, seat, owner));
+                AuthorizedCommands(source, seat, owner),
+                new SeatPendingSurface(source, ownsDecision, isActor));
         }
 
         /// <summary>

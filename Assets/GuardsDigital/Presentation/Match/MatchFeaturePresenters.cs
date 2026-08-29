@@ -685,7 +685,7 @@ namespace GuardsDigital.Presentation.Match
     internal static class PendingDecisionCommandBinding
     {
         public static DirectorCommand Require(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             PendingDecisionFamilyId familyId,
             Func<DirectorCommand, bool> matches) =>
             Require(projection?.DecisionContract, familyId, matches);
@@ -736,7 +736,7 @@ namespace GuardsDigital.Presentation.Match
     internal static class EffectChoiceCompletion
     {
         public static DirectorCommand FindImmediateConfirm(
-            MatchSessionProjection projection, EffectChoiceCommand accepted)
+            IMatchReadModel projection, EffectChoiceCommand accepted)
         {
             var choice = projection?.PendingEffectChoice;
             if (choice == null || accepted == null ||
@@ -760,30 +760,40 @@ namespace GuardsDigital.Presentation.Match
 
     public sealed class BoardInteractionPresenter
     {
-        private readonly IMatchSession session;
+        private readonly IMatchClient session;
         private readonly IBoardInteractionView view;
-        private MatchSessionProjection lastProjection;
+        private IMatchReadModel lastProjection;
         private BoardInteractionViewModel lastViewModel;
-        private MatchSessionProjection fastTravelSelectionProjection;
+        private IMatchReadModel fastTravelSelectionProjection;
         private ActionDefinitionId? selectedFastTravelActionDefinitionId;
-        private MatchSessionProjection choiceHighlightProjection;
+        private IMatchReadModel choiceHighlightProjection;
         private RuleObject highlightedChoiceUnit;
         private HexCoordinate? highlightedCorrectionDestination;
-        private MatchSessionProjection effectChoiceHighlightProjection;
+        private IMatchReadModel effectChoiceHighlightProjection;
         private HexCoordinate? highlightedEffectChoiceSpace;
-        private MatchSessionProjection respawnHighlightProjection;
+        private IMatchReadModel respawnHighlightProjection;
         private HexCoordinate? highlightedRespawnSpace;
-        private MatchSessionProjection clearCueProjection;
+        private IMatchReadModel clearCueProjection;
         private IReadOnlyList<TokenInstanceId> offeredClearTokens = Array.Empty<TokenInstanceId>();
         private IReadOnlyList<TokenInstanceId> selectedClearTokens = Array.Empty<TokenInstanceId>();
 
+
+        /// <summary>
+        /// Milestone 8.30b. The Director-shaped constructor every existing fixture and journey uses,
+        /// composing the Director's own client. A seat-scoped surface passes its client instead.
+        /// </summary>
         public BoardInteractionPresenter(IMatchSession session, IBoardInteractionView view)
+            : this(new DirectorMatchClient(session), view)
+        {
+        }
+
+        public BoardInteractionPresenter(IMatchClient session, IBoardInteractionView view)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.view = view ?? throw new ArgumentNullException(nameof(view));
         }
 
-        public event Action<MatchSessionProjection> SessionProjectionChanged;
+        public event Action<IMatchReadModel> SessionProjectionChanged;
 
         public void Refresh()
         {
@@ -1008,7 +1018,7 @@ namespace GuardsDigital.Presentation.Match
         /// lit, so a lit space is always one a click can take.
         /// </summary>
         private static IReadOnlyList<HexCoordinate> SelectableEffectChoiceDestinations(
-            MatchSessionProjection projection) =>
+            IMatchReadModel projection) =>
             SelectableEffectChoiceSpaces(projection, emptyOnly: true);
 
         /// <summary>
@@ -1020,7 +1030,7 @@ namespace GuardsDigital.Presentation.Match
         /// path asks for all of them.</para>
         /// </summary>
         private static IReadOnlyList<HexCoordinate> SelectableEffectChoiceSpaces(
-            MatchSessionProjection projection, bool emptyOnly = false)
+            IMatchReadModel projection, bool emptyOnly = false)
         {
             var choice = projection.PendingEffectChoice;
             if (choice == null || projection.PendingEffectChoicePreview.Count == 0)
@@ -1050,7 +1060,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         private static HexCoordinate? FindResultingSpace(
-            MatchSessionProjection projection, HexCoordinate? targetSpace)
+            IMatchReadModel projection, HexCoordinate? targetSpace)
         {
             if (!targetSpace.HasValue)
             {
@@ -1075,7 +1085,7 @@ namespace GuardsDigital.Presentation.Match
         /// different consequence intents for one identity are an impossible concurrent projection.
         /// </summary>
         private static IReadOnlyList<PieceTargetCueViewModel> CreatePieceTargetCues(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             RuleObject highlightedChoiceUnit,
             IReadOnlyList<TokenInstanceId> offeredClearTokenIds,
             IReadOnlyList<TokenInstanceId> selectedClearTokenIds)
@@ -1353,7 +1363,7 @@ namespace GuardsDigital.Presentation.Match
         /// remains a card-faced HUD decision, and an absent or unknown description has no board surface.
         /// </summary>
         public static IReadOnlyList<SystemTransitionDestinationViewModel>
-            CreateSystemTransitionDestinations(MatchSessionProjection projection) =>
+            CreateSystemTransitionDestinations(IMatchReadModel projection) =>
             CreateSystemTransitionDestinations(
                 projection?.PendingSystemTransitionDescription,
                 projection?.DecisionContract);
@@ -1473,7 +1483,7 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            var result = session.Execute(command);
+            var result = session.Submit(command);
             if (!result.Accepted)
             {
                 return false;
@@ -1490,7 +1500,7 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
-        private FastTravelOptionProjection GetSelectedFastTravelOption(MatchSessionProjection projection)
+        private FastTravelOptionProjection GetSelectedFastTravelOption(IMatchReadModel projection)
         {
             if (!ReferenceEquals(projection, fastTravelSelectionProjection) ||
                 !selectedFastTravelActionDefinitionId.HasValue)
@@ -1505,7 +1515,7 @@ namespace GuardsDigital.Presentation.Match
 
         private bool Execute(DirectorCommand command)
         {
-            var result = session.Execute(command);
+            var result = session.Submit(command);
             if (result.Accepted)
             {
                 SessionProjectionChanged?.Invoke(result.Projection);
@@ -1642,23 +1652,33 @@ namespace GuardsDigital.Presentation.Match
 
     public sealed class DirectorHandsPresenter
     {
-        private readonly IMatchSession session;
+        private readonly IMatchClient session;
         private readonly IDirectorHandsView view;
         private CardInstanceId? selectedCardInstanceId;
-        private MatchSessionProjection lastProjection;
+        private IMatchReadModel lastProjection;
         private CardInstanceId? lastSelectedCardInstanceId;
         private DirectorHandsViewModel lastViewModel;
         private HeroId pinnedHeroId;
         private HeroId pinnedAgainstAwaitedHeroId;
         private HeroId lastViewedHeroId;
 
+
+        /// <summary>
+        /// Milestone 8.30b. The Director-shaped constructor every existing fixture and journey uses,
+        /// composing the Director's own client. A seat-scoped surface passes its client instead.
+        /// </summary>
         public DirectorHandsPresenter(IMatchSession session, IDirectorHandsView view)
+            : this(new DirectorMatchClient(session), view)
+        {
+        }
+
+        public DirectorHandsPresenter(IMatchClient session, IDirectorHandsView view)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.view = view ?? throw new ArgumentNullException(nameof(view));
         }
 
-        public event Action<MatchSessionProjection> SessionProjectionChanged;
+        public event Action<IMatchReadModel> SessionProjectionChanged;
 
         /// <summary>
         /// The hero whose tray is currently drawn (milestone 7.8a).
@@ -1696,7 +1716,7 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
-        private HeroId Resolve(MatchSessionProjection projection)
+        private HeroId Resolve(IMatchReadModel projection)
         {
             var awaited = Awaited(projection);
             if (pinnedHeroId.IsDefined && pinnedAgainstAwaitedHeroId.Equals(awaited))
@@ -1709,7 +1729,7 @@ namespace GuardsDigital.Presentation.Match
             return awaited;
         }
 
-        private static HeroId Awaited(MatchSessionProjection projection)
+        private static HeroId Awaited(IMatchReadModel projection)
         {
             if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
             {
@@ -1794,7 +1814,7 @@ namespace GuardsDigital.Presentation.Match
         /// this round's five and does not appear.
         /// </summary>
         private static IReadOnlyList<TrayCardViewModel> BuildTray(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             HeroId heroId,
             CardInstanceId? selectedCardInstanceId)
         {
@@ -1893,7 +1913,7 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            var result = session.Execute(DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            var result = session.Submit(DirectorCommand.CommitCard(card.OwnerId, card.Id));
             if (result.Accepted)
             {
                 selectedCardInstanceId = null;
@@ -1911,7 +1931,7 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            var result = session.Execute(DirectorCommand.Pass(heroId));
+            var result = session.Submit(DirectorCommand.Pass(heroId));
             if (result.Accepted)
             {
                 selectedCardInstanceId = null;
@@ -2758,21 +2778,31 @@ namespace GuardsDigital.Presentation.Match
 
     public sealed class RoundActionPresenter
     {
-        private readonly IMatchSession session;
+        private readonly IMatchClient session;
         private readonly IRoundActionView view;
         private readonly List<TokenInstanceId> clearSelection = new List<TokenInstanceId>();
-        private MatchSessionProjection lastProjection;
+        private IMatchReadModel lastProjection;
         private RoundActionViewModel lastViewModel;
-        private MatchSessionProjection clearModeProjection;
+        private IMatchReadModel clearModeProjection;
         private ActionDefinitionId clearModeActionDefinitionId;
 
+
+        /// <summary>
+        /// Milestone 8.30b. The Director-shaped constructor every existing fixture and journey uses,
+        /// composing the Director's own client. A seat-scoped surface passes its client instead.
+        /// </summary>
         public RoundActionPresenter(IMatchSession session, IRoundActionView view)
+            : this(new DirectorMatchClient(session), view)
+        {
+        }
+
+        public RoundActionPresenter(IMatchClient session, IRoundActionView view)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.view = view ?? throw new ArgumentNullException(nameof(view));
         }
 
-        public event Action<MatchSessionProjection> SessionProjectionChanged;
+        public event Action<IMatchReadModel> SessionProjectionChanged;
         public event Action<FastTravelOfferViewModel> FastTravelSelectionRequested;
 
         /// <summary>
@@ -2898,7 +2928,7 @@ namespace GuardsDigital.Presentation.Match
 
         private bool Execute(DirectorCommand command)
         {
-            var result = session.Execute(command);
+            var result = session.Submit(command);
             if (!result.Accepted)
             {
                 return false;
@@ -2917,7 +2947,7 @@ namespace GuardsDigital.Presentation.Match
                 return true;
             }
 
-            var confirmed = session.Execute(confirm);
+            var confirmed = session.Submit(confirm);
             if (confirmed.Accepted)
             {
                 SessionProjectionChanged?.Invoke(confirmed.Projection);
@@ -3053,7 +3083,7 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
-        public static RoundActionViewModel CreateViewModel(MatchSessionProjection projection) =>
+        public static RoundActionViewModel CreateViewModel(IMatchReadModel projection) =>
             CreateViewModel(projection, default, Array.Empty<TokenInstanceId>());
 
         /// <summary>
@@ -3079,7 +3109,7 @@ namespace GuardsDigital.Presentation.Match
         /// <b>frame</b> is a resolution in progress, which asks nothing itself - its question, when it
         /// has one, is one of the families above it.</para>
         /// </summary>
-        private static bool HasPendingDecision(MatchSessionProjection projection) =>
+        private static bool HasPendingDecision(IMatchReadModel projection) =>
             IsAwaitingAnAnsweredDecision(projection) || IsInsideAnUnfinishedResolution(projection);
 
         /// <summary>
@@ -3087,7 +3117,7 @@ namespace GuardsDigital.Presentation.Match
         /// set <see cref="FormatStatus"/> must name, one entry per family, checked as compiled reads
         /// rather than as a written-down list a later milestone could forget to extend.
         /// </summary>
-        private static bool IsAwaitingAnAnsweredDecision(MatchSessionProjection projection) =>
+        private static bool IsAwaitingAnAnsweredDecision(IMatchReadModel projection) =>
             projection.PendingInitiativeChoice != null ||
             projection.PendingDefenseChoice != null ||
             projection.PendingEffectChoice != null ||
@@ -3103,13 +3133,13 @@ namespace GuardsDigital.Presentation.Match
         /// progress - but it is not itself something a player answers, so it carries no status words
         /// of its own.
         /// </summary>
-        private static bool IsInsideAnUnfinishedResolution(MatchSessionProjection projection) =>
+        private static bool IsInsideAnUnfinishedResolution(IMatchReadModel projection) =>
             projection.PendingMovementResolution != null ||
             projection.PendingAttackResolution != null ||
             projection.PendingSkillResolution != null;
 
         private static RoundActionViewModel CreateViewModel(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             ActionDefinitionId openClearActionDefinitionId,
             IReadOnlyList<TokenInstanceId> selectedClearTokenIds)
         {
@@ -3257,7 +3287,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         private static IReadOnlyList<PrintedActionRegionViewModel> CreatePrintedActionRegions(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             IReadOnlyList<ActionOffer> offered,
             IReadOnlyList<TypedInvocationViewModel> actions,
             IReadOnlyList<FastTravelOfferViewModel> fastTravelOffers,
@@ -3317,7 +3347,7 @@ namespace GuardsDigital.Presentation.Match
         /// from this surface at all.</para>
         /// </summary>
         private static RemovalPreventionPromptViewModel CreateRemovalPreventionPrompt(
-            MatchSessionProjection projection)
+            IMatchReadModel projection)
         {
             var prompt = projection.PendingRemovalPrevention;
             if (prompt == null)
@@ -3355,7 +3385,7 @@ namespace GuardsDigital.Presentation.Match
         /// than the absence the milestone is fixing.
         /// </summary>
         public static SystemTransitionPromptViewModel CreateSystemTransitionPrompt(
-            MatchSessionProjection projection) =>
+            IMatchReadModel projection) =>
             CreateSystemTransitionPrompt(
                 projection?.PendingSystemTransitionDescription,
                 projection?.Definitions,
@@ -3553,7 +3583,7 @@ namespace GuardsDigital.Presentation.Match
         /// here reads a card, a hero, or a node name.
         /// </summary>
         private static void CreateEffectChoices(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             out IReadOnlyList<TypedInvocationViewModel> controls,
             out IReadOnlyList<EffectChoiceTargetViewModel> targets,
             out IReadOnlyList<TypedInvocationViewModel> destinations,
@@ -3755,7 +3785,7 @@ namespace GuardsDigital.Presentation.Match
         /// display name - and never from printed card text.
         /// </summary>
         private static string FindCardName(
-            MatchSessionProjection projection, CardInstanceId cardInstanceId)
+            IMatchReadModel projection, CardInstanceId cardInstanceId)
         {
             var card = projection.Cards.FirstOrDefault(value => value.Id.Equals(cardInstanceId));
             if (card == null)
@@ -3775,7 +3805,7 @@ namespace GuardsDigital.Presentation.Match
         /// carries, with an ordinal only where the choice offers that name twice.
         /// </summary>
         private static string FormatTargetLabel(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             EffectChoiceCandidatePreview preview,
             int ordinal,
             ICollection<string> repeatedTokenNames)
@@ -3811,7 +3841,7 @@ namespace GuardsDigital.Presentation.Match
         /// label rather than faulting, which is the same tolerance the hero and minion arms show.
         /// </summary>
         private static string FindTokenName(
-            MatchSessionProjection projection, EffectChoiceCandidatePreview preview) =>
+            IMatchReadModel projection, EffectChoiceCandidatePreview preview) =>
             FindToken(projection, preview)?.Definition.DisplayName;
 
         /// <summary>
@@ -3821,7 +3851,7 @@ namespace GuardsDigital.Presentation.Match
         /// to be when both come from one lookup against one list.
         /// </summary>
         private static PlacedToken FindToken(
-            MatchSessionProjection projection, EffectChoiceCandidatePreview preview) =>
+            IMatchReadModel projection, EffectChoiceCandidatePreview preview) =>
             preview.Occupant.Kind != BoardObjectKind.Token
                 ? null
                 : projection.PlacedTokens.SingleOrDefault(token =>
@@ -3834,7 +3864,7 @@ namespace GuardsDigital.Presentation.Match
         /// candidate and a board candidate read alike rather than one of them reading as an ordinal.
         /// </summary>
         private static string FormatSupplyMinionLabel(
-            MatchSessionProjection projection, MinionId minionId, int ordinal)
+            IMatchReadModel projection, MinionId minionId, int ordinal)
         {
             var declared = projection.Setup.Minions.SingleOrDefault(value =>
                 value.MinionId.Equals(minionId));
@@ -3844,7 +3874,7 @@ namespace GuardsDigital.Presentation.Match
                     declared.TeamSide, declared.MinionType, ordinal);
         }
 
-        private RoundActionViewModel GetOrCreateViewModel(MatchSessionProjection projection)
+        private RoundActionViewModel GetOrCreateViewModel(IMatchReadModel projection)
         {
             // Milestone 6.3a: an open Clear belongs to the projection it was opened against. A
             // projection-version change - an accepted or refused command, End Turn, Undo, restart,
@@ -3868,7 +3898,7 @@ namespace GuardsDigital.Presentation.Match
             return lastViewModel;
         }
 
-        private static TypedInvocationViewModel CreateEndTurnInvocation(MatchSessionProjection projection)
+        private static TypedInvocationViewModel CreateEndTurnInvocation(IMatchReadModel projection)
         {
             var movementChoice = projection.PendingMovementChoice;
             if (movementChoice != null && movementChoice.CanStop)
@@ -3917,7 +3947,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         private static IReadOnlyList<TypedInvocationViewModel> CreateDefenseChoices(
-            MatchSessionProjection projection)
+            IMatchReadModel projection)
         {
             var choice = projection.PendingDefenseChoice;
             var preview = projection.PendingDefensePreview;
@@ -3991,7 +4021,7 @@ namespace GuardsDigital.Presentation.Match
         /// than wearing the spent-card treatment.</para>
         /// </summary>
         private static TrayCardViewModel CreateCardFace(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             CardInstanceId cardInstanceId)
         {
             var card = projection.Cards.FirstOrDefault(value => value.Id.Equals(cardInstanceId));
@@ -4067,7 +4097,7 @@ namespace GuardsDigital.Presentation.Match
             return $"  {sign}{contribution.Amount} — {contribution.SourceLabel}";
         }
 
-        private static string FormatActionLabel(MatchSessionProjection projection, ActionOffer offer)
+        private static string FormatActionLabel(IMatchReadModel projection, ActionOffer offer)
         {
             var definition = projection.Definitions.Single(value =>
                 value.Reference.Equals(offer.SourceDefinitionReference));
@@ -4095,14 +4125,14 @@ namespace GuardsDigital.Presentation.Match
             return context == ActionInvocationContext.PrintedPrimary ? "PRIMARY" : "SECONDARY";
         }
 
-        private static string GetCardDisplayName(MatchSessionProjection projection, CardInstanceId cardId)
+        private static string GetCardDisplayName(IMatchReadModel projection, CardInstanceId cardId)
         {
             var card = projection.Cards.Single(value => value.Id.Equals(cardId));
             return projection.Definitions.Single(value =>
                 value.Reference.Equals(card.DefinitionReference)).DisplayName.ToUpperInvariant();
         }
 
-        private static string FormatStatus(MatchSessionProjection projection)
+        private static string FormatStatus(IMatchReadModel projection)
         {
             if (projection.Phase == RoundResolutionPhase.EndOfRound)
             {
@@ -4470,18 +4500,28 @@ namespace GuardsDigital.Presentation.Match
 
     public sealed class MinionChoicePresenter
     {
-        private readonly IMatchSession session;
+        private readonly IMatchClient session;
         private readonly IMinionChoiceView view;
-        private MatchSessionProjection lastProjection;
+        private IMatchReadModel lastProjection;
         private MinionChoiceViewModel lastViewModel;
 
+
+        /// <summary>
+        /// Milestone 8.30b. The Director-shaped constructor every existing fixture and journey uses,
+        /// composing the Director's own client. A seat-scoped surface passes its client instead.
+        /// </summary>
         public MinionChoicePresenter(IMatchSession session, IMinionChoiceView view)
+            : this(new DirectorMatchClient(session), view)
+        {
+        }
+
+        public MinionChoicePresenter(IMatchClient session, IMinionChoiceView view)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.view = view ?? throw new ArgumentNullException(nameof(view));
         }
 
-        public event Action<MatchSessionProjection> SessionProjectionChanged;
+        public event Action<IMatchReadModel> SessionProjectionChanged;
 
         public void Refresh()
         {
@@ -4546,7 +4586,7 @@ namespace GuardsDigital.Presentation.Match
             return Execute(current.ConfirmInvocation.Command);
         }
 
-        public static MinionChoiceViewModel CreateViewModel(MatchSessionProjection projection)
+        public static MinionChoiceViewModel CreateViewModel(IMatchReadModel projection)
         {
             if (projection == null)
             {
@@ -4637,7 +4677,7 @@ namespace GuardsDigital.Presentation.Match
         /// A subject label joins the projection's minion occupancy for team and intrinsic type, which
         /// is a lookup of projected state, not a rules answer.
         /// </summary>
-        private static MinionChoiceViewModel CreateCorrectionViewModel(MatchSessionProjection projection)
+        private static MinionChoiceViewModel CreateCorrectionViewModel(IMatchReadModel projection)
         {
             var pending = projection.PendingDisplacedMinionCorrection;
             if (pending == null)
@@ -4721,7 +4761,7 @@ namespace GuardsDigital.Presentation.Match
                 destinations);
         }
 
-        private MinionChoiceViewModel GetOrCreateViewModel(MatchSessionProjection projection)
+        private MinionChoiceViewModel GetOrCreateViewModel(IMatchReadModel projection)
         {
             if (!ReferenceEquals(projection, lastProjection))
             {
@@ -4734,7 +4774,7 @@ namespace GuardsDigital.Presentation.Match
 
         private bool Execute(DirectorCommand command)
         {
-            var result = session.Execute(command);
+            var result = session.Submit(command);
             if (result.Accepted)
             {
                 SessionProjectionChanged?.Invoke(result.Projection);
@@ -4798,7 +4838,7 @@ namespace GuardsDigital.Presentation.Match
             this.view = view ?? throw new ArgumentNullException(nameof(view));
         }
 
-        public event Action<MatchSessionProjection> SessionProjectionChanged;
+        public event Action<IMatchReadModel> SessionProjectionChanged;
 
         public void Refresh()
         {
@@ -4918,18 +4958,21 @@ namespace GuardsDigital.Presentation.Match
             UndoRestartPresenter undoRestart,
             DiagnosticLogPresenter diagnostics,
             MinionChoicePresenter minionChoice,
-            Action<MatchSessionProjection> afterSessionChange = null,
+            Action<IMatchReadModel> afterSessionChange = null,
             HeroOverviewsPresenter heroOverviews = null)
         {
             this.heroOverviews = heroOverviews;
             this.board = board ?? throw new ArgumentNullException(nameof(board));
             this.hands = hands ?? throw new ArgumentNullException(nameof(hands));
             this.round = round ?? throw new ArgumentNullException(nameof(round));
-            this.undoRestart = undoRestart ?? throw new ArgumentNullException(nameof(undoRestart));
-            this.diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+            // Milestone 8.30b: the Director-only pair is optional, because a seat-scoped HUD composes
+            // neither. Undo, restart and the diagnostic log are the Director's authority, and a player
+            // surface must not be able to reach them even by being handed one.
+            this.undoRestart = undoRestart;
+            this.diagnostics = diagnostics;
             this.minionChoice = minionChoice ?? throw new ArgumentNullException(nameof(minionChoice));
 
-            void Changed(MatchSessionProjection projection)
+            void Changed(IMatchReadModel projection)
             {
                 afterSessionChange?.Invoke(projection);
                 RefreshAll();
@@ -4938,7 +4981,11 @@ namespace GuardsDigital.Presentation.Match
             board.SessionProjectionChanged += Changed;
             hands.SessionProjectionChanged += Changed;
             round.SessionProjectionChanged += Changed;
-            undoRestart.SessionProjectionChanged += Changed;
+            if (undoRestart != null)
+            {
+                undoRestart.SessionProjectionChanged += Changed;
+            }
+
             minionChoice.SessionProjectionChanged += Changed;
         }
 
@@ -4947,8 +4994,8 @@ namespace GuardsDigital.Presentation.Match
             board.Refresh();
             hands.Refresh();
             round.Refresh();
-            undoRestart.Refresh();
-            diagnostics.Refresh();
+            undoRestart?.Refresh();
+            diagnostics?.Refresh();
             minionChoice.Refresh();
             heroOverviews?.Refresh();
         }

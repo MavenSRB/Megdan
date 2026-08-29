@@ -386,8 +386,15 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(seat, Is.Not.Null,
                     "Every command the Director could take belongs to some seat: " + command);
                 var client = host.ClientForSeat(seat.Id);
+
+                // Named from the host's own stream position rather than this call's counter. A caller
+                // that drives the same host twice would otherwise reuse `drive-0`, and the host would
+                // refuse it as the duplicate it genuinely is - the idempotency window doing its job
+                // to a fixture that did not mean to test it.
                 var result = client.Submit(new SeatSubmission(
-                    new SubmissionId("drive-" + submitted), client.Projection.Version, command));
+                    new SubmissionId("drive-" + host.Sequence + "-" + submitted),
+                    client.Projection.Version,
+                    command));
                 Assert.That(result.Accepted, Is.True, result.Detail);
                 submitted++;
             }

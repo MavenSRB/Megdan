@@ -709,7 +709,7 @@ namespace GuardsDigital.Application
         }
     }
 
-    public sealed class MatchSessionProjection
+    public sealed class MatchSessionProjection : IMatchReadModel
     {
         private readonly Lazy<string> diagnosticSnapshot;
         private readonly AuthoritativeSnapshotCapture authoritativeCapture;

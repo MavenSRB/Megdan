@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-08-29
+Last updated: 2026-08-30
 
 ## Purpose and authority
 
@@ -13,12 +13,14 @@ The route has completed approved HUD corrections **8.29a-8.29b1b**, offer and li
 ## Current authorization and next route
 
 - Current completed milestone: **8.30a**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **8.30b**.
 - Next proposed milestone: **8.30b**.
 
-Milestone **8.30a** completed on 2026-08-29. Six seats are derived from the authoritative participant graph, and each has its own read model: its own cards, every hero's countable hand and deck sizes, the public board, and the standing decision's answers only where it owns them. Another seat's hand and deck are absent rather than filtered, a facedown commitment has no identity until the reveal, and no Director history, snapshot, diagnostic log or control reaches the player surface. A submission carries a payload, the trusted seat it arrived on, a unique identity and the version it was decided against; the host resolves player, hero and team through `MatchParticipants` and refuses an unknown seat, a stale or future version, a replayed identity, a payload claiming another seat's hero or side, and any command that seat's own projection did not publish - each before the authority is touched. All ten pending families own their answers, seven of them observed in a seeded official six-player match, and every seat the authority is still awaiting may commit at once as rulebook p.7 prescribes rather than one at a time as the Director is asked. A development-only harness selects any seat, and restore or session replacement reseats from the restored authority.
+Milestone **8.30b** is in progress. Its seat-scoping half is built and green in the cross-platform harness: one `IMatchReadModel` both the Director's projection and a seat's answer, `SeatProjection` scoping every pending decision, companion envelope and offer to the seat that may act on it, one `IMatchClient` with a Director and a seat implementation, the five player-facing presenters retyped to read and submit through them, and a runtime composed for a seat that builds no Undo or diagnostic presenter at all. `MatchSceneCompositionRoot.NextComposedSeat` is the development-only one-shot seat selector. **Still owed:** the amended End Turn and status-bar layout with its geometry re-measured, `SeatScopedMatchHudPlayModeTests`, and the complete Edit Mode and Play Mode runs plus the targeted Game View inspection at 2560x1440 and the short desktop viewport.
 
-Milestone **8.30** completed on 2026-08-29 and put match authority behind one Unity-free serialized `MatchHost` port: submissions execute one at a time, one made from inside another is refused, and each accepted one appends a record carrying its sequence, published version and ordered rule events to a bounded stream consumers read from their own cursors. The configured scene composes the port instead of the session. Rules, content, schema v34 and the wire are unchanged by both milestones.
+Milestone **8.30a** completed on 2026-08-29. Six seats derived from the participant graph each read an owner-scoped projection in which another seat's hand and deck are absent and no Director surface appears, rulebook p.4 deciding what is open; every submission carries its trusted seat, a unique identity and an expected version, and an unknown seat, stale version, replay, forged identity or unpublished command is refused before the authority is touched. All ten pending families own their answers, and every awaiting seat may commit at once as p.7 prescribes rather than one at a time as the Director is asked.
+
+Milestone **8.30** put match authority behind the Unity-free serialized `MatchHost` port and its bounded ordered result stream, which the configured scene composes instead of the session. Rules, content, schema v34 and the wire are unchanged by all three milestones.
 
 Corrective **8.29b1b** completed on 2026-08-29 and [Project/MATCH_HUD.md](Project/MATCH_HUD.md) owns the resulting card anatomy. The treatment is transparent UI geometry only: it copies no private pixels, uses no texture mask, and performs no runtime image analysis. Corrective **8.29b1a** separately closed the stale rail guards while preserving the measured 258.667-versus-288 three-up fit.
 
@@ -26,11 +28,13 @@ Corrective **8.29c** was deferred after its Director Undo symptom could not be r
 
 Milestone **8.29** selected one serialized player host over UGS Multiplayer Services 1.2.0 sessions, Relay-DTLS, and Unity Transport 2.6.0 under `guards-private-online/1`. Structural owner projections, host-owned seats, snapshot resync, and terminal host loss are pinned; accounts, matchmaking, telemetry, public distribution, and package installation remain excluded. `RISK-ONLINE-001` stays active until implementation evidence closes it.
 
-Earlier Phase 8 milestones established the verified six-hero roster, typed effect/query and pending-decision contracts, official 3v3 setup, deterministic 768-command/12-round gate at current seed 21, source-ratio card faces, production-sized HUD geometry, URP 17.5 baseline, and governance routing. The current implementation inventory and subject shards own live behavior; the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md) owns exact completion evidence and revisions. Corrective **8.28a1** restored the Unity-free harness while retaining Unity Edit Mode coverage; the last complete gates are 1,747/1,747 harness and 2,050/2,050 Edit Mode, with Play Mode last green at 243/243. **Phase 7 is complete** and its exact record is addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
+Earlier Phase 8 milestones established the verified six-hero roster, typed effect/query and pending-decision contracts, official 3v3 setup, deterministic 768-command/12-round gate at current seed 21, source-ratio card faces, production-sized HUD geometry, URP 17.5 baseline, and governance routing. The current implementation inventory and subject shards own live behavior; the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md) owns exact completion evidence and revisions. Corrective **8.28a1** restored the Unity-free harness while retaining Unity Edit Mode coverage; the last complete gates are 1,747/1,747 harness, 2,057/2,057 Edit Mode and 243/243 Play Mode. **Phase 7 is complete** and its exact record is addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
 
 The **Phase 8** route has completed the deterministic official 3v3 gate, URP migration, corrective 8.28a1, independent readiness review 8.28a, private-online architecture decision 8.29, HUD corrections 8.29a-8.29b1b, offer and lifecycle corrections 8.29d-8.29f, transport-neutral session boundary 8.30, and owner-scoped seat projections and command authorization 8.30a. Deferred 8.29c remains proposed; no networking package is installed and no online runtime exists yet.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
+
+Roadmap amendment, 2026-08-29: milestone **8.30b** also moves End Turn to the bottom right as a larger control and expands the top status bar to narrate every step. That widens its primitive-layout check past the no-production-styling non-goal for those two surfaces only, and re-measures the pinned HUD geometry.
 
 Roadmap amendments, 2026-08-26 through 2026-08-28: **8.25f** uses each locally prepared private front, **8.25f1** removes its generated shell, and **8.25f2** enlarges the shared source-ratio face and composes the accepted physical hand/full-screen map HUD with one fixed largest-state status/action footprint. Clean-checkout fallback and identity-free facedown remain; private pixels stay ignored and outside rules authority.
 

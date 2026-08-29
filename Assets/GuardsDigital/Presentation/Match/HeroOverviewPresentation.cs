@@ -813,7 +813,7 @@ namespace GuardsDigital.Presentation.Match
         /// Milestone 8.23a: rulebook p.18's markers this hero is currently holding, and what each one
         /// does to them.
         ///
-        /// <para>It is <c>MatchSessionProjection.MarkersHeldBy</c> read straight through, on exactly
+        /// <para>It is <c>IMatchReadModel.MarkersHeldBy</c> read straight through, on exactly
         /// the terms milestone 8.21a put <see cref="Coins"/> here: never a set this presenter
         /// maintains, never a tally of give-and-return events it watched. That is what makes the
         /// reading survive a snapshot restore, a deterministic replay, a retained-prefix Undo and a
@@ -861,15 +861,26 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class HeroOverviewsPresenter
     {
-        private readonly IMatchSession session;
+        private readonly IMatchClient session;
         private readonly IHeroOverviewsView view;
         private readonly Func<HeroId> viewedHero;
-        private MatchSessionProjection lastProjection;
+        private IMatchReadModel lastProjection;
         private HeroId lastViewedHero;
         private HeroOverviewsViewModel lastViewModel;
 
+        /// <summary>
+        /// Milestone 8.30b. The Director-shaped constructor, composing the Director's own client.
+        /// </summary>
         public HeroOverviewsPresenter(
             IMatchSession session,
+            IHeroOverviewsView view,
+            Func<HeroId> viewedHero = null)
+            : this(new DirectorMatchClient(session), view, viewedHero)
+        {
+        }
+
+        public HeroOverviewsPresenter(
+            IMatchClient session,
             IHeroOverviewsView view,
             Func<HeroId> viewedHero = null)
         {
@@ -908,7 +919,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         private static HeroOverviewViewModel Build(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             HeroId heroId,
             TeamSide teamSide,
             HeroContentId contentId,
@@ -952,7 +963,7 @@ namespace GuardsDigital.Presentation.Match
         /// team, hero, hand position, display name, art, or action type - the one rule
         /// <see cref="CardColor"/> states about itself.
         /// </summary>
-        public static CardColor ColorOf(MatchSessionProjection projection, CardInstance card)
+        public static CardColor ColorOf(IMatchReadModel projection, CardInstance card)
         {
             if (projection == null) throw new ArgumentNullException(nameof(projection));
             if (card == null) throw new ArgumentNullException(nameof(card));
@@ -966,7 +977,7 @@ namespace GuardsDigital.Presentation.Match
         /// assignment history does not name it.
         /// </summary>
         public static int PlayedTurnIndex(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             HeroId heroId,
             CardInstanceId cardInstanceId)
         {
@@ -1001,7 +1012,7 @@ namespace GuardsDigital.Presentation.Match
         /// replay and a retained-prefix Undo answer it without a presentation-side lifetime.</para>
         /// </summary>
         public static IReadOnlyList<HeroTurnSlotViewModel> TurnSlots(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             HeroId heroId)
         {
             if (projection == null) throw new ArgumentNullException(nameof(projection));
@@ -1042,7 +1053,7 @@ namespace GuardsDigital.Presentation.Match
         /// projection alone.</para>
         /// </summary>
         public static IReadOnlyList<TrayCardViewModel> DiscardedCards(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             HeroId heroId)
         {
             if (projection == null) throw new ArgumentNullException(nameof(projection));
@@ -1063,7 +1074,7 @@ namespace GuardsDigital.Presentation.Match
         /// card the most this can find.</para>
         /// </summary>
         public static TrayCardViewModel UnlockedUltimate(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             HeroId heroId)
         {
             if (projection == null) throw new ArgumentNullException(nameof(projection));
@@ -1087,7 +1098,7 @@ namespace GuardsDigital.Presentation.Match
         /// left after that refusal is exactly a status, which is all the facedown marker draws.</para>
         /// </summary>
         public static HeroCurrentCardViewModel CurrentCard(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             HeroId heroId)
         {
             if (projection == null) throw new ArgumentNullException(nameof(projection));
@@ -1138,7 +1149,7 @@ namespace GuardsDigital.Presentation.Match
         /// player two different faces for one card and neither would be obviously wrong.
         /// </summary>
         public static TrayCardViewModel TrayCard(
-            MatchSessionProjection projection,
+            IMatchReadModel projection,
             CardInstance card,
             TrayCardGroup group,
             int playedTurnIndex,

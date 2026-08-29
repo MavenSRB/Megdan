@@ -25,6 +25,7 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchHost host;
         private readonly IMatchSession session;
+        private readonly IMatchClient client;
         private readonly MatchFeatureCoordinator coordinator;
         private readonly ConfiguredMatchHudRenderer hud;
 
@@ -42,7 +43,8 @@ namespace GuardsDigital.Presentation.Match
             UnityEngine.Material resultingSpaceMaterial = null,
             Func<GuardsDigital.Core.Components.PlacedToken, PlacedTokenView> tokenViewFactory = null,
             UnityEngine.Material highlightRimMaterial = null,
-            UnityEngine.Material resultingSpaceRimMaterial = null)
+            UnityEngine.Material resultingSpaceRimMaterial = null,
+            SeatId? seat = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -86,6 +88,21 @@ namespace GuardsDigital.Presentation.Match
                     configuration));
             session = new LocalDirectorMatchClient(host);
 
+            // Milestone 8.30b. One composition serves both surfaces. With no seat named this is the
+            // Director's runtime exactly as before; named a seat, every presenter below is handed
+            // that seat's authorized view and its submissions travel in the envelope 8.30a
+            // authorizes, so the same proven HUD is scoped rather than rewritten.
+            Seat = seat.HasValue ? host.Seats.Find(seat.Value) : null;
+            if (seat.HasValue && Seat == null)
+            {
+                throw new ArgumentException(
+                    "No seat '" + seat.Value + "' is bound in this match.", nameof(seat));
+            }
+
+            client = Seat == null
+                ? (IMatchClient)new DirectorMatchClient(session)
+                : new SeatMatchClient(host.ClientForSeat(Seat.Id));
+
             BoardView = new BoardInteractionUnityView(
                 heroViews, tileViews, highlightMaterial, minionViews, resultingSpaceMaterial,
                 tokenViewFactory, highlightRimMaterial, resultingSpaceRimMaterial);
@@ -95,14 +112,17 @@ namespace GuardsDigital.Presentation.Match
             DiagnosticView = new DiagnosticLogUnityView();
             MinionChoiceView = new MinionChoiceUnityView();
             HeroOverviewsView = new HeroOverviewsUnityView();
-            BoardPresenter = new BoardInteractionPresenter(session, BoardView);
-            HandsPresenter = new DirectorHandsPresenter(session, HandsView);
+            BoardPresenter = new BoardInteractionPresenter(client, BoardView);
+            HandsPresenter = new DirectorHandsPresenter(client, HandsView);
             HeroOverviewsPresenter = new HeroOverviewsPresenter(
-                session, HeroOverviewsView, () => HandsPresenter.ViewedHeroId);
-            RoundPresenter = new RoundActionPresenter(session, RoundView);
-            UndoRestartPresenter = new UndoRestartPresenter(session, UndoRestartView);
-            DiagnosticPresenter = new DiagnosticLogPresenter(session, DiagnosticView);
-            MinionChoicePresenter = new MinionChoicePresenter(session, MinionChoiceView);
+                client, HeroOverviewsView, () => HandsPresenter.ViewedHeroId);
+            RoundPresenter = new RoundActionPresenter(client, RoundView);
+
+            // The Director's own controls exist only in the Director's runtime. A seat's HUD is not
+            // given an Undo it must remember to hide; it is given a composition that has none.
+            UndoRestartPresenter = Seat == null ? new UndoRestartPresenter(session, UndoRestartView) : null;
+            DiagnosticPresenter = Seat == null ? new DiagnosticLogPresenter(session, DiagnosticView) : null;
+            MinionChoicePresenter = new MinionChoicePresenter(client, MinionChoiceView);
 
             BoardView.BindIntentHandlers(
                 // Milestone 7.8a: the map pointer is the only hero-selection control there is. A click
@@ -195,9 +215,11 @@ namespace GuardsDigital.Presentation.Match
             // choosing surface with no pointer state involved.
             RoundPresenter.ClearSelectionChanged += selection =>
                 BoardPresenter.SetOpenClearSelection(selection);
-            UndoRestartView.UndoRequested += () => UndoRestartPresenter.Undo();
-            UndoRestartView.RestartRequested += () => UndoRestartPresenter.Restart();
-            DiagnosticView.ToggleRequested += () => DiagnosticPresenter.Toggle();
+            // Milestone 8.30b: a seat-scoped runtime composes no Director presenter, so these controls
+            // are wired to nothing rather than wired to something that would refuse them.
+            UndoRestartView.UndoRequested += () => UndoRestartPresenter?.Undo();
+            UndoRestartView.RestartRequested += () => UndoRestartPresenter?.Restart();
+            DiagnosticView.ToggleRequested += () => DiagnosticPresenter?.Toggle();
             MinionChoiceView.CandidateSubmitted += candidate => MinionChoicePresenter.Submit(candidate);
             MinionChoiceView.ConfirmRequested += () => MinionChoicePresenter.Confirm();
             MinionChoiceView.CandidateHighlighted += candidate =>
@@ -260,33 +282,51 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public IMatchHost Host => host;
 
+        /// <summary>
+        /// Milestone 8.30b. The seat this runtime was composed for, or <c>null</c> for the Director's
+        /// own runtime. It is set once at construction and never moves: choosing a different seat
+        /// composes a different runtime, so no live surface can be re-pointed at another player.
+        /// </summary>
+        public MatchSeat Seat { get; }
+
         public IMatchSession Session => session;
+        /// <summary>
+        /// The Director's own full-trust view. Milestone 8.30b left this on the session deliberately:
+        /// it is the scene and fixture affordance, while every presenter and every HUD read goes
+        /// through <see cref="ReadModel"/>, which is seat-scoped whenever this runtime is.
+        /// </summary>
         public MatchSessionProjection Projection => session.Projection;
-        public QuickGameSetupState Setup => session.Projection.Setup;
-        public IReadOnlyList<CardDefinition> Definitions => session.Projection.Definitions;
-        public IReadOnlyList<CardInstance> Cards => session.Projection.Cards;
-        public IReadOnlyList<HeroOccupancy> Heroes => session.Projection.Heroes;
+
+        /// <summary>
+        /// Milestone 8.30b. What the composed surface actually reads - the Director's whole view, or
+        /// one seat's authorized one when this runtime was composed for a seat.
+        /// </summary>
+        public IMatchReadModel ReadModel => client.Projection;
+        public QuickGameSetupState Setup => client.Projection.Setup;
+        public IReadOnlyList<CardDefinition> Definitions => client.Projection.Definitions;
+        public IReadOnlyList<CardInstance> Cards => client.Projection.Cards;
+        public IReadOnlyList<HeroOccupancy> Heroes => client.Projection.Heroes;
 
         /// <summary>
         /// Milestone 8.5b: the card instances currently sourcing a live Active effect, forwarded like
         /// every other projected read here so a scene-facing caller never names the projection type.
         /// </summary>
         public IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds =>
-            session.Projection.ActiveEffectSourceCardInstanceIds;
+            client.Projection.ActiveEffectSourceCardInstanceIds;
 
         public bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
-            session.Projection.IsActiveEffectSource(cardInstanceId);
-        public RoundResolutionPhase Phase => session.Projection.Phase;
-        public int RoundIndex => session.Projection.RoundIndex;
-        public int TurnIndex => session.Projection.TurnIndex;
-        public TieBreakerState TieBreakerState => session.Projection.TieBreakerState;
-        public bool IsTurnActive => session.Projection.IsTurnActive;
-        public SelectedInitiativeActor SelectedActor => session.Projection.SelectedActor;
-        public PendingInitiativeChoice PendingInitiativeChoice => session.Projection.PendingInitiativeChoice;
-        public PendingMovementChoice PendingMovementChoice => session.Projection.PendingMovementChoice;
-        public PendingAttackTargetChoice PendingAttackTargetChoice => session.Projection.PendingAttackTargetChoice;
-        public PendingDefenseResponseChoice PendingDefenseChoice => session.Projection.PendingDefenseChoice;
-        public IReadOnlyList<ActionOffer> AvailableTurnActions => session.Projection.AvailableTurnActions;
+            client.Projection.IsActiveEffectSource(cardInstanceId);
+        public RoundResolutionPhase Phase => client.Projection.Phase;
+        public int RoundIndex => client.Projection.RoundIndex;
+        public int TurnIndex => client.Projection.TurnIndex;
+        public TieBreakerState TieBreakerState => client.Projection.TieBreakerState;
+        public bool IsTurnActive => client.Projection.IsTurnActive;
+        public SelectedInitiativeActor SelectedActor => client.Projection.SelectedActor;
+        public PendingInitiativeChoice PendingInitiativeChoice => client.Projection.PendingInitiativeChoice;
+        public PendingMovementChoice PendingMovementChoice => client.Projection.PendingMovementChoice;
+        public PendingAttackTargetChoice PendingAttackTargetChoice => client.Projection.PendingAttackTargetChoice;
+        public PendingDefenseResponseChoice PendingDefenseChoice => client.Projection.PendingDefenseChoice;
+        public IReadOnlyList<ActionOffer> AvailableTurnActions => client.Projection.AvailableTurnActions;
         public IReadOnlyList<DirectorCommand> AcceptedCommands => session.Projection.AcceptedCommands;
 
         /// <summary>
@@ -296,7 +336,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public IReadOnlyList<DirectorCommand> EnumerateProjectedCommands()
         {
-            var projection = session.Projection;
+            var projection = client.Projection;
             var candidates = new List<DirectorCommand>();
             if (projection.Phase == RoundResolutionPhase.GameEnded)
             {
@@ -394,7 +434,7 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.20a: a refused command records why, exactly as a refused restore does. This
             // is the Director's own surface and a refusal it cannot explain is the one thing it must
             // never be - the property was already here and only the snapshot path was setting it.
-            var result = session.Execute(command);
+            var result = client.Submit(command);
             LastOperationDetail = result.Detail;
             if (result.Accepted)
             {
@@ -405,8 +445,8 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public IReadOnlyList<RuleEventLogEntry> DiagnosticEvents => session.Projection.DiagnosticEvents;
-        public IReadOnlyList<RoundTurnSlot> TurnSlots => session.Projection.TurnSlots;
-        public IReadOnlyList<CompletedRoundRecord> CompletedRounds => session.Projection.CompletedRounds;
+        public IReadOnlyList<RoundTurnSlot> TurnSlots => client.Projection.TurnSlots;
+        public IReadOnlyList<CompletedRoundRecord> CompletedRounds => client.Projection.CompletedRounds;
         public BoardInteractionUnityView BoardView { get; }
         public DirectorHandsUnityView HandsView { get; }
         public RoundActionUnityView RoundView { get; }
@@ -426,11 +466,11 @@ namespace GuardsDigital.Presentation.Match
         public void RefreshAll()
         {
             hud.RenderHeader(new MatchHudHeaderViewModel(
-                session.Projection.TieBreakerState,
-                session.Projection.Setup,
-                session.Projection.TeamLifeCounters,
-                session.Projection.RoundIndex,
-                session.Projection.TurnIndex));
+                client.Projection.TieBreakerState,
+                client.Projection.Setup,
+                client.Projection.TeamLifeCounters,
+                client.Projection.RoundIndex,
+                client.Projection.TurnIndex));
             coordinator.RefreshAll();
             hud.ApplyExclusiveContext();
         }
@@ -439,7 +479,7 @@ namespace GuardsDigital.Presentation.Match
             HandsPresenter.SelectCommitmentCard(cardId);
 
         public TurnCardCommitmentStatus GetCommitmentStatus(HeroId heroId) =>
-            session.Projection.GetCommitment(heroId).Status;
+            client.Projection.GetCommitment(heroId).Status;
 
         public bool ConfirmSelectedCommitment() => HandsPresenter.ConfirmSelectedCard();
 
@@ -500,7 +540,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public IReadOnlyList<GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId>
             PausedSystemTransitionOptions =>
-            session.Projection.PendingSystemTransitionStep?.Options ??
+            client.Projection.PendingSystemTransitionStep?.Options ??
             (IReadOnlyList<GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId>)
                 Array.Empty<GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId>();
 
@@ -515,7 +555,7 @@ namespace GuardsDigital.Presentation.Match
         public bool AnswerPausedSystemTransition(
             GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId optionId)
         {
-            var pending = session.Projection.PendingSystemTransitionStep;
+            var pending = client.Projection.PendingSystemTransitionStep;
             var invocation = pending?.Invocations
                 .FirstOrDefault(candidate => candidate.OptionId.Equals(optionId));
             if (pending == null || invocation == null || !invocation.Value.IsDefined)
@@ -524,11 +564,11 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var command = PendingDecisionCommandBinding.Require(
-                session.Projection,
+                client.Projection,
                 PendingDecisionFamilies.SystemTransition,
                 candidate => candidate.Kind == DirectorCommandKind.AnswerSystemTransitionStep &&
                     candidate.SystemTransitionChoice.Equals(invocation.Value));
-            var accepted = session.Execute(command).Accepted;
+            var accepted = client.Submit(command).Accepted;
             RefreshAll();
             return accepted;
         }
@@ -555,7 +595,7 @@ namespace GuardsDigital.Presentation.Match
             return RoundPresenter.Submit(invocation);
         }
 
-        public PendingEffectChoice PendingEffectChoice => session.Projection.PendingEffectChoice;
+        public PendingEffectChoice PendingEffectChoice => client.Projection.PendingEffectChoice;
 
         /// <summary>
         /// Milestone 8.21. The standing removal-prevention decision, or <c>null</c> when none is. It is
@@ -564,7 +604,7 @@ namespace GuardsDigital.Presentation.Match
         /// application assembly the whole projection lives in.
         /// </summary>
         public GuardsDigital.Core.Rules.CardResolution.RemovalPreventionPrompt
-            PendingRemovalPrevention => session.Projection.PendingRemovalPrevention;
+            PendingRemovalPrevention => client.Projection.PendingRemovalPrevention;
 
         /// <summary>
         /// Milestone 8.21. One hero's projected coin balance, which is p.13's own reward ledger and the
@@ -572,7 +612,7 @@ namespace GuardsDigital.Presentation.Match
         /// progression record, on the same assembly-boundary terms as the pause above.
         /// </summary>
         public int CoinsOf(HeroId heroId) =>
-            session.Projection.HeroProgression
+            client.Projection.HeroProgression
                 .Single(progression => progression.HeroId.Equals(heroId))
                 .Coins;
 
@@ -599,7 +639,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public PendingMinionBattleChoice PendingMinionBattleChoice =>
-            session.Projection.PendingMinionBattleChoice;
+            client.Projection.PendingMinionBattleChoice;
 
         public bool SubmitMinionChoiceCandidate(MinionId minionId)
         {
@@ -698,7 +738,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
-            PendingDisplacedMinionCorrection => session.Projection.PendingDisplacedMinionCorrection;
+            PendingDisplacedMinionCorrection => client.Projection.PendingDisplacedMinionCorrection;
 
         /// <summary>Forwards the rendered subject control of a paused correction, addressed by minion.</summary>
         public bool SubmitCorrectionSubject(MinionId minionId)
@@ -735,9 +775,11 @@ namespace GuardsDigital.Presentation.Match
                 candidate?.Unit ?? RuleObject.None, candidate?.Destination);
         }
 
-        public bool Undo() => UndoRestartPresenter.Undo();
+        /// <summary>The Director's Undo, and <c>false</c> from a seat-scoped runtime that has none.</summary>
+        public bool Undo() => UndoRestartPresenter?.Undo() == true;
 
-        public bool Restart() => UndoRestartPresenter.Restart();
+        /// <summary>The Director's restart, and <c>false</c> from a seat-scoped runtime.</summary>
+        public bool Restart() => UndoRestartPresenter?.Restart() == true;
 
         public string CaptureSnapshot() => session.CaptureSnapshot();
 

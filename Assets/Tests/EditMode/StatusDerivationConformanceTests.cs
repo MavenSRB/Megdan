@@ -117,16 +117,22 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Every <see cref="MatchSessionProjection"/> property these method bodies read. A property
-        /// read compiles to its getter, so the getter is the identity both sides of every comparison
-        /// above are made on - never the name it happens to be spelled with at the call site.
+        /// Every projection property these method bodies read. A property read compiles to its getter,
+        /// so the getter is the identity both sides of every comparison above are made on - never the
+        /// name it happens to be spelled with at the call site.
+        ///
+        /// <para>Milestone 8.30b: both declaring types count. The presenter now reads through
+        /// <see cref="IMatchReadModel"/>, which is what lets one surface render the Director's view and
+        /// a seat's; naming only the concrete projection made this scan find nothing at all and pass
+        /// its own vacuity guard instead of the rule.</para>
         /// </summary>
         private static List<MethodInfo> ProjectionReadsOf(params string[] methodNames) =>
             Scan(methodNames)
                 .SelectMany(method => method.Instructions)
                 .Select(instruction => instruction.Member as MethodInfo)
                 .Where(member => member != null &&
-                    member.DeclaringType == typeof(MatchSessionProjection) &&
+                    (member.DeclaringType == typeof(IMatchReadModel) ||
+                        member.DeclaringType == typeof(MatchSessionProjection)) &&
                     member.IsSpecialName &&
                     member.Name.StartsWith("get_", StringComparison.Ordinal))
                 .Distinct()

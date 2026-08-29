@@ -232,8 +232,8 @@ namespace GuardsDigital.Tests.EditMode
             AssertPresenterDependencies<BoardInteractionPresenter, IBoardInteractionView>();
             AssertPresenterDependencies<DirectorHandsPresenter, IDirectorHandsView>();
             AssertPresenterDependencies<RoundActionPresenter, IRoundActionView>();
-            AssertPresenterDependencies<UndoRestartPresenter, IUndoRestartView>();
-            AssertPresenterDependencies<DiagnosticLogPresenter, IDiagnosticLogView>();
+            AssertPresenterDependencies<UndoRestartPresenter, IUndoRestartView>(directorOnly: true);
+            AssertPresenterDependencies<DiagnosticLogPresenter, IDiagnosticLogView>(directorOnly: true);
             AssertPresenterDependencies<MinionChoicePresenter, IMinionChoiceView>();
 
             var presentationSources = new[]
@@ -1460,13 +1460,27 @@ namespace GuardsDigital.Tests.EditMode
                 "A rebuilt projection that no longer offers the button clears the board preview.");
         }
 
-        private static void AssertPresenterDependencies<TPresenter, TView>()
+        /// <summary>
+        /// Milestone 8.30b named which port each presenter may hold, which is stricter than the rule
+        /// this replaced. A player-facing presenter holds <see cref="IMatchClient"/> - the Director's
+        /// view or one seat's, and it cannot tell which - while Undo, restart and the diagnostic log
+        /// hold <see cref="IMatchSession"/>, so a seat's client can never be handed to them.
+        /// </summary>
+        private static void AssertPresenterDependencies<TPresenter, TView>(bool directorOnly = false)
         {
             var fields = typeof(TPresenter).GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(fields.Any(field => field.FieldType == typeof(IMatchSession)), Is.True);
+            var port = directorOnly ? typeof(IMatchSession) : typeof(IMatchClient);
+            Assert.That(fields.Any(field => field.FieldType == port), Is.True,
+                typeof(TPresenter).Name + " must depend on " + port.Name + " and nothing wider.");
             Assert.That(fields.Any(field => field.FieldType == typeof(TView)), Is.True);
             Assert.That(fields.Any(field => field.FieldType.Name.EndsWith("Presenter", StringComparison.Ordinal)),
                 Is.False);
+            if (!directorOnly)
+            {
+                Assert.That(fields.Any(field => field.FieldType == typeof(IMatchSession)), Is.False,
+                    typeof(TPresenter).Name + " is a player-facing surface and must not hold the " +
+                    "session, whose Undo, restart, snapshot and history are the Director's alone.");
+            }
         }
 
         private static MatchSession CreateSession()

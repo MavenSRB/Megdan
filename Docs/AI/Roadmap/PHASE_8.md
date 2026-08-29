@@ -575,11 +575,13 @@ Rules note: the Director's surface asks each hero to commit in turn, which is on
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830a-add-locally-testable-owner-scoped-projections-and-command-authorization-completion-evidence).
 
-### [ ] 8.30b Seat-scope and complete the player HUD prompt flow
+### [~] 8.30b Seat-scope and complete the player HUD prompt flow
 
 Re-scoped by the 8.2 re-baseline (2026-08-21, user approved, applying the 7.9a recommendation): milestone 7.8a already delivered the player-facing runtime UI Toolkit match HUD this block's original "build" wording restated. What remains is scoping that proven surface to one authorized seat and completing the states a multi-seat session adds.
 
 Blocked by: Milestone 8.30a must prove the local owner-scoped projection and authorization contract.
+
+Amendment, 2026-08-29, user-approved: this milestone additionally moves End Turn to the bottom right of the panel as a larger control of its own, and moves the contextual narration into the top status bar, which is expanded to report what the match is doing at every step. It widens the primitive-layout check past this block's "no production styling" non-goal for those two surfaces only; every other non-goal stands, and the measured HUD geometry milestones 8.25c and 8.25f2 pin is re-measured rather than assumed by it.
 
 Observable outcome: The proven 7.8a HUD, driven by one selected seat's authorized projection and typed invocations alone, can complete the full six-hero match through the local session.
 
