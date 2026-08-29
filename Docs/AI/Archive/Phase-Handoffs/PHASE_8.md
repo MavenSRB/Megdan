@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.29b1a Reconcile rail geometry guards after the approved plaque changes completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.29b1a | The shared rail guards now distinguish bonus-strip content from decorative borders, compare declared width within the established one-device-pixel grid, and record the accepted post-8.29a/8.29b held-marker baseline without changing production geometry. Exact 3/3 and all-consuming-fixture 27/27 Play Mode evidence retain the independent 258.667-versus-288 three-up fit. | `cd24612` |
+
 ## Milestone 8.29b Stabilize hero selection and recompose Level Up completion evidence
 
 | ID | Outcome | Commit |
