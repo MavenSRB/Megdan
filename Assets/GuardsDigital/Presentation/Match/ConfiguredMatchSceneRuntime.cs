@@ -129,6 +129,15 @@ namespace GuardsDigital.Presentation.Match
             HandsView.CardSelected += cardId => HandsPresenter.SelectCommitmentCard(cardId);
             HandsView.ConfirmRequested += () => HandsPresenter.ConfirmSelectedCard();
             HandsView.PassRequested += heroId => HandsPresenter.Pass(heroId);
+            HandsView.PrintedActionSubmitted += invocation => RoundPresenter.Submit(invocation);
+            HandsView.FastTravelSelected += selection => RoundPresenter.SelectFastTravel(selection);
+            HandsView.ClearSelected += offer =>
+            {
+                if (RoundPresenter.SelectClear(offer))
+                {
+                    RefreshAll();
+                }
+            };
             RoundView.InvocationSubmitted += invocation => RoundPresenter.Submit(invocation);
             RoundView.FastTravelSelected += selection => RoundPresenter.SelectFastTravel(selection);
             RoundView.TargetSubmitted += target => RoundPresenter.SubmitTarget(target);

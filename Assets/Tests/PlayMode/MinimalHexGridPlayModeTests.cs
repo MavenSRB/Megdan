@@ -1156,13 +1156,13 @@ namespace GuardsDigital.Tests.PlayMode
                 Has.None.EqualTo("ACTIONS"),
                 "The status sentence already names these as actions; no gutter repeats it.");
             var actionControls = actionSection.Children().OfType<Button>().ToArray();
-            Assert.That(actionControls, Has.Length.GreaterThan(1));
+            Assert.That(actionControls, Has.Length.EqualTo(1),
+                "Printed actions live on the resolving card; only End Turn remains in this dock.");
             var lines = actionControls
                 .GroupBy(control => Mathf.Round(control.worldBound.yMin))
                 .ToArray();
             Assert.That(lines, Has.Length.EqualTo(1),
-                "The routine five-offer set keeps End Turn on the action row instead of leaving it " +
-                "alone on a second line.");
+                "The remaining external End Turn control occupies one line.");
             Assert.That(lines[0].Min(control => control.worldBound.xMin),
                 Is.EqualTo(actionSection.worldBound.xMin).Within(0.5f),
                 "The action row starts at the dock's content edge with no empty heading gutter.");
@@ -1183,6 +1183,144 @@ namespace GuardsDigital.Tests.PlayMode
                 .Min(element => element.worldBound.yMin);
             Assert.That(dock.yMax, Is.LessThanOrEqualTo(firstCard + 0.5f),
                 "The fixed status dock finishes before the cards begin.");
+        }
+
+        [UnityTest]
+        public IEnumerator OrdinaryPrintedActions_AppearOnTheResolvingCardWithoutADuplicateDockRow()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            UiPlayer.SetPlayerViewport(2560, 1440, "8.29b1 reference printed-action surface");
+            using (ConfiguredCardArtwork.UseTextureLoader(_ => null))
+            {
+                yield return LoadScene();
+                var root = Root();
+                var runtime = root.Runtime;
+                CommitNextTurn(runtime);
+                yield return null;
+                yield return null;
+
+                var resolvingCard = Descendants(root.Hud.RootElement)
+                    .Last(element => element.name == "gd-card-choice");
+                Assert.That(Descendants(resolvingCard)
+                        .Count(element => element.name == "gd-printed-action-region"),
+                    Is.EqualTo(runtime.RoundView.Model.Actions.Count +
+                        runtime.RoundView.Model.UnavailableActions.Count),
+                    "Every projected printed action owns one region on the fully exposed resolving card.");
+
+                var actionSection = Named(root.Hud.RootElement, "gd-action-section");
+                Assert.That(actionSection.Children().OfType<Button>().ToArray(), Has.Length.EqualTo(1),
+                    "Only End Turn remains in the ordinary dock; printed actions have no duplicate row.");
+                Assert.That(actionSection.Children().OfType<Button>().Single().text,
+                    Is.EqualTo(runtime.RoundView.Model.EndTurnInvocation.Label));
+
+                var regions = Descendants(resolvingCard)
+                    .Where(element => element.name == "gd-printed-action-region")
+                    .OfType<Button>().ToArray();
+                Assert.That(regions.Count(region => region.enabledSelf),
+                    Is.EqualTo(runtime.RoundView.Model.PrintedActionRegions.Count(region =>
+                        region.Invocation != null)));
+                AssertPrintedActionControlsStayOnCard(resolvingCard, "2560x1440");
+                yield return Capture("tmp/milestone-8-29b1-printed-actions-2560x1440.png");
+
+                UiPlayer.SetPlayerViewport(2048, 1152, "8.29b1 validated desktop printed-action surface");
+                yield return null;
+                yield return null;
+                resolvingCard = Descendants(root.Hud.RootElement)
+                    .Last(element => element.name == "gd-card-choice");
+                regions = Descendants(resolvingCard)
+                    .Where(element => element.name == "gd-printed-action-region")
+                    .OfType<Button>().ToArray();
+                AssertPrintedActionControlsStayOnCard(resolvingCard, "2048x1152");
+                yield return Capture("tmp/milestone-8-29b1-printed-actions-2048x1152.png");
+
+                var available = regions.First(region => region.enabledSelf);
+                var projected = (PrintedActionRegionViewModel)available.userData;
+                var restingGlow = available.style.borderTopWidth.value;
+                var bounds = resolvingCard.worldBound;
+                UiPlayer.PointAt(available);
+                Assert.That(available.style.borderTopWidth.value, Is.GreaterThan(restingGlow),
+                    "Pointer hover brightens the already-visible region without moving it.");
+                UiPlayer.PointAway(available);
+                Assert.That(resolvingCard.worldBound, Is.EqualTo(bounds),
+                    "Hovering the overlay changes no card-footprint geometry.");
+                var acceptedBefore = runtime.AcceptedCommands.Count;
+                UiPlayer.Click(available);
+                yield return null;
+
+                Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(acceptedBefore + 1));
+                Assert.That(runtime.AcceptedCommands.Last(), Is.EqualTo(projected.Invocation.Command));
+                Assert.That(runtime.AcceptedCommands.Last().Kind,
+                    Is.EqualTo(DirectorCommandKind.StartAction));
+                Assert.That(runtime.HandsView.ForwardPrintedActionRegion(projected), Is.False,
+                    "The old region is stale immediately after its exact offer advances.");
+            }
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.29b1 restore the viewport this session was running at");
+            yield return null;
+        }
+
+        private static void AssertPrintedActionControlsStayOnCard(
+            VisualElement resolvingCard, string viewport)
+        {
+            var regions = Descendants(resolvingCard)
+                .Where(element => element.name == "gd-printed-action-region")
+                .OfType<Button>().ToArray();
+            Assert.That(regions, Is.Not.Empty, $"No printed action regions draw at {viewport}.");
+            var card = resolvingCard.worldBound;
+            Assert.That(card.width,
+                Is.EqualTo(CardFootprint.ArtworkWidth).Within(UiPlayer.PixelSnapping()),
+                $"The resolving card keeps the standard artwork width at {viewport}.");
+            Assert.That(card.height,
+                Is.EqualTo(CardFootprint.ArtworkHeight).Within(UiPlayer.PixelSnapping()),
+                $"The resolving card keeps the standard artwork height at {viewport}.");
+            var controls = regions.Cast<VisualElement>().Concat(Descendants(resolvingCard)
+                .Where(element => element.name == "gd-action-replacement-chip"));
+            foreach (var region in controls)
+            {
+                var bounds = region.worldBound;
+                var label = (region as Button)?.text ?? region.name;
+                Assert.That(bounds.width, Is.GreaterThan(0f), $"{label} has no width at {viewport}.");
+                Assert.That(bounds.height, Is.GreaterThan(0f), $"{label} has no height at {viewport}.");
+                Assert.That(bounds.xMin, Is.GreaterThanOrEqualTo(card.xMin - 0.5f));
+                Assert.That(bounds.xMax, Is.LessThanOrEqualTo(card.xMax + 0.5f));
+                Assert.That(bounds.yMin, Is.GreaterThanOrEqualTo(card.yMin - 0.5f));
+                Assert.That(bounds.yMax, Is.LessThanOrEqualTo(card.yMax + 0.5f));
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator ResolvingCardActionRegions_OverlayPreparedArtworkWithoutChangingItsFootprint()
+        {
+            var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            try
+            {
+                using (ConfiguredCardArtwork.UseTextureLoader(_ => texture))
+                {
+                    yield return LoadScene();
+                    var root = Root();
+                    CommitNextTurn(root.Runtime);
+                    yield return null;
+                    yield return null;
+
+                    var resolvingCard = Descendants(root.Hud.RootElement)
+                        .Last(element => element.name == "gd-card-choice");
+                    Assert.That(Descendants(resolvingCard)
+                        .Any(element => element.name == "gd-card-artwork"), Is.True);
+                    Assert.That(Descendants(resolvingCard)
+                            .Count(element => element.name == "gd-printed-action-region"),
+                        Is.EqualTo(root.Runtime.RoundView.Model.PrintedActionRegions.Count));
+                    Assert.That(resolvingCard.worldBound.width,
+                        Is.EqualTo(CardFootprint.ArtworkWidth).Within(UiPlayer.PixelSnapping()));
+                    Assert.That(resolvingCard.worldBound.height,
+                        Is.EqualTo(CardFootprint.ArtworkHeight).Within(UiPlayer.PixelSnapping()));
+                }
+            }
+            finally
+            {
+                Object.Destroy(texture);
+            }
         }
 
         /// <summary>
@@ -3133,8 +3271,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(Object.FindObjectsByType<HexTileView>(),
                 Has.All.Matches<HexTileView>(value => !value.IsHighlighted));
 
-            runtime.RoundView.ForwardFastTravelSelection(
-                runtime.RoundView.Model.FastTravelOffers.Single());
+            var fastTravel = Descendants(Root().Hud.RootElement)
+                .OfType<Button>()
+                .Single(control => control.name == "gd-action-replacement-chip" &&
+                    control.text == "FAST TRAVEL");
+            UiPlayer.Click(fastTravel);
             yield return null;
 
             Assert.That(runtime.BoardView.Model.FastTravelDestinations,

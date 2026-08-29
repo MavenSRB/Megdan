@@ -289,31 +289,39 @@ namespace GuardsDigital.Tests.EditMode
             var greyed = StartAttackTurnWithNothingToClear(out _);
             var greyedView = new RoundActionUnityView();
             new RoundActionPresenter(greyed, greyedView).Refresh();
-            var greyedControl = Descendants(greyedView.Root)
-                .Single(element => element.name == "gd-clear-offer");
+            var greyedHands = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(greyed, greyedHands).Refresh();
+            greyedHands.SetPrintedActionRegions(greyedView.Model.PrintedActionRegions);
+            var greyedControl = Descendants(greyedHands.Root)
+                .Single(element => element.name == "gd-action-replacement-chip" &&
+                    ((UnityEngine.UIElements.Button)element).text == "CLEAR");
 
             Assert.That(greyedControl.enabledSelf, Is.False);
             Assert.That(greyedControl.style.opacity.value, Is.EqualTo(0.45f).Within(0.001f),
                 "Milestone 6.5ac's rule: unavailability is never carried by inertness alone, so the " +
                 "shared dimming is applied explicitly.");
-            Assert.That(greyedControl.tooltip, Does.Contain("could remove nothing"));
+            Assert.That(greyedControl.tooltip, Does.Contain("unavailable"));
             Assert.That(
-                Descendants(greyedView.Root).OfType<UnityEngine.UIElements.Button>()
-                    .Any(button => button.text == "CLEAR (REPLACES ATTACK)"),
+                Descendants(greyedHands.Root).OfType<UnityEngine.UIElements.Button>()
+                    .Any(button => button.text == "CLEAR"),
                 Is.True,
-                "It keeps its label and its place rather than leaving the surface.");
+                "The compact replacement chip keeps its words and its place on the Attack region.");
 
             var available = StartAttackTurnBesideAHazard(out _, out _);
             var availableView = new RoundActionUnityView();
             new RoundActionPresenter(available, availableView).Refresh();
-            var availableControl = Descendants(availableView.Root)
-                .Single(element => element.name == "gd-clear-offer");
+            var availableHands = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(available, availableHands).Refresh();
+            availableHands.SetPrintedActionRegions(availableView.Model.PrintedActionRegions);
+            var availableControl = Descendants(availableHands.Root)
+                .Single(element => element.name == "gd-action-replacement-chip" &&
+                    ((UnityEngine.UIElements.Button)element).text == "CLEAR");
 
             Assert.That(availableControl.enabledSelf, Is.True);
             Assert.That(availableControl.style.opacity.value, Is.Not.EqualTo(0.45f).Within(0.001f),
                 "and an offer the authority does allow is never dimmed - the shared treatment is " +
                 "applied to one of these two controls and not the other.");
-            Assert.That(availableControl.tooltip, Does.Not.Contain("could remove nothing"));
+            Assert.That(availableControl.tooltip, Does.Not.Contain("unavailable"));
         }
 
         [Test]

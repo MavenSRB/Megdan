@@ -1227,8 +1227,10 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
             var index = hand.TrayCards.Select((card, position) => (card, position))
                 .Single(entry => entry.card.IsResolving).position;
-            Assert.That(buttons[index].enabledSelf, Is.False,
-                "so it is inert - no command, and no focus stop the tray did not have before.");
+            Assert.That(buttons[index].enabledSelf, Is.True,
+                "the inert outer face stays enabled so its printed action descendants can receive input.");
+            Assert.That(buttons[index].focusable, Is.False,
+                "The outer face itself remains no duplicate command or focus stop.");
             Assert.That(buttons[index].style.opacity.value, Is.EqualTo(1f),
                 "but it is the card being played, so it is not dimmed as though it were spent.");
             foreach (var other in buttons.Where((_, position) => position != index))
@@ -2639,6 +2641,116 @@ namespace GuardsDigital.Tests.EditMode
                     "STALE", DirectorCommand.StartAction(attack.ActionDefinitionId))),
                 Is.False,
                 "The round presenter refuses a start naming it even from an older model.");
+        }
+
+        [Test]
+        public void TheResolvingCardsPrintedActionRegions_ForwardOnlyTheirExactProjectedOffers()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.First(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.State.Location == CardLocation.Hand);
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            }
+
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseTiedActor(
+                    tie.OwningSide, tie.CandidateCardInstanceIds[0]));
+            }
+
+            var view = new RoundActionUnityView();
+            var presenter = new RoundActionPresenter(session, view);
+            presenter.Refresh();
+            Assert.That(view.Model.PrintedActionRegions, Has.Count.EqualTo(
+                session.Projection.AvailableTurnActions.Count));
+            foreach (var region in view.Model.PrintedActionRegions)
+            {
+                var offer = session.Projection.AvailableTurnActions.Single(value =>
+                    value.Equals(region.Offer));
+                var definition = session.Projection.Definitions.Single(value =>
+                    value.Reference.Equals(offer.SourceDefinitionReference));
+                var action = definition.ActionDefinitions.Single(value =>
+                    value.Id.Equals(offer.ActionDefinitionId));
+                Assert.That(region.SourceCardInstanceId,
+                    Is.EqualTo(session.Projection.SelectedActor.CardInstanceId));
+                Assert.That(region.ActionDefinitionId, Is.EqualTo(action.Id));
+                Assert.That(region.ActionKind, Is.EqualTo(action.Kind));
+                Assert.That(region.InvocationContext, Is.EqualTo(offer.InvocationContext));
+                Assert.That(region.AssistiveLabel,
+                    Does.Contain(offer.InvocationContext == ActionInvocationContext.PrintedPrimary
+                        ? "PRIMARY"
+                        : "SECONDARY"));
+                Assert.That(region.AssistiveLabel, Does.Contain(action.Kind.ToString().ToUpperInvariant()));
+                Assert.That(region.AssistiveLabel, Does.Contain(
+                    action.DefaultPolicy.CardTextApplication == CardTextApplicationPolicy.Applies
+                        ? "text applies"
+                        : "text suppressed"));
+                Assert.That(region.Invocation == null, Is.EqualTo(!offer.IsAvailable),
+                    "An unavailable printed region structurally carries no command.");
+                if (region.Invocation != null)
+                {
+                    Assert.That(region.Invocation.Command,
+                        Is.EqualTo(DirectorCommand.StartAction(offer.ActionDefinitionId)));
+                }
+            }
+
+            Assert.That(view.Model.PrintedActionRegions
+                    .TakeWhile(region => region.InvocationContext != ActionInvocationContext.PrintedPrimary)
+                    .Select(region => region.SecondaryIndex),
+                Is.Ordered,
+                "Keyboard order follows the upper Secondary strip before the Primary band.");
+            Assert.That(view.Model.FastTravelOffers, Has.All.Matches<FastTravelOfferViewModel>(replacement =>
+                view.Model.PrintedActionRegions.Any(region =>
+                    ReferenceEquals(region.FastTravelOffer, replacement) &&
+                    region.ActionDefinitionId.Equals(replacement.ReplacedMovementActionDefinitionId))));
+            Assert.That(view.Model.ClearOffers, Has.All.Matches<ClearOfferViewModel>(replacement =>
+                view.Model.PrintedActionRegions.Any(region =>
+                    ReferenceEquals(region.ClearOffer, replacement) &&
+                    region.ActionDefinitionId.Equals(replacement.ReplacedAttackActionDefinitionId))));
+
+            var actionSection = view.Root.Q<VisualElement>("gd-action-section");
+            Assert.That(actionSection, Is.Not.Null);
+            Assert.That(actionSection.Children().OfType<Button>().ToArray(), Has.Length.EqualTo(1),
+                "Printed Primary and Secondary starts belong to typed regions on the resolving card; " +
+                "only End Turn remains an ordinary external control.");
+
+            var hands = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(session, hands).Refresh();
+            hands.SetPrintedActionRegions(view.Model.PrintedActionRegions);
+            var controls = Descendants(hands.Root)
+                .Where(element => element.name == "gd-printed-action-region").ToArray();
+            Assert.That(controls, Has.Length.EqualTo(view.Model.PrintedActionRegions.Count));
+            Assert.That(controls.Select(control => control.userData),
+                Is.EqualTo(view.Model.PrintedActionRegions));
+
+            TypedInvocationViewModel forwarded = null;
+            hands.PrintedActionSubmitted += invocation => forwarded = invocation;
+            var available = view.Model.PrintedActionRegions.First(region => region.Invocation != null);
+            Assert.That(hands.ForwardPrintedActionRegion(available), Is.True);
+            Assert.That(forwarded, Is.SameAs(available.Invocation),
+                "The region forwards the standing typed invocation without rebuilding it.");
+
+            hands.SetPrintedActionRegions(Array.Empty<PrintedActionRegionViewModel>());
+            forwarded = null;
+            Assert.That(hands.ForwardPrintedActionRegion(available), Is.False,
+                "A region retained from the prior projection is stale.");
+            Assert.That(forwarded, Is.Null);
+            var forged = new PrintedActionRegionViewModel(
+                available.Offer,
+                available.ActionKind,
+                available.ActionLabel,
+                available.SecondaryIndex,
+                available.SecondaryCount,
+                available.AssistiveLabel,
+                available.Invocation,
+                available.FastTravelOffer,
+                available.ClearOffer);
+            Assert.That(hands.ForwardPrintedActionRegion(forged), Is.False,
+                "An equivalent but unprojected region cannot forge the current card's start.");
         }
 
         // -------------------------------------------------------------------------------------------

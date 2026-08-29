@@ -220,7 +220,11 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         internal static void MarkInPlay(VisualElement element)
         {
-            element.SetEnabled(false);
+            // A resolving card is not a commitment control, but its printed descendants can now be
+            // action controls. Keep the inert outer face enabled and remove its focus stop instead of
+            // disabling the whole subtree.
+            element.SetEnabled(true);
+            element.focusable = false;
             element.style.opacity = 1f;
         }
 
@@ -1470,6 +1474,8 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement hoverPreview;
         private bool compactPeekMode;
         private TrayCardViewModel highlightedPeekCard;
+        private IReadOnlyList<PrintedActionRegionViewModel> printedActionRegions =
+            Array.Empty<PrintedActionRegionViewModel>();
 
         public DirectorHandsUnityView()
         {
@@ -1522,6 +1528,45 @@ namespace GuardsDigital.Presentation.Match
         public event Action<CardInstanceId> CardSelected;
         public event Action ConfirmRequested;
         public event Action<HeroId> PassRequested;
+        public event Action<TypedInvocationViewModel> PrintedActionSubmitted;
+        public event Action<FastTravelOfferViewModel> FastTravelSelected;
+        public event Action<ClearOfferViewModel> ClearSelected;
+
+        public IReadOnlyList<PrintedActionRegionViewModel> PrintedActionRegions => printedActionRegions;
+
+        /// <summary>
+        /// Binds the ordinary action projection to this hand without teaching the hand legality. The
+        /// resolving card filters only by its typed instance identity; every command still follows the
+        /// round presenter's existing validation and session path.
+        /// </summary>
+        public void SetPrintedActionRegions(IEnumerable<PrintedActionRegionViewModel> regions)
+        {
+            var next = (regions ?? Enumerable.Empty<PrintedActionRegionViewModel>()).ToArray();
+            if (printedActionRegions.SequenceEqual(next))
+            {
+                return;
+            }
+
+            printedActionRegions = Array.AsReadOnly(next);
+            if (Model != null)
+            {
+                Rebuild();
+            }
+        }
+
+        public bool ForwardPrintedActionRegion(PrintedActionRegionViewModel region)
+        {
+            if (region?.Invocation == null || !printedActionRegions.Any(value =>
+                    ReferenceEquals(value, region) &&
+                    value.SourceCardInstanceId.Equals(region.SourceCardInstanceId) &&
+                    value.ActionDefinitionId.Equals(region.ActionDefinitionId)))
+            {
+                return false;
+            }
+
+            PrintedActionSubmitted?.Invoke(region.Invocation);
+            return true;
+        }
 
         /// <summary>
         /// Overlaps five full source-ratio faces into the configured hand's compact horizontal
@@ -1666,6 +1711,11 @@ namespace GuardsDigital.Presentation.Match
                 ApplyPeekFootprint(button);
             }
 
+            if (card.IsResolving)
+            {
+                AddPrintedActionOverlay(button, card);
+            }
+
             // Milestone 8.5b: the card sits in a slot, and the slot is what carries the Active-effect
             // outline. It has to be outside the card because the card's own border is the shared
             // selection treatment, and a card can be selected and active at the same time - two
@@ -1735,6 +1785,158 @@ namespace GuardsDigital.Presentation.Match
                     pointedAt => SetPeekPreview(pointedAt ? card : null, slot));
             }
             return slot;
+        }
+
+        private void AddPrintedActionOverlay(VisualElement cardSurface, TrayCardViewModel card)
+        {
+            var regions = printedActionRegions
+                .Where(value => value.SourceCardInstanceId.Equals(card.CardInstanceId))
+                .ToArray();
+            if (regions.Length == 0)
+            {
+                return;
+            }
+
+            var overlay = new VisualElement { name = "gd-printed-action-overlay" };
+            overlay.style.position = Position.Absolute;
+            overlay.style.left = 0f;
+            overlay.style.top = 0f;
+            overlay.style.width = Length.Percent(100f);
+            overlay.style.height = Length.Percent(100f);
+            overlay.pickingMode = PickingMode.Ignore;
+            foreach (var region in regions)
+            {
+                var bounds = PrintedActionBounds(region);
+                var control = new Button(() => ForwardPrintedActionRegion(region))
+                {
+                    name = "gd-printed-action-region",
+                    text = RegionCaption(region),
+                    tooltip = region.AssistiveLabel,
+                    userData = region
+                };
+                ApplyActionBounds(control, bounds);
+                control.style.backgroundColor = new Color(0.03f, 0.06f, 0.09f, 0.36f);
+                control.style.color = Color.white;
+                control.style.fontSize = 9f;
+                control.style.unityFontStyleAndWeight = FontStyle.Bold;
+                control.style.unityTextAlign = TextAnchor.UpperLeft;
+                HudElements.Padding(control, 3f);
+                SetPrintedRegionGlow(control, region.Invocation != null, false);
+                if (region.Invocation == null)
+                {
+                    HudElements.MarkUnavailable(control);
+                }
+                else
+                {
+                    HudElements.OnPointedAt(
+                        control, highlighted => SetPrintedRegionGlow(control, true, highlighted));
+                }
+
+                overlay.Add(control);
+                if (region.FastTravelOffer != null)
+                {
+                    overlay.Add(BuildReplacementChip(
+                        region,
+                        "FAST TRAVEL",
+                        bounds,
+                        () =>
+                        {
+                            if (printedActionRegions.Any(value => ReferenceEquals(value, region)))
+                            {
+                                FastTravelSelected?.Invoke(region.FastTravelOffer);
+                            }
+                        },
+                        true));
+                }
+
+                if (region.ClearOffer != null)
+                {
+                    overlay.Add(BuildReplacementChip(
+                        region,
+                        "CLEAR",
+                        bounds,
+                        () =>
+                        {
+                            if (region.ClearOffer.IsAvailable &&
+                                printedActionRegions.Any(value => ReferenceEquals(value, region)))
+                            {
+                                ClearSelected?.Invoke(region.ClearOffer);
+                            }
+                        },
+                        region.ClearOffer.IsAvailable));
+                }
+            }
+
+            cardSurface.Add(overlay);
+        }
+
+        private static Button BuildReplacementChip(
+            PrintedActionRegionViewModel region,
+            string label,
+            Rect actionBounds,
+            Action selected,
+            bool available)
+        {
+            var chip = new Button(available ? selected : null)
+            {
+                name = "gd-action-replacement-chip",
+                text = label,
+                tooltip = available
+                    ? $"{label} replaces {region.ActionKind}"
+                    : $"{label} replaces {region.ActionKind} - unavailable",
+                userData = region
+            };
+            chip.style.position = Position.Absolute;
+            chip.style.left = actionBounds.xMax - 86f;
+            chip.style.top = actionBounds.yMax - 24f;
+            chip.style.width = 82f;
+            chip.style.height = 20f;
+            chip.style.fontSize = 8.5f;
+            chip.style.unityFontStyleAndWeight = FontStyle.Bold;
+            chip.style.backgroundColor = new Color(0.04f, 0.08f, 0.12f, 0.94f);
+            chip.style.color = Color.white;
+            HudElements.Border(chip, MatchHudTheme.ConfirmAccent, 2f, 4f);
+            if (!available)
+            {
+                HudElements.MarkUnavailable(chip);
+            }
+
+            return chip;
+        }
+
+        private static void ApplyActionBounds(VisualElement element, Rect bounds)
+        {
+            const float maximumGlowWidth = 4f;
+            element.style.position = Position.Absolute;
+            element.style.left = bounds.x;
+            element.style.top = bounds.y;
+            element.style.width = bounds.width - (maximumGlowWidth * 2f);
+            element.style.height = bounds.height - (maximumGlowWidth * 2f);
+        }
+
+        private static Rect PrintedActionBounds(PrintedActionRegionViewModel region)
+        {
+            if (region.InvocationContext == ActionInvocationContext.PrintedPrimary)
+            {
+                return new Rect(4f, 78f, CardFootprint.Width - 8f, 50f);
+            }
+
+            var count = Mathf.Max(1, region.SecondaryCount);
+            var width = (CardFootprint.Width - 8f) / count;
+            return new Rect(4f + (width * region.SecondaryIndex), 47f, width, 31f);
+        }
+
+        private static string RegionCaption(PrintedActionRegionViewModel region) =>
+            region.ActionLabel;
+
+        private static void SetPrintedRegionGlow(
+            VisualElement control, bool available, bool highlighted)
+        {
+            var color = available
+                ? (highlighted ? MatchHudTheme.ConfirmAccent : MatchHudTheme.SelectedOutline)
+                : new Color(MatchHudTheme.MutedText.r, MatchHudTheme.MutedText.g,
+                    MatchHudTheme.MutedText.b, 0.65f);
+            HudElements.Border(control, color, highlighted ? 4f : 3f, 4f);
         }
 
         private static void ApplyPeekFootprint(VisualElement card)
@@ -2991,46 +3193,8 @@ namespace GuardsDigital.Presentation.Match
                 AddActionInvocation(section, choice);
             }
 
-            foreach (var action in Model.Actions)
-            {
-                AddActionInvocation(section, action);
-            }
-
-            // Milestone 6.5af: an action the authority judged unstartable is drawn beside the ones that
-            // can be started, disabled, so a player reads that the action exists and cannot be taken.
-            foreach (var unavailable in Model.UnavailableActions)
-            {
-                var control = HudElements.Control(unavailable.Label, null);
-                HudElements.MarkUnavailable(control);
-                AddActionControl(section, control);
-            }
-
-            foreach (var fastTravel in Model.FastTravelOffers)
-            {
-                AddActionControl(section, HudElements.Control(
-                    fastTravel.Label, () => ForwardFastTravelSelection(fastTravel)));
-            }
-
-            foreach (var clear in Model.ClearOffers)
-            {
-                // Milestone 8.8b: a Clear with nothing adjacent to remove keeps its label and its place
-                // and reads as unavailable through opacity as well as through being inert, which is the
-                // treatment milestones 6.5ac and 6.5af give every other refused control. It carries no
-                // command at all rather than one the authority would reject.
-                var control = HudElements.Control(
-                    clear.Label,
-                    clear.IsAvailable ? () => ClearSelected?.Invoke(clear) : (Action)null);
-                control.name = "gd-clear-offer";
-                control.tooltip = clear.IsAvailable
-                    ? "Clear replaces this card's Attack"
-                    : "No token stands adjacent to this hero, so a Clear could remove nothing";
-                if (!clear.IsAvailable)
-                {
-                    HudElements.MarkUnavailable(control);
-                }
-
-                AddActionControl(section, control);
-            }
+            // Printed starts and the Clear/Fast Travel replacements attached to them are drawn on the
+            // fully exposed resolving card. This dock retains only controls with no printed region.
 
             // Milestone 8.11a, at the user's request: each Respawn destination is a space, so it is
             // marked on the board and chosen by clicking it. The controls that used to name them are

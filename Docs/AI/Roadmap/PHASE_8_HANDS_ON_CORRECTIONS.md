@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard for player-reported UI and rules-offer defects found after milestone 8.29a and before private-online implementation resumes. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
 
-These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestones 8.29b and corrective 8.29b1a are complete; 8.29b1 has resumed, and 8.29c-8.29e remain proposed.
+These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestones 8.29b, 8.29b1 and corrective 8.29b1a are complete; 8.29c-8.29e remain proposed.
 
 ### [x] 8.29b Stabilize hero selection and recompose Level Up
 
@@ -25,9 +25,9 @@ Non-goals: No rule, progression, coin, item, option-projection, command, seriali
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829b-stabilize-hero-selection-and-recompose-level-up-completion-evidence).
 
-### [~] 8.29b1 Select printed actions directly on the resolving card
+### [x] 8.29b1 Select printed actions directly on the resolving card
 
-Approved at the user's direction on 2026-08-29 after the completed enlarged-card HUD still presented ordinary action selection as a row of debug-like text buttons. Implementation is complete and its focused action-surface checks pass; corrective 8.29b1a closed the three stale rail-geometry guards exposed by affected validation, so final affected and two-resolution evidence can now close this milestone. The already emphasized, fully exposed resolving card becomes the ordinary printed-action surface, with luminous boxes over the exact printed regions and compact replacement chips attached to the action they replace.
+Approved and completed at the user's direction on 2026-08-29 after the completed enlarged-card HUD still presented ordinary action selection as a row of debug-like text buttons. The already emphasized, fully exposed resolving card is now the ordinary printed-action surface, with luminous boxes over the exact printed regions and compact replacement chips attached to the action they replace. Corrective 8.29b1a closed the stale rail guards exposed during affected validation; the final 134 Edit Mode, 165 Play Mode, focused and two-resolution non-batch checks are green.
 
 Observable outcome: During ordinary card resolution, a player starts each legal printed Primary or Secondary action by clicking or focusing the corresponding highlighted region on the resolving card itself; the separate action-button row is absent, while non-card controls such as End Turn remain in the contextual dock.
 
@@ -44,6 +44,8 @@ Acceptance checks:
 Closing checks: `TheResolvingCardsPrintedActionRegions_ForwardOnlyTheirExactProjectedOffers` is recorded failing at the pre-fix revision where the resolving face owns no action controls and passing when its fixed typed regions forward the matching offers. `OrdinaryPrintedActions_AppearOnTheResolvingCardWithoutADuplicateDockRow` closes the live pointer, focus, replacement, containment and one-surface behavior across prepared-art and generated-fallback fixtures.
 
 Non-goals: No rule, action availability, printed value, card-text application, replacement, targeting, command, serialization, replay, Undo, card definition, source artwork, card-footprint, ordinary commitment, Defense, Level Up, effect-choice, networking, animation or general production-HUD redesign; no hotspot derived from private image analysis and no removal of End Turn or Director/headless controls.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829b1-select-printed-actions-directly-on-the-resolving-card-completion-evidence).
 
 ### [x] 8.29b1a Reconcile rail geometry guards after the approved plaque changes
 

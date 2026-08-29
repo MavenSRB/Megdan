@@ -2014,6 +2014,68 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
+    /// One printed action on the currently resolving card, bound to the exact offer the authority
+    /// projected. The view may place this on a fixed card region; it never has to infer an action from
+    /// artwork, printed words, a hero, or a card name.
+    /// </summary>
+    public sealed class PrintedActionRegionViewModel
+    {
+        public PrintedActionRegionViewModel(
+            ActionOffer offer,
+            ActionKind actionKind,
+            string actionLabel,
+            int secondaryIndex,
+            int secondaryCount,
+            string assistiveLabel,
+            TypedInvocationViewModel invocation,
+            FastTravelOfferViewModel fastTravelOffer = null,
+            ClearOfferViewModel clearOffer = null)
+        {
+            if (!offer.SourceCardInstanceId.IsDefined || !offer.ActionDefinitionId.IsDefined)
+            {
+                throw new ArgumentException("A printed action region requires its exact projected offer.");
+            }
+
+            if (offer.InvocationContext != ActionInvocationContext.PrintedPrimary && secondaryIndex < 0)
+            {
+                throw new ArgumentException("A Secondary printed region requires its ordered index.");
+            }
+
+            Offer = offer;
+            ActionKind = actionKind;
+            ActionLabel = string.IsNullOrWhiteSpace(actionLabel)
+                ? throw new ArgumentException("A printed action region requires its typed label.", nameof(actionLabel))
+                : actionLabel;
+            SecondaryIndex = secondaryIndex;
+            SecondaryCount = secondaryCount;
+            AssistiveLabel = string.IsNullOrWhiteSpace(assistiveLabel)
+                ? throw new ArgumentException(
+                    "A printed action region requires an assistive reading.", nameof(assistiveLabel))
+                : assistiveLabel;
+            Invocation = invocation;
+            FastTravelOffer = fastTravelOffer;
+            ClearOffer = clearOffer;
+        }
+
+        public ActionOffer Offer { get; }
+        public CardInstanceId SourceCardInstanceId => Offer.SourceCardInstanceId;
+        public ActionDefinitionId ActionDefinitionId => Offer.ActionDefinitionId;
+        public ActionInvocationContext InvocationContext => Offer.InvocationContext;
+        public ActionKind ActionKind { get; }
+        public string ActionLabel { get; }
+        public int SecondaryIndex { get; }
+        public int SecondaryCount { get; }
+        public string AssistiveLabel { get; }
+
+        /// <summary>The exact projected start, or null when the authority stamped the offer unavailable.</summary>
+        public TypedInvocationViewModel Invocation { get; }
+
+        /// <summary>The existing typed replacement selectors attached to the action they replace.</summary>
+        public FastTravelOfferViewModel FastTravelOffer { get; }
+        public ClearOfferViewModel ClearOffer { get; }
+    }
+
+    /// <summary>
     /// Milestone 6.5c: one control of a pending effect choice that names a board object. The space is
     /// the object's identity for this purpose - the same space-as-identity the effect definition binds
     /// - so hovering the control and lighting the board agree without presentation holding a second
@@ -2358,7 +2420,8 @@ namespace GuardsDigital.Presentation.Match
             ClearSelectionViewModel clearSelection = null,
             SystemTransitionPromptViewModel systemTransitionPrompt = null,
             EffectChoicePromptViewModel effectChoicePrompt = null,
-            RemovalPreventionPromptViewModel removalPreventionPrompt = null)
+            RemovalPreventionPromptViewModel removalPreventionPrompt = null,
+            IEnumerable<PrintedActionRegionViewModel> printedActionRegions = null)
         {
             SystemTransitionPrompt = systemTransitionPrompt;
             EffectChoicePrompt = effectChoicePrompt;
@@ -2393,6 +2456,8 @@ namespace GuardsDigital.Presentation.Match
             ClearOffers = Array.AsReadOnly((clearOffers ??
                 Enumerable.Empty<ClearOfferViewModel>()).ToArray());
             ClearSelection = clearSelection;
+            PrintedActionRegions = Array.AsReadOnly((printedActionRegions ??
+                Enumerable.Empty<PrintedActionRegionViewModel>()).ToArray());
             if (clearSelection != null && !ClearOffers.Any(offer =>
                     offer.ReplacedAttackActionDefinitionId.Equals(
                         clearSelection.ReplacedAttackActionDefinitionId)))
@@ -2464,6 +2529,13 @@ namespace GuardsDigital.Presentation.Match
         /// refused mode, on an offer.
         /// </summary>
         public IReadOnlyList<UnavailableActionViewModel> UnavailableActions { get; }
+
+        /// <summary>
+        /// Ordinary printed starts as typed regions of the resolving face. Headless callers retain
+        /// <see cref="Actions"/> and <see cref="UnavailableActions"/>; the configured HUD draws this
+        /// list instead of duplicating those starts in its external dock.
+        /// </summary>
+        public IReadOnlyList<PrintedActionRegionViewModel> PrintedActionRegions { get; }
 
         public IReadOnlyList<HeroRespawnOptionViewModel> HeroRespawnOptions { get; }
         public TypedInvocationViewModel ResolveWithoutRespawn { get; }
@@ -3103,6 +3175,8 @@ namespace GuardsDigital.Presentation.Match
                     // Milestone 8.8b: the authority's own stamp, never a count made here.
                     option.ReplacementOffer.IsAvailable))
                 .ToArray();
+            var printedActionRegions = CreatePrintedActionRegions(
+                projection, offered, actions, fastTravelOffers, clearOffers);
             var clearSelection = CreateClearSelection(
                 clearOptions, openClearActionDefinitionId, selectedClearTokenIds);
             CreateEffectChoices(
@@ -3177,7 +3251,54 @@ namespace GuardsDigital.Presentation.Match
                     ? null
                     : new EffectChoicePromptViewModel(EffectChoicePromptLabels.SubjectOf(
                         projection.PendingEffectChoice, projection.PendingEffectChoicePreview)),
-                CreateRemovalPreventionPrompt(projection));
+                CreateRemovalPreventionPrompt(projection),
+                printedActionRegions);
+        }
+
+        private static IReadOnlyList<PrintedActionRegionViewModel> CreatePrintedActionRegions(
+            MatchSessionProjection projection,
+            IReadOnlyList<ActionOffer> offered,
+            IReadOnlyList<TypedInvocationViewModel> actions,
+            IReadOnlyList<FastTravelOfferViewModel> fastTravelOffers,
+            IReadOnlyList<ClearOfferViewModel> clearOffers)
+        {
+            var regions = new List<PrintedActionRegionViewModel>(offered.Count);
+            for (var index = 0; index < offered.Count; index++)
+            {
+                var offer = offered[index];
+                var definition = projection.Definitions.Single(value =>
+                    value.Reference.Equals(offer.SourceDefinitionReference));
+                var action = definition.ActionDefinitions.Single(value =>
+                    value.Id.Equals(offer.ActionDefinitionId));
+                var secondaries = offered.Where(value =>
+                    value.SourceCardInstanceId.Equals(offer.SourceCardInstanceId) &&
+                    value.InvocationContext != ActionInvocationContext.PrintedPrimary).ToArray();
+                var secondaryIndex = offer.InvocationContext == ActionInvocationContext.PrintedPrimary
+                    ? -1
+                    : Array.FindIndex(secondaries, value => value.Equals(offer));
+                var invocation = actions.SingleOrDefault(value =>
+                    value.Command.Kind == DirectorCommandKind.StartAction &&
+                    value.Command.ActionDefinitionId.Equals(offer.ActionDefinitionId));
+                var label = FormatActionLabel(projection, offer);
+                regions.Add(new PrintedActionRegionViewModel(
+                    offer,
+                    action.Kind,
+                    label,
+                    secondaryIndex,
+                    secondaries.Length,
+                    $"{label} - {(offer.IsAvailable ? "available" : "unavailable")}",
+                    invocation,
+                    fastTravelOffers.SingleOrDefault(value =>
+                        value.ReplacedMovementActionDefinitionId.Equals(offer.ActionDefinitionId)),
+                    clearOffers.SingleOrDefault(value =>
+                        value.ReplacedAttackActionDefinitionId.Equals(offer.ActionDefinitionId))));
+            }
+
+            // Keyboard order follows the face from its upper Secondary strip into its Primary band.
+            return Array.AsReadOnly(regions
+                .OrderBy(value => value.InvocationContext == ActionInvocationContext.PrintedPrimary ? 1 : 0)
+                .ThenBy(value => value.SecondaryIndex)
+                .ToArray());
         }
 
         /// <summary>

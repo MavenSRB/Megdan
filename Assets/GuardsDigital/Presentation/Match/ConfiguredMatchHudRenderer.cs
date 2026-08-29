@@ -739,6 +739,7 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            hands.SetPrintedActionRegions(round.Model?.PrintedActionRegions);
             var usesTray = round.HasExclusiveDecision || minionChoice?.Model != null;
             var hostChanged = usesTray != contextUsesTray;
             if (hostChanged)

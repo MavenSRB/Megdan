@@ -12,11 +12,11 @@ The route has completed approved HUD corrections **8.29a-8.29b** after private-o
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.29b**.
-- Active authorized milestone: **8.29b1**.
-- Next proposed milestone: **8.29b1**.
+- Current completed milestone: **8.29b1**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **8.29c**.
 
-Milestone **8.29b** completed on 2026-08-29. All six plaques permanently reserve identical viewed-outline geometry, and Level Up now keeps the same six complete projected candidates in three labelled Blue/Green/Red pairs inside one contained comparison band. Focused T2, deliberate closure-guard, affected fixture, and two-resolution Game View evidence preserve every option fact and invocation while hero columns, `DIRECTOR`, and the board-safe surface remain fixed. Corrective **8.29b1a** is complete: exact 3/3 and affected 27/27 Play Mode evidence distinguish rail content from border chrome, apply the standing one-device-pixel width contract, and preserve the measured 258.667-versus-288 three-up fit. Approved **8.29b1** has resumed for final affected and two-resolution evidence after its printed-region, generated/prepared face, Fast Travel, Clear, and six-hero action checks passed.
+Milestone **8.29b1** completed on 2026-08-29. Ordinary projected Primary and ordered Secondary actions now live as contained luminous typed regions on the fully exposed resolving card; Clear and Fast Travel attach as exact replacement chips, End Turn remains external, and stale or forged activation executes nothing. Focused failing-then-passing containment evidence, 134/134 affected Edit Mode, 165/165 affected Play Mode, and a 1/1 targeted non-batch run at 2560x1440 and 2048x1152 cover generated/prepared faces and all six hero journeys. Corrective **8.29b1a** separately closed the stale rail guards with exact 3/3 and affected 27/27 Play Mode evidence while preserving the measured 258.667-versus-288 three-up fit.
 
 Approved **8.29b1** moves ordinary printed-action selection onto luminous typed regions of the fully exposed resolving card, with Clear and Fast Travel attached to the action they replace while End Turn stays external. Three further hands-on corrections are documented and not approved for implementation: **8.29c** restores the real Director Undo pointer-to-authority-to-refresh path; **8.29d** removes the deliberate availability bypass for Attacks whose mandatory card text must establish their target, including Brogan and Tigerclaw; and **8.29e** prevents impossible optional before/after-Attack and before-action branches from offering dead prompts, including Arien. Each owns a separate failing-then-passing check. **8.30** resumes after these corrections.
 

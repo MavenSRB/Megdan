@@ -221,11 +221,13 @@ namespace GuardsDigital.Tests.PlayMode
         public IEnumerator Scene_OffersClearOnAnAttackTurnBesideAPlacedHazard()
         {
             yield return LoadScene();
-            var runtime = Root().Runtime;
+            var root = Root();
+            var runtime = root.Runtime;
             var placed = PlaceAHazard(runtime);
             yield return null;
 
             CommitAttackTurn(runtime);
+            yield return null;
             var offer = runtime.ClearOffers.Single();
             Assert.That(offer.Label, Is.EqualTo("CLEAR (REPLACES ATTACK)"),
                 "Milestone 6.3 implemented Clear and shipped no way to choose it; the configured " +
@@ -233,7 +235,14 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(offer.CandidateCount, Is.EqualTo(1));
 
             var acceptedBefore = runtime.AcceptedCommands.Count;
-            Assert.That(runtime.SelectClear(), Is.True);
+            var clearChip = UiPlayer.Descendants(root.Hud.RootElement)
+                .OfType<UnityEngine.UIElements.Button>()
+                .Single(control => control.name == "gd-action-replacement-chip" &&
+                    control.text == "CLEAR");
+            Assert.That(clearChip.userData, Is.TypeOf<PrintedActionRegionViewModel>());
+            Assert.That(((PrintedActionRegionViewModel)clearChip.userData).ClearOffer,
+                Is.SameAs(offer));
+            UiPlayer.Click(clearChip);
             yield return null;
 
             var token = runtime.BoardView.Model.PlacedTokens.Single();
