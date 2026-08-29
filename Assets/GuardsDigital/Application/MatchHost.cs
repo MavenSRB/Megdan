@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 
 namespace GuardsDigital.Application
@@ -279,6 +280,30 @@ namespace GuardsDigital.Application
         MatchHostResultStreamRead ReadResults(long afterSequence);
 
         string CaptureSnapshot();
+
+        /// <summary>
+        /// Milestone 8.30a. The seats of this match, derived from the authoritative participant
+        /// graph rather than configured beside it.
+        /// </summary>
+        MatchSeatBinding Seats { get; }
+
+        /// <summary>
+        /// Milestone 8.30a. One seat's authorized view. An unknown seat is a programming error here,
+        /// because a caller that cannot name a real seat has nothing to be told about.
+        /// </summary>
+        SeatProjection ProjectionForSeat(SeatId seat);
+
+        /// <summary>
+        /// Milestone 8.30a. Executes one player submission as the seat it arrived on, having
+        /// authorized it against that seat's own published surface.
+        /// </summary>
+        SeatSubmissionResult SubmitForSeat(SeatId seat, SeatSubmission submission);
+
+        /// <summary>
+        /// Milestone 8.30a. The client bound to that seat: everything a player surface may see and
+        /// do, and nothing the Director may.
+        /// </summary>
+        ISeatClient ClientForSeat(SeatId seat);
     }
 
     /// <summary>
@@ -308,9 +333,24 @@ namespace GuardsDigital.Application
         /// </summary>
         public const int RetainedResultCount = 64;
 
+        /// <summary>
+        /// Milestone 8.30a. How many submission identities the host remembers, so that a replay of
+        /// one is recognized rather than executed a second time.
+        ///
+        /// <para>Bounded for the same reason the result stream is, and generous relative to it: a
+        /// seat can only have one submission in flight, so this covers every seat's recent history
+        /// several times over. The reconnect-sized window a network host actually needs is milestone
+        /// 8.33's, measured there from real retry traffic.</para>
+        /// </summary>
+        public const int RetainedSubmissionIdCount = 256;
+
         private readonly IMatchSession session;
         private readonly object gate = new object();
         private readonly List<MatchHostResultRecord> retained = new List<MatchHostResultRecord>();
+        private readonly HashSet<SubmissionId> consumedSubmissionIds = new HashSet<SubmissionId>();
+        private readonly Queue<SubmissionId> consumedSubmissionOrder = new Queue<SubmissionId>();
+        private MatchParticipants seatedParticipants;
+        private MatchSeatBinding seatBinding;
         private bool executing;
         private long sequence;
 
@@ -404,6 +444,203 @@ namespace GuardsDigital.Application
         }
 
         public string CaptureSnapshot() => session.CaptureSnapshot();
+
+        /// <summary>
+        /// Milestone 8.30a. The seats, rebuilt whenever the authority publishes a different
+        /// participant graph.
+        /// </summary>
+        /// <remarks>
+        /// A derived cache in the same sense the Undo checkpoints are: discarding it would change
+        /// only how often the binding is recomputed. Keying it on the authority's own participants
+        /// object is what makes a snapshot restore or a session replacement reseat from the restored
+        /// authority instead of carrying the seats it had before.
+        /// </remarks>
+        public MatchSeatBinding Seats
+        {
+            get
+            {
+                lock (gate)
+                {
+                    return CurrentSeats();
+                }
+            }
+        }
+
+        public SeatProjection ProjectionForSeat(SeatId seat)
+        {
+            lock (gate)
+            {
+                var bound = CurrentSeats().Find(seat);
+                if (bound == null)
+                {
+                    throw new ArgumentException(
+                        "No seat '" + seat + "' is bound in this match.", nameof(seat));
+                }
+
+                return SeatProjectionFactory.ForSeat(session.Projection, bound);
+            }
+        }
+
+        public ISeatClient ClientForSeat(SeatId seat)
+        {
+            lock (gate)
+            {
+                var bound = CurrentSeats().Find(seat);
+                if (bound == null)
+                {
+                    throw new ArgumentException(
+                        "No seat '" + seat + "' is bound in this match.", nameof(seat));
+                }
+
+                return new SeatClient(this, bound);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.30a. The whole player path into match authority.
+        /// </summary>
+        /// <remarks>
+        /// <para>Every check below runs before the authority is touched and reads only committed
+        /// state, so a refused submission cannot have applied a part of itself. They are ordered so
+        /// that each answers a different question: is this a seat, is this answer about the board as
+        /// it stands, has this attempt already been made, is the payload claiming an identity this
+        /// seat does not have, and is this one of the things the seat's own projection offered.</para>
+        /// <para>The last of those is the load-bearing one. A command is authorized because the seat
+        /// published it, not because it looks legal, so a rules-legal command belonging to another
+        /// seat is refused without the rules ever being consulted - and the authority still
+        /// revalidates whatever gets through.</para>
+        /// <para>Only a submission that reaches the authority consumes its identity. An envelope
+        /// refusal leaves it unused, so a client whose expected version was stale re-reads and
+        /// retries the same attempt rather than having to invent a second name for it.</para>
+        /// </remarks>
+        public SeatSubmissionResult SubmitForSeat(SeatId seat, SeatSubmission submission)
+        {
+            if (submission == null) throw new ArgumentNullException(nameof(submission));
+
+            lock (gate)
+            {
+                var bound = CurrentSeats().Find(seat);
+                if (bound == null)
+                {
+                    return SeatRefused(
+                        submission,
+                        null,
+                        SeatSubmissionRejectionReason.UnknownSeat,
+                        "No seat '" + seat + "' is bound in this match.");
+                }
+
+                if (executing)
+                {
+                    return SeatRefused(
+                        submission,
+                        bound,
+                        SeatSubmissionRejectionReason.HostRefused,
+                        "The host is already executing a submission.");
+                }
+
+                var projection = SeatProjectionFactory.ForSeat(session.Projection, bound);
+                if (submission.ExpectedVersion != projection.Version)
+                {
+                    return SeatRefused(
+                        submission,
+                        bound,
+                        SeatSubmissionRejectionReason.StaleProjection,
+                        "The submission expects version " + submission.ExpectedVersion +
+                        " and the authoritative version is " + projection.Version + ".");
+                }
+
+                if (consumedSubmissionIds.Contains(submission.Id))
+                {
+                    return SeatRefused(
+                        submission,
+                        bound,
+                        SeatSubmissionRejectionReason.DuplicateSubmission,
+                        "Submission '" + submission.Id + "' has already reached the authority.");
+                }
+
+                var claimed = SeatCommandOwnership.Claim(submission.Command);
+                if (!claimed.IsHeldBy(bound))
+                {
+                    return SeatRefused(
+                        submission,
+                        bound,
+                        SeatSubmissionRejectionReason.OwnershipMismatch,
+                        "The payload claims " + claimed + ", which seat " + bound.Id + " does not own.");
+                }
+
+                if (!projection.AuthorizedCommands.Contains(submission.Command))
+                {
+                    return SeatRefused(
+                        submission,
+                        bound,
+                        SeatSubmissionRejectionReason.UnauthorizedCommand,
+                        "The command is not in the " + projection.AuthorizedCommands.Count +
+                        " this seat's projection published at version " + projection.Version + ".");
+                }
+
+                ConsumeSubmissionId(submission.Id);
+                executing = true;
+                MatchHostResult inner;
+                try
+                {
+                    DuringSubmissionForTest?.Invoke();
+                    inner = Execute(MatchSubmission.ForCommand(submission.Command));
+                }
+                finally
+                {
+                    executing = false;
+                }
+
+                return new SeatSubmissionResult(
+                    submission,
+                    inner.Accepted,
+                    inner.Accepted
+                        ? SeatSubmissionRejectionReason.None
+                        : SeatSubmissionRejectionReason.SessionRefused,
+                    inner.SessionRejectionReason,
+                    inner.Detail,
+                    inner.Version,
+                    inner.Sequence,
+                    SeatProjectionFactory.ForSeat(session.Projection, bound));
+            }
+        }
+
+        private MatchSeatBinding CurrentSeats()
+        {
+            var participants = session.Projection.Participants;
+            if (!ReferenceEquals(participants, seatedParticipants))
+            {
+                seatedParticipants = participants;
+                seatBinding = MatchSeatBinding.ForParticipants(participants);
+            }
+
+            return seatBinding;
+        }
+
+        private void ConsumeSubmissionId(SubmissionId id)
+        {
+            consumedSubmissionIds.Add(id);
+            consumedSubmissionOrder.Enqueue(id);
+            while (consumedSubmissionOrder.Count > RetainedSubmissionIdCount)
+            {
+                consumedSubmissionIds.Remove(consumedSubmissionOrder.Dequeue());
+            }
+        }
+
+        private SeatSubmissionResult SeatRefused(
+            SeatSubmission submission,
+            MatchSeat seat,
+            SeatSubmissionRejectionReason reason,
+            string detail) =>
+            new SeatSubmissionResult(
+                submission,
+                false,
+                reason,
+                MatchSessionRejectionReason.None,
+                detail,
+                session.Projection.Version,
+                0,
+                seat == null ? null : SeatProjectionFactory.ForSeat(session.Projection, seat));
 
         /// <summary>
         /// Runs inside a submission, before the authority is reached. The one deterministic way to

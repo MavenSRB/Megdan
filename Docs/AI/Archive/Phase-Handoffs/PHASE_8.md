@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30a Add locally testable owner-scoped projections and command authorization completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30a | Six seats are derived from the authoritative participant graph, and each receives its own read model: its own cards, every hero's countable hand and deck sizes, the public board, and the standing decision's answers only when it owns them. Another seat's hand and deck are absent rather than filtered, a facedown commitment has no identity until the reveal, and no Director history, snapshot, diagnostic log or control appears on the player surface at all. Every player submission arrives as a payload plus the trusted seat it came in on, a unique identity and the version it was decided against; the host resolves player, hero and team through `MatchParticipants` and refuses an unknown seat, a stale or future version, a replayed identity, a payload claiming another seat's hero or side, and any command the seat's own projection did not publish - each before the authority is touched. All ten pending families are covered, seven of them observed in a seeded official six-player match answered seat by seat. A development-only harness selects any seat; snapshot restore and session replacement reseat from the restored authority and rebuild every seat identically. | `pending` |
+
 ## Milestone 8.30 Move match authority behind a transport-neutral session boundary completion evidence
 
 | ID | Outcome | Commit |

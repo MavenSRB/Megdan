@@ -550,7 +550,7 @@ Non-goals: No owner-scoped projection, seat binding, submission identity, expect
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830-move-match-authority-behind-a-transport-neutral-session-boundary-completion-evidence).
 
-### [ ] 8.30a Add locally testable owner-scoped projections and command authorization
+### [x] 8.30a Add locally testable owner-scoped projections and command authorization
 
 Blocked by: Milestone 8.30 must establish the transport-neutral session boundary.
 
@@ -569,7 +569,13 @@ Non-goals: No network SDK, transport envelope, host/join flow, relay/NAT travers
 
 ER2 note (`F-ER2-07`): `MatchSessionProjection` is currently one global read model exposing every owner's cards and full state; this milestone is the recorded owner of the per-viewer seam, and every projection property added before it raises its cost.
 
-### [!] 8.30b Seat-scope and complete the player HUD prompt flow
+Resolution (`F-ER2-07`): the per-viewer seam exists. `SeatProjection` is a separate read model built per seat, in which another seat's hand and deck are absent rather than filtered, and it carries no accepted-command history, snapshot, diagnostic log or Director control. `MatchSessionProjection` is unchanged and stays the Director's own full-trust view; the cost this note warned about is now paid once per seat-visible field rather than by every consumer.
+
+Rules note: the Director's surface asks each hero to commit in turn, which is one controller serializing one question. The seat surface authorizes every seat the authority is still awaiting at the same time, which is rulebook p.7's simultaneous facedown choice; the commitment authority already tracked each hero independently, so nothing about the rule changed.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830a-add-locally-testable-owner-scoped-projections-and-command-authorization-completion-evidence).
+
+### [ ] 8.30b Seat-scope and complete the player HUD prompt flow
 
 Re-scoped by the 8.2 re-baseline (2026-08-21, user approved, applying the 7.9a recommendation): milestone 7.8a already delivered the player-facing runtime UI Toolkit match HUD this block's original "build" wording restated. What remains is scoping that proven surface to one authorized seat and completing the states a multi-seat session adds.
 

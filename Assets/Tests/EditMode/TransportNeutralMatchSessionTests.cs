@@ -408,6 +408,17 @@ namespace GuardsDigital.Tests.EditMode
                 SnapshotReads++;
                 return inner.CaptureSnapshot();
             }
+
+            // Milestone 8.30a's seat surface. This double exists to observe the director client's
+            // submissions, so it forwards the seat members unchanged rather than recording them.
+            public MatchSeatBinding Seats => inner.Seats;
+
+            public SeatProjection ProjectionForSeat(SeatId seat) => inner.ProjectionForSeat(seat);
+
+            public SeatSubmissionResult SubmitForSeat(SeatId seat, SeatSubmission submission) =>
+                inner.SubmitForSeat(seat, submission);
+
+            public ISeatClient ClientForSeat(SeatId seat) => inner.ClientForSeat(seat);
         }
 
         /// <summary>
