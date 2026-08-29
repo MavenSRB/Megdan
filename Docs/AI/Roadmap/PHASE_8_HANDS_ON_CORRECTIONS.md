@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard for player-reported UI and rules-offer defects found after milestone 8.29a and before private-online implementation resumes. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
 
-These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestones 8.29b, 8.29b1 and correctives 8.29b1a-8.29b1b are complete; 8.29c-8.29e remain proposed.
+These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestones 8.29b, 8.29b1 and correctives 8.29b1a-8.29b1b are complete; 8.29c-8.29f remain proposed.
 
 ### [x] 8.29b Stabilize hero selection and recompose Level Up
 
@@ -142,3 +142,22 @@ Acceptance checks:
 Closing check: `AnOptionalStepWhoseBranchCannotApply_CompletesWithoutOfferingAConfirmCommand` is recorded failing at the pre-fix revision where the optional node always pauses and passing after the feasibility gate. `ConfiguredTimedOptionalEffects_OfferOnlyPerformableBranches` closes the roster matrix, including Arien's observed before/after-Attack surfaces.
 
 Non-goals: No change to printed card text, Attack legality unrelated to optional text, rules timing, target queries, movement/displacement legality, triggered-effect limits, card balance, hero-specific rule branch, networking, animation, or general prompt redesign.
+
+### [ ] 8.29f Close a completed Attack before another action can start
+
+Proposed at the user's direction on 2026-08-29 after hands-on play and the accepted rule-event log demonstrated Arien's Red Tier I Dangerous Current completing its Primary Attack against a minion and then accepting the same card's Secondary Movement before the card resolved. Code inspection confirmed that Attack completion and source-card resolution are separate transitions, while a later action start relies on the selected unresolved card and absence of pending work rather than an independent one-action-spent boundary. Documentation of this correction is approved; implementation is not yet approved. Dangerous Current is the required configured reproduction, not a card-name exception.
+
+Observable outcome: Once an Attack reaches its terminal Action Ended boundary, its played source card resolves exactly once and Initiative advances before any unrelated Primary, Secondary, Hold, Fast Travel, or Clear action can start on that card; only a rules-authorized repeat or genuinely pending action consequence may keep the card open.
+
+Acceptance checks:
+
+- A focused configured regression reproduces the reported Level-I Dangerous Current sequence: Arien performs its Primary Attack against a legal enemy minion, its Before-the-Attack text follows the selected zero-or-one-hero outcome, and the minion Defeat/removal path completes. The same card is then resolved, the selected actor advances, and submitting its Secondary Movement invocation is rejected atomically with no movement, second action-start event, or extra card transition.
+- Every terminal Attack path reaches one shared completion invariant exactly once, including successful and defended hero Attacks, ordinary minion Defeat, removal prevented or completed, Before-the-Attack and After-the-Attack text with immediate or resumed choices, a mandatory step that stops the remaining action, and the final instance of a legal repeat. A path that is genuinely paused on Defense, card text, removal prevention, displacement correction, Lane Push, or an authorized repeat remains open and exposes no unrelated ordinary action.
+- The turn/action authority rejects a stale second normal-action command after the same selected card has recorded a terminal action boundary even if presentation still holds an old invocation. The protection is shared and source-driven; it does not parse printed text, branch on Arien or Dangerous Current, or rely only on hiding a HUD control.
+- Rulebook exceptions remain distinct: Defense continues to be a reaction from a card in hand and not the played card's one turn action; a card-text or continuous-source Repeat still performs only its explicitly authorized additional instance; resolving a defeated hero's unresolved card still performs no action.
+- Snapshot restore, replay, retained-prefix Undo/reapply, restart, deterministic drivers, ordered semantic events, and immutable projections reconstruct the same one-action boundary. Rejected stale second-action commands do not enter accepted history or change version, pending state, occupancy, card state, or Initiative.
+- Focused Core/Edit Mode lifecycle regressions pass, plus a focused Play Mode pointer journey that performs Dangerous Current's Attack and proves its Movement region is no longer actionable after completion. The event log shows one terminal Attack, one card resolution, and no second action start.
+
+Closing checks: `ACompletedAttack_CannotStartASecondActionOnItsUnresolvedSourceCard` is recorded failing at the pre-fix revision where Dangerous Current's completed Primary Attack is followed by an accepted Secondary Movement and passing after correction. `EveryTerminalAttackPath_ResolvesItsSourceCardExactlyOnceOrNamesItsPendingContinuation` closes the shared lifecycle matrix and prevents a card-specific repair.
+
+Non-goals: No change to Dangerous Current's wording, values, targeting, Before-the-Attack effect, minion Defeat/removal rules, action timing, Repeat semantics, Defense exception, Initiative order, card-content definitions, networking, animation, or general action-HUD design; no hero/card-name branch and no presentation-only suppression standing in for authority rejection.
