@@ -144,7 +144,7 @@ namespace GuardsDigital.Tests.PlayMode
             var railBox = rail.worldBound;
             Assert.That(
                 railBox.width,
-                Is.EqualTo(ConfiguredMatchHudRenderer.HeroRailWidth).Within(EdgeTolerance),
+                Is.EqualTo(ConfiguredMatchHudRenderer.HeroRailWidth).Within(UiPlayer.PixelSnapping()),
                 $"The {side} rail is {railBox.width} wide at {where} rather than the width every " +
                 "region rect is still computed from. A rail that grew to hold the count would be " +
                 "the one thing this milestone may not do.");
@@ -185,10 +185,14 @@ namespace GuardsDigital.Tests.PlayMode
                 .Single(element => element.name == "gd-bonus-strip");
             var chips = UiPlayer.Descendants(strip)
                 .Single(element => element.name == "gd-item-chips");
+            var lineHeight = strip.worldBound.height -
+                strip.resolvedStyle.borderTopWidth -
+                strip.resolvedStyle.borderBottomWidth;
             Assert.That(
-                strip.worldBound.height,
+                lineHeight,
                 Is.EqualTo(Mathf.Max(chips.worldBound.height, box.height)).Within(EdgeTolerance),
-                $"The {side} item strip's line is {strip.worldBound.height} tall at {where}, where " +
+                $"The {side} item strip's content line is {lineHeight} tall at {where}, where " +
+                    $"its border box is {strip.worldBound.height}, " +
                     $"its chips need {chips.worldBound.height} and the coin is {box.height} - so the " +
                     "line grew to hold both rather than fitting the coin inside it.");
 

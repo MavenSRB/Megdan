@@ -98,10 +98,11 @@ namespace GuardsDigital.Tests.PlayMode
         ///
         /// <para>A regression guard rather than a target: <see cref="ThreeUpBudget"/> is the target and
         /// this build meets it, while this ceiling independently keeps a rail from growing back past
-        /// what the recomposition achieved. Measured at 239 and recorded at 245 to leave the runtime
-        /// theme's own rounding alone.</para>
+        /// what the recomposition achieved. The approved 8.29a medallion and 8.29b permanently
+        /// reserved selection outline changed that accepted geometry: measured at 258.667 and
+        /// recorded at 259, with runtime pixel snapping still allowed separately by the caller.</para>
         /// </summary>
-        internal const float RecordedRailCeiling = 245f;
+        internal const float RecordedRailCeiling = 259f;
 
         /// <summary>
         /// How many independently laid-out rows a hero rail stacks: the header, the item strip, a held

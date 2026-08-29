@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard for player-reported UI and rules-offer defects found after milestone 8.29a and before private-online implementation resumes. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
 
-These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestone 8.29b is complete; 8.29b1 and 8.29c-8.29e remain proposed.
+These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestones 8.29b and corrective 8.29b1a are complete; 8.29b1 has resumed, and 8.29c-8.29e remain proposed.
 
 ### [x] 8.29b Stabilize hero selection and recompose Level Up
 
@@ -25,9 +25,9 @@ Non-goals: No rule, progression, coin, item, option-projection, command, seriali
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829b-stabilize-hero-selection-and-recompose-level-up-completion-evidence).
 
-### [ ] 8.29b1 Select printed actions directly on the resolving card
+### [~] 8.29b1 Select printed actions directly on the resolving card
 
-Proposed at the user's direction on 2026-08-29 after the completed enlarged-card HUD still presented ordinary action selection as a row of debug-like text buttons. Documentation of this correction is approved; implementation is not yet approved. The already emphasized, fully exposed resolving card becomes the ordinary printed-action surface, with luminous boxes over the exact printed regions and compact replacement chips attached to the action they replace.
+Approved at the user's direction on 2026-08-29 after the completed enlarged-card HUD still presented ordinary action selection as a row of debug-like text buttons. Implementation is complete and its focused action-surface checks pass; corrective 8.29b1a closed the three stale rail-geometry guards exposed by affected validation, so final affected and two-resolution evidence can now close this milestone. The already emphasized, fully exposed resolving card becomes the ordinary printed-action surface, with luminous boxes over the exact printed regions and compact replacement chips attached to the action they replace.
 
 Observable outcome: During ordinary card resolution, a player starts each legal printed Primary or Secondary action by clicking or focusing the corresponding highlighted region on the resolving card itself; the separate action-button row is absent, while non-card controls such as End Turn remain in the contextual dock.
 
@@ -44,6 +44,24 @@ Acceptance checks:
 Closing checks: `TheResolvingCardsPrintedActionRegions_ForwardOnlyTheirExactProjectedOffers` is recorded failing at the pre-fix revision where the resolving face owns no action controls and passing when its fixed typed regions forward the matching offers. `OrdinaryPrintedActions_AppearOnTheResolvingCardWithoutADuplicateDockRow` closes the live pointer, focus, replacement, containment and one-surface behavior across prepared-art and generated-fallback fixtures.
 
 Non-goals: No rule, action availability, printed value, card-text application, replacement, targeting, command, serialization, replay, Undo, card definition, source artwork, card-footprint, ordinary commitment, Defense, Level Up, effect-choice, networking, animation or general production-HUD redesign; no hotspot derived from private image analysis and no removal of End Turn or Director/headless controls.
+
+### [x] 8.29b1a Reconcile rail geometry guards after the approved plaque changes
+
+Approved at the user's direction on 2026-08-29 after 8.29b1 affected validation found three repeatable failures in two standing rail guards. The failures concern test measurement assumptions introduced before the approved 8.29a medallion and 8.29b reserved-outline geometry; the printed-action implementation does not own or change either rail.
+
+Observable outcome: The standing rail guards measure the intended content geometry and the accepted post-8.29a/8.29b plaque baseline without masking later growth. No production HUD, layout, rule or action behavior changes.
+
+Acceptance checks:
+
+- The shared coin guard excludes the bonus strip's decorative top and bottom borders before comparing the content line with the taller of its item chips and coin, and compares the declared rail width within the panel's explicit one-pixel snapping allowance. It continues to fail if content height or width grows beyond those bounds; both Wasp coin-rail journeys pass at their validated viewports.
+- The held-marker rail ceiling is rebaselined only to the measured accepted plaque geometry after 8.29a and 8.29b. The independent `ThreeUpBudget` assertion remains unchanged and continues to prove that three rails fit the standing rail rect.
+- The exact three previously failing Play Mode journeys pass together, followed by the directly affected rail journeys and documentation/source validation.
+
+Closing checks: `TheCoinBalance_MovesOnTheRailOfTheHeroTheDefeatPaidAndOnNoOther`, `Scene_KeepsEveryRailsCoinCountInsideItsRailAtBothValidatedViewports`, and `APoisonedHero_ReadsTheMarkerAndItsThreeLostValuesOnTheirOwnRail` are recorded failing in the pre-correction 8.29b1 candidate based on `f35bd432` and passing after the bounded content-line, one-edge width-snap and marker-ceiling corrections. The recovered intermediate run records the first two corrected boundaries passing before the short-viewport width assertion exposed its older fixed half-unit tolerance; the marker journey's recorded output independently preserves its 258.667-versus-288 three-up measurement.
+
+Non-goals: No production source, visual geometry, plaque composition, card surface, rules authority, action offer, command, snapshot, content or unrelated test change; no tolerance or ceiling beyond the observed approved baseline.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829b1a-reconcile-rail-geometry-guards-after-the-approved-plaque-changes-completion-evidence).
 
 ### [ ] 8.29c Restore the Director Undo player path
 
