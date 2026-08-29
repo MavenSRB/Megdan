@@ -543,7 +543,7 @@ namespace GuardsDigital.Tests.EditMode
             ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
 
         /// <summary>Milestone 8.27's reported unmodified official-roster Wave-ending seed.</summary>
-        private const int CaptureSeed = 5;
+        private const int CaptureSeed = 21;
         private const int CaptureBudget = 1200;
 
         /// <summary>Twelve samples of one command kind: six at the start of the match and six at the end.</summary>

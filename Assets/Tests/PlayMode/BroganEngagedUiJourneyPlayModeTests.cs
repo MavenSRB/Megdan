@@ -178,6 +178,44 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the Attack the charge set up resolved against the unit it named.");
         }
 
+        [UnityTest]
+        public IEnumerator MadDashWithoutACompleteChargeBinding_IsGreyedAndCannotBeStarted()
+        {
+            yield return LoadStagedScene(SceneCardContent.ConfiguredMatch);
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var broganId = BroganSeat(runtime).HeroId;
+
+            CommitSoTheNamedSeatActs(runtime, broganId, BroganCardContent.MadDash);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(broganId));
+            yield return PointTrayAt(root, broganId);
+            yield return null;
+
+            var unavailable = runtime.RoundView.Model.UnavailableActions.Single(action =>
+                KindOf(runtime, action.ActionDefinitionId) == ActionKind.Attack);
+            Assert.That(runtime.RoundView.Model.Actions.Any(action =>
+                    action.Command.ActionDefinitionId.Equals(unavailable.ActionDefinitionId)),
+                Is.False,
+                "The mandatory charge with no complete text-to-target continuation has no command.");
+
+            var control = UiPlayer.Button(hud, unavailable.Label);
+            Assert.That(control.enabledInHierarchy, Is.False,
+                "The rendered Mad Dash Attack region is visibly disabled rather than silently inert.");
+
+            var snapshot = runtime.CaptureSnapshot();
+            var commandCount = runtime.AcceptedCommands.Count;
+            var stale = new TypedInvocationViewModel(
+                unavailable.Label, DirectorCommand.StartAction(unavailable.ActionDefinitionId));
+            Assert.That(runtime.RoundPresenter.Submit(stale), Is.False,
+                "A stale invocation cannot bypass the same live feasibility check.");
+            Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(snapshot));
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandCount));
+            Assert.That(runtime.PendingEffectChoice, Is.Null);
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
+            yield return CaptureGameView("mad-dash-unavailable");
+        }
+
         /// <summary>
         /// Brutal Jab: "You may move 1 space. Push an enemy unit or a token adjacent to you up to 1
         /// space."

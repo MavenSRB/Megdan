@@ -88,7 +88,7 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 
 ### [ ] 8.29c Restore the Director Undo player path
 
-Proposed at the user's direction on 2026-08-29 after hands-on play found that the visible Director Undo control no longer undoes. Documentation of this correction is approved; implementation is not yet approved. The authoritative retained-prefix operation remains separately covered, so this milestone owns the real pointer-to-authority-to-refresh journey and must not assume whether the defect is hit routing, enablement, callback wiring, rejection, or refresh until its pre-fix reproduction identifies that boundary.
+Proposed at the user's direction on 2026-08-29 after hands-on play found that the visible Director Undo control no longer undoes. Documentation of this correction is approved; implementation was deferred on 2026-08-29 when the symptom could not be reproduced and the user chose to document a future recurrence more exactly. The authoritative retained-prefix operation remains separately covered, so this milestone owns the real pointer-to-authority-to-refresh journey and must not assume whether the defect is hit routing, enablement, callback wiring, rejection, or refresh until its pre-fix reproduction identifies that boundary.
 
 Observable outcome: When accepted command history exists, a player can open the Director drawer, activate Undo through the rendered HUD, and see exactly the latest accepted command removed with every standing surface refreshed to the reconstructed retained-prefix state.
 
@@ -105,9 +105,9 @@ Closing check: `ClickingDirectorUndo_UndoesExactlyOneAcceptedCommandAndRefreshes
 
 Non-goals: No change to which accepted commands are undoable, no multi-step history browser, redo, confirmation dialog, networking, rule, snapshot-schema, event-log redesign, hero-plaque redesign, or general production-HUD/accessibility work.
 
-### [ ] 8.29d Grey attacks whose mandatory card text cannot establish a target
+### [x] 8.29d Grey attacks whose mandatory card text cannot establish a target
 
-Proposed at the user's direction on 2026-08-29 after Brogan's Red charge Attack remained actionable without a valid charge target; code inspection confirmed that target-by-card-text Attacks deliberately bypass the availability probe. Documentation of this correction is approved; implementation is not yet approved. The correction is shared and source-driven: Brogan and Tigerclaw are required examples, not card-name exceptions.
+Completed on 2026-08-29 after Brogan's Red charge Attack remained actionable without a valid charge target; code inspection confirmed that target-by-card-text Attacks deliberately bypassed the availability probe. The correction is shared and source-driven: Brogan and Tigerclaw are required examples, not card-name exceptions.
 
 Observable outcome: An Attack whose mandatory ordered card text must first move, choose, or otherwise bind its eventual Attack target is offered only when at least one complete legal text-to-target continuation currently exists.
 
@@ -123,6 +123,8 @@ Acceptance checks:
 Closing check: `AnAttackWhoseMandatoryTextMustBindItsTarget_IsUnavailableWhenNoBindingCanBeCompleted` is recorded failing at the pre-fix revision because the target-by-card-text policy returns available without probing its mandatory text, then passing with empty and non-empty legal-continuation fixtures. Configured Brogan and Tigerclaw rows close the player-facing regression without introducing content-specific authority.
 
 Non-goals: No card wording, rule interpretation, balancing, Attack-resolution order, Defense, Defeat, board geometry, generic movement legality, card-content redesign, hero-specific rule branch, networking, animation, or broader action-menu redesign.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829d-grey-attacks-whose-mandatory-card-text-cannot-establish-a-target-completion-evidence).
 
 ### [ ] 8.29e Stop offering impossible timed optional effects
 

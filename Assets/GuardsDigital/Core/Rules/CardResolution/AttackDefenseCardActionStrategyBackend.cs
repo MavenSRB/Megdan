@@ -2452,9 +2452,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     offer.AttackRange != AttackRangeKind.Ranged) ||
                 !offer.ActorId.IsDefined ||
                 // Milestone 8.19a. An Attack whose text names its target has no target set at the
-                // moment this is asked, and the set it would have had is the wrong one - the text moves
-                // the attacker first. That is a judgement this cannot make rather than a proven
-                // emptiness, and rule 12's conservative reading offers what it cannot judge.
+                // moment this narrow target-set query is asked, and the set it would have had is the
+                // wrong one - the text moves the attacker first. The full card-action authority probes
+                // that typed continuation separately; this backend therefore leaves it undecided here.
                 (action.AttackTargetPolicy?.TargetIsBoundByCardText ?? false) ||
                 !adjacentMoveAuthority.Occupancies.Any(occupancy =>
                     occupancy.HeroId.Equals(offer.ActorId)))

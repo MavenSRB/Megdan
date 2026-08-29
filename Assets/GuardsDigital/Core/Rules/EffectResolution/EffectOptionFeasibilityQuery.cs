@@ -47,6 +47,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             Blocked = 2
         }
 
+        private enum BindingVerdict
+        {
+            Continue = 0,
+            Bound = 1,
+            Blocked = 2
+        }
+
         /// <summary>
         /// The options of <paramref name="chooseNode"/> the chooser cannot perform, in the definition's
         /// own order. Empty when every option can be performed, and never larger than the option set.
@@ -105,6 +112,103 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 Array.Empty<EffectNodeOutcome>(),
                 context,
                 ref budget) == Verdict.Performable;
+        }
+
+        /// <summary>
+        /// Whether a mandatory card-text path can reach the typed operation that binds an enclosing
+        /// Attack's target. Unlike <see cref="CanApplyAnything"/>, an earlier optional or otherwise
+        /// performable step is not sufficient: the walk continues until a mandatory target binding is
+        /// reachable, or a mandatory prerequisite proves the path blocked. A modal choice succeeds
+        /// when any legal branch can bind, matching the player's ability to choose that branch.
+        /// </summary>
+        public static bool CanCompleteMandatoryAttackTargetBinding(
+            PendingResolution prospectiveFrame,
+            EffectResolutionContext context)
+        {
+            if (prospectiveFrame == null) throw new ArgumentNullException(nameof(prospectiveFrame));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+
+            var budget = MaximumNodesPerOption;
+            return WalkToAttackTargetBinding(
+                context.Definition.RootNodeId,
+                prospectiveFrame,
+                Array.Empty<EffectNodeOutcome>(),
+                context,
+                ref budget) == BindingVerdict.Bound;
+        }
+
+        private static BindingVerdict WalkToAttackTargetBinding(
+            EffectNodeId nodeId,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            ref int budget)
+        {
+            if (--budget < 0)
+            {
+                throw new InvalidOperationException(
+                    $"Effect definition '{context.Definition.Id}' did not settle within " +
+                    $"{MaximumNodesPerOption} nodes while judging an Attack target binding.");
+            }
+
+            if (!context.Definition.TryGetNode(nodeId, out var node))
+            {
+                return BindingVerdict.Continue;
+            }
+
+            switch (node.Kind)
+            {
+                case EffectNodeKind.Capability:
+                    if (node.Capability.Equals(
+                            GuardsDigital.Core.Effects.Synthetic.SyntheticContinuationCapabilities
+                                .SetAttackTargetV1))
+                    {
+                        return node.FailurePolicy == EffectFailurePolicy.Mandatory
+                            ? BindingVerdict.Bound
+                            : BindingVerdict.Continue;
+                    }
+
+                    return Judge(node, frame, outcomes, context) == Verdict.Blocked
+                        ? BindingVerdict.Blocked
+                        : BindingVerdict.Continue;
+
+                case EffectNodeKind.Sequence:
+                    foreach (var child in node.ChildNodeIds)
+                    {
+                        var verdict = WalkToAttackTargetBinding(
+                            child, frame, outcomes, context, ref budget);
+                        if (verdict != BindingVerdict.Continue)
+                        {
+                            return verdict;
+                        }
+                    }
+
+                    return BindingVerdict.Continue;
+
+                case EffectNodeKind.Optional:
+                    // A player may decline this whole subtree, so it cannot be the mandatory binding
+                    // that makes the enclosing Attack legal. Continue to the next ordered step.
+                    return BindingVerdict.Continue;
+
+                case EffectNodeKind.Choose:
+                case EffectNodeKind.Conditional:
+                    foreach (var child in node.ChildNodeIds)
+                    {
+                        if (WalkToAttackTargetBinding(
+                                child, frame, outcomes, context, ref budget) ==
+                            BindingVerdict.Bound)
+                        {
+                            return BindingVerdict.Bound;
+                        }
+                    }
+
+                    return node.FailurePolicy == EffectFailurePolicy.Mandatory
+                        ? BindingVerdict.Blocked
+                        : BindingVerdict.Continue;
+
+                default:
+                    return BindingVerdict.Continue;
+            }
         }
 
         /// <summary>

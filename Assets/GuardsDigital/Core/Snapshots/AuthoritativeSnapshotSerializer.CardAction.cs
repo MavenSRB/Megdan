@@ -1244,11 +1244,10 @@ namespace GuardsDigital.Core.Snapshots
                 if (!definition.Reference.Equals(common.DefinitionReference)) continue;
                 foreach (var action in definition.ActionDefinitions)
                 {
-                    if (action.Id.Equals(common.ActionId) &&
-                        action.EffectRoot != null &&
-                        action.EffectRoot.Reference.Equals(reference))
+                    if (action.Id.Equals(common.ActionId))
                     {
-                        return action.EffectRoot;
+                        var trusted = action.EffectRootFor(reference);
+                        if (trusted != null) return trusted;
                     }
                 }
             }

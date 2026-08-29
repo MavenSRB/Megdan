@@ -55,15 +55,15 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that ends the engaged official-roster scenario by
-        /// p.13's last Life counter, after 8 rounds and 479 commands.
+        /// p.13's last Life counter, after 4 rounds and 237 commands.
         /// </summary>
-        private const int LifeCounterMatchSeed = 4;
+        private const int LifeCounterMatchSeed = 3;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the unmodified official six-player setup
-        /// to p.8's last Wave counter, after 12 rounds and 799 commands.
+        /// to p.8's last Wave counter, after 12 rounds and 768 commands.
         /// </summary>
-        private const int FinalWaveMatchSeed = 5;
+        private const int FinalWaveMatchSeed = 21;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the official-roster uncontested-push

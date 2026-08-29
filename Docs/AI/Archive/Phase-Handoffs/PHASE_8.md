@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.29d Grey attacks whose mandatory card text cannot establish a target completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.29d | Attacks whose mandatory typed card text must establish the target are greyed unless a complete legal binding path exists; Brogan and Tigerclaw prove both sides, stale starts reject atomically, the saved HUD disables Mad Dash, and restore/Undo trust both declared timed roots. | `COMMIT_PENDING` |
+
 ## Milestone 8.29b1b Align silent printed-action highlights and preserve them on hover completion evidence
 
 | ID | Outcome | Commit |

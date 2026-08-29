@@ -1768,7 +1768,8 @@ namespace GuardsDigital.Core.Cards
         private bool CanStartAttack(ActionOffer offer) =>
             cardActions == null ||
             cardActions.CanAttackFindTarget(
-                offer, definitions, participants, CurrentModifications());
+                offer, definitions, instances, participants, timing, CurrentModifications(),
+                roundIndex, turnIndex);
 
         public TurnResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)
         {
@@ -2318,6 +2319,15 @@ namespace GuardsDigital.Core.Cards
             ActionOffer offer,
             List<TurnResolutionEvent> precedingEvents)
         {
+            if (!cardActions.CanAttackFindTarget(
+                    offer, definitions, instances, participants, timing, CurrentModifications(),
+                    roundIndex, turnIndex))
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.AttackActionRejected,
+                    CardActionResolutionRejectionReason.TargetUnavailable);
+            }
+
             var result = cardActions.StartTurnAttackResolution(
                 resolutionId,
                 offer,

@@ -390,6 +390,30 @@ namespace GuardsDigital.Tests.EditMode
                 MatchConfiguration.CreateForContinuationFixture(TeamSide.Red));
 
         /// <summary>
+        /// The same continuation content with every minion removed and the two heroes left at their
+        /// distant setup spaces. The synthetic charge therefore has no complete move-and-bind line,
+        /// while its card definition and every non-board dependency remain identical to the engaged
+        /// fixture.
+        /// </summary>
+        public static MatchSession CreateContinuationSessionWithoutChargeBinding()
+        {
+            var configuration = MatchConfiguration.CreateForContinuationFixture(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                setup.Heroes,
+                Array.Empty<QuickGameMinionSetupState>()));
+        }
+
+        /// <summary>
         /// Milestone 8.19a. The same board with the Red hero's Ultimate already beside the dashboard,
         /// so the `before-action-trigger@1` it declares is in effect.
         ///

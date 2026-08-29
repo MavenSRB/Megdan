@@ -212,6 +212,55 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void AttackTargetBindingProbe_DoesNotMistakeAnOptionalStepForTheMandatoryBinding()
+        {
+            var optional = new EffectNodeId("optional-flourish");
+            var optionalWork = new EffectNodeId("optional-work");
+            var blocker = new EffectNodeId("mandatory-blocker");
+            var bind = new EffectNodeId("unreachable-bind");
+            var definition = new EffectDefinition(
+                new EffectDefinitionId("optional-before-binding-fixture"), "rev-1", Root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        Root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { optional, blocker, bind }),
+                    new EffectNodeDefinition(
+                        optional, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        childNodeIds: new[] { optionalWork },
+                        chooser: EffectChooserRole.Actor),
+                    Leaf(optionalWork, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.May),
+                    Leaf(blocker, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                    Leaf(bind, SyntheticContinuationCapabilities.SetAttackTargetV1,
+                        EffectFailurePolicy.Mandatory)
+                });
+            var context = Context(definition);
+
+            Assert.That(
+                EffectOptionFeasibilityQuery.CanCompleteMandatoryAttackTargetBinding(
+                    Prospective(context, "optional-binding-probe"), context),
+                Is.False,
+                "Optional work can apply, but the mandatory path still stops before it binds a target.");
+        }
+
+        [Test]
+        public void AttackTargetBindingProbe_AdmitsAModalDefinitionWhenAnyBranchCanBind()
+        {
+            var definition = Choose(
+                EffectFailurePolicy.Mandatory, 1, 1,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                Leaf(Second, SyntheticContinuationCapabilities.SetAttackTargetV1,
+                    EffectFailurePolicy.Mandatory));
+            var context = Context(definition);
+
+            Assert.That(
+                EffectOptionFeasibilityQuery.CanCompleteMandatoryAttackTargetBinding(
+                    Prospective(context, "modal-binding-probe"), context),
+                Is.True,
+                "One legal modal branch that reaches the typed binding keeps the Attack available.");
+        }
+
+        [Test]
         public void AChoiceWithOnePerformableOption_OffersNoStop()
         {
             // The control that keeps the stop measured rather than blanket: where a mode can still be
@@ -532,6 +581,18 @@ namespace GuardsDigital.Tests.EditMode
             new EffectResolutionContext(
                 definition, SyntheticEffectCapabilities.CreateCatalog(), null, null, 1, 1,
                 RuleModificationSet.Empty, EffectCardState.Absent, ActionKind.Skill);
+
+        private static PendingResolution Prospective(
+            EffectResolutionContext context, string resolutionId) =>
+            EffectResolutionSession.BuildStartFrame(
+                new EffectResolutionId(resolutionId),
+                new CardInstanceId("feasibility-card"),
+                default,
+                new ActionDefinitionId("feasibility-action"),
+                Actor,
+                Actor,
+                ActionInvocationContext.PrintedPrimary,
+                context);
 
         private static IReadOnlyList<string> Kinds(EffectResolutionStepResult result) =>
             result.Events.Select(value => $"{value.NodeId}={value.ResultKind}").ToArray();

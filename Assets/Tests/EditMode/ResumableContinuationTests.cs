@@ -141,6 +141,20 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         [Test]
+        public void AnAttackWhoseMandatoryTextMustBindItsTarget_IsUnavailableWhenNoBindingCanBeCompleted()
+        {
+            var blocked = ConfiguredMatchFixtures.CreateContinuationSessionWithoutChargeBinding();
+            CommitForAttack(blocked, ChargeCard);
+            Assert.That(AttackOffer(blocked).IsAvailable, Is.False,
+                "A mandatory charge with no legal move-and-target continuation is visibly unavailable.");
+
+            var performable = ConfiguredMatchFixtures.CreateContinuationSession();
+            CommitForAttack(performable, ChargeCard);
+            Assert.That(AttackOffer(performable).IsAvailable, Is.True,
+                "Any complete legal move-and-target continuation keeps the same typed Attack available.");
+        }
+
+        [Test]
         public void AnAttackWhoseTextNamesItsTarget_OpensNoTargetChoiceAndBindsOneThroughItsText()
         {
             var session = StartAttackWith(ChargeCard, out _);

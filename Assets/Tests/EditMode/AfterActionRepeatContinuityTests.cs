@@ -246,13 +246,22 @@ namespace GuardsDigital.Tests.EditMode
                 "A match restored around the corrected repeat continues into the same state, byte for " +
                 "byte.");
 
-            var undone = live.Undo();
+            // This property's complete walk may now consume the whole 4,000-command budget. Exercise
+            // retained-prefix Undo just past the historical refusal, while the snapshot envelope can
+            // still carry its rule-event log, rather than making Undo depend on whether this random
+            // route happens to reach an ending before that transport limit.
+            var undoPrefixCount = StagedRefusalCommand + 1;
+            var undoSession = CreateStagedWaspVersusTigerclawSession();
+            DeterministicMatchLoop.Replay(
+                undoSession, record.Commands.Take(undoPrefixCount).ToArray());
+            var beforeUndo = undoSession.Projection.AuthoritativeSnapshot;
+            var undone = undoSession.Undo();
             Assert.That(undone.Accepted, Is.True, undone.Detail);
-            Assert.That(live.Projection.AcceptedCommands,
-                Is.EqualTo(record.Commands.Take(record.Commands.Count - 1)));
-            var again = live.Execute(record.Commands[record.Commands.Count - 1]);
+            Assert.That(undoSession.Projection.AcceptedCommands,
+                Is.EqualTo(record.Commands.Take(undoPrefixCount - 1)));
+            var again = undoSession.Execute(record.Commands[undoPrefixCount - 1]);
             Assert.That(again.Accepted, Is.True, again.Detail);
-            Assert.That(live.Projection.AuthoritativeSnapshot, Is.EqualTo(record.FinalSnapshot),
+            Assert.That(undoSession.Projection.AuthoritativeSnapshot, Is.EqualTo(beforeUndo),
                 "A retained-prefix Undo followed by the same command is the same state, byte for byte.");
         }
 
@@ -410,18 +419,22 @@ namespace GuardsDigital.Tests.EditMode
         /// The nodes whose two answers this sweep has observed to be the same state, and which this
         /// milestone deliberately leaves as they are.
         ///
-        /// <para><b>Nine nodes across five heroes, all one mechanism, and none of them p.10's
+        /// <para><b>Eleven nodes across five heroes, all one mechanism, and none of them p.10's
         /// repeat.</b> Eight were found on this check's first runs; Brogan's <c>shove-push</c> became
         /// reachable when milestone 8.25e5f corrected Siren's Call's secondary values. Every one is
         /// an optional card-text step - a printed "you may" or "up to" - whose body begins with a
         /// mandatory selection: Wasp's
         /// <c>high-voltage-may</c> and <c>kinetic-push</c>, Brogan's <c>shove-move</c> and
         /// <c>shove-push</c> and <c>throw-discard</c>, Arien's <c>wave-push</c>, Tigerclaw's
-        /// <c>theft-opening-move</c>, and Xargatha's <c>green-may</c> and <c>converts-may</c>. Where the
+        /// <c>theft-opening-move</c>, Tigerclaw's <c>before-move</c> and <c>after-move</c>, and
+        /// Xargatha's <c>green-may</c> and <c>converts-may</c>. Where the
         /// board leaves that selection nothing to name, taking the offer reaches the step, cannot
         /// complete it, and rulebook p.10's Mandatory and Optional Steps stops the action exactly
         /// where declining leaves it. The original eight were observed on both boards on six seeds
-        /// each; <c>shove-push</c> is observed on the official board on seeds 2 and 5.</para>
+        /// each; <c>shove-push</c> is observed on the official board on seeds 2 and 5. Milestone
+        /// 8.29d's corrected Attack availability changes the deterministic route and exposes
+        /// Tigerclaw's two timed optional moves here; proposed milestone 8.29e already owns that exact
+        /// optional-prompt mechanism.</para>
         ///
         /// <para><b>Why they are recorded rather than fixed here.</b> The repeat family this milestone
         /// owns is closed by asking one authority whether the instance it would start can start, and
@@ -431,13 +444,14 @@ namespace GuardsDigital.Tests.EditMode
         /// against - <c>RULES_LEDGER.md</c>'s question 11, where an option the actor cannot perform is
         /// refused rather than offered - so what is missing is the mechanism rather than the decision.
         /// Milestone 8.25e1's independent offer-and-answer reachability inventory is where it belongs,
-        /// and this constant is what hands it over: a ninth node fails the sweep until somebody says
+        /// and this constant is what hands it over: a new node fails the sweep until somebody says
         /// why it is here.</para>
         /// </summary>
         private static readonly string[] IndistinguishableAnswersThisMilestoneDoesNotOwn =
         {
             "high-voltage-may", "kinetic-push", "shove-move", "shove-push", "throw-discard",
-            "wave-push", "theft-opening-move", "green-may", "converts-may"
+            "wave-push", "theft-opening-move", "before-move", "after-move", "green-may",
+            "converts-may"
         };
 
         /// <summary>

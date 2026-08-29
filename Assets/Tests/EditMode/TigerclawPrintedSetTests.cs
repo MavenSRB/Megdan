@@ -67,21 +67,13 @@ namespace GuardsDigital.Tests.EditMode
         /// rather than asserted around.</para>
         /// </summary>
         [Test]
-        public void BlinkStrike_WithNoCrossableEnemy_AttacksNobody()
+        public void BlinkStrike_WithNoCrossableEnemy_IsUnavailable()
         {
             var fixture = Create(banishedMinions: MinionsBesideHim());
 
-            fixture.StartPrimary(TigerclawCardContent.BlinkStrike);
-            fixture.AnswerEveryStandingChoice();
-
-            Assert.That(fixture.NodeApplied("blink-move"), Is.False,
-                "No enemy stands one space away in a straight line, so the line names nobody and the " +
-                "Move it publishes never runs.");
-            Assert.That(fixture.HeroSpace(fixture.Hero), Is.EqualTo(HeroAt), "He is where he began.");
-            Assert.That(
-                fixture.RuleEventTypes().Any(value => value == "Action.AttackStarted"), Is.False,
-                "\"If you cannot make this move, you cannot attack.\" - p.10 skips what stands after " +
-                "an impossible mandatory step, and the Attack is exactly that.");
+            Assert.That(fixture.IsPrimaryAvailable(TigerclawCardContent.BlinkStrike), Is.False,
+                "No enemy stands one space away in a straight line with a legal landing beyond it, " +
+                "so the mandatory move-and-target continuation is greyed before the card is spent.");
         }
 
         /// <summary>
@@ -89,7 +81,7 @@ namespace GuardsDigital.Tests.EditMode
         /// line he may cross from one he may not, and no other rule of the card changes.
         /// </summary>
         [Test]
-        public void BlinkStrike_RefusesALineWhoseEndSpaceIsOccupied()
+        public void BlinkStrike_WithAnOccupiedEndSpace_IsUnavailable()
         {
             var fixture = Create(
                 minionPlacements: new Dictionary<string, HexCoordinate>
@@ -98,16 +90,9 @@ namespace GuardsDigital.Tests.EditMode
                     ["red-ranged-01"] = TwoAway
                 });
 
-            fixture.StartPrimary(TigerclawCardContent.BlinkStrike);
-            fixture.AnswerEveryStandingChoice();
-
-            Assert.That(fixture.HeroSpace(fixture.Hero), Is.EqualTo(HeroAt),
-                "He moves *through* the unit and stops beyond it; a space with something in it is not " +
-                "a place p.18's Move may end, so no line exists and the step cannot be completed.");
-            Assert.That(
-                fixture.RuleEventTypes().Any(value => value == "Action.AttackStarted"), Is.False,
-                "An enemy is standing beside him and is still not attacked, because what this card " +
-                "targets is the unit its line crossed rather than whatever is in reach.");
+            Assert.That(fixture.IsPrimaryAvailable(TigerclawCardContent.BlinkStrike), Is.False,
+                "He must move through the enemy and stop beyond it. An occupied end space leaves no " +
+                "complete mandatory move-and-target continuation, so the Attack is unavailable.");
         }
 
         // -----------------------------------------------------------------------------------------

@@ -877,6 +877,66 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications) =>
             attackDefenseBackend.CanFindLegalTarget(offer, definitions, participants, modifications);
 
+        /// <summary>
+        /// Milestone 8.29d: the complete availability question for a live turn. Ordinary Attacks keep
+        /// using the target backend's exact candidate query; an Attack whose mandatory card text binds
+        /// its target instead probes that typed effect path without starting or mutating a frame.
+        /// </summary>
+        public bool CanAttackFindTarget(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            if (!ActionOfferQuery.TryFindActionDefinition(
+                    offer, materializedDefinitions, out var action) ||
+                action.Kind != ActionKind.Attack ||
+                !(action.AttackTargetPolicy?.TargetIsBoundByCardText ?? false))
+            {
+                return attackDefenseBackend.CanFindLegalTarget(
+                    offer, materializedDefinitions, participants, modifications);
+            }
+
+            var cardText = action.CardTextAt(CardTextTiming.BeforeTheAttack);
+            if (cardText == null)
+            {
+                return false;
+            }
+
+            var context = new EffectResolutionContext(
+                cardText,
+                ContentCatalogs.Capabilities,
+                participants,
+                timing,
+                roundIndex,
+                turnIndex,
+                modifications,
+                EffectCardState.Of(materializedDefinitions, instances),
+                ActionKind.Attack,
+                components: components,
+                heroItems: skillBackend.HeroItems,
+                rosterState: rosterState);
+            return EffectOptionFeasibilityQuery.CanCompleteMandatoryAttackTargetBinding(
+                EffectResolutionSession.BuildStartFrame(
+                    new EffectResolutionId(
+                        $"probe-attack-target-{offer.SourceCardInstanceId.Value}-" +
+                        offer.ActionDefinitionId.Value),
+                    offer.SourceCardInstanceId,
+                    offer.SourceDefinitionReference,
+                    offer.ActionDefinitionId,
+                    offer.ActorId,
+                    offer.ActorId,
+                    offer.InvocationContext,
+                    context),
+                context);
+        }
+
         public CardActionResolutionResult AnswerEffectChoice(
             GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommand command,
             IEnumerable<CardDefinition> definitions,
