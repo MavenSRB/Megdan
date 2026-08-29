@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.29b1b Align silent printed-action highlights and preserve them on hover completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.29b1b | Prepared resolving cards now expose silent typed actions through a centred layered warm Movement circle or broad layered Primary Skill/Attack box; Fast Travel stays beside Movement, Clear sits immediately above Attack, and resolving-card hover cannot cover the controls. Prepared/generated, replacement, hover, two-resolution and all-hero evidence closes with 136/136 affected Edit Mode, 166/166 affected Play Mode, and 1/1 non-batch visual validation. | `3d1a4f1` |
+
 ## Milestone 8.29b1 Select printed actions directly on the resolving card completion evidence
 
 | ID | Outcome | Commit |
