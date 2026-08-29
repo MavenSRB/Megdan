@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30b Seat-scope and complete the player HUD prompt flow completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30b | The proven runtime HUD is driven by one selected seat's authorized projection and typed invocations alone. One `IMatchReadModel` serves the Director's projection and a seat's, `SeatProjection` scopes every pending decision, companion envelope and offer to the seat that may act on it, and one `IMatchClient` submits for either; a runtime composed for a seat builds no Undo or diagnostic presenter at all, and `MatchSceneCompositionRoot.NextComposedSeat` is the development-only one-shot selector that can name a seat and change nothing about one. The user-approved amendment moved the contextual narration into the top status bar, widened from 56 to 96 reference units as a 56-unit identity row plus a 40-unit narration lane, and gave End Turn the panel's bottom-right corner as a 300-by-96 control of its own. Every pinned rectangle was re-measured rather than assumed: the Tie Breaker chip, the tray, the compact hand, the Level Up band and the round dock did not move at all, while the rail column went 888 to 848 against the 733 three rails need and the board went 1092x910 to 1044x870. The amendment also found that two of the ten declared pending families were named by no status branch, so a Minion Battle and a paused system transition reached the player under the round's own phase line. | `pending` |
+
 ## Milestone 8.30a Add locally testable owner-scoped projections and command authorization completion evidence
 
 | ID | Outcome | Commit |

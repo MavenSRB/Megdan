@@ -262,22 +262,50 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly VisualElement tieBreakerChip;
         private readonly VisualElement content;
+        private readonly VisualElement identityRow;
+        private readonly VisualElement narrationLane;
 
         public MatchStatusBarUnityView()
         {
             Root = HudElements.Panel(MatchHudTheme.TopBarBackground);
             Root.name = "gd-topbar";
             Root.style.position = Position.Absolute;
-            Root.style.flexDirection = FlexDirection.Row;
-            Root.style.alignItems = Align.Center;
-            Root.style.justifyContent = Justify.SpaceBetween;
+            // Milestone 8.30b: two stacked rows rather than one. The identity row keeps every fact it
+            // carried and the measurements taken of it; the narration lane beneath it is what the
+            // user-approved amendment added.
+            Root.style.flexDirection = FlexDirection.Column;
+            Root.style.alignItems = Align.Stretch;
+            Root.style.justifyContent = Justify.FlexStart;
             Root.style.paddingLeft = 14f;
             Root.style.paddingRight = 12f;
             Root.style.borderBottomWidth = 1f;
             Root.style.borderBottomColor = MatchHudTheme.PanelBorder;
+
+            identityRow = new VisualElement { name = "gd-topbar-identity" };
+            identityRow.style.flexDirection = FlexDirection.Row;
+            identityRow.style.alignItems = Align.Center;
+            identityRow.style.justifyContent = Justify.SpaceBetween;
+            identityRow.style.flexShrink = 0f;
+            identityRow.style.height = ConfiguredMatchHudRenderer.StatusBarIdentityRowHeight;
+            Root.Add(identityRow);
+
             content = HudElements.Row(18f);
             content.style.flexShrink = 1f;
-            Root.Add(content);
+            identityRow.Add(content);
+
+            // The lane the round view's own narration element is re-parented into. This is a host and
+            // never a second renderer: the sentence is derived by the round presenter from the
+            // projection, exactly as it was when it was drawn beside the cards, so there is still one
+            // place that decides what the match is doing and one place that says it.
+            narrationLane = new VisualElement { name = "gd-narration-lane" };
+            narrationLane.style.flexDirection = FlexDirection.Row;
+            narrationLane.style.alignItems = Align.Center;
+            narrationLane.style.flexGrow = 1f;
+            narrationLane.style.flexShrink = 1f;
+            narrationLane.style.overflow = Overflow.Hidden;
+            narrationLane.style.paddingBottom = 4f;
+            Root.Add(narrationLane);
+
             tieBreakerChip = HudElements.Panel(MatchHudTheme.EmptySlot);
             tieBreakerChip.name = "gd-tie-breaker";
             tieBreakerChip.style.position = Position.Absolute;
@@ -289,6 +317,30 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public VisualElement Root { get; }
+
+        /// <summary>
+        /// Moves the round view's narration element into this bar's lane. Milestone 8.30b's amendment.
+        ///
+        /// <para>It is exposed rather than filled here because the narration belongs to the surface
+        /// that derives it. A builder of its own in this class would be a second answer to "what is
+        /// the match doing", and two answers is the one thing this lane must not have - it is exactly
+        /// the shape milestone 7.9c's finding F-PRES-01 was, where two copies of one derivation had
+        /// drifted apart by a single pending family.</para>
+        /// </summary>
+        public void HostNarration(VisualElement narration)
+        {
+            if (narration == null)
+            {
+                throw new ArgumentNullException(nameof(narration));
+            }
+
+            narration.RemoveFromHierarchy();
+            narration.style.flexGrow = 1f;
+            narration.style.flexShrink = 1f;
+            narration.style.marginTop = 0f;
+            narration.style.marginBottom = 0f;
+            narrationLane.Add(narration);
+        }
 
         public MatchHudHeaderViewModel Model { get; private set; }
 
@@ -2625,6 +2677,17 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement preview;
 
         /// <summary>
+        /// End Turn's own surface. Milestone 8.30b's user-approved amendment took the control out of
+        /// the shared action row and gave it the panel's bottom-right corner as a larger control of
+        /// its own; the renderer moves this element out of the contextual region onto the panel and
+        /// places it, exactly as it already does with this view's Defense preview.
+        ///
+        /// <para>It stays a child of <see cref="Root"/> until something moves it, so a fixture that
+        /// renders this view alone still finds the control where every other one it draws is.</para>
+        /// </summary>
+        private readonly VisualElement endTurnHost;
+
+        /// <summary>
         /// The upgrade-option controls this rebuild drew, in the order they were drawn. Milestone 8.8a:
         /// the selection outline belongs to exactly one of them at a time, so marking one means unmarking
         /// the rest, and a driver with no pointer has to be able to reach them by option.
@@ -2650,11 +2713,20 @@ namespace GuardsDigital.Presentation.Match
         {
             Root = new VisualElement { name = "gd-context" };
             Root.style.flexDirection = FlexDirection.Column;
+            // Milestone 8.30b: the narration is named, because the renderer now moves it into the top
+            // status bar and a check has to be able to say where it ended up.
             status = HudElements.Row(8f);
+            status.name = "gd-narration";
             status.style.marginBottom = 6f;
             rows = HudElements.Column(6f);
+            endTurnHost = new VisualElement { name = "gd-end-turn" };
+            endTurnHost.style.flexDirection = FlexDirection.Column;
+            endTurnHost.style.alignItems = Align.Stretch;
+            endTurnHost.style.justifyContent = Justify.Center;
+            endTurnHost.style.display = DisplayStyle.None;
             Root.Add(status);
             Root.Add(rows);
+            Root.Add(endTurnHost);
             preview = HudElements.Panel(DefensePreviewBackgroundColor);
             preview.name = "gd-defense-preview";
             preview.style.position = Position.Absolute;
@@ -2668,6 +2740,18 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The Defense breakdown popup, placed on the HUD root so it can leave the tray.</summary>
         public VisualElement PreviewRoot => preview;
+
+        /// <summary>
+        /// The narration element, so the renderer can host it in the top status bar. Milestone 8.30b.
+        /// </summary>
+        public VisualElement NarrationRoot => status;
+
+        /// <summary>
+        /// End Turn's own element, so the renderer can place it in the panel's bottom-right corner.
+        /// Milestone 8.30b. It is hidden whenever the projection offers no End Turn, which is every
+        /// state in which the turn authority would refuse one.
+        /// </summary>
+        public VisualElement EndTurnRoot => endTurnHost;
 
         public RoundActionViewModel Model { get; private set; }
         public DefenseBreakdownViewModel ActiveDefensePreview => activeDefensePreview;
@@ -2824,6 +2908,11 @@ namespace GuardsDigital.Presentation.Match
         {
             status.Clear();
             rows.Clear();
+            // Milestone 8.30b: End Turn is rebuilt before the branches below, because four of them
+            // return early and the control is no longer inside the region any of them draw. Every one
+            // of those four is a state the turn authority refuses an End Turn in, so the model carries
+            // none and this leaves the corner empty rather than leaving a stale control standing.
+            RebuildEndTurn();
             // Milestone 8.8a: the controls a rebuild is about to discard, and the selection that belonged
             // to them. A highlight belongs to the model it was read from, exactly as every other one here
             // does.
@@ -3426,21 +3515,72 @@ namespace GuardsDigital.Presentation.Match
             // choices that have no board surface at all; `EffectChoiceTargets` stays on the model
             // because the presenter still resolves a click through it.
 
-            if (Model.EndTurnInvocation != null)
-            {
-                var endTurn = HudElements.Control(
-                    Model.EndTurnInvocation.Label, () => ForwardInvocation(Model.EndTurnInvocation));
-                AddActionControl(section, endTurn);
-            }
+            // Milestone 8.30b, by the user-approved amendment: End Turn is no longer one of these.
+            // It is built by `RebuildEndTurn` into its own surface, which the renderer places in the
+            // panel's bottom-right corner.
 
-            // A trailing gap is useful only between controls. Keeping it after End Turn was the last
-            // few units that pushed that otherwise-fitting control onto a second line.
+            // A trailing gap is useful only between controls, and the row is content-sized: the last
+            // control keeps none.
             var last = section.Children().LastOrDefault();
             if (last != null)
             {
                 last.style.marginRight = 0f;
             }
         }
+
+        /// <summary>
+        /// End Turn, as its own control in its own surface. Milestone 8.30b's user-approved amendment.
+        ///
+        /// <para>Nothing about what it submits changed: it forwards the same projected invocation the
+        /// action row forwarded, through the same <c>ForwardInvocation</c>, so the authority sees the
+        /// identical command. What changed is that it is no longer the last item of a row it shared
+        /// with the offered actions - milestone 8.29b1b had already moved those onto the resolving
+        /// card, leaving End Turn a small button alone in a dock about the hand.</para>
+        /// </summary>
+        private void RebuildEndTurn()
+        {
+            endTurnHost.Clear();
+            var invocation = Model?.EndTurnInvocation;
+
+            // `HasExclusiveDecision` and not a second list, for milestone 7.9c's finding F-PRES-01
+            // reason: two copies of "is the region asking something" drift by one entry and the entry
+            // they drift by is a control standing where it must not.
+            //
+            // **This is what the complete Edit Mode run caught.** Nine of the ten states that
+            // predicate covers are authority pauses, and the projection offers no End Turn in any of
+            // them - but the tenth, an open Clear selection, is a presentation context: the authority
+            // has not paused, so it still offers an End Turn, and the player is part-way through
+            // choosing tokens on the board. Until this milestone the region hid the control by the
+            // accident of returning early before the action row was built. Moving the control out of
+            // that row would have made ending the turn mid-selection reachable again, which is
+            // exactly the one-usable-context rule the tray hiding exists to keep.
+            if (invocation == null || HasExclusiveDecision)
+            {
+                endTurnHost.style.display = DisplayStyle.None;
+                return;
+            }
+
+            endTurnHost.style.display = DisplayStyle.Flex;
+            var control = HudElements.Control(
+                invocation.Label,
+                () => ForwardInvocation(invocation),
+                ConfiguredMatchHudRenderer.EndTurnControlHeight);
+            control.name = "gd-end-turn-control";
+            control.style.fontSize = EndTurnControlFontSize;
+            control.style.unityFontStyleAndWeight = FontStyle.Bold;
+            control.style.unityTextAlign = TextAnchor.MiddleCenter;
+            control.style.flexGrow = 1f;
+            control.style.flexShrink = 0f;
+            control.style.backgroundColor = MatchHudTheme.ConfirmAccent;
+            control.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
+            endTurnHost.Add(control);
+        }
+
+        /// <summary>
+        /// End Turn's type size. Milestone 8.30b: it is the largest label on the HUD, which is the
+        /// point - it is the one control that ends what the player is doing.
+        /// </summary>
+        public const float EndTurnControlFontSize = 22f;
 
         private void AddActionInvocation(
             VisualElement section,

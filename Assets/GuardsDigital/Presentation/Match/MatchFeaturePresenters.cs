@@ -4134,6 +4134,37 @@ namespace GuardsDigital.Presentation.Match
 
         private static string FormatStatus(IMatchReadModel projection)
         {
+            // Milestone 8.30b, and these two branches are what the user-approved amendment found.
+            //
+            // Moving this sentence into the top status bar made it the standing report of what the
+            // match is doing, and two of the ten declared pending families had never been named here.
+            // Both stand while the round phase reads EndOfRound, so both were reaching a player as
+            // "ROUND 1 COMPLETE - END OF ROUND" while the match was in fact waiting on an answer - the
+            // same shape milestone 8.20d found for the effect choice, which reached the table as
+            // "choose an action or End Turn". They are read before the phase for exactly that reason:
+            // a question the match is asking now outranks the phase it is asking it in.
+            //
+            // Neither is added to `IsAwaitingAnAnsweredDecision`. That list decides which offers are
+            // suppressed, and these two already suppress their own - the end-of-round advance is
+            // withheld against both by name - so moving them onto it would change what is offered in
+            // order to fix what is said. `EveryDeclaredPendingFamilyIsNamedByTheStatusDerivation`
+            // compares this method against the declared inventory instead, which is the comparison
+            // that was missing.
+            var minionBattle = projection.PendingMinionBattleChoice;
+            if (minionBattle != null)
+            {
+                return $"Minion Battle: {MinionChoiceLabels.TeamLabel(minionBattle.ChoosingSide)} " +
+                    $"removes {minionBattle.RequiredRemovalCount}, " +
+                    $"{minionBattle.SelectedUnits.Count} chosen.";
+            }
+
+            var transitionStep = projection.PendingSystemTransitionStep;
+            if (transitionStep != null)
+            {
+                return "System transition paused: " +
+                    $"{MinionChoiceLabels.TeamLabel(transitionStep.ChoosingSide)} decides.";
+            }
+
             if (projection.Phase == RoundResolutionPhase.EndOfRound)
             {
                 return $"ROUND {projection.RoundIndex} COMPLETE - END OF ROUND";

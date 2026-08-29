@@ -168,9 +168,33 @@ namespace GuardsDigital.Presentation.Match
         private const float EventLogPreferredHeight = 360f;
 
         /// <summary>
-        /// The standing status strip's height, in reference units. The Tie Breaker chip sits inside it.
+        /// The identity row of the standing status strip: the build name, the round and turn, both
+        /// Life counters, the Wave count, and the Tie Breaker chip. It is what the whole strip was
+        /// before milestone 8.30b, and the chip's rectangle is still measured against it, so widening
+        /// the strip below moved nothing that was already in it.
         /// </summary>
-        public const float StatusBarHeight = 56f;
+        public const float StatusBarIdentityRowHeight = 56f;
+
+        /// <summary>
+        /// The narration lane beneath the identity row, added by milestone 8.30b's user-approved
+        /// amendment. The contextual narration used to be the first row of the round dock down beside
+        /// the cards, which is the corner of the screen a player looks at least while the board is
+        /// what they are reading; it is now the widest line on the panel and sits directly under the
+        /// round and Life counters it qualifies.
+        ///
+        /// <para>Forty units is one 12-unit line plus its padding at every validated viewport - the
+        /// longest narration this build can produce is the respawn sentence, which measures well
+        /// inside a single line at the narrowest panel this HUD lays out into.</para>
+        /// </summary>
+        public const float StatusBarNarrationHeight = 40f;
+
+        /// <summary>
+        /// The standing status strip's height, in reference units: the identity row plus the narration
+        /// lane below it. Every region under the strip is placed from this, so milestone 8.30b's
+        /// amendment re-measured the hero rail column, the playfield and the tray against the taller
+        /// value rather than assuming they still fitted.
+        /// </summary>
+        public const float StatusBarHeight = StatusBarIdentityRowHeight + StatusBarNarrationHeight;
 
         /// <summary>
         /// The fixed height of the ordinary round/hand status dock below `DIRECTOR`. It is the height
@@ -190,6 +214,25 @@ namespace GuardsDigital.Presentation.Match
         /// lane. The upper hex-safe arm begins <see cref="BoardHexUiGap"/> units after it.
         /// </summary>
         public const float CompactHandRightEdge = Margin + StatusDockWidth;
+
+        /// <summary>
+        /// End Turn's own width, in reference units. Milestone 8.30b's user-approved amendment took it
+        /// out of the action row and gave it the panel's bottom-right corner.
+        ///
+        /// <para><b>Why it left the row.</b> It was the last control on an unlabelled line it shared
+        /// with every offered action, and milestone 8.29b1b then moved the printed actions onto the
+        /// resolving card - so the row it was keeping company with is empty in an ordinary turn, and
+        /// End Turn was a small button alone in the middle of a dock about the hand. It is the one
+        /// control that ends what the player is doing, so it is now the size and the position that
+        /// says so.</para>
+        /// </summary>
+        public const float EndTurnControlWidth = 300f;
+
+        /// <summary>
+        /// End Turn's own height. Roughly twice <c>HudElements.ControlHeight</c>, which is what makes
+        /// it read as its own surface rather than as a wider member of the action row.
+        /// </summary>
+        public const float EndTurnControlHeight = 96f;
 
         /// <summary>
         /// The compact board camera's width-to-height ratio. The official playable footprint is wider
@@ -285,6 +328,9 @@ namespace GuardsDigital.Presentation.Match
         public Rect TieBreakerIndicatorRect => GetTieBreakerIndicatorRect();
         public Rect RuleEventLogPanelRect => GetRuleEventLogRect();
         public Rect StatusBarRect => CalculateStatusBarRect(PanelViewport.x, PanelViewport.y);
+
+        /// <summary>Where End Turn's own control stands. Milestone 8.30b.</summary>
+        public Rect EndTurnControlRect => GetEndTurnControlRect();
         public Rect RedHeroRailRect =>
             CalculateHeroRailRect(PanelViewport.x, PanelViewport.y, TeamSide.Red);
         public Rect BlueHeroRailRect =>
@@ -371,6 +417,12 @@ namespace GuardsDigital.Presentation.Match
                     liveStatusDock.Contains(panelPosition)) ||
                 GetTieBreakerIndicatorRect().Contains(panelPosition) ||
                 CalculateStatusBarRect(viewport.x, viewport.y).Contains(panelPosition) ||
+                // Milestone 8.30b. End Turn's corner sits inside the tray band, and the band blocks
+                // the pointer only across the compact hand's own footprint at the opposite edge - so
+                // without this the board would act on the same click the control consumed. It is asked
+                // only while the control is drawn, because the corner is genuinely board when it
+                // is not.
+                EndTurnBlocksPointerAt(panelPosition) ||
                 GetDirectorToggleRect().Contains(panelPosition) ||
                 (IsDirectorDrawerOpen && GetDirectorDrawerRect().Contains(panelPosition)) ||
                 (diagnostics?.Model?.IsExpanded == true && GetRuleEventLogRect().Contains(panelPosition)))
@@ -433,6 +485,24 @@ namespace GuardsDigital.Presentation.Match
             var viewport = PanelViewport;
             yield return CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Red);
             yield return CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Blue);
+        }
+
+        /// <summary>
+        /// Whether End Turn's own corner consumes the pointer here. Milestone 8.30b: the laid-out box
+        /// where the panel has one, and the stated rectangle otherwise, which is the preference every
+        /// other live-or-stated region in this file makes.
+        /// </summary>
+        private bool EndTurnBlocksPointerAt(Vector2 panelPosition)
+        {
+            var host = round?.EndTurnRoot;
+            if (host == null || host.style.display.value == DisplayStyle.None)
+            {
+                return false;
+            }
+
+            return TryLiveRect(host, out var live)
+                ? live.Contains(panelPosition)
+                : GetEndTurnControlRect().Contains(panelPosition);
         }
 
         private static bool TryLiveRect(VisualElement element, out Rect rect)
@@ -628,6 +698,16 @@ namespace GuardsDigital.Presentation.Match
             hands.HoverPreviewRoot.RemoveFromHierarchy();
             root.Add(hands.HoverPreviewRoot);
             root.Add(round.PreviewRoot);
+
+            // Milestone 8.30b, by the user-approved amendment. Two of this view's surfaces leave the
+            // contextual region: the narration goes into the top status bar, which is the widest line
+            // on the panel and directly under the round and Life counters it qualifies, and End Turn
+            // takes the panel's bottom-right corner as a control of its own. Both are re-parented
+            // rather than rebuilt, so the round presenter remains the only thing that derives either.
+            statusBar.HostNarration(round.NarrationRoot);
+            round.EndTurnRoot.RemoveFromHierarchy();
+            round.EndTurnRoot.style.position = Position.Absolute;
+            root.Add(round.EndTurnRoot);
             if (heroOverviews != null)
             {
                 // Only the revealed face leaves the rail layer. Keeping the rail columns where they
@@ -723,6 +803,7 @@ namespace GuardsDigital.Presentation.Match
                 CalculateHeroRailRect(width, height, TeamSide.Blue, ordinaryTray.yMin),
                 playfield);
             LayoutDirectorControls();
+            LayoutEndTurnControl();
             diagnostics?.Layout(GetRuleEventLogRect());
             PublishCameraSafeLayout(ordinaryTray, playfield, viewport);
         }
@@ -972,11 +1053,52 @@ namespace GuardsDigital.Presentation.Match
                 Mathf.Max(Margin, panelWidth - width - Margin),
                 Margin,
                 width,
-                Mathf.Max(0f, Mathf.Min(StatusBarHeight, Mathf.Max(0f, panelHeight)) - (Margin * 2f)));
+                // Milestone 8.30b: the identity row rather than the whole strip. The narration lane
+                // widened the strip below this chip; measuring the chip against the strip would have
+                // stretched it down over the sentence instead of leaving it where it has always been.
+                Mathf.Max(
+                    0f,
+                    Mathf.Min(StatusBarIdentityRowHeight, Mathf.Max(0f, panelHeight)) - (Margin * 2f)));
         }
 
         private static Rect GetTieBreakerIndicatorRect() =>
             CalculateTieBreakerIndicatorRect(PanelViewport.x, PanelViewport.y);
+
+        /// <summary>
+        /// End Turn's own rectangle in the panel's bottom-right corner, stated as a function of the
+        /// viewport for the reason <see cref="CalculateTieBreakerIndicatorRect"/> is: a fixture with no
+        /// live panel has to be able to ask where it lands at a viewport it is not running at.
+        ///
+        /// <para>The corner is free in every state that offers End Turn. The tray band reaches the
+        /// panel's full width, but its ordinary content is the compact five-card hand in the opposite
+        /// corner, and the states that fill the band instead - a Defense response, a removal
+        /// prevention, a paused system transition, a card-valued effect choice - are exactly the
+        /// states in which the turn authority refuses an End Turn, so the presenter projects none and
+        /// this control is not drawn. The hero rails stop at the tray's top edge, so neither reaches
+        /// this band at all.</para>
+        /// </summary>
+        public static Rect CalculateEndTurnControlRect(float panelWidth, float panelHeight)
+        {
+            // It yields to the compact hand rather than overlapping it, which is the same answer
+            // `CalculateHeroRailWidth` gives when a panel is too narrow for the width it prefers: the
+            // supported desktop shapes leave 1816 reference units here and receive the full 300, and
+            // only the deliberately degenerate shapes - the ones that already resolve the rail columns
+            // to no height at all - reach the narrowing branch.
+            var handRightEdge = CalculateCompactHandPointerRect(panelWidth, panelHeight).xMax;
+            var width = Mathf.Min(
+                EndTurnControlWidth, Mathf.Max(0f, panelWidth - Margin - handRightEdge));
+            var height = Mathf.Min(
+                EndTurnControlHeight,
+                Mathf.Max(0f, panelHeight - StatusBarHeight - (Margin * 2f)));
+            return new Rect(
+                Mathf.Max(handRightEdge, panelWidth - width - Margin),
+                Mathf.Max(StatusBarHeight + Margin, panelHeight - height - Margin),
+                width,
+                height);
+        }
+
+        private static Rect GetEndTurnControlRect() =>
+            CalculateEndTurnControlRect(PanelViewport.x, PanelViewport.y);
 
         /// <summary>
         /// Where the `DIRECTOR` toggle stands: directly below the live third Red hero. Level Up no
@@ -1063,6 +1185,24 @@ namespace GuardsDigital.Presentation.Match
 
             CameraSafeLayout = new BoardCameraSafeLayout(upper, lower, viewport);
             PlayfieldLayoutChanged?.Invoke(CameraSafeLayout);
+        }
+
+        /// <summary>
+        /// Places End Turn in the panel's bottom-right corner. Milestone 8.30b.
+        /// </summary>
+        private void LayoutEndTurnControl()
+        {
+            var host = round?.EndTurnRoot;
+            if (host == null)
+            {
+                return;
+            }
+
+            var rect = GetEndTurnControlRect();
+            host.style.left = rect.x;
+            host.style.top = rect.y;
+            host.style.width = rect.width;
+            host.style.height = rect.height;
         }
 
         private void LayoutDirectorControls()

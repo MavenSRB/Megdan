@@ -1155,26 +1155,47 @@ namespace GuardsDigital.Tests.PlayMode
                     .Select(label => label.text),
                 Has.None.EqualTo("ACTIONS"),
                 "The status sentence already names these as actions; no gutter repeats it.");
+            // Milestone 8.30b's user-approved amendment. Printed actions moved onto the resolving card
+            // at 8.29b1b and End Turn moved to the panel's own bottom-right corner here, so the dock's
+            // action row is empty in an ordinary turn and `HideEmptySections` hides it rather than
+            // reserving a line for nothing.
             var actionControls = actionSection.Children().OfType<Button>().ToArray();
-            Assert.That(actionControls, Has.Length.EqualTo(1),
-                "Printed actions live on the resolving card; only End Turn remains in this dock.");
-            var lines = actionControls
-                .GroupBy(control => Mathf.Round(control.worldBound.yMin))
-                .ToArray();
-            Assert.That(lines, Has.Length.EqualTo(1),
-                "The remaining external End Turn control occupies one line.");
-            Assert.That(lines[0].Min(control => control.worldBound.xMin),
-                Is.EqualTo(actionSection.worldBound.xMin).Within(0.5f),
-                "The action row starts at the dock's content edge with no empty heading gutter.");
-            Assert.That(actionControls.Max(control => control.worldBound.xMax),
-                Is.LessThanOrEqualTo(actionSection.worldBound.xMax + 0.5f),
-                "Keeping one line does not push End Turn through the dock's safe right edge.");
+            Assert.That(actionControls, Is.Empty,
+                "Printed actions live on the resolving card and End Turn has its own corner, so this " +
+                "dock row holds no external control at all.");
+            Assert.That(UiPlayer.IsShown(actionSection), Is.False,
+                "A section with nothing in it is not drawn.");
+
+            var endTurnControl = (Button)Named(root.Hud.RootElement, "gd-end-turn-control");
+            Assert.That(endTurnControl, Is.Not.Null);
+            Assert.That(endTurnControl.text,
+                Is.EqualTo(root.Runtime.RoundView.Model.EndTurnInvocation.Label));
+            var endTurnBox = endTurnControl.worldBound;
+            var endTurnRect = root.Hud.EndTurnControlRect;
+            Assert.That(endTurnBox.xMin, Is.EqualTo(endTurnRect.xMin).Within(snap),
+                "End Turn stands where the stated corner rectangle puts it.");
+            Assert.That(endTurnBox.yMin, Is.EqualTo(endTurnRect.yMin).Within(snap));
+            Assert.That(endTurnBox.width, Is.EqualTo(ConfiguredMatchHudRenderer.EndTurnControlWidth)
+                .Within(snap * 2f));
+            Assert.That(endTurnBox.height, Is.EqualTo(ConfiguredMatchHudRenderer.EndTurnControlHeight)
+                .Within(snap * 2f));
+            Assert.That(endTurnBox.xMin, Is.GreaterThan(dock.xMax),
+                "It is clear of the dock it used to sit inside.");
+            Assert.That(endTurnBox.yMin, Is.GreaterThanOrEqualTo(dock.yMax),
+                "and below it, in the band the compact hand leaves empty.");
             var handHeader = Named(root.Hud.RootElement, "gd-hand-header").worldBound;
-            var contextContentBottom = Descendants(context)
+            // Milestone 8.30b. This used to assert that wrapped action controls finished with a
+            // deliberate gap before the hand-status row. There are no controls left here to wrap:
+            // 8.29b1b moved the printed actions onto the resolving card and the amendment moved the
+            // narration into the status strip and End Turn into the panel's corner, so an ordinary
+            // revealed turn draws nothing in this region at all. That is the assertion now - a later
+            // milestone that puts something back fails here and has its spacing judged again rather
+            // than inheriting a gap rule about an empty box.
+            var contextContent = Descendants(context)
                 .Where(element => UiPlayer.IsShown(element) && element.worldBound.height > 0f)
-                .Max(element => element.worldBound.yMax);
-            Assert.That(contextContentBottom, Is.LessThanOrEqualTo(handHeader.yMin - 5.5f),
-                "Wrapped action controls finish with a deliberate gap before the hand-status row.");
+                .ToArray();
+            Assert.That(contextContent.Select(element => element.name).ToArray(), Is.Empty,
+                "An ordinary revealed turn draws no contextual control.");
             Assert.That(handHeader.yMax, Is.LessThanOrEqualTo(dock.yMax + 0.5f),
                 "The largest routine state's content fits the dock's fixed height.");
 
@@ -1210,10 +1231,12 @@ namespace GuardsDigital.Tests.PlayMode
                     "Every projected printed action owns one region on the fully exposed resolving card.");
 
                 var actionSection = Named(root.Hud.RootElement, "gd-action-section");
-                Assert.That(actionSection.Children().OfType<Button>().ToArray(), Has.Length.EqualTo(1),
-                    "Only End Turn remains in the ordinary dock; printed actions have no duplicate row.");
-                Assert.That(actionSection.Children().OfType<Button>().Single().text,
-                    Is.EqualTo(runtime.RoundView.Model.EndTurnInvocation.Label));
+                Assert.That(actionSection.Children().OfType<Button>().ToArray(), Is.Empty,
+                    "Printed actions have no duplicate row, and milestone 8.30b moved End Turn out " +
+                    "of this dock entirely.");
+                Assert.That(((Button)Named(root.Hud.RootElement, "gd-end-turn-control")).text,
+                    Is.EqualTo(runtime.RoundView.Model.EndTurnInvocation.Label),
+                    "End Turn carries the projected label in its own corner surface.");
 
                 var regions = Descendants(resolvingCard)
                     .Where(element => element.name == "gd-printed-action-region")

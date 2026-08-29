@@ -2719,9 +2719,17 @@ namespace GuardsDigital.Tests.EditMode
 
             var actionSection = view.Root.Q<VisualElement>("gd-action-section");
             Assert.That(actionSection, Is.Not.Null);
-            Assert.That(actionSection.Children().OfType<Button>().ToArray(), Has.Length.EqualTo(1),
-                "Printed Primary and Secondary starts belong to typed regions on the resolving card; " +
-                "only End Turn remains an ordinary external control.");
+            Assert.That(actionSection.Children().OfType<Button>().ToArray(), Is.Empty,
+                "Printed Primary and Secondary starts belong to typed regions on the resolving card, " +
+                "and milestone 8.30b's amendment moved End Turn to a surface of its own, so an " +
+                "ordinary turn now leaves this row with no external control in it at all.");
+
+            var endTurnControl = view.EndTurnRoot.Q<Button>("gd-end-turn-control");
+            Assert.That(endTurnControl, Is.Not.Null,
+                "End Turn is drawn, in the surface the renderer places in the panel's corner.");
+            Assert.That(endTurnControl.text, Is.EqualTo(view.Model.EndTurnInvocation.Label),
+                "The control still carries the projected invocation's own label.");
+            Assert.That(view.EndTurnRoot.style.display.value, Is.EqualTo(DisplayStyle.Flex));
 
             var hands = new DirectorHandsUnityView();
             new DirectorHandsPresenter(session, hands).Refresh();
@@ -3511,13 +3519,26 @@ namespace GuardsDigital.Tests.EditMode
                 var blue = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
                     viewport.x, viewport.y, TeamSide.Blue);
 
-                foreach (var rect in new[] { bar, tray, playfield, red, blue })
+                // Milestone 8.30b: End Turn's own corner is a standing region of the layout now, so it
+                // is measured with the rest. It is the one placed from two edges at once, which is
+                // exactly the shape that leaves a panel on a viewport nobody measured it at.
+                var endTurn = ConfiguredMatchHudRenderer.CalculateEndTurnControlRect(
+                    viewport.x, viewport.y);
+
+                foreach (var rect in new[] { bar, tray, playfield, red, blue, endTurn })
                 {
                     Assert.That(rect.xMin, Is.GreaterThanOrEqualTo(0f), $"{viewport}");
                     Assert.That(rect.yMin, Is.GreaterThanOrEqualTo(0f), $"{viewport}");
                     Assert.That(rect.xMax, Is.LessThanOrEqualTo(viewport.x + 0.01f), $"{viewport}");
                     Assert.That(rect.yMax, Is.LessThanOrEqualTo(viewport.y + 0.01f), $"{viewport}");
                 }
+
+                Assert.That(endTurn.yMin, Is.GreaterThanOrEqualTo(bar.yMax),
+                    $"End Turn never reaches the status strip at {viewport}.");
+                Assert.That(endTurn.xMin, Is.GreaterThanOrEqualTo(
+                        ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(
+                            viewport.x, viewport.y).xMax),
+                    $"and never reaches the compact hand at {viewport}.");
 
                 Assert.That(bar.yMax, Is.LessThanOrEqualTo(playfield.yMin + 0.01f));
                 Assert.That(playfield.yMax, Is.LessThanOrEqualTo(tray.yMin + 0.01f),

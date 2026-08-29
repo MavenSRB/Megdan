@@ -575,7 +575,7 @@ Rules note: the Director's surface asks each hero to commit in turn, which is on
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830a-add-locally-testable-owner-scoped-projections-and-command-authorization-completion-evidence).
 
-### [~] 8.30b Seat-scope and complete the player HUD prompt flow
+### [x] 8.30b Seat-scope and complete the player HUD prompt flow
 
 Re-scoped by the 8.2 re-baseline (2026-08-21, user approved, applying the 7.9a recommendation): milestone 7.8a already delivered the player-facing runtime UI Toolkit match HUD this block's original "build" wording restated. What remains is scoping that proven surface to one authorized seat and completing the states a multi-seat session adds.
 
@@ -596,7 +596,11 @@ Acceptance checks:
 
 Non-goals: No transport, lobby, reconnect implementation, production styling, animation overhaul, main menu, account UI, tutorial, or Phase 9 presentation work.
 
-### [!] 8.30c Validate the complete six-seat player experience against the local session
+Closing check: `EveryDeclaredPendingFamilyIsNamedByTheStatusDerivation`, observed failing at the pre-fix working tree - where the status derivation named eight of the ten declared pending families, so a standing Minion Battle or paused system transition reached the player under the round's own phase line - and passing once both branches were added.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830b-seat-scope-and-complete-the-player-hud-prompt-flow-completion-evidence).
+
+### [ ] 8.30c Validate the complete six-seat player experience against the local session
 
 Blocked by: Milestone 8.30b must provide the primitive local player HUD and prompt flow.
 

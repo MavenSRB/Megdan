@@ -39,7 +39,13 @@ namespace GuardsDigital.Tests.EditMode
             // this measures is unchanged - what moved is which viewport reaches it. A panel this small
             // is reached by a window whose shape is this extreme rather than by one whose pixel count
             // is, which is the whole point of the scaled panel.
-            Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(0f, 68f, 778f, 220f)));
+            //
+            // Milestone 8.30b re-measured it. The user-approved amendment widened the status strip
+            // from 56 to 96 reference units - a 56-unit identity row plus a 40-unit narration lane -
+            // and on a panel this short the tray height is bounded by what the strip leaves rather
+            // than by its own preferred 460, so both numbers moved together: 220 tall from y 68
+            // becomes 180 tall from y 108, and the tray still starts below the strip.
+            Assert.That(panel, Is.EqualTo(new UnityEngine.Rect(0f, 108f, 778f, 180f)));
             Assert.That(panel.xMax, Is.LessThanOrEqualTo(778f));
             Assert.That(panel.yMax, Is.LessThanOrEqualTo(300f));
             Assert.That(

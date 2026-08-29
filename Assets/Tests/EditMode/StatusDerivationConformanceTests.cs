@@ -101,6 +101,50 @@ namespace GuardsDigital.Tests.EditMode
                 "by calling it a frame, which is exactly the evasion this split must not create.");
         }
 
+        /// <summary>
+        /// Milestone 8.30b's closing check, and it exists because the amendment changed what this
+        /// sentence is for.
+        ///
+        /// <para>Until this milestone the narration was the first row of the round dock down beside
+        /// the cards; the user-approved amendment moved it into the top status bar and asked that the
+        /// bar report what the match is doing <em>at every step</em>. The rule above compares
+        /// <c>FormatStatus</c> against the presenter's own pause list, which is the set of families
+        /// whose standing suppresses the offers a second action would produce - and two of the ten
+        /// families the project declares are not on it, because both already suppress their own
+        /// offers by name. So both passed the rule above while reaching a player as "ROUND 1 COMPLETE
+        /// - END OF ROUND" with the match in fact waiting on an answer.</para>
+        ///
+        /// <para>This compares against the declared inventory instead, which is the whole set. It is
+        /// the same comparison milestone 8.20d made and the same failure it found - a family the
+        /// status derivation never reads is a decision the player meets under whatever the fallback
+        /// happens to say - widened from the presenter's list to the project's.</para>
+        /// </summary>
+        [Test]
+        public void EveryDeclaredPendingFamilyIsNamedByTheStatusDerivation()
+        {
+            var declared = DecisionFamilyInventory.ChoiceProjectionMembers;
+            var named = ProjectionReadsOf(FormatStatus)
+                .Select(getter => getter.Name.Substring("get_".Length))
+                .Distinct()
+                .ToArray();
+
+            Assert.That(declared, Has.Length.GreaterThan(KnownDecisionFamilies),
+                "The declared inventory is wider than the presenter's pause list, which is why this " +
+                "rule is not the one above. An inventory that has shrunk to the pause list is a " +
+                "broken rule rather than a pass.");
+            Assert.That(named, Has.Length.GreaterThanOrEqualTo(declared.Length),
+                "A scan of the status derivation that finds fewer projection reads than there are " +
+                "declared families has stopped seeing the method rather than proved anything - the " +
+                "vacuity milestone 8.30b's retype produced in this file once already.");
+            Assert.That(
+                declared.Where(member => !named.Contains(member, StringComparer.Ordinal))
+                    .OrderBy(name => name, StringComparer.Ordinal).ToArray(),
+                Is.Empty,
+                "A declared pending family the status derivation never reads is a step the top status " +
+                "bar cannot report. Add its branch to the derivation; adding it to the pause list " +
+                "instead would change which offers are suppressed in order to fix what is said.");
+        }
+
         [Test]
         public void NoScannedInstructionInTheseDerivationsIsUnresolved()
         {

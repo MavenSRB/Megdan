@@ -12,11 +12,11 @@ The route has completed approved HUD corrections **8.29a-8.29b1b**, offer and li
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.30a**.
-- Active authorized milestone: **8.30b**.
-- Next proposed milestone: **8.30b**.
+- Current completed milestone: **8.30b**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **8.30c**.
 
-Milestone **8.30b** is in progress. Its seat-scoping half is built and green in the cross-platform harness: one `IMatchReadModel` both the Director's projection and a seat's answer, `SeatProjection` scoping every pending decision, companion envelope and offer to the seat that may act on it, one `IMatchClient` with a Director and a seat implementation, the five player-facing presenters retyped to read and submit through them, and a runtime composed for a seat that builds no Undo or diagnostic presenter at all. `MatchSceneCompositionRoot.NextComposedSeat` is the development-only one-shot seat selector. **Still owed:** the amended End Turn and status-bar layout with its geometry re-measured, `SeatScopedMatchHudPlayModeTests`, and the complete Edit Mode and Play Mode runs plus the targeted Game View inspection at 2560x1440 and the short desktop viewport.
+Milestone **8.30b** completed on 2026-08-30. One `IMatchReadModel` answers both the Director's projection and a seat's, `SeatProjection` scopes every pending decision, envelope and offer to the seat that may act on it, one `IMatchClient` submits for either, and a runtime composed for a seat builds no Undo or diagnostic presenter; `MatchSceneCompositionRoot.NextComposedSeat` is the development-only one-shot selector. Its user-approved amendment moved the contextual narration into the top status bar - now 96 reference units, a 56-unit identity row over a 40-unit lane - and gave End Turn the panel's bottom-right corner as its own control. Every pinned rectangle was re-measured: chip, tray, hand, Level Up band and dock unmoved; the rail column 888 to 848 against the 733 three rails need; the board 1092x910 to 1044x870. Two declared pending families were named by no status branch, so a Minion Battle and a paused transition had reached the player under the round's phase line.
 
 Milestone **8.30a** completed on 2026-08-29. Six seats derived from the participant graph each read an owner-scoped projection in which another seat's hand and deck are absent and no Director surface appears, rulebook p.4 deciding what is open; every submission carries its trusted seat, a unique identity and an expected version, and an unknown seat, stale version, replay, forged identity or unpublished command is refused before the authority is touched. All ten pending families own their answers, and every awaiting seat may commit at once as p.7 prescribes rather than one at a time as the Director is asked.
 

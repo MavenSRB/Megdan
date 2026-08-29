@@ -7,6 +7,7 @@ using GuardsDigital.Core.Replay;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Tests.EditMode
 {
@@ -218,6 +219,149 @@ namespace GuardsDigital.Tests.EditMode
                     .Any(value => value.GetParameters()[0].ParameterType == typeof(IMatchClient)),
                 Is.True);
         }
+
+
+        /// <summary>
+        /// Milestone 8.30b, the amendment's own surfaces. Both are moved rather than rebuilt, which is
+        /// what keeps one derivation behind each of them.
+        /// </summary>
+        [Test]
+        public void TheAmendedSurfacesCarryTheProjectedNarrationAndEndTurnAndAreMovedNotRebuilt()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var client = new SeatMatchClient(host.ClientForSeat(host.Seats.Seats[0].Id));
+            var model = RoundActionPresenter.CreateViewModel(client.Projection);
+            var view = new RoundActionUnityView();
+
+            view.Render(model);
+
+            Assert.That(view.NarrationRoot.name, Is.EqualTo("gd-narration"));
+            Assert.That(Labels(view.NarrationRoot), Does.Contain(model.Status),
+                "The narration element carries exactly the sentence the presenter derived.");
+            Assert.That(model.Status, Is.Not.Empty,
+                "There is no step at which the derivation has nothing to report.");
+
+            // The bar hosts that element; it does not build a second one of its own.
+            var bar = new MatchStatusBarUnityView();
+            bar.HostNarration(view.NarrationRoot);
+
+            Assert.That(view.NarrationRoot.parent.name, Is.EqualTo("gd-narration-lane"));
+            Assert.That(Descendants(bar.Root).Contains(view.NarrationRoot), Is.True);
+            Assert.That(Descendants(view.Root).Contains(view.NarrationRoot), Is.False,
+                "It left the contextual region rather than being copied out of it.");
+            Assert.That(Labels(bar.Root), Does.Contain(model.Status));
+
+            // And it keeps following the projection from its new home.
+            var moved = RoundActionPresenter.CreateViewModel(client.Projection);
+            view.Render(moved);
+            Assert.That(Labels(bar.Root), Does.Contain(moved.Status));
+        }
+
+        /// <summary>
+        /// Milestone 8.30b. End Turn is the seat's own control in its own surface, offered exactly when
+        /// the seat's projection offers it and forwarding exactly what it was given.
+        /// </summary>
+        [Test]
+        public void EndTurnStandsAloneForTheSeatThatMayEndTheTurnAndIsDrawnForNobodyElse()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            MatchSeat acting = null;
+            for (var driven = 0; driven < 400 && acting == null; driven += 5)
+            {
+                OwnerScopedProjectionTests.DriveThroughSeats(host, 5);
+                acting = host.Seats.Seats.FirstOrDefault(value =>
+                    RoundActionPresenter.CreateViewModel(host.ProjectionForSeat(value.Id))
+                        .EndTurnInvocation != null);
+            }
+
+            Assert.That(acting, Is.Not.Null,
+                "The drive must reach a seat that may end its turn; a skipped case would be a hole " +
+                "in this milestone's evidence rather than a pass.");
+
+            var actingModel = RoundActionPresenter.CreateViewModel(host.ProjectionForSeat(acting.Id));
+            var actingView = new RoundActionUnityView();
+            actingView.Render(actingModel);
+
+            var control = actingView.EndTurnRoot.Q<Button>("gd-end-turn-control");
+            Assert.That(control, Is.Not.Null);
+            Assert.That(control.text, Is.EqualTo(actingModel.EndTurnInvocation.Label));
+            Assert.That(actingView.EndTurnRoot.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(Descendants(actingView.Root)
+                    .OfType<Button>()
+                    .Count(button => button.text == actingModel.EndTurnInvocation.Label),
+                Is.EqualTo(1),
+                "It is drawn once. The action row it used to sit in must not still be drawing one.");
+
+            // The control's own action, taken the way every other Edit Mode case in this project takes
+            // one: an element with no live panel dispatches no pointer event, so the forwarding path
+            // is exercised directly and the Play Mode fixture presses the button for real.
+            TypedInvocationViewModel forwarded = null;
+            actingView.InvocationSubmitted += invocation => forwarded = invocation;
+            actingView.ForwardInvocation(actingModel.EndTurnInvocation);
+
+            Assert.That(forwarded, Is.SameAs(actingModel.EndTurnInvocation),
+                "It forwards the projected invocation without composing a command of its own.");
+
+            foreach (var other in host.Seats.Seats.Where(value => !value.Id.Equals(acting.Id)))
+            {
+                var otherModel = RoundActionPresenter.CreateViewModel(host.ProjectionForSeat(other.Id));
+                if (otherModel.EndTurnInvocation != null)
+                {
+                    continue;
+                }
+
+                var otherView = new RoundActionUnityView();
+                otherView.Render(otherModel);
+                Assert.That(otherView.EndTurnRoot.style.display.value,
+                    Is.EqualTo(DisplayStyle.None),
+                    "A seat the projection offers no End Turn draws no control in the corner - it is " +
+                    "absent rather than standing and refusing.");
+                Assert.That(otherView.EndTurnRoot.childCount, Is.Zero);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.30b, and this is the behaviour behind the closing check.
+        ///
+        /// <para>The Minion Battle is one of the two declared pending families the status derivation
+        /// had never named. It stands at the end of a round, so the sentence a player read was the
+        /// round's own phase line while the match was in fact waiting for them to choose which
+        /// minions leave the board. Now that the sentence is the top status bar's standing report,
+        /// that is the difference between a bar that says what is happening and one that does not.
+        /// </para>
+        /// </summary>
+        [Test]
+        public void TheNarrationNamesAStandingMinionBattleRatherThanTheRoundItStandsIn()
+        {
+            var session = MinionChoicePresentationTests.CreatePendingRemovalSession();
+            var battle = session.Projection.PendingMinionBattleChoice;
+
+            Assert.That(battle, Is.Not.Null, "The fixture stands on the family this case is about.");
+
+            var status = RoundActionPresenter.CreateViewModel(session.Projection).Status;
+
+            Assert.That(status, Does.StartWith("Minion Battle:"));
+            Assert.That(status, Does.Contain(MinionChoiceLabels.TeamLabel(battle.ChoosingSide)),
+                "The side that decides is named, which is what a team-owned pause has to say.");
+            Assert.That(status, Does.Not.Contain("COMPLETE - END OF ROUND"),
+                "which is the line this pause used to arrive under.");
+        }
+
+        private static System.Collections.Generic.IEnumerable<VisualElement> Descendants(
+            VisualElement element)
+        {
+            foreach (var child in element.Children())
+            {
+                yield return child;
+                foreach (var nested in Descendants(child))
+                {
+                    yield return nested;
+                }
+            }
+        }
+
+        private static string[] Labels(VisualElement element) =>
+            Descendants(element).OfType<Label>().Select(label => label.text).ToArray();
 
         private sealed class CapturingHandsView : IDirectorHandsView
         {

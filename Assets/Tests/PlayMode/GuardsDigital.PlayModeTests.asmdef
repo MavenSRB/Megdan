@@ -4,6 +4,7 @@
   "references": [
     "GuardsDigital.Core",
     "GuardsDigital.Core.CardState",
+    "GuardsDigital.Application",
     "GuardsDigital.Presentation",
     "Unity.InputSystem",
     "Unity.RenderPipelines.Universal.Runtime"

@@ -270,7 +270,13 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(CardFootprint.Height + 40f).Within(0.01f),
                 "The card band spends 40 reference units on chrome; the hand's " +
                 "status belongs in the open playfield-side dock rather than in a second tray row.");
-            Assert.That(playfield.height, Is.GreaterThanOrEqualTo(900f),
+            // Milestone 8.30b re-measured this floor rather than assuming it survived. The amendment
+            // narration lane took 40 reference units off the top of the middle band, so the measured
+            // board went from 1092x910 to 1044x870 - the trade the amendment makes, and one a capture
+            // at 2560x1440 and at the short desktop viewport was taken to judge. The floor moves with
+            // the measurement and stays a floor: a board that has lost another ten units to some later
+            // strip fails here rather than shrinking quietly one milestone at a time.
+            Assert.That(playfield.height, Is.GreaterThanOrEqualTo(860f),
                 "At the reference viewport the separated hand must leave a materially sized board, " +
                 "not merely a positive postage-stamp viewport.");
 
@@ -302,6 +308,86 @@ namespace GuardsDigital.Tests.EditMode
             // The status strip is a reference unit too, and the tray clears it.
             Assert.That(tray.yMin,
                 Is.GreaterThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
+        }
+
+        /// <summary>
+        /// Milestone 8.30b amendment geometry, measured at the reference panel rather than described.
+        ///
+        /// <para>The amendment moved two surfaces and said in as many words that the geometry
+        /// milestones 8.25c and 8.25f2 pinned is <em>re-measured</em> rather than assumed by it. These
+        /// are those measurements: what the widened strip cost, what it did not touch, and where End
+        /// Turn corner landed. Every number here was read off the layout before it was written down.
+        /// </para>
+        /// </summary>
+        [Test]
+        public void TheAmendedStripAndEndTurnCorner_MeasureAsRecordedAtTheReferencePanel()
+        {
+            var width = MatchHudPanelScaling.ReferenceWidth;
+            var height = MatchHudPanelScaling.ReferenceHeight;
+
+            // The strip is the old bar plus the new lane, and the two are stated separately so the
+            // chip below can be measured against the half it has always sat in.
+            Assert.That(ConfiguredMatchHudRenderer.StatusBarIdentityRowHeight, Is.EqualTo(56f),
+                "The identity row is exactly the strip milestone 8.25c measured.");
+            Assert.That(ConfiguredMatchHudRenderer.StatusBarHeight,
+                Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarIdentityRowHeight +
+                    ConfiguredMatchHudRenderer.StatusBarNarrationHeight));
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateStatusBarRect(width, height),
+                Is.EqualTo(new Rect(0f, 0f, 2560f, 96f)));
+
+            // What the amendment did NOT move, which is most of the HUD. The chip is measured against
+            // the identity row, so widening the strip left it exactly where 8.25c put it; the tray,
+            // the compact hand, the Level Up comparison band and the round dock are all placed from
+            // the panel bottom edge and are untouched.
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(width, height),
+                Is.EqualTo(new Rect(2348f, 12f, 200f, 32f)),
+                "The Tie Breaker chip did not move or grow when the strip below it did.");
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateCardPanelRect(width, height),
+                Is.EqualTo(new Rect(0f, 968f, 2560f, 460f)));
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(width, height),
+                Is.EqualTo(new Rect(0f, 968f, 732f, 460f)));
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateUpgradeComparisonPanelRect(width, height),
+                Is.EqualTo(new Rect(0f, 878f, 2560f, 550f)));
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateStatusDockRect(width, height),
+                Is.EqualTo(new Rect(12f, 838f, 720f, 128f)),
+                "The round dock is placed from the playfield bottom edge, which the strip did not " +
+                "move, so it kept its footprint exactly.");
+
+            // What it did move, and by how much. The rail column and the board each lost the lane's
+            // forty units off the top; the three-rail stack measured at 733 still clears by 115.
+            var red = ConfiguredMatchHudRenderer.CalculateHeroRailRect(width, height, TeamSide.Red);
+            var blue = ConfiguredMatchHudRenderer.CalculateHeroRailRect(width, height, TeamSide.Blue);
+            Assert.That(red, Is.EqualTo(new Rect(12f, 108f, 264f, 848f)));
+            Assert.That(blue, Is.EqualTo(new Rect(2284f, 108f, 264f, 848f)));
+            Assert.That(red.height - 733f, Is.EqualTo(115f).Within(0.01f),
+                "Rulebook p.6 three rails a side clear the amended strip by this margin.");
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculatePlayfieldRect(width, height),
+                Is.EqualTo(new Rect(1228f, 96f, 1044f, 870f)),
+                "The board starts under the amended strip and still ends exactly where it did, " +
+                "because the tray it stops above did not move.");
+
+            // End Turn corner: inside the band the tray reserves and the compact hand leaves empty,
+            // below both rail columns, and inside the panel.
+            var endTurn = ConfiguredMatchHudRenderer.CalculateEndTurnControlRect(width, height);
+            var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(width, height);
+            Assert.That(endTurn, Is.EqualTo(new Rect(2248f, 1332f, 300f, 96f)));
+            Assert.That(endTurn.xMax, Is.EqualTo(width - 12f).Within(0.01f),
+                "It is inset from the panel right edge by the standing margin and no more.");
+            Assert.That(endTurn.yMax, Is.EqualTo(height - 12f).Within(0.01f));
+            Assert.That(endTurn.yMin, Is.GreaterThanOrEqualTo(tray.yMin),
+                "It stands inside the band the tray reserves,");
+            Assert.That(endTurn.xMin, Is.GreaterThanOrEqualTo(
+                ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(width, height).xMax),
+                "clear of the five overlapped faces at the band opposite end,");
+            Assert.That(endTurn.yMin, Is.GreaterThanOrEqualTo(blue.yMax),
+                "and below the rail column, which stops at the tray.");
         }
 
         /// <summary>

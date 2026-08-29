@@ -953,7 +953,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// </summary>
         internal static IEnumerator CaptureGameView(string name)
         {
-            if (Application.isBatchMode)
+            if (UnityEngine.Application.isBatchMode)
             {
                 yield break;
             }

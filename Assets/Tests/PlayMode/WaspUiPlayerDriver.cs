@@ -106,7 +106,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// </summary>
         public static System.Collections.IEnumerator CaptureGameView(string milestone, string name)
         {
-            if (Application.isBatchMode)
+            if (UnityEngine.Application.isBatchMode)
             {
                 yield break;
             }
