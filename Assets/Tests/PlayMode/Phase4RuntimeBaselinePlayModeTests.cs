@@ -27,6 +27,19 @@ namespace GuardsDigital.Tests.PlayMode
         private const double MaximumAverageAcceptedCommandRefreshMilliseconds = 25.0;
         private const double MaximumUndoReplayMilliseconds = 250.0;
 
+        // The frames immediately after the scene load can stall on work that is not this scene's
+        // steady cost, and the stall is process state rather than frame work. The complete-suite run
+        // recorded in tmp/p95-diag-complete-1-results.xml held sixteen consecutive frames at about
+        // 8.3 ms and then settled to 1.56 ms; tmp/p95-diag-complete-2-results.xml recorded two hundred
+        // frames of the same build with no stall at all. Every frame of both, stalled or not, drew the
+        // same nine SetPass calls and allocated the same 8,879 B, so the stalled frames were not doing
+        // more work. A p95 over sixty samples is the third-largest of sixty, so a stall that long
+        // decides the number outright - which is how this line came to read 16-17 ms twice while
+        // nothing about the frame had changed. The warm-up window is therefore skipped by the
+        // assertions and reported instead, so a real collapse still reaches the record.
+        private const int WarmUpFrames = 60;
+        private const int SteadyStateFrames = 60;
+
         [UnityTest]
         public IEnumerator CompleteMapAndTwoRoundDirectorFlow_StayWithinRecordedPhase4Thresholds()
         {
@@ -49,6 +62,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(mapView, Is.Not.Null);
             Assert.That(mapView.RenderedDefinition.Spaces, Has.Count.EqualTo(292));
 
+            var warmUpGc = new List<long>();
+            var warmUpFrameMilliseconds = new List<double>();
             var steadyGc = new List<long>();
             var steadyFrameMilliseconds = new List<double>();
             using (var gcRecorder = ProfilerRecorder.StartNew(
@@ -62,7 +77,14 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 Assert.That(gcRecorder.Valid, Is.True, "GC allocation ProfilerRecorder is unavailable.");
                 Assert.That(mainThreadRecorder.Valid, Is.True, "Main Thread ProfilerRecorder is unavailable.");
-                for (var frame = 0; frame < 60; frame++)
+                for (var frame = 0; frame < WarmUpFrames; frame++)
+                {
+                    yield return null;
+                    warmUpGc.Add(gcRecorder.LastValue);
+                    warmUpFrameMilliseconds.Add(mainThreadRecorder.LastValue * 0.000001d);
+                }
+
+                for (var frame = 0; frame < SteadyStateFrames; frame++)
                 {
                     yield return null;
                     steadyGc.Add(gcRecorder.LastValue);
@@ -151,6 +173,12 @@ namespace GuardsDigital.Tests.PlayMode
             var sortedFrames = steadyFrameMilliseconds.OrderBy(value => value).ToArray();
             var p95FrameMilliseconds = Percentile(sortedFrames, 0.95);
             var maxGcBytes = sortedGc[sortedGc.Length - 1];
+            var sortedWarmUpFrames = warmUpFrameMilliseconds.OrderBy(value => value).ToArray();
+            var sortedWarmUpGc = warmUpGc.OrderBy(value => value).ToArray();
+            var warmUpP95FrameMilliseconds = Percentile(sortedWarmUpFrames, 0.95);
+            var warmUpMaxFrameMilliseconds = sortedWarmUpFrames[sortedWarmUpFrames.Length - 1];
+            var warmUpMaxGcBytes = sortedWarmUpGc[sortedWarmUpGc.Length - 1];
+            var medianFrameMilliseconds = Percentile(sortedFrames, 0.5);
             var screenshotPath = Path.GetFullPath(Path.Combine(
                 UnityEngine.Application.dataPath,
                 "..",
@@ -160,7 +188,10 @@ namespace GuardsDigital.Tests.PlayMode
 
             TestContext.WriteLine(
                 "PHASE4_BASELINE " +
-                $"frames=60 maxGcBytesPerFrame={maxGcBytes} p95FrameMs={p95FrameMilliseconds:F3} " +
+                $"frames={SteadyStateFrames} maxGcBytesPerFrame={maxGcBytes} p95FrameMs={p95FrameMilliseconds:F3} " +
+                $"medianFrameMs={medianFrameMilliseconds:F3} " +
+                $"warmUpFrames={WarmUpFrames} warmUpP95FrameMs={warmUpP95FrameMilliseconds:F3} " +
+                $"warmUpMaxFrameMs={warmUpMaxFrameMilliseconds:F3} warmUpMaxGcBytesPerFrame={warmUpMaxGcBytes} " +
                 $"mapRebuilds={rebuildCount} avgMapRebuildMs={averageRebuildMilliseconds:F3} " +
                 $"ownedResources={initialOwnedResources} ownedResourceGrowth=0 " +
                 $"snapshots={snapshotCount} avgSnapshotMs={averageSnapshotMilliseconds:F3} " +
@@ -169,7 +200,10 @@ namespace GuardsDigital.Tests.PlayMode
                 $"undoReplayMs={undo.Elapsed.TotalMilliseconds:F3}");
 
             Assert.That(maxGcBytes, Is.LessThanOrEqualTo(MaximumSteadyStateGcBytesPerFrame));
-            Assert.That(p95FrameMilliseconds, Is.LessThanOrEqualTo(MaximumP95FrameMilliseconds));
+            Assert.That(p95FrameMilliseconds, Is.LessThanOrEqualTo(MaximumP95FrameMilliseconds),
+                "The steady-state frame cost crossed its recorded line. This window starts after the "
+                + "warm-up frames, so a post-load stall cannot reach it; compare warmUpP95FrameMs in "
+                + "the PHASE4_BASELINE line before looking for a frame-cost regression.");
             Assert.That(averageRebuildMilliseconds, Is.LessThanOrEqualTo(MaximumAverageMapRebuildMilliseconds));
             Assert.That(averageSnapshotMilliseconds, Is.LessThanOrEqualTo(MaximumAverageSnapshotMilliseconds));
             Assert.That(averageAcceptedCommandRefreshMilliseconds,
