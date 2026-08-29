@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.29b1 Select printed actions directly on the resolving card completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.29b1 | Ordinary projected Primary and ordered Secondary actions are contained luminous typed regions on the fully exposed resolving card. Clear and Fast Travel attach as exact replacement chips, End Turn remains external, generated/prepared faces keep their footprint, and stale or forged activations execute nothing. Failing-then-passing projection, pointer, overflow and live-footprint checks close with 134/134 affected Edit Mode, 165/165 affected Play Mode, and a two-resolution 1/1 non-batch Game View run. | `21d8250` |
+
 ## Milestone 8.29b1a Reconcile rail geometry guards after the approved plaque changes completion evidence
 
 | ID | Outcome | Commit |
