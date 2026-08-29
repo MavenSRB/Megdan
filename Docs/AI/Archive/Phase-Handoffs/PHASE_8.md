@@ -6,7 +6,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.29e | An optional card-text branch that can apply nothing is skipped instead of opening p.10's confirm-or-decline, so Arien's before-Attack move offers nothing to move only when nothing is there and the Attack still completes. One content-derived matrix names every timed optional surface the six dealt heroes print and the gate that refuses each. | `pending` |
+| 8.29e | An optional card-text branch that can apply nothing is skipped instead of opening p.10's confirm-or-decline, so Arien's before-Attack move offers nothing to move only when nothing is there and the Attack still completes. One content-derived matrix names every timed optional surface the six dealt heroes print and the gate that refuses each. | `77e8bde` |
 
 ## Milestone 8.29d Grey attacks whose mandatory card text cannot establish a target completion evidence
 
