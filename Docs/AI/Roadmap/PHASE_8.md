@@ -6,81 +6,8 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Phase 8 begins only after the synthetic core match gate. Wasp-specific card work composes proven core actions, keywords, effect operations, queries, modifiers, control flow, and system transitions; it does not defer their first general implementation until a card requires them. The mirrored Wasp setup identities introduced earlier remain an intermediate configuration for the first complete hero gate, not the final pitch roster. After that gate, five additional user-approved heroes enter through source inventory and capability-delta mapping before the final six-distinct-hero 3v3 integration. Once the complete primitive match and URP baseline are proven, a separate private-online track moves the same authority behind a host/session boundary and reaches an invite-only six-human internet playtest before production presentation begins.
 
-The completed definitions of milestones **8.1** through **8.10** - Wasp's source inventory and capability matrix, her verified definitions and both dealt hands, the general card-text seam and the two tray surfaces built on it, her five telekinetic Skills, the declared modifier vocabulary's consumers, the current-card rail, her two kinetic Skills and two basic cards, the tray-faced upgrade grid, the refused empty Clear, and her five printed Attacks - moved verbatim to [PHASE_8_COMPLETED.md](PHASE_8_COMPLETED.md), 8.1 through 8.7a on 2026-08-22 during milestone 8.8a's required warning-threshold ownership review and 8.8 through 8.10 on the same date during milestone 8.11a's; milestones **8.11** through **8.11c** - her Defense cards, the official map underlay and its interaction overlay, the verified card-table visuals, and identity-named effect-choice candidates answered on the board - followed on 2026-08-26 during milestone 8.25a's audit, when two proposed corrective blocks took this shard past its hard limit; and milestones **8.12** through **8.15a** - the Active-effect and continuous trigger windows, High Voltage, her progression and Ultimate unlock, her completed card behaviour and the faced card choices - followed on 2026-08-27 during milestone 8.25d's. Milestones **8.11d** and **8.11e** moved verbatim to [PHASE_8_COMPLETED_2.md](PHASE_8_COMPLETED_2.md) on 2026-08-28 during milestone 8.25f2a's warning-threshold review. They remain active authority under the same `Roadmap/` threshold; this is sharding, not archiving, and their per-milestone evidence is still addressed by SHA from the [Phase 8 archive](../Archive/Phase-Handoffs/PHASE_8.md). This shard keeps 8.16 onward, which is what the next milestone reads against.
+The completed definitions of milestones **8.1** through **8.10** - Wasp's source inventory and capability matrix, her verified definitions and both dealt hands, the general card-text seam and the two tray surfaces built on it, her five telekinetic Skills, the declared modifier vocabulary's consumers, the current-card rail, her two kinetic Skills and two basic cards, the tray-faced upgrade grid, the refused empty Clear, and her five printed Attacks - moved verbatim to [PHASE_8_COMPLETED.md](PHASE_8_COMPLETED.md), 8.1 through 8.7a on 2026-08-22 during milestone 8.8a's required warning-threshold ownership review and 8.8 through 8.10 on the same date during milestone 8.11a's; milestones **8.11** through **8.11c** - her Defense cards, the official map underlay and its interaction overlay, the verified card-table visuals, and identity-named effect-choice candidates answered on the board - followed on 2026-08-26 during milestone 8.25a's audit, when two proposed corrective blocks took this shard past its hard limit; and milestones **8.12** through **8.15a** - the Active-effect and continuous trigger windows, High Voltage, her progression and Ultimate unlock, her completed card behaviour and the faced card choices - followed on 2026-08-27 during milestone 8.25d's. Milestones **8.11d** and **8.11e** moved verbatim to [PHASE_8_COMPLETED_2.md](PHASE_8_COMPLETED_2.md) on 2026-08-28 during milestone 8.25f2a's warning-threshold review, and milestones **8.16** through **8.17** - the deterministic Wasp mirror integration gate, its independent card-engine extensibility review, the board-answered Lane-Push respawn placement, and the user's selection of the five additional pitch heroes - followed to the same shard on 2026-08-29 during milestone 8.30's. They remain active authority under the same `Roadmap/` threshold; this is sharding, not archiving, and their per-milestone evidence is still addressed by SHA from the [Phase 8 archive](../Archive/Phase-Handoffs/PHASE_8.md). This shard keeps 8.18a onward, which is what the next milestone reads against.
 
-
-### [x] 8.16 Complete the deterministic Wasp mirror integration gate
-
-Observable outcome: A Wasp mirror match can start, play repeated turns/rounds, and end through every victory path with primitive visuals and debug UI.
-
-Acceptance checks:
-
-- Every implemented Wasp rule links to an authoritative source and focused tests.
-- Approved deviations are the only known departures.
-- Undo, restart, snapshots, event log, and Tie Breaker override work internally.
-- A broader source-linked Wasp integration suite passes.
-- T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816-complete-the-deterministic-wasp-mirror-integration-gate-completion-evidence).
-
-### [x] 8.16a Independently review Wasp-driven card-engine extensibility
-
-Blocked by: Milestone 8.16 must pass its source-linked Wasp integration gate.
-
-Observable outcome: A fresh analysis-only review identifies what the first complete verified hero revealed about the generic card/effect architecture before five additional heroes multiply its extension costs.
-
-Acceptance checks:
-
-- The review traces every implemented Wasp capability to its source, typed contract, handler or composition, serialized continuation/state, ordered events, and focused/integration evidence.
-- It searches for card-name or hero-name branching, runtime printed-text parsing, untyped universal payloads, Wasp-specific behavior disguised as a generic capability, duplicated patterns that now justify a shared capability, and speculative abstractions supported by only one exceptional card.
-- It evaluates effect/query/modifier/continuous-source performance and test maintainability using actual Wasp scenarios rather than synthetic assumptions alone.
-- Findings follow the common independent-review evidence contract and distinguish legitimate isolated custom handlers from leakage that would make the next five heroes increasingly expensive.
-- Any correction is proposed separately; the review changes no rules, content, runtime implementation, card values, or source interpretation.
-
-Non-goals: No selection, inventory, or implementation of another hero; no Wasp rebalance; no generic framework merely to eliminate every custom handler.
-
-Hard gate: Additional pitch-hero inventory and implementation do not begin until milestone 8.16a and every gate-blocking corrective milestone are reviewed and approved. Production visual work remains blocked until the six-hero 3v3 gate at milestone 8.27, the render-pipeline migration gate at milestone 8.28 with its independent review at 8.28a, and the private online playtest gate at milestone 8.36 with its independent review at 8.36a are reviewed and approved, matching the sibling gate statements.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816a-independently-review-wasp-driven-card-engine-extensibility-completion-evidence).
-
-**8.16b disposition - closed without implementation, 2026-08-27.** The user-approved roadmap reassessment withdraws the never-scheduled 8.16a corrective bundle rather than marking unperformed work complete. Later evidence changed its boundaries: the permanent Wasp player-path matrix supersedes F-TEST-08's incidental mirror-seed coverage; real Brogan and Sabina declarations exercise `SourceTeamRelation.AlliedWithSource`, while the remaining relation-vocabulary disposition joins the contract correction below; and Xargatha's Cleave now proves a live repeated-Attack exclusion survives restore, though the compatibility corpus still lacks that arm. F-CORE-10's mis-aimed complete-match capture belongs to milestone 8.27, which is the existing official-six-player full-match and scale gate. The surviving F-CARD-10, F-CARD-11, F-CARD-13, F-TEST-07, and residual F-TEST-09 work is re-baselined at milestone 8.25e7. This disposition closes the obsolete proposal ID, not any surviving finding, and changes no code, rule, content, schema, test, or validation evidence.
-
-### [x] 8.16c Answer blocked Lane-Push respawn placement on the board
-
-Inserted 2026-08-23 at the user's direction after the running match exposed a missed acceptance defect from milestones 8.11a and 8.15a. The reserved 8.16b proposal is now closed by the disposition above; 8.25e7 and 8.27 own its surviving work.
-
-Observable outcome: when a non-token obstacle blocks a minion Spawn point during a Lane Push, every equally-nearest empty destination is lit on the board and the owning team answers by clicking one of those spaces; the HUD explains the mandatory placement but presents no destination button.
-
-Acceptance checks:
-
-- A pending `LanePushRespawnPlace` system-transition description projects every currently offered destination into the board interaction model, each paired one-to-one with the continuation's exact typed invocation. Presentation adds, removes, reorders, decodes, or reconstructs neither legality nor command identity.
-- Every offered destination uses the existing selectable-space cue and is simultaneously visible before pointer movement. Clicking a lit space forwards only its paired `AnswerSystemTransitionStep` command through the configured board pointer path; an unoffered coordinate, stale projection, forged option, or repeated click executes nothing.
-- The Lane Push status and explanation remain in the contextual HUD, but no `PLACE AT ...` control, coordinate control, or other destination-naming button is drawn. Card-faced Level Up options and system-transition director/headless access retain their existing behavior.
-- Accepted placement, refusal, Undo, restart, snapshot restore, replay, transition completion, and presentation rebuild clear or reconstruct the destination set from the current immutable projection without stale highlights or duplicate input surfaces.
-- `PromptReachabilityConformanceTests.APausedLanePushRespawnPlace_IsAnsweredOnlyOnTheBoard` is observed failing at the pre-fix revision and passing after the correction. A directly affected Play Mode journey reaches a real blocked Spawn-point pause, verifies every offered space is lit, clicks one through the camera pointer ray, and verifies the chosen minion placement and cleared cues; one targeted Game View inspection confirms the HUD contains explanation rather than destination buttons.
-
-Non-goals: no Lane Push, Spawn, Place, obstacle, nearest-space, Tie Breaker, transition-order, snapshot, or replay rule change; no change to the offered destinations or command/wire shape; no redesign of the HUD, board cue palette, camera, director tooling, Level Up presentation, animation, or production VFX.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816c-answer-blocked-lane-push-respawn-placement-on-the-board-completion-evidence).
-
-### [x] 8.17 Select the five additional pitch heroes
-
-Observable outcome: The user approves five specific heroes that join Wasp as six different heroes divided into three Red and three Blue roster slots for the private pitch.
-
-**Approved 2026-08-23: the rulebook's own recommended first-game line-up, chosen by the user from p.6's setup step 7 over the analysis-recommended alternative.** Red: Wasp the Warmaiden, Xargatha the Changed, Tigerclaw the Cutpurse; Blue: Arien the Tidemaster, Brogan the Destroyer, Sabina the Gunslinger - the exact dashboards the printed step names for a six-player game, so the team slots come from the source rather than from invention. All five newcomers are one-star Challenging, none carries the profile cards' `Tokens` role, and every extraction set is Wasp-shaped: nineteen faces at the same readable resolution, with all thirty-two dashboard backs blank placeholders - the recorded W-01-class open question each hero shard inherits at its 8.18 slice.
-
-Acceptance checks:
-
-- The proposed roster contains no duplicate hero and identifies each hero's intended team slot without treating team assignment as a card-rule branch.
-- Implementation-grade card, dashboard, token/marker, miniature/presentation, and applicable official-ruling sources are confirmed available or explicitly recorded as blockers.
-- Selection considers effect-family and presentation breadth so the roster demonstrates the reusable architecture without claiming equal implementation cost for every hero.
-- The exact five-hero choice receives explicit user approval before inventory begins.
-
-Non-goals: No card transcription, effect implementation, production art, balance adjustment, or seventh pitch hero.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-817-select-the-five-additional-pitch-heroes-completion-evidence).
-
-Milestone 8.18 was split five ways by the 8.2 re-baseline (2026-08-21, user approved, applying the 7.9a recommendation): its own acceptance contract says a missing component blocks the affected hero, but one milestone made a single blocked hero hold four others, and the one-shard-per-hero contract already exists. Each slice below applies the same inventory contract to the one hero milestone 8.17 assigns to its slot: every required face and component present and readable; structured data manually checked against source images and applicable official rulings; missing, ambiguous, or conflicting content recorded in that hero's own `Rules/HERO_<NAME>.md` shard per the milestone 6.1y contract, blocking only that hero rather than being guessed, with content affecting more than one hero staying in `RULES_LEDGER.md`; and no implementation from unverified filenames, OCR, display text, or assumed cross-hero similarity.
 
 ### [x] 8.18a Inventory and verify pitch hero slot A
 
@@ -598,13 +525,32 @@ Milestone **8.29a** is complete. Its exact definition remains active authority i
 
 ### Completed correction 8.29b and remaining hands-on route before 8.30
 
-Milestones **8.29b**, **8.29b1**, **8.29b1a-8.29b1b**, **8.29d**, **8.29e** and **8.29f** are complete; only deferred **8.29c** remains. Their exact observable outcomes, acceptance checks, closing checks, and non-goals are authoritative in [the Phase 8 hands-on correction shard](PHASE_8_HANDS_ON_CORRECTIONS.md). Milestone 8.30 resumes now that sequence is finished.
+Milestones **8.29b**, **8.29b1**, **8.29b1a-8.29b1b**, **8.29d**, **8.29e** and **8.29f** are complete; only deferred **8.29c** remains. Their exact observable outcomes, acceptance checks, closing checks, and non-goals are authoritative in [the Phase 8 hands-on correction shard](PHASE_8_HANDS_ON_CORRECTIONS.md). Milestone 8.30 followed that sequence.
 
-### [ ] 8.30 Move match authority behind a transport-neutral session boundary
+### [x] 8.30 Move match authority behind a transport-neutral session boundary
 
 Observable outcome: The existing local director adapter and a future network host can submit the same typed commands to, and consume the same ordered events and snapshots from, one authoritative match session without moving rules into Unity views or transport callbacks.
 
-### [!] 8.30a Add locally testable owner-scoped projections and command authorization
+Implementation boundary: [the private-online architecture record](../Project/PRIVATE_ONLINE_ARCHITECTURE.md#re-baselined-implementation-track) scopes this milestone to the Unity-free serialized host/session port and its protocol-neutral result stream, with no UGS, package, or transport work, and [the private-online validation shard](../Testing/PRIVATE_ONLINE.md#milestone-matrix) names its exact filters and tier. The acceptance checks below were written from those two user-approved records when the milestone was authorized, and add no scope to them.
+
+Acceptance checks:
+
+- One Unity-free port fronts the whole authority-mutating surface - typed command, Undo, restart, snapshot restore - plus the snapshot read and the current projection, so a consumer needs no second reference to the session behind it.
+- The port executes submissions serially: concurrent submissions queue rather than interleave, and a submission made from inside another - the shape a transport callback takes - is refused before the authority is reached.
+- Each accepted submission appends exactly one record to one ordered result stream carrying its sequence, the authoritative version it published, and the ordered rule events it produced; two independent consumers reading from their own cursors receive identical ordered records.
+- A refused submission advances neither the authoritative version nor the stream, and a host refusal is reported distinctly from the authority's own rules refusal.
+- A consumer whose cursor has fallen outside the retained window is told to resynchronize and handed no records, rather than handed a stream with a gap in it.
+- The same typed commands reach the same authoritative state, snapshot and rule-event log whether submitted through the port or executed directly against the session.
+- The existing local director adapter submits through the port: the configured scene composes the host, its presenters and headless driver hold the port's client, and no production code outside the application boundary constructs a match session.
+- Nothing on the port names a Unity, UGS, transport or socket type, and the submission payload carries no caller identity that milestone 8.30a's trusted seat binding could be claimed by.
+
+Closing check: `MatchAuthority_IsConstructedOnlyInsideTheApplicationBoundary`, observed failing at the pre-fix working tree - where the configured scene runtime constructed the authority itself - and passing once that composition moved behind the port.
+
+Non-goals: No owner-scoped projection, seat binding, submission identity, expected-version or idempotency check, which are milestone 8.30a's; no seat-scoped HUD, which is 8.30b's; no network SDK, package installation, transport envelope, codec, host/join flow, relay, reconnect policy, production security claim, or UI work.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830-move-match-authority-behind-a-transport-neutral-session-boundary-completion-evidence).
+
+### [ ] 8.30a Add locally testable owner-scoped projections and command authorization
 
 Blocked by: Milestone 8.30 must establish the transport-neutral session boundary.
 

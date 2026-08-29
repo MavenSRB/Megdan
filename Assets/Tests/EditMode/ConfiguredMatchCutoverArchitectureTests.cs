@@ -260,6 +260,47 @@ namespace GuardsDigital.Tests.EditMode
                 "Disposing in the Editor must destroy the owned material through Object.DestroyImmediate.");
         }
 
+        /// <summary>
+        /// Milestone 8.30. The scene's own half of the transport-neutral boundary.
+        ///
+        /// <para>The Unity-free <c>OnlineArchitectureConformanceTests</c> proves that no production
+        /// file outside the Application boundary constructs a session; this proves the positive of
+        /// the same statement for the one composition that matters - that the configured runtime
+        /// composes the port and hands its presenters the port's client. Compiled code rather than
+        /// a constructed runtime, because building one needs a board, six views and two materials to
+        /// answer a question about wiring.</para>
+        /// </summary>
+        [Test]
+        public void ConfiguredRuntime_ReachesAuthorityOnlyThroughTheTransportNeutralPort()
+        {
+            var runtime = new[] { typeof(ConfiguredMatchSceneRuntime) };
+
+            Assert.That(ILConformanceScanner.References(runtime, ILConformanceScanner.Method(
+                    typeof(MatchHost), nameof(MatchHost.Compose), typeof(MatchSessionInitialState))),
+                Is.True,
+                "The configured scene must compose authority through the host port.");
+            Assert.That(ILConformanceScanner.References(runtime, ILConformanceScanner.Constructor(
+                    typeof(LocalDirectorMatchClient), typeof(IMatchHost))),
+                Is.True,
+                "Its presenters must be given the port's client, so every director command is one " +
+                "submission to the same serialized executor a network host will submit to.");
+            Assert.That(ILConformanceScanner.References(runtime, ILConformanceScanner.Constructor(
+                    typeof(MatchSession), typeof(MatchSessionInitialState))),
+                Is.False,
+                "Constructing the authority here would put the local adapter and a future host on " +
+                "two different objects, which is the state milestone 8.30 removed.");
+
+            Assert.That(Fields(typeof(ConfiguredMatchSceneRuntime))
+                    .Count(value => value.FieldType == typeof(IMatchHost)),
+                Is.EqualTo(1));
+            Assert.That(Fields(typeof(MatchSceneCompositionRoot))
+                    .Any(value => value.FieldType == typeof(IMatchHost) ||
+                        value.FieldType == typeof(IMatchSession)),
+                Is.False,
+                "The composition root reaches the port through the runtime it owns, and holds no " +
+                "authority reference of its own.");
+        }
+
         private static FieldInfo[] Fields(Type type) =>
             type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
     }

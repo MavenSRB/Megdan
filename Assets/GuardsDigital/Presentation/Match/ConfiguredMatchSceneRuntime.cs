@@ -23,6 +23,7 @@ namespace GuardsDigital.Presentation.Match
 {
     public sealed class ConfiguredMatchSceneRuntime
     {
+        private readonly IMatchHost host;
         private readonly IMatchSession session;
         private readonly MatchFeatureCoordinator coordinator;
         private readonly ConfiguredMatchHudRenderer hud;
@@ -73,12 +74,17 @@ namespace GuardsDigital.Presentation.Match
                 map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
                 obstacleViews.Select(view => view.Occupancy));
-            session = new MatchSession(
+            // Milestone 8.30: the scene composes the transport-neutral host, never the authority
+            // directly. Every presenter below, the Director's own controls and the headless smoke
+            // driver submit through the one serialized executor a network host will also submit to,
+            // so no surface here holds a session reference of its own to reach around it.
+            host = MatchHost.Compose(
                 new MatchSessionInitialState(
                     scenario,
                     setup,
                     maps,
                     configuration));
+            session = new LocalDirectorMatchClient(host);
 
             BoardView = new BoardInteractionUnityView(
                 heroViews, tileViews, highlightMaterial, minionViews, resultingSpaceMaterial,
@@ -246,6 +252,13 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Opens or closes the compact `DIRECTOR` drawer. It changes no match state.</summary>
         public void ToggleDirectorDrawer() => hud.ToggleDirectorDrawer();
+
+        /// <summary>
+        /// Milestone 8.30. The transport-neutral port this scene's authority stands behind. It is
+        /// the seam milestone 8.30a scopes to six seats and 8.31 onward puts a network host on; a
+        /// consumer that needs the ordered result stream reads it here.
+        /// </summary>
+        public IMatchHost Host => host;
 
         public IMatchSession Session => session;
         public MatchSessionProjection Projection => session.Projection;

@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30 Move match authority behind a transport-neutral session boundary completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30 | Match authority now stands behind one Unity-free serialized host port: every typed command, Undo, restart and snapshot restore is a submission executed one at a time, each accepted one appends a record carrying its sequence, published version and ordered rule events to a bounded stream two independent consumers read from their own cursors, and a consumer that falls outside the window is told to resynchronize instead of being handed a gap. The configured scene composes the host rather than the authority, so the director's controls, presenters and headless driver submit through the door a network host will use; the port names no Unity, UGS or transport type, and the payload carries no caller identity. Nothing about rules, content, schema v34 or the wire changed. | `pending` |
+
 ## Milestone 8.29f Close a completed Attack before another action can start completion evidence
 
 | ID | Outcome | Commit |

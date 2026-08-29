@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard holding additional Phase 8 milestone definitions that are complete and self-contained. Return to [ROADMAP.md](../ROADMAP.md) or the active shard [PHASE_8.md](PHASE_8.md). Historical completion evidence: [PHASE_8 handoffs](../Archive/Phase-Handoffs/PHASE_8.md).
 
-Created 2026-08-28 during milestone 8.25f2a's required warning-threshold ownership review. Milestones 8.11d and 8.11e moved here verbatim after the main Phase 8 shard reached its warning threshold; milestone 8.29a followed during the 2026-08-29 ownership review. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
+Created 2026-08-28 during milestone 8.25f2a's required warning-threshold ownership review. Milestones 8.11d and 8.11e moved here verbatim after the main Phase 8 shard reached its warning threshold; milestone 8.29a followed during the 2026-08-29 ownership review, and milestones 8.16 through 8.17 followed during milestone 8.30's on the same date. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
 
 ### [x] 8.11d Replace piece-target triangles with fitted rings and washes
 
@@ -51,6 +51,79 @@ Acceptance checks:
 Non-goals: no game-rule, verified-card, candidate, legality, action-offer, consequence, command, event, pending-choice, snapshot-schema, or content-revision change; no card/hero/display-name branch or runtime text parsing; no new prompt, error dialog, control, cue, layout, board, HUD, or other UI redesign; no public fault-injection/configuration surface, broad conversion of all in-place authorities to a new state model, replay/checkpoint redesign, networking work, or build artifact; no speculative combinations of pending states the configured authority cannot reach; and no Active-effect/continuous-trigger execution or other part of milestone 8.12.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-811e-make-accepted-commands-and-their-resulting-projections-atomic-completion-evidence).
+
+### [x] 8.16 Complete the deterministic Wasp mirror integration gate
+
+Observable outcome: A Wasp mirror match can start, play repeated turns/rounds, and end through every victory path with primitive visuals and debug UI.
+
+Acceptance checks:
+
+- Every implemented Wasp rule links to an authoritative source and focused tests.
+- Approved deviations are the only known departures.
+- Undo, restart, snapshots, event log, and Tie Breaker override work internally.
+- A broader source-linked Wasp integration suite passes.
+- T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816-complete-the-deterministic-wasp-mirror-integration-gate-completion-evidence).
+
+### [x] 8.16a Independently review Wasp-driven card-engine extensibility
+
+Blocked by: Milestone 8.16 must pass its source-linked Wasp integration gate.
+
+Observable outcome: A fresh analysis-only review identifies what the first complete verified hero revealed about the generic card/effect architecture before five additional heroes multiply its extension costs.
+
+Acceptance checks:
+
+- The review traces every implemented Wasp capability to its source, typed contract, handler or composition, serialized continuation/state, ordered events, and focused/integration evidence.
+- It searches for card-name or hero-name branching, runtime printed-text parsing, untyped universal payloads, Wasp-specific behavior disguised as a generic capability, duplicated patterns that now justify a shared capability, and speculative abstractions supported by only one exceptional card.
+- It evaluates effect/query/modifier/continuous-source performance and test maintainability using actual Wasp scenarios rather than synthetic assumptions alone.
+- Findings follow the common independent-review evidence contract and distinguish legitimate isolated custom handlers from leakage that would make the next five heroes increasingly expensive.
+- Any correction is proposed separately; the review changes no rules, content, runtime implementation, card values, or source interpretation.
+
+Non-goals: No selection, inventory, or implementation of another hero; no Wasp rebalance; no generic framework merely to eliminate every custom handler.
+
+Hard gate: Additional pitch-hero inventory and implementation do not begin until milestone 8.16a and every gate-blocking corrective milestone are reviewed and approved. Production visual work remains blocked until the six-hero 3v3 gate at milestone 8.27, the render-pipeline migration gate at milestone 8.28 with its independent review at 8.28a, and the private online playtest gate at milestone 8.36 with its independent review at 8.36a are reviewed and approved, matching the sibling gate statements.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816a-independently-review-wasp-driven-card-engine-extensibility-completion-evidence).
+
+**8.16b disposition - closed without implementation, 2026-08-27.** The user-approved roadmap reassessment withdraws the never-scheduled 8.16a corrective bundle rather than marking unperformed work complete. Later evidence changed its boundaries: the permanent Wasp player-path matrix supersedes F-TEST-08's incidental mirror-seed coverage; real Brogan and Sabina declarations exercise `SourceTeamRelation.AlliedWithSource`, while the remaining relation-vocabulary disposition joins the contract correction below; and Xargatha's Cleave now proves a live repeated-Attack exclusion survives restore, though the compatibility corpus still lacks that arm. F-CORE-10's mis-aimed complete-match capture belongs to milestone 8.27, which is the existing official-six-player full-match and scale gate. The surviving F-CARD-10, F-CARD-11, F-CARD-13, F-TEST-07, and residual F-TEST-09 work is re-baselined at milestone 8.25e7. This disposition closes the obsolete proposal ID, not any surviving finding, and changes no code, rule, content, schema, test, or validation evidence.
+
+### [x] 8.16c Answer blocked Lane-Push respawn placement on the board
+
+Inserted 2026-08-23 at the user's direction after the running match exposed a missed acceptance defect from milestones 8.11a and 8.15a. The reserved 8.16b proposal is now closed by the disposition above; 8.25e7 and 8.27 own its surviving work.
+
+Observable outcome: when a non-token obstacle blocks a minion Spawn point during a Lane Push, every equally-nearest empty destination is lit on the board and the owning team answers by clicking one of those spaces; the HUD explains the mandatory placement but presents no destination button.
+
+Acceptance checks:
+
+- A pending `LanePushRespawnPlace` system-transition description projects every currently offered destination into the board interaction model, each paired one-to-one with the continuation's exact typed invocation. Presentation adds, removes, reorders, decodes, or reconstructs neither legality nor command identity.
+- Every offered destination uses the existing selectable-space cue and is simultaneously visible before pointer movement. Clicking a lit space forwards only its paired `AnswerSystemTransitionStep` command through the configured board pointer path; an unoffered coordinate, stale projection, forged option, or repeated click executes nothing.
+- The Lane Push status and explanation remain in the contextual HUD, but no `PLACE AT ...` control, coordinate control, or other destination-naming button is drawn. Card-faced Level Up options and system-transition director/headless access retain their existing behavior.
+- Accepted placement, refusal, Undo, restart, snapshot restore, replay, transition completion, and presentation rebuild clear or reconstruct the destination set from the current immutable projection without stale highlights or duplicate input surfaces.
+- `PromptReachabilityConformanceTests.APausedLanePushRespawnPlace_IsAnsweredOnlyOnTheBoard` is observed failing at the pre-fix revision and passing after the correction. A directly affected Play Mode journey reaches a real blocked Spawn-point pause, verifies every offered space is lit, clicks one through the camera pointer ray, and verifies the chosen minion placement and cleared cues; one targeted Game View inspection confirms the HUD contains explanation rather than destination buttons.
+
+Non-goals: no Lane Push, Spawn, Place, obstacle, nearest-space, Tie Breaker, transition-order, snapshot, or replay rule change; no change to the offered destinations or command/wire shape; no redesign of the HUD, board cue palette, camera, director tooling, Level Up presentation, animation, or production VFX.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-816c-answer-blocked-lane-push-respawn-placement-on-the-board-completion-evidence).
+
+### [x] 8.17 Select the five additional pitch heroes
+
+Observable outcome: The user approves five specific heroes that join Wasp as six different heroes divided into three Red and three Blue roster slots for the private pitch.
+
+**Approved 2026-08-23: the rulebook's own recommended first-game line-up, chosen by the user from p.6's setup step 7 over the analysis-recommended alternative.** Red: Wasp the Warmaiden, Xargatha the Changed, Tigerclaw the Cutpurse; Blue: Arien the Tidemaster, Brogan the Destroyer, Sabina the Gunslinger - the exact dashboards the printed step names for a six-player game, so the team slots come from the source rather than from invention. All five newcomers are one-star Challenging, none carries the profile cards' `Tokens` role, and every extraction set is Wasp-shaped: nineteen faces at the same readable resolution, with all thirty-two dashboard backs blank placeholders - the recorded W-01-class open question each hero shard inherits at its 8.18 slice.
+
+Acceptance checks:
+
+- The proposed roster contains no duplicate hero and identifies each hero's intended team slot without treating team assignment as a card-rule branch.
+- Implementation-grade card, dashboard, token/marker, miniature/presentation, and applicable official-ruling sources are confirmed available or explicitly recorded as blockers.
+- Selection considers effect-family and presentation breadth so the roster demonstrates the reusable architecture without claiming equal implementation cost for every hero.
+- The exact five-hero choice receives explicit user approval before inventory begins.
+
+Non-goals: No card transcription, effect implementation, production art, balance adjustment, or seventh pitch hero.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-817-select-the-five-additional-pitch-heroes-completion-evidence).
+
+Milestone 8.18 was split five ways by the 8.2 re-baseline (2026-08-21, user approved, applying the 7.9a recommendation): its own acceptance contract says a missing component blocks the affected hero, but one milestone made a single blocked hero hold four others, and the one-shard-per-hero contract already exists. Each slice below applies the same inventory contract to the one hero milestone 8.17 assigns to its slot: every required face and component present and readable; structured data manually checked against source images and applicable official rulings; missing, ambiguous, or conflicting content recorded in that hero's own `Rules/HERO_<NAME>.md` shard per the milestone 6.1y contract, blocking only that hero rather than being guessed, with content affecting more than one hero staying in `RULES_LEDGER.md`; and no implementation from unverified filenames, OCR, display text, or assumed cross-hero similarity.
 
 ### [x] 8.29a Recompose and contain the side hero trays
 
