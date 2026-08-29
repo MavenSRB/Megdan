@@ -1774,12 +1774,14 @@ namespace GuardsDigital.Presentation.Match
                 : card.Face.EmptyTextLabel;
             button.tooltip = $"{card.AssistiveLabel} - {printed}";
             slot.Add(button);
-            if (compactPeekMode)
+            if (compactPeekMode && !card.IsResolving)
             {
                 // The button, not its overlapping layout slot, owns the pointer. Enter/leave events
                 // are targeted at the painted card and an overlapped slot is not the hit surface a
                 // player sees. The reveal itself is recursively pointer-transparent below, so it can
                 // draw on top without taking either this hover or the subsequent click away.
+                // The resolving card is already fully exposed and owns live printed-action children;
+                // raising a standalone copy over it would hide those children precisely on hover.
                 HudElements.OnPointedAt(
                     button,
                     pointedAt => SetPeekPreview(pointedAt ? card : null, slot));
@@ -1804,24 +1806,35 @@ namespace GuardsDigital.Presentation.Match
             overlay.style.width = Length.Percent(100f);
             overlay.style.height = Length.Percent(100f);
             overlay.pickingMode = PickingMode.Ignore;
+            var preparedArtwork = cardSurface.Q<Image>("gd-card-artwork")?.image as Texture2D;
+            var usesPreparedArtwork = preparedArtwork != null;
             foreach (var region in regions)
             {
-                var bounds = PrintedActionBounds(region);
+                var bounds = PrintedActionBounds(region, usesPreparedArtwork);
                 var control = new Button(() => ForwardPrintedActionRegion(region))
                 {
                     name = "gd-printed-action-region",
-                    text = RegionCaption(region),
+                    text = string.Empty,
                     tooltip = region.AssistiveLabel,
                     userData = region
                 };
-                ApplyActionBounds(control, bounds);
-                control.style.backgroundColor = new Color(0.03f, 0.06f, 0.09f, 0.36f);
-                control.style.color = Color.white;
-                control.style.fontSize = 9f;
-                control.style.unityFontStyleAndWeight = FontStyle.Bold;
-                control.style.unityTextAlign = TextAnchor.UpperLeft;
-                HudElements.Padding(control, 3f);
-                SetPrintedRegionGlow(control, region.Invocation != null, false);
+                ApplyActionBounds(control, bounds, usesPreparedArtwork);
+                control.style.backgroundColor = Color.clear;
+                control.style.backgroundImage = StyleKeyword.None;
+                control.style.color = Color.clear;
+                HudElements.Padding(control, 0f);
+                if (usesPreparedArtwork)
+                {
+                    AddPreparedArtworkHighlight(
+                        control,
+                        region.ActionKind,
+                        region.Invocation != null);
+                }
+                else
+                {
+                    SetPrintedRegionGlow(control, region.Invocation != null, false);
+                }
+
                 if (region.Invocation == null)
                 {
                     HudElements.MarkUnavailable(control);
@@ -1829,7 +1842,18 @@ namespace GuardsDigital.Presentation.Match
                 else
                 {
                     HudElements.OnPointedAt(
-                        control, highlighted => SetPrintedRegionGlow(control, true, highlighted));
+                        control,
+                        highlighted =>
+                        {
+                            if (usesPreparedArtwork)
+                            {
+                                SetPreparedArtworkGlow(control, highlighted);
+                            }
+                            else
+                            {
+                                SetPrintedRegionGlow(control, true, highlighted);
+                            }
+                        });
                 }
 
                 overlay.Add(control);
@@ -1846,7 +1870,8 @@ namespace GuardsDigital.Presentation.Match
                                 FastTravelSelected?.Invoke(region.FastTravelOffer);
                             }
                         },
-                        true));
+                        true,
+                        usesPreparedArtwork));
                 }
 
                 if (region.ClearOffer != null)
@@ -1863,7 +1888,8 @@ namespace GuardsDigital.Presentation.Match
                                 ClearSelected?.Invoke(region.ClearOffer);
                             }
                         },
-                        region.ClearOffer.IsAvailable));
+                        region.ClearOffer.IsAvailable,
+                        usesPreparedArtwork));
                 }
             }
 
@@ -1875,7 +1901,8 @@ namespace GuardsDigital.Presentation.Match
             string label,
             Rect actionBounds,
             Action selected,
-            bool available)
+            bool available,
+            bool usesPreparedArtwork)
         {
             var chip = new Button(available ? selected : null)
             {
@@ -1887,8 +1914,24 @@ namespace GuardsDigital.Presentation.Match
                 userData = region
             };
             chip.style.position = Position.Absolute;
-            chip.style.left = actionBounds.xMax - 86f;
-            chip.style.top = actionBounds.yMax - 24f;
+            var clearAbovePreparedAttack = usesPreparedArtwork &&
+                region.ActionKind == ActionKind.Attack &&
+                string.Equals(label, "CLEAR", StringComparison.Ordinal);
+            var placeBesidePreparedRegion = usesPreparedArtwork &&
+                !clearAbovePreparedAttack &&
+                actionBounds.xMax + 86f <= CardFootprint.ArtworkWidth;
+            chip.style.left = clearAbovePreparedAttack
+                ? actionBounds.xMax - 82f
+                : placeBesidePreparedRegion
+                    ? actionBounds.xMax + 4f
+                    : actionBounds.xMax - 86f;
+            chip.style.top = clearAbovePreparedAttack
+                ? actionBounds.y - 24f
+                : placeBesidePreparedRegion
+                    ? actionBounds.y + Mathf.Max(0f, (actionBounds.height - 24f) * 0.5f)
+                    : usesPreparedArtwork
+                        ? actionBounds.y + 4f
+                        : actionBounds.yMax - 24f;
             chip.style.width = 82f;
             chip.style.height = 20f;
             chip.style.fontSize = 8.5f;
@@ -1904,18 +1947,30 @@ namespace GuardsDigital.Presentation.Match
             return chip;
         }
 
-        private static void ApplyActionBounds(VisualElement element, Rect bounds)
+        private static void ApplyActionBounds(
+            VisualElement element, Rect bounds, bool usesPreparedArtwork)
         {
             const float maximumGlowWidth = 4f;
             element.style.position = Position.Absolute;
             element.style.left = bounds.x;
             element.style.top = bounds.y;
-            element.style.width = bounds.width - (maximumGlowWidth * 2f);
-            element.style.height = bounds.height - (maximumGlowWidth * 2f);
+            element.style.width = usesPreparedArtwork
+                ? bounds.width
+                : bounds.width - (maximumGlowWidth * 2f);
+            element.style.height = usesPreparedArtwork
+                ? bounds.height
+                : bounds.height - (maximumGlowWidth * 2f);
         }
 
-        private static Rect PrintedActionBounds(PrintedActionRegionViewModel region)
+        private static Rect PrintedActionBounds(
+            PrintedActionRegionViewModel region, bool usesPreparedArtwork)
         {
+            if (usesPreparedArtwork)
+            {
+                return ScalePreparedActionBounds(PreparedActionSourceBounds(region));
+            }
+
+            // The generated fallback owns a different anatomy and keeps its established upper bands.
             if (region.InvocationContext == ActionInvocationContext.PrintedPrimary)
             {
                 return new Rect(4f, 78f, CardFootprint.Width - 8f, 50f);
@@ -1926,8 +1981,164 @@ namespace GuardsDigital.Presentation.Match
             return new Rect(4f + (width * region.SecondaryIndex), 47f, width, 31f);
         }
 
-        private static string RegionCaption(PrintedActionRegionViewModel region) =>
-            region.ActionLabel;
+        private static Rect PreparedActionSourceBounds(PrintedActionRegionViewModel region)
+        {
+            // Prepared fronts share one verified 372x520 anatomy. Movement owns a compact circular
+            // treatment around its printed boot/value badge. Primary Attack and Skill own the broad
+            // lower action panel, so their temporary treatment is a single large box around that
+            // complete printed section. These are shared template coordinates, not card-name rules.
+            if (region.InvocationContext == ActionInvocationContext.PrintedPrimary)
+            {
+                switch (region.ActionKind)
+                {
+                    case ActionKind.Movement:
+                        return new Rect(8f, 330f, 80f, 82f);
+                    case ActionKind.Attack:
+                        return new Rect(6f, 308f, 360f, 184f);
+                    case ActionKind.Skill:
+                        return new Rect(6f, 328f, 360f, 164f);
+                    default:
+                        return new Rect(6f, 318f, 360f, 174f);
+                }
+            }
+
+            if (region.ActionKind == ActionKind.Movement)
+            {
+                // The visible boot/value composite spans roughly x=21..69 and y=203..249 on the
+                // shared source. This footprint centres the circle on that ink rather than the rail.
+                return new Rect(5f, 184f, 80f, 82f);
+            }
+
+            // Future typed prepared Secondary actions retain a bounded left-rail badge without
+            // changing the current Movement mapping or introducing identity-specific geometry.
+            var index = Mathf.Max(0, region.SecondaryIndex);
+            return new Rect(12f, 124f + (70f * index), 70f, 70f);
+        }
+
+        private static Rect ScalePreparedActionBounds(Rect sourceBounds)
+        {
+            var scaleX = CardFootprint.ArtworkWidth / CardFootprint.ArtworkSourceWidth;
+            var scaleY = CardFootprint.ArtworkHeight / CardFootprint.ArtworkSourceHeight;
+            return new Rect(
+                sourceBounds.x * scaleX,
+                sourceBounds.y * scaleY,
+                sourceBounds.width * scaleX,
+                sourceBounds.height * scaleY);
+        }
+
+        private static void AddPreparedArtworkHighlight(
+            VisualElement control,
+            ActionKind actionKind,
+            bool available)
+        {
+            // The control remains the typed hit/focus surface but contributes no fill or text. The
+            // temporary prepared-card treatment is deliberately simple: a circle around Movement's
+            // printed boot/value badge, or a broad box around the complete Primary Skill/Attack panel.
+            HudElements.Border(control, Color.clear, 0f, 0f);
+            control.style.overflow = Overflow.Visible;
+            if (!available)
+            {
+                return;
+            }
+
+            var glow = new PreparedActionGlow(actionKind == ActionKind.Movement)
+            {
+                name = "gd-prepared-action-glow",
+                pickingMode = PickingMode.Ignore,
+                focusable = false,
+                userData = actionKind
+            };
+            glow.style.position = Position.Absolute;
+            glow.style.left = 0f;
+            glow.style.top = 0f;
+            glow.style.width = Length.Percent(100f);
+            glow.style.height = Length.Percent(100f);
+            control.Add(glow);
+            SetPreparedArtworkGlow(control, false);
+        }
+
+        private static void SetPreparedArtworkGlow(VisualElement control, bool highlighted)
+        {
+            var glow = control.Q<PreparedActionGlow>("gd-prepared-action-glow");
+            if (glow == null)
+            {
+                return;
+            }
+
+            glow.SetHighlighted(highlighted);
+        }
+
+        /// <summary>
+        /// A stable three-layer treatment drawn over one prepared action region. It never copies card
+        /// pixels or invents an action glyph: Movement receives a circular ring around the existing
+        /// boot/value badge, while Primary Skill and Attack receive a broad rounded rectangle around
+        /// their complete printed action panel.
+        /// </summary>
+        private sealed class PreparedActionGlow : VisualElement
+        {
+            private readonly VisualElement halo;
+            private readonly VisualElement bloom;
+            private readonly VisualElement core;
+
+            internal PreparedActionGlow(bool circular)
+            {
+                AddToClassList(circular
+                    ? "gd-prepared-action-glow-circle"
+                    : "gd-prepared-action-glow-box");
+                var radius = circular ? 999f : 8f;
+                halo = BuildLayer(
+                    "gd-prepared-action-glow-halo",
+                    new Color(1f, 0.52f, 0.04f, 0.16f),
+                    10f,
+                    radius,
+                    -4f);
+                bloom = BuildLayer(
+                    "gd-prepared-action-glow-bloom",
+                    new Color(1f, 0.72f, 0.10f, 0.38f),
+                    6f,
+                    radius,
+                    -2f);
+                bloom.style.backgroundColor = circular
+                    ? new Color(1f, 0.72f, 0.10f, 0.25f)
+                    : new Color(1f, 0.72f, 0.10f, 0.09f);
+                core = BuildLayer(
+                    "gd-prepared-action-glow-core",
+                    new Color(1f, 0.99f, 0.82f, 1f),
+                    2f,
+                    radius,
+                    1f);
+                Add(halo);
+                Add(bloom);
+                Add(core);
+                SetHighlighted(false);
+            }
+
+            internal void SetHighlighted(bool value)
+            {
+                // Hover/focus strengthens the same rings without resizing or relocating either one.
+                style.opacity = value ? 1f : 0.92f;
+            }
+
+            private static VisualElement BuildLayer(
+                string name, Color color, float width, float radius, float inset)
+            {
+                var layer = new VisualElement
+                {
+                    name = name,
+                    pickingMode = PickingMode.Ignore,
+                    focusable = false
+                };
+                layer.style.position = Position.Absolute;
+                layer.style.left = inset;
+                layer.style.top = inset;
+                layer.style.right = inset;
+                layer.style.bottom = inset;
+                layer.style.backgroundColor = Color.clear;
+                HudElements.Border(layer, color, width, radius);
+                return layer;
+            }
+        }
+
 
         private static void SetPrintedRegionGlow(
             VisualElement control, bool available, bool highlighted)

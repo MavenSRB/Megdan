@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -322,6 +323,39 @@ namespace GuardsDigital.Tests.EditMode
                 "and an offer the authority does allow is never dimmed - the shared treatment is " +
                 "applied to one of these two controls and not the other.");
             Assert.That(availableControl.tooltip, Does.Not.Contain("unavailable"));
+        }
+
+        [Test]
+        public void PreparedClearChip_SitsImmediatelyAboveItsAttackBox()
+        {
+            var session = StartAttackTurnBesideAHazard(out _, out _);
+            var round = new RoundActionUnityView();
+            new RoundActionPresenter(session, round).Refresh();
+            var region = round.Model.PrintedActionRegions.Single(candidate =>
+                candidate.ClearOffer != null);
+            Assert.That(region.ActionKind, Is.EqualTo(ActionKind.Attack));
+
+            var actionBounds = new UnityEngine.Rect(5f, 249f, 291f, 149f);
+            var factory = typeof(DirectorHandsUnityView).GetMethod(
+                "BuildReplacementChip", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(factory, Is.Not.Null,
+                "The regression must exercise the HUD's one replacement-chip placement function.");
+            var clear = (UnityEngine.UIElements.Button)factory.Invoke(null, new object[]
+            {
+                region,
+                "CLEAR",
+                actionBounds,
+                (Action)(() => { }),
+                true,
+                true
+            });
+
+            Assert.That(clear.style.top.value.value + clear.style.height.value.value,
+                Is.EqualTo(actionBounds.y - 4f).Within(0.001f),
+                "CLEAR sits above the Attack glow with a visible gap, never inside it.");
+            Assert.That(clear.style.left.value.value + clear.style.width.value.value,
+                Is.EqualTo(actionBounds.xMax).Within(0.001f),
+                "The chip is right-aligned to the Attack box it replaces.");
         }
 
         [Test]

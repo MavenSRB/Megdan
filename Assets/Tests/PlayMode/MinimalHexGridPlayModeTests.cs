@@ -1190,8 +1190,9 @@ namespace GuardsDigital.Tests.PlayMode
         {
             var restoreWidth = (uint)Screen.width;
             var restoreHeight = (uint)Screen.height;
-            UiPlayer.SetPlayerViewport(2560, 1440, "8.29b1 reference printed-action surface");
-            using (ConfiguredCardArtwork.UseTextureLoader(_ => null))
+            UiPlayer.SetPlayerViewport(2560, 1440, "8.29b1b reference printed-action surface");
+            // Use the project's natural provider here: the local visual route exercises prepared
+            // fronts, while a clean checkout still proves the generated fallback without private art.
             {
                 yield return LoadScene();
                 var root = Root();
@@ -1220,10 +1221,12 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(regions.Count(region => region.enabledSelf),
                     Is.EqualTo(runtime.RoundView.Model.PrintedActionRegions.Count(region =>
                         region.Invocation != null)));
+                Assert.That(regions.Select(region => region.text), Is.All.Empty,
+                    "The prepared or generated face supplies the visible action wording.");
                 AssertPrintedActionControlsStayOnCard(resolvingCard, "2560x1440");
-                yield return Capture("tmp/milestone-8-29b1-printed-actions-2560x1440.png");
+                yield return Capture("tmp/milestone-8-29b1b-printed-actions-2560x1440.png");
 
-                UiPlayer.SetPlayerViewport(2048, 1152, "8.29b1 validated desktop printed-action surface");
+                UiPlayer.SetPlayerViewport(2048, 1152, "8.29b1b validated desktop printed-action surface");
                 yield return null;
                 yield return null;
                 resolvingCard = Descendants(root.Hud.RootElement)
@@ -1232,15 +1235,27 @@ namespace GuardsDigital.Tests.PlayMode
                     .Where(element => element.name == "gd-printed-action-region")
                     .OfType<Button>().ToArray();
                 AssertPrintedActionControlsStayOnCard(resolvingCard, "2048x1152");
-                yield return Capture("tmp/milestone-8-29b1-printed-actions-2048x1152.png");
+                yield return Capture("tmp/milestone-8-29b1b-printed-actions-2048x1152.png");
 
                 var available = regions.First(region => region.enabledSelf);
                 var projected = (PrintedActionRegionViewModel)available.userData;
                 var restingGlow = available.style.borderTopWidth.value;
+                var preparedGlow = Descendants(available)
+                    .SingleOrDefault(element => element.name == "gd-prepared-action-glow");
+                var restingPreparedGlow = preparedGlow?.style.opacity.value ?? 0f;
                 var bounds = resolvingCard.worldBound;
                 UiPlayer.PointAt(available);
-                Assert.That(available.style.borderTopWidth.value, Is.GreaterThan(restingGlow),
-                    "Pointer hover brightens the already-visible region without moving it.");
+                if (preparedGlow != null)
+                {
+                    Assert.That(preparedGlow.style.opacity.value,
+                        Is.GreaterThan(restingPreparedGlow),
+                        "Pointer hover strengthens the same prepared circle or box.");
+                }
+                else
+                {
+                    Assert.That(available.style.borderTopWidth.value, Is.GreaterThan(restingGlow),
+                        "Pointer hover brightens the generated region without moving it.");
+                }
                 UiPlayer.PointAway(available);
                 Assert.That(resolvingCard.worldBound, Is.EqualTo(bounds),
                     "Hovering the overlay changes no card-footprint geometry.");
@@ -1257,7 +1272,7 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             UiPlayer.SetPlayerViewport(
-                restoreWidth, restoreHeight, "8.29b1 restore the viewport this session was running at");
+                restoreWidth, restoreHeight, "8.29b1b restore the viewport this session was running at");
             yield return null;
         }
 
@@ -1315,6 +1330,53 @@ namespace GuardsDigital.Tests.PlayMode
                         Is.EqualTo(CardFootprint.ArtworkWidth).Within(UiPlayer.PixelSnapping()));
                     Assert.That(resolvingCard.worldBound.height,
                         Is.EqualTo(CardFootprint.ArtworkHeight).Within(UiPlayer.PixelSnapping()));
+                }
+            }
+            finally
+            {
+                Object.Destroy(texture);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator HoveringTheResolvingCard_PreservesItsLivePrintedActionSurface()
+        {
+            var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            try
+            {
+                using (ConfiguredCardArtwork.UseTextureLoader(_ => texture))
+                {
+                    yield return LoadScene();
+                    var root = Root();
+                    CommitNextTurn(root.Runtime);
+                    yield return null;
+                    yield return null;
+
+                    var resolvingCard = Descendants(root.Hud.RootElement)
+                        .Last(element => element.name == "gd-card-choice");
+                    var overlay = Descendants(resolvingCard)
+                        .Single(element => element.name == "gd-printed-action-overlay");
+                    var regions = Descendants(overlay)
+                        .Where(element => element.name == "gd-printed-action-region")
+                        .ToArray();
+                    var preview = Named(root.Hud.RootElement, "gd-hand-hover-preview");
+                    Assert.That(preview.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+
+                    UiPlayer.PointAt(resolvingCard);
+                    yield return null;
+
+                    Assert.That(preview.resolvedStyle.display, Is.EqualTo(DisplayStyle.None),
+                        "The already exposed resolving card must not raise a standalone face over its actions.");
+                    Assert.That(overlay.panel, Is.Not.Null);
+                    Assert.That(Descendants(resolvingCard)
+                            .Where(element => element.name == "gd-printed-action-region"),
+                        Is.EqualTo(regions),
+                        "Hover preserves the exact live region objects and their typed offers.");
+                    Assert.That(regions.OfType<Button>().Select(region => region.text), Is.All.Empty);
+
+                    UiPlayer.PointAway(resolvingCard);
+                    yield return null;
+                    Assert.That(preview.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
                 }
             }
             finally

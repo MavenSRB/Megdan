@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard for player-reported UI and rules-offer defects found after milestone 8.29a and before private-online implementation resumes. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
 
-These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestones 8.29b, 8.29b1 and corrective 8.29b1a are complete; 8.29c-8.29e remain proposed.
+These corrections remain separately approvable micro-milestones because their implementation and closing checks have independent boundaries. Milestones 8.29b, 8.29b1 and correctives 8.29b1a-8.29b1b are complete; 8.29c-8.29e remain proposed.
 
 ### [x] 8.29b Stabilize hero selection and recompose Level Up
 
@@ -46,6 +46,27 @@ Closing checks: `TheResolvingCardsPrintedActionRegions_ForwardOnlyTheirExactProj
 Non-goals: No rule, action availability, printed value, card-text application, replacement, targeting, command, serialization, replay, Undo, card definition, source artwork, card-footprint, ordinary commitment, Defense, Level Up, effect-choice, networking, animation or general production-HUD redesign; no hotspot derived from private image analysis and no removal of End Turn or Director/headless controls.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829b1-select-printed-actions-directly-on-the-resolving-card-completion-evidence).
+
+### [x] 8.29b1b Align silent printed-action highlights and preserve them on hover
+
+Approved and completed at the user's direction on 2026-08-29 after hands-on prepared-card inspection showed that 8.29b1's text-heavy regions were aligned to the generated fallback's upper bands rather than the official front's printed anatomy, and that hovering the resolving card raised a standalone preview without its action surface. Further hands-on passes rejected the intermediate crop, invented vector symbols and source-traced symbol masks. The user selected a deliberately simple temporary treatment: a glowing circle around Movement's printed boot/value badge and one large glowing box around the complete Primary Skill or Attack section.
+
+Observable outcome: A resolving prepared front places a luminous circle around a legal printed Movement boot/value badge and a broad luminous box around a legal Primary Skill or Attack section, with no redundant action words; hovering that already exposed card never covers or removes those highlights.
+
+Acceptance checks:
+
+- Prepared fronts map typed Primary Skill and Attack offers to their broad lower printed-action panels, while Primary or Secondary Movement maps to the compact boot/value badge. The mapping uses shared 372-by-520 source-ratio template geometry plus invocation/action kind, never a card/hero name, runtime pixel reading, OCR, or printed-text parsing.
+- The generated fallback retains its own generated Primary/Secondary anatomy rather than inheriting prepared-front coordinates. Both branches keep the exact `CardFootprint` and every region inside it at 2560x1440 and 2048x1152.
+- Printed-action controls render with an empty visible label and transparent hit surface: the artwork supplies the meaning, while tooltip/assistive text retains action kind, value, context, applicability, and availability. An available prepared Movement action owns one centred circular glow around its boot/value badge, including a warm translucent inner light; an available Primary Skill or Attack owns one broad rounded glow box around its complete printed section. Each glow layers a faint wide halo, amber bloom and near-white core. These are transparent UI geometry only - no copied card pixels, replacement glyphs, texture masks or runtime image analysis. Pointer hover or keyboard focus strengthens the same stable shape without moving or resizing it. The generated fallback retains its contained luminous outline because it has no prepared artwork anatomy.
+- Fast Travel and Clear keep their necessary compact labels and exact typed offers: Fast Travel remains beside the Movement circle, while Clear sits immediately above and right-aligned to the prepared Attack box rather than inside it. Activating the silent printed region still starts only its printed action.
+- The already exposed resolving card does not create the ordinary compact-hand standalone hover preview. Its region objects, glow, availability, invocation, pointer behavior, and keyboard order remain live across real pointer enter/leave; hovering other hand cards retains their existing preview behavior.
+- Focused Edit Mode view/projection checks and Play Mode prepared/generated pointer journeys pass, followed by targeted non-batch prepared-front inspection at 2560x1440 and 2048x1152.
+
+Closing checks: `PreparedArtworkPrintedActionRegions_AreSilentAndUseTheOfficialTypedSlots` is recorded failing while the controls still carry action text and the fallback's upper-band coordinates, then passing with separate prepared/generated geometry. `HoveringTheResolvingCard_PreservesItsLivePrintedActionSurface` is recorded failing while the standalone preview covers the overlay and passing when the resolving card suppresses only that redundant preview.
+
+Non-goals: No rule, action offer, availability, printed value, replacement eligibility, command, card definition, source-artwork or import mutation, imported resource or derived private image asset, card footprint, ordinary commitment, Defense/Level Up/effect choice, other-card hover preview, networking, animation, or general HUD redesign; no per-card geometry table, texture mask, runtime pixel analysis, OCR or printed-text parsing.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829b1b-align-silent-printed-action-highlights-and-preserve-them-on-hover-completion-evidence).
 
 ### [x] 8.29b1a Reconcile rail geometry guards after the approved plaque changes
 

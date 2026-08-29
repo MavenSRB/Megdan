@@ -178,7 +178,10 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// The one shown button whose label is exactly <paramref name="label"/>. Zero or several is a
+        /// The one shown button whose visible label is exactly <paramref name="label"/>, or whose
+        /// silent printed-action region carries that exact projected label as typed user data. The
+        /// latter is how the player driver addresses the artwork-native boot, Skill book, or swords
+        /// without forcing redundant words back onto the prepared card face. Zero or several is a
         /// failure with the visible candidates named, because a journey that cannot find its control
         /// must say what the player was actually looking at.
         /// </summary>
@@ -186,7 +189,11 @@ namespace GuardsDigital.Tests.PlayMode
         {
             var buttons = Descendants(hud.RootElement)
                 .OfType<Button>()
-                .Where(candidate => IsShown(candidate) && candidate.text == label)
+                .Where(candidate => IsShown(candidate) &&
+                    (candidate.text == label ||
+                     candidate.name == "gd-printed-action-region" &&
+                     candidate.userData is PrintedActionRegionViewModel region &&
+                     region.ActionLabel == label))
                 .ToArray();
             Assert.That(buttons, Has.Length.EqualTo(1),
                 $"Expected exactly one shown control labelled '{label}'; the shown controls are: " +

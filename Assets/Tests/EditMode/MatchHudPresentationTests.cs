@@ -2702,7 +2702,7 @@ namespace GuardsDigital.Tests.EditMode
                     .TakeWhile(region => region.InvocationContext != ActionInvocationContext.PrintedPrimary)
                     .Select(region => region.SecondaryIndex),
                 Is.Ordered,
-                "Keyboard order follows the upper Secondary strip before the Primary band.");
+                "Keyboard order follows projected Secondary actions before the Primary action.");
             Assert.That(view.Model.FastTravelOffers, Has.All.Matches<FastTravelOfferViewModel>(replacement =>
                 view.Model.PrintedActionRegions.Any(region =>
                     ReferenceEquals(region.FastTravelOffer, replacement) &&
@@ -2751,6 +2751,140 @@ namespace GuardsDigital.Tests.EditMode
                 available.ClearOffer);
             Assert.That(hands.ForwardPrintedActionRegion(forged), Is.False,
                 "An equivalent but unprojected region cannot forge the current card's start.");
+        }
+
+        [Test]
+        public void PreparedArtworkPrintedActionRegions_AreSilentAndUseTheOfficialTypedSlots()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.First(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.State.Location == CardLocation.Hand);
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            }
+
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseTiedActor(
+                    tie.OwningSide, tie.CandidateCardInstanceIds[0]));
+            }
+
+            var round = new RoundActionUnityView();
+            new RoundActionPresenter(session, round).Refresh();
+            var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            try
+            {
+                using (ConfiguredCardArtwork.UseTextureLoader(_ => texture))
+                {
+                    var hands = new DirectorHandsUnityView();
+                    new DirectorHandsPresenter(session, hands).Refresh();
+                    hands.SetPrintedActionRegions(round.Model.PrintedActionRegions);
+                    var controls = Descendants(hands.Root)
+                        .Where(element => element.name == "gd-printed-action-region")
+                        .OfType<Button>().ToArray();
+                    Assert.That(controls, Is.Not.Empty);
+                    Assert.That(controls.Select(control => control.text), Is.All.Empty,
+                        "The printed face already names and values its actions; overlays add no copy.");
+                    Assert.That(controls.Select(control => control.style.backgroundColor.value.a),
+                        Is.All.EqualTo(0f), "The typed hit surfaces add no synthetic fill.");
+                    Assert.That(controls.Select(control => control.style.borderTopWidth.value),
+                        Is.All.EqualTo(0f),
+                        "Prepared artwork uses its own symbol shine instead of a blue box outline.");
+                    var availableControls = controls.Where(control => control.enabledSelf).ToArray();
+                    Assert.That(availableControls, Is.Not.Empty);
+                    Assert.That(availableControls.All(control => Descendants(control)
+                            .Count(element => element.name == "gd-prepared-action-glow") == 1),
+                        Is.True,
+                        "Each available hotspot owns exactly one stable prepared-action glow.");
+                    Assert.That(availableControls.SelectMany(Descendants)
+                            .Any(element => element.name == "gd-prepared-action-artwork"), Is.False,
+                        "An opaque prepared-card crop must never be raised over the printed face.");
+                    Assert.That(availableControls.All(control => Descendants(control)
+                            .Single(element => element.name == "gd-prepared-action-glow")
+                            .userData.Equals(((PrintedActionRegionViewModel)control.userData).ActionKind)),
+                        Is.True,
+                        "The glow follows the projected typed action kind without card names.");
+                    var glowLayers = availableControls.SelectMany(Descendants)
+                        .Where(element => element.name == "gd-prepared-action-glow-halo" ||
+                            element.name == "gd-prepared-action-glow-bloom" ||
+                            element.name == "gd-prepared-action-glow-core")
+                        .ToArray();
+                    Assert.That(glowLayers, Has.Length.EqualTo(availableControls.Length * 3),
+                        "Each prepared region owns an outer halo, amber bloom and bright core.");
+                    Assert.That(glowLayers.OfType<Image>(), Is.Empty,
+                        "The simple geometry never copies or re-layers prepared-card pixels.");
+
+                    var primary = controls.Single(control =>
+                        ((PrintedActionRegionViewModel)control.userData).InvocationContext ==
+                            ActionInvocationContext.PrintedPrimary);
+                    Assert.That(primary.style.top.value.value,
+                        Is.GreaterThan(CardFootprint.Height * 0.55f),
+                        "The prepared Primary hotspot belongs to the official lower action strip.");
+                    var primaryModel = (PrintedActionRegionViewModel)primary.userData;
+                    var primaryGlow = Descendants(primary)
+                        .SingleOrDefault(element => element.name == "gd-prepared-action-glow");
+                    if (primaryModel.ActionKind == ActionKind.Movement)
+                    {
+                        Assert.That(primary.style.width.value.value,
+                            Is.LessThan(CardFootprint.Width * 0.25f));
+                        Assert.That(primaryGlow == null ||
+                            primaryGlow.ClassListContains("gd-prepared-action-glow-circle"), Is.True,
+                            "Primary Movement uses the same compact circle as the rail boot.");
+                    }
+                    else
+                    {
+                        Assert.That(primaryModel.ActionKind,
+                            Is.EqualTo(ActionKind.Skill).Or.EqualTo(ActionKind.Attack));
+                        Assert.That(primary.style.width.value.value,
+                            Is.GreaterThan(CardFootprint.Width * 0.90f),
+                            "Primary Skill or Attack boxes span the complete printed action panel.");
+                        Assert.That(primary.style.height.value.value,
+                            Is.GreaterThan(CardFootprint.Height * 0.25f));
+                        Assert.That(primaryGlow == null ||
+                            primaryGlow.ClassListContains("gd-prepared-action-glow-box"), Is.True);
+                    }
+
+                    var secondary = controls.Single(control =>
+                        ((PrintedActionRegionViewModel)control.userData).InvocationContext ==
+                            ActionInvocationContext.PrintedSecondary);
+                    Assert.That(((PrintedActionRegionViewModel)secondary.userData).ActionKind,
+                        Is.EqualTo(ActionKind.Movement));
+                    Assert.That(secondary.style.left.value.value,
+                        Is.LessThan(CardFootprint.Width * 0.10f));
+                    Assert.That(secondary.style.width.value.value,
+                        Is.LessThan(CardFootprint.Width * 0.25f),
+                        "Secondary Movement circles its left-rail boot/value badge.");
+                    Assert.That(secondary.style.top.value.value,
+                        Is.InRange(CardFootprint.Height * 0.30f, CardFootprint.Height * 0.50f));
+                    var secondaryGlow = Descendants(secondary)
+                        .SingleOrDefault(element => element.name == "gd-prepared-action-glow");
+                    Assert.That(secondaryGlow == null ||
+                        secondaryGlow.ClassListContains("gd-prepared-action-glow-circle"), Is.True);
+                }
+
+                var fallbackHands = new DirectorHandsUnityView();
+                new DirectorHandsPresenter(session, fallbackHands).Refresh();
+                fallbackHands.SetPrintedActionRegions(round.Model.PrintedActionRegions);
+                var fallbackPrimary = Descendants(fallbackHands.Root)
+                    .Where(element => element.name == "gd-printed-action-region")
+                    .OfType<Button>().Single(control =>
+                        ((PrintedActionRegionViewModel)control.userData).InvocationContext ==
+                            ActionInvocationContext.PrintedPrimary);
+                Assert.That(fallbackPrimary.style.top.value.value,
+                    Is.LessThan(CardFootprint.Height * 0.40f),
+                    "The generated fallback keeps its own upper-band anatomy.");
+                Assert.That(Descendants(fallbackPrimary)
+                        .Any(element => element.name == "gd-prepared-action-glow"), Is.False);
+                Assert.That(fallbackPrimary.style.borderTopWidth.value, Is.GreaterThan(0f),
+                    "The generated face retains its synthetic action-region treatment.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
         }
 
         // -------------------------------------------------------------------------------------------
