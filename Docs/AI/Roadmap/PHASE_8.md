@@ -616,6 +616,27 @@ Acceptance checks:
 
 Non-goals: No network process, provider integration, lobby, reconnect, public distribution, production visuals, or invited playtest.
 
+### [~] 8.30d Light the chosen action's printed icons and integrate the replacement, End Turn, and narration surfaces
+
+User-approved roadmap amendment (2026-08-30), following 8.30b's precedent: widens the block's "no production styling" non-goal for exactly five surfaces — the printed-action offer treatment, the Defense-prompt cards, the two replacement controls, the End Turn control, and the top status bar's narration lane. Every other non-goal stands. The user approved starting this before 8.30c, so the six-seat gate validates the finished surfaces; 8.31 remains gated on 8.30c alone.
+
+Blocked by: Milestone 8.30b must provide the seat-scoped player HUD and prompt flow.
+
+Observable outcome: While the player is choosing, the choice itself is lit and unmissable: each offered printed action's own icon shines (silhouette rim plus radiance, steady, brighter under pointer and focus), a Defense offer shines exactly the shield it would defend with, Fast Travel and Clear hang as card-gold ribbon tabs off the Movement and Attack they respectively replace, End Turn is a neutral pewter banner that shines fully when it is the only offer left, and the status bar narrates the match in the player's own words — lit warm when the sentence is addressed to the viewing seat.
+
+Acceptance checks:
+
+- A geometry pass over all six heroes' prepared fronts verifies the shared badge rects per icon slot (rail shield, rail boot, primary boot/swords/book/shield, ranged and Block variants); shine sprites trace each badge's outer silhouette from the highest-contrast source card for that slot, are alignment-checked against every hero's fronts, and live with the private card resources.
+- Every offered printed action carries the shine at its kind icon's rect; unavailable regions carry none; the panel box and ring treatments are retired. Overlays are picking-ignored: hit surfaces, focus order, and the UiPlayer click drivers are unchanged.
+- The Defense prompt shines the rail shield for a secondary Defense and the primary-slot shield for a Duelist or Block, placement typed by the presenter; `DECLINE DEFENSE` stays untreated.
+- Fast Travel's ribbon attaches to the Movement region it replaces and Clear's to the Attack region it replaces, text-first, muted when unavailable, shining under pointer and focus.
+- End Turn keeps its 8.30b placement, hide rules, and invocation, restyled as the pewter banner with its two glow states.
+- The narration keeps its single derivation and `EveryDeclaredPendingFamilyIsNamedByTheStatusDerivation`, reworded to name who acts in game terms without engine vocabulary, and the lane visually distinguishes the viewing seat's own move from every other state.
+- Generated-fallback faces state the same facts through their typed chips lighting up; a missing sprite degrades to the prior treatment with a one-time diagnostic.
+- The measured HUD geometry milestones 8.25c and 8.25f2 pin is re-measured rather than assumed; Game View inspection at the supported validation resolutions confirms every lit state is obvious at real card size, with archived screenshots and user sign-off on intensity.
+
+Non-goals: No animation loop, no board-surface changes, no invented action glyphs, no other HUD styling, no Phase 9 presentation suite.
+
 ### [!] 8.31 Establish the private host and six player seats
 
 Blocked by: Milestone 8.30c must pass the complete local six-seat player-experience gate.
