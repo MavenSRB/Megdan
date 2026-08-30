@@ -29,6 +29,7 @@ Active definitions remain indexed from [ROADMAP.md](../ROADMAP.md).
 
 ## Other historical evidence
 
+- [Removed and superseded roadmap definitions](ROADMAP_HISTORY.md)
 - [Superseded testing recipes](TESTING_HISTORY.md)
 - [Pre-governance project-status snapshot](PROJECT_STATUS_PRE_GOVERNANCE.md)
 - [Resolved technical risks](RESOLVED_TECHNICAL_RISKS.md)

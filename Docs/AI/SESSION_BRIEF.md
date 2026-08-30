@@ -37,6 +37,8 @@ The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Road
 
 Roadmap amendment, 2026-08-30: milestone **8.30d** lights each offered action's printed icon, the Defense shield, and a player-facing narration lane, restyles Fast Travel/Clear as ribbon tabs on the actions they replace, and turns End Turn pewter. It widens the no-production-styling non-goal for five surfaces and starts before 8.30c by user approval; 8.31 stays gated on 8.30c.
 
+Roadmap amendment, 2026-08-30: the former proposed milestone **8.30e** was removed at the user's direction. The completed 8.30d scan-backed highlighting remains the accepted treatment; no digital-front rebuild, hand-traced glyph template, or 108-card composition/sign-off work remains scheduled. **8.30c** remains next, and **8.31** remains gated on it alone.
+
 Roadmap amendment, 2026-08-29: milestone **8.30b** also moves End Turn to the bottom right as a larger control and expands the top status bar to narrate every step. That widens its primitive-layout check past the no-production-styling non-goal for those two surfaces only, and re-measures the pinned HUD geometry.
 
 Roadmap amendments, 2026-08-26 through 2026-08-28: **8.25f** uses each locally prepared private front, **8.25f1** removes its generated shell, and **8.25f2** enlarges the shared source-ratio face and composes the accepted physical hand/full-screen map HUD with one fixed largest-state status/action footprint. Clean-checkout fallback and identity-free facedown remain; private pixels stay ignored and outside rules authority.
