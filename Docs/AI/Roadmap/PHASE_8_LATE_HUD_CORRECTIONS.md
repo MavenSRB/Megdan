@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard for the player-requested HUD and card-interaction corrections found after milestone 8.30d and before the complete six-seat local validation gate. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
 
-The user approved defining and scheduling these milestones on 2026-08-30. That roadmap amendment does not authorize their implementation: each milestone still requires its own explicit approval under the roadmap execution rule. Milestone 8.30c was already being implemented when these corrections were collected, so 8.30f follows it, 8.30g follows 8.30f, and the separately iterative board treatment at 8.30h follows the completed card interaction. Each correction reruns the six-seat checks it affects before private-online work begins.
+The user approved defining and scheduling these milestones on 2026-08-30. That roadmap amendment does not authorize their implementation: each milestone still requires its own explicit approval under the roadmap execution rule. Milestone 8.30c was already being implemented when these corrections were collected, so 8.30f follows it, 8.30g follows 8.30f, and the separately iterative board treatment at 8.30h follows the completed card interaction. A further user-approved amendment on 2026-08-31 defines milestone 8.30i, which follows 8.30h because it reuses that milestone's shared six-corner construction, and which carries the final pre-network evidence refresh. Each correction reruns the six-seat checks it affects before private-online work begins.
 
 ### [ ] 8.30f Recompose the turn controls and correct small HUD readings
 
@@ -66,3 +66,22 @@ Acceptance checks:
 Closing checks: `EveryLegalBoardChoice_LightsSixFixedHexCornerMarksFromProjectedGeometry` and `MovementAndAttackHighlights_StrengthenInPlaceWithDistinctSignedOffColours` fail against the pre-milestone board treatment and pass after the final visual iteration.
 
 Non-goals: No movement, range, line-of-sight, Attack, targeting, occupancy, or map-data rule change; no runtime pixel analysis, source-map repaint, whole-hex wash, pulsing or looping animation, card-highlight redesign, unit-art change, networking implementation, or general board/presentation overhaul.
+
+### [ ] 8.30i Read Defense participation and its breakdown through the corrected shine language
+
+Blocked by: Milestone 8.30h must deliver the shared six-corner template, the layered steady/stronger shine construction, and its signed-off Movement and Attack hues, which the Defense treatment reuses and must remain clearly distinct from.
+
+Observable outcome: A minion contributing to a projected Defense is read from the board itself - all six printed corner marks of its occupied hex lit in one of two contribution colours, green for +1 and red for -1, replacing the floating text badge - and hovering a Defense offer opens a structured, themed breakdown panel whose contribution rows, totals, and result are readable at a glance instead of one undifferentiated text block.
+
+Acceptance checks:
+
+- Every minion the projection marks with a +1 or -1 Defense contribution lights all six corner marks of its occupied hex through milestone 8.30h's shared six-corner template and layered construction, in two contribution-specific colours - a green family for +1 and a red family for -1 - clearly distinct from the signed-off Movement and Attack hues at real board scale. The `StandardMinionView` floating "+1"/"-1" text badge and its oval text-glyph backing are retired by milestone 8.30i, and tests assert the retirement.
+- The corner shine states participation only: contribution amounts, Defense eligibility, adjacency, and resolution rules are unchanged, and each contribution's existing assistive reading keeps its amount and source. A minion simultaneously carrying a fitted target ring keeps it, and one targeted inspection confirms the two readings stay distinguishable on the same hex.
+- The Defense breakdown view model carries the typed attack and Defense contribution rows, both totals, the block result, and the outcome the presenter already receives as typed projections, rather than one pre-joined string; the flattened text reading remains available wherever a check or assistive surface consumes it today.
+- The hover preview draws the breakdown as themed sections: one row per contribution with its signed amount coloured by sign, emphasized attack and Defense totals, and a result statement visually distinct between defended, attack-succeeds, and defeated. Its anchor-clear inside-viewport placement, hover trigger, dismissal timing, and reference-unit geometry contract are unchanged.
+- The milestone deliberately includes bounded hands-on iteration over the two contribution hues, resting and hover strengths, and the breakdown panel's treatment at real gameplay size; final values are accepted only after targeted non-batch Game View comparison at 2560x1440 and 2048x1152, with intermediate attempts remaining implementation work rather than new scope decisions.
+- Focused Edit Mode geometry/material and view-model tests plus focused Play Mode Defense journeys pass at both supported resolutions, and the directly affected 8.30c six-seat Defense, board-cue, resource-lifetime, and supported-resolution checks rerun green at the final signed-off treatment before 8.31.
+
+Closing checks: `MinionDefenseContributions_LightSixHexCornerMarksInSignedContributionColours` and `TheDefenseBreakdownPreview_DrawsTypedContributionRowsTotalsAndOutcome` fail against the pre-milestone badge and flattened-text treatments and pass after the final visual iteration.
+
+Non-goals: No Defense rule, contribution-amount, timing, or resolution change; no change to which offers show a preview or when it appears and dismisses; no whole-hex wash, pulsing or looping animation, Movement/Attack hue redesign, networking implementation, or general board or HUD overhaul.
