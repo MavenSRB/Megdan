@@ -642,7 +642,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(model.FastTravelOffers, Is.Empty);
             Assert.That(model.EndTurnInvocation, Is.Null,
                 "End Turn is suppressed during the mandatory correction choice.");
-            Assert.That(model.Status, Does.Contain("correction").IgnoreCase,
+            Assert.That(model.Status, Does.Contain("displaced minion").IgnoreCase,
                 "The status line names what the match is waiting on.");
         }
 

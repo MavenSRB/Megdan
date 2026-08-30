@@ -1948,7 +1948,8 @@ namespace GuardsDigital.Presentation.Match
             string label,
             DirectorCommand command,
             DefenseBreakdownViewModel defenseBreakdown = null,
-            TrayCardViewModel card = null)
+            TrayCardViewModel card = null,
+            CardShineSlot defenseShineSlot = CardShineSlot.None)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A typed invocation requires a label.", nameof(label))
@@ -1956,11 +1957,21 @@ namespace GuardsDigital.Presentation.Match
             Command = command ?? throw new ArgumentNullException(nameof(command));
             DefenseBreakdown = defenseBreakdown;
             Card = card;
+            DefenseShineSlot = defenseShineSlot;
         }
 
         public string Label { get; }
         public DirectorCommand Command { get; }
         public DefenseBreakdownViewModel DefenseBreakdown { get; }
+
+        /// <summary>
+        /// Which printed badge this Defense offer would defend with, stated by the presenter from
+        /// the offered action's typed origin - the rail shield for a secondary Defense, the primary
+        /// badge for a Duelist or Block - so the view lights it without inferring anything from
+        /// card content. <see cref="CardShineSlot.None"/> on every invocation that is not a card
+        /// Defense offer, DECLINE included. Milestone 8.30d.
+        /// </summary>
+        public CardShineSlot DefenseShineSlot { get; }
 
         /// <summary>
         /// The card this invocation is about, as the tray draws one, or null when it is not about a
@@ -2415,6 +2426,17 @@ namespace GuardsDigital.Presentation.Match
         public string SectionLabel { get; }
     }
 
+    /// <summary>
+    /// The two voices milestone 8.30d gives the top status bar's narration: the warm lane for a
+    /// sentence addressed to the viewing seat, the calm one for everything the match is doing on
+    /// its own or at another seat.
+    /// </summary>
+    public enum NarrationVoice
+    {
+        Calm = 0,
+        YourMove = 1
+    }
+
     public sealed class RoundActionViewModel
     {
         public RoundActionViewModel(
@@ -2510,6 +2532,34 @@ namespace GuardsDigital.Presentation.Match
         public int TurnIndex { get; }
         public RoundResolutionPhase Phase { get; }
         public string Status { get; }
+
+        /// <summary>
+        /// Which voice the narration lane speaks <see cref="Status"/> in. Milestone 8.30d: warm
+        /// when this model carries anything the viewing seat can act on - the sentence is then
+        /// addressed to the player - and calm otherwise. It is derived from the same lists the
+        /// region renders, so the voice and the controls cannot drift apart; a seat-scoped model
+        /// carries only that seat's own offers, which is what makes presence mean "yours".
+        /// </summary>
+        public NarrationVoice Voice =>
+            DefenseChoices.Count > 0 ||
+            InitiativeChoices.Count > 0 ||
+            EffectChoices.Count > 0 ||
+            EffectChoiceTargets.Count > 0 ||
+            EffectChoiceDestinations.Count > 0 ||
+            HeroRespawnOptions.Count > 0 ||
+            ResolveWithoutRespawn != null ||
+            RemovalPreventionPrompt != null ||
+            SystemTransitionPrompt != null ||
+            ClearSelection != null ||
+            EndTurnInvocation != null ||
+            ContinueEndOfRoundInvocation != null ||
+            Actions.Count > 0 ||
+            PrintedActionRegions.Any(region =>
+                region.Invocation != null ||
+                region.FastTravelOffer != null ||
+                (region.ClearOffer != null && region.ClearOffer.IsAvailable))
+                ? NarrationVoice.YourMove
+                : NarrationVoice.Calm;
         public IReadOnlyList<TypedInvocationViewModel> Actions { get; }
         public TypedInvocationViewModel EndTurnInvocation { get; }
         public TypedInvocationViewModel ContinueEndOfRoundInvocation { get; }
@@ -3988,7 +4038,10 @@ namespace GuardsDigital.Presentation.Match
                                 command.ChoiceId.Equals(choice.ChoiceId) &&
                                 command.CardInstanceId.Equals(offer.SourceCardInstanceId)),
                         CreateDefenseBreakdown(projection.Version, preview, choicePreview),
-                        CreateCardFace(projection, offer.SourceCardInstanceId));
+                        CreateCardFace(projection, offer.SourceCardInstanceId),
+                        offer.InvocationContext == ActionInvocationContext.PrintedPrimary
+                            ? CardShineSlot.Primary
+                            : CardShineSlot.SecondaryDefense);
                 })
                 .ToList();
             if (choice.CanDecline)
@@ -4150,39 +4203,47 @@ namespace GuardsDigital.Presentation.Match
             // order to fix what is said. `EveryDeclaredPendingFamilyIsNamedByTheStatusDerivation`
             // compares this method against the declared inventory instead, which is the comparison
             // that was missing.
+            // Milestone 8.30d rewords every sentence here into the player's language - who acts,
+            // in game words, no engine vocabulary - without touching which family each branch
+            // reads: `EveryDeclaredPendingFamilyIsNamedByTheStatusDerivation` still compares this
+            // method's compiled reads against the declared inventory, and the branches are the
+            // same branches.
             var minionBattle = projection.PendingMinionBattleChoice;
             if (minionBattle != null)
             {
                 return $"Minion Battle: {MinionChoiceLabels.TeamLabel(minionBattle.ChoosingSide)} " +
-                    $"removes {minionBattle.RequiredRemovalCount}, " +
-                    $"{minionBattle.SelectedUnits.Count} chosen.";
+                    $"removes {minionBattle.RequiredRemovalCount} " +
+                    (minionBattle.RequiredRemovalCount == 1 ? "minion" : "minions") +
+                    $" ({minionBattle.SelectedUnits.Count} chosen).";
             }
 
             var transitionStep = projection.PendingSystemTransitionStep;
             if (transitionStep != null)
             {
-                return "System transition paused: " +
-                    $"{MinionChoiceLabels.TeamLabel(transitionStep.ChoosingSide)} decides.";
+                return $"{MinionChoiceLabels.TeamLabel(transitionStep.ChoosingSide)} " +
+                    "is choosing how to proceed.";
             }
 
             if (projection.Phase == RoundResolutionPhase.EndOfRound)
             {
-                return $"ROUND {projection.RoundIndex} COMPLETE - END OF ROUND";
+                return $"Round {projection.RoundIndex} complete.";
             }
 
             if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
             {
-                return $"Round {projection.RoundIndex}, turn {projection.TurnIndex}: awaiting commitments.";
+                return $"Round {projection.RoundIndex}, Turn {projection.TurnIndex}: " +
+                    "players are choosing their cards.";
             }
 
             if (projection.PendingInitiativeChoice != null)
             {
-                return "Choose the tied Initiative actor.";
+                return "Tied Initiative: choose who acts first.";
             }
 
             if (projection.PendingDefenseChoice != null)
             {
-                return $"Defense response pending against Attack {projection.PendingDefenseChoice.AttackTotal}.";
+                return $"Incoming Attack {projection.PendingDefenseChoice.AttackTotal}: " +
+                    "choose a card to defend with.";
             }
 
             // Milestone 8.20d: the seventh pending family, and the one that had never been here.
@@ -4214,28 +4275,32 @@ namespace GuardsDigital.Presentation.Match
 
             if (projection.PendingHeroRespawnChoice != null)
             {
-                return "Hero is off board: choose a respawn point or resolve the card without an action.";
+                return "Your hero is down: choose a respawn space on the board, " +
+                    "or resolve the card without acting.";
             }
 
             if (projection.PendingAttackTargetChoice != null)
             {
-                return "Choose a legal Attack target.";
+                return "Choose a target for the Attack.";
             }
 
             if (projection.PendingMovementChoice != null)
             {
-                return $"Movement has {projection.PendingMovementChoice.RemainingAllowance} remaining.";
+                var remaining = projection.PendingMovementChoice.RemainingAllowance;
+                return $"Movement: {remaining} " +
+                    (remaining == 1 ? "space" : "spaces") + " left.";
             }
 
             if (projection.PendingDisplacedMinionCorrection != null)
             {
-                return "Displaced-minion correction: " +
-                    $"{MinionChoiceLabels.TeamLabel(projection.PendingDisplacedMinionCorrection.ChoosingSide)} decides.";
+                return $"{MinionChoiceLabels.TeamLabel(projection.PendingDisplacedMinionCorrection.ChoosingSide)} " +
+                    "places the displaced minion.";
             }
 
             return projection.SelectedActor.IsDefined
-                ? $"Initiative {projection.SelectedActor.InitiativeTotal}: choose an action or End Turn."
-                : "Awaiting the next authoritative choice.";
+                ? $"Initiative {projection.SelectedActor.InitiativeTotal}: " +
+                    "choose an action, or end your turn."
+                : "Waiting for the match to continue.";
         }
     }
 

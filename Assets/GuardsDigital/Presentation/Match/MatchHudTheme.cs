@@ -84,6 +84,36 @@ namespace GuardsDigital.Presentation.Match
         public static readonly Color ActiveEffectAccent = new Color(0.729f, 0.451f, 0.949f, 1f);
 
         /// <summary>
+        /// Milestone 8.30d: the shine an offered printed icon wears - the same warm near-white the
+        /// prepared overlays bake as their silhouette rim, so a generated face's lit chip, a
+        /// replacement ribbon, and End Turn's banner all speak one "this is your choice" light.
+        /// </summary>
+        public static readonly Color ShineRim = new Color(1f, 0.988f, 0.910f, 1f);
+
+        /// <summary>The shine's close radiance, between the rim and the halo.</summary>
+        public static readonly Color ShineGlow = new Color(1f, 0.925f, 0.667f, 1f);
+
+        /// <summary>The shine's widest, softest ring.</summary>
+        public static readonly Color ShineHalo = new Color(1f, 0.882f, 0.588f, 1f);
+
+        /// <summary>
+        /// Milestone 8.30d: End Turn's banner cloth. Neutral pewter by the user's decision - the
+        /// board already carries enough gold - echoing the silver of the cards' own printed icons.
+        /// </summary>
+        public static readonly Color PewterBanner = new Color(0.675f, 0.698f, 0.729f, 1f);
+
+        /// <summary>The pewter banner's dark edge and fold ink.</summary>
+        public static readonly Color PewterBannerEdge = new Color(0.173f, 0.196f, 0.227f, 1f);
+
+        /// <summary>
+        /// Milestone 8.30d: the narration lane's warm voice - background and ink for the sentence
+        /// that is addressed to the viewing seat, against the calm muted voice of every other state.
+        /// </summary>
+        public static readonly Color NarrationWarmBackground = new Color(0.184f, 0.141f, 0.063f, 1f);
+
+        public static readonly Color NarrationWarmText = new Color(1f, 0.933f, 0.784f, 1f);
+
+        /// <summary>
         /// Milestone 8.7a: the neutral back a card committed facedown is drawn as.
         ///
         /// It is a colour of its own rather than <see cref="EmptySlot"/> because the two say opposite

@@ -844,12 +844,15 @@ namespace GuardsDigital.Tools
                 {
                     int local = y * w + x;
                     float a = 0f, r = 0f, g = 0f, b = 0f;
-                    Over(ref a, ref r, ref g, ref b, Math.Min(0.42f, haloA[local] * 0.42f), 255f, 225f, 150f);
-                    Over(ref a, ref r, ref g, ref b, Math.Min(0.60f, glowA[local] * 0.60f), 255f, 236f, 170f);
-                    Over(ref a, ref r, ref g, ref b, Math.Min(1.00f, rimA[local] * 1.35f), 255f, 252f, 232f);
+                    // Hotter than the source mock on purpose: at HUD card scale (roughly 46% of
+                    // the 372x520 source) the softer numbers read as nothing, and the user's bar
+                    // is "really POP, obvious to the player".
+                    Over(ref a, ref r, ref g, ref b, Math.Min(0.58f, haloA[local] * 0.58f), 255f, 225f, 150f);
+                    Over(ref a, ref r, ref g, ref b, Math.Min(0.78f, glowA[local] * 0.78f), 255f, 236f, 170f);
+                    Over(ref a, ref r, ref g, ref b, Math.Min(1.00f, rimA[local] * 1.60f), 255f, 252f, 232f);
                     if (solid[local] == 1)
                     {
-                        a = 0.12f; r = 255f; g = 248f; b = 225f;
+                        a = 0.18f; r = 255f; g = 248f; b = 225f;
                     }
 
                     if (a <= 0.004f)

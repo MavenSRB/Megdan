@@ -616,7 +616,7 @@ Acceptance checks:
 
 Non-goals: No network process, provider integration, lobby, reconnect, public distribution, production visuals, or invited playtest.
 
-### [~] 8.30d Light the chosen action's printed icons and integrate the replacement, End Turn, and narration surfaces
+### [x] 8.30d Light the chosen action's printed icons and integrate the replacement, End Turn, and narration surfaces
 
 User-approved roadmap amendment (2026-08-30), following 8.30b's precedent: widens the block's "no production styling" non-goal for exactly five surfaces — the printed-action offer treatment, the Defense-prompt cards, the two replacement controls, the End Turn control, and the top status bar's narration lane. Every other non-goal stands. The user approved starting this before 8.30c, so the six-seat gate validates the finished surfaces; 8.31 remains gated on 8.30c alone.
 
@@ -636,6 +636,8 @@ Acceptance checks:
 - The measured HUD geometry milestones 8.25c and 8.25f2 pin is re-measured rather than assumed; Game View inspection at the supported validation resolutions confirms every lit state is obvious at real card size, with archived screenshots and user sign-off on intensity.
 
 Non-goals: No animation loop, no board-surface changes, no invented action glyphs, no other HUD styling, no Phase 9 presentation suite.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830d-light-the-chosen-actions-printed-icons-and-integrate-the-replacement-end-turn-and-narration-surfaces-completion-evidence).
 
 ### [!] 8.31 Establish the private host and six player seats
 

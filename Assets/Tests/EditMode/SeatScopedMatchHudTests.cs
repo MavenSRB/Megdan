@@ -343,8 +343,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(status, Does.StartWith("Minion Battle:"));
             Assert.That(status, Does.Contain(MinionChoiceLabels.TeamLabel(battle.ChoosingSide)),
                 "The side that decides is named, which is what a team-owned pause has to say.");
-            Assert.That(status, Does.Not.Contain("COMPLETE - END OF ROUND"),
-                "which is the line this pause used to arrive under.");
+            Assert.That(status, Does.Not.Contain("complete"),
+                "and never the round's own phase line, which is what this pause used to arrive under.");
         }
 
         private static System.Collections.Generic.IEnumerable<VisualElement> Descendants(

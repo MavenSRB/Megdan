@@ -2790,7 +2790,12 @@ namespace GuardsDigital.Tests.EditMode
             var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
             try
             {
+                // Milestone 8.30d: with a prepared shine overlay the icon itself shines and this
+                // whole treatment is replaced, so the shine loader is pinned absent here - this
+                // test is now the documented degradation path a clean checkout takes, and it must
+                // not flip green or red with whatever sprites this machine happens to hold.
                 using (ConfiguredCardArtwork.UseTextureLoader(_ => texture))
+                using (ConfiguredCardShine.UseTextureLoader(_ => null))
                 {
                     var hands = new DirectorHandsUnityView();
                     new DirectorHandsPresenter(session, hands).Refresh();
@@ -2891,13 +2896,432 @@ namespace GuardsDigital.Tests.EditMode
                     "The generated fallback keeps its own upper-band anatomy.");
                 Assert.That(Descendants(fallbackPrimary)
                         .Any(element => element.name == "gd-prepared-action-glow"), Is.False);
-                Assert.That(fallbackPrimary.style.borderTopWidth.value, Is.GreaterThan(0f),
-                    "The generated face retains its synthetic action-region treatment.");
+                // Milestone 8.30d: the generated face states the same offer by lighting its typed
+                // chip - the primary value plate, or the kind label on a face that prints no value
+                // - instead of the retired border box around the whole band. The chip lights for an
+                // OFFERED region only, so the assertion follows an available one rather than
+                // assuming the primary is startable in this fixture.
+                Assert.That(fallbackPrimary.style.borderTopWidth.value, Is.EqualTo(0f),
+                    "The border box treatment is retired; the typed chip lights instead.");
+                var fallbackAvailable = Descendants(fallbackHands.Root)
+                    .Where(element => element.name == "gd-printed-action-region")
+                    .OfType<Button>()
+                    .First(control =>
+                        ((PrintedActionRegionViewModel)control.userData).Invocation != null);
+                var availableModel = (PrintedActionRegionViewModel)fallbackAvailable.userData;
+                var availableSlot =
+                    availableModel.InvocationContext == ActionInvocationContext.PrintedPrimary
+                        ? CardShineSlot.Primary
+                        : availableModel.ActionKind == ActionKind.Defense
+                            ? CardShineSlot.SecondaryDefense
+                            : CardShineSlot.SecondaryMovement;
+                var fallbackSurface = fallbackAvailable.parent.parent;
+                var litChip = availableSlot == CardShineSlot.Primary
+                    ? fallbackSurface.Q<VisualElement>("gd-card-primary-value") ??
+                        fallbackSurface.Q<VisualElement>("gd-card-primary-kind")
+                    : fallbackSurface.Q<VisualElement>(availableSlot == CardShineSlot.SecondaryDefense
+                        ? "gd-card-secondary-defense"
+                        : "gd-card-secondary-movement");
+                Assert.That(litChip, Is.Not.Null,
+                    "The generated face carries the typed chip the offer is about.");
+                Assert.That(litChip.style.backgroundColor.value,
+                    Is.EqualTo(MatchHudTheme.ShineGlow),
+                    "An offered region's chip wears the shared shine accent.");
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(texture);
             }
+        }
+
+        [Test]
+        public void PreparedShineOverlays_LightExactlyTheOfferedIconsAndReplaceTheGlowTreatment()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.First(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.State.Location == CardLocation.Hand);
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            }
+
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseTiedActor(
+                    tie.OwningSide, tie.CandidateCardInstanceIds[0]));
+            }
+
+            var round = new RoundActionUnityView();
+            new RoundActionPresenter(session, round).Refresh();
+            var artwork = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            var shine = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            var requestedPaths = new List<string>();
+            try
+            {
+                using (ConfiguredCardArtwork.UseTextureLoader(_ => artwork))
+                using (ConfiguredCardShine.UseTextureLoader(path =>
+                {
+                    requestedPaths.Add(path);
+                    return shine;
+                }))
+                {
+                    var hands = new DirectorHandsUnityView();
+                    new DirectorHandsPresenter(session, hands).Refresh();
+                    hands.SetPrintedActionRegions(round.Model.PrintedActionRegions);
+                    var controls = Descendants(hands.Root)
+                        .Where(element => element.name == "gd-printed-action-region")
+                        .OfType<Button>().ToArray();
+                    Assert.That(controls, Is.Not.Empty);
+
+                    // Milestone 8.30d: every offered region lights its own printed icon through the
+                    // per-card overlay; an unavailable region lights nothing; and the prior glow
+                    // treatment is gone whenever an overlay stands.
+                    var availableRegions = round.Model.PrintedActionRegions
+                        .Where(region => region.Invocation != null).ToArray();
+                    Assert.That(availableRegions, Is.Not.Empty);
+                    var shineImages = Descendants(hands.Root)
+                        .OfType<Image>()
+                        .Where(element => element.name == "gd-card-shine")
+                        .ToArray();
+                    var resolvingShines = shineImages
+                        .Where(image => image.image == shine)
+                        .ToArray();
+                    Assert.That(resolvingShines, Has.Length.EqualTo(availableRegions.Length),
+                        "One shine overlay per offered region, none for the unavailable ones.");
+                    Assert.That(resolvingShines.Select(image => image.pickingMode),
+                        Is.All.EqualTo(PickingMode.Ignore),
+                        "The shine is light, never a hit surface: drivers and focus are untouched.");
+                    Assert.That(resolvingShines.Select(image => image.style.opacity.value),
+                        Is.All.EqualTo(DirectorHandsUnityView.SteadyShineOpacity).Within(0.001f),
+                        "The steady state; pointer and focus raise it to full.");
+                    var expectedSlots = availableRegions
+                        .Select(region =>
+                            region.InvocationContext == ActionInvocationContext.PrintedPrimary
+                                ? CardShineSlot.Primary
+                                : region.ActionKind == ActionKind.Defense
+                                    ? CardShineSlot.SecondaryDefense
+                                    : CardShineSlot.SecondaryMovement)
+                        .OrderBy(slot => slot).ToArray();
+                    Assert.That(resolvingShines.Select(image => (CardShineSlot)image.userData)
+                            .OrderBy(slot => slot).ToArray(),
+                        Is.EqualTo(expectedSlots),
+                        "Each overlay is the typed slot of the region it lights.");
+                    Assert.That(requestedPaths,
+                        Has.All.Contains("/_shine/").And.All.StartWith("Private/Cards/"),
+                        "Overlays load from the prepared _shine directory beside the card art.");
+                    Assert.That(Descendants(hands.Root)
+                            .Any(element => element.name == "gd-prepared-action-glow"), Is.False,
+                        "The ring and box treatments are retired wherever an overlay stands.");
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(artwork);
+                UnityEngine.Object.DestroyImmediate(shine);
+            }
+        }
+
+        [Test]
+        public void TheShineOverlayResourcePath_IsDerivedFromTheArtworkCatalogsOwnMapping()
+        {
+            var reference = WaspCardContent.DealtDefinitions.First().Reference;
+            foreach (var slot in new[]
+                     {
+                         CardShineSlot.Primary,
+                         CardShineSlot.SecondaryDefense,
+                         CardShineSlot.SecondaryMovement
+                     })
+            {
+                Assert.That(ConfiguredCardShine.TryGetResourcePath(reference, slot, out var path),
+                    Is.True);
+                Assert.That(path, Does.StartWith("Private/Cards/wasp/_shine/"),
+                    "Overlays live in the _shine directory beside the ignored card art.");
+                Assert.That(path, Does.EndWith(slot == CardShineSlot.Primary
+                    ? "--primary"
+                    : slot == CardShineSlot.SecondaryDefense
+                        ? "--secondary-defense"
+                        : "--secondary-movement"));
+            }
+
+            Assert.That(
+                ConfiguredCardShine.TryGetResourcePath(reference, CardShineSlot.None, out _),
+                Is.False, "None is a meaning with no overlay, never a file.");
+            Assert.That(
+                ConfiguredCardShine.TryGetResourcePath(
+                    default, CardShineSlot.Primary, out _),
+                Is.False, "A card outside the tracked catalog has no overlay path at all.");
+        }
+
+        /// <summary>
+        /// Milestone 8.30d's alignment cross-check, from the typed side: on a machine holding the
+        /// prepared private art, every slot the verified content declares - a printed primary on
+        /// every non-Ultimate, and the rail channels its secondary actions print - resolves to a
+        /// real prepared overlay through Resources. The six passive Ultimates declare nothing and
+        /// load nothing. A clean checkout has no private art and takes the documented degradation
+        /// path instead, which the pinned-null test above proves.
+        /// </summary>
+        [Test]
+        public void OnAMachineHoldingPreparedOverlays_EveryTypedSlotResolvesFromResources()
+        {
+            // File-based on purpose: prepared art is real bytes on this machine whatever the test
+            // platform's Resources behaviour is, and the claim under test is the generator-to-typed
+            // alignment, not Unity's loader.
+            var resourcesRoot = System.IO.Path.Combine(UnityEngine.Application.dataPath, "Resources");
+            if (!System.IO.Directory.Exists(
+                    System.IO.Path.Combine(resourcesRoot, "Private", "Cards")))
+            {
+                Assert.Ignore(
+                    "No prepared private card art on this machine; the clean-checkout " +
+                    "degradation path is what the pinned-null treatment test proves instead.");
+            }
+
+            var all = WaspCardContent.DealtDefinitions
+                .Concat(XargathaCardContent.DealtDefinitions)
+                .Concat(TigerclawCardContent.DealtDefinitions)
+                .Concat(ArienCardContent.DealtDefinitions)
+                .Concat(BroganCardContent.DealtDefinitions)
+                .Concat(SabinaCardContent.DealtDefinitions);
+            var missing = new List<string>();
+            var resolved = 0;
+            foreach (var definition in all)
+            {
+                if (definition.UltimateRule != null)
+                {
+                    continue;
+                }
+
+                var slots = new List<CardShineSlot>();
+                if (definition.ActionDefinitions.Any(action =>
+                        action.Origin == ActionDefinitionOrigin.PrintedPrimary))
+                {
+                    slots.Add(CardShineSlot.Primary);
+                }
+
+                var railChannels = definition.ActionDefinitions
+                    .Where(action =>
+                        action.Origin == ActionDefinitionOrigin.PrintedSecondary ||
+                        action.Origin == ActionDefinitionOrigin.Reaction)
+                    .SelectMany(action => action.BaseValues)
+                    .Select(value => value.Channel)
+                    .Distinct()
+                    .ToArray();
+                if (railChannels.Contains(PrintedValueChannel.Defense))
+                {
+                    slots.Add(CardShineSlot.SecondaryDefense);
+                }
+
+                if (railChannels.Contains(PrintedValueChannel.Movement))
+                {
+                    slots.Add(CardShineSlot.SecondaryMovement);
+                }
+
+                foreach (var slot in slots)
+                {
+                    if (ConfiguredCardShine.TryGetResourcePath(
+                            definition.Reference, slot, out var resourcePath) &&
+                        System.IO.File.Exists(
+                            System.IO.Path.Combine(resourcesRoot, resourcePath + ".png")))
+                    {
+                        resolved++;
+                    }
+                    else
+                    {
+                        missing.Add($"{definition.Id.Value}/{slot}");
+                    }
+                }
+            }
+
+            Assert.That(missing, Is.Empty,
+                "Tools/Prepare-ShineSprites.ps1 regenerates the prepared overlays.");
+            Assert.That(resolved, Is.EqualTo(284),
+                "The typed inventory is the 284 slots the generator traces.");
+        }
+
+        [Test]
+        public void ADefenseOffer_ShinesTheShieldItWouldDefendWith_AtThePresenterTypedPlacement()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
+            var choice = session.Projection.PendingDefenseChoice;
+            Assert.That(choice, Is.Not.Null);
+
+            var artwork = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            var shine = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            try
+            {
+                using (ConfiguredCardArtwork.UseTextureLoader(_ => artwork))
+                using (ConfiguredCardShine.UseTextureLoader(_ => shine))
+                {
+                    var view = new RoundActionUnityView();
+                    new RoundActionPresenter(session, view).Refresh();
+
+                    // The placement is the presenter's typed statement, one per offer, derived from
+                    // the offered Defense action's own origin: the rail shield for a secondary
+                    // Defense, the primary badge for a Duelist or Block. DECLINE carries None.
+                    var offered = view.Model.DefenseChoices.Where(value => value.Card != null).ToArray();
+                    Assert.That(offered, Is.Not.Empty);
+                    Assert.That(offered.Select(value => value.DefenseShineSlot),
+                        Is.EqualTo(choice.LegalDefenseOffers.Select(offer =>
+                            offer.InvocationContext == ActionInvocationContext.PrintedPrimary
+                                ? CardShineSlot.Primary
+                                : CardShineSlot.SecondaryDefense)));
+                    Assert.That(view.Model.DefenseChoices.Last().DefenseShineSlot,
+                        Is.EqualTo(CardShineSlot.None),
+                        "DECLINE DEFENSE is about no card, so it lights nothing.");
+
+                    var controls = Descendants(view.Root)
+                        .Where(element => element.name == "gd-defense-card")
+                        .ToArray();
+                    Assert.That(controls, Has.Length.EqualTo(offered.Length));
+                    for (var index = 0; index < controls.Length; index++)
+                    {
+                        // The fixture's internal-test cards are outside the artwork catalog, so
+                        // each face takes whichever of the two documented paths it really is:
+                        // a prepared face shines through the overlay, a generated face lights the
+                        // typed chip. Both are the same statement at the same typed placement.
+                        if (Descendants(controls[index])
+                            .Any(element => element.name == "gd-card-artwork"))
+                        {
+                            var shines = Descendants(controls[index])
+                                .OfType<Image>()
+                                .Where(element => element.name == "gd-card-shine")
+                                .ToArray();
+                            Assert.That(shines, Has.Length.EqualTo(1),
+                                "Each offered prepared face shines exactly one badge.");
+                            Assert.That(shines[0].userData,
+                                Is.EqualTo(offered[index].DefenseShineSlot),
+                                "and it is the presenter-typed one.");
+                            Assert.That(shines[0].pickingMode, Is.EqualTo(PickingMode.Ignore));
+                        }
+                        else
+                        {
+                            var chipName = offered[index].DefenseShineSlot == CardShineSlot.Primary
+                                ? "gd-card-primary-value"
+                                : "gd-card-secondary-defense";
+                            var chip = Descendants(controls[index])
+                                .FirstOrDefault(element => element.name == chipName) ??
+                                (offered[index].DefenseShineSlot == CardShineSlot.Primary
+                                    ? Descendants(controls[index]).FirstOrDefault(element =>
+                                        element.name == "gd-card-primary-kind")
+                                    : null);
+                            Assert.That(chip, Is.Not.Null,
+                                "The generated face carries the typed chip the offer is about.");
+                            Assert.That(chip.style.backgroundColor.value,
+                                Is.EqualTo(MatchHudTheme.ShineGlow),
+                                "and it wears the shared shine accent.");
+                        }
+                    }
+
+                    var decline = Descendants(view.Root).OfType<Button>()
+                        .Single(button => button.text == "DECLINE DEFENSE");
+                    Assert.That(Descendants(decline)
+                            .Any(element => element.name == "gd-card-shine"), Is.False);
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(artwork);
+                UnityEngine.Object.DestroyImmediate(shine);
+            }
+        }
+
+        [Test]
+        public void EndTurn_ShinesFullyExactlyWhenItIsTheOnlyOfferLeft()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.First(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.State.Location == CardLocation.Hand);
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            }
+
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseTiedActor(
+                    tie.OwningSide, tie.CandidateCardInstanceIds[0]));
+            }
+
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+            Assert.That(view.Model.EndTurnInvocation, Is.Not.Null,
+                "The fixture's ordinary turn offers an End Turn beside its printed starts.");
+            Assert.That(view.Model.PrintedActionRegions.Any(region => region.Invocation != null),
+                Is.True);
+            Assert.That(view.EndTurnShinesFully, Is.False,
+                "While the card still offers starts, the banner keeps its modest steady glow.");
+
+            var alone = new RoundActionViewModel(
+                view.Model.Version,
+                view.Model.RoundIndex,
+                view.Model.TurnIndex,
+                view.Model.Phase,
+                view.Model.Status,
+                Array.Empty<TypedInvocationViewModel>(),
+                view.Model.EndTurnInvocation,
+                null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>());
+            view.Render(alone);
+            Assert.That(view.EndTurnShinesFully, Is.True,
+                "With nothing else offered, ending the turn is the player's one move and the " +
+                "banner says so at full shine.");
+            Assert.That(view.EndTurnRoot.Q<Button>("gd-end-turn-control"), Is.Not.Null);
+        }
+
+        [Test]
+        public void TheNarration_SpeaksWarmForTheViewersOwnMoveAndCalmOtherwise()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.First(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.State.Location == CardLocation.Hand);
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            }
+
+            var tie = session.Projection.PendingInitiativeChoice;
+            if (tie != null)
+            {
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseTiedActor(
+                    tie.OwningSide, tie.CandidateCardInstanceIds[0]));
+            }
+
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+            Assert.That(view.Model.Voice, Is.EqualTo(NarrationVoice.YourMove),
+                "A model carrying anything to act on is addressed to the player.");
+            var warmLabel = view.NarrationRoot.Q<Label>("gd-narration-text");
+            Assert.That(warmLabel, Is.Not.Null);
+            Assert.That(warmLabel.text, Is.EqualTo(view.Model.Status));
+            Assert.That(view.NarrationRoot.style.backgroundColor.value,
+                Is.EqualTo(MatchHudTheme.NarrationWarmBackground));
+            Assert.That(
+                view.NarrationRoot.Q<VisualElement>("gd-narration-accent").style.display.value,
+                Is.EqualTo(DisplayStyle.Flex));
+
+            var calm = new RoundActionViewModel(
+                view.Model.Version,
+                view.Model.RoundIndex,
+                view.Model.TurnIndex,
+                view.Model.Phase,
+                "Waiting for the match to continue.",
+                Array.Empty<TypedInvocationViewModel>(),
+                null,
+                null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>());
+            Assert.That(calm.Voice, Is.EqualTo(NarrationVoice.Calm));
+            view.Render(calm);
+            Assert.That(view.NarrationRoot.style.backgroundColor.value.a, Is.EqualTo(0f),
+                "A sentence about someone else's move carries no warm lane behind it.");
+            Assert.That(
+                view.NarrationRoot.Q<VisualElement>("gd-narration-accent").style.display.value,
+                Is.EqualTo(DisplayStyle.None));
         }
 
         // -------------------------------------------------------------------------------------------

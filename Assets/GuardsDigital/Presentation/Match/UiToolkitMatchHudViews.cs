@@ -1875,7 +1875,23 @@ namespace GuardsDigital.Presentation.Match
                 control.style.backgroundImage = StyleKeyword.None;
                 control.style.color = Color.clear;
                 HudElements.Padding(control, 0f);
-                if (usesPreparedArtwork)
+
+                // Milestone 8.30d: an offered action's own printed icon shines. On prepared
+                // artwork the shine is the per-card overlay tracing that badge's silhouette; a
+                // missing overlay degrades to the prior treatment (with the loader's one-time
+                // diagnostic), which is also the whole clean-checkout path. On the generated
+                // fallback face the same statement is the typed chip lighting up. An unavailable
+                // region carries no shine at all - nothing offered, nothing lit.
+                Image shine = null;
+                if (usesPreparedArtwork &&
+                    region.Invocation != null &&
+                    ConfiguredCardShine.TryLoadTexture(
+                        card.DefinitionReference, ShineSlotFor(region), out var shineTexture))
+                {
+                    shine = BuildShineOverlay(shineTexture, ShineSlotFor(region));
+                    overlay.Add(shine);
+                }
+                else if (usesPreparedArtwork)
                 {
                     AddPreparedArtworkHighlight(
                         control,
@@ -1884,7 +1900,8 @@ namespace GuardsDigital.Presentation.Match
                 }
                 else
                 {
-                    SetPrintedRegionGlow(control, region.Invocation != null, false);
+                    SetGeneratedChipShine(
+                        cardSurface, ShineSlotFor(region), region.Invocation != null, false);
                 }
 
                 if (region.Invocation == null)
@@ -1897,13 +1914,18 @@ namespace GuardsDigital.Presentation.Match
                         control,
                         highlighted =>
                         {
-                            if (usesPreparedArtwork)
+                            if (shine != null)
+                            {
+                                shine.style.opacity = highlighted ? 1f : SteadyShineOpacity;
+                            }
+                            else if (usesPreparedArtwork)
                             {
                                 SetPreparedArtworkGlow(control, highlighted);
                             }
                             else
                             {
-                                SetPrintedRegionGlow(control, true, highlighted);
+                                SetGeneratedChipShine(
+                                    cardSurface, ShineSlotFor(region), true, highlighted);
                             }
                         });
                 }
@@ -1956,7 +1978,12 @@ namespace GuardsDigital.Presentation.Match
             bool available,
             bool usesPreparedArtwork)
         {
-            var chip = new Button(available ? selected : null)
+            // Milestone 8.30d: the replacement controls wear the card's own banner language - a
+            // gold swallowtail ribbon grown from the region of the action each replaces (Fast
+            // Travel from the Movement it replaces, Clear from the Attack) - instead of the dark
+            // utility chips that sat beside the art belonging to nothing. Text-first by the
+            // standing rule: this HUD invents no action glyph.
+            var chip = new ReplacementRibbon(available ? selected : null, available)
             {
                 name = "gd-action-replacement-chip",
                 text = label,
@@ -1965,38 +1992,202 @@ namespace GuardsDigital.Presentation.Match
                     : $"{label} replaces {region.ActionKind} - unavailable",
                 userData = region
             };
+            chip.SetVisibleLabel(label);
             chip.style.position = Position.Absolute;
             var clearAbovePreparedAttack = usesPreparedArtwork &&
                 region.ActionKind == ActionKind.Attack &&
                 string.Equals(label, "CLEAR", StringComparison.Ordinal);
             var placeBesidePreparedRegion = usesPreparedArtwork &&
                 !clearAbovePreparedAttack &&
-                actionBounds.xMax + 86f <= CardFootprint.ArtworkWidth;
+                actionBounds.xMax + 96f <= CardFootprint.ArtworkWidth;
             chip.style.left = clearAbovePreparedAttack
-                ? actionBounds.xMax - 82f
+                ? actionBounds.xMax - 92f
                 : placeBesidePreparedRegion
-                    ? actionBounds.xMax + 4f
-                    : actionBounds.xMax - 86f;
+                    ? actionBounds.xMax - 2f
+                    : actionBounds.xMax - 96f;
             chip.style.top = clearAbovePreparedAttack
-                ? actionBounds.y - 24f
+                ? actionBounds.y - 26f
                 : placeBesidePreparedRegion
-                    ? actionBounds.y + Mathf.Max(0f, (actionBounds.height - 24f) * 0.5f)
+                    ? actionBounds.y + Mathf.Max(0f, (actionBounds.height - 26f) * 0.5f)
                     : usesPreparedArtwork
                         ? actionBounds.y + 4f
-                        : actionBounds.yMax - 24f;
-            chip.style.width = 82f;
-            chip.style.height = 20f;
-            chip.style.fontSize = 8.5f;
-            chip.style.unityFontStyleAndWeight = FontStyle.Bold;
-            chip.style.backgroundColor = new Color(0.04f, 0.08f, 0.12f, 0.94f);
-            chip.style.color = Color.white;
-            HudElements.Border(chip, MatchHudTheme.ConfirmAccent, 2f, 4f);
+                        : actionBounds.yMax - 26f;
+            chip.style.width = 92f;
+            chip.style.height = 22f;
             if (!available)
             {
                 HudElements.MarkUnavailable(chip);
             }
+            else
+            {
+                HudElements.OnPointedAt(chip, chip.SetShineHovered);
+            }
 
             return chip;
+        }
+
+        /// <summary>
+        /// A replacement offer as a gold swallowtail ribbon - the cloth the card's own left banner
+        /// is cut from, hung off the printed action it replaces. It is still exactly the button the
+        /// dark chip was: same forwarding, same availability semantics, same anchor; only the
+        /// clothes changed (milestone 8.30d, user-approved mock). Pointing at it gives the ribbon
+        /// the shared warm shine, so the highlight follows what the player is about to pick.
+        /// </summary>
+        private sealed class ReplacementRibbon : Button
+        {
+            private const float NotchDepth = 10f;
+
+            private readonly bool available;
+            private bool shineHovered;
+
+            private readonly VisualElement cloth;
+
+            internal ReplacementRibbon(Action selected, bool available)
+                : base(selected)
+            {
+                this.available = available;
+                style.backgroundColor = Color.clear;
+                HudElements.Border(this, Color.clear, 0f, 0f);
+                HudElements.Padding(this, 0f);
+                style.paddingRight = NotchDepth;
+                style.fontSize = 9f;
+                style.unityFontStyleAndWeight = FontStyle.Bold;
+                style.unityTextAlign = TextAnchor.MiddleCenter;
+                style.color = available
+                    ? new Color(0.204f, 0.133f, 0.039f, 1f)
+                    : MatchHudTheme.MutedText;
+                style.overflow = Overflow.Visible;
+
+                // A TextElement paints its own words FIRST - both a generateVisualContent mesh and
+                // any child render above them, so there is no order in which a self-painted cloth
+                // sits under the built-in label. The cloth is therefore a child, and the VISIBLE
+                // words are a second child above it; the Button's own text stays set (buried under
+                // the cloth) because it is the typed selector every existing check finds a
+                // replacement control by.
+                cloth = new VisualElement
+                {
+                    name = "gd-ribbon-cloth",
+                    pickingMode = PickingMode.Ignore,
+                    focusable = false
+                };
+                cloth.style.position = Position.Absolute;
+                cloth.style.left = 0f;
+                cloth.style.top = 0f;
+                cloth.style.right = 0f;
+                cloth.style.bottom = 0f;
+                cloth.style.overflow = Overflow.Visible;
+                cloth.generateVisualContent += OnGenerateVisualContent;
+                Add(cloth);
+                cloth.SendToBack();
+
+                visibleLabel = new Label
+                {
+                    name = "gd-ribbon-label",
+                    pickingMode = PickingMode.Ignore,
+                    focusable = false
+                };
+                visibleLabel.style.position = Position.Absolute;
+                visibleLabel.style.left = 0f;
+                visibleLabel.style.top = 0f;
+                visibleLabel.style.right = NotchDepth;
+                visibleLabel.style.bottom = 0f;
+                visibleLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+                visibleLabel.style.fontSize = 9f;
+                visibleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+                visibleLabel.style.color = available
+                    ? new Color(0.204f, 0.133f, 0.039f, 1f)
+                    : MatchHudTheme.MutedText;
+                Add(visibleLabel);
+            }
+
+            private readonly Label visibleLabel;
+
+            /// <summary>The words the ribbon shows; the Button's own text is the selector only.</summary>
+            internal void SetVisibleLabel(string label)
+            {
+                visibleLabel.text = label ?? string.Empty;
+            }
+
+            internal void SetShineHovered(bool hovered)
+            {
+                if (shineHovered == hovered)
+                {
+                    return;
+                }
+
+                shineHovered = hovered;
+                cloth.MarkDirtyRepaint();
+            }
+
+            private void OnGenerateVisualContent(MeshGenerationContext context)
+            {
+                var painter = context.painter2D;
+                var rect = cloth.contentRect;
+                if (rect.width <= NotchDepth + 2f || rect.height <= 4f)
+                {
+                    return;
+                }
+
+                var right = rect.xMax;
+                var mid = rect.center.y;
+
+                if (available && shineHovered)
+                {
+                    // The warm shine, painted as widening strokes because Painter2D has no blur.
+                    DrawBanner(painter, rect, right, mid, Color.clear,
+                        new Color(MatchHudTheme.ShineGlow.r, MatchHudTheme.ShineGlow.g,
+                            MatchHudTheme.ShineGlow.b, 0.20f), 8f);
+                    DrawBanner(painter, rect, right, mid, Color.clear,
+                        new Color(MatchHudTheme.ShineRim.r, MatchHudTheme.ShineRim.g,
+                            MatchHudTheme.ShineRim.b, 0.45f), 4f);
+                }
+
+                var fabric = available
+                    ? new Color(0.969f, 0.710f, 0.149f, 1f)
+                    : new Color(0.42f, 0.40f, 0.36f, 1f);
+                DrawBanner(painter, rect, right, mid, fabric, Color.clear, 0f);
+
+                // The darker lower fold that keeps it reading as cloth rather than plastic.
+                painter.fillColor = new Color(0f, 0f, 0f, available ? 0.14f : 0.10f);
+                painter.BeginPath();
+                painter.MoveTo(new Vector2(rect.xMin, mid));
+                painter.LineTo(new Vector2(right - NotchDepth, mid));
+                painter.LineTo(new Vector2(right, rect.yMax));
+                painter.LineTo(new Vector2(rect.xMin, rect.yMax));
+                painter.ClosePath();
+                painter.Fill();
+
+                DrawBanner(painter, rect, right, mid, Color.clear,
+                    available
+                        ? new Color(0.322f, 0.212f, 0.055f, 1f)
+                        : new Color(0.25f, 0.25f, 0.25f, 1f), 2f);
+            }
+
+            private static void DrawBanner(
+                Painter2D painter, Rect rect, float right, float mid,
+                Color fill, Color stroke, float strokeWidth)
+            {
+                painter.BeginPath();
+                painter.MoveTo(new Vector2(rect.xMin, rect.yMin));
+                painter.LineTo(new Vector2(right, rect.yMin));
+                painter.LineTo(new Vector2(right - NotchDepth, mid));
+                painter.LineTo(new Vector2(right, rect.yMax));
+                painter.LineTo(new Vector2(rect.xMin, rect.yMax));
+                painter.ClosePath();
+                if (fill.a > 0f)
+                {
+                    painter.fillColor = fill;
+                    painter.Fill();
+                }
+
+                if (stroke.a > 0f && strokeWidth > 0f)
+                {
+                    painter.strokeColor = stroke;
+                    painter.lineWidth = strokeWidth;
+                    painter.lineJoin = LineJoin.Round;
+                    painter.Stroke();
+                }
+            }
         }
 
         private static void ApplyActionBounds(
@@ -2121,6 +2312,136 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// The steady strength of a lit icon; pointer or focus raises it to full. High on purpose:
+        /// the user's bar is "obvious to the player", and at HUD card scale a timid steady state
+        /// read as nothing at all.
+        /// </summary>
+        public const float SteadyShineOpacity = 0.95f;
+
+        /// <summary>
+        /// Which prepared shine slot an offered printed region lights: the primary badge for a
+        /// printed primary, and the rail badge of the region's own kind for a secondary. Milestone
+        /// 8.30d - the mapping is typed, exactly like the sprite files it selects between.
+        /// </summary>
+        private static CardShineSlot ShineSlotFor(PrintedActionRegionViewModel region)
+        {
+            if (region.InvocationContext == ActionInvocationContext.PrintedPrimary)
+            {
+                return CardShineSlot.Primary;
+            }
+
+            return region.ActionKind == ActionKind.Defense
+                ? CardShineSlot.SecondaryDefense
+                : CardShineSlot.SecondaryMovement;
+        }
+
+        /// <summary>
+        /// One prepared shine overlay as a picking-ignored image spanning the whole card, so it
+        /// aligns with the artwork it was traced from and no geometry lives in code.
+        /// </summary>
+        internal static Image BuildShineOverlay(Texture2D texture, CardShineSlot slot)
+        {
+            var shine = new Image
+            {
+                name = "gd-card-shine",
+                image = texture,
+                scaleMode = ScaleMode.ScaleToFit,
+                pickingMode = PickingMode.Ignore,
+                focusable = false,
+                userData = slot
+            };
+            shine.style.position = Position.Absolute;
+            shine.style.left = 0f;
+            shine.style.top = 0f;
+            shine.style.right = 0f;
+            shine.style.bottom = 0f;
+            shine.style.opacity = SteadyShineOpacity;
+            return shine;
+        }
+
+        /// <summary>
+        /// The generated fallback face's version of the same statement: the typed chip that prints
+        /// the slot's value lights up. Recolour only - a border or size change would move the very
+        /// layout the shared selection treatment promises never to move.
+        /// </summary>
+        internal static void SetGeneratedChipShine(
+            VisualElement cardSurface, CardShineSlot slot, bool available, bool highlighted)
+        {
+            if (!available)
+            {
+                return;
+            }
+
+            var chip = FindGeneratedChip(cardSurface, slot);
+            if (chip == null)
+            {
+                return;
+            }
+
+            var ink = new Color(0.16f, 0.12f, 0.05f, 1f);
+            chip.style.backgroundColor = highlighted
+                ? MatchHudTheme.ShineRim
+                : MatchHudTheme.ShineGlow;
+            chip.style.color = ink;
+            if (chip.name == "gd-card-primary-value")
+            {
+                // The plate already carries a 2-unit border; recolouring it changes no layout.
+                var rim = highlighted ? Color.white : MatchHudTheme.ShineRim;
+                chip.style.borderLeftColor = rim;
+                chip.style.borderRightColor = rim;
+                chip.style.borderTopColor = rim;
+                chip.style.borderBottomColor = rim;
+                foreach (var child in chip.Children())
+                {
+                    child.style.color = ink;
+                }
+            }
+        }
+
+        private static VisualElement FindGeneratedChip(VisualElement cardSurface, CardShineSlot slot)
+        {
+            switch (slot)
+            {
+                case CardShineSlot.Primary:
+                    return cardSurface.Q<VisualElement>("gd-card-primary-value") ??
+                        cardSurface.Q<VisualElement>("gd-card-primary-kind");
+                case CardShineSlot.SecondaryDefense:
+                    return cardSurface.Q<VisualElement>("gd-card-secondary-defense");
+                case CardShineSlot.SecondaryMovement:
+                    return cardSurface.Q<VisualElement>("gd-card-secondary-movement");
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// Lights one badge of a standalone card face - the Defense prompt's use, where every legal
+        /// card shines exactly the shield it would defend with. Prepared faces get the traced
+        /// overlay; generated faces light the typed chip; a missing overlay quietly lights nothing
+        /// beyond the loader's one-time diagnostic, because the face itself is already the offer.
+        /// </summary>
+        public static void AddFaceShine(
+            VisualElement faceElement, TrayCardViewModel card, CardShineSlot slot)
+        {
+            if (faceElement == null || card == null || slot == CardShineSlot.None)
+            {
+                return;
+            }
+
+            if (faceElement.Q<Image>("gd-card-artwork") != null)
+            {
+                if (ConfiguredCardShine.TryLoadTexture(card.DefinitionReference, slot, out var texture))
+                {
+                    faceElement.Add(BuildShineOverlay(texture, slot));
+                }
+
+                return;
+            }
+
+            SetGeneratedChipShine(faceElement, slot, true, false);
+        }
+
+        /// <summary>
         /// A stable three-layer treatment drawn over one prepared action region. It never copies card
         /// pixels or invents an action glyph: Movement receives a circular ring around the existing
         /// boot/value badge, while Primary Skill and Attack receive a broad rounded rectangle around
@@ -2191,16 +2512,6 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
-
-        private static void SetPrintedRegionGlow(
-            VisualElement control, bool available, bool highlighted)
-        {
-            var color = available
-                ? (highlighted ? MatchHudTheme.ConfirmAccent : MatchHudTheme.SelectedOutline)
-                : new Color(MatchHudTheme.MutedText.r, MatchHudTheme.MutedText.g,
-                    MatchHudTheme.MutedText.b, 0.65f);
-            HudElements.Border(control, color, highlighted ? 4f : 3f, 4f);
-        }
 
         private static void ApplyPeekFootprint(VisualElement card)
         {
@@ -2425,6 +2736,13 @@ namespace GuardsDigital.Presentation.Match
             foreach (var value in card.Face.SecondaryValues)
             {
                 var label = HudElements.Text(value.Label, 11.5f, ink, FontStyle.Bold);
+                // Milestone 8.30d: the chip is named by its typed channel so the shine treatment
+                // can light exactly the value a Defense or Movement offer is about.
+                label.name = value.Channel == PrintedValueChannel.Defense
+                    ? "gd-card-secondary-defense"
+                    : value.Channel == PrintedValueChannel.Movement
+                        ? "gd-card-secondary-movement"
+                        : "gd-card-secondary-value";
                 label.tooltip = value.AssistiveLabel;
                 if (!first)
                 {
@@ -2483,6 +2801,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var kind = HudElements.Text(card.Face.PrimaryActionLabel, 11f, ink, FontStyle.Bold);
+            kind.name = "gd-card-primary-kind";
             kind.style.flexGrow = 1f;
             kind.style.flexShrink = 1f;
             kind.style.marginLeft = value == null ? 0f : 6f;
@@ -2753,6 +3072,13 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public VisualElement EndTurnRoot => endTurnHost;
 
+        /// <summary>
+        /// Whether the drawn End Turn banner is in its full-shine state - ending the turn is the
+        /// only offer left. Milestone 8.30d, exposed as a fact a test can read rather than a colour
+        /// only a screenshot carries; false whenever the control is hidden.
+        /// </summary>
+        public bool EndTurnShinesFully { get; private set; }
+
         public RoundActionViewModel Model { get; private set; }
         public DefenseBreakdownViewModel ActiveDefensePreview => activeDefensePreview;
         public Rect DefensePreviewAnchor => defensePreviewAnchor;
@@ -2919,7 +3245,29 @@ namespace GuardsDigital.Presentation.Match
             upgradeOptionControls.Clear();
             defenseCardControls.Clear();
             HighlightedUpgradeOption = null;
-            status.Add(HudElements.Text(Model.Status, 12f, MatchHudTheme.PrimaryText));
+            // Milestone 8.30d: the narration speaks in two voices. When the sentence is addressed
+            // to the viewing seat - the model carries something to act on - the lane lights warm
+            // with the shared shine accent; every other state stays calm and quiet. The word is
+            // never carried by colour alone: the sentence itself says who acts.
+            var warm = Model.Voice == NarrationVoice.YourMove;
+            status.style.backgroundColor = warm
+                ? MatchHudTheme.NarrationWarmBackground
+                : Color.clear;
+            var accent = new VisualElement { name = "gd-narration-accent" };
+            accent.style.width = 5f;
+            accent.style.alignSelf = Align.Stretch;
+            accent.style.flexShrink = 0f;
+            accent.style.backgroundColor = MatchHudTheme.ShineGlow;
+            accent.style.display = warm ? DisplayStyle.Flex : DisplayStyle.None;
+            status.Add(accent);
+            var narration = HudElements.Text(
+                Model.Status,
+                warm ? 14f : 12f,
+                warm ? MatchHudTheme.NarrationWarmText : MatchHudTheme.MutedText,
+                warm ? FontStyle.Bold : FontStyle.Normal);
+            narration.name = "gd-narration-text";
+            narration.style.marginLeft = warm ? 8f : 0f;
+            status.Add(narration);
 
             // Milestone 7.8a: a paused system transition is the whole of the region while it stands.
             // Nothing else the model carries can be acted on - the authority refuses every other
@@ -3462,7 +3810,12 @@ namespace GuardsDigital.Presentation.Match
             control.style.backgroundColor = MatchHudTheme.PanelBackground;
             HudElements.MarkSelectedWithoutResizing(control, false);
 
-            control.Add(DirectorHandsUnityView.BuildStandaloneCard(choice.Card));
+            var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
+            // Milestone 8.30d: a card Defense offer shines exactly the shield it would defend
+            // with, at the typed placement the presenter stated - never one the view inferred
+            // from the face. Every other card-faced invocation carries None and lights nothing.
+            DirectorHandsUnityView.AddFaceShine(face, choice.Card, choice.DefenseShineSlot);
+            control.Add(face);
             control.tooltip = choice.Label.Replace('\n', ' ');
             return control;
         }
@@ -3556,24 +3909,206 @@ namespace GuardsDigital.Presentation.Match
             // exactly the one-usable-context rule the tray hiding exists to keep.
             if (invocation == null || HasExclusiveDecision)
             {
+                EndTurnShinesFully = false;
                 endTurnHost.style.display = DisplayStyle.None;
                 return;
             }
 
             endTurnHost.style.display = DisplayStyle.Flex;
-            var control = HudElements.Control(
-                invocation.Label,
-                () => ForwardInvocation(invocation),
-                ConfiguredMatchHudRenderer.EndTurnControlHeight);
-            control.name = "gd-end-turn-control";
+
+            // Milestone 8.30d: whether ending the turn is the only thing left to do. Everything
+            // else this region could offer alongside an End Turn is enumerable from the model the
+            // view is already rendering: a startable printed region, a live replacement, a tied
+            // Initiative, or the end-of-round continue. When none stands, the banner shines fully -
+            // the game itself points at the player's one move.
+            var onlyOfferLeft =
+                Model.InitiativeChoices.Count == 0 &&
+                Model.ContinueEndOfRoundInvocation == null &&
+                Model.PrintedActionRegions.All(region =>
+                    region.Invocation == null &&
+                    region.FastTravelOffer == null &&
+                    (region.ClearOffer == null || !region.ClearOffer.IsAvailable));
+
+            EndTurnShinesFully = onlyOfferLeft;
+            var control = new EndTurnBanner(() => ForwardInvocation(invocation), onlyOfferLeft)
+            {
+                name = "gd-end-turn-control",
+                text = invocation.Label
+            };
+            control.SetVisibleLabel(invocation.Label);
+            control.style.minHeight = ConfiguredMatchHudRenderer.EndTurnControlHeight;
             control.style.fontSize = EndTurnControlFontSize;
             control.style.unityFontStyleAndWeight = FontStyle.Bold;
             control.style.unityTextAlign = TextAnchor.MiddleCenter;
             control.style.flexGrow = 1f;
             control.style.flexShrink = 0f;
-            control.style.backgroundColor = MatchHudTheme.ConfirmAccent;
-            control.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
             endTurnHost.Add(control);
+        }
+
+        /// <summary>
+        /// End Turn as a neutral pewter banner - swallowtailed at both ends in the cards' own
+        /// cloth language, but in the silver of their printed icons rather than a fifth patch of
+        /// gold, by the user's 8.30d decision. Same invocation, same hide rules, same 8.30b
+        /// placement; only the clothes changed. It carries a modest steady glow while other offers
+        /// stand and the full warm shine when ending the turn is the only thing left to do.
+        /// </summary>
+        private sealed class EndTurnBanner : Button
+        {
+            private const float NotchDepth = 14f;
+
+            private readonly bool onlyOfferLeft;
+            private bool hovered;
+
+            private readonly VisualElement cloth;
+
+            internal EndTurnBanner(Action selected, bool onlyOfferLeft)
+                : base(selected)
+            {
+                this.onlyOfferLeft = onlyOfferLeft;
+                style.backgroundColor = Color.clear;
+                HudElements.Border(this, Color.clear, 0f, 0f);
+                style.marginLeft = 0f;
+                style.marginRight = 0f;
+                style.marginTop = 0f;
+                style.marginBottom = 0f;
+                style.paddingLeft = NotchDepth + 8f;
+                style.paddingRight = NotchDepth + 8f;
+                style.paddingTop = 6f;
+                style.paddingBottom = 6f;
+                style.whiteSpace = WhiteSpace.NoWrap;
+                style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
+                style.overflow = Overflow.Visible;
+
+                // A TextElement paints its own words FIRST - both a generateVisualContent mesh and
+                // any child render above them - so the cloth is a child, and the VISIBLE words are
+                // a second child above it. The Button's own text stays set, buried under the
+                // pewter, because it is the selector every existing check finds End Turn by.
+                cloth = new VisualElement
+                {
+                    name = "gd-banner-cloth",
+                    pickingMode = PickingMode.Ignore,
+                    focusable = false
+                };
+                cloth.style.position = Position.Absolute;
+                cloth.style.left = 0f;
+                cloth.style.top = 0f;
+                cloth.style.right = 0f;
+                cloth.style.bottom = 0f;
+                cloth.style.overflow = Overflow.Visible;
+                cloth.generateVisualContent += OnGenerateVisualContent;
+                Add(cloth);
+                cloth.SendToBack();
+
+                visibleLabel = new Label
+                {
+                    name = "gd-end-turn-label",
+                    pickingMode = PickingMode.Ignore,
+                    focusable = false
+                };
+                visibleLabel.style.position = Position.Absolute;
+                visibleLabel.style.left = NotchDepth;
+                visibleLabel.style.top = 0f;
+                visibleLabel.style.right = NotchDepth;
+                visibleLabel.style.bottom = 0f;
+                visibleLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+                visibleLabel.style.fontSize = EndTurnControlFontSize;
+                visibleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+                visibleLabel.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
+                Add(visibleLabel);
+                RegisterCallback<PointerEnterEvent>(_ => SetHovered(true));
+                RegisterCallback<PointerLeaveEvent>(_ => SetHovered(false));
+            }
+
+            private readonly Label visibleLabel;
+
+            /// <summary>The words the banner shows; the Button's own text is the selector only.</summary>
+            internal void SetVisibleLabel(string label)
+            {
+                visibleLabel.text = label ?? string.Empty;
+            }
+
+            /// <summary>Whether this banner is in its full-shine "your one move" state.</summary>
+            internal bool ShinesFully => onlyOfferLeft;
+
+            private void SetHovered(bool value)
+            {
+                if (hovered == value)
+                {
+                    return;
+                }
+
+                hovered = value;
+                cloth.MarkDirtyRepaint();
+            }
+
+            private void OnGenerateVisualContent(MeshGenerationContext context)
+            {
+                var painter = context.painter2D;
+                var rect = cloth.contentRect;
+                var left = rect.xMin;
+                var right = rect.xMax;
+                var mid = rect.center.y;
+                if (right - left <= NotchDepth * 2f + 4f || rect.height <= 8f)
+                {
+                    return;
+                }
+
+                var strong = onlyOfferLeft || hovered;
+                DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
+                    new Color(MatchHudTheme.ShineHalo.r, MatchHudTheme.ShineHalo.g,
+                        MatchHudTheme.ShineHalo.b, strong ? 0.30f : 0.10f), strong ? 18f : 8f);
+                DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
+                    new Color(MatchHudTheme.ShineGlow.r, MatchHudTheme.ShineGlow.g,
+                        MatchHudTheme.ShineGlow.b, strong ? 0.50f : 0.16f), strong ? 10f : 5f);
+                if (strong)
+                {
+                    DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
+                        new Color(MatchHudTheme.ShineRim.r, MatchHudTheme.ShineRim.g,
+                            MatchHudTheme.ShineRim.b, 0.85f), 4f);
+                }
+
+                DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid,
+                    MatchHudTheme.PewterBanner, Color.clear, 0f);
+
+                painter.fillColor = new Color(0f, 0f, 0f, 0.12f);
+                painter.BeginPath();
+                painter.MoveTo(new Vector2(left + NotchDepth, mid));
+                painter.LineTo(new Vector2(right - NotchDepth, mid));
+                painter.LineTo(new Vector2(right, rect.yMax));
+                painter.LineTo(new Vector2(left, rect.yMax));
+                painter.ClosePath();
+                painter.Fill();
+
+                DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
+                    MatchHudTheme.PewterBannerEdge, 3f);
+            }
+
+            private static void DrawBanner(
+                Painter2D painter, float left, float right, float top, float bottom, float mid,
+                Color fill, Color stroke, float strokeWidth)
+            {
+                painter.BeginPath();
+                painter.MoveTo(new Vector2(left, top));
+                painter.LineTo(new Vector2(right, top));
+                painter.LineTo(new Vector2(right - NotchDepth, mid));
+                painter.LineTo(new Vector2(right, bottom));
+                painter.LineTo(new Vector2(left, bottom));
+                painter.LineTo(new Vector2(left + NotchDepth, mid));
+                painter.ClosePath();
+                if (fill.a > 0f)
+                {
+                    painter.fillColor = fill;
+                    painter.Fill();
+                }
+
+                if (stroke.a > 0f && strokeWidth > 0f)
+                {
+                    painter.strokeColor = stroke;
+                    painter.lineWidth = strokeWidth;
+                    painter.lineJoin = LineJoin.Round;
+                    painter.Stroke();
+                }
+            }
         }
 
         /// <summary>
@@ -3692,7 +4227,12 @@ namespace GuardsDigital.Presentation.Match
             control.style.backgroundColor = MatchHudTheme.PanelBackground;
             HudElements.MarkSelectedWithoutResizing(control, false);
 
-            control.Add(DirectorHandsUnityView.BuildStandaloneCard(choice.Card));
+            var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
+            // Milestone 8.30d: a card Defense offer shines exactly the shield it would defend
+            // with, at the typed placement the presenter stated - never one the view inferred
+            // from the face. Every other card-faced invocation carries None and lights nothing.
+            DirectorHandsUnityView.AddFaceShine(face, choice.Card, choice.DefenseShineSlot);
+            control.Add(face);
             control.tooltip = choice.Label.Replace('\n', ' ');
             return control;
         }

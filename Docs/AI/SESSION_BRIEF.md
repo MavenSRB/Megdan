@@ -12,17 +12,18 @@ The route has completed approved HUD corrections **8.29a-8.29b1b**, offer and li
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.30b**.
-- Active authorized milestone: **8.30d**, in progress.
-- Next proposed milestone: **8.30d**.
+- Current completed milestone: **8.30d**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **8.30c**.
 
-Milestone **8.30b** completed on 2026-08-30. One `IMatchReadModel` answers both the Director's projection and a seat's, `SeatProjection` scopes every pending decision, envelope and offer to the seat that may act on it, one `IMatchClient` submits for either, and a runtime composed for a seat builds no Undo or diagnostic presenter; `MatchSceneCompositionRoot.NextComposedSeat` is the development-only one-shot selector. Its amendment's re-measured geometry: chip, tray, hand, Level Up band and dock unmoved; the rail column 888 to 848; the board 1092x910 to 1044x870.
+Milestone **8.30d** completed on 2026-08-30. Every offered printed action's own icon shines through a per-card overlay traced beside the private art, a Defense offer shines the shield it would defend with at a presenter-typed placement, Fast Travel and Clear are card-gold ribbons on the actions they replace, End Turn is a neutral pewter banner that shines fully when it is the only offer left, and the narration speaks player-facing sentences in a warm voice when addressed to the viewing seat. A missing overlay degrades to the prior treatment, which is the whole clean-checkout path.
 
-Milestone **8.30a** completed on 2026-08-29. Six seats derived from the participant graph each read an owner-scoped projection in which another seat's hand and deck are absent and no Director surface appears, rulebook p.4 deciding what is open; every submission carries its trusted seat, a unique identity and an expected version, and an unknown seat, stale version, replay, forged identity or unpublished command is refused before the authority is touched. All ten pending families own their answers, and every awaiting seat may commit at once as p.7 prescribes rather than one at a time as the Director is asked.
+Milestone **8.30b** completed on 2026-08-30. One `IMatchReadModel` answers both the Director's projection and a seat's, `SeatProjection` scopes every pending decision, envelope and offer to the seat that may act on it, one `IMatchClient` submits for either, and a runtime composed for a seat builds no Undo or diagnostic presenter; `MatchSceneCompositionRoot.NextComposedSeat` is the development-only one-shot selector. Its amendment's re-measured geometry lives in the archive row.
 
+Milestone **8.30a** completed on 2026-08-29. Six seats derived from the participant graph each read an owner-scoped projection in which another seat's hand and deck are absent and no Director surface appears, rulebook p.4 deciding what is open; every submission carries its trusted seat, a unique identity and an expected version, and an unknown seat, stale version, replay, forged identity or unpublished command is refused before the authority is touched.
 Milestone **8.30** put match authority behind the Unity-free serialized `MatchHost` port and its bounded ordered result stream, which the configured scene composes instead of the session. Rules, content, schema v34 and the wire are unchanged by all three milestones.
 
-Corrective **8.29b1b** completed on 2026-08-29 and [Project/MATCH_HUD.md](Project/MATCH_HUD.md) owns the resulting card anatomy. The treatment is transparent UI geometry only: it copies no private pixels, uses no texture mask, and performs no runtime image analysis. Corrective **8.29b1a** separately closed the stale rail guards while preserving the measured 258.667-versus-288 three-up fit.
+Corrective **8.29b1b** completed on 2026-08-29 and [Project/MATCH_HUD.md](Project/MATCH_HUD.md) owns the resulting card anatomy. Corrective **8.29b1a** separately closed the stale rail guards while preserving the measured 258.667-versus-288 three-up fit.
 
 Corrective **8.29c** was deferred after its Director Undo symptom could not be reproduced; it remains proposed pending a documented recurrence. The completed correctives around it each own a failing-then-passing check and are defined in [Roadmap/PHASE_8_HANDS_ON_CORRECTIONS.md](Roadmap/PHASE_8_HANDS_ON_CORRECTIONS.md): **8.29b1/8.29b1b** keep Clear and Fast Travel attached to the printed action they replace while End Turn stays external, **8.29d** greys an Attack whose mandatory card text can bind no target, **8.29e** stops an optional branch that can apply nothing from opening p.10's confirm-or-decline, and **8.29f** decides whether p.14 is over from what stands after an Attack's steps rather than from the outcome its resolver reported before them.
 

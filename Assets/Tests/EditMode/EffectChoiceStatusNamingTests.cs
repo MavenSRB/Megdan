@@ -38,7 +38,7 @@ namespace GuardsDigital.Tests.EditMode
         /// What the derivation falls through to when nothing is pending. No standing decision may
         /// ever reach a player under it, which is the whole of the defect this milestone closes.
         /// </summary>
-        private const string OrdinaryTurnStatusFragment = "choose an action or End Turn";
+        private const string OrdinaryTurnStatusFragment = "choose an action, or end your turn";
 
         // -------------------------------------------------------------------------------------
         // The shapes the configured roster can reach
@@ -358,10 +358,10 @@ namespace GuardsDigital.Tests.EditMode
         {
             Assert.That(status, Does.Not.Contain(OrdinaryTurnStatusFragment),
                 "A standing decision drawn under the ordinary turn's words is the defect itself.");
-            Assert.That(status, Does.Not.Contain("Defense response pending"));
-            Assert.That(status, Does.Not.Contain("Attack target"));
+            Assert.That(status, Does.Not.Contain("Incoming Attack"));
+            Assert.That(status, Does.Not.Contain("target for the Attack"));
             Assert.That(status, Does.Not.Contain("respawn"));
-            Assert.That(status, Does.Not.Contain("Displaced-minion"));
+            Assert.That(status, Does.Not.Contain("displaced minion"));
         }
 
         /// <summary>

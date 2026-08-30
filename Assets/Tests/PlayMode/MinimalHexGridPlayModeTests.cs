@@ -1246,6 +1246,25 @@ namespace GuardsDigital.Tests.PlayMode
                         region.Invocation != null)));
                 Assert.That(regions.Select(region => region.text), Is.All.Empty,
                     "The prepared or generated face supplies the visible action wording.");
+
+                // Milestone 8.30d, on the natural providers: whenever the resolving card draws
+                // prepared artwork AND its overlays resolved, each offered region's shine image is
+                // in the live tree - which is what the Game View capture below is evidence of.
+                // A checkout without overlays legitimately draws the documented fallback instead.
+                if (Descendants(resolvingCard).Any(element => element.name == "gd-card-artwork"))
+                {
+                    var liveShines = Descendants(resolvingCard)
+                        .OfType<UnityEngine.UIElements.Image>()
+                        .Count(element => element.name == "gd-card-shine");
+                    var offeredRegions = runtime.RoundView.Model.PrintedActionRegions
+                        .Count(region => region.Invocation != null);
+                    var fallbackGlows = Descendants(resolvingCard)
+                        .Count(element => element.name == "gd-prepared-action-glow");
+                    Assert.That(liveShines + fallbackGlows, Is.EqualTo(offeredRegions),
+                        "Every offered region is lit by exactly one treatment - the shine overlay " +
+                        "where prepared, the named fallback where not.");
+                }
+
                 AssertPrintedActionControlsStayOnCard(resolvingCard, "2560x1440");
                 yield return Capture("tmp/milestone-8-29b1b-printed-actions-2560x1440.png");
 
@@ -1262,13 +1281,38 @@ namespace GuardsDigital.Tests.PlayMode
 
                 var available = regions.First(region => region.enabledSelf);
                 var projected = (PrintedActionRegionViewModel)available.userData;
-                var restingGlow = available.style.borderTopWidth.value;
+                // Milestone 8.30d: the live treatment is the per-card shine overlay lighting the
+                // region's own printed icon; a checkout without prepared overlays degrades to the
+                // prior prepared glow, and the generated face lights its typed chip. The hover
+                // behaviour is asserted for whichever of the three this run actually drew.
+                var expectedSlot = projected.InvocationContext == ActionInvocationContext.PrintedPrimary
+                    ? CardShineSlot.Primary
+                    : projected.ActionKind == GuardsDigital.Core.Cards.ActionKind.Defense
+                        ? CardShineSlot.SecondaryDefense
+                        : CardShineSlot.SecondaryMovement;
+                var shineImage = Descendants(resolvingCard)
+                    .OfType<UnityEngine.UIElements.Image>()
+                    .FirstOrDefault(element => element.name == "gd-card-shine" &&
+                        expectedSlot.Equals(element.userData));
+                var restingShine = shineImage?.style.opacity.value ?? 0f;
                 var preparedGlow = Descendants(available)
                     .SingleOrDefault(element => element.name == "gd-prepared-action-glow");
                 var restingPreparedGlow = preparedGlow?.style.opacity.value ?? 0f;
+                var litChip = Descendants(resolvingCard).FirstOrDefault(element =>
+                    element.name == (expectedSlot == CardShineSlot.Primary
+                        ? "gd-card-primary-value"
+                        : expectedSlot == CardShineSlot.SecondaryDefense
+                            ? "gd-card-secondary-defense"
+                            : "gd-card-secondary-movement"));
+                var restingChipColor = litChip?.style.backgroundColor.value ?? default;
                 var bounds = resolvingCard.worldBound;
                 UiPlayer.PointAt(available);
-                if (preparedGlow != null)
+                if (shineImage != null)
+                {
+                    Assert.That(shineImage.style.opacity.value, Is.GreaterThan(restingShine),
+                        "Pointer hover raises the printed icon's shine to full.");
+                }
+                else if (preparedGlow != null)
                 {
                     Assert.That(preparedGlow.style.opacity.value,
                         Is.GreaterThan(restingPreparedGlow),
@@ -1276,8 +1320,11 @@ namespace GuardsDigital.Tests.PlayMode
                 }
                 else
                 {
-                    Assert.That(available.style.borderTopWidth.value, Is.GreaterThan(restingGlow),
-                        "Pointer hover brightens the generated region without moving it.");
+                    Assert.That(litChip, Is.Not.Null,
+                        "A generated face carries the typed chip its offer is about.");
+                    Assert.That(litChip.style.backgroundColor.value,
+                        Is.Not.EqualTo(restingChipColor),
+                        "Pointer hover brightens the lit chip without moving anything.");
                 }
                 UiPlayer.PointAway(available);
                 Assert.That(resolvingCard.worldBound, Is.EqualTo(bounds),
@@ -3240,7 +3287,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(hero.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
             Assert.That(heroRing.IsVisible, Is.False);
             Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
-            Assert.That(runtime.RoundView.Model.Status, Does.Contain("Defense"));
+            Assert.That(runtime.RoundView.Model.Status, Does.Contain("Incoming Attack"));
 
             var blockCard = runtime.Cards.Single(card =>
                 card.OwnerId.Equals(heroTargetId) &&
@@ -3658,7 +3705,7 @@ namespace GuardsDigital.Tests.PlayMode
                 currentRound.RoundIndex,
                 currentRound.TurnIndex,
                 currentRound.Phase,
-                "Defense response pending against Attack 3.",
+                "Incoming Attack 3: choose a card to defend with.",
                 currentRound.Actions,
                 currentRound.EndTurnInvocation,
                 currentRound.ContinueEndOfRoundInvocation,

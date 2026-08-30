@@ -194,7 +194,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.RoundView.Model.Status, Does.StartWith("Choose 1 of "));
             Assert.That(runtime.RoundView.Model.Status, Does.EndWith(" cards."));
             Assert.That(runtime.RoundView.Model.Status,
-                Does.Not.Contain("choose an action or End Turn"),
+                Does.Not.Contain("choose an action, or end your turn"),
                 "which is the line this discard chooser used to arrive under.");
 
             var heading = UiPlayer.Descendants(hud.RootElement)

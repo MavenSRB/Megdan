@@ -379,7 +379,7 @@ namespace GuardsDigital.Tests.EditMode
                 1,
                 1,
                 RoundResolutionPhase.EndOfRound,
-                "ROUND 1 COMPLETE - END OF ROUND",
+                "Round 1 complete.",
                 Array.Empty<TypedInvocationViewModel>(),
                 null,
                 null,
