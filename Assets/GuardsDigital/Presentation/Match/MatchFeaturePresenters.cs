@@ -16,6 +16,7 @@ using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Transitions;
+using GuardsDigital.Core.Rules.Victory;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -1654,6 +1655,7 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchClient session;
         private readonly IDirectorHandsView view;
+        private readonly HeroId homeHeroId;
         private CardInstanceId? selectedCardInstanceId;
         private IMatchReadModel lastProjection;
         private CardInstanceId? lastSelectedCardInstanceId;
@@ -1673,9 +1675,29 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public DirectorHandsPresenter(IMatchClient session, IDirectorHandsView view)
+            : this(session, view, default)
+        {
+        }
+
+        /// <summary>
+        /// Milestone 8.30c. A seat-scoped composition names the hero whose private tray is home for
+        /// that player. The Director leaves it undefined and keeps following the currently awaited
+        /// hero exactly as before. This is presentation-local routing only: the hero must already
+        /// belong to the supplied read model's setup, and it grants no command or card identity.
+        /// </summary>
+        public DirectorHandsPresenter(
+            IMatchClient session, IDirectorHandsView view, HeroId homeHeroId)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.view = view ?? throw new ArgumentNullException(nameof(view));
+            if (homeHeroId.IsDefined && !session.Projection.Setup.Heroes.Any(hero =>
+                    hero.HeroId.Equals(homeHeroId)))
+            {
+                throw new ArgumentException(
+                    "A home tray must name a hero in the supplied match.", nameof(homeHeroId));
+            }
+
+            this.homeHeroId = homeHeroId;
         }
 
         public event Action<IMatchReadModel> SessionProjectionChanged;
@@ -1683,10 +1705,11 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>
         /// The hero whose tray is currently drawn (milestone 7.8a).
         ///
-        /// By default it is the hero the match is waiting on - the one still owing a commitment, or the
-        /// one resolving a turn. A map selection pins another hero, and the pin lasts exactly as long as
-        /// that awaited hero does: when the match moves on to somebody else, the tray follows, because a
-        /// tray left on the wrong hero would be showing a hand nothing can be played from.
+        /// For the Director it defaults to the hero the match is waiting on - the one still owing a
+        /// commitment, or the one resolving a turn. For a seat it defaults to that seat's home hero,
+        /// whose private hand is the one the projection actually carries. A map selection pins another
+        /// hero, and the pin lasts exactly as long as the currently awaited hero does; when the match
+        /// moves on, the Director follows the new wait and a seat returns to its own tray.
         ///
         /// It is local presentation state throughout. Nothing here submits a command or reads back into
         /// authority, which is why <see cref="SelectViewedHero"/> can be answered from a board click that
@@ -1726,7 +1749,7 @@ namespace GuardsDigital.Presentation.Match
 
             pinnedHeroId = default;
             pinnedAgainstAwaitedHeroId = default;
-            return awaited;
+            return homeHeroId.IsDefined ? homeHeroId : awaited;
         }
 
         private static HeroId Awaited(IMatchReadModel projection)
@@ -4217,6 +4240,19 @@ namespace GuardsDigital.Presentation.Match
             // reads: `EveryDeclaredPendingFamilyIsNamedByTheStatusDerivation` still compares this
             // method's compiled reads against the declared inventory, and the branches are the
             // same branches.
+            // Milestone 8.30c. An ended match is a terminal player state, not another wait. Before
+            // this branch it reached the fallback as "Waiting for the match to continue", which
+            // drew a live-sounding prompt after every control had correctly disappeared. The outcome
+            // is public and identical in all six seat projections, so the one shared derivation names
+            // the winning side and the rulebook victory sentence for every perspective.
+            if (projection.Phase == RoundResolutionPhase.GameEnded)
+            {
+                var outcome = projection.Outcome;
+                var side = projection.Participants.GetTeam(outcome.WinningTeamId).Side;
+                return MinionChoiceLabels.TeamLabel(side) + " wins: " +
+                    FormatVictoryCause(outcome.Cause) + ".";
+            }
+
             var minionBattle = projection.PendingMinionBattleChoice;
             if (minionBattle != null)
             {
@@ -4310,6 +4346,22 @@ namespace GuardsDigital.Presentation.Match
                 ? $"Initiative {projection.SelectedActor.InitiativeTotal}: " +
                     "choose an action, or end your turn."
                 : "Waiting for the match to continue.";
+        }
+
+        private static string FormatVictoryCause(MatchVictoryCause cause)
+        {
+            switch (cause)
+            {
+                case MatchVictoryCause.FinalWaveFlipped:
+                    return "the final Wave counter was flipped";
+                case MatchVictoryCause.ThroneCaptured:
+                    return "the enemy Throne was captured";
+                case MatchVictoryCause.LifeCountersExhausted:
+                    return "the opposing team ran out of Life counters";
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(cause), cause, "An ended match requires one rulebook victory cause.");
+            }
         }
     }
 

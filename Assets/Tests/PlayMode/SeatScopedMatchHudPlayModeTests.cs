@@ -1,7 +1,9 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -257,6 +259,144 @@ namespace GuardsDigital.Tests.PlayMode
                     .Select(label => label.text),
                 Does.Contain(status),
                 "and the second seat bar reports the second seat own reading.");
+        }
+
+        /// <summary>
+        /// Milestone 8.30c's six-perspective presentation/lifecycle gate. The development switcher
+        /// replaces the scene runtime instead of repointing one, so every composition must begin
+        /// with the requested seat's own hand, one handler surface, no local selection from the last
+        /// seat, and the same bounded generated resources at every supported viewport.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator SeatScene_RecomposesAllSixPerspectivesWithoutLeakingStateHandlersOrResources()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            yield return LoadComposedScene();
+            var seats = Root().Runtime.Host.Seats.Seats
+                .Select(seat => (seat.Id, seat.HeroId))
+                .ToArray();
+            Assert.That(seats, Has.Length.EqualTo(6));
+
+            var viewports = new[]
+            {
+                (Width: 2560u, Height: 1440u, Label: "reference"),
+                (Width: 2048u, Height: 1152u, Label: "validated desktop"),
+                (Width: 2560u, Height: 540u, Label: "short desktop")
+            };
+            var materialCounts = new List<int>();
+            var meshCounts = new List<int>();
+            var highlightCounts = new List<int>();
+            var selectorCounts = new List<int>();
+
+            for (var index = 0; index < seats.Length; index++)
+            {
+                var viewport = viewports[index % viewports.Length];
+                UiPlayer.SetPlayerViewport(
+                    viewport.Width, viewport.Height,
+                    "8.30c six-seat " + viewport.Label + " perspective " + index);
+                yield return ComposeForSeat(seats[index].Id);
+                var root = Root();
+                var runtime = root.Runtime;
+                runtime.RefreshAll();
+                yield return null;
+                yield return null;
+
+                Assert.That(Screen.width, Is.EqualTo((int)viewport.Width));
+                Assert.That(Screen.height, Is.EqualTo((int)viewport.Height));
+                Assert.That(runtime.Seat.Id, Is.EqualTo(seats[index].Id));
+                Assert.That(runtime.Seat.HeroId, Is.EqualTo(seats[index].HeroId));
+                Assert.That(MatchSceneCompositionRoot.NextComposedSeat, Is.Null,
+                    "The development selection is one-shot and cannot choose a later scene.");
+                Assert.That(runtime.ReadModel, Is.TypeOf<SeatProjection>(),
+                    "Every HUD presenter reads the requested seat projection.");
+                Assert.That(runtime.Host.Version, Is.Zero,
+                    "A seat switch composes a fresh local session rather than carrying state across.");
+                Assert.That(runtime.UndoRestartPresenter, Is.Null);
+                Assert.That(runtime.DiagnosticPresenter, Is.Null);
+
+                var hands = runtime.HandsView.Model;
+                Assert.That(hands, Is.Not.Null);
+                Assert.That(hands.ViewedHand.HeroId, Is.EqualTo(seats[index].HeroId),
+                    "A seat opens on its own playable hand, not another player's empty tray.");
+                Assert.That(hands.ViewedHand.Cards, Is.Not.Empty,
+                    "The requested seat can choose its opening commitment.");
+                Assert.That(hands.Hands
+                        .Where(hand => !hand.HeroId.Equals(seats[index].HeroId))
+                        .SelectMany(hand => hand.Cards),
+                    Is.Empty,
+                    "Another seat's private hand never enters the drawn model.");
+                Assert.That(hands.Hands.Select(hand => hand.SelectedCardInstanceId),
+                    Is.All.Null,
+                    "No local card selection survives a session replacement.");
+
+                var visibleIds = runtime.Cards.Select(card => card.Id).ToArray();
+                foreach (var hidden in runtime.Host.Projection.Cards.Where(card =>
+                    !card.OwnerId.Equals(seats[index].HeroId) &&
+                    (card.State.Location == CardLocation.Hand ||
+                        card.State.Location == CardLocation.Deck)))
+                {
+                    Assert.That(visibleIds.Contains(hidden.Id), Is.False,
+                        "A seat runtime carries no other player's private hand or deck identity.");
+                }
+
+                Assert.That(runtime.RoundView.Model.Status, Is.Not.Empty);
+                Assert.That(
+                    UiPlayer.Descendants(Named(root.Hud.RootElement, "gd-topbar"))
+                        .OfType<Label>().Select(label => label.text),
+                    Does.Contain(runtime.RoundView.Model.Status));
+                Assert.That(Named(root.Hud.RootElement, "gd-narration").worldBound.width,
+                    Is.GreaterThan(0f));
+
+                Assert.That(
+                    Object.FindObjectsByType<MatchSceneCompositionRoot>(),
+                    Has.Length.EqualTo(1));
+                Assert.That(
+                    Object.FindObjectsByType<ConfiguredMatchHudRenderer>(),
+                    Has.Length.EqualTo(1),
+                    "One replacement scene leaves one HUD and one set of input handlers.");
+                var selectors = Object.FindObjectsByType<PrimitiveHeroPointerSelector>().Length;
+                selectorCounts.Add(selectors);
+                Assert.That(selectors, Is.EqualTo(6),
+                    "The official table has one pointer selector per hero, never an accumulated copy.");
+
+                materialCounts.Add(CountOwnedMaterials());
+                meshCounts.Add(CountOwnedMeshes());
+                highlightCounts.Add(root.OwnedHighlightNativeResourceCount);
+
+                if (!UnityEngine.Application.isBatchMode && index < viewports.Length)
+                {
+                    yield return Capture(
+                        "tmp/milestone-8-30c-seat-" + index + "-" +
+                        viewport.Width + "x" + viewport.Height + ".png");
+                }
+
+                if (index == 0)
+                {
+                    Assert.That(runtime.SelectCommitmentCard(hands.ViewedHand.Cards[0].Id), Is.True);
+                    Assert.That(runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId, Is.Not.Null,
+                        "The first scene must hold a real local selection for the next replacement " +
+                        "to prove it does not retain one.");
+                    Assert.That(runtime.Host.Version, Is.Zero,
+                        "Selecting a card is local presentation state, not authority.");
+                }
+            }
+
+            Assert.That(materialCounts.Distinct().Count(), Is.EqualTo(1),
+                "Repeated seat composition does not grow generated materials monotonically.");
+            Assert.That(meshCounts.Distinct().Count(), Is.EqualTo(1),
+                "Repeated seat composition does not grow generated meshes monotonically.");
+            Assert.That(highlightCounts.Distinct().Count(), Is.EqualTo(1),
+                "Every replacement owns the same bounded highlight resources.");
+            Assert.That(selectorCounts.Distinct().Count(), Is.EqualTo(1),
+                "Every replacement owns the same bounded input surfaces.");
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.30c restore the prior viewport");
+            yield return null;
         }
 
         /// <summary>
@@ -525,6 +665,21 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(File.Exists(path), Is.True,
                 "The targeted Game View visual evidence must be captured at " + relativePath + ".");
+        }
+
+        private static int CountOwnedMaterials()
+        {
+            return Resources.FindObjectsOfTypeAll<Material>().Count(value =>
+                value != null && value.hideFlags == HideFlags.DontSave &&
+                (value.name.EndsWith(" Debug", System.StringComparison.Ordinal) ||
+                 value.name.EndsWith(" Placeholder", System.StringComparison.Ordinal) ||
+                 value.name == DestinationHighlightMaterialOwner.GeneratedMaterialName));
+        }
+
+        private static int CountOwnedMeshes()
+        {
+            return Resources.FindObjectsOfTypeAll<Mesh>().Count(value =>
+                value != null && value.name == "Owned Placeholder Grid Hex Mesh");
         }
     }
 }

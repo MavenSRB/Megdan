@@ -600,7 +600,7 @@ Closing check: `EveryDeclaredPendingFamilyIsNamedByTheStatusDerivation`, observe
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830b-seat-scope-and-complete-the-player-hud-prompt-flow-completion-evidence).
 
-### [ ] 8.30c Validate the complete six-seat player experience against the local session
+### [x] 8.30c Validate the complete six-seat player experience against the local session
 
 Blocked by: Milestone 8.30b must provide the primitive local player HUD and prompt flow.
 
@@ -615,6 +615,8 @@ Acceptance checks:
 - Validation records explicitly state that this in-process local gate proves no claim about serialization envelopes, network faults, relay/NAT traversal, latency, disconnects, or real-internet behavior.
 
 Non-goals: No network process, provider integration, lobby, reconnect, public distribution, production visuals, or invited playtest.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830c-validate-the-complete-six-seat-player-experience-against-the-local-session-completion-evidence).
 
 ### [x] 8.30d Light the chosen action's printed icons and integrate the replacement, End Turn, and narration surfaces
 
@@ -641,11 +643,13 @@ Non-goals: No animation loop, no board-surface changes, no invented action glyph
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830d-light-the-chosen-actions-printed-icons-and-integrate-the-replacement-end-turn-and-narration-surfaces-completion-evidence).
 
-**2026-08-30 route amendment, user-directed.** The former proposed milestone 8.30e was removed from the active route. Keep milestone 8.30d's completed scan-backed highlighting treatment as implemented; no digital-front rebuild, user-traced template-card dependency, or bulk 108-front composition/sign-off work remains scheduled. Milestone 8.30c remains next, and 8.31 remains gated on 8.30c alone. The never-started definition is preserved in [roadmap history](../Archive/ROADMAP_HISTORY.md#removed-proposed-milestone-830e-compose-the-card-fronts-digitally-from-the-verified-content).
+**2026-08-30 route amendment, user-directed.** The former proposed milestone 8.30e was removed from the active route. Keep milestone 8.30d's completed scan-backed highlighting treatment as implemented; no digital-front rebuild, user-traced template-card dependency, or bulk 108-front composition/sign-off work remains scheduled. At that amendment 8.30c was next and 8.31 was gated on it alone. The later late-HUD amendment below schedules new corrections after the already-started 8.30c and before 8.31. The never-started definition is preserved in [roadmap history](../Archive/ROADMAP_HISTORY.md#removed-proposed-milestone-830e-compose-the-card-fronts-digitally-from-the-verified-content).
+
+**2026-08-30 late-HUD amendment, user-directed.** Proposed milestones **8.30f**, **8.30g**, and **8.30h** are defined in [the late HUD and card-interaction correction shard](PHASE_8_LATE_HUD_CORRECTIONS.md). Milestone 8.30c was already being implemented when they were defined, so it completes first. Milestone 8.30f keeps End Turn bottom-right, moves only commitment confirmation below `DIRECTOR`, strengthens fixed action highlights, centres/enlarges compact numbers, and reorders a Defense discard; 8.30g adds immediate facedown commitment by dragging an eligible hand card onto the map while preserving click-then-confirm; 8.30h separately iterates Movement and Attack colours while lighting all six printed corner marks of every projected choice hex. Each correction refreshes the 8.30c checks it affects. The route is 8.30c, 8.30f, 8.30g, 8.30h, then 8.31. The removed 8.30e stays removed.
 
 ### [!] 8.31 Establish the private host and six player seats
 
-Blocked by: Milestone 8.30c must pass the complete local six-seat player-experience gate.
+Blocked by: Milestone 8.30h must refresh the final affected six-seat local evidence after milestones 8.30c and 8.30f-8.30g.
 
 Observable outcome: One host creates an invite-only session and six compatible Windows clients can occupy exactly one stable player/hero seat each, with duplicates, unauthorized seat changes, and incompatible content/schema revisions rejected.
 

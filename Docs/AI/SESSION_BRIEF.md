@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-08-30
+Last updated: 2026-08-31
 
 ## Purpose and authority
 
@@ -8,13 +8,15 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The route has completed approved HUD corrections **8.29a-8.29b1b**, offer and lifecycle corrections **8.29d-8.29f**, transport-neutral session boundary **8.30** and owner-scoped seat projections **8.30a**. **The loaded match is rulebook p.5's six-player Quick Game**: six heroes, three Waves, five Lives a side, the Tie Breaker, twelve minions, and 108 playable cards. Its deterministic director proves all victory causes plus replay, restore, retained-prefix Undo, restart, snapshots, and event logs. URP 17.5 is the checked-in rendering baseline; the six-hero board/HUD and Win64 smoke path are intact. All six heroes pass the permanent player-path gate, all 114 roster fronts are source-verified, and schema v34 persists every pause and pins the registered content contract set. `RISK-SCALE-001` is retired; the serialized one-question-at-a-time director remains an accepted UX tradeoff. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
+The route has completed approved HUD corrections **8.29a-8.29b1b**, offer and lifecycle corrections **8.29d-8.29f**, transport-neutral session boundary **8.30**, owner-scoped seat projections **8.30a**, and the complete local six-seat player gate **8.30c**. **The loaded match is rulebook p.5's six-player Quick Game**: six heroes, three Waves, five Lives a side, the Tie Breaker, twelve minions, and 108 playable cards. Its deterministic director and six independently authorized local seat clients prove all victory causes plus replay, restore, retained-prefix Undo, restart, snapshots, and event logs. URP 17.5 is the checked-in rendering baseline; the six-hero board/HUD and Win64 smoke path are intact. All six heroes pass the permanent player-path gate, all 114 roster fronts are source-verified, and schema v34 persists every pause and pins the registered content contract set. `RISK-SCALE-001` is retired; the serialized one-question-at-a-time director remains an accepted UX tradeoff. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.30d**.
+- Current completed milestone: **8.30c**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.30c**.
+- Next proposed milestone: **8.30f**.
+
+Milestone **8.30c** completed on 2026-08-31. Three records run through every seat, prompt family, team owner and ending, with privacy/refusal/rebuild and three-viewport lifecycle checks. Seats open their own hand and terminal status names the result. This remains in-process, not network evidence.
 
 Milestone **8.30d** completed on 2026-08-30. Every offered printed action's own icon shines through a per-card overlay traced beside the private art, a Defense offer shines the shield it would defend with at a presenter-typed placement, Fast Travel and Clear are card-gold ribbons on the actions they replace, End Turn is a neutral pewter banner that shines fully when it is the only offer left, and the narration speaks player-facing sentences in a warm voice when addressed to the viewing seat. A missing overlay degrades to the prior treatment, which is the whole clean-checkout path.
 
@@ -29,15 +31,17 @@ Corrective **8.29c** was deferred after its Director Undo symptom could not be r
 
 Milestone **8.29** selected one serialized player host over UGS Multiplayer Services 1.2.0 sessions, Relay-DTLS, and Unity Transport 2.6.0 under `guards-private-online/1`. Structural owner projections, host-owned seats, snapshot resync, and terminal host loss are pinned; accounts, matchmaking, telemetry, public distribution, and package installation remain excluded. `RISK-ONLINE-001` stays active until implementation evidence closes it.
 
-Earlier Phase 8 milestones established the verified six-hero roster, typed effect/query and pending-decision contracts, official 3v3 setup, deterministic 768-command/12-round gate at current seed 21, source-ratio card faces, production-sized HUD geometry, URP 17.5 baseline, and governance routing. The current implementation inventory and subject shards own live behavior; the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md) owns exact completion evidence and revisions. Corrective **8.28a1** restored the Unity-free harness while retaining Unity Edit Mode coverage; the last complete gates are 1,747/1,747 harness, 2,057/2,057 Edit Mode and 243/243 Play Mode. **Phase 7 is complete** and its exact record is addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
+Earlier Phase 8 milestones established the verified six-hero roster, typed effect/query and pending-decision contracts, official 3v3 setup, deterministic 768-command/12-round gate at current seed 21, source-ratio card faces, production-sized HUD geometry, URP 17.5 baseline, and governance routing. The current implementation inventory and subject shards own live behavior; the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md) owns exact completion evidence and revisions. Corrective **8.28a1** restored the Unity-free harness while retaining Unity Edit Mode coverage; the last complete gates are 1,748/1,748 harness, 2,071/2,071 Edit Mode and 249/249 Play Mode. **Phase 7 is complete** and its exact record is addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
 
-The **Phase 8** route has completed the deterministic official 3v3 gate, URP migration, corrective 8.28a1, independent readiness review 8.28a, private-online architecture decision 8.29, HUD corrections 8.29a-8.29b1b, offer and lifecycle corrections 8.29d-8.29f, transport-neutral session boundary 8.30, and owner-scoped seat projections and command authorization 8.30a. Deferred 8.29c remains proposed; no networking package is installed and no online runtime exists yet.
+The **Phase 8** route has completed the deterministic official 3v3 gate, URP migration, corrective 8.28a1, independent readiness review 8.28a, private-online architecture decision 8.29, HUD corrections 8.29a-8.29b1b, offer and lifecycle corrections 8.29d-8.29f, transport-neutral session boundary 8.30, owner-scoped seat projections and command authorization 8.30a, the seat-scoped HUD 8.30b, the complete local six-seat gate 8.30c, and the accepted highlighting treatment 8.30d. Deferred 8.29c remains proposed; no networking package is installed and no online runtime exists yet.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
 Roadmap amendment, 2026-08-30: milestone **8.30d** lights each offered action's printed icon, the Defense shield, and a player-facing narration lane, restyles Fast Travel/Clear as ribbon tabs on the actions they replace, and turns End Turn pewter. It widens the no-production-styling non-goal for five surfaces and starts before 8.30c by user approval; 8.31 stays gated on 8.30c.
 
-Roadmap amendment, 2026-08-30: the former proposed milestone **8.30e** was removed at the user's direction. The completed 8.30d scan-backed highlighting remains the accepted treatment; no digital-front rebuild, hand-traced glyph template, or 108-card composition/sign-off work remains scheduled. **8.30c** remains next, and **8.31** remains gated on it alone.
+Roadmap amendment, 2026-08-30: the former proposed milestone **8.30e** was removed at the user's direction. The completed 8.30d scan-backed highlighting remains the accepted treatment; no digital-front rebuild, hand-traced glyph template, or 108-card composition/sign-off work remains scheduled. That amendment left **8.30c** next and **8.31** gated on it; the later amendment below schedules new corrections after the already-started 8.30c and before 8.31.
+
+Roadmap amendment, 2026-08-30: milestone **8.30c** was already being implemented when the late HUD corrections were defined and has now completed. Proposed corrective **8.30f** keeps End Turn bottom-right, moves only commitment confirmation below `DIRECTOR`, strengthens action highlights without moving them, centres the played-card number, enlarges the coin count in place, and puts a Defense discard with the unavailable side of the hand. Proposed **8.30g** separately adds mouse drag from an eligible hand card onto the map as an immediate facedown commitment while keeping click-then-confirm unchanged. Proposed **8.30h** then applies the accepted steady/stronger action-shine language to all six printed corner marks on every legal Movement-destination or Attack-target hex, with distinct iterated colours. Each correction refreshes the 8.30c checks it affects. The remaining route is **8.30f -> 8.30g -> 8.30h -> 8.31**; none of the new milestones is authorized for implementation by this scheduling amendment.
 
 Roadmap amendment, 2026-08-29: milestone **8.30b** also moves End Turn to the bottom right as a larger control and expands the top status bar to narrate every step. That widens its primitive-layout check past the no-production-styling non-goal for those two surfaces only, and re-measures the pinned HUD geometry.
 

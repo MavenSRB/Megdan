@@ -4,6 +4,7 @@ using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -67,6 +68,38 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(accepted.Accepted, Is.True, accepted.Detail);
             Assert.That(host.Version, Is.EqualTo(1),
                 "One surface submission is one authorized state advance.");
+        }
+
+        /// <summary>
+        /// Milestone 8.30c's presentation-lifecycle finding. Before the home hero was supplied at
+        /// composition, every seat opened whichever hero sorted first in the Director's global wait;
+        /// for five seats that was an empty tray rather than their playable private hand.
+        /// </summary>
+        [Test]
+        public void ASeatScopedHandsPresenterOpensOnThatSeatsOwnPlayableHand()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var firstAwaited = host.Projection.Setup.Heroes
+                .OrderBy(hero => hero.TeamSide)
+                .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
+                .First().HeroId;
+            var seat = host.Seats.Seats.First(value => !value.HeroId.Equals(firstAwaited));
+            var client = new SeatMatchClient(host.ClientForSeat(seat.Id));
+            var view = new CapturingHandsView();
+
+            new DirectorHandsPresenter(client, view, seat.HeroId).Refresh();
+
+            Assert.That(view.Model.ViewedHeroId, Is.EqualTo(seat.HeroId));
+            Assert.That(view.Model.ViewedHand.HeroId, Is.EqualTo(seat.HeroId));
+            Assert.That(view.Model.ViewedHand.Cards, Is.Not.Empty,
+                "The seat can see and choose its own opening commitment.");
+            Assert.That(view.Model.ViewedHand.Cards,
+                Has.All.Matches<CardInstance>(card => card.OwnerId.Equals(seat.HeroId)));
+            Assert.That(
+                () => new DirectorHandsPresenter(
+                    client, new CapturingHandsView(), new HeroId("not-in-this-match")),
+                Throws.ArgumentException,
+                "A presentation default cannot invent or transfer ownership.");
         }
 
         [Test]
@@ -345,6 +378,61 @@ namespace GuardsDigital.Tests.EditMode
                 "The side that decides is named, which is what a team-owned pause has to say.");
             Assert.That(status, Does.Not.Contain("complete"),
                 "and never the round's own phase line, which is what this pause used to arrive under.");
+        }
+
+        /// <summary>
+        /// Milestone 8.30c's demonstrated HUD/prompt defect. The terminal projection already offered
+        /// no controls, but its narration fell through to "Waiting for the match to continue". An
+        /// ended match now reads as ended, identically and safely from all six seat perspectives.
+        /// </summary>
+        [Test]
+        public void ACompletedMatchNamesTheWinnerAndVictoryPathAndOffersNoSeatAControl()
+        {
+            var session = ConfiguredMatchFixtures.CreateUncontestedOfficialSixPlayerPushSession();
+            var record = DeterministicMatchLoop.Play(session, seed: 1, maximumCommands: 1200);
+            Assert.That(record.Outcome.HasEnded, Is.True,
+                "The recorded local scenario must reach its terminal projection.");
+            var host = new MatchHost(session);
+            var statuses = new System.Collections.Generic.List<string>();
+
+            foreach (var seat in host.Seats.Seats)
+            {
+                var client = new SeatMatchClient(host.ClientForSeat(seat.Id));
+                var model = RoundActionPresenter.CreateViewModel(client.Projection);
+                statuses.Add(model.Status);
+
+                Assert.That(model.Phase, Is.EqualTo(RoundResolutionPhase.GameEnded));
+                Assert.That(model.Status,
+                    Is.EqualTo("[R] RED wins: the enemy Throne was captured."));
+                Assert.That(model.Status, Does.Not.Contain("Waiting"));
+                Assert.That(model.Actions, Is.Empty);
+                Assert.That(model.EndTurnInvocation, Is.Null);
+                Assert.That(model.ContinueEndOfRoundInvocation, Is.Null);
+                Assert.That(model.InitiativeChoices, Is.Empty);
+                Assert.That(model.DefenseChoices, Is.Empty);
+                Assert.That(model.FastTravelOffers, Is.Empty);
+                Assert.That(model.EffectChoices, Is.Empty);
+                Assert.That(model.EffectChoiceTargets, Is.Empty);
+                Assert.That(model.EffectChoiceDestinations, Is.Empty);
+                Assert.That(model.HeroRespawnOptions, Is.Empty);
+                Assert.That(model.ResolveWithoutRespawn, Is.Null);
+                Assert.That(model.ClearOffers, Is.Empty);
+                Assert.That(model.ClearSelection, Is.Null);
+                Assert.That(model.SystemTransitionPrompt, Is.Null);
+                Assert.That(model.EffectChoicePrompt, Is.Null);
+                Assert.That(model.RemovalPreventionPrompt, Is.Null);
+
+                var hands = new CapturingHandsView();
+                new DirectorHandsPresenter(client, hands).Refresh();
+                Assert.That(hands.Model.Hands
+                        .Where(hand => !hand.HeroId.Equals(seat.HeroId))
+                        .SelectMany(hand => hand.Cards),
+                    Is.Empty,
+                    "The completed-state tray still cannot name another seat's private hand.");
+            }
+
+            Assert.That(statuses.Distinct().Count(), Is.EqualTo(1),
+                "The public completed-match result is identical from all six seats.");
         }
 
         private static System.Collections.Generic.IEnumerable<VisualElement> Descendants(

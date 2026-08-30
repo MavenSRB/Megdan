@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30c Validate the complete six-seat player experience against the local session completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30c | Three deterministic official-roster records complete only through the six independently authorized seat clients: Life exhaustion in 236 commands, final Wave in 632, and Throne capture in 116. Every seat submits; all ten pending families, both team-owned sides and the facedown/reveal boundary are observed; every command checks p.4 private/public projection; cross-seat and stale controls refuse without mutation; midpoint snapshot/session replacement rebuilds every authorized view and reaches byte-identical terminal authority. Repeated scene composition covers all six perspectives at 2560x1440, 2048x1152 and 2560x540 without hidden-card leakage, control transfer, retained selection, duplicate handler surfaces or growing presentation-owned resources. It exposed and fixed two player blockers: a seat opened another hero's empty tray, and terminal narration said the completed match was waiting; seats now open their own playable hand and every ending names its public winner and victory path with no control offered. T3 evidence is 1748/1748 harness, 137/137 focused Edit, 6/6 focused Play, 2071/2071 complete Edit, 249/249 complete Play, and 1/1 targeted non-batch with three inspected captures. The first complete Edit attempt's zero-package licensing failure cleared through the one policy recovery; schema v34, rules, content identity and wire remain unchanged. This in-process gate proves no network behavior. | pending |
+
 ## Milestone 8.30d Light the chosen action's printed icons and integrate the replacement, End Turn, and narration surfaces completion evidence
 
 | ID | Outcome | Commit |

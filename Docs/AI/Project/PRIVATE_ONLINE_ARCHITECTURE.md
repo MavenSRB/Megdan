@@ -116,7 +116,9 @@ The dependency-safe sequence remains 8.30 through 8.36a. Estimated implementatio
 | 8.36 | Two-network invited six-human match, evidence capture and triage | 1-2 d plus scheduling |
 | 8.36a | Fresh analysis-only review and Phase 9 re-baseline | 1-2 d |
 
-The exact commands, filters, topology, and pass criteria are owned by [../Testing/PRIVATE_ONLINE.md](../Testing/PRIVATE_ONLINE.md). The shortest next integration outcome is 8.30-8.30c: prove all six player perspectives and privacy locally before any cloud/package variable is introduced. No adjacent milestone is authorized by this decision.
+Milestones 8.30 through 8.30c are now complete locally. Three deterministic official-roster records run only through all six seat clients, cover the ten pending families, both team-owned sides and all three victory causes, and remain byte-identical across midpoint snapshot/session replacement. Every perspective is checked after every command for owner-private/public visibility and authorized control; repeated scene composition at the three supported desktop viewports retains no stale selection, duplicate handler surface or growing owned resources. This in-process evidence proves no serialized envelope, network fault, Relay/NAT traversal, latency, disconnect, reconnect or real-internet behavior.
+
+The exact commands, filters, topology, and pass criteria are owned by [../Testing/PRIVATE_ONLINE.md](../Testing/PRIVATE_ONLINE.md). The shortest next integration outcome is 8.31: introduce the pinned package/service/Relay variables only after the local boundary they must preserve is green. No adjacent milestone is authorized by this decision.
 
 ## Sources
 

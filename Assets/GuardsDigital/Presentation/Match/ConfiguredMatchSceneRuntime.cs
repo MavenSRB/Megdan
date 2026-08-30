@@ -113,7 +113,8 @@ namespace GuardsDigital.Presentation.Match
             MinionChoiceView = new MinionChoiceUnityView();
             HeroOverviewsView = new HeroOverviewsUnityView();
             BoardPresenter = new BoardInteractionPresenter(client, BoardView);
-            HandsPresenter = new DirectorHandsPresenter(client, HandsView);
+            HandsPresenter = new DirectorHandsPresenter(
+                client, HandsView, Seat?.HeroId ?? default);
             HeroOverviewsPresenter = new HeroOverviewsPresenter(
                 client, HeroOverviewsView, () => HandsPresenter.ViewedHeroId);
             RoundPresenter = new RoundActionPresenter(client, RoundView);
