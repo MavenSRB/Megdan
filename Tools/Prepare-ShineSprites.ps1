@@ -13,8 +13,10 @@
     with slot one of primary, secondary-defense, secondary-movement. Which slots a card owns
     comes from the typed content manifest, never from pixels: rulebook p.16's Ultimates are
     passive and get no sprite at all, and a single rail badge sits in the rail's LOWER position
-    (verified over all 108 fronts). Pixels only decide geometry. Rail badges are traced from each
-    card directly. The primary badge glyphs are the same artwork on every card - only position,
+    (verified over all 108 fronts). Pixels only decide geometry. The shared Movement boot uses one
+    audited canonical rail silhouette (`sabina/point-blank-shot`) at the shared lower-rail anchor;
+    per-card colour classification cannot collapse it around the numeral or merge it into banner
+    cloth. Defense rails remain traced from their own fronts. The primary badge glyphs are the same artwork on every card - only position,
     ink colour and the value digit vary - so each glyph family's solid mask is VOTED from
     hand-audited clean per-card traces, anchored per card to its own panel geometry by a
     bounded evidence search, and the card's own printed digit is unioned back in so a 7 shines
@@ -124,11 +126,13 @@ namespace GuardsDigital.Tools
             new Dictionary<string, List<TemplateMember>>();
         private static readonly Dictionary<string, GlyphTemplate> Templates =
             new Dictionary<string, GlyphTemplate>();
+        private static SlotTrace movementRailTemplate;
 
         public static void ResetTemplates()
         {
             PendingMembers.Clear();
             Templates.Clear();
+            movementRailTemplate = null;
         }
 
         public static byte[] LoadCard(string inputPath)
@@ -228,6 +232,38 @@ namespace GuardsDigital.Tools
             // banner distance. Its black outline and white digit are pristine, though - so the
             // fallback traces those alone and closes the outline curve into the badge solid.
             return TraceRail(rgba, upper, -1);
+        }
+
+        public static string SetMovementRailTemplate(byte[] rgba)
+        {
+            var trace = TraceRail(rgba, false);
+            if (trace.Status != "ok")
+            {
+                return trace.Status;
+            }
+
+            movementRailTemplate = trace;
+            return "ok rail-movement-template " + trace.Area;
+        }
+
+        public static SlotTrace TraceMovementRail()
+        {
+            if (movementRailTemplate == null)
+            {
+                return new SlotTrace { Slot = "rail-lower", Status = "missing-movement-template" };
+            }
+
+            return new SlotTrace
+            {
+                Slot = "rail-lower",
+                Status = "ok-template",
+                X0 = movementRailTemplate.X0,
+                Y0 = movementRailTemplate.Y0,
+                X1 = movementRailTemplate.X1,
+                Y1 = movementRailTemplate.Y1,
+                Area = movementRailTemplate.Area,
+                Sprite = (byte[])movementRailTemplate.Sprite.Clone()
+            };
         }
 
         // bannerDistance -1 selects the outline-and-digit fallback mask.
@@ -1200,7 +1236,9 @@ namespace GuardsDigital.Tools
                 }
             }
 
-            var finished = Finish(rgba, "primary-ring", mask, CardWidth, CardHeight, 0, 0, 900, 16000, true);
+            var finished = Finish(
+                rgba, "primary-ring", mask, CardWidth, CardHeight, 0, 0,
+                900, 16000, primaryRing: true);
             if (finished.Status == "ok")
             {
                 finished.Status = "ok-ring";
@@ -1608,7 +1646,8 @@ namespace GuardsDigital.Tools
 
         private static SlotTrace Finish(
             byte[] rgba, string slot, byte[] solid, int w, int h,
-            int offsetX, int offsetY, int minArea, int maxArea, bool thin = false)
+            int offsetX, int offsetY, int minArea, int maxArea,
+            bool thin = false, bool primaryRing = false)
         {
             int area = 0, minX = w, minY = h, maxX = -1, maxY = -1;
             for (int y = 0; y < h; y++)
@@ -1640,9 +1679,11 @@ namespace GuardsDigital.Tools
                 };
             }
 
-            var sprite = thin
-                ? ComposeThin(solid, w, h, offsetX, offsetY)
-                : Compose(solid, w, h, offsetX, offsetY);
+            var sprite = primaryRing
+                ? ComposePrimaryRing(solid, w, h, offsetX, offsetY)
+                : thin
+                    ? ComposeThin(solid, w, h, offsetX, offsetY)
+                    : Compose(solid, w, h, offsetX, offsetY);
             return new SlotTrace
             {
                 Slot = slot,
@@ -1961,12 +2002,15 @@ namespace GuardsDigital.Tools
             return sprite;
         }
 
-        private static byte[] Compose(byte[] solid, int w, int h, int offsetX, int offsetY)
+        // The Primary's printed-line bake: a crisp core on the existing boxes plus a spatially wider,
+        // softer halo. Runtime tint decides the approved graphite-and-steel colour; this sprite owns
+        // only light falloff, so increasing its glow cannot invent or move a line.
+        private static byte[] ComposePrimaryRing(
+            byte[] solid, int w, int h, int offsetX, int offsetY)
         {
-            var rim = Subtract(Morph(solid, w, h, 3, true), solid, w, h);
-            var rimA = Blur(ToFloat(rim, w, h), w, h, 1);
-            var glowA = Blur(ToFloat(Morph(solid, w, h, 5, true), w, h), w, h, 3);
-            var haloA = Blur(ToFloat(Morph(solid, w, h, 9, true), w, h), w, h, 6);
+            var coreA = Blur(ToFloat(solid, w, h), w, h, 1);
+            var glowA = Blur(ToFloat(Morph(solid, w, h, 4, true), w, h), w, h, 4);
+            var haloA = Blur(ToFloat(Morph(solid, w, h, 10, true), w, h), w, h, 8);
 
             var sprite = new byte[CardWidth * CardHeight * 4];
             for (int y = 0; y < h; y++)
@@ -1975,16 +2019,57 @@ namespace GuardsDigital.Tools
                 {
                     int local = y * w + x;
                     float a = 0f, r = 0f, g = 0f, b = 0f;
-                    // Hotter than the source mock on purpose: at HUD card scale (roughly 46% of
-                    // the 372x520 source) the softer numbers read as nothing, and the user's bar
-                    // is "really POP, obvious to the player".
-                    Over(ref a, ref r, ref g, ref b, Math.Min(0.58f, haloA[local] * 0.58f), 255f, 225f, 150f);
-                    Over(ref a, ref r, ref g, ref b, Math.Min(0.78f, glowA[local] * 0.78f), 255f, 236f, 170f);
-                    Over(ref a, ref r, ref g, ref b, Math.Min(1.00f, rimA[local] * 1.60f), 255f, 252f, 232f);
-                    if (solid[local] == 1)
+                    Over(ref a, ref r, ref g, ref b,
+                        Math.Min(0.34f, haloA[local] * 0.34f), 230f, 240f, 255f);
+                    Over(ref a, ref r, ref g, ref b,
+                        Math.Min(0.62f, glowA[local] * 0.62f), 238f, 246f, 255f);
+                    Over(ref a, ref r, ref g, ref b,
+                        Math.Min(1.00f, coreA[local] * 1.50f), 252f, 254f, 255f);
+                    if (a <= 0.004f)
                     {
-                        a = 0.18f; r = 255f; g = 248f; b = 225f;
+                        continue;
                     }
+
+                    int gx = x + offsetX, gy = y + offsetY;
+                    if (gx < 0 || gx >= CardWidth || gy < 0 || gy >= CardHeight)
+                    {
+                        continue;
+                    }
+
+                    int i = (gy * CardWidth + gx) * 4;
+                    sprite[i] = (byte)Math.Min(255f, b);
+                    sprite[i + 1] = (byte)Math.Min(255f, g);
+                    sprite[i + 2] = (byte)Math.Min(255f, r);
+                    sprite[i + 3] = (byte)Math.Min(255f, a * 255f);
+                }
+            }
+
+            return sprite;
+        }
+
+        private static byte[] Compose(byte[] solid, int w, int h, int offsetX, int offsetY)
+        {
+            // Secondary badges use the same three-stage light hierarchy as Primary, but their
+            // compact printed numbers cannot carry Primary's opaque core without washing into a
+            // white blob. Preserve the exact-shape core at half strength and let the warm outer
+            // falloff carry the emphasis.
+            var coreA = Blur(ToFloat(solid, w, h), w, h, 1);
+            var glowA = Blur(ToFloat(Morph(solid, w, h, 4, true), w, h), w, h, 4);
+            var haloA = Blur(ToFloat(Morph(solid, w, h, 10, true), w, h), w, h, 8);
+
+            var sprite = new byte[CardWidth * CardHeight * 4];
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    int local = y * w + x;
+                    float a = 0f, r = 0f, g = 0f, b = 0f;
+                    Over(ref a, ref r, ref g, ref b,
+                        Math.Min(0.24f, haloA[local] * 0.24f), 255f, 225f, 150f);
+                    Over(ref a, ref r, ref g, ref b,
+                        Math.Min(0.46f, glowA[local] * 0.46f), 255f, 236f, 170f);
+                    Over(ref a, ref r, ref g, ref b,
+                        Math.Min(0.52f, coreA[local] * 0.68f), 255f, 252f, 232f);
 
                     if (a <= 0.004f)
                     {
@@ -2118,6 +2203,15 @@ foreach ($templateGroup in $templateWhitelist.Keys) {
     }
 }
 
+$movementRailReference = [System.IO.Path]::Combine(
+    $cardsRoot, 'sabina', 'point-blank-shot.png')
+$movementRailStatus = [GuardsDigital.Tools.ShineTracer]::SetMovementRailTemplate(
+    [GuardsDigital.Tools.ShineTracer]::LoadCard($movementRailReference))
+if ($movementRailStatus -notlike 'ok*') {
+    throw "Movement rail template failed: $movementRailStatus"
+}
+Write-Output $movementRailStatus
+
 $reportRows = New-Object System.Collections.Generic.List[string]
 $reportRows.Add('hero,card,slot,status,x0,y0,x1,y1,area,file')
 $written = 0; $skipped = 0; $missing = 0; $stale = 0; $stray = 0; $traced = 0; $failed = 0
@@ -2148,13 +2242,13 @@ Get-ChildItem -Path $cardsRoot -Directory | Sort-Object Name | ForEach-Object {
         $hasMovement = $typed.railChannels -match 'Movement'
         if ($hasDefense -and $hasMovement) {
             $slots.Add(@{ name = 'secondary-defense'; trace = [GuardsDigital.Tools.ShineTracer]::TraceRail($rgba, $true) })
-            $slots.Add(@{ name = 'secondary-movement'; trace = [GuardsDigital.Tools.ShineTracer]::TraceRail($rgba, $false) })
+            $slots.Add(@{ name = 'secondary-movement'; trace = [GuardsDigital.Tools.ShineTracer]::TraceMovementRail() })
         }
         elseif ($hasDefense) {
             $slots.Add(@{ name = 'secondary-defense'; trace = [GuardsDigital.Tools.ShineTracer]::TraceRail($rgba, $false) })
         }
         elseif ($hasMovement) {
-            $slots.Add(@{ name = 'secondary-movement'; trace = [GuardsDigital.Tools.ShineTracer]::TraceRail($rgba, $false) })
+            $slots.Add(@{ name = 'secondary-movement'; trace = [GuardsDigital.Tools.ShineTracer]::TraceMovementRail() })
         }
 
         if ($typed.primaryKind -ne 'None') {
@@ -2251,4 +2345,3 @@ if ($Check) {
 else {
     Write-Output ("Prepared shine sprites: {0} written, {1} already present, {2} failed, {3} slots traced. Report: {4}" -f $written, $skipped, $failed, $traced, $Report)
 }
-

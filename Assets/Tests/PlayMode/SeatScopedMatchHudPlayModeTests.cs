@@ -96,6 +96,74 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 8.30f: selecting a card keeps the existing click-then-confirm path, but the one
+        /// confirmation banner now stands below DIRECTOR at both supported desktop viewports and a
+        /// tall/narrow live window, and submits exactly once through the seat client.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator SeatScene_ConfirmStandsBelowDirectorAtBothDesktopViewportsAndCommitsOnce()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            UiPlayer.SetPlayerViewport(2560, 1440, "8.30f confirm reference viewport");
+            yield return LoadSeatScene(0);
+            var root = Root();
+            var runtime = root.Runtime;
+            var selectable = runtime.HandsView.Model.ViewedHand.Cards.First();
+            Assert.That(runtime.SelectCommitmentCard(selectable.Id), Is.True);
+
+            foreach (var viewport in new[]
+                     {
+                         (Width: 2560u, Height: 1440u, Label: "reference"),
+                         (Width: 2048u, Height: 1152u, Label: "validated desktop"),
+                         (Width: 756u, Height: 1247u, Label: "tall narrow")
+                     })
+            {
+                UiPlayer.SetPlayerViewport(
+                    viewport.Width, viewport.Height, "8.30f confirm " + viewport.Label);
+                runtime.RefreshAll();
+                yield return null;
+                yield return null;
+
+                var director = Named(root.Hud.RootElement, "gd-director-toggle").worldBound;
+                var confirm = Named(root.Hud.RootElement, "gd-confirm-control");
+                var drawn = confirm.worldBound;
+                var stated = root.Hud.ConfirmFacedownControlRect;
+                var snap = UiPlayer.PixelSnapping();
+                TestContext.WriteLine(
+                    $"8.30f {viewport.Label}: panel={ConfiguredMatchHudRenderer.PanelViewport}, " +
+                    $"director={director}, confirm={drawn}, host={runtime.HandsView.ConfirmActionRoot.worldBound}, " +
+                    $"stated={stated}, hostStyleTop={runtime.HandsView.ConfirmActionRoot.style.top.value.value}");
+                Assert.That(UiPlayer.IsShown(confirm), Is.True);
+                Assert.That(drawn.xMin, Is.EqualTo(stated.xMin).Within(snap));
+                Assert.That(drawn.yMin, Is.EqualTo(stated.yMin).Within(snap));
+                Assert.That(drawn.width, Is.EqualTo(stated.width).Within(snap * 2f));
+                Assert.That(drawn.yMin - director.yMax,
+                    Is.EqualTo(ConfiguredMatchHudRenderer.ConfirmDirectorGap).Within(snap * 2f),
+                    "The banner has its approved breathing room below DIRECTOR.");
+                Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
+                    .Count(element => element.name == "gd-confirm-control"), Is.EqualTo(1));
+                Assert.That(drawn.Overlaps(root.Hud.EndTurnControlRect), Is.False,
+                    "Commitment confirmation no longer occupies End Turn's corner.");
+            }
+
+            var before = runtime.Host.Version;
+            UiPlayer.Click(Named(root.Hud.RootElement, "gd-confirm-control"));
+            yield return null;
+            yield return null;
+            Assert.That(runtime.Host.Version, Is.EqualTo(before + 1));
+            Assert.That(runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId, Is.Null);
+            Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
+                .Any(element => element.name == "gd-confirm-control" && UiPlayer.IsShown(element)),
+                Is.False,
+                "One successful press removes the confirmation surface and cannot double-submit.");
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.30f restore prior viewport");
+            yield return null;
+        }
+
+        /// <summary>
         /// The amendment's second half: End Turn is a control of its own in the panel bottom-right
         /// corner, it is measured where the renderer says it is, and pressing it advances the match
         /// through the seat own client.

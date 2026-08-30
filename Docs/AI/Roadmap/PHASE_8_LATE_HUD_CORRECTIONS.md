@@ -4,7 +4,7 @@ Canonical active roadmap shard for the player-requested HUD and card-interaction
 
 The user approved defining and scheduling these milestones on 2026-08-30. That roadmap amendment does not authorize their implementation: each milestone still requires its own explicit approval under the roadmap execution rule. Milestone 8.30c was already being implemented when these corrections were collected, so 8.30f follows it, 8.30g follows 8.30f, and the separately iterative board treatment at 8.30h follows the completed card interaction. A further user-approved amendment on 2026-08-31 defines milestone 8.30i, which follows 8.30h because it reuses that milestone's shared six-corner construction, and which carries the final pre-network evidence refresh. Each correction reruns the six-seat checks it affects before private-online work begins.
 
-### [ ] 8.30f Recompose the turn controls and correct small HUD readings
+### [x] 8.30f Recompose the turn controls and correct small HUD readings
 
 Blocked by: Milestone 8.30c must complete the already-started six-seat local player-experience gate; milestone 8.30d already provides the current action-shine, corner-banner, narration, and card-tray treatment.
 
@@ -16,6 +16,7 @@ Acceptance checks:
 - Clicking a hand card retains the existing select-then-confirm flow. Moving the confirmation surface changes no commitment eligibility, command, hidden-information boundary, focus order, or facedown result.
 - Every prepared-front printed-action highlight has identical resolved geometry at rest, pointer hover, and keyboard focus. Hover and focus may change only visual strength such as opacity, colour, radiance, or contrast; they do not translate, scale, resize, or swap to differently aligned artwork.
 - A legal resting highlight is unmissable at real card size over both a pale Primary Skill text panel and dark or busy artwork. Its hover/focus state is visibly stronger still. Movement's boot/value badge, Primary Skill and Attack panels, and the generated fallback retain their typed placement and hit regions; unavailable actions remain visually distinct and inert.
+- Prepared Movement badges use one user-approved canonical full-boot silhouette at the shared rail anchor, so per-card colour classification cannot collapse a same-hue boot around its numeral. Primary printed-line rings and Defense badges retain their typed per-card geometry; source artwork is unchanged.
 - The initiative number on a revealed current/played-card marker is visually centred both horizontally and vertically inside its fixed badge at one- and two-digit values. The badge footprint and card lifecycle meaning do not change.
 - The coin count grows from the current 9-point numeral to a clearly readable size, with the coin disc expanding only as much as needed to contain it. The coin remains in the existing item/coin strip, stays circular, preserves its tooltip and assistive reading, and does not collide with item chips or change rail width.
 - When a Defense card is discarded, the next projection places that card on the left/unavailable side of its owner's hand/tray rather than leaving it on the right beside cards that can still be played. This is projection-driven presentation ordering only: Defense choice, discard state, card identity, restore, replay, Undo, restart, and another seat's hidden-hand boundary remain unchanged.
@@ -23,7 +24,9 @@ Acceptance checks:
 
 Closing checks: `ConfirmStandsBelowDirectorWhileEndTurnKeepsItsCornerWithoutDuplicates`, `PrintedActionHighlights_StrengthenInPlaceAndRemainReadableAtRest`, and `HeroRailNumbersAndDefenseDiscardOrdering_MatchTheCorrectedHud` reproduce the reported pre-fix layouts and pass after the correction.
 
-Non-goals: No rule, action availability, Defense resolution, discard lifecycle, commitment authority, card definition, source artwork, shine-mask tracing, hidden-information contract, board layout, narration, networking, general HUD redesign, animation loop, or new settings/accessibility suite.
+Non-goals: No rule, action availability, Defense resolution, discard lifecycle, commitment authority, card definition, source-artwork modification, per-card manual Movement-mask tuning, hidden-information contract, board layout, narration, networking, general HUD redesign, animation loop, or new settings/accessibility suite.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830f-recompose-the-turn-controls-and-correct-small-hud-readings-completion-evidence).
 
 ### [ ] 8.30g Drag an eligible hand card onto the map to commit it facedown
 

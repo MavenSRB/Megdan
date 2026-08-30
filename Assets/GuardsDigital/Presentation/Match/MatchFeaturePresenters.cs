@@ -1828,7 +1828,7 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// Milestone 7.8a: one hero's current-round cards in the tray's own order - played in ascending
-        /// turn order, then available, then discarded.
+        /// turn order, then discarded/unavailable, then available.
         ///
         /// The three groups are read from projected card lifecycle state and the round's own assignment
         /// history; nothing here decides that a card was retrieved, discarded by a Defense, or cleared by
@@ -1901,7 +1901,7 @@ namespace GuardsDigital.Presentation.Match
             return Array.AsReadOnly(entries
                 .OrderBy(entry => entry.Group == TrayCardGroup.Played
                     ? 0
-                    : entry.Group == TrayCardGroup.Available ? 1 : 2)
+                    : entry.Group == TrayCardGroup.Discarded ? 1 : 2)
                 .ThenBy(entry => entry.PlayedTurnIndex)
                 .ThenBy(entry => entry.CardInstanceId.Value, StringComparer.Ordinal)
                 .ToArray());
@@ -1990,7 +1990,7 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>
         /// Which printed badge this Defense offer would defend with, stated by the presenter from
         /// the offered action's typed origin - the rail shield for a secondary Defense, the primary
-        /// badge for a Duelist or Block - so the view lights it without inferring anything from
+        /// printed-lines ring for a Duelist or Block - so the view lights it without inferring anything from
         /// card content. <see cref="CardShineSlot.None"/> on every invocation that is not a card
         /// Defense offer, DECLINE included. Milestone 8.30d.
         /// </summary>
@@ -4043,6 +4043,10 @@ namespace GuardsDigital.Presentation.Match
             var values = choice.LegalDefenseOffers
                 .Select(offer =>
                 {
+                    var sourceDefinition = projection.Definitions.Single(value =>
+                        value.Reference.Equals(offer.SourceDefinitionReference));
+                    var sourceAction = sourceDefinition.ActionDefinitions.Single(value =>
+                        value.Id.Equals(offer.ActionDefinitionId));
                     var choicePreview = preview.Choices.Single(value =>
                         value.CardInstanceId.HasValue &&
                         value.CardInstanceId.Value.Equals(offer.SourceCardInstanceId));
@@ -4071,8 +4075,8 @@ namespace GuardsDigital.Presentation.Match
                                 command.CardInstanceId.Equals(offer.SourceCardInstanceId)),
                         CreateDefenseBreakdown(projection.Version, preview, choicePreview),
                         CreateCardFace(projection, offer.SourceCardInstanceId),
-                        offer.InvocationContext == ActionInvocationContext.PrintedPrimary
-                            ? CardShineSlot.Primary
+                        sourceAction.Origin == ActionDefinitionOrigin.PrintedPrimary
+                            ? CardShineSlot.PrimaryRing
                             : CardShineSlot.SecondaryDefense);
                 })
                 .ToList();

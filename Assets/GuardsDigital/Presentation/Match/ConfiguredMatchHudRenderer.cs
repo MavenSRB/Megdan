@@ -274,6 +274,12 @@ namespace GuardsDigital.Presentation.Match
         // still reads as the rail's next control rather than as a detached panel.
         private const float DirectorRailGap = 2f;
         private const float DirectorStatusGap = 3f;
+        /// <summary>
+        /// The small visual breath between DIRECTOR and the commitment banner. It is deliberately
+        /// larger than the frameless status seam so the banner's flared pewter edge does not crowd
+        /// the compact toggle above it.
+        /// </summary>
+        public const float ConfirmDirectorGap = 18f;
         private const float DirectorDrawerWidth = 134f;
         private const float DirectorDrawerHeight = 112f;
         private const int OrdinaryHandCardCount = 5;
@@ -331,6 +337,9 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Where End Turn's own control stands. Milestone 8.30b.</summary>
         public Rect EndTurnControlRect => GetEndTurnControlRect();
+
+        /// <summary>The commitment confirmation lane immediately below the Director toggle.</summary>
+        public Rect ConfirmFacedownControlRect => GetConfirmFacedownControlRect();
         public Rect RedHeroRailRect =>
             CalculateHeroRailRect(PanelViewport.x, PanelViewport.y, TeamSide.Red);
         public Rect BlueHeroRailRect =>
@@ -706,12 +715,15 @@ namespace GuardsDigital.Presentation.Match
             round.EndTurnRoot.RemoveFromHierarchy();
             round.EndTurnRoot.style.position = Position.Absolute;
             root.Add(round.EndTurnRoot);
-            // The hand's Pass/Confirm banners share End Turn's corner (the user's follow-up
-            // 8.30d decision retiring the hand-status bar); the two surfaces never draw in the
-            // same moment, so one rectangle serves both.
+            // Pass keeps the corner treatment it received at 8.30d. Milestone 8.30f moves only
+            // commitment confirmation into the open lane immediately below DIRECTOR.
             hands.CornerActionsRoot.RemoveFromHierarchy();
             hands.CornerActionsRoot.style.position = Position.Absolute;
             root.Add(hands.CornerActionsRoot);
+            hands.ConfirmActionRoot.RemoveFromHierarchy();
+            hands.ConfirmActionRoot.style.position = Position.Absolute;
+            hands.SetConfirmLayoutReady(false);
+            root.Add(hands.ConfirmActionRoot);
             if (heroOverviews != null)
             {
                 // Only the revealed face leaves the rail layer. Keeping the rail columns where they
@@ -1133,6 +1145,36 @@ namespace GuardsDigital.Presentation.Match
         private Rect GetDirectorToggleRect() =>
             TryLiveRect(directorToggle, out var live) ? live : CalculateDirectorToggleRect();
 
+        private Rect GetConfirmFacedownControlRect()
+        {
+            var control = hands?.ConfirmActionRoot?.Q<VisualElement>("gd-confirm-control");
+            if (TryLiveRect(control, out var live))
+            {
+                return live;
+            }
+
+            return CalculateConfirmFacedownControlRect(CalculateDirectorToggleRect());
+        }
+
+        private Rect CalculateConfirmFacedownControlRect(Rect toggle)
+        {
+            // This runs immediately after LayoutDirectorControls writes the toggle's new style.
+            // worldBound still describes the preceding frame at that moment, which put Confirm
+            // beside an old top-left position when a tall/narrow viewport moved DIRECTOR below the
+            // resolved hero column. Recompute from the same current inputs instead of reading that
+            // one-frame-stale bound.
+            var viewport = PanelViewport;
+            var tray = CalculateCardPanelRect(viewport.x, viewport.y);
+            var top = toggle.yMax + ConfirmDirectorGap;
+            return new Rect(
+                toggle.x,
+                top,
+                Mathf.Min(EndTurnControlWidth, Mathf.Max(0f, viewport.x - Margin - toggle.x)),
+                Mathf.Min(
+                    DirectorHandsUnityView.CornerBannerHeight,
+                    Mathf.Max(0f, tray.yMin - top)));
+        }
+
         private void LayoutResolvedHudGeometry()
         {
             if (root == null || trayRegion == null)
@@ -1141,6 +1183,10 @@ namespace GuardsDigital.Presentation.Match
             }
 
             LayoutDirectorControls();
+            // The resolved hero column can move DIRECTOR after the ordinary Layout pass. Confirm
+            // must follow in the same callback; otherwise it retains the preceding frame's top and
+            // separates from DIRECTOR after a resize or first live geometry resolution.
+            LayoutEndTurnControl();
             var viewport = PanelViewport;
             var tray = CalculateCardPanelRect(viewport.x, viewport.y);
             var playfield = CalculatePlayfieldRect(viewport.x, viewport.y, tray);
@@ -1213,6 +1259,18 @@ namespace GuardsDigital.Presentation.Match
                 corner.style.top = rect.y;
                 corner.style.width = rect.width;
                 corner.style.height = rect.height;
+            }
+
+            var confirm = hands?.ConfirmActionRoot;
+            if (confirm != null)
+            {
+                var confirmRect = CalculateConfirmFacedownControlRect(
+                    CalculateDirectorToggleRect());
+                confirm.style.left = confirmRect.x;
+                confirm.style.top = confirmRect.y;
+                confirm.style.width = confirmRect.width;
+                confirm.style.height = confirmRect.height;
+                hands.SetConfirmLayoutReady(true);
             }
         }
 

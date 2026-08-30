@@ -390,11 +390,22 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(block, Is.Not.Null,
                 "Dodge is in his hand and a Block is offered whether or not its condition is met - " +
                 "which is what makes answering with it a decision. Shown: " + UiPlayer.Describe(hud));
+            Assert.That(block.DefenseShineSlot, Is.EqualTo(CardShineSlot.PrimaryRing),
+                "A primary Defense is invoked in the Reaction window, so its printed origin - not " +
+                "its invocation context - must select Dodge's primary ring.");
 
             var faceName = NameOf(runtime, TigerclawCardContent.Dodge);
-            UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-defense-card", faceName));
+            var dodgeControl = UiPlayer.NamedElementWithText(hud, "gd-defense-card", faceName);
+            UiPlayer.EnsureVisible(dodgeControl);
             yield return null;
-            UiPlayer.Click(UiPlayer.NamedElementWithText(hud, "gd-defense-card", faceName));
+            Assert.That(UiPlayer.Descendants(dodgeControl).OfType<UnityEngine.UIElements.Image>()
+                    .Any(image => image.name == "gd-card-shine" &&
+                        image.userData is CardShineSlot slot && slot == CardShineSlot.PrimaryRing),
+                Is.True, "The live Dodge face carries its generated primary-ring overlay.");
+            Assert.That(UiPlayer.Descendants(dodgeControl).OfType<UnityEngine.UIElements.Image>()
+                    .Any(image => image.name == "gd-card-shine-primary-contrast"),
+                Is.True, "and the contrast pass keeps that ring legible on the Blue face.");
+            UiPlayer.Click(dodgeControl);
             yield return null;
             yield return null;
 

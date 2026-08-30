@@ -1102,7 +1102,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>The coin disc's diameter, which is what keeps it inside the item strip's line.</summary>
-        private const float CoinDiscSize = 18f;
+        private const float CoinDiscSize = 24f;
 
         /// <summary>
         /// p.15's balance as the coin it counts: a struck disc with the number on its face.
@@ -1232,7 +1232,7 @@ namespace GuardsDigital.Presentation.Match
             coinDisc.style.backgroundColor = MatchHudTheme.CoinFace;
             HudElements.Border(coinDisc, MatchHudTheme.CoinEdge, 1f, CoinDiscSize / 2f);
             var coinAmount = HudElements.Text(
-                hero.CoinAmountLabel, 9f, MatchHudTheme.CoinInk, FontStyle.Bold);
+                hero.CoinAmountLabel, 13f, MatchHudTheme.CoinInk, FontStyle.Bold);
             coinAmount.name = "gd-hero-coins-amount";
             coinAmount.style.whiteSpace = WhiteSpace.NoWrap;
             coinAmount.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -1408,6 +1408,15 @@ namespace GuardsDigital.Presentation.Match
                 // does not have.
                 initiative.style.whiteSpace = WhiteSpace.NoWrap;
                 initiative.style.unityTextAlign = TextAnchor.MiddleCenter;
+                initiative.style.position = Position.Absolute;
+                initiative.style.left = 0f;
+                initiative.style.top = 0f;
+                initiative.style.right = 0f;
+                initiative.style.bottom = 0f;
+                initiative.style.marginTop = 0f;
+                initiative.style.marginBottom = 0f;
+                initiative.style.marginLeft = 0f;
+                initiative.style.marginRight = 0f;
                 marker.Add(initiative);
 
                 // The same reveal the four resolved slots offer, on the card that has not resolved yet:
@@ -1424,7 +1433,7 @@ namespace GuardsDigital.Presentation.Match
 
     /// <summary>
     /// The card tray: one hero's whole current round, colour-coded, in the order the milestone fixes -
-    /// already played in ascending turn order, then available, then discarded.
+    /// already played in ascending turn order, then discarded/unavailable, then available.
     ///
     /// Which hero it shows is the presenter's, and it is changed only from the map. This view draws no
     /// hero-selection control of its own.
@@ -1565,12 +1574,22 @@ namespace GuardsDigital.Presentation.Match
             cornerActions.style.flexDirection = FlexDirection.Column;
             cornerActions.style.justifyContent = Justify.FlexEnd;
             cornerActions.style.alignItems = Align.Stretch;
+            confirmAction = new VisualElement { name = "gd-hand-confirm-action" };
+            confirmAction.pickingMode = PickingMode.Ignore;
+            confirmAction.style.flexDirection = FlexDirection.Column;
+            confirmAction.style.justifyContent = Justify.FlexStart;
+            confirmAction.style.alignItems = Align.Stretch;
+            confirmAction.style.display = DisplayStyle.None;
             Root.Add(header);
             Root.Add(cards);
             Root.Add(cornerActions);
+            Root.Add(confirmAction);
         }
 
         private readonly VisualElement cornerActions;
+        private readonly VisualElement confirmAction;
+        private bool confirmLayoutReady;
+        private bool trayHidden;
 
         /// <summary>One corner banner's height; two of them stack inside End Turn's corner rect.</summary>
         public const float CornerBannerHeight = 44f;
@@ -1583,6 +1602,21 @@ namespace GuardsDigital.Presentation.Match
         /// moment with (End Turn belongs to a revealed turn, these to choosing a card).
         /// </summary>
         public VisualElement CornerActionsRoot => cornerActions;
+
+        /// <summary>The facedown commitment confirmation, hosted below DIRECTOR by 8.30f.</summary>
+        public VisualElement ConfirmActionRoot => confirmAction;
+
+        /// <summary>
+        /// Prevents the absolute confirmation host from painting at UI Toolkit's default origin for
+        /// the frame before the configured HUD publishes its first real rectangle.
+        /// </summary>
+        public void SetConfirmLayoutReady(bool ready)
+        {
+            confirmLayoutReady = ready;
+            confirmAction.style.display = ready && !trayHidden
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+        }
 
         public VisualElement Root { get; }
 
@@ -1684,6 +1718,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public void SetHidden(bool hidden)
         {
+            trayHidden = hidden;
             if (hidden)
             {
                 ClearPeekPreview();
@@ -1695,6 +1730,9 @@ namespace GuardsDigital.Presentation.Match
             // hand-status bar); the corner banners are the surface exclusivity must hide.
             HeaderRoot.style.display = DisplayStyle.None;
             cornerActions.style.display = display;
+            confirmAction.style.display = confirmLayoutReady && !hidden
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
         }
 
         private void Rebuild()
@@ -1728,6 +1766,7 @@ namespace GuardsDigital.Presentation.Match
             // that moves the game on. The Button texts stay the exact selector strings every
             // existing check and driver finds these commands by.
             cornerActions.Clear();
+            confirmAction.Clear();
             if (hand.CanPass)
             {
                 var pass = new RoundActionUnityView.PewterBanner(
@@ -1754,7 +1793,7 @@ namespace GuardsDigital.Presentation.Match
                 };
                 confirm.SetVisibleLabel("CONFIRM FACEDOWN");
                 confirm.style.minHeight = CornerBannerHeight;
-                cornerActions.Add(confirm);
+                confirmAction.Add(confirm);
             }
 
             for (var index = 0; index < drawnCards.Length; index++)
@@ -1915,6 +1954,7 @@ namespace GuardsDigital.Presentation.Match
                 // all - nothing offered, nothing lit.
                 var isPrimary = region.InvocationContext == ActionInvocationContext.PrintedPrimary;
                 Image shine = null;
+                Image primaryContrast = null;
                 PrimaryOfferGlow primaryGlow = null;
                 if (usesPreparedArtwork &&
                     region.Invocation != null &&
@@ -1928,6 +1968,15 @@ namespace GuardsDigital.Presentation.Match
                     HudElements.Border(control, Color.clear, 0f, 0f);
                     control.style.overflow = Overflow.Visible;
                     shine = BuildShineOverlay(shineTexture, ShineSlotFor(region));
+                    if (ShineSlotFor(region) == CardShineSlot.PrimaryRing)
+                    {
+                        var slot = ShineSlotFor(region);
+                        primaryContrast = BuildShineOverlay(shineTexture, slot);
+                        primaryContrast.name = "gd-card-shine-primary-contrast";
+                        primaryContrast.tintColor = MatchHudTheme.PrimaryShineContrast;
+                        SetPrimaryContrastHighlighted(primaryContrast, false);
+                        overlay.Add(primaryContrast);
+                    }
                     overlay.Add(shine);
                 }
                 else if (isPrimary && region.Invocation != null)
@@ -1977,9 +2026,11 @@ namespace GuardsDigital.Presentation.Match
                             }
                             else if (shine != null)
                             {
-                                shine.style.opacity = highlighted ? 1f : SteadyShineOpacity;
-                                shine.style.scale = new Scale(Vector3.one *
-                                    (highlighted ? HoverShineScale : 1f));
+                                SetPreparedShineHighlighted(shine, highlighted);
+                                if (primaryContrast != null)
+                                {
+                                    SetPrimaryContrastHighlighted(primaryContrast, highlighted);
+                                }
                             }
                             else if (usesPreparedArtwork)
                             {
@@ -2135,9 +2186,13 @@ namespace GuardsDigital.Presentation.Match
                     rect.x + Margin, rect.y + Margin,
                     rect.width - Margin * 2f, rect.height - Margin * 2f);
                 var boost = hovered ? 1.3f : 1f;
-                StrokeBox(painter, box, WithAlpha(MatchHudTheme.ShineHalo, 0.16f * boost), 9f);
-                StrokeBox(painter, box, WithAlpha(MatchHudTheme.ShineGlow, 0.38f * boost), 5f);
-                StrokeBox(painter, box, WithAlpha(MatchHudTheme.ShineRim, Mathf.Min(1f, 0.92f * boost)), 2f);
+                StrokeBox(painter, box,
+                    WithAlpha(MatchHudTheme.PrimaryShineHalo, 0.22f * boost), 9f);
+                StrokeBox(painter, box,
+                    WithAlpha(MatchHudTheme.PrimaryShineGlow, 0.48f * boost), 5f);
+                StrokeBox(painter, box,
+                    WithAlpha(MatchHudTheme.PrimaryShineRim,
+                        Mathf.Min(1f, 0.96f * boost)), 2f);
             }
 
             private static Color WithAlpha(Color color, float alpha) =>
@@ -2451,10 +2506,16 @@ namespace GuardsDigital.Presentation.Match
         /// response is visible too - at 0.95 the raise to 1.0 read as nothing, which the user
         /// called out on the live build.
         /// </summary>
-        public const float SteadyShineOpacity = 0.72f;
+        public const float SteadyShineOpacity = 0.90f;
 
-        /// <summary>The slight grow a lit overlay takes while pointed at.</summary>
-        public const float HoverShineScale = 1.03f;
+        /// <summary>
+        /// A Primary's traced printed-lines ring needs a stronger core than the compact Secondary
+        /// badges because it crosses both pale rules text and busy art at card scale.
+        /// </summary>
+        public const float PrimaryRingSteadyOpacity = 0.96f;
+
+        /// <summary>The aligned graphite pass that keys the Primary ring over any card colour.</summary>
+        public const float PrimaryRingContrastOpacity = 0.52f;
 
         /// <summary>
         /// Which prepared shine slot an offered printed region lights: the printed-lines ring for
@@ -2485,6 +2546,9 @@ namespace GuardsDigital.Presentation.Match
                 name = "gd-card-shine",
                 image = texture,
                 scaleMode = ScaleMode.ScaleToFit,
+                tintColor = slot == CardShineSlot.PrimaryRing
+                    ? MatchHudTheme.PrimaryShineTint
+                    : Color.white,
                 pickingMode = PickingMode.Ignore,
                 focusable = false,
                 userData = slot
@@ -2494,9 +2558,33 @@ namespace GuardsDigital.Presentation.Match
             shine.style.top = 0f;
             shine.style.right = 0f;
             shine.style.bottom = 0f;
-            shine.style.opacity = SteadyShineOpacity;
+            SetPreparedShineHighlighted(shine, false);
             return shine;
         }
+
+        /// <summary>
+        /// Strengthens one prepared overlay without changing any of its resolved geometry. Hover and
+        /// keyboard focus share this path so neither can make the traced artwork jump on the card.
+        /// </summary>
+        internal static void SetPreparedShineHighlighted(Image shine, bool highlighted)
+        {
+            if (shine == null)
+            {
+                throw new ArgumentNullException(nameof(shine));
+            }
+
+            var primary = shine.userData is CardShineSlot slot &&
+                slot == CardShineSlot.PrimaryRing;
+            shine.style.opacity = highlighted
+                ? 1f
+                : primary ? PrimaryRingSteadyOpacity : SteadyShineOpacity;
+        }
+
+        private static void SetPrimaryContrastHighlighted(Image shine, bool highlighted)
+        {
+            shine.style.opacity = highlighted ? 0.68f : PrimaryRingContrastOpacity;
+        }
+
 
         /// <summary>
         /// The generated fallback face's version of the same statement: the typed chip that prints
@@ -2542,6 +2630,7 @@ namespace GuardsDigital.Presentation.Match
             switch (slot)
             {
                 case CardShineSlot.Primary:
+                case CardShineSlot.PrimaryRing:
                     return cardSurface.Q<VisualElement>("gd-card-primary-value") ??
                         cardSurface.Q<VisualElement>("gd-card-primary-kind");
                 case CardShineSlot.SecondaryDefense:
@@ -2555,7 +2644,7 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// Lights one badge of a standalone card face - the Defense prompt's use, where every legal
-        /// card shines exactly the shield it would defend with. Prepared faces get the traced
+        /// card shines exactly the printed region it would defend with. Prepared faces get the traced
         /// overlay; generated faces light the typed chip; a missing overlay quietly lights nothing
         /// beyond the loader's one-time diagnostic, because the face itself is already the offer.
         /// </summary>
@@ -2571,6 +2660,18 @@ namespace GuardsDigital.Presentation.Match
             {
                 if (ConfiguredCardShine.TryLoadTexture(card.DefinitionReference, slot, out var texture))
                 {
+                    if (slot == CardShineSlot.PrimaryRing)
+                    {
+                        // Match the ordinary printed-action surface exactly. The cool ring alone
+                        // disappears into Blue and pale rules panels (Dodge exposed this); its
+                        // aligned graphite keyline is what makes the same traced lines legible.
+                        var contrast = BuildShineOverlay(texture, slot);
+                        contrast.name = "gd-card-shine-primary-contrast";
+                        contrast.tintColor = MatchHudTheme.PrimaryShineContrast;
+                        SetPrimaryContrastHighlighted(contrast, false);
+                        faceElement.Add(contrast);
+                    }
+
                     faceElement.Add(BuildShineOverlay(texture, slot));
                 }
 

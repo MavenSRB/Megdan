@@ -159,7 +159,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheTray_SortsPlayedThenAvailableThenDiscardedAndNamesNoRound()
+        public void TheTray_SortsPlayedThenUnavailableThenAvailableAndNamesNoRound()
         {
             var session = ConfiguredMatchFixtures.CreateConfiguredSession();
             var view = new DirectorHandsUnityView();
@@ -190,7 +190,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ADiscardedCard_SitsAtTheFarRightAndIsReadFromTheProjectedLifecycle()
+        public void ADiscardedCard_SitsOnTheLeftUnavailableSideAndIsReadFromTheProjectedLifecycle()
         {
             var session = ConfiguredMatchFixtures.CreateSessionWithADiscardedCard(out var heroId);
             var view = new DirectorHandsUnityView();
@@ -200,7 +200,13 @@ namespace GuardsDigital.Tests.EditMode
             var hand = view.Model.Hands.Single(value => value.HeroId.Equals(heroId));
             var discarded = hand.TrayCards.Where(card => card.Group == TrayCardGroup.Discarded).ToArray();
             Assert.That(discarded, Is.Not.Empty, "The fixture discarded a card through a Defense.");
-            Assert.That(hand.TrayCards.Last().Group, Is.EqualTo(TrayCardGroup.Discarded));
+            var firstAvailable = Array.FindIndex(
+                hand.TrayCards.ToArray(), card => card.Group == TrayCardGroup.Available);
+            var lastDiscarded = Array.FindLastIndex(
+                hand.TrayCards.ToArray(), card => card.Group == TrayCardGroup.Discarded);
+            Assert.That(lastDiscarded, Is.LessThan(firstAvailable),
+                "A Defense discard joins the left/unavailable side rather than remaining beside " +
+                "the playable cards on the right.");
             Assert.That(discarded.Select(card => card.HistoryLabel).Distinct(),
                 Is.EqualTo(new[] { "DISCARDED" }));
             foreach (var card in discarded)
@@ -1617,14 +1623,16 @@ namespace GuardsDigital.Tests.EditMode
 
                 var coins = strip.Children().Single(child => child.name == "gd-hero-coins");
                 var disc = Descendants(coins).Single(child => child.name == "gd-hero-coin-disc");
-                Assert.That(disc.style.width.value.value, Is.EqualTo(18f).Within(0.01f),
+                Assert.That(disc.style.width.value.value, Is.EqualTo(24f).Within(0.01f),
                     "The coin is a disc, so its two axes are one number.");
-                Assert.That(disc.style.height.value.value, Is.EqualTo(18f).Within(0.01f));
+                Assert.That(disc.style.height.value.value, Is.EqualTo(24f).Within(0.01f));
                 Assert.That(disc.style.flexShrink.value, Is.EqualTo(0f).Within(0.01f),
                     "and a squashed coin at a narrow rail would be an ellipse with a number in it.");
 
                 foreach (var part in Descendants(coins).OfType<Label>())
                 {
+                    Assert.That(part.style.fontSize.value.value, Is.EqualTo(13f).Within(0.01f),
+                        "8.30f replaces the former nine-point numeral with a readable count.");
                     Assert.That(part.style.whiteSpace.value, Is.EqualTo(WhiteSpace.NoWrap),
                         "A wrapped balance would grow the disc it is centred in.");
                     Assert.That(part.style.marginTop.value.value, Is.EqualTo(0f).Within(0.01f),
@@ -3003,9 +3011,37 @@ namespace GuardsDigital.Tests.EditMode
                     Assert.That(resolvingShines.Select(image => image.pickingMode),
                         Is.All.EqualTo(PickingMode.Ignore),
                         "The shine is light, never a hit surface: drivers and focus are untouched.");
-                    Assert.That(resolvingShines.Select(image => image.style.opacity.value),
-                        Is.All.EqualTo(DirectorHandsUnityView.SteadyShineOpacity).Within(0.001f),
-                        "The steady state; pointer and focus raise it to full.");
+                    foreach (var image in resolvingShines)
+                    {
+                        var expectedTint = (CardShineSlot)image.userData ==
+                            CardShineSlot.PrimaryRing
+                                ? MatchHudTheme.PrimaryShineTint
+                                : Color.white;
+                        Assert.That(image.tintColor, Is.EqualTo(expectedTint),
+                            "Only Primary receives the contrasting hue; Secondary badges keep " +
+                            "the accepted warm treatment.");
+                    }
+                    foreach (var image in resolvingShines)
+                    {
+                        var expectedOpacity = (CardShineSlot)image.userData ==
+                            CardShineSlot.PrimaryRing
+                                ? DirectorHandsUnityView.PrimaryRingSteadyOpacity
+                                : DirectorHandsUnityView.SteadyShineOpacity;
+                        Assert.That(image.style.opacity.value,
+                            Is.EqualTo(expectedOpacity).Within(0.001f),
+                            "The steady state; pointer and focus raise it to full.");
+                    }
+                    var primaryContrast = Descendants(hands.Root)
+                        .OfType<Image>()
+                        .Where(element => element.name == "gd-card-shine-primary-contrast")
+                        .ToArray();
+                    Assert.That(primaryContrast, Has.Length.EqualTo(availableRegions.Count(region =>
+                        region.InvocationContext == ActionInvocationContext.PrintedPrimary)));
+                    Assert.That(primaryContrast.Select(image => image.tintColor),
+                        Is.All.EqualTo(MatchHudTheme.PrimaryShineContrast));
+                    Assert.That(primaryContrast.Select(image => image.style.opacity.value),
+                        Is.All.EqualTo(DirectorHandsUnityView.PrimaryRingContrastOpacity).Within(0.001f),
+                        "A Primary receives one aligned graphite keyline beneath the cool rim.");
                     Assert.That(Descendants(hands.Root)
                             .Any(element => element.name == "gd-primary-offer-glow"), Is.False,
                         "With ring overlays resolving, the drawn approximation never appears.");
@@ -3037,6 +3073,156 @@ namespace GuardsDigital.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(artwork);
                 UnityEngine.Object.DestroyImmediate(shine);
             }
+        }
+
+        [Test]
+        public void ConfirmStandsBelowDirectorWhileEndTurnKeepsItsCornerWithoutDuplicates()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var hands = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, hands);
+            presenter.Refresh();
+            var selected = hands.Model.ViewedHand.TrayCards.First(card => card.IsSelectable);
+            Assert.That(presenter.SelectCommitmentCard(selected.CardInstanceId), Is.True);
+            Assert.That(hands.ConfirmActionRoot.style.display.value, Is.EqualTo(DisplayStyle.None),
+                "Before the HUD publishes absolute geometry, Confirm must not flash at (0,0).");
+
+            var host = new GameObject("8.30f-confirm-layout");
+            try
+            {
+                var hud = host.AddComponent<ConfiguredMatchHudRenderer>();
+                hud.Configure(
+                    hands,
+                    new RoundActionUnityView(),
+                    new UndoRestartUnityView(),
+                    new DiagnosticLogUnityView(),
+                    new MinionChoiceUnityView(),
+                    new HeroOverviewsUnityView());
+
+                var confirms = Descendants(hud.RootElement)
+                    .Where(element => element.name == "gd-confirm-control").ToArray();
+                Assert.That(confirms, Has.Length.EqualTo(1));
+                Assert.That(Descendants(hands.CornerActionsRoot)
+                    .Any(element => element.name == "gd-confirm-control"), Is.False,
+                    "Only Pass retains the bottom-right corner host.");
+                Assert.That(Descendants(hands.ConfirmActionRoot)
+                    .Single(element => element.name == "gd-confirm-control"), Is.SameAs(confirms[0]));
+                Assert.That(hands.ConfirmActionRoot.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+
+                var expected = hud.ConfirmFacedownControlRect;
+                Assert.That(hands.ConfirmActionRoot.style.left.value.value, Is.EqualTo(expected.x));
+                Assert.That(hands.ConfirmActionRoot.style.top.value.value, Is.EqualTo(expected.y));
+                Assert.That(hands.ConfirmActionRoot.style.width.value.value, Is.EqualTo(expected.width));
+                var director = hud.RootElement.Q<Button>("gd-director-toggle");
+                Assert.That(expected.yMin,
+                    Is.EqualTo(director.style.top.value.value +
+                        director.style.height.value.value +
+                        ConfiguredMatchHudRenderer.ConfirmDirectorGap));
+
+                var endTurn = hud.EndTurnControlRect;
+                Assert.That(endTurn.xMin,
+                    Is.GreaterThan(ConfiguredMatchHudRenderer.PanelViewport.x / 2f));
+                Assert.That(endTurn.yMin,
+                    Is.GreaterThan(ConfiguredMatchHudRenderer.PanelViewport.y / 2f),
+                    "End Turn remains in the panel's bottom-right quadrant.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void PrintedActionHighlights_StrengthenInPlaceAndRemainReadableAtRest()
+        {
+            var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            try
+            {
+                var build = typeof(DirectorHandsUnityView).GetMethod(
+                    "BuildShineOverlay",
+                    System.Reflection.BindingFlags.Static |
+                    System.Reflection.BindingFlags.NonPublic);
+                var setHighlighted = typeof(DirectorHandsUnityView).GetMethod(
+                    "SetPreparedShineHighlighted",
+                    System.Reflection.BindingFlags.Static |
+                    System.Reflection.BindingFlags.NonPublic);
+                Assert.That(build, Is.Not.Null);
+                Assert.That(setHighlighted, Is.Not.Null);
+                var shine = (Image)build.Invoke(null,
+                    new object[] { texture, CardShineSlot.PrimaryRing });
+                var geometry = new[]
+                {
+                    shine.style.left.value.value,
+                    shine.style.top.value.value,
+                    shine.style.right.value.value,
+                    shine.style.bottom.value.value
+                };
+                Assert.That(shine.style.opacity.value,
+                    Is.EqualTo(DirectorHandsUnityView.PrimaryRingSteadyOpacity).Within(0.001f));
+                Assert.That(shine.style.opacity.value, Is.GreaterThan(0.8f),
+                    "The steady overlay is deliberately strong enough to read at real card size.");
+
+                var secondary = (Image)build.Invoke(null,
+                    new object[] { texture, CardShineSlot.SecondaryMovement });
+                Assert.That(secondary.style.opacity.value,
+                    Is.EqualTo(DirectorHandsUnityView.SteadyShineOpacity).Within(0.001f));
+                Assert.That(secondary.style.opacity.value,
+                    Is.LessThan(DirectorHandsUnityView.PrimaryRingSteadyOpacity),
+                    "Compact secondary symbols remain readable instead of washing into a white blob.");
+
+                setHighlighted.Invoke(null, new object[] { shine, true });
+                Assert.That(shine.style.opacity.value, Is.EqualTo(1f));
+                Assert.That(new[]
+                    {
+                        shine.style.left.value.value,
+                        shine.style.top.value.value,
+                        shine.style.right.value.value,
+                        shine.style.bottom.value.value
+                    }, Is.EqualTo(geometry),
+                    "Hover/focus strengthens the same traced pixels without translating or scaling.");
+
+                setHighlighted.Invoke(null, new object[] { shine, false });
+                Assert.That(shine.style.opacity.value,
+                    Is.EqualTo(DirectorHandsUnityView.PrimaryRingSteadyOpacity).Within(0.001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
+        public void HeroRailNumbersAndDefenseDiscardOrdering_MatchTheCorrectedHud()
+        {
+            var resolving = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var rails = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(resolving, rails).Refresh();
+            var initiative = Descendants(rails.Root)
+                .Where(element => element.name == "gd-current-card")
+                .Select(marker => Descendants(marker).OfType<Label>().Single())
+                .First();
+            Assert.That(initiative.style.position.value, Is.EqualTo(Position.Absolute));
+            Assert.That(initiative.style.left.value.value, Is.Zero);
+            Assert.That(initiative.style.top.value.value, Is.Zero);
+            Assert.That(initiative.style.right.value.value, Is.Zero);
+            Assert.That(initiative.style.bottom.value.value, Is.Zero,
+                "The one- or two-digit Initiative label fills the fixed badge and centres in both axes.");
+
+            var coin = Descendants(rails.Root)
+                .OfType<Label>().First(element => element.name == "gd-hero-coins-amount");
+            var disc = coin.parent;
+            Assert.That(coin.style.fontSize.value.value, Is.GreaterThan(9f));
+            Assert.That(disc.style.width.value.value, Is.GreaterThan(18f));
+            Assert.That(disc.style.width.value.value, Is.EqualTo(disc.style.height.value.value));
+            Assert.That(coin.parent.parent.tooltip, Does.Contain("coin"));
+
+            var discardedSession = ConfiguredMatchFixtures.CreateSessionWithADiscardedCard(out var heroId);
+            var hands = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(discardedSession, hands);
+            presenter.SelectViewedHero(heroId);
+            var tray = hands.Model.ViewedHand.TrayCards.ToArray();
+            Assert.That(Array.FindLastIndex(tray, card => card.Group == TrayCardGroup.Discarded),
+                Is.LessThan(Array.FindIndex(tray, card => card.Group == TrayCardGroup.Available)));
         }
 
         [Test]
@@ -3103,6 +3289,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(BroganCardContent.DealtDefinitions)
                 .Concat(SabinaCardContent.DealtDefinitions);
             var missing = new List<string>();
+            var movementMasks = new List<string>();
             var resolved = 0;
             foreach (var definition in all)
             {
@@ -3145,6 +3332,11 @@ namespace GuardsDigital.Tests.EditMode
                             System.IO.Path.Combine(resourcesRoot, resourcePath + ".png")))
                     {
                         resolved++;
+                        if (slot == CardShineSlot.SecondaryMovement)
+                        {
+                            movementMasks.Add(System.IO.Path.Combine(
+                                resourcesRoot, resourcePath + ".png"));
+                        }
                     }
                     else
                     {
@@ -3158,6 +3350,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(resolved, Is.EqualTo(386),
                 "The typed inventory is the 386 slots the generator traces - the badge and " +
                 "rail overlays plus one printed-lines ring per non-Ultimate card.");
+            Assert.That(movementMasks, Has.Count.EqualTo(92));
+            var canonicalBoot = System.IO.File.ReadAllBytes(movementMasks.Single(path =>
+                path.Replace('\\', '/').EndsWith(
+                    "/sabina/_shine/point-blank-shot--secondary-movement.png",
+                    StringComparison.OrdinalIgnoreCase)));
+            foreach (var movementMask in movementMasks)
+            {
+                Assert.That(System.IO.File.ReadAllBytes(movementMask), Is.EqualTo(canonicalBoot),
+                    $"{movementMask} must use the audited full-boot silhouette; per-card colour " +
+                    "classification previously collapsed some masks around the numeral.");
+            }
         }
 
         [Test]
@@ -3179,13 +3382,17 @@ namespace GuardsDigital.Tests.EditMode
 
                     // The placement is the presenter's typed statement, one per offer, derived from
                     // the offered Defense action's own origin: the rail shield for a secondary
-                    // Defense, the primary badge for a Duelist or Block. DECLINE carries None.
+                    // Defense, the printed-lines ring for a Duelist or Block. DECLINE carries None.
                     var offered = view.Model.DefenseChoices.Where(value => value.Card != null).ToArray();
                     Assert.That(offered, Is.Not.Empty);
                     Assert.That(offered.Select(value => value.DefenseShineSlot),
                         Is.EqualTo(choice.LegalDefenseOffers.Select(offer =>
-                            offer.InvocationContext == ActionInvocationContext.PrintedPrimary
-                                ? CardShineSlot.Primary
+                            session.Projection.Definitions.Single(definition =>
+                                    definition.Reference.Equals(offer.SourceDefinitionReference))
+                                .ActionDefinitions.Single(action =>
+                                    action.Id.Equals(offer.ActionDefinitionId)).Origin ==
+                                ActionDefinitionOrigin.PrintedPrimary
+                                ? CardShineSlot.PrimaryRing
                                 : CardShineSlot.SecondaryDefense)));
                     Assert.That(view.Model.DefenseChoices.Last().DefenseShineSlot,
                         Is.EqualTo(CardShineSlot.None),
@@ -3214,15 +3421,35 @@ namespace GuardsDigital.Tests.EditMode
                                 Is.EqualTo(offered[index].DefenseShineSlot),
                                 "and it is the presenter-typed one.");
                             Assert.That(shines[0].pickingMode, Is.EqualTo(PickingMode.Ignore));
+                            var contrasts = Descendants(controls[index])
+                                .OfType<Image>()
+                                .Where(element =>
+                                    element.name == "gd-card-shine-primary-contrast")
+                                .ToArray();
+                            if (offered[index].DefenseShineSlot == CardShineSlot.PrimaryRing)
+                            {
+                                Assert.That(contrasts, Has.Length.EqualTo(1),
+                                    "A primary Defense choice needs the same graphite keyline as " +
+                                    "the ordinary action surface, or its cool ring vanishes on Blue.");
+                                Assert.That(contrasts[0].tintColor,
+                                    Is.EqualTo(MatchHudTheme.PrimaryShineContrast));
+                                Assert.That(contrasts[0].style.opacity.value,
+                                    Is.EqualTo(DirectorHandsUnityView.PrimaryRingContrastOpacity)
+                                        .Within(0.001f));
+                            }
+                            else
+                            {
+                                Assert.That(contrasts, Is.Empty);
+                            }
                         }
                         else
                         {
-                            var chipName = offered[index].DefenseShineSlot == CardShineSlot.Primary
+                            var chipName = offered[index].DefenseShineSlot == CardShineSlot.PrimaryRing
                                 ? "gd-card-primary-value"
                                 : "gd-card-secondary-defense";
                             var chip = Descendants(controls[index])
                                 .FirstOrDefault(element => element.name == chipName) ??
-                                (offered[index].DefenseShineSlot == CardShineSlot.Primary
+                                (offered[index].DefenseShineSlot == CardShineSlot.PrimaryRing
                                     ? Descendants(controls[index]).FirstOrDefault(element =>
                                         element.name == "gd-card-primary-kind")
                                     : null);

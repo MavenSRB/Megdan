@@ -97,6 +97,21 @@ namespace GuardsDigital.Presentation.Match
         public static readonly Color ShineHalo = new Color(1f, 0.882f, 0.588f, 1f);
 
         /// <summary>
+        /// The Primary action's restrained cool-metal hierarchy. Warm gold could disappear into Gold,
+        /// Red and parchment-heavy primary panels; a neutral graphite keyline beneath this cool ivory
+        /// remains legible over every face without borrowing selection's cyan or Active's violet.
+        /// </summary>
+        public static readonly Color PrimaryShineTint = new Color(0.88f, 0.94f, 1f, 1f);
+
+        public static readonly Color PrimaryShineContrast = new Color(0.08f, 0.10f, 0.14f, 1f);
+
+        public static readonly Color PrimaryShineRim = new Color(0.94f, 0.97f, 1f, 1f);
+
+        public static readonly Color PrimaryShineGlow = new Color(0.62f, 0.70f, 0.78f, 1f);
+
+        public static readonly Color PrimaryShineHalo = new Color(0.10f, 0.12f, 0.16f, 1f);
+
+        /// <summary>
         /// Milestone 8.30d: End Turn's banner cloth. Neutral pewter by the user's decision - the
         /// board already carries enough gold - echoing the silver of the cards' own printed icons.
         /// </summary>
