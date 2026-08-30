@@ -1558,6 +1558,10 @@ namespace GuardsDigital.Presentation.Match
             // carried is not rebuilt - the narration and the rails already say it.
             header.style.display = DisplayStyle.None;
             cornerActions = new VisualElement { name = "gd-hand-corner-actions" };
+            // The host itself must never take the pointer: it shares End Turn's corner rect,
+            // and a pickable empty host swallowed every End Turn click (three journeys caught
+            // it). Its banner children pick for themselves.
+            cornerActions.pickingMode = PickingMode.Ignore;
             cornerActions.style.flexDirection = FlexDirection.Column;
             cornerActions.style.justifyContent = Justify.FlexEnd;
             cornerActions.style.alignItems = Align.Stretch;

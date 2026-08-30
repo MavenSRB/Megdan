@@ -999,10 +999,10 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockWidth)
                     .Within(UiPlayer.PixelSnapping()),
                 "The status block reserves the largest routine state's width from the first click.");
-            Assert.That(statusDock.height,
-                Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockHeight)
-                    .Within(UiPlayer.PixelSnapping()),
-                "The status block reserves the largest routine state's height from the first click.");
+            // Milestone 8.30d, the user's final call: the dock reserves no height - the empty
+            // box above the cards is retired, and content-driven is the invariant now.
+            Assert.That(statusDock.height, Is.LessThan(24f),
+                "The dock draws nothing in routine states; its empty box is retired.");
             Assert.That(statusDock.xMax,
                 Is.LessThanOrEqualTo(safe.UpperRegion.xMin + 0.5f),
                 "The relocated status stops before the upper hex-safe arm begins.");
