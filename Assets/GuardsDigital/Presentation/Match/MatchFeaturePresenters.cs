@@ -2060,7 +2060,8 @@ namespace GuardsDigital.Presentation.Match
             string assistiveLabel,
             TypedInvocationViewModel invocation,
             FastTravelOfferViewModel fastTravelOffer = null,
-            ClearOfferViewModel clearOffer = null)
+            ClearOfferViewModel clearOffer = null,
+            CardColor cardColor = CardColor.None)
         {
             if (!offer.SourceCardInstanceId.IsDefined || !offer.ActionDefinitionId.IsDefined)
             {
@@ -2086,6 +2087,7 @@ namespace GuardsDigital.Presentation.Match
             Invocation = invocation;
             FastTravelOffer = fastTravelOffer;
             ClearOffer = clearOffer;
+            CardColor = cardColor;
         }
 
         public ActionOffer Offer { get; }
@@ -2104,6 +2106,12 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The existing typed replacement selectors attached to the action they replace.</summary>
         public FastTravelOfferViewModel FastTravelOffer { get; }
         public ClearOfferViewModel ClearOffer { get; }
+
+        /// <summary>
+        /// The printed colour of the card this region sits on - a typed fact from the definition,
+        /// carried so the replacement ribbons can wear the card's own cloth.
+        /// </summary>
+        public CardColor CardColor { get; }
     }
 
     /// <summary>
@@ -3372,7 +3380,8 @@ namespace GuardsDigital.Presentation.Match
                     fastTravelOffers.SingleOrDefault(value =>
                         value.ReplacedMovementActionDefinitionId.Equals(offer.ActionDefinitionId)),
                     clearOffers.SingleOrDefault(value =>
-                        value.ReplacedAttackActionDefinitionId.Equals(offer.ActionDefinitionId))));
+                        value.ReplacedAttackActionDefinitionId.Equals(offer.ActionDefinitionId)),
+                    definition.Progression.Color));
             }
 
             // Keyboard order follows the face from its upper Secondary strip into its Primary band.

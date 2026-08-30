@@ -1122,10 +1122,24 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
             var confirmationDock = dockElement.worldBound;
+            // Milestone 8.30d, the user's follow-up decision: Confirm is a pewter corner banner
+            // in End Turn's own rectangle, not a control inside the dock's hand-status bar -
+            // that bar is retired outright.
+            var confirmControl = Descendants(root.Hud.RootElement).OfType<Button>()
+                .SingleOrDefault(control => control.text == "CONFIRM FACEDOWN");
+            Assert.That(confirmControl, Is.Not.Null,
+                "The middle measurement is the selected-card confirmation state.");
             Assert.That(Descendants(dockElement).OfType<Button>()
                     .Any(control => control.text == "CONFIRM FACEDOWN"),
-                Is.True,
-                "The middle measurement is the selected-card confirmation state.");
+                Is.False,
+                "The dock's hand-status bar is retired; Confirm lives in the corner.");
+            var confirmBox = confirmControl.worldBound;
+            var cornerRect = root.Hud.EndTurnControlRect;
+            Assert.That(confirmBox.xMax,
+                Is.EqualTo(cornerRect.xMax).Within(UiPlayer.PixelSnapping() * 2f),
+                "The confirm banner stands in End Turn's corner rectangle.");
+            Assert.That(confirmBox.yMax,
+                Is.EqualTo(cornerRect.yMax).Within(UiPlayer.PixelSnapping() * 2f));
             yield return Capture("tmp/milestone-8-25f2-status-dock-confirmation.png");
 
             Assert.That(root.Runtime.ConfirmSelectedCommitment(), Is.True);
@@ -1141,11 +1155,14 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(confirmationDock.size.y, Is.EqualTo(awaitingDock.size.y).Within(snap));
             Assert.That(dock.size.x, Is.EqualTo(awaitingDock.size.x).Within(snap));
             Assert.That(dock.size.y, Is.EqualTo(awaitingDock.size.y).Within(snap),
-                "Awaiting, confirmation and revealed action states keep one largest-state footprint.");
+                "Awaiting, confirmation and revealed action states keep one footprint.");
             Assert.That(dock.width,
                 Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockWidth).Within(snap));
-            Assert.That(dock.height,
-                Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockHeight).Within(snap));
+            // Milestone 8.30d, the user's final call: the dock reserves no height and draws no
+            // chrome - every routine tenant moved elsewhere, so an empty frame was all that
+            // remained and it is gone.
+            Assert.That(dock.height, Is.LessThan(24f),
+                "The dock draws nothing in routine states; its empty box is retired.");
             yield return Capture("tmp/milestone-8-25f2-status-dock-actions.png");
 
             var context = Named(root.Hud.RootElement, "gd-context");
@@ -1183,7 +1200,6 @@ namespace GuardsDigital.Tests.PlayMode
                 "It is clear of the dock it used to sit inside.");
             Assert.That(endTurnBox.yMin, Is.GreaterThanOrEqualTo(dock.yMax),
                 "and below it, in the band the compact hand leaves empty.");
-            var handHeader = Named(root.Hud.RootElement, "gd-hand-header").worldBound;
             // Milestone 8.30b. This used to assert that wrapped action controls finished with a
             // deliberate gap before the hand-status row. There are no controls left here to wrap:
             // 8.29b1b moved the printed actions onto the resolving card and the amendment moved the
@@ -1196,8 +1212,10 @@ namespace GuardsDigital.Tests.PlayMode
                 .ToArray();
             Assert.That(contextContent.Select(element => element.name).ToArray(), Is.Empty,
                 "An ordinary revealed turn draws no contextual control.");
-            Assert.That(handHeader.yMax, Is.LessThanOrEqualTo(dock.yMax + 0.5f),
-                "The largest routine state's content fits the dock's fixed height.");
+            // Milestone 8.30d, the user's follow-up decision: the hand-status bar is retired -
+            // never shown in any state - and its commands are the corner banners asserted above.
+            Assert.That(UiPlayer.IsShown(Named(root.Hud.RootElement, "gd-hand-header")), Is.False,
+                "The hand-status bar is retired outright.");
 
             var firstCard = Descendants(root.Hud.RootElement)
                 .Where(element => element.name == "gd-card-choice")
@@ -1247,10 +1265,11 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(regions.Select(region => region.text), Is.All.Empty,
                     "The prepared or generated face supplies the visible action wording.");
 
-                // Milestone 8.30d, on the natural providers: whenever the resolving card draws
-                // prepared artwork AND its overlays resolved, each offered region's shine image is
-                // in the live tree - which is what the Game View capture below is evidence of.
-                // A checkout without overlays legitimately draws the documented fallback instead.
+                // Milestone 8.30d, final direction, on the natural providers: whenever the
+                // resolving card draws prepared artwork, each offered SECONDARY is lit by its
+                // badge overlay, each offered PRIMARY by its printed-lines ring overlay, and a
+                // checkout without overlays degrades to the named fallbacks - which is what the
+                // Game View capture below is evidence of.
                 if (Descendants(resolvingCard).Any(element => element.name == "gd-card-artwork"))
                 {
                     var liveShines = Descendants(resolvingCard)
@@ -1260,9 +1279,12 @@ namespace GuardsDigital.Tests.PlayMode
                         .Count(region => region.Invocation != null);
                     var fallbackGlows = Descendants(resolvingCard)
                         .Count(element => element.name == "gd-prepared-action-glow");
-                    Assert.That(liveShines + fallbackGlows, Is.EqualTo(offeredRegions),
-                        "Every offered region is lit by exactly one treatment - the shine overlay " +
-                        "where prepared, the named fallback where not.");
+                    var drawnPrimaryGlows = Descendants(resolvingCard)
+                        .Count(element => element.name == "gd-primary-offer-glow");
+                    Assert.That(liveShines + fallbackGlows + drawnPrimaryGlows,
+                        Is.EqualTo(offeredRegions),
+                        "Every offered region is lit by exactly one treatment - a prepared " +
+                        "overlay (badge or printed-lines ring) or its named fallback.");
                 }
 
                 AssertPrintedActionControlsStayOnCard(resolvingCard, "2560x1440");
@@ -1279,17 +1301,16 @@ namespace GuardsDigital.Tests.PlayMode
                 AssertPrintedActionControlsStayOnCard(resolvingCard, "2048x1152");
                 yield return Capture("tmp/milestone-8-29b1b-printed-actions-2048x1152.png");
 
-                var available = regions.First(region => region.enabledSelf);
+                // The hover walk drives a SECONDARY region: primaries wear the section glow
+                // (asserted by count above) while secondaries keep the three-way treatment the
+                // branches below cover - shine overlay, prepared fallback, or generated chip.
+                var available = regions.First(region => region.enabledSelf &&
+                    ((PrintedActionRegionViewModel)region.userData).InvocationContext !=
+                        ActionInvocationContext.PrintedPrimary);
                 var projected = (PrintedActionRegionViewModel)available.userData;
-                // Milestone 8.30d: the live treatment is the per-card shine overlay lighting the
-                // region's own printed icon; a checkout without prepared overlays degrades to the
-                // prior prepared glow, and the generated face lights its typed chip. The hover
-                // behaviour is asserted for whichever of the three this run actually drew.
-                var expectedSlot = projected.InvocationContext == ActionInvocationContext.PrintedPrimary
-                    ? CardShineSlot.Primary
-                    : projected.ActionKind == GuardsDigital.Core.Cards.ActionKind.Defense
-                        ? CardShineSlot.SecondaryDefense
-                        : CardShineSlot.SecondaryMovement;
+                var expectedSlot = projected.ActionKind == GuardsDigital.Core.Cards.ActionKind.Defense
+                    ? CardShineSlot.SecondaryDefense
+                    : CardShineSlot.SecondaryMovement;
                 var shineImage = Descendants(resolvingCard)
                     .OfType<UnityEngine.UIElements.Image>()
                     .FirstOrDefault(element => element.name == "gd-card-shine" &&
@@ -1701,10 +1722,11 @@ namespace GuardsDigital.Tests.PlayMode
                     Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockWidth)
                         .Within(UiPlayer.PixelSnapping()),
                     "The awaiting state already reserves the largest routine dock width.");
-                Assert.That(statusDock.height,
-                    Is.EqualTo(ConfiguredMatchHudRenderer.StatusDockHeight)
-                        .Within(UiPlayer.PixelSnapping()),
-                    "The awaiting state already reserves the largest routine dock height.");
+                // Milestone 8.30d, the user's final call: no reserved dock height - the empty
+                // box above the cards is retired, and the dock is only as tall as whatever
+                // (rarely) still renders into it.
+                Assert.That(statusDock.height, Is.LessThan(24f),
+                    "The dock draws nothing in routine states; its empty box is retired.");
 
                 yield return Capture("tmp/milestone-8-25f2-readable-reserved-card-band.png");
             }

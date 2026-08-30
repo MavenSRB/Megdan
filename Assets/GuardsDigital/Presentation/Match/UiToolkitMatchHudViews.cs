@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
@@ -1553,9 +1553,32 @@ namespace GuardsDigital.Presentation.Match
             hoverPreview.style.position = Position.Absolute;
             hoverPreview.style.display = DisplayStyle.None;
             hoverPreview.pickingMode = PickingMode.Ignore;
+            // Milestone 8.30d, the user's follow-up decision: the hand-status bar is dead. Its
+            // two commands live on as corner banners instead, and the identity/hint line it
+            // carried is not rebuilt - the narration and the rails already say it.
+            header.style.display = DisplayStyle.None;
+            cornerActions = new VisualElement { name = "gd-hand-corner-actions" };
+            cornerActions.style.flexDirection = FlexDirection.Column;
+            cornerActions.style.justifyContent = Justify.FlexEnd;
+            cornerActions.style.alignItems = Align.Stretch;
             Root.Add(header);
             Root.Add(cards);
+            Root.Add(cornerActions);
         }
+
+        private readonly VisualElement cornerActions;
+
+        /// <summary>One corner banner's height; two of them stack inside End Turn's corner rect.</summary>
+        public const float CornerBannerHeight = 44f;
+        public const float CornerBannerFontSize = 16f;
+
+        /// <summary>
+        /// The hand's Pass and Confirm banners. It begins inside <see cref="Root"/> so this view
+        /// remains complete in isolation; the configured HUD reparents it into the panel's
+        /// bottom-right corner - the same place End Turn stands, which these two never share a
+        /// moment with (End Turn belongs to a revealed turn, these to choosing a card).
+        /// </summary>
+        public VisualElement CornerActionsRoot => cornerActions;
 
         public VisualElement Root { get; }
 
@@ -1664,8 +1687,10 @@ namespace GuardsDigital.Presentation.Match
 
             var display = hidden ? DisplayStyle.None : DisplayStyle.Flex;
             Root.style.display = display;
-            // In the configured HUD the header is a sibling of Root, so exclusivity must hide both.
-            HeaderRoot.style.display = display;
+            // The header stays dead either way (the user's follow-up decision retired the
+            // hand-status bar); the corner banners are the surface exclusivity must hide.
+            HeaderRoot.style.display = DisplayStyle.None;
+            cornerActions.style.display = display;
         }
 
         private void Rebuild()
@@ -1693,41 +1718,40 @@ namespace GuardsDigital.Presentation.Match
             cards.style.minWidth = rowWidth;
             cards.style.maxWidth = rowWidth;
 
-            header.Add(HudElements.Text(
-                $"{hand.HeaderLabel} · {hand.CommitmentLabel.Replace("\n", " · ")}",
-                12f,
-                MatchHudTheme.PrimaryText,
-                FontStyle.Bold));
-
-            // The tray's own actions sit at the top right of its frame, beside the hint, rather than in
-            // a row under the cards - the user's 2026-08-21 decision. A card is tall now, so a control
-            // below the row sat near the bottom of the screen and a long way from the card that had
-            // just been picked up; the header is one place, always in view, and it does not move when a
-            // card is selected. Nothing about the controls themselves changed.
-            var actions = HudElements.Row(8f);
-            actions.name = "gd-tray-actions";
-            actions.style.justifyContent = Justify.FlexEnd;
-            actions.style.flexShrink = 1f;
-            actions.Add(HudElements.Text(
-                "SELECT A HERO ON THE MAP TO CHANGE HANDS", 10f, MatchHudTheme.MutedText));
-
+            // Milestone 8.30d, the user's follow-up decision: no hand-status bar. Pass and
+            // Confirm stand in the panel's bottom-right corner as pewter banners - the same
+            // clothes and the same place End Turn wears, one banner language for the button
+            // that moves the game on. The Button texts stay the exact selector strings every
+            // existing check and driver finds these commands by.
+            cornerActions.Clear();
             if (hand.CanPass)
             {
-                var pass = HudElements.Control("PASS - NO CARD", () => PassRequested?.Invoke(hand.HeroId), 30f);
-                pass.style.marginLeft = 10f;
-                actions.Add(pass);
+                var pass = new RoundActionUnityView.PewterBanner(
+                    () => PassRequested?.Invoke(hand.HeroId), false,
+                    CornerBannerFontSize, "gd-pass-banner-label")
+                {
+                    name = "gd-pass-control",
+                    text = "PASS - NO CARD"
+                };
+                pass.SetVisibleLabel("PASS - NO CARD");
+                pass.style.minHeight = CornerBannerHeight;
+                pass.style.marginBottom = 8f;
+                cornerActions.Add(pass);
             }
 
             if (hand.SelectedCardInstanceId.HasValue)
             {
-                var confirm = HudElements.Control("CONFIRM FACEDOWN", () => ConfirmRequested?.Invoke(), 30f);
-                confirm.style.backgroundColor = MatchHudTheme.ConfirmAccent;
-                confirm.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
-                confirm.style.marginLeft = 10f;
-                actions.Add(confirm);
+                var confirm = new RoundActionUnityView.PewterBanner(
+                    () => ConfirmRequested?.Invoke(), true,
+                    CornerBannerFontSize, "gd-confirm-banner-label")
+                {
+                    name = "gd-confirm-control",
+                    text = "CONFIRM FACEDOWN"
+                };
+                confirm.SetVisibleLabel("CONFIRM FACEDOWN");
+                confirm.style.minHeight = CornerBannerHeight;
+                cornerActions.Add(confirm);
             }
-
-            header.Add(actions);
 
             for (var index = 0; index < drawnCards.Length; index++)
             {
@@ -1876,20 +1900,48 @@ namespace GuardsDigital.Presentation.Match
                 control.style.color = Color.clear;
                 HudElements.Padding(control, 0f);
 
-                // Milestone 8.30d: an offered action's own printed icon shines. On prepared
-                // artwork the shine is the per-card overlay tracing that badge's silhouette; a
-                // missing overlay degrades to the prior treatment (with the loader's one-time
-                // diagnostic), which is also the whole clean-checkout path. On the generated
-                // fallback face the same statement is the typed chip lighting up. An unavailable
-                // region carries no shine at all - nothing offered, nothing lit.
+                // Milestone 8.30d, per the user's final direction: an offered SECONDARY action's
+                // own printed icon shines (the per-card overlay tracing that badge's silhouette,
+                // degrading to the prior treatment when the overlay is absent), while an offered
+                // PRIMARY lights the card's own printed lines - the per-card ring overlay
+                // tracing the type ribbon's box and the rules-text box, with no icon shine and
+                // no invented lines. On the generated fallback face, which prints no such lines,
+                // the primary statement is the drawn glowing box over the typed band, and a
+                // secondary is its chip lighting up. An unavailable region carries no shine at
+                // all - nothing offered, nothing lit.
+                var isPrimary = region.InvocationContext == ActionInvocationContext.PrintedPrimary;
                 Image shine = null;
+                PrimaryOfferGlow primaryGlow = null;
                 if (usesPreparedArtwork &&
                     region.Invocation != null &&
                     ConfiguredCardShine.TryLoadTexture(
                         card.DefinitionReference, ShineSlotFor(region), out var shineTexture))
                 {
+                    // The hit surface is invisible: clearing the Button's default theme border is
+                    // what the prior treatment did first, and skipping it drew a stock button box
+                    // around every lit icon. For a primary the typed slot is the printed-lines
+                    // ring; for a secondary it is the badge silhouette.
+                    HudElements.Border(control, Color.clear, 0f, 0f);
+                    control.style.overflow = Overflow.Visible;
                     shine = BuildShineOverlay(shineTexture, ShineSlotFor(region));
                     overlay.Add(shine);
+                }
+                else if (isPrimary && region.Invocation != null)
+                {
+                    // A prepared front without its ring overlay, and every generated-face
+                    // primary: the drawn approximation of the same statement.
+                    HudElements.Border(control, Color.clear, 0f, 0f);
+                    control.style.overflow = Overflow.Visible;
+                    primaryGlow = new PrimaryOfferGlow();
+                    ApplyActionBounds(
+                        primaryGlow,
+                        new Rect(
+                            bounds.x - PrimaryOfferGlow.Margin,
+                            bounds.y - PrimaryOfferGlow.Margin,
+                            bounds.width + PrimaryOfferGlow.Margin * 2f,
+                            bounds.height + PrimaryOfferGlow.Margin * 2f),
+                        true);
+                    overlay.Add(primaryGlow);
                 }
                 else if (usesPreparedArtwork)
                 {
@@ -1900,6 +1952,7 @@ namespace GuardsDigital.Presentation.Match
                 }
                 else
                 {
+                    HudElements.Border(control, Color.clear, 0f, 0f);
                     SetGeneratedChipShine(
                         cardSurface, ShineSlotFor(region), region.Invocation != null, false);
                 }
@@ -1914,9 +1967,15 @@ namespace GuardsDigital.Presentation.Match
                         control,
                         highlighted =>
                         {
-                            if (shine != null)
+                            if (primaryGlow != null)
+                            {
+                                primaryGlow.SetHovered(highlighted);
+                            }
+                            else if (shine != null)
                             {
                                 shine.style.opacity = highlighted ? 1f : SteadyShineOpacity;
+                                shine.style.scale = new Scale(Vector3.one *
+                                    (highlighted ? HoverShineScale : 1f));
                             }
                             else if (usesPreparedArtwork)
                             {
@@ -1979,11 +2038,12 @@ namespace GuardsDigital.Presentation.Match
             bool usesPreparedArtwork)
         {
             // Milestone 8.30d: the replacement controls wear the card's own banner language - a
-            // gold swallowtail ribbon grown from the region of the action each replaces (Fast
-            // Travel from the Movement it replaces, Clear from the Attack) - instead of the dark
-            // utility chips that sat beside the art belonging to nothing. Text-first by the
-            // standing rule: this HUD invents no action glyph.
-            var chip = new ReplacementRibbon(available ? selected : null, available)
+            // swallowtail ribbon grown from the region of the action each replaces (Fast Travel
+            // from the Movement it replaces, Clear from the Attack) - instead of the dark
+            // utility chips that sat beside the art belonging to nothing. The cloth follows the
+            // CARD's printed colour (the user's correction to the original all-gold cut), and
+            // text-first by the standing rule: this HUD invents no action glyph.
+            var chip = new ReplacementRibbon(available ? selected : null, available, region.CardColor)
             {
                 name = "gd-action-replacement-chip",
                 text = label,
@@ -2027,6 +2087,74 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// An offered PRIMARY action's treatment, per the user's final 8.30d direction: the whole
+        /// printed primary section glows - the same warm halo the rail badges wear, drawn as
+        /// widening strokes around the section's box because Painter2D has no blur - and the icon
+        /// itself carries no shine. Steady by the approved rule; pointing at it brightens it.
+        /// </summary>
+        private sealed class PrimaryOfferGlow : VisualElement
+        {
+            internal const float Margin = 12f;
+
+            private bool hovered;
+
+            internal PrimaryOfferGlow()
+            {
+                name = "gd-primary-offer-glow";
+                pickingMode = PickingMode.Ignore;
+                focusable = false;
+                style.overflow = Overflow.Visible;
+                generateVisualContent += OnGenerateVisualContent;
+            }
+
+            internal void SetHovered(bool value)
+            {
+                if (hovered == value)
+                {
+                    return;
+                }
+
+                hovered = value;
+                MarkDirtyRepaint();
+            }
+
+            private void OnGenerateVisualContent(MeshGenerationContext context)
+            {
+                var painter = context.painter2D;
+                var rect = contentRect;
+                if (rect.width <= Margin * 2f + 4f || rect.height <= Margin * 2f + 4f)
+                {
+                    return;
+                }
+
+                var box = new Rect(
+                    rect.x + Margin, rect.y + Margin,
+                    rect.width - Margin * 2f, rect.height - Margin * 2f);
+                var boost = hovered ? 1.3f : 1f;
+                StrokeBox(painter, box, WithAlpha(MatchHudTheme.ShineHalo, 0.16f * boost), 9f);
+                StrokeBox(painter, box, WithAlpha(MatchHudTheme.ShineGlow, 0.38f * boost), 5f);
+                StrokeBox(painter, box, WithAlpha(MatchHudTheme.ShineRim, Mathf.Min(1f, 0.92f * boost)), 2f);
+            }
+
+            private static Color WithAlpha(Color color, float alpha) =>
+                new Color(color.r, color.g, color.b, Mathf.Clamp01(alpha));
+
+            private static void StrokeBox(Painter2D painter, Rect box, Color color, float width)
+            {
+                painter.strokeColor = color;
+                painter.lineWidth = width;
+                painter.lineJoin = LineJoin.Round;
+                painter.BeginPath();
+                painter.MoveTo(new Vector2(box.xMin, box.yMin));
+                painter.LineTo(new Vector2(box.xMax, box.yMin));
+                painter.LineTo(new Vector2(box.xMax, box.yMax));
+                painter.LineTo(new Vector2(box.xMin, box.yMax));
+                painter.ClosePath();
+                painter.Stroke();
+            }
+        }
+
+        /// <summary>
         /// A replacement offer as a gold swallowtail ribbon - the cloth the card's own left banner
         /// is cut from, hung off the printed action it replaces. It is still exactly the button the
         /// dark chip was: same forwarding, same availability semantics, same anchor; only the
@@ -2038,14 +2166,16 @@ namespace GuardsDigital.Presentation.Match
             private const float NotchDepth = 10f;
 
             private readonly bool available;
+            private readonly CardColor cardColor;
             private bool shineHovered;
 
             private readonly VisualElement cloth;
 
-            internal ReplacementRibbon(Action selected, bool available)
+            internal ReplacementRibbon(Action selected, bool available, CardColor cardColor)
                 : base(selected)
             {
                 this.available = available;
+                this.cardColor = cardColor;
                 style.backgroundColor = Color.clear;
                 HudElements.Border(this, Color.clear, 0f, 0f);
                 HudElements.Padding(this, 0f);
@@ -2054,7 +2184,7 @@ namespace GuardsDigital.Presentation.Match
                 style.unityFontStyleAndWeight = FontStyle.Bold;
                 style.unityTextAlign = TextAnchor.MiddleCenter;
                 style.color = available
-                    ? new Color(0.204f, 0.133f, 0.039f, 1f)
+                    ? MatchHudTheme.RibbonInk(cardColor)
                     : MatchHudTheme.MutedText;
                 style.overflow = Overflow.Visible;
 
@@ -2095,7 +2225,7 @@ namespace GuardsDigital.Presentation.Match
                 visibleLabel.style.fontSize = 9f;
                 visibleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
                 visibleLabel.style.color = available
-                    ? new Color(0.204f, 0.133f, 0.039f, 1f)
+                    ? MatchHudTheme.RibbonInk(cardColor)
                     : MatchHudTheme.MutedText;
                 Add(visibleLabel);
             }
@@ -2143,7 +2273,7 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 var fabric = available
-                    ? new Color(0.969f, 0.710f, 0.149f, 1f)
+                    ? MatchHudTheme.RibbonCloth(cardColor)
                     : new Color(0.42f, 0.40f, 0.36f, 1f);
                 DrawBanner(painter, rect, right, mid, fabric, Color.clear, 0f);
 
@@ -2159,7 +2289,7 @@ namespace GuardsDigital.Presentation.Match
 
                 DrawBanner(painter, rect, right, mid, Color.clear,
                     available
-                        ? new Color(0.322f, 0.212f, 0.055f, 1f)
+                        ? Color.Lerp(fabric, Color.black, 0.62f)
                         : new Color(0.25f, 0.25f, 0.25f, 1f), 2f);
             }
 
@@ -2312,22 +2442,27 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// The steady strength of a lit icon; pointer or focus raises it to full. High on purpose:
-        /// the user's bar is "obvious to the player", and at HUD card scale a timid steady state
-        /// read as nothing at all.
+        /// The steady strength of a lit icon; pointer or focus raises it to full. Strong enough
+        /// to be obvious at rest (the user's bar), but far enough below full that the hover
+        /// response is visible too - at 0.95 the raise to 1.0 read as nothing, which the user
+        /// called out on the live build.
         /// </summary>
-        public const float SteadyShineOpacity = 0.95f;
+        public const float SteadyShineOpacity = 0.72f;
+
+        /// <summary>The slight grow a lit overlay takes while pointed at.</summary>
+        public const float HoverShineScale = 1.03f;
 
         /// <summary>
-        /// Which prepared shine slot an offered printed region lights: the primary badge for a
-        /// printed primary, and the rail badge of the region's own kind for a secondary. Milestone
-        /// 8.30d - the mapping is typed, exactly like the sprite files it selects between.
+        /// Which prepared shine slot an offered printed region lights: the printed-lines ring for
+        /// a printed primary (the user's final direction - the existing boxes glow, not the icon),
+        /// and the rail badge of the region's own kind for a secondary. Milestone 8.30d - the
+        /// mapping is typed, exactly like the sprite files it selects between.
         /// </summary>
         private static CardShineSlot ShineSlotFor(PrintedActionRegionViewModel region)
         {
             if (region.InvocationContext == ActionInvocationContext.PrintedPrimary)
             {
-                return CardShineSlot.Primary;
+                return CardShineSlot.PrimaryRing;
             }
 
             return region.ActionKind == ActionKind.Defense
@@ -2523,12 +2658,32 @@ namespace GuardsDigital.Presentation.Match
             card.style.maxHeight = PeekCardHeight;
         }
 
+        /// <summary>
+        /// The compact card a peek preview currently stands in for. While the full face is up,
+        /// the resting card underneath goes fully transparent - the user's correction: the pop
+        /// REPLACES the card, it does not float over a visible copy of it. Opacity, not
+        /// visibility, so the anchor keeps receiving the very pointer events that hold the
+        /// preview open.
+        /// </summary>
+        private VisualElement peekAnchor;
+
         private void SetPeekPreview(TrayCardViewModel card, VisualElement anchor)
         {
             if (!compactPeekMode || card == null)
             {
                 ClearPeekPreview();
                 return;
+            }
+
+            if (peekAnchor != null && peekAnchor != anchor)
+            {
+                peekAnchor.style.opacity = 1f;
+            }
+
+            peekAnchor = anchor;
+            if (peekAnchor != null)
+            {
+                peekAnchor.style.opacity = 0f;
             }
 
             highlightedPeekCard = card;
@@ -2557,6 +2712,12 @@ namespace GuardsDigital.Presentation.Match
 
         private void ClearPeekPreview()
         {
+            if (peekAnchor != null)
+            {
+                peekAnchor.style.opacity = 1f;
+                peekAnchor = null;
+            }
+
             highlightedPeekCard = null;
             hoverPreview.Clear();
             hoverPreview.style.display = DisplayStyle.None;
@@ -2893,7 +3054,7 @@ namespace GuardsDigital.Presentation.Match
             return mark;
         }
 
-        /// <summary>Where the card is in this hero's round: `PLAYED · TURN n`, `AVAILABLE`, `DISCARDED`.</summary>
+        /// <summary>Where the card is in this hero's round: `PLAYED Â· TURN n`, `AVAILABLE`, `DISCARDED`.</summary>
         private static VisualElement BuildHistoryBand(TrayCardViewModel card, Color ink)
         {
             var band = new VisualElement { name = "gd-card-history" };
@@ -3930,7 +4091,9 @@ namespace GuardsDigital.Presentation.Match
                     (region.ClearOffer == null || !region.ClearOffer.IsAvailable));
 
             EndTurnShinesFully = onlyOfferLeft;
-            var control = new EndTurnBanner(() => ForwardInvocation(invocation), onlyOfferLeft)
+            var control = new PewterBanner(
+                () => ForwardInvocation(invocation), onlyOfferLeft,
+                EndTurnControlFontSize, "gd-end-turn-label")
             {
                 name = "gd-end-turn-control",
                 text = invocation.Label
@@ -3946,25 +4109,27 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// End Turn as a neutral pewter banner - swallowtailed at both ends in the cards' own
-        /// cloth language, but in the silver of their printed icons rather than a fifth patch of
-        /// gold, by the user's 8.30d decision. Same invocation, same hide rules, same 8.30b
-        /// placement; only the clothes changed. It carries a modest steady glow while other offers
-        /// stand and the full warm shine when ending the turn is the only thing left to do.
+        /// The neutral pewter banner - swallowtailed at both ends in the cards' own cloth
+        /// language, but in the silver of their printed icons rather than a fifth patch of gold,
+        /// by the user's 8.30d decision. Born as End Turn's clothes, and shared with the hand's
+        /// Confirm and Pass controls by the user's follow-up: one banner language for "the button
+        /// that moves the game on". A strong-shine banner carries the full warm glow (End Turn as
+        /// the only move left, or a confirm that IS the move); otherwise a modest steady one,
+        /// raised while pointed at.
         /// </summary>
-        private sealed class EndTurnBanner : Button
+        internal sealed class PewterBanner : Button
         {
             private const float NotchDepth = 14f;
 
-            private readonly bool onlyOfferLeft;
+            private readonly bool strongShine;
             private bool hovered;
 
             private readonly VisualElement cloth;
 
-            internal EndTurnBanner(Action selected, bool onlyOfferLeft)
+            internal PewterBanner(Action selected, bool strongShine, float fontSize, string labelName)
                 : base(selected)
             {
-                this.onlyOfferLeft = onlyOfferLeft;
+                this.strongShine = strongShine;
                 style.backgroundColor = Color.clear;
                 HudElements.Border(this, Color.clear, 0f, 0f);
                 style.marginLeft = 0f;
@@ -4001,7 +4166,7 @@ namespace GuardsDigital.Presentation.Match
 
                 visibleLabel = new Label
                 {
-                    name = "gd-end-turn-label",
+                    name = labelName,
                     pickingMode = PickingMode.Ignore,
                     focusable = false
                 };
@@ -4011,7 +4176,7 @@ namespace GuardsDigital.Presentation.Match
                 visibleLabel.style.right = NotchDepth;
                 visibleLabel.style.bottom = 0f;
                 visibleLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-                visibleLabel.style.fontSize = EndTurnControlFontSize;
+                visibleLabel.style.fontSize = fontSize;
                 visibleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
                 visibleLabel.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
                 Add(visibleLabel);
@@ -4028,7 +4193,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             /// <summary>Whether this banner is in its full-shine "your one move" state.</summary>
-            internal bool ShinesFully => onlyOfferLeft;
+            internal bool ShinesFully => strongShine;
 
             private void SetHovered(bool value)
             {
@@ -4053,7 +4218,7 @@ namespace GuardsDigital.Presentation.Match
                     return;
                 }
 
-                var strong = onlyOfferLeft || hovered;
+                var strong = strongShine || hovered;
                 DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
                     new Color(MatchHudTheme.ShineHalo.r, MatchHudTheme.ShineHalo.g,
                         MatchHudTheme.ShineHalo.b, strong ? 0.30f : 0.10f), strong ? 18f : 8f);

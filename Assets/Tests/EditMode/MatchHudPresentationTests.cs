@@ -2896,37 +2896,44 @@ namespace GuardsDigital.Tests.EditMode
                     "The generated fallback keeps its own upper-band anatomy.");
                 Assert.That(Descendants(fallbackPrimary)
                         .Any(element => element.name == "gd-prepared-action-glow"), Is.False);
-                // Milestone 8.30d: the generated face states the same offer by lighting its typed
-                // chip - the primary value plate, or the kind label on a face that prints no value
-                // - instead of the retired border box around the whole band. The chip lights for an
-                // OFFERED region only, so the assertion follows an available one rather than
-                // assuming the primary is startable in this fixture.
+                // Milestone 8.30d, final direction: on the generated face an offered SECONDARY
+                // states itself by lighting its typed chip, and an offered PRIMARY by the same
+                // glowing section box the prepared face wears - the border box stays retired
+                // either way. The chip assertion follows an available secondary rather than
+                // assuming one particular region is startable in this fixture.
                 Assert.That(fallbackPrimary.style.borderTopWidth.value, Is.EqualTo(0f),
-                    "The border box treatment is retired; the typed chip lights instead.");
-                var fallbackAvailable = Descendants(fallbackHands.Root)
+                    "The border box treatment is retired.");
+                var fallbackRegions = Descendants(fallbackHands.Root)
                     .Where(element => element.name == "gd-printed-action-region")
-                    .OfType<Button>()
-                    .First(control =>
-                        ((PrintedActionRegionViewModel)control.userData).Invocation != null);
-                var availableModel = (PrintedActionRegionViewModel)fallbackAvailable.userData;
-                var availableSlot =
-                    availableModel.InvocationContext == ActionInvocationContext.PrintedPrimary
-                        ? CardShineSlot.Primary
-                        : availableModel.ActionKind == ActionKind.Defense
-                            ? CardShineSlot.SecondaryDefense
-                            : CardShineSlot.SecondaryMovement;
-                var fallbackSurface = fallbackAvailable.parent.parent;
-                var litChip = availableSlot == CardShineSlot.Primary
-                    ? fallbackSurface.Q<VisualElement>("gd-card-primary-value") ??
-                        fallbackSurface.Q<VisualElement>("gd-card-primary-kind")
-                    : fallbackSurface.Q<VisualElement>(availableSlot == CardShineSlot.SecondaryDefense
-                        ? "gd-card-secondary-defense"
-                        : "gd-card-secondary-movement");
-                Assert.That(litChip, Is.Not.Null,
-                    "The generated face carries the typed chip the offer is about.");
-                Assert.That(litChip.style.backgroundColor.value,
-                    Is.EqualTo(MatchHudTheme.ShineGlow),
-                    "An offered region's chip wears the shared shine accent.");
+                    .OfType<Button>().ToArray();
+                var fallbackAvailableSecondary = fallbackRegions.FirstOrDefault(control =>
+                    ((PrintedActionRegionViewModel)control.userData).Invocation != null &&
+                    ((PrintedActionRegionViewModel)control.userData).InvocationContext !=
+                        ActionInvocationContext.PrintedPrimary);
+                if (fallbackAvailableSecondary != null)
+                {
+                    var availableModel =
+                        (PrintedActionRegionViewModel)fallbackAvailableSecondary.userData;
+                    var fallbackSurface = fallbackAvailableSecondary.parent.parent;
+                    var litChip = fallbackSurface.Q<VisualElement>(
+                        availableModel.ActionKind == ActionKind.Defense
+                            ? "gd-card-secondary-defense"
+                            : "gd-card-secondary-movement");
+                    Assert.That(litChip, Is.Not.Null,
+                        "The generated face carries the typed chip the offer is about.");
+                    Assert.That(litChip.style.backgroundColor.value,
+                        Is.EqualTo(MatchHudTheme.ShineGlow),
+                        "An offered secondary's chip wears the shared shine accent.");
+                }
+
+                var fallbackAvailablePrimaries = fallbackRegions.Count(control =>
+                    ((PrintedActionRegionViewModel)control.userData).Invocation != null &&
+                    ((PrintedActionRegionViewModel)control.userData).InvocationContext ==
+                        ActionInvocationContext.PrintedPrimary);
+                Assert.That(Descendants(fallbackHands.Root)
+                        .Count(element => element.name == "gd-primary-offer-glow"),
+                    Is.EqualTo(fallbackAvailablePrimaries),
+                    "An offered primary glows as its whole section on the generated face too.");
             }
             finally
             {
@@ -2975,9 +2982,11 @@ namespace GuardsDigital.Tests.EditMode
                         .OfType<Button>().ToArray();
                     Assert.That(controls, Is.Not.Empty);
 
-                    // Milestone 8.30d: every offered region lights its own printed icon through the
-                    // per-card overlay; an unavailable region lights nothing; and the prior glow
-                    // treatment is gone whenever an overlay stands.
+                    // Milestone 8.30d, final direction: every offered SECONDARY lights its own
+                    // printed icon through the per-card overlay, every offered PRIMARY lights the
+                    // card's own printed lines through the per-card ring overlay (no icon shine,
+                    // no invented lines), an unavailable region lights nothing, and the prior
+                    // glow treatment is gone wherever an overlay stands.
                     var availableRegions = round.Model.PrintedActionRegions
                         .Where(region => region.Invocation != null).ToArray();
                     Assert.That(availableRegions, Is.Not.Empty);
@@ -2989,17 +2998,24 @@ namespace GuardsDigital.Tests.EditMode
                         .Where(image => image.image == shine)
                         .ToArray();
                     Assert.That(resolvingShines, Has.Length.EqualTo(availableRegions.Length),
-                        "One shine overlay per offered region, none for the unavailable ones.");
+                        "One overlay per offered region - ring for a primary, icon shine for a " +
+                        "secondary - and none for the unavailable ones.");
                     Assert.That(resolvingShines.Select(image => image.pickingMode),
                         Is.All.EqualTo(PickingMode.Ignore),
                         "The shine is light, never a hit surface: drivers and focus are untouched.");
                     Assert.That(resolvingShines.Select(image => image.style.opacity.value),
                         Is.All.EqualTo(DirectorHandsUnityView.SteadyShineOpacity).Within(0.001f),
                         "The steady state; pointer and focus raise it to full.");
+                    Assert.That(Descendants(hands.Root)
+                            .Any(element => element.name == "gd-primary-offer-glow"), Is.False,
+                        "With ring overlays resolving, the drawn approximation never appears.");
+                    Assert.That(controls.Select(control => control.style.borderTopWidth.value),
+                        Is.All.EqualTo(0f),
+                        "The invisible hit surface draws no stock button box around the lit icon.");
                     var expectedSlots = availableRegions
                         .Select(region =>
                             region.InvocationContext == ActionInvocationContext.PrintedPrimary
-                                ? CardShineSlot.Primary
+                                ? CardShineSlot.PrimaryRing
                                 : region.ActionKind == ActionKind.Defense
                                     ? CardShineSlot.SecondaryDefense
                                     : CardShineSlot.SecondaryMovement)
@@ -3030,6 +3046,7 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var slot in new[]
                      {
                          CardShineSlot.Primary,
+                         CardShineSlot.PrimaryRing,
                          CardShineSlot.SecondaryDefense,
                          CardShineSlot.SecondaryMovement
                      })
@@ -3040,9 +3057,11 @@ namespace GuardsDigital.Tests.EditMode
                     "Overlays live in the _shine directory beside the ignored card art.");
                 Assert.That(path, Does.EndWith(slot == CardShineSlot.Primary
                     ? "--primary"
-                    : slot == CardShineSlot.SecondaryDefense
-                        ? "--secondary-defense"
-                        : "--secondary-movement"));
+                    : slot == CardShineSlot.PrimaryRing
+                        ? "--primary-ring"
+                        : slot == CardShineSlot.SecondaryDefense
+                            ? "--secondary-defense"
+                            : "--secondary-movement"));
             }
 
             Assert.That(
@@ -3097,6 +3116,7 @@ namespace GuardsDigital.Tests.EditMode
                         action.Origin == ActionDefinitionOrigin.PrintedPrimary))
                 {
                     slots.Add(CardShineSlot.Primary);
+                    slots.Add(CardShineSlot.PrimaryRing);
                 }
 
                 var railChannels = definition.ActionDefinitions
@@ -3135,8 +3155,9 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(missing, Is.Empty,
                 "Tools/Prepare-ShineSprites.ps1 regenerates the prepared overlays.");
-            Assert.That(resolved, Is.EqualTo(284),
-                "The typed inventory is the 284 slots the generator traces.");
+            Assert.That(resolved, Is.EqualTo(386),
+                "The typed inventory is the 386 slots the generator traces - the badge and " +
+                "rail overlays plus one printed-lines ring per non-Ultimate card.");
         }
 
         [Test]

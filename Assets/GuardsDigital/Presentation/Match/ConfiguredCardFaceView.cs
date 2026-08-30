@@ -157,6 +157,13 @@ namespace GuardsDigital.Presentation.Match
             return surface;
         }
 
+        /// <summary>
+        /// The printed cards have rounded corners; the scans bake them over a dark square. The
+        /// face clips itself to the printed radius (the user's correction), proportional to the
+        /// source corner arc - about 4.8% of the card's width.
+        /// </summary>
+        public static float CornerRadius(float width) => width * 0.048f;
+
         private static void BuildArtwork(
             VisualElement surface,
             TrayCardViewModel card,
@@ -164,7 +171,7 @@ namespace GuardsDigital.Presentation.Match
         {
             CardFootprint.ApplyArtwork(surface);
             surface.style.backgroundColor = Color.clear;
-            HudElements.Border(surface, Color.clear, 0f, 0f);
+            HudElements.Border(surface, Color.clear, 0f, CornerRadius(CardFootprint.ArtworkWidth));
 
             var artwork = new Image
             {
@@ -200,7 +207,9 @@ namespace GuardsDigital.Presentation.Match
                 selection.style.top = 0f;
                 selection.style.right = 0f;
                 selection.style.bottom = 0f;
-                HudElements.Border(selection, MatchHudTheme.SelectedOutline, 3f, 0f);
+                HudElements.Border(
+                    selection, MatchHudTheme.SelectedOutline, 3f,
+                    CornerRadius(CardFootprint.ArtworkWidth));
                 surface.Add(selection);
             }
         }

@@ -611,21 +611,19 @@ namespace GuardsDigital.Presentation.Match
                 root.Add(heroOverviews.Root);
             }
 
-            statusDock = HudElements.Panel(MatchHudTheme.PanelBackground);
-            statusDock.name = "gd-status-dock";
+            // Milestone 8.30d, the user's final call: the dock draws NO chrome and reserves NO
+            // height - "kill this empty box above the cards". Every routine tenant has moved
+            // (narration to the top bar, printed actions onto the resolving card, End Turn and
+            // Confirm to the corner banners, the hand-status bar retired outright), so an
+            // empty frame was all that remained. Anything that still lands here in an ordinary
+            // state renders frameless at its own height.
+            statusDock = new VisualElement { name = "gd-status-dock" };
             statusDock.style.position = Position.Absolute;
             statusDock.style.flexDirection = FlexDirection.Column;
             statusDock.style.alignItems = Align.FlexStart;
             statusDock.style.width = StatusDockWidth;
             statusDock.style.minWidth = StatusDockWidth;
             statusDock.style.maxWidth = StatusDockWidth;
-            statusDock.style.height = StatusDockHeight;
-            statusDock.style.minHeight = StatusDockHeight;
-            statusDock.style.maxHeight = StatusDockHeight;
-            // This is one stable label/control dock, not another broad HUD band. Eight units keep the
-            // largest action state off its edge while the smaller commitment states retain its frame.
-            HudElements.Padding(statusDock, 8f);
-            HudElements.Border(statusDock, MatchHudTheme.PanelBorder, 1f, 4f);
             root.Add(statusDock);
 
             directorToggle = HudElements.Control("DIRECTOR", ToggleDirectorDrawer, DirectorToggleHeight);
@@ -708,6 +706,12 @@ namespace GuardsDigital.Presentation.Match
             round.EndTurnRoot.RemoveFromHierarchy();
             round.EndTurnRoot.style.position = Position.Absolute;
             root.Add(round.EndTurnRoot);
+            // The hand's Pass/Confirm banners share End Turn's corner (the user's follow-up
+            // 8.30d decision retiring the hand-status bar); the two surfaces never draw in the
+            // same moment, so one rectangle serves both.
+            hands.CornerActionsRoot.RemoveFromHierarchy();
+            hands.CornerActionsRoot.style.position = Position.Absolute;
+            root.Add(hands.CornerActionsRoot);
             if (heroOverviews != null)
             {
                 // Only the revealed face leaves the rail layer. Keeping the rail columns where they
@@ -1192,17 +1196,24 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private void LayoutEndTurnControl()
         {
+            var rect = GetEndTurnControlRect();
             var host = round?.EndTurnRoot;
-            if (host == null)
+            if (host != null)
             {
-                return;
+                host.style.left = rect.x;
+                host.style.top = rect.y;
+                host.style.width = rect.width;
+                host.style.height = rect.height;
             }
 
-            var rect = GetEndTurnControlRect();
-            host.style.left = rect.x;
-            host.style.top = rect.y;
-            host.style.width = rect.width;
-            host.style.height = rect.height;
+            var corner = hands?.CornerActionsRoot;
+            if (corner != null)
+            {
+                corner.style.left = rect.x;
+                corner.style.top = rect.y;
+                corner.style.width = rect.width;
+                corner.style.height = rect.height;
+            }
         }
 
         private void LayoutDirectorControls()
@@ -1224,20 +1235,14 @@ namespace GuardsDigital.Presentation.Match
             var statusWidth = Mathf.Min(
                 StatusDockWidth,
                 Mathf.Max(0f, viewport.x - Margin - toggle.x));
-            var statusHeight = Mathf.Min(
-                StatusDockHeight,
-                Mathf.Max(0f, tray.yMin - statusTop));
             statusDock.style.left = toggle.x;
             statusDock.style.top = statusTop;
-            // Pin all six bounds. Width/height alone can still be negotiated by flex layout; matching
-            // minimum and maximum values makes the largest ordinary state the invariant footprint.
-            // A genuinely smaller viewport is the only reason the declared size is bounded here.
+            // Width pinned; height is the content's own - the dock reserves nothing and draws
+            // nothing when empty (the user's final 8.30d call).
             statusDock.style.width = statusWidth;
             statusDock.style.minWidth = statusWidth;
             statusDock.style.maxWidth = statusWidth;
-            statusDock.style.height = statusHeight;
-            statusDock.style.minHeight = statusHeight;
-            statusDock.style.maxHeight = statusHeight;
+            statusDock.style.maxHeight = Mathf.Max(0f, tray.yMin - statusTop);
             var drawer = CalculateDirectorDrawerRect(toggle);
             directorDrawer.style.left = drawer.x;
             directorDrawer.style.top = drawer.y;

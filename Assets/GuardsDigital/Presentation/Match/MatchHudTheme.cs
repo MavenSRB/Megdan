@@ -204,6 +204,37 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// The replacement ribbons' cloth, following the card the replaced action is printed on
+        /// (the user's 8.30d correction: the ribbons wear the CARD's colour, not a universal
+        /// gold). Brighter than <see cref="Face"/> the way ribbon cloth is brighter than a card
+        /// face; Gold keeps the exact approved value the mock was signed off with.
+        /// </summary>
+        public static Color RibbonCloth(CardColor color)
+        {
+            switch (color)
+            {
+                case CardColor.Silver: return new Color(0.800f, 0.825f, 0.845f, 1f);
+                case CardColor.Red: return new Color(0.851f, 0.271f, 0.239f, 1f);
+                case CardColor.Green: return new Color(0.298f, 0.686f, 0.373f, 1f);
+                case CardColor.Blue: return new Color(0.302f, 0.584f, 0.878f, 1f);
+                default: return new Color(0.969f, 0.710f, 0.149f, 1f);
+            }
+        }
+
+        /// <summary>The readable label ink on <see cref="RibbonCloth"/>, chosen for contrast.</summary>
+        public static Color RibbonInk(CardColor color)
+        {
+            switch (color)
+            {
+                case CardColor.Silver: return new Color(0.09f, 0.094f, 0.102f, 1f);
+                case CardColor.Red:
+                case CardColor.Green:
+                case CardColor.Blue: return Color.white;
+                default: return new Color(0.204f, 0.133f, 0.039f, 1f);
+            }
+        }
+
+        /// <summary>
         /// The printed colour's own name. A card with no printed colour - milestone 7.3's Ultimate, and
         /// a definition that states no progression at all - says so rather than being given a sixth
         /// colour word it does not have.

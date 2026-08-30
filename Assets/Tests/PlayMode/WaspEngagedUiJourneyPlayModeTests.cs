@@ -450,6 +450,11 @@ namespace GuardsDigital.Tests.PlayMode
                 "Static Barrier's printed Initiative 13 acts before Lift Up's 10.");
             var barrierCardId = runtime.SelectedActor.CardInstanceId;
 
+            // Milestone 8.30d, final direction: an offered primary glows as its whole printed
+            // section. Archived from the exact state the Skill click below consumes.
+            yield return UiPlayer.CaptureGameView(
+                "8-30d2", "the-offered-primary-glows-as-its-section");
+
             yield return StartActionThroughControl(root, ActionKind.Skill);
             yield return null;
             Assert.That(runtime.IsActiveEffectSource(barrierCardId), Is.True,

@@ -14,7 +14,15 @@ namespace GuardsDigital.Presentation.Match
         None = 0,
         Primary = 1,
         SecondaryDefense = 2,
-        SecondaryMovement = 3
+        SecondaryMovement = 3,
+
+        /// <summary>
+        /// The card's own printed lines around its primary section - the type ribbon's box and
+        /// the rules-text box - lit as one ring. The user's final 8.30d direction for an offered
+        /// primary: no invented lines and no icon shine; the existing print glows. The badge
+        /// slot above stays for the Defense prompt, which lights the shield itself.
+        /// </summary>
+        PrimaryRing = 4
     }
 
     /// <summary>
@@ -117,6 +125,7 @@ namespace GuardsDigital.Presentation.Match
             switch (slot)
             {
                 case CardShineSlot.Primary: return "primary";
+                case CardShineSlot.PrimaryRing: return "primary-ring";
                 case CardShineSlot.SecondaryDefense: return "secondary-defense";
                 case CardShineSlot.SecondaryMovement: return "secondary-movement";
                 default: throw new ArgumentOutOfRangeException(nameof(slot));
