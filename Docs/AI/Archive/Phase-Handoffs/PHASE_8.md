@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30i2 Remove generic effect-choice confirmation buttons and keep spatial choices on the map completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30i2 | Generic `CONFIRM CHOICE` and spatial `UNDO OPTION` controls are removed. A select that fills its projected maximum forwards the authority's exact select and immediate confirm as one player action; partial variable choices use `DONE`, optional steps use `ACCEPT`/`DECLINE`, and a selected map subject carries its exact deselect invocation for a second map click. Non-spatial modes, cards, numbers and supply pieces keep their established surfaces. Focused Edit Mode passed 60/60 and focused Play Mode passed 8/8; review found no rules, persistence, schema-v34, stale-command, or broader HUD defect. | `49101257` |
+
 ## Milestone 8.30i1 Give prepared hero tokens a white interior background completion evidence
 
 | ID | Outcome | Commit |
