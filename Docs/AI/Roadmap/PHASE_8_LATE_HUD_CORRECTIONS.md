@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard for the player-requested HUD and card-interaction corrections found after milestone 8.30d and before the complete six-seat local validation gate. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
 
-The user approved defining and scheduling these milestones on 2026-08-30. That roadmap amendment does not authorize their implementation: each milestone still requires its own explicit approval under the roadmap execution rule. Milestone 8.30c was already being implemented when these corrections were collected, so 8.30f follows it, 8.30g follows 8.30f, and the separately iterative board treatment at 8.30h follows the completed card interaction. A further user-approved amendment on 2026-08-31 defines milestone 8.30i, which follows 8.30h because it reuses that milestone's shared six-corner construction, and which carries the final pre-network evidence refresh. Each correction reruns the six-seat checks it affects before private-online work begins.
+The user approved defining and scheduling these milestones on 2026-08-30. That roadmap amendment does not authorize their implementation: each milestone still requires its own explicit approval under the roadmap execution rule. Milestone 8.30c was already being implemented when these corrections were collected, so 8.30f follows it, 8.30g follows 8.30f, and the separately iterative board treatment at 8.30h follows the completed card interaction. Further user-approved amendments on 2026-08-31 define milestone 8.30i, which follows 8.30h because it reuses that milestone's shared six-corner construction, and milestone 8.30j, which then strips the Upgrade-a-Card choice down to its cards and centred gains facts. Milestone 8.30j carries the final pre-network evidence refresh. Each correction reruns the six-seat checks it affects before private-online work begins.
 
 ### [x] 8.30f Recompose the turn controls and correct small HUD readings
 
@@ -130,3 +130,22 @@ Acceptance checks:
 Closing checks: `MinionDefenseContributions_LightSixHexCornerMarksInSignedContributionColours` and `TheDefenseBreakdownPreview_DrawsTypedContributionRowsTotalsAndOutcome` fail against the pre-milestone badge and flattened-text treatments and pass after the final visual iteration.
 
 Non-goals: No Defense rule, contribution-amount, timing, or resolution change; no change to which offers show a preview or when it appears and dismisses; no whole-hex wash, pulsing or looping animation, Movement/Attack hue redesign, networking implementation, or general board or HUD overhaul.
+
+### [ ] 8.30j Strip the Upgrade-a-Card choice down to cards and centred gains
+
+Blocked by: Milestone 8.30i must complete the preceding Defense presentation correction and its affected six-seat evidence refresh before this separately reviewable Upgrade-a-Card layout correction begins.
+
+Observable outcome: p.15's Upgrade-a-Card choice shows the six complete candidate cards directly, with no enclosing comparison box, Blue/Green/Red pair captions, pair outlines, or individual option frames; each card's existing `GAINS` item fact is centred immediately below that card.
+
+Acceptance checks:
+
+- The choice retains exactly six standard-footprint whole-card controls in the established left-to-right order: the two projected candidates for the Blue source card, then Green, then Red, with each source card's two candidates retaining their projected option order. Pairing remains a layout/authority fact but has no visible `BLUE PAIR`, `GREEN PAIR`, or `RED PAIR` caption and no coloured or neutral pair container.
+- The opaque full-width comparison band and every per-option background, padding plate, resting border, selection border, and enclosing outline shown in the reported layout are absent. Only the complete card faces and their gains rows are visible in the option area; transparent layout elements may preserve spacing and grouping but may not paint a box. The printed border already present in source card artwork is not altered.
+- The whole card remains the exact pointer and keyboard control for its existing projected invocation. Hover, focus, and activation remain perceivable without adding an enclosing option frame or moving, resizing, cropping, recolouring, or replacing the face; exactly one choice is submitted and stale or unavailable controls remain inert.
+- Each candidate's `GAINS` label and its existing signed item chip, or `NO ITEM` fallback, form one compact row centred horizontally beneath that candidate's card. The row does not align to the left edge of an obsolete option frame, widen the card, or change which sibling card supplies the p.16 item fact; returned and set-aside card facts remain in hover and assistive text.
+- All six cards and gains rows fit without horizontal scrolling at 2560x1440 and 2048x1152, retain the standing bounded vertical treatment on a deliberately short supported view, and move neither the hero rails, `DIRECTOR`, nor the board-safe surface.
+- Focused Edit Mode hierarchy, geometry, ordering, and invocation checks plus focused Play Mode pointer and keyboard Upgrade-a-Card journeys pass at both validated desktop resolutions. A targeted non-batch Game View inspection confirms that no comparison, pair, or option outline remains and that every gains row is visually centred. The directly affected 8.30c Upgrade-a-Card, six-seat input, stale-control, and supported-resolution checks rerun green at the final revision before 8.31.
+
+Closing check: `UpgradeChoices_ShowOnlySixCardsWithCenteredGainsAndNoComparisonFrames` fails against the reported comparison-band, labelled-pair, outlined-option layout and passes after the correction.
+
+Non-goals: No Level Up, card progression, item, eligibility, option-pairing, colour-order, command, snapshot, replay, Undo, or hidden-information change; no card-face, card-footprint, source-artwork, ordinary tray, Defense-choice, general contextual-region, board, networking, animation, or broader HUD redesign.

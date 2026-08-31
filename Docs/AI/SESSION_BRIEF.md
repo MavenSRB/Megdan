@@ -28,7 +28,7 @@ The **Phase 8** route has completed everything itemized above through the local 
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
-Roadmap amendment, 2026-08-31: proposed **8.30i** follows completed 8.30h, retiring the minion +1/-1 badge for six hex-corner marks lit green or red by contribution and rebuilding the Defense hover breakdown from its typed rows, totals, and result; the final pre-network evidence refresh remains there, so the remaining route is **8.30i -> 8.31**.
+Roadmap amendments, 2026-08-31: proposed **8.30i** follows completed 8.30h, retiring the minion +1/-1 badge for six hex-corner marks lit green or red by contribution and rebuilding the Defense hover breakdown from its typed rows, totals, and result. Proposed **8.30j** then removes p.15's Upgrade-a-Card comparison box, Blue/Green/Red pair captions, pair/option outlines, and other visible option framing while keeping the six cards in their established order and centring each `GAINS` row beneath its card. The final affected six-seat evidence refresh moves to 8.30j, so the remaining route is **8.30i -> 8.30j -> 8.31**.
 
 Standing route exceptions: none remain. Phase 6's exact sequencing lives in its three [Roadmap/](Roadmap/) shards and its per-milestone evidence is addressed by SHA from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md); scheduling is not authorization.
 
