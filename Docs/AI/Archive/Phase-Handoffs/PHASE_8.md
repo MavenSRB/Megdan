@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30g Drag an eligible hand card onto the map to commit it facedown completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30g | An eligible hand card now crosses one 12-reference-unit threshold into a pointer-captured, presentation-only proxy and commits that exact standing projected card once when released over the existing L-shaped live map surface; the drop coordinate never enters the command. Off-map, stale, repeated and session-replaced gestures clear without mutation, another seat's hidden card is absent, and below-threshold pointer plus keyboard selection retain the existing `CONFIRM FACEDOWN` route. T2 final evidence is 5/5 focused Edit, 2/2 closing Play, 136/136 affected Edit, 19/19 affected Play, and 1/1 targeted non-batch Play with inspected 2560x1440 and 2048x1152 captures. The required review found no remaining player-experience, rules-authority, maintainability or project-risk defect; rules, commitment/reveal authority, hidden information, schema v34, source artwork, networking and the last complete-suite baselines remain unchanged. | pending |
+
 ## Milestone 8.30f2 Attach primary replacement flags to their printed title bands completion evidence
 
 | ID | Outcome | Commit |

@@ -1910,10 +1910,7 @@ namespace GuardsDigital.Presentation.Match
         public bool SelectCommitmentCard(CardInstanceId cardInstanceId)
         {
             var projection = session.Projection;
-            var card = projection.Cards.SingleOrDefault(value => value.Id.Equals(cardInstanceId));
-            if (projection.Phase != RoundResolutionPhase.AwaitingCommitments || card == null ||
-                card.State.Location != CardLocation.Hand ||
-                projection.GetCommitment(card.OwnerId).Status != TurnCardCommitmentStatus.AwaitingResponse)
+            if (FindCommittableCard(projection, cardInstanceId) == null)
             {
                 return false;
             }
@@ -1944,6 +1941,49 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return result.Accepted;
+        }
+
+        /// <summary>
+        /// Commits one currently projected hand card without first storing it as the click-selection.
+        /// Milestone 8.30g uses this for the drag-to-map path: the pointer's drop position is deliberately
+        /// absent because the map is only a presentation boundary, never a card target or rules input.
+        /// The card is re-read from the standing projection immediately before submission, so a stale,
+        /// hidden, already committed, or otherwise ineligible drag is refused without mutation.
+        /// </summary>
+        public bool CommitCardImmediately(CardInstanceId cardInstanceId)
+        {
+            var projection = session.Projection;
+            var card = FindCommittableCard(projection, cardInstanceId);
+            if (card == null)
+            {
+                return false;
+            }
+
+            var result = session.Submit(DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            if (result.Accepted)
+            {
+                selectedCardInstanceId = null;
+                SessionProjectionChanged?.Invoke(result.Projection);
+            }
+
+            return result.Accepted;
+        }
+
+        private static CardInstance FindCommittableCard(
+            IMatchReadModel projection, CardInstanceId cardInstanceId)
+        {
+            if (projection.Phase != RoundResolutionPhase.AwaitingCommitments)
+            {
+                return null;
+            }
+
+            var card = projection.Cards.SingleOrDefault(value => value.Id.Equals(cardInstanceId));
+            return card != null &&
+                card.State.Location == CardLocation.Hand &&
+                projection.GetCommitment(card.OwnerId).Status ==
+                    TurnCardCommitmentStatus.AwaitingResponse
+                ? card
+                : null;
         }
 
         public bool Pass(HeroId heroId)

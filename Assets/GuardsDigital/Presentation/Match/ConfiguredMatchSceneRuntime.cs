@@ -155,6 +155,7 @@ namespace GuardsDigital.Presentation.Match
                     Refreshed(RoundPresenter.ToggleClearTokenAtSpace(coordinate)));
             HandsView.CardSelected += cardId => HandsPresenter.SelectCommitmentCard(cardId);
             HandsView.ConfirmRequested += () => HandsPresenter.ConfirmSelectedCard();
+            HandsView.CardDroppedOnMap += cardId => HandsPresenter.CommitCardImmediately(cardId);
             HandsView.PassRequested += heroId => HandsPresenter.Pass(heroId);
             HandsView.PrintedActionSubmitted += invocation => RoundPresenter.Submit(invocation);
             HandsView.FastTravelSelected += selection => RoundPresenter.SelectFastTravel(selection);

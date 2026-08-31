@@ -164,6 +164,143 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 8.30g's successful route at both supported desktop resolutions. The events are
+        /// genuine UI Toolkit pointer down/move/up events, the release lands in the board camera's
+        /// live safe surface, and the exact card commits through the seat client without ever drawing
+        /// the click path's confirmation control.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator DraggingAnEligibleHandCardOntoTheMap_CommitsItOnceWithoutConfirmation()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            foreach (var viewport in new[]
+                     {
+                         (Width: 2560u, Height: 1440u, Label: "reference"),
+                         (Width: 2048u, Height: 1152u, Label: "validated desktop")
+                     })
+            {
+                UiPlayer.SetPlayerViewport(
+                    viewport.Width, viewport.Height, "8.30g drag " + viewport.Label);
+                yield return LoadSeatScene(0);
+                var root = Root();
+                var runtime = root.Runtime;
+                runtime.RefreshAll();
+                yield return null;
+                yield return null;
+
+                var model = runtime.HandsView.Model.ViewedHand.TrayCards.Last(card => card.IsSelectable);
+                var card = CardControl(root.Hud.RootElement, model);
+                var drop = root.Hud.CameraSafeLayout.UpperRegion.center;
+                Assert.That(root.Hud.IsMapDropPoint(drop), Is.True);
+                var before = runtime.Host.Version;
+
+                var target = BeginDrag(card, out _);
+                SendPointerMove(target, drop);
+                Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
+                    .resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+                Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
+                    .Any(element => element.name == "gd-confirm-control" && UiPlayer.IsShown(element)),
+                    Is.False, "The drag path never selects first and never flashes confirmation.");
+
+                if (!UnityEngine.Application.isBatchMode)
+                {
+                    yield return Capture(
+                        "tmp/milestone-8-30g-card-drag-" + viewport.Width + "x" +
+                        viewport.Height + ".png");
+                }
+
+                SendPointerUp(target, drop);
+                yield return null;
+                yield return null;
+
+                Assert.That(runtime.Host.Version, Is.EqualTo(before + 1));
+                Assert.That(runtime.GetCommitmentStatus(runtime.Seat.HeroId),
+                    Is.EqualTo(TurnCardCommitmentStatus.CardCommittedFacedown));
+                Assert.That(runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId, Is.Null);
+                Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
+                    .resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+                Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
+                    .Any(element => element.name == "gd-confirm-control" && UiPlayer.IsShown(element)),
+                    Is.False);
+
+                // The refreshed projection still draws the remaining cards, but none is eligible for
+                // another commitment. A complete second pointer sequence therefore cannot resubmit.
+                var remaining = UiPlayer.Descendants(root.Hud.RootElement)
+                    .First(element => element.name == "gd-card-choice");
+                SendDrag(remaining, drop);
+                Assert.That(runtime.Host.Version, Is.EqualTo(before + 1));
+            }
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.30g restore prior viewport");
+            yield return null;
+        }
+
+        /// <summary>
+        /// Milestone 8.30g's cancellation and compatibility route: an off-map drag submits nothing,
+        /// a below-threshold move remains the existing click-and-confirm path, and replacing the
+        /// session while a pointer is captured leaves no proxy, selection, callback, or submission.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator ClickingOrCancellingACardDrag_PreservesTheExistingConfirmationFlow()
+        {
+            UiPlayer.EnsurePlayerViewport();
+            yield return LoadSeatScene(0);
+            var root = Root();
+            var runtime = root.Runtime;
+            yield return null;
+            yield return null;
+
+            var model = runtime.HandsView.Model.ViewedHand.TrayCards.Last(card => card.IsSelectable);
+            var card = CardControl(root.Hud.RootElement, model);
+            var hudChrome = Named(root.Hud.RootElement, "gd-topbar").worldBound.center;
+            Assert.That(root.Hud.IsMapDropPoint(hudChrome), Is.False);
+            var before = runtime.Host.Version;
+
+            SendDrag(card, hudChrome);
+            yield return null;
+            Assert.That(runtime.Host.Version, Is.EqualTo(before));
+            Assert.That(runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId, Is.Null,
+                "An off-map release is cancellation, not click selection.");
+
+            // A movement below the threshold is still Button.Clickable's ordinary click route.
+            var target = BeginDrag(card, out var start);
+            var belowThreshold = start + new Vector2(
+                DirectorHandsUnityView.CardDragThreshold * 0.25f, 0f);
+            SendPointerMove(target, belowThreshold);
+            SendPointerUp(target, belowThreshold);
+            yield return null;
+            Assert.That(runtime.Host.Version, Is.EqualTo(before));
+            Assert.That(runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId,
+                Is.EqualTo(model.CardInstanceId));
+            Assert.That(Named(root.Hud.RootElement, "gd-confirm-control"), Is.Not.Null);
+
+            // Begin a real drag, then replace the scene before release. Detachment must cancel the
+            // captured gesture; the fresh seat scene starts with neither selection nor proxy.
+            card = CardControl(root.Hud.RootElement, model);
+            target = BeginDrag(card, out _);
+            SendPointerMove(target, root.Hud.CameraSafeLayout.UpperRegion.center);
+            Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
+                .resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            var oldHost = runtime.Host;
+            var seat = runtime.Seat.Id;
+
+            yield return ComposeForSeat(seat);
+            root = Root();
+            runtime = root.Runtime;
+            yield return null;
+            yield return null;
+
+            Assert.That(oldHost.Version, Is.EqualTo(before),
+                "Replacing the session cannot submit the captured old gesture.");
+            Assert.That(runtime.Host.Version, Is.Zero);
+            Assert.That(runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId, Is.Null);
+            Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
+                .resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+        }
+
+        /// <summary>
         /// The amendment's second half: End Turn is a control of its own in the panel bottom-right
         /// corner, it is measured where the renderer says it is, and pressing it advances the match
         /// through the seat own client.
@@ -717,6 +854,74 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(found, Has.Length.EqualTo(1),
                 "Expected exactly one element named " + name + "; found " + found.Length + ".");
             return found[0];
+        }
+
+        private static VisualElement CardControl(VisualElement root, TrayCardViewModel card)
+        {
+            var found = UiPlayer.Descendants(root).Where(element =>
+                element.name == "gd-card-choice" &&
+                !string.IsNullOrEmpty(element.tooltip) &&
+                element.tooltip.Contains(card.DisplayName)).ToArray();
+            Assert.That(found, Has.Length.EqualTo(1),
+                "Expected one drawn card control for " + card.DisplayName + ".");
+            return found[0];
+        }
+
+        private static VisualElement BeginDrag(VisualElement card, out Vector2 start)
+        {
+            Assert.That(card?.panel, Is.Not.Null);
+            start = card.worldBound.center;
+            var target = card.panel.Pick(start);
+            Assert.That(target, Is.Not.Null);
+            using (var down = PointerDownEvent.GetPooled(new Event
+            {
+                type = EventType.MouseDown,
+                mousePosition = start,
+                button = 0,
+                clickCount = 1
+            }))
+            {
+                down.target = target;
+                target.SendEvent(down);
+            }
+
+            return target;
+        }
+
+        private static void SendDrag(VisualElement card, Vector2 end)
+        {
+            var target = BeginDrag(card, out _);
+            SendPointerMove(target, end);
+            SendPointerUp(target, end);
+        }
+
+        private static void SendPointerMove(VisualElement target, Vector2 position)
+        {
+            using (var move = PointerMoveEvent.GetPooled(new Event
+            {
+                type = EventType.MouseDrag,
+                mousePosition = position,
+                button = 0
+            }))
+            {
+                move.target = target;
+                target.SendEvent(move);
+            }
+        }
+
+        private static void SendPointerUp(VisualElement target, Vector2 position)
+        {
+            using (var up = PointerUpEvent.GetPooled(new Event
+            {
+                type = EventType.MouseUp,
+                mousePosition = position,
+                button = 0,
+                clickCount = 1
+            }))
+            {
+                up.target = target;
+                target.SendEvent(up);
+            }
         }
 
         private static IEnumerator Capture(string relativePath)

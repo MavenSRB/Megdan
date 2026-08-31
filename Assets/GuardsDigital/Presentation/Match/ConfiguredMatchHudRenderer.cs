@@ -352,6 +352,17 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The panel this HUD draws on, for a test that needs to look at the built tree.</summary>
         public VisualElement RootElement => root;
 
+        /// <summary>
+        /// Whether a panel-space point is on the board surface accepted by the commitment drag.
+        /// The two regions are the exact L-shaped safe surface already published to the board camera;
+        /// HUD chrome, the hand, and space outside the panel are therefore excluded without inventing
+        /// a second map rectangle.
+        /// </summary>
+        public bool IsMapDropPoint(Vector2 panelPosition) =>
+            CameraSafeLayout.IsValid &&
+            (CameraSafeLayout.UpperRegion.Contains(panelPosition) ||
+             CameraSafeLayout.LowerRightRegion.Contains(panelPosition));
+
         public void Configure(
             DirectorHandsUnityView handsView,
             RoundActionUnityView roundView,
@@ -704,6 +715,9 @@ namespace GuardsDigital.Presentation.Match
             root.Add(trayRegion);
             hands.HoverPreviewRoot.RemoveFromHierarchy();
             root.Add(hands.HoverPreviewRoot);
+            hands.DragProxyRoot.RemoveFromHierarchy();
+            root.Add(hands.DragProxyRoot);
+            hands.SetMapDropPredicate(IsMapDropPoint);
             root.Add(round.PreviewRoot);
 
             // Milestone 8.30b, by the user-approved amendment. Two of this view's surfaces leave the

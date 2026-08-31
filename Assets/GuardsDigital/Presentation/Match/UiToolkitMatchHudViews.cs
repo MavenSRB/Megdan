@@ -11,6 +11,76 @@ using UnityEngine.UIElements;
 namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
+    /// Presentation-only state for one possible card drag. It knows pointer distance and identity, but
+    /// neither map geometry nor commitment legality; those are rechecked by their existing owners.
+    /// </summary>
+    internal sealed class CardCommitmentDragState
+    {
+        private int pointerId = -1;
+        private CardInstanceId cardInstanceId;
+        private Vector2 start;
+
+        public bool IsTracking => pointerId >= 0;
+        public int PointerId => pointerId;
+        public bool IsDragging { get; private set; }
+        public CardInstanceId CardInstanceId => cardInstanceId;
+
+        public bool Begin(int nextPointerId, CardInstanceId nextCardInstanceId, Vector2 position)
+        {
+            if (IsTracking || nextPointerId < 0 || !nextCardInstanceId.IsDefined)
+            {
+                return false;
+            }
+
+            pointerId = nextPointerId;
+            cardInstanceId = nextCardInstanceId;
+            start = position;
+            IsDragging = false;
+            return true;
+        }
+
+        public bool Move(int movedPointerId, Vector2 position, float threshold)
+        {
+            if (!IsTracking || movedPointerId != pointerId)
+            {
+                return false;
+            }
+
+            if (!IsDragging && (position - start).sqrMagnitude >= threshold * threshold)
+            {
+                IsDragging = true;
+            }
+
+            return IsDragging;
+        }
+
+        public bool Release(int releasedPointerId, out CardInstanceId releasedCard, out bool wasDrag)
+        {
+            releasedCard = default;
+            wasDrag = false;
+            if (!IsTracking || releasedPointerId != pointerId)
+            {
+                return false;
+            }
+
+            releasedCard = cardInstanceId;
+            wasDrag = IsDragging;
+            Reset();
+            return true;
+        }
+
+        public void Cancel() => Reset();
+
+        private void Reset()
+        {
+            pointerId = -1;
+            cardInstanceId = default;
+            start = default;
+            IsDragging = false;
+        }
+    }
+
+    /// <summary>
     /// The element vocabulary every configured HUD surface is built from.
     ///
     /// Milestone 7.8a. Styles are set here in C# rather than in a stylesheet asset, deliberately: the
@@ -1562,6 +1632,18 @@ namespace GuardsDigital.Presentation.Match
             hoverPreview.style.position = Position.Absolute;
             hoverPreview.style.display = DisplayStyle.None;
             hoverPreview.pickingMode = PickingMode.Ignore;
+            dragProxy = new VisualElement { name = "gd-card-drag-proxy" };
+            dragProxy.style.position = Position.Absolute;
+            dragProxy.style.display = DisplayStyle.None;
+            dragProxy.style.width = DragProxyWidth;
+            dragProxy.style.height = DragProxyHeight;
+            dragProxy.style.opacity = 0.86f;
+            dragProxy.style.backgroundColor = MatchHudTheme.PanelBackground;
+            dragProxy.style.flexDirection = FlexDirection.Column;
+            dragProxy.style.justifyContent = Justify.Center;
+            dragProxy.style.alignItems = Align.Center;
+            dragProxy.pickingMode = PickingMode.Ignore;
+            HudElements.Border(dragProxy, MatchHudTheme.SelectedOutline, 3f, 10f);
             // Milestone 8.30d, the user's follow-up decision: the hand-status bar is dead. Its
             // two commands live on as corner banners instead, and the identity/hint line it
             // carried is not rebuilt - the narration and the rails already say it.
@@ -1588,8 +1670,16 @@ namespace GuardsDigital.Presentation.Match
 
         private readonly VisualElement cornerActions;
         private readonly VisualElement confirmAction;
+        private readonly VisualElement dragProxy;
+        private readonly CardCommitmentDragState dragState = new CardCommitmentDragState();
+        private VisualElement dragCapture;
+        private Func<Vector2, bool> isMapDropPoint;
         private bool confirmLayoutReady;
         private bool trayHidden;
+
+        public const float CardDragThreshold = 12f;
+        internal const float DragProxyWidth = 150f;
+        internal const float DragProxyHeight = 210f;
 
         /// <summary>One corner banner's height; two of them stack inside End Turn's corner rect.</summary>
         public const float CornerBannerHeight = 44f;
@@ -1634,11 +1724,15 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public VisualElement HoverPreviewRoot => hoverPreview;
 
+        /// <summary>The pointer-transparent card proxy reparented to the configured panel root.</summary>
+        public VisualElement DragProxyRoot => dragProxy;
+
         public TrayCardViewModel HighlightedPeekCard => highlightedPeekCard;
 
         public DirectorHandsViewModel Model { get; private set; }
 
         public event Action<CardInstanceId> CardSelected;
+        public event Action<CardInstanceId> CardDroppedOnMap;
         public event Action ConfirmRequested;
         public event Action<HeroId> PassRequested;
         public event Action<TypedInvocationViewModel> PrintedActionSubmitted;
@@ -1646,6 +1740,12 @@ namespace GuardsDigital.Presentation.Match
         public event Action<ClearOfferViewModel> ClearSelected;
 
         public IReadOnlyList<PrintedActionRegionViewModel> PrintedActionRegions => printedActionRegions;
+
+        /// <summary>Supplies the HUD-owned L-shaped live map boundary for drag release.</summary>
+        public void SetMapDropPredicate(Func<Vector2, bool> predicate)
+        {
+            isMapDropPoint = predicate ?? throw new ArgumentNullException(nameof(predicate));
+        }
 
         /// <summary>
         /// Binds the ordinary action projection to this hand without teaching the hand legality. The
@@ -1722,6 +1822,7 @@ namespace GuardsDigital.Presentation.Match
             if (hidden)
             {
                 ClearPeekPreview();
+                CancelCardDrag();
             }
 
             var display = hidden ? DisplayStyle.None : DisplayStyle.Flex;
@@ -1737,6 +1838,7 @@ namespace GuardsDigital.Presentation.Match
 
         private void Rebuild()
         {
+            CancelCardDrag();
             ClearPeekPreview();
             header.Clear();
             cards.Clear();
@@ -1817,6 +1919,7 @@ namespace GuardsDigital.Presentation.Match
                 name = "gd-card-choice"
             };
             button.text = string.Empty;
+            BindCardDrag(button, card);
 
             // The shared builder owns both complete-face shapes: a prepared printed front at its
             // verified source aspect, or the taller typed generated fallback when no resource exists.
@@ -1906,6 +2009,117 @@ namespace GuardsDigital.Presentation.Match
                     pointedAt => SetPeekPreview(pointedAt ? card : null, slot));
             }
             return slot;
+        }
+
+        private void BindCardDrag(Button button, TrayCardViewModel card)
+        {
+            button.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0 || !card.IsSelectable ||
+                    !dragState.Begin(evt.pointerId, card.CardInstanceId, evt.position))
+                {
+                    return;
+                }
+
+                dragCapture = button;
+                button.CapturePointer(evt.pointerId);
+            }, TrickleDown.TrickleDown);
+
+            button.RegisterCallback<PointerMoveEvent>(evt =>
+            {
+                if (!dragState.Move(evt.pointerId, evt.position, CardDragThreshold))
+                {
+                    return;
+                }
+
+                ShowDragProxy(card, evt.position);
+            }, TrickleDown.TrickleDown);
+
+            button.RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (!dragState.Release(evt.pointerId, out var cardId, out var wasDrag))
+                {
+                    return;
+                }
+
+                ReleaseDragCapture(evt.pointerId);
+                HideDragProxy();
+                if (!wasDrag)
+                {
+                    return;
+                }
+
+                // Suppress Button.Clickable's pointer-up path: a drag is one input path and cannot
+                // also select the card or reveal the confirmation banner beneath it.
+                evt.StopImmediatePropagation();
+                if (isMapDropPoint?.Invoke(evt.position) == true)
+                {
+                    CardDroppedOnMap?.Invoke(cardId);
+                }
+            }, TrickleDown.TrickleDown);
+
+            button.RegisterCallback<PointerCancelEvent>(evt =>
+            {
+                if (dragState.IsTracking)
+                {
+                    CancelCardDrag();
+                }
+            });
+            button.RegisterCallback<DetachFromPanelEvent>(_ => CancelCardDrag());
+        }
+
+        private void ShowDragProxy(TrayCardViewModel card, Vector2 pointerPosition)
+        {
+            if (dragProxy.childCount == 0)
+            {
+                var name = new Label(card.DisplayName)
+                {
+                    name = "gd-card-drag-proxy-name"
+                };
+                name.style.whiteSpace = WhiteSpace.Normal;
+                name.style.unityTextAlign = TextAnchor.MiddleCenter;
+                name.style.unityFontStyleAndWeight = FontStyle.Bold;
+                name.style.fontSize = 16f;
+                name.style.color = MatchHudTheme.PrimaryText;
+                name.style.paddingLeft = 10f;
+                name.style.paddingRight = 10f;
+                dragProxy.Add(name);
+                dragProxy.tooltip = "Commit " + card.DisplayName + " facedown";
+            }
+
+            dragProxy.style.left = pointerPosition.x - (DragProxyWidth * 0.5f);
+            dragProxy.style.top = pointerPosition.y - (DragProxyHeight * 0.5f);
+            dragProxy.style.display = DisplayStyle.Flex;
+            dragProxy.BringToFront();
+        }
+
+        private void CancelCardDrag()
+        {
+            if (dragCapture != null && dragState.IsTracking)
+            {
+                ReleaseDragCapture(dragState.PointerId);
+            }
+
+            dragState.Cancel();
+            dragCapture = null;
+            HideDragProxy();
+        }
+
+        private void ReleaseDragCapture(int pointerId)
+        {
+            if (dragCapture != null && dragCapture.HasPointerCapture(pointerId))
+            {
+                dragCapture.ReleasePointer(pointerId);
+            }
+
+            dragCapture = null;
+        }
+
+        private void HideDragProxy()
+        {
+            dragProxy.style.display = DisplayStyle.None;
+            dragProxy.Clear();
+            dragProxy.tooltip = string.Empty;
         }
 
         private void AddPrintedActionOverlay(VisualElement cardSurface, TrayCardViewModel card)

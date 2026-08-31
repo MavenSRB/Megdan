@@ -316,6 +316,24 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void DirectorHandsPresenter_DirectCommitRevalidatesTheExactStandingCardOnce()
+        {
+            var session = CreateSession();
+            var presenter = new DirectorHandsPresenter(session, new CapturingHandsView());
+            var redCard = GetHandCards(session, TeamSide.Red)[0];
+
+            Assert.That(presenter.CommitCardImmediately(redCard.Id), Is.True);
+            Assert.That(session.Projection.GetCommitment(redCard.OwnerId).Status,
+                Is.EqualTo(TurnCardCommitmentStatus.CardCommittedFacedown));
+            Assert.That(session.Projection.AcceptedCommands, Has.Count.EqualTo(1));
+
+            Assert.That(presenter.CommitCardImmediately(redCard.Id), Is.False,
+                "The card is no longer an eligible hand commitment in the standing projection.");
+            Assert.That(session.Projection.AcceptedCommands, Has.Count.EqualTo(1),
+                "A stale or repeated drag cannot double-submit.");
+        }
+
+        [Test]
         public void BoardPresenter_ProjectsAndSubmitsExactPendingMovementChoice()
         {
             var session = CreateSession();

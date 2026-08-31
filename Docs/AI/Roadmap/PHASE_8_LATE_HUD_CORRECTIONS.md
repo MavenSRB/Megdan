@@ -66,7 +66,7 @@ Non-goals: No Secondary redesign, action eligibility or command change, card/act
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830f2-attach-primary-replacement-flags-to-their-printed-title-bands-completion-evidence).
 
-### [ ] 8.30g Drag an eligible hand card onto the map to commit it facedown
+### [x] 8.30g Drag an eligible hand card onto the map to commit it facedown
 
 Blocked by: Milestones 8.30f-8.30f2 must establish the final hand, commitment-control, replacement-flag layout and validated editor baseline against which the additional pointer path is tested.
 
@@ -86,6 +86,8 @@ Acceptance checks:
 Closing checks: `DraggingAnEligibleHandCardOntoTheMap_CommitsItOnceWithoutConfirmation` and `ClickingOrCancellingACardDrag_PreservesTheExistingConfirmationFlow` fail before the additional gesture exists and pass with the two input paths kept distinct.
 
 Non-goals: No change to card commitment or reveal rules, no drag-to-reorder hand, no card-to-space targeting, no confirmation removal from click or keyboard input, no touch/mobile gesture scope, no freeform card physics, no networking implementation, and no general animation or input-system rewrite.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830g-drag-an-eligible-hand-card-onto-the-map-to-commit-it-facedown-completion-evidence).
 
 ### [ ] 8.30h Illuminate board choices through all six printed hex-corner marks
 
