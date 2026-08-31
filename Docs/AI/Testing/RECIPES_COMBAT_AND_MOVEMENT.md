@@ -111,7 +111,7 @@ $actionOfferValueEditArguments = @(
 )
 
 $actionOfferValueEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $actionOfferValueEditArguments `
     -Wait `
     -PassThru `
@@ -138,7 +138,7 @@ $attackInitiationEditArguments = @(
 )
 
 $attackInitiationEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $attackInitiationEditArguments `
     -Wait `
     -PassThru `
@@ -165,7 +165,7 @@ $rangedAttackEditArguments = @(
 )
 
 $rangedAttackEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $rangedAttackEditArguments `
     -Wait `
     -PassThru `
@@ -192,7 +192,7 @@ $defenseResponseEditArguments = @(
 )
 
 $defenseResponseEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $defenseResponseEditArguments `
     -Wait `
     -PassThru `
@@ -219,7 +219,7 @@ $attackOutcomeEditArguments = @(
 )
 
 $attackOutcomeEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $attackOutcomeEditArguments `
     -Wait `
     -PassThru `
@@ -246,7 +246,7 @@ $cardFoundationHardeningArguments = @(
 )
 
 $cardFoundationHardeningProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $cardFoundationHardeningArguments `
     -Wait `
     -PassThru `
@@ -273,7 +273,7 @@ $oneClickCardMovementArguments = @(
 )
 
 $oneClickCardMovementProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $oneClickCardMovementArguments `
     -Wait `
     -PassThru `
@@ -300,7 +300,7 @@ $visibleCardMovementArguments = @(
 )
 
 $visibleCardMovementProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $visibleCardMovementArguments `
     -Wait `
     -PassThru `

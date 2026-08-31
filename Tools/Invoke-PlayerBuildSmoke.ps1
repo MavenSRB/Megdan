@@ -24,7 +24,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$unityEditorVersion = '6000.5.7f1'
+$unityEditorVersion = '6000.5.9f1'
 $buildLog = [System.IO.Path]::Combine($projectRoot, 'tmp', 'player-build-smoke-build.log')
 $playerLog = [System.IO.Path]::Combine($projectRoot, 'tmp', 'player-build-smoke-player.log')
 $executablePath = [System.IO.Path]::Combine($projectRoot, 'Builds', 'Win64Smoke', 'GuardsDigitalSmoke.exe')

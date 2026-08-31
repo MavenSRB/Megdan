@@ -6,7 +6,7 @@ Canonical decision record for milestone 8.29. Return to [../PROJECT_CONTEXT.md](
 
 For the private Windows playtest track, use one player-hosted authoritative process connected to five clients through Unity Gaming Services (UGS) Multiplayer Services sessions and Relay:
 
-- Unity Editor **6000.5.7f1** and URP **17.5.0** remain the project baseline.
+- Unity Editor **6000.5.9f1** and URP **17.5.0** remain the project baseline. The patch migration changes no selected networking package, protocol, or trust boundary.
 - Select released `com.unity.services.multiplayer` **1.2.0** for private session/join-code grouping, Relay allocation, and service lifecycle.
 - Select released `com.unity.transport` **2.6.0** as the byte transport, using Relay **DTLS** and reliable sequenced delivery for protocol messages. Do not add Netcode for GameObjects or Netcode for Entities.
 - Use the Authentication package version resolved by Multiplayer Services 1.2.0 and pinned in `Packages/packages-lock.json` when milestone 8.31 installs the stack. Sign in anonymously; the UGS player ID is service identity, not gameplay authority or a durable account.

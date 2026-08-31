@@ -8,7 +8,7 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $requestPath = [System.IO.Path]::Combine($projectRoot, 'tmp', 'unity-validation-request.json')
 
-$unityEditorVersion = '6000.5.7f1'
+$unityEditorVersion = '6000.5.9f1'
 
 function Test-IsWindowsHost {
     # $IsWindows exists on PowerShell Core only; Windows PowerShell 5.1 predates it and is

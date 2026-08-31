@@ -16,7 +16,7 @@ $hexCoordinateArguments = @(
 )
 
 $hexCoordinateProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $hexCoordinateArguments `
     -Wait `
     -PassThru `
@@ -43,7 +43,7 @@ $minimalGridEditArguments = @(
 )
 
 $minimalGridEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $minimalGridEditArguments `
     -Wait `
     -PassThru `
@@ -70,7 +70,7 @@ $primitiveHeroEditArguments = @(
 )
 
 $primitiveHeroEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $primitiveHeroEditArguments `
     -Wait `
     -PassThru `
@@ -97,7 +97,7 @@ $heroSelectionEditArguments = @(
 )
 
 $heroSelectionEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $heroSelectionEditArguments `
     -Wait `
     -PassThru `
@@ -124,7 +124,7 @@ $adjacentMoveEditArguments = @(
 )
 
 $adjacentMoveEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $adjacentMoveEditArguments `
     -Wait `
     -PassThru `
@@ -151,7 +151,7 @@ $adjacentClickMoveEditArguments = @(
 )
 
 $adjacentClickMoveEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $adjacentClickMoveEditArguments `
     -Wait `
     -PassThru `
@@ -178,7 +178,7 @@ $movementSessionEditArguments = @(
 )
 
 $movementSessionEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $movementSessionEditArguments `
     -Wait `
     -PassThru `
@@ -205,7 +205,7 @@ $obstacleBlockingEditArguments = @(
 )
 
 $obstacleBlockingEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $obstacleBlockingEditArguments `
     -Wait `
     -PassThru `

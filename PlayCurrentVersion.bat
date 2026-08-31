@@ -4,7 +4,7 @@ setlocal
 set "PROJECT_DIR=%~dp0"
 if "%PROJECT_DIR:~-1%"=="\" set "PROJECT_DIR=%PROJECT_DIR:~0,-1%"
 
-set "UNITY_EXE=C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe"
+set "UNITY_EXE=C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe"
 set "LAUNCH_METHOD=GuardsDigital.EditorTools.CurrentPrototypeLauncher.OpenCurrentSceneAndEnterPlayMode"
 
 if not exist "%UNITY_EXE%" (

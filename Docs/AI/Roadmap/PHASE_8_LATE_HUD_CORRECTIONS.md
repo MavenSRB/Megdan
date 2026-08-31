@@ -28,9 +28,28 @@ Non-goals: No rule, action availability, Defense resolution, discard lifecycle, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830f-recompose-the-turn-controls-and-correct-small-hud-readings-completion-evidence).
 
+### [x] 8.30f1 Migrate the editor patch and reconcile the stale Confirm geometry gate
+
+Blocked by: Milestone 8.30f established the accepted commitment-control geometry; Unity 6000.5.9f1 must be installed and its new analyzer hash admitted by Smart App Control without weakening Windows security.
+
+Observable outcome: The project, launchers, live recipes, and current platform authorities use Unity 6000.5.9f1, whose editor and compiler path run with Smart App Control and Microsoft Defender still enabled; the one Play Mode geometry assertion left behind by 8.30f now verifies `CONFIRM FACEDOWN` below `DIRECTOR` rather than expecting the retired End Turn-corner placement.
+
+Acceptance checks:
+
+- `ProjectSettings/ProjectVersion.txt`, the local launchers, README, live Unity recipes, and current editor/platform authority agree on Unity 6000.5.9f1 and revision `b57deb96f08d`; historical records remain unchanged.
+- `Scene_StacksCurrentActionControlsAboveHandStatusWithoutOverlap` records the observed pre-fix failure against the End Turn rectangle and passes after comparing the live confirmation banner with `ConfirmFacedownControlRect`; it still proves the dock has no duplicate confirmation and End Turn retains its own bottom-right rectangle.
+- The launcher contract checks, focused HUD Edit Mode fixture, focused closing Play Mode check, and both complete Unity suites pass with fresh XML/log evidence. Windows records no 6000.5.9f1 UI Toolkit source-generator block, Smart App Control stays in enforcement mode, and Defender real-time protection stays enabled.
+- The editor-resolved `com.unity.searcher` patch and Project Auditor serialization reorder are recorded as toolchain-only migration output; no selected networking package, game package, rule, schema, content identity, or presentation behavior changes.
+
+Closing check: `Scene_StacksCurrentActionControlsAboveHandStatusWithoutOverlap` failed at the pre-fix migration revision by comparing the correct below-`DIRECTOR` banner with End Turn's corner and passes once the assertion names the accepted 8.30f geometry.
+
+Non-goals: No HUD production change, new layout decision, rule or command change, package selection beyond the editor-resolved patch, Smart App Control exception or disablement, networking implementation, schema migration, source-artwork change, or work from milestone 8.30g.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830f1-migrate-the-editor-patch-and-reconcile-the-stale-confirm-geometry-gate-completion-evidence).
+
 ### [ ] 8.30g Drag an eligible hand card onto the map to commit it facedown
 
-Blocked by: Milestone 8.30f must establish the final hand and commitment-control layout against which the additional pointer path is validated.
+Blocked by: Milestones 8.30f and 8.30f1 must establish the final hand and commitment-control layout and validated editor baseline against which the additional pointer path is tested.
 
 Observable outcome: In addition to the unchanged click-then-confirm path, a player may drag an eligible card from their hand onto the map and release it to commit that exact card facedown immediately, without a separate confirmation press.
 

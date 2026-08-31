@@ -1122,9 +1122,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
             var confirmationDock = dockElement.worldBound;
-            // Milestone 8.30d, the user's follow-up decision: Confirm is a pewter corner banner
-            // in End Turn's own rectangle, not a control inside the dock's hand-status bar -
-            // that bar is retired outright.
+            // Milestone 8.30f: the dock's hand-status bar remains retired, but Confirm alone
+            // moved out of End Turn's corner and into the open lane immediately below DIRECTOR.
             var confirmControl = Descendants(root.Hud.RootElement).OfType<Button>()
                 .SingleOrDefault(control => control.text == "CONFIRM FACEDOWN");
             Assert.That(confirmControl, Is.Not.Null,
@@ -1132,14 +1131,23 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(Descendants(dockElement).OfType<Button>()
                     .Any(control => control.text == "CONFIRM FACEDOWN"),
                 Is.False,
-                "The dock's hand-status bar is retired; Confirm lives in the corner.");
+                "The dock's hand-status bar is retired; Confirm lives below DIRECTOR.");
             var confirmBox = confirmControl.worldBound;
-            var cornerRect = root.Hud.EndTurnControlRect;
+            var confirmRect = root.Hud.ConfirmFacedownControlRect;
+            var directorBox = Named(root.Hud.RootElement, "gd-director-toggle").worldBound;
+            Assert.That(confirmBox.xMin,
+                Is.EqualTo(confirmRect.xMin).Within(UiPlayer.PixelSnapping() * 2f),
+                "The confirm banner uses the resolved below-DIRECTOR rectangle.");
             Assert.That(confirmBox.xMax,
-                Is.EqualTo(cornerRect.xMax).Within(UiPlayer.PixelSnapping() * 2f),
-                "The confirm banner stands in End Turn's corner rectangle.");
+                Is.EqualTo(confirmRect.xMax).Within(UiPlayer.PixelSnapping() * 2f));
+            Assert.That(confirmBox.yMin,
+                Is.EqualTo(confirmRect.yMin).Within(UiPlayer.PixelSnapping() * 2f));
             Assert.That(confirmBox.yMax,
-                Is.EqualTo(cornerRect.yMax).Within(UiPlayer.PixelSnapping() * 2f));
+                Is.EqualTo(confirmRect.yMax).Within(UiPlayer.PixelSnapping() * 2f));
+            Assert.That(confirmBox.yMin,
+                Is.GreaterThanOrEqualTo(directorBox.yMax +
+                    ConfiguredMatchHudRenderer.ConfirmDirectorGap - UiPlayer.PixelSnapping() * 2f),
+                "Confirm stands immediately below DIRECTOR without covering it.");
             yield return Capture("tmp/milestone-8-25f2-status-dock-confirmation.png");
 
             Assert.That(root.Runtime.ConfirmSelectedCommitment(), Is.True);

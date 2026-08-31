@@ -18,7 +18,7 @@ $minimalGridPlayArguments = @(
 )
 
 $minimalGridPlayProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $minimalGridPlayArguments `
     -Wait `
     -PassThru `
@@ -139,7 +139,7 @@ $completeEditArguments = @(
 )
 
 $completeEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $completeEditArguments `
     -Wait `
     -PassThru `
@@ -159,7 +159,7 @@ $completePlayArguments = @(
 )
 
 $completePlayProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $completePlayArguments `
     -Wait `
     -PassThru `

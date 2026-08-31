@@ -16,7 +16,7 @@ $cardDefinitionInstanceEditArguments = @(
 )
 
 $cardDefinitionInstanceEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $cardDefinitionInstanceEditArguments `
     -Wait `
     -PassThru `
@@ -43,7 +43,7 @@ $cardLifecycleEditArguments = @(
 )
 
 $cardLifecycleEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $cardLifecycleEditArguments `
     -Wait `
     -PassThru `
@@ -70,7 +70,7 @@ $matchParticipantArguments = @(
 )
 
 $matchParticipantProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $matchParticipantArguments `
     -Wait `
     -PassThru `
@@ -97,7 +97,7 @@ $tieBreakerSetupEditArguments = @(
 )
 
 $tieBreakerSetupEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $tieBreakerSetupEditArguments `
     -Wait `
     -PassThru `
@@ -124,7 +124,7 @@ $tieBreakerIndicatorEditArguments = @(
 )
 
 $tieBreakerIndicatorEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $tieBreakerIndicatorEditArguments `
     -Wait `
     -PassThru `
@@ -151,7 +151,7 @@ $directorHandsEditArguments = @(
 )
 
 $directorHandsEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $directorHandsEditArguments `
     -Wait `
     -PassThru `
@@ -178,7 +178,7 @@ $turnCardCommitmentEditArguments = @(
 )
 
 $turnCardCommitmentEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $turnCardCommitmentEditArguments `
     -Wait `
     -PassThru `
@@ -205,7 +205,7 @@ $initiativeEditArguments = @(
 )
 
 $initiativeEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $initiativeEditArguments `
     -Wait `
     -PassThru `
@@ -232,7 +232,7 @@ $holdTurnEditArguments = @(
 )
 
 $holdTurnEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $holdTurnEditArguments `
     -Wait `
     -PassThru `
@@ -259,7 +259,7 @@ $turnMovementEditArguments = @(
 )
 
 $turnMovementEditProcess = Start-Process `
-    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.7f1\Editor\Unity.exe' `
+    -FilePath 'C:\Program Files\Unity\Hub\Editor\6000.5.9f1\Editor\Unity.exe' `
     -ArgumentList $turnMovementEditArguments `
     -Wait `
     -PassThru `

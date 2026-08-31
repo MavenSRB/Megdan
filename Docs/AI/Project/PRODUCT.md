@@ -74,7 +74,7 @@ These deviations are detailed and tracked in `RULES_LEDGER.md`.
 ## Technology and platforms
 
 - Engine: Unity.
-- Installed and selected editor: Unity `6000.5.7f1`.
+- Installed and selected editor: Unity `6000.5.9f1`.
 - Rendering pipeline: Built-In Render Pipeline is retained for the current primitive-rule phases. Before production presentation begins, milestone 8.28 migrates the validated primitive match to URP and makes URP the accepted rendering baseline; do not introduce Built-In-only production visual dependencies beforehand.
 - Reference development platform: Windows desktop and Unity Editor.
 - Active reference build target: Windows 64-bit standalone (`Win64`).
