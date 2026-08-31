@@ -133,7 +133,6 @@ namespace GuardsDigital.Tests.PlayMode
             var mode = runtime.RoundView.Model.EffectChoices.First(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
             Assert.That(runtime.RoundPresenter.Submit(mode), Is.True);
-            Assert.That(runtime.ConfirmEffectChoice(), Is.True);
             yield return null;
 
             var target = runtime.RoundView.Model.EffectChoiceTargets
@@ -386,9 +385,10 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.SubmitAction(FeintSkill), Is.True);
             Assert.That(runtime.SubmitEffectChoiceOption(PlaceBranch), Is.True);
-            Assert.That(runtime.ConfirmEffectChoice(), Is.True,
-                "A mode keeps the explicit confirm milestone 6.8a gave it; only a value candidate " +
-                "is answered in one click.");
+            Assert.That(runtime.RoundView.Model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm),
+                Is.False,
+                "Choosing one mode is the answer; no generic confirmation control follows it.");
 
             // The supply is untouched, so p.18's `if able` reclamation step skips and the placement
             // is the next decision.

@@ -711,19 +711,16 @@ namespace GuardsDigital.Tests.EditMode
             // invocations it currently projects: a forwarded decision missing from that legality list
             // is refused, and nothing else in this fixture would notice.
             var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            var acceptedBeforeSelection = session.Projection.AcceptedCommands.Count;
             Assert.That(presenter.Submit(selections[0]), Is.True);
             var afterSelect = RoundActionPresenter.CreateViewModel(session.Projection);
-            var confirm = afterSelect.EffectChoices.Single(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            Assert.That(confirm.Label, Is.EqualTo(EffectChoiceLabels.ConfirmLabel));
-            Assert.That(afterSelect.EffectChoices.Any(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Deselect), Is.True,
-                "A selected mode can be taken back before it is confirmed.");
-
-            Assert.That(presenter.Submit(confirm), Is.True);
-            var afterConfirm = RoundActionPresenter.CreateViewModel(session.Projection);
-            Assert.That(afterConfirm.EffectChoices, Is.Empty,
-                "The completed frame leaves no decision behind.");
+            Assert.That(afterSelect.EffectChoices, Is.Empty,
+                "An exactly-one mode finishes when it is picked; no generic confirmation button remains.");
+            Assert.That(
+                session.Projection.AcceptedCommands.Skip(acceptedBeforeSelection)
+                    .Select(value => value.EffectChoice.Kind),
+                Is.EqualTo(new[] { EffectChoiceCommandKind.Select, EffectChoiceCommandKind.Confirm }),
+                "Presentation forwards the authority's select and immediate confirm as one player action.");
         }
 
         /// <summary>
@@ -891,8 +888,9 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// Milestone 6.5b. Red Bombard's `directly Move another adjacent unit up to 2 spaces` inherits
-        /// both 6.5c surfaces without adding presentation of its own: the unit is a named control, and
-        /// the destinations it then offers are empty spaces the board lights.
+        /// both 6.5c surfaces without adding presentation of its own: the unit is a named map target,
+        /// and the destinations it then offers remain on the map. The zero-distance answer to `up to`
+        /// is the occupied source space; the other destinations are empty spaces.
         /// </summary>
         [Test]
         public void RoundPresenter_GivesTheDirectMoveItsNamedTargetThenLeavesDestinationsToTheBoard()
@@ -910,18 +908,20 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(naming.EffectChoiceTargets.Single().ResultingSpace, Is.Null,
                 "An `up to` distance is an unanswered decision, so no landing space is projected.");
 
-            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(
-                naming.EffectChoiceTargets.Single().Command.EffectChoice)).Accepted, Is.True);
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            Assert.That(presenter.SubmitTarget(naming.EffectChoiceTargets.Single()), Is.True,
+                "The player's one target click carries the authority's immediate confirmation too.");
 
             var moving = RoundActionPresenter.CreateViewModel(session.Projection);
-            Assert.That(moving.EffectChoiceTargets, Is.Empty,
-                "Every destination is an empty space, so none names an object.");
             Assert.That(moving.EffectChoices.Any(value =>
                     value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select),
                 Is.False,
                 "No anonymous OPTION #n button survives on either half of this branch.");
-            Assert.That(moving.EffectChoiceDestinations.Count,
+            Assert.That(
+                moving.EffectChoiceDestinations.Count + moving.EffectChoiceTargets.Count,
                 Is.EqualTo(session.Projection.PendingEffectChoice.SelectInvocations.Count));
+            Assert.That(moving.EffectChoiceTargets, Has.Count.EqualTo(1),
+                "The occupied source space is the zero-distance answer to `up to`; it remains clickable.");
         }
 
         /// <summary>
@@ -1623,7 +1623,7 @@ namespace GuardsDigital.Tests.EditMode
                 "A paused frame withholds the offers Core would refuse, repeat prompt included.");
             Assert.That(
                 model.EffectChoices.Select(value => value.Label),
-                Is.EqualTo(new[] { EffectChoiceLabels.ConfirmLabel, EffectChoiceLabels.DeclineLabel }),
+                Is.EqualTo(new[] { EffectChoiceLabels.AcceptLabel, EffectChoiceLabels.DeclineLabel }),
                 "Exactly the two controls the projection carries, in its order and under the labels " +
                 "milestone 6.2a's `may` has used since it shipped - this conversion invents none.");
             Assert.That(

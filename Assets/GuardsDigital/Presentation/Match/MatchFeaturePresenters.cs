@@ -128,7 +128,8 @@ namespace GuardsDigital.Presentation.Match
         public static string DeselectLabel(EffectNodeId optionNodeId, int ordinal) =>
             $"UNDO {CandidateLabel(optionNodeId, ordinal)}";
 
-        public const string ConfirmLabel = "CONFIRM CHOICE";
+        public const string CompletionLabel = "DONE";
+        public const string AcceptLabel = "ACCEPT";
         public const string DeclineLabel = "DECLINE";
 
         /// <summary>
@@ -758,18 +759,18 @@ namespace GuardsDigital.Presentation.Match
     /// <summary>
     /// Milestone 6.5c: how an effect-choice selection reaches its end.
     ///
-    /// An exactly-one choice - `Choose one`, one target, one destination - is finished the moment the
-    /// single selection is made, but the authority still models the answer as select then confirm, so
-    /// a player who has already decided is asked to say so twice. Presentation closes that by
+    /// A bounded choice is finished when a selection reaches its maximum - one mode, target, card,
+    /// number, or destination for an exactly-one choice, or the final piece of a larger set. The
+    /// authority still models that answer as select then confirm, so a player who has already filled
+    /// the choice would otherwise be asked to say so twice. Presentation closes that by
     /// forwarding both invocations the authority itself offers, in the order it offers them; it
     /// invents no command, decides no legality, and changes nothing about how the choice confirms.
-    /// A choice with any other bounds keeps its explicit confirm, because there the selection really
-    /// is unfinished.
+    /// A choice that has not reached its maximum keeps an explicit completion action, because there
+    /// the selection may really be unfinished.
     ///
-    /// It applies to a value candidate only. A mode is the one decision whose control set milestone
-    /// 6.5c leaves exactly as milestone 6.8a built it, and taking a mode back before committing to it
-    /// is worth the second click; a target or a destination is picked off the board, where the pick
-    /// itself is the commitment.
+    /// It applies to every candidate kind. A pick is the commitment regardless of whether its surface
+    /// is the map, a card face, a printed number, or a mode control. Choices with wider bounds retain
+    /// an explicit completion action because selecting one candidate does not necessarily finish them.
     /// </summary>
     internal static class EffectChoiceCompletion
     {
@@ -779,10 +780,10 @@ namespace GuardsDigital.Presentation.Match
             var choice = projection?.PendingEffectChoice;
             if (choice == null || accepted == null ||
                 accepted.Kind != EffectChoiceCommandKind.Select ||
-                accepted.Candidate.Kind != EffectChoiceCandidateKind.Value ||
                 !choice.ChoiceId.Equals(accepted.ChoiceId) ||
                 !choice.ResolutionId.Equals(accepted.ResolutionId) ||
-                choice.MinimumSelections != 1 || choice.MaximumSelections != 1 ||
+                choice.MaximumSelections < 1 ||
+                choice.SelectedCandidates.Count != choice.MaximumSelections ||
                 choice.ConfirmInvocation == null)
             {
                 return null;
@@ -1104,7 +1105,7 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
-            return choice.SelectInvocations
+            return choice.SelectInvocations.Concat(choice.DeselectInvocations)
                 .Where(invocation =>
                     invocation.Candidate.Kind == EffectChoiceCandidateKind.Value &&
                     admitted.ContainsKey(invocation.Candidate.Value))
@@ -1408,7 +1409,9 @@ namespace GuardsDigital.Presentation.Match
                     return false;
                 }
 
-                var selection = effectChoice.SelectInvocations.SingleOrDefault(value =>
+                var selection = effectChoice.SelectInvocations
+                    .Concat(effectChoice.DeselectInvocations)
+                    .SingleOrDefault(value =>
                     value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
                     value.Candidate.Value.Kind == EffectValueKind.Coordinate &&
                     value.Candidate.Value.Coordinate.Equals(destination));
@@ -1525,7 +1528,9 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            var selection = effectChoice.SelectInvocations.SingleOrDefault(value =>
+            var selection = effectChoice.SelectInvocations
+                .Concat(effectChoice.DeselectInvocations)
+                .SingleOrDefault(value =>
                 value.Candidate.Kind == EffectChoiceCandidateKind.Value &&
                 value.Candidate.Value.Equals(standing[0]));
             return selection != null && SubmitEffectChoiceSelection(
@@ -3984,20 +3989,48 @@ namespace GuardsDigital.Presentation.Match
 
             foreach (var invocation in choice.DeselectInvocations)
             {
+                var command = PendingDecisionCommandBinding.Require(
+                    projection,
+                    PendingDecisionFamilies.Effect,
+                    candidateCommand => candidateCommand.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                        ReferenceEquals(candidateCommand.EffectChoice, invocation));
+                var candidate = invocation.Candidate;
+                if (candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    previews.TryGetValue(candidate.Value, out var preview))
+                {
+                    if (preview.NamesObject)
+                    {
+                        namedTargets.Add(new EffectChoiceTargetViewModel(
+                            FormatTargetLabel(
+                                projection, preview, ordinals[candidate], repeatedTokenNames),
+                            preview.Coordinate,
+                            preview.ResultingCoordinate,
+                            command,
+                            FindToken(projection, preview)?.Id ?? default));
+                    }
+                    else
+                    {
+                        boardDestinations.Add(new TypedInvocationViewModel(
+                            EffectChoiceLabels.DeselectLabel(
+                                candidate.OptionNodeId, ordinals[candidate]),
+                            command));
+                    }
+
+                    continue;
+                }
+
                 invocations.Add(new TypedInvocationViewModel(
                     EffectChoiceLabels.DeselectLabel(
-                        invocation.Candidate.OptionNodeId, ordinals[invocation.Candidate]),
-                    PendingDecisionCommandBinding.Require(
-                        projection,
-                        PendingDecisionFamilies.Effect,
-                        command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
-                            ReferenceEquals(command.EffectChoice, invocation))));
+                        candidate.OptionNodeId, ordinals[candidate]),
+                    command));
             }
 
             if (choice.ConfirmInvocation != null)
             {
                 invocations.Add(new TypedInvocationViewModel(
-                    EffectChoiceLabels.ConfirmLabel,
+                    choice.Kind == EffectChoiceKind.ConfirmOrDecline
+                        ? EffectChoiceLabels.AcceptLabel
+                        : EffectChoiceLabels.CompletionLabel,
                     PendingDecisionCommandBinding.Require(
                         projection,
                         PendingDecisionFamilies.Effect,

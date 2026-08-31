@@ -154,7 +154,7 @@ namespace GuardsDigital.Tests.EditMode
             var sections = Render(model);
             AssertEveryControlIsUnderItsOwnHeading(model, sections);
             Assert.That(sections["OPTIONAL STEP"].Select(control => control.text),
-                Is.EqualTo(new[] { EffectChoiceLabels.ConfirmLabel, EffectChoiceLabels.DeclineLabel }),
+                Is.EqualTo(new[] { EffectChoiceLabels.AcceptLabel, EffectChoiceLabels.DeclineLabel }),
                 "Both answers keep their labels, their order and their invocations; only the " +
                 "heading over them changed. " + Describe(sections));
         }

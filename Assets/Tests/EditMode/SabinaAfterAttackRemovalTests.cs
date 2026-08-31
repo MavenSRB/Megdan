@@ -3,6 +3,9 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 using static GuardsDigital.Tests.EditMode.SabinaBoard;
 using static GuardsDigital.Tests.EditMode.StagedHeroBoard;
@@ -190,6 +193,39 @@ namespace GuardsDigital.Tests.EditMode
                 "The other Red Melee minion beside her is exactly what the clause names.");
         }
 
+        [Test]
+        public void BulletHell_SelectedMapTargetStaysOnTheMapAndCreatesNoDebugDeselectControl()
+        {
+            var fixture = ThreeEnemiesAndAFriendBesideHer();
+            fixture.PlayAttackAt(SabinaCardContent.BulletHell, fixture.MinionAt(FirstAdjacent));
+            var selectedMinion = fixture.MinionAt(SecondAdjacent);
+            var select = fixture.Choice.SelectInvocations.Single(invocation =>
+                invocation.Candidate.Value.MinionId.Equals(selectedMinion));
+
+            Assert.That(
+                fixture.Session.Execute(DirectorCommand.AnswerEffectChoice(select)).Accepted,
+                Is.True);
+
+            var model = RoundActionPresenter.CreateViewModel(fixture.Session.Projection);
+            Assert.That(model.EffectChoices.Any(invocation =>
+                    invocation.Command.EffectChoice.Kind == EffectChoiceCommandKind.Deselect),
+                Is.False,
+                "A selected piece must not create an off-map UNDO OPTION control.");
+            Assert.That(model.EffectChoices.Select(invocation => invocation.Label),
+                Does.Contain(EffectChoiceLabels.CompletionLabel),
+                "An up-to-two choice still needs a deliberate completion action before its maximum.");
+            Assert.That(model.EffectChoiceTargets.Single(target =>
+                    target.Command.EffectChoice.Candidate.Value.MinionId.Equals(selectedMinion))
+                    .Command.EffectChoice.Kind,
+                Is.EqualTo(EffectChoiceCommandKind.Deselect),
+                "The selected piece itself carries the authority's deselect invocation.");
+
+            var board = new BoardInteractionPresenter(fixture.Session, new NoOpBoardView());
+            Assert.That(board.SubmitMinion(selectedMinion), Is.True,
+                "Clicking the selected map piece toggles it off through the board path.");
+            Assert.That(fixture.Choice.SelectedCandidates, Is.Empty);
+        }
+
         /// <summary>
         /// p.18's immunity keeps a removal from being offered at all, and the same minion becomes
         /// removable once the immunity lapses.
@@ -364,6 +400,13 @@ namespace GuardsDigital.Tests.EditMode
                 banishedMinions: exposeTheHeavy
                     ? new[] { "red-melee-02", "red-melee-03", "red-melee-04", "red-ranged-01" }
                     : null);
+        }
+
+        private sealed class NoOpBoardView : IBoardInteractionView
+        {
+            public void Render(BoardInteractionViewModel model)
+            {
+            }
         }
 
         /// <summary>

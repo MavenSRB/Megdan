@@ -71,7 +71,6 @@ namespace GuardsDigital.Tests.PlayMode
                 "A greyed control carries no command, so nothing about it can reach the session.");
 
             Assert.That(runtime.SubmitEffectChoiceOption(PlaceBranch), Is.True);
-            Assert.That(runtime.ConfirmEffectChoice(), Is.True);
             yield return null;
 
             var destinations = runtime.PendingEffectChoice.Candidates
@@ -121,7 +120,6 @@ namespace GuardsDigital.Tests.PlayMode
             CommitNeedleTurn(runtime);
             Assert.That(runtime.SubmitAction(NeedleSkill), Is.True);
             Assert.That(runtime.SubmitEffectChoiceOption(PlaceBranch), Is.True);
-            Assert.That(runtime.ConfirmEffectChoice(), Is.True);
             yield return null;
 
             var acceptedBefore = runtime.AcceptedCommands.Count;

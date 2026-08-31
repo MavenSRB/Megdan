@@ -1829,7 +1829,6 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(
                 runtime.SubmitEffectChoiceOption(new EffectNodeId("bulwark-fast-travel-restriction")),
                 Is.True);
-            Assert.That(runtime.ConfirmEffectChoice(), Is.True);
             yield return null;
 
             Assert.That(runtime.ActiveEffectSourceCardInstanceIds,
@@ -3736,7 +3735,6 @@ namespace GuardsDigital.Tests.PlayMode
 
             var mode = new EffectNodeId("bulwark-defense-bonus");
             Assert.That(runtime.SubmitEffectChoiceOption(mode), Is.True);
-            Assert.That(runtime.ConfirmEffectChoice(), Is.True);
 
             Assert.That(runtime.PendingEffectChoice, Is.Null);
             Assert.That(runtime.RoundView.Model.EffectChoices, Is.Empty);

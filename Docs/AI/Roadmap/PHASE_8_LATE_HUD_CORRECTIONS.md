@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard for the player-requested HUD and card-interaction corrections found after milestone 8.30d and before the complete six-seat local validation gate. Return to [ROADMAP.md](../ROADMAP.md) or the surrounding [Phase 8 route](PHASE_8.md).
 
-The user approved defining and scheduling these milestones on 2026-08-30. That roadmap amendment does not authorize their implementation: each milestone still requires its own explicit approval under the roadmap execution rule. Milestone 8.30c was already being implemented when these corrections were collected, so 8.30f follows it, 8.30g follows 8.30f, and the separately iterative board treatment at 8.30h follows the completed card interaction. Further user-approved amendments on 2026-08-31 define milestone 8.30i, which reuses 8.30h's shared six-corner construction. Corrective 8.30i1 then gives every prepared hero-token face a white interior field while preserving its portrait and team rings on both the board and hero rails. Milestone 8.30j strips the Upgrade-a-Card choice down to its cards and centred gains facts, milestone 8.30k replaces the hero-plaque item-channel abbreviations with the established printed symbols, milestone 8.30l moves non-resolving unavailable cards out of the playable hand into a right-side HUD group that matches the current hand presentation and retains unavailable dimming, and milestone 8.30m gives every rendered card a consistent thick black exterior outline. The 2026-09-01 amendment then adds milestone 8.30n so tied teammates publicly agree who acts first before networking carries that decision. Milestone 8.30n carries the final pre-network six-seat evidence refresh. Each correction reruns the six-seat checks it affects before private-online work begins.
+The user approved defining and scheduling these milestones on 2026-08-30. That roadmap amendment does not authorize their implementation: each milestone still requires its own explicit approval under the roadmap execution rule. Milestone 8.30c was already being implemented when these corrections were collected, so 8.30f follows it, 8.30g follows 8.30f, and the separately iterative board treatment at 8.30h follows the completed card interaction. Further user-approved amendments on 2026-08-31 define milestone 8.30i, which reuses 8.30h's shared six-corner construction. Corrective 8.30i1 then gives every prepared hero-token face a white interior field while preserving its portrait and team rings on both the board and hero rails. User-directed corrective 8.30i2 removes the generic effect-choice confirmation/debug controls and keeps every spatial select/deselect on the map. Milestone 8.30j strips the Upgrade-a-Card choice down to its cards and centred gains facts, milestone 8.30k replaces the hero-plaque item-channel abbreviations with the established printed symbols, milestone 8.30l moves non-resolving unavailable cards out of the playable hand into a right-side HUD group that matches the current hand presentation and retains unavailable dimming, and milestone 8.30m gives every rendered card a consistent thick black exterior outline. The 2026-09-01 amendment then adds milestone 8.30n so tied teammates publicly agree who acts first before networking carries that decision. Milestone 8.30n carries the final pre-network six-seat evidence refresh. Each correction reruns the six-seat checks it affects before private-online work begins.
 
 ### [x] 8.30f Recompose the turn controls and correct small HUD readings
 
@@ -158,9 +158,29 @@ Non-goals: No hero, team, setup, rule, command, projection, snapshot, replay, Un
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830i1-give-prepared-hero-tokens-a-white-interior-background-completion-evidence).
 
+### [x] 8.30i2 Remove generic effect-choice confirmation buttons and keep spatial choices on the map
+
+Blocked by: Corrective 8.30i1 must complete the shared prepared-token treatment before this independently requested interaction correction begins.
+
+Observable outcome: A player never sees `CONFIRM CHOICE` or a generic `UNDO OPTION` for an effect decision. Picking the last allowed candidate completes the choice immediately, while every candidate that names a map piece or space is selected and deselected by clicking that map subject.
+
+Acceptance checks:
+
+- A select that fills the authority-projected maximum forwards that exact select and its newly projected confirm as one player action, for modes, cards, numbers, supply pieces, targets, and destinations. A choice whose maximum is not yet filled stays open.
+- A variable or partially filled choice retains one production `DONE` action; a confirm-or-decline optional step reads `ACCEPT`/`DECLINE`. No runtime UI source contains `CONFIRM CHOICE`.
+- A selected spatial effect candidate remains represented by its selected board cue and exact deselect invocation. Clicking it again submits that deselect; no off-map `UNDO OPTION` control is created. Empty destinations and an occupied zero-distance `up to` destination remain map answers.
+- Non-spatial candidates retain their established complete-card, printed-number, supply-piece, or mode surfaces. Rules authority, bounds, commands, selection order, snapshot/replay/Undo state, and stale-command rejection are unchanged.
+- Focused Edit Mode presenter/status/map-toggle regressions and focused Play Mode mode, token, Push/Place, Active-effect, and two-map-click pair journeys pass.
+
+Closing checks: `RoundPresenter_ForwardsAPausedEffectFramesModesAndWithholdsEveryOtherControl` fails while a mode still exposes the generic second confirmation; `BulletHell_SelectedMapTargetStaysOnTheMapAndCreatesNoDebugDeselectControl` fails while a selected map piece creates an off-map deselect control; both pass after the correction.
+
+Non-goals: No effect, card, target, displacement, selection-bound, confirmation-command, pending-choice, snapshot, replay, Undo, map-cue colour/geometry, Minion-Battle, Clear, facedown commitment, Defense, system-transition, networking, or broader HUD redesign.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830i2-remove-generic-effect-choice-confirmation-buttons-and-keep-spatial-choices-on-the-map-completion-evidence).
+
 ### [ ] 8.30j Strip the Upgrade-a-Card choice down to cards and centred gains
 
-Blocked by: Corrective 8.30i1 must complete the shared prepared-token treatment after milestone 8.30i before this separately reviewable Upgrade-a-Card layout correction begins.
+Blocked by: Corrective 8.30i2 must complete the effect-choice interaction correction before this separately reviewable Upgrade-a-Card layout correction begins.
 
 Observable outcome: p.15's Upgrade-a-Card choice shows the six complete candidate cards directly, with no enclosing comparison box, Blue/Green/Red pair captions, pair outlines, or individual option frames; each card's existing `GAINS` item fact is centred immediately below that card.
 
