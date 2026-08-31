@@ -1,10 +1,17 @@
 using System;
 using System.Collections.Generic;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
+using GuardsDigital.Presentation.Units.Minions;
+using GuardsDigital.Presentation.Units.Heroes;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -104,6 +111,178 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Vector4.Distance(
                 HexCornerHighlightTemplate.MovementColor,
                 HexCornerHighlightTemplate.AttackColor), Is.GreaterThan(0.5f));
+        }
+
+        [Test]
+        public void MinionDefenseContributions_LightSixHexCornerMarksInSignedContributionColours()
+        {
+            var positiveTile = Tile(new HexCoordinate(0, 0));
+            var negativeTile = Tile(new HexCoordinate(1, 0));
+            var mapId = new MapId("defense-corner-map");
+            var positive = GuardsDigital.Core.Units.Minions.MinionOccupancy.FromSetup(
+                new QuickGameMinionSetupState(
+                    new MinionId("positive-defense"),
+                    new TeamId("blue-team"),
+                    TeamSide.Blue,
+                    StandardMinionType.Melee,
+                    new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-spawn")),
+                    new ConfiguredSpaceReference(mapId, new SpaceId("positive-space")),
+                    positiveTile.Coordinate));
+            var negative = GuardsDigital.Core.Units.Minions.MinionOccupancy.FromSetup(
+                new QuickGameMinionSetupState(
+                    new MinionId("negative-defense"),
+                    new TeamId("red-team"),
+                    TeamSide.Red,
+                    StandardMinionType.Heavy,
+                    new ConfiguredSpawnPointReference(mapId, new SpawnPointId("red-spawn")),
+                    new ConfiguredSpaceReference(mapId, new SpaceId("negative-space")),
+                    negativeTile.Coordinate));
+            var positiveObject = new GameObject("Positive Defense Minion");
+            var negativeObject = new GameObject("Negative Defense Minion");
+            owned.Add(positiveObject);
+            owned.Add(negativeObject);
+            var positiveView = positiveObject.AddComponent<StandardMinionView>();
+            var negativeView = negativeObject.AddComponent<StandardMinionView>();
+            positiveView.Configure(positive, 1f);
+            negativeView.Configure(negative, 1f);
+            template = new HexCornerHighlightTemplate(1f);
+            var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            owned.Add(material);
+            var view = new BoardInteractionUnityView(
+                Array.Empty<GuardsDigital.Presentation.Units.Heroes.PrimitiveHeroView>(),
+                new[] { positiveTile, negativeTile },
+                material,
+                new[] { positiveView, negativeView },
+                sharedCornerHighlightTemplate: template);
+
+            view.Render(new BoardInteractionViewModel(
+                1,
+                Array.Empty<HeroOccupancy>(),
+                new[] { positive, negative },
+                Array.Empty<HexCoordinate>(),
+                Array.Empty<HeroId>(),
+                Array.Empty<GuardsDigital.Core.Setup.MinionId>(),
+                default,
+                minionDefenseCues: new[]
+                {
+                    new MinionDefenseCueViewModel(positive.MinionId, 1),
+                    new MinionDefenseCueViewModel(negative.MinionId, -1)
+                }));
+
+            Assert.That(positiveTile.CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.DefensePositive));
+            Assert.That(negativeTile.CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.DefenseNegative));
+            Assert.That(positiveTile.CornerHighlight.VisibleMarkCount, Is.EqualTo(6));
+            Assert.That(negativeTile.CornerHighlight.VisibleMarkCount, Is.EqualTo(6));
+            Assert.That(positiveTile.IsHighlighted, Is.False);
+            Assert.That(negativeTile.IsHighlighted, Is.False);
+            Assert.That(HexCornerHighlightTemplate.DefensePositiveColor,
+                Is.Not.EqualTo(HexCornerHighlightTemplate.MovementColor));
+            Assert.That(HexCornerHighlightTemplate.DefenseNegativeColor,
+                Is.Not.EqualTo(HexCornerHighlightTemplate.AttackColor));
+        }
+
+        [Test]
+        public void AttackIntentEffectTargetHeroHover_KeepsBloodRedTargetAndPreviewsProjectedSignedContributions()
+        {
+            var targetTile = Tile(new HexCoordinate(0, 0));
+            var positiveTile = Tile(new HexCoordinate(1, 0));
+            var negativeTile = Tile(new HexCoordinate(1, 1));
+            var targetId = new HeroId("hovered-target");
+            var target = new HeroOccupancy(targetId, targetTile.Coordinate);
+            var mapId = new MapId("hover-preview-map");
+            MinionOccupancy Minion(string id, TeamSide side, HexTileView tile) =>
+                MinionOccupancy.FromSetup(new QuickGameMinionSetupState(
+                    new MinionId(id),
+                    new TeamId(side == TeamSide.Blue ? "blue-team" : "red-team"),
+                    side,
+                    StandardMinionType.Melee,
+                    new ConfiguredSpawnPointReference(mapId, new SpawnPointId(id + "-spawn")),
+                    new ConfiguredSpaceReference(mapId, new SpaceId(id + "-space")),
+                    tile.Coordinate));
+            var positive = Minion("hover-positive", TeamSide.Blue, positiveTile);
+            var negative = Minion("hover-negative", TeamSide.Red, negativeTile);
+            ValueContributionProjection Contribution(MinionOccupancy minion, int amount) =>
+                new ValueContributionProjection(
+                    new ValueContribution(
+                        ValueContributionKind.MinionDefenseModifier,
+                        minion.MinionId,
+                        PrintedValueChannel.Defense,
+                        amount),
+                    minion.MinionId.Value);
+            var targetPreview = new AttackTargetDefensePreviewProjection(
+                targetId,
+                new[] { Contribution(positive, 1), Contribution(negative, -1) });
+
+            var heroObject = new GameObject("Hovered Target Hero");
+            var positiveObject = new GameObject("Hover Positive Minion");
+            var negativeObject = new GameObject("Hover Negative Minion");
+            owned.Add(heroObject);
+            owned.Add(positiveObject);
+            owned.Add(negativeObject);
+            var heroView = heroObject.AddComponent<PrimitiveHeroView>();
+            heroView.Configure(target, 1f);
+            var positiveView = positiveObject.AddComponent<StandardMinionView>();
+            var negativeView = negativeObject.AddComponent<StandardMinionView>();
+            positiveView.Configure(positive, 1f);
+            negativeView.Configure(negative, 1f);
+            template = new HexCornerHighlightTemplate(1f);
+            var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            owned.Add(material);
+            var view = new BoardInteractionUnityView(
+                new[] { heroView },
+                new[] { targetTile, positiveTile, negativeTile },
+                material,
+                new[] { positiveView, negativeView },
+                sharedCornerHighlightTemplate: template);
+            view.Render(new BoardInteractionViewModel(
+                1,
+                new[] { target },
+                new[] { positive, negative },
+                Array.Empty<HexCoordinate>(),
+                Array.Empty<HeroId>(),
+                Array.Empty<MinionId>(),
+                default,
+                pieceTargetCues: new[]
+                {
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForHero(targetId),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Attack),
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForMinion(positive.MinionId),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Attack)
+                },
+                attackTargetDefensePreviews: new[] { targetPreview }));
+
+            Assert.That(targetTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+            Assert.That(positiveTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+            Assert.That(positiveTile.CornerHighlight.ContributionKind,
+                Is.EqualTo(HexCornerHighlightKind.None));
+
+            view.SetHoveredCoordinate(targetTile.Coordinate);
+
+            Assert.That(targetTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+            Assert.That(targetTile.CornerHighlight.IsHovered, Is.True);
+            Assert.That(positiveTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack),
+                "A minion that is also an Attack target retains its blood-red target halo.");
+            Assert.That(positiveTile.CornerHighlight.ContributionKind,
+                Is.EqualTo(HexCornerHighlightKind.DefensePositive));
+            Assert.That(positiveTile.CornerHighlight.VisibleCoreMaterialColor,
+                Is.EqualTo(HexCornerHighlightTemplate.DefensePositiveColor),
+                "A contributing minion that is also an Attack target needs a saturated green core " +
+                "inside its blood-red halo; a white-biased core disappears at gameplay scale.");
+            Assert.That(negativeTile.CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.DefenseNegative));
+
+            view.SetHoveredCoordinate(null);
+
+            Assert.That(positiveTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+            Assert.That(positiveTile.CornerHighlight.ContributionKind,
+                Is.EqualTo(HexCornerHighlightKind.None));
+            Assert.That(negativeTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.None));
         }
 
         [Test]

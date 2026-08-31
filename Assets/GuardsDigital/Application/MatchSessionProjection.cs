@@ -199,6 +199,45 @@ namespace GuardsDigital.Application
         public IReadOnlyList<ValueContributionProjection> MinionContributions { get; }
     }
 
+    /// <summary>
+    /// The minion Defense modifiers that would apply if one currently legal hero Attack target were
+    /// selected, whether the target comes from the ordinary Attack choice or a typed Attack-intent
+    /// effect choice such as Charge. The rules query computes these before presentation sees them;
+    /// hovering merely selects one already-projected candidate.
+    /// </summary>
+    public sealed class AttackTargetDefensePreviewProjection
+    {
+        public AttackTargetDefensePreviewProjection(
+            HeroId heroId,
+            IEnumerable<ValueContributionProjection> minionContributions)
+        {
+            if (!heroId.IsDefined)
+            {
+                throw new ArgumentException("An Attack-target Defense preview requires a hero.", nameof(heroId));
+            }
+
+            var contributions = (minionContributions ??
+                throw new ArgumentNullException(nameof(minionContributions))).ToArray();
+            if (contributions.Any(value =>
+                    value.Kind != ValueContributionKind.MinionDefenseModifier ||
+                    !value.SourceMinionId.IsDefined ||
+                    (value.Amount != -1 && value.Amount != 1)) ||
+                contributions.Select(value => value.SourceMinionId).Distinct().Count() !=
+                    contributions.Length)
+            {
+                throw new ArgumentException(
+                    "An Attack-target Defense preview requires unique signed minion modifiers.",
+                    nameof(minionContributions));
+            }
+
+            HeroId = heroId;
+            MinionContributions = Array.AsReadOnly(contributions);
+        }
+
+        public HeroId HeroId { get; }
+        public IReadOnlyList<ValueContributionProjection> MinionContributions { get; }
+    }
+
     public sealed class FastTravelOptionProjection
     {
         public FastTravelOptionProjection(
@@ -773,7 +812,9 @@ namespace GuardsDigital.Application
             IEnumerable<CardInstanceId> activeEffectSourceCardInstanceIds = null,
             GuardsDigital.Core.Rules.CardResolution.RemovalPreventionPrompt
                 pendingRemovalPrevention = null,
-            IEnumerable<MarkerAttachment> heldMarkers = null)
+            IEnumerable<MarkerAttachment> heldMarkers = null,
+            IEnumerable<AttackTargetDefensePreviewProjection>
+                pendingAttackTargetDefensePreviews = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -836,15 +877,44 @@ namespace GuardsDigital.Application
             AvailableFastTravelOptions = Array.AsReadOnly((availableFastTravelOptions ??
                 Enumerable.Empty<FastTravelOptionProjection>()).ToArray());
             PendingDefensePreview = pendingDefensePreview;
+            PendingEffectChoicePreview = Array.AsReadOnly((pendingEffectChoicePreview ??
+                Enumerable.Empty<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>())
+                .ToArray());
+            var attackTargetDefensePreviews = (pendingAttackTargetDefensePreviews ??
+                Enumerable.Empty<AttackTargetDefensePreviewProjection>()).ToArray();
+            var expectedAttackTargetPreviewHeroIds = (PendingAttackTargetChoice == null
+                    ? Enumerable.Empty<HeroId>()
+                    : PendingAttackTargetChoice.LegalTargetHeroIds)
+                .Concat(PendingEffectChoice == null
+                    ? Enumerable.Empty<HeroId>()
+                    : PendingEffectChoicePreview
+                        .Where(preview =>
+                            preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Attack &&
+                            preview.Occupant.Kind == BoardObjectKind.Hero &&
+                            PendingEffectChoice.SelectInvocations.Any(invocation =>
+                                invocation.Candidate.Equals(
+                                    EffectChoiceCandidate.Value_(preview.CandidateValue))))
+                        .Select(preview => preview.Occupant.HeroId))
+                .Distinct()
+                .ToArray();
+            if (attackTargetDefensePreviews.Any(value => value == null) ||
+                attackTargetDefensePreviews.Select(value => value.HeroId).Distinct().Count() !=
+                    attackTargetDefensePreviews.Length ||
+                !attackTargetDefensePreviews.Select(value => value.HeroId).SequenceEqual(
+                    expectedAttackTargetPreviewHeroIds))
+            {
+                throw new ArgumentException(
+                    "Attack-target Defense previews must match the ordered legal hero targets " +
+                    "from ordinary Attack and typed Attack-intent effect choices.",
+                    nameof(pendingAttackTargetDefensePreviews));
+            }
+            PendingAttackTargetDefensePreviews = Array.AsReadOnly(attackTargetDefensePreviews);
             PendingMinionBattleChoice = pendingMinionBattleChoice;
             PendingHeroRespawnChoice = pendingHeroRespawnChoice;
             PendingLanePushRequest = pendingLanePushRequest;
             PendingImmediateLanePush = pendingImmediateLanePush;
             PendingSystemTransitionStep = pendingSystemTransitionStep;
             PendingDisplacedMinionCorrection = pendingDisplacedMinionCorrection;
-            PendingEffectChoicePreview = Array.AsReadOnly((pendingEffectChoicePreview ??
-                Enumerable.Empty<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>())
-                .ToArray());
             AvailableHoldOffer = availableHoldOffer;
             AvailableClearOptions = Array.AsReadOnly((availableClearOptions ??
                 Enumerable.Empty<ClearOptionProjection>()).ToArray());
@@ -1109,6 +1179,8 @@ namespace GuardsDigital.Application
         /// </summary>
         public ActionOffer? AvailableHoldOffer { get; }
         public PendingDefensePreviewProjection PendingDefensePreview { get; }
+        public IReadOnlyList<AttackTargetDefensePreviewProjection>
+            PendingAttackTargetDefensePreviews { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
 

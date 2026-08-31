@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 using UnityEngine;
@@ -12,7 +13,7 @@ namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
     /// Presentation-only state for one possible card drag. It knows pointer distance and identity, but
-    /// neither map geometry nor commitment legality; those are rechecked by their existing owners.
+    /// neither map geometry nor card-choice legality; those are rechecked by their existing owners.
     /// </summary>
     internal sealed class CardCommitmentDragState
     {
@@ -3020,7 +3021,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
 
-        private static void ApplyPeekFootprint(VisualElement card)
+        internal static void ApplyPeekFootprint(VisualElement card)
         {
             card.style.width = PeekCardWidth;
             card.style.minWidth = PeekCardWidth;
@@ -3059,15 +3060,27 @@ namespace GuardsDigital.Presentation.Match
             }
 
             highlightedPeekCard = card;
-            hoverPreview.Clear();
+            PopulatePeekPreview(hoverPreview, card, anchor);
+        }
+
+        /// <summary>
+        /// Draws the ordinary hand's complete pointer-transparent peek at its shared bounded position.
+        /// Defense offers reuse this exact presentation rather than maintaining a second card fan.
+        /// </summary>
+        internal static void PopulatePeekPreview(
+            VisualElement preview,
+            TrayCardViewModel card,
+            VisualElement anchor)
+        {
+            preview.Clear();
             var face = BuildStandaloneCard(card);
             IgnorePickingRecursively(face);
-            hoverPreview.Add(face);
-            hoverPreview.style.display = DisplayStyle.Flex;
-            hoverPreview.BringToFront();
+            preview.Add(face);
+            preview.style.display = DisplayStyle.Flex;
+            preview.BringToFront();
             var viewport = ConfiguredMatchHudRenderer.PanelViewport;
             var bounds = anchor.worldBound;
-            hoverPreview.style.left = Mathf.Clamp(
+            preview.style.left = Mathf.Clamp(
                 bounds.xMin,
                 0f,
                 Mathf.Max(
@@ -3076,7 +3089,7 @@ namespace GuardsDigital.Presentation.Match
                         viewport.x,
                         ConfiguredMatchHudRenderer.CompactHandRightEdge) -
                     CardFootprint.Width));
-            hoverPreview.style.top = Mathf.Clamp(
+            preview.style.top = Mathf.Clamp(
                 bounds.yMin,
                 ConfiguredMatchHudRenderer.StatusBarHeight + 4f,
                 Mathf.Max(0f, viewport.y - CardFootprint.Height - 4f));
@@ -3506,18 +3519,10 @@ namespace GuardsDigital.Presentation.Match
             (CardFootprint.Width + (UpgradeOptionInset * 2f)) * 2f + UpgradePairGap;
 
         /// <summary>
-        /// The frame a legal Defense card sits in, on the same terms as
-        /// <see cref="UpgradeOptionInset"/>. Milestone 8.11b. Four of these plus `DECLINE DEFENSE`, the
-        /// section's own gutter label and their spacing come to well under the full-width tray, which
-        /// is the standing no-horizontal-travel constraint on this row.
+        /// The legacy framed footprint retained by other card-valued choice families. Defense itself
+        /// became frameless during milestone 8.30i and uses <see cref="CardFootprint.Width"/> directly.
         /// </summary>
         private const float DefenseCardInset = 6f;
-
-        /// <summary>
-        /// The width one legal Defense offer occupies: a whole tray card plus the frame its shared
-        /// selection outline is drawn in. Every offer is exactly this wide, so choosing one cannot
-        /// change another's width, re-wrap its rules text, or move the row.
-        /// </summary>
         public const float DefenseCardFootprint =
             CardFootprint.Width + (DefenseCardInset * 2f);
 
@@ -3527,6 +3532,13 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement status;
         private readonly VisualElement rows;
         private readonly VisualElement preview;
+        private readonly VisualElement declineDefenseHost;
+        private readonly VisualElement defenseCardHoverPreview;
+        private readonly VisualElement defenseDragProxy;
+        private readonly CardCommitmentDragState defenseDragState = new CardCommitmentDragState();
+        private VisualElement defenseDragCapture;
+        private VisualElement draggedDefenseCard;
+        private Func<Vector2, bool> isMapDropPoint;
 
         /// <summary>
         /// End Turn's own surface. Milestone 8.30b's user-approved amendment took the control out of
@@ -3586,12 +3598,43 @@ namespace GuardsDigital.Presentation.Match
             preview.pickingMode = PickingMode.Ignore;
             HudElements.Padding(preview, 10f);
             HudElements.Border(preview, MatchHudTheme.PanelBorder, 1f, 4f);
+            declineDefenseHost = new VisualElement { name = "gd-decline-defense-host" };
+            declineDefenseHost.style.flexDirection = FlexDirection.Column;
+            declineDefenseHost.style.alignItems = Align.Stretch;
+            declineDefenseHost.style.justifyContent = Justify.FlexStart;
+            declineDefenseHost.style.display = DisplayStyle.None;
+            Root.Add(declineDefenseHost);
+            defenseCardHoverPreview = new VisualElement { name = "gd-defense-card-hover-preview" };
+            defenseCardHoverPreview.style.position = Position.Absolute;
+            defenseCardHoverPreview.style.display = DisplayStyle.None;
+            defenseCardHoverPreview.pickingMode = PickingMode.Ignore;
+            defenseDragProxy = new VisualElement { name = "gd-defense-card-drag-proxy" };
+            defenseDragProxy.style.position = Position.Absolute;
+            defenseDragProxy.style.display = DisplayStyle.None;
+            defenseDragProxy.style.width = CardFootprint.Width;
+            defenseDragProxy.style.height = CardFootprint.Height;
+            defenseDragProxy.pickingMode = PickingMode.Ignore;
         }
 
         public VisualElement Root { get; }
 
         /// <summary>The Defense breakdown popup, placed on the HUD root so it can leave the tray.</summary>
         public VisualElement PreviewRoot => preview;
+
+        /// <summary>The Defense decline banner hosted at the facedown confirmation rectangle.</summary>
+        public VisualElement DeclineDefenseRoot => declineDefenseHost;
+
+        /// <summary>The ordinary hand-style complete face raised from an overlapped Defense card.</summary>
+        public VisualElement DefenseCardHoverPreviewRoot => defenseCardHoverPreview;
+
+        /// <summary>The pointer-transparent complete Defense card reparented to the HUD root.</summary>
+        public VisualElement DefenseDragProxyRoot => defenseDragProxy;
+
+        /// <summary>Uses the commitment drag's exact live board boundary for Defense-card drops.</summary>
+        public void SetMapDropPredicate(Func<Vector2, bool> predicate)
+        {
+            isMapDropPoint = predicate ?? throw new ArgumentNullException(nameof(predicate));
+        }
 
         /// <summary>
         /// The narration element, so the renderer can host it in the top status bar. Milestone 8.30b.
@@ -3765,6 +3808,10 @@ namespace GuardsDigital.Presentation.Match
 
         private void Rebuild()
         {
+            CancelDefenseCardDrag();
+            ClearDefenseCardPeekPreview();
+            declineDefenseHost.Clear();
+            declineDefenseHost.style.display = DisplayStyle.None;
             status.Clear();
             rows.Clear();
             // Milestone 8.30b: End Turn is rebuilt before the branches below, because four of them
@@ -3882,7 +3929,8 @@ namespace GuardsDigital.Presentation.Match
         {
             foreach (var section in rows.Children())
             {
-                var contentCount = section.name == "gd-action-section"
+                var contentCount = section.name == "gd-action-section" ||
+                                   section.name == "gd-defense-section"
                     ? section.childCount
                     : section.childCount - 1;
                 section.style.display = contentCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
@@ -4274,28 +4322,57 @@ namespace GuardsDigital.Presentation.Match
         /// same one p.15's upgrade prompt uses - so this region introduces no second card design and
         /// decodes no printed sentence.</para>
         ///
-        /// <para>Nothing about the decision moves onto the card. The authority-computed
+        /// <para>The authority-computed
         /// Attack/Defense/result preview is still what hover and keyboard focus raise, still read from
         /// the offer's own <see cref="DefenseBreakdownViewModel"/>, and the visible order is the
         /// projected response order, which is the keyboard order too because the controls are added in
-        /// it. <c>DECLINE DEFENSE</c> is about no card, so it stays the compact control it was.</para>
+        /// it. A card may be clicked or dragged onto the same live board surface used by facedown
+        /// commitment; both paths forward that card's exact projected invocation once. The redundant
+        /// DEFENSE gutter and card frames are absent, and <c>DECLINE DEFENSE</c> uses the same pewter
+        /// banner language as <c>CONFIRM FACEDOWN</c>.</para>
         /// </summary>
         private void BuildDefense()
         {
-            var section = Section("DEFENSE");
+            var section = HudElements.Row(SectionGap);
+            section.name = "gd-defense-section";
             section.style.flexWrap = Wrap.NoWrap;
-            foreach (var choice in Model.DefenseChoices)
+            section.style.alignItems = Align.FlexStart;
+            section.style.flexGrow = 0f;
+            section.style.flexShrink = 0f;
+            section.style.width = ConfiguredMatchHudRenderer.CompactHandRightEdge;
+            section.style.minWidth = ConfiguredMatchHudRenderer.CompactHandRightEdge;
+            section.style.maxWidth = ConfiguredMatchHudRenderer.CompactHandRightEdge;
+            section.style.marginTop = DirectorHandsUnityView.AvailableCardRaise;
+            rows.Add(section);
+            var cardChoices = Model.DefenseChoices.Where(choice => choice.Card != null).ToArray();
+            for (var index = 0; index < cardChoices.Length; index++)
             {
-                var control = choice.Card == null
-                    ? HudElements.Control(choice.Label, () => ForwardInvocation(choice))
-                    : BuildDefenseCard(choice);
+                var choice = cardChoices[index];
+                var control = BuildDefenseCard(choice);
+                var slot = new VisualElement { name = "gd-defense-card-slot" };
+                slot.style.flexDirection = FlexDirection.Column;
+                slot.style.alignItems = Align.Stretch;
+                slot.style.flexShrink = 0f;
+                slot.style.marginRight = index == cardChoices.Length - 1
+                    ? 0f
+                    : -DirectorHandsUnityView.PeekCardOverlap;
+                slot.style.top = -DirectorHandsUnityView.AvailableCardRaise;
+                HudElements.Padding(slot, DirectorHandsUnityView.ActiveOutlineGap);
+                HudElements.Border(slot, Color.clear,
+                    DirectorHandsUnityView.ActiveOutlineWidth, 11f);
+                slot.Add(control);
+                BindDefenseCardDrag(control, slot, choice);
+                HudElements.OnPointedAt(control, pointedAt =>
+                    SetDefenseCardPeekPreview(pointedAt ? choice : null, slot));
                 if (choice.DefenseBreakdown != null)
                 {
                     HudElements.OnPointedAt(control, pointedAt =>
                     {
                         if (pointedAt)
                         {
-                            ShowDefensePreview(choice.DefenseBreakdown, control.worldBound);
+                            ShowDefensePreview(
+                                choice.DefenseBreakdown,
+                                CalculateDefenseCardFanWorldBound(control.worldBound));
                         }
                         else
                         {
@@ -4304,17 +4381,73 @@ namespace GuardsDigital.Presentation.Match
                     });
                 }
 
-                section.Add(control);
+                section.Add(slot);
             }
+
+            var declineChoice = Model.DefenseChoices.FirstOrDefault(choice => choice.Card == null);
+            if (declineChoice != null)
+            {
+                var decline = new PewterBanner(
+                    () => ForwardInvocation(declineChoice), true,
+                    DirectorHandsUnityView.CornerBannerFontSize,
+                    "gd-decline-defense-banner-label")
+                {
+                    name = "gd-decline-defense-control",
+                    text = declineChoice.Label
+                };
+                decline.SetVisibleLabel(declineChoice.Label);
+                decline.style.minHeight = DirectorHandsUnityView.CornerBannerHeight;
+                decline.style.whiteSpace = WhiteSpace.Normal;
+                declineDefenseHost.Add(decline);
+                declineDefenseHost.style.display = DisplayStyle.Flex;
+            }
+        }
+
+        /// <summary>
+        /// The breakdown belongs to the complete set of available Defense cards, not to the one
+        /// overlapped face currently under the pointer. Anchor it to the visible fan so its right
+        /// edge is stable while the pointer crosses cards and the popup never sits over that hand.
+        /// </summary>
+        private Rect CalculateDefenseCardFanWorldBound(Rect fallback)
+        {
+            var hasBounds = false;
+            var xMin = 0f;
+            var yMin = 0f;
+            var xMax = 0f;
+            var yMax = 0f;
+            foreach (var pair in defenseCardControls)
+            {
+                var bounds = pair.Value.worldBound;
+                if (bounds.width <= 0f || bounds.height <= 0f)
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    xMin = bounds.xMin;
+                    yMin = bounds.yMin;
+                    xMax = bounds.xMax;
+                    yMax = bounds.yMax;
+                    hasBounds = true;
+                    continue;
+                }
+
+                xMin = Mathf.Min(xMin, bounds.xMin);
+                yMin = Mathf.Min(yMin, bounds.yMin);
+                xMax = Mathf.Max(xMax, bounds.xMax);
+                yMax = Mathf.Max(yMax, bounds.yMax);
+            }
+
+            return hasBounds ? Rect.MinMaxRect(xMin, yMin, xMax, yMax) : fallback;
         }
 
         /// <summary>
         /// One legal Defense card: the whole card is the control, and it forwards exactly the
         /// invocation the authority projected for it.
         ///
-        /// The selection outline is the HUD's shared treatment, always drawn and only ever changing
-        /// colour, so pointing at or focusing an offer cannot change a card's width, re-wrap its rules
-        /// text, or move the row - the same rule milestone 8.8a's upgrade grid keeps.
+        /// The control adds no surrounding plate, inset, or selection box, so the shared card face is
+        /// the complete visible offer and pointing at it cannot move or resize the row.
         /// </summary>
         private Button BuildDefenseCard(TypedInvocationViewModel choice)
         {
@@ -4334,14 +4467,14 @@ namespace GuardsDigital.Presentation.Match
             // four different baselines; stretching them to the row fixed that inside this prompt and
             // left the same four cards a different size everywhere else.
             control.style.alignSelf = Align.FlexStart;
-            control.style.width = DefenseCardFootprint;
+            control.style.width = CardFootprint.Width;
             control.style.marginLeft = 0f;
             control.style.marginRight = 0f;
             control.style.marginTop = 0f;
             control.style.marginBottom = 0f;
-            HudElements.Padding(control, DefenseCardInset);
-            control.style.backgroundColor = MatchHudTheme.PanelBackground;
-            HudElements.MarkSelectedWithoutResizing(control, false);
+            HudElements.Padding(control, 0f);
+            control.style.backgroundColor = Color.clear;
+            HudElements.Border(control, Color.clear, 0f, 0f);
 
             var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
             // Milestone 8.30d: a card Defense offer shines exactly the shield it would defend
@@ -4351,6 +4484,162 @@ namespace GuardsDigital.Presentation.Match
             control.Add(face);
             control.tooltip = choice.Label.Replace('\n', ' ');
             return control;
+        }
+
+        private void BindDefenseCardDrag(
+            Button control,
+            VisualElement sourceSlot,
+            TypedInvocationViewModel choice)
+        {
+            control.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0 || choice.Card == null ||
+                    !defenseDragState.Begin(
+                        evt.pointerId, choice.Card.CardInstanceId, evt.position))
+                {
+                    return;
+                }
+
+                defenseDragCapture = control;
+                control.CapturePointer(evt.pointerId);
+            }, TrickleDown.TrickleDown);
+
+            control.RegisterCallback<PointerMoveEvent>(evt =>
+            {
+                if (!defenseDragState.Move(
+                        evt.pointerId, evt.position, DirectorHandsUnityView.CardDragThreshold))
+                {
+                    return;
+                }
+
+                ShowDefenseDragProxy(choice, sourceSlot, evt.position);
+            }, TrickleDown.TrickleDown);
+
+            control.RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (!defenseDragState.Release(evt.pointerId, out var cardId, out var wasDrag))
+                {
+                    return;
+                }
+
+                ReleaseDefenseDragCapture(evt.pointerId);
+                HideDefenseDragProxy();
+                if (!wasDrag)
+                {
+                    return;
+                }
+
+                evt.StopImmediatePropagation();
+                if (choice.Card.CardInstanceId.Equals(cardId) &&
+                    isMapDropPoint?.Invoke(evt.position) == true)
+                {
+                    ForwardDefenseCard(choice);
+                }
+            }, TrickleDown.TrickleDown);
+
+            control.RegisterCallback<PointerCancelEvent>(_ => CancelDefenseCardDrag());
+            control.RegisterCallback<DetachFromPanelEvent>(_ => CancelDefenseCardDrag());
+        }
+
+        private void ShowDefenseDragProxy(
+            TypedInvocationViewModel choice,
+            VisualElement source,
+            Vector2 pointerPosition)
+        {
+            ClearDefenseCardPeekPreview();
+            if (defenseDragProxy.childCount == 0)
+            {
+                var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
+                DirectorHandsUnityView.AddFaceShine(
+                    face, choice.Card, choice.DefenseShineSlot);
+                DirectorHandsUnityView.IgnorePickingRecursively(face);
+                defenseDragProxy.Add(face);
+                defenseDragProxy.tooltip = choice.Label.Replace('\n', ' ');
+            }
+
+            if (draggedDefenseCard == null)
+            {
+                draggedDefenseCard = source;
+                draggedDefenseCard.style.visibility = Visibility.Hidden;
+            }
+
+            defenseDragProxy.style.left = pointerPosition.x - (CardFootprint.Width * 0.5f);
+            defenseDragProxy.style.top = pointerPosition.y - (CardFootprint.Height * 0.5f);
+            defenseDragProxy.style.display = DisplayStyle.Flex;
+            defenseDragProxy.BringToFront();
+        }
+
+        private void CancelDefenseCardDrag()
+        {
+            if (defenseDragCapture != null && defenseDragState.IsTracking)
+            {
+                ReleaseDefenseDragCapture(defenseDragState.PointerId);
+            }
+
+            defenseDragState.Cancel();
+            defenseDragCapture = null;
+            HideDefenseDragProxy();
+        }
+
+        private void ReleaseDefenseDragCapture(int pointerId)
+        {
+            if (defenseDragCapture != null && defenseDragCapture.HasPointerCapture(pointerId))
+            {
+                defenseDragCapture.ReleasePointer(pointerId);
+            }
+
+            defenseDragCapture = null;
+        }
+
+        private void HideDefenseDragProxy()
+        {
+            if (draggedDefenseCard != null)
+            {
+                draggedDefenseCard.style.visibility = Visibility.Visible;
+                draggedDefenseCard = null;
+            }
+
+            defenseDragProxy.style.display = DisplayStyle.None;
+            defenseDragProxy.Clear();
+        }
+
+        private VisualElement defenseCardPeekAnchor;
+
+        private void SetDefenseCardPeekPreview(
+            TypedInvocationViewModel choice,
+            VisualElement anchor)
+        {
+            if (choice?.Card == null)
+            {
+                ClearDefenseCardPeekPreview();
+                return;
+            }
+
+            if (defenseCardPeekAnchor != null && defenseCardPeekAnchor != anchor)
+            {
+                defenseCardPeekAnchor.style.opacity = 1f;
+            }
+
+            defenseCardPeekAnchor = anchor;
+            defenseCardPeekAnchor.style.opacity = 0f;
+            DirectorHandsUnityView.PopulatePeekPreview(
+                defenseCardHoverPreview, choice.Card, anchor);
+            DirectorHandsUnityView.AddFaceShine(
+                defenseCardHoverPreview.ElementAt(0),
+                choice.Card,
+                choice.DefenseShineSlot);
+        }
+
+        private void ClearDefenseCardPeekPreview()
+        {
+            if (defenseCardPeekAnchor != null)
+            {
+                defenseCardPeekAnchor.style.opacity = 1f;
+                defenseCardPeekAnchor = null;
+            }
+
+            defenseCardHoverPreview.Clear();
+            defenseCardHoverPreview.style.display = DisplayStyle.None;
         }
 
         private void BuildActionRow()
@@ -4780,11 +5069,85 @@ namespace GuardsDigital.Presentation.Match
             defensePreviewAnchor = anchorScreenRect;
             dismissPreviewAt = -1d;
             preview.Clear();
-            var text = HudElements.Text(model.Text, 11f, MatchHudTheme.PrimaryText);
-            text.style.whiteSpace = WhiteSpace.Normal;
-            preview.Add(text);
+            var title = HudElements.Text(model.Title, 13f, MatchHudTheme.PrimaryText);
+            title.name = "gd-defense-preview-title";
+            title.style.unityFontStyleAndWeight = FontStyle.Bold;
+            title.style.marginBottom = 6f;
+            preview.Add(title);
+
+            AddDefenseSection("ATTACK", model.AttackRows);
+            var attackTotal = HudElements.Text(
+                $"ATTACK TOTAL  {model.AttackTotal}", 13f, MatchHudTheme.PrimaryText);
+            attackTotal.name = "gd-defense-attack-total";
+            attackTotal.style.unityFontStyleAndWeight = FontStyle.Bold;
+            attackTotal.style.marginTop = 3f;
+            attackTotal.style.marginBottom = 7f;
+            preview.Add(attackTotal);
+
+            AddDefenseSection("DEFENSE", model.DefenseRows);
+            var defenseTotalText = model.DefenseTotal.HasValue
+                ? $"DEFENSE TOTAL  {model.DefenseTotal.Value}"
+                : model.BlockResult == DefenseBlockResult.Blocked
+                    ? "BLOCK"
+                    : model.BlockResult == DefenseBlockResult.ConditionUnfulfilled
+                        ? "BLOCK CONDITION NOT MET"
+                        : "NO DEFENSE TOTAL";
+            var defenseTotal = HudElements.Text(
+                defenseTotalText, 13f, MatchHudTheme.PrimaryText);
+            defenseTotal.name = "gd-defense-defense-total";
+            defenseTotal.style.unityFontStyleAndWeight = FontStyle.Bold;
+            defenseTotal.style.marginTop = 3f;
+            defenseTotal.style.marginBottom = 7f;
+            preview.Add(defenseTotal);
+
+            var resultColor = model.Outcome == AttackResolutionOutcome.SuccessfullyDefended
+                ? new Color(0.30f, 0.88f, 0.48f, 1f)
+                : model.BlockResult == DefenseBlockResult.ConditionUnfulfilled
+                    ? new Color(1f, 0.24f, 0.16f, 1f)
+                    : new Color(1f, 0.63f, 0.18f, 1f);
+            var result = HudElements.Text(model.ResultStatement, 14f, resultColor);
+            result.name = "gd-defense-result";
+            result.style.unityFontStyleAndWeight = FontStyle.Bold;
+            result.style.unityTextAlign = TextAnchor.MiddleCenter;
+            result.style.backgroundColor = new Color(
+                resultColor.r * 0.12f,
+                resultColor.g * 0.12f,
+                resultColor.b * 0.12f,
+                1f);
+            HudElements.Padding(result, 6f);
+            HudElements.Border(result, resultColor, 1f, 3f);
+            preview.Add(result);
             preview.style.display = DisplayStyle.Flex;
             LayoutPreview();
+        }
+
+        private void AddDefenseSection(
+            string heading,
+            IReadOnlyList<DefenseContributionRowViewModel> contributionRows)
+        {
+            var section = HudElements.Text(heading, 10f, MatchHudTheme.MutedText);
+            section.name = "gd-defense-section";
+            section.style.unityFontStyleAndWeight = FontStyle.Bold;
+            preview.Add(section);
+            foreach (var contribution in contributionRows)
+            {
+                var row = HudElements.Row(8f);
+                row.name = "gd-defense-contribution-row";
+                row.style.justifyContent = Justify.SpaceBetween;
+                var source = HudElements.Text(
+                    contribution.SourceLabel, 11f, MatchHudTheme.PrimaryText);
+                source.name = "gd-defense-contribution-source";
+                source.style.flexGrow = 1f;
+                var amountColor = contribution.Amount >= 0
+                    ? new Color(0.30f, 0.90f, 0.48f, 1f)
+                    : new Color(1f, 0.30f, 0.20f, 1f);
+                var amount = HudElements.Text(contribution.SignedAmount, 12f, amountColor);
+                amount.name = "gd-defense-contribution-amount";
+                amount.style.unityFontStyleAndWeight = FontStyle.Bold;
+                row.Add(source);
+                row.Add(amount);
+                preview.Add(row);
+            }
         }
 
         public void ScheduleDefensePreviewDismissal(double now)
@@ -4828,18 +5191,23 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Where the breakdown sits: clear of the control it belongs to, and inside the viewport.
-        /// Unchanged geometry from milestone 5.8b - only the surface it is drawn on has changed.
+        /// Where the breakdown sits: immediately right of the complete available-card fan and
+        /// inside the viewport. A constrained right edge falls back to the fan's left.
         /// </summary>
         public static Rect CalculateDefensePreviewRect(Rect anchor, Vector2 viewport, Vector2 size)
         {
             var width = Mathf.Min(size.x, Mathf.Max(0f, viewport.x));
             var height = Mathf.Min(size.y, Mathf.Max(0f, viewport.y));
-            var above = anchor.yMin - height - 8f;
-            var below = anchor.yMax + 8f;
-            var y = above >= 0f ? above : Mathf.Min(below, Mathf.Max(0f, viewport.y - height));
-            var x = Mathf.Clamp(anchor.center.x - (width / 2f), 0f, Mathf.Max(0f, viewport.x - width));
-            return new Rect(x, Mathf.Max(0f, y), width, height);
+            var maximumX = Mathf.Max(0f, viewport.x - width);
+            var right = anchor.xMax + 8f;
+            var left = anchor.xMin - width - 8f;
+            var x = right + width <= viewport.x
+                ? right
+                : left >= 0f
+                    ? left
+                    : Mathf.Clamp(right, 0f, maximumX);
+            var y = Mathf.Clamp(anchor.yMin, 0f, Mathf.Max(0f, viewport.y - height));
+            return new Rect(x, y, width, height);
         }
     }
 

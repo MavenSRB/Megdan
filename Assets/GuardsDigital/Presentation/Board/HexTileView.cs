@@ -129,16 +129,20 @@ namespace GuardsDigital.Presentation.Board
             highlight.Configure(template);
         }
 
-        public void SetCornerHighlighted(HexCornerHighlightKind kind, bool hovered)
+        public void SetCornerHighlighted(
+            HexCornerHighlightKind kind,
+            bool hovered,
+            HexCornerHighlightKind contributionKind = HexCornerHighlightKind.None)
         {
             var highlight = CornerHighlight;
             if (highlight == null)
             {
-                if (kind == HexCornerHighlightKind.None) return;
+                if (kind == HexCornerHighlightKind.None &&
+                    contributionKind == HexCornerHighlightKind.None) return;
                 throw new System.InvalidOperationException("The tile has no shared corner-highlight template.");
             }
 
-            highlight.Set(kind, hovered);
+            highlight.Set(kind, hovered, contributionKind);
         }
 
         private void ApplyRim(bool highlighted, Material rimMaterial)

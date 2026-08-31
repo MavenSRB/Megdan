@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.IO;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
@@ -2990,6 +2991,131 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+        /// <summary>Milestone 8.30i's target-hover contribution coexistence evidence.</summary>
+        [UnityTest]
+        public IEnumerator Scene_CapturesAttackTargetDefenseContributionsAtBothSupportedResolutions()
+        {
+            if (UnityEngine.Application.isBatchMode)
+            {
+                Assert.That(UnityEngine.Application.isBatchMode, Is.True,
+                    "The screenshot branch is exercised by the dedicated nonbatch recipe.");
+                yield break;
+            }
+
+            var restoreFirst = SelectFixedGameViewResolution(2560, 1440);
+            System.Action restoreSecond = null;
+            PrimitiveHeroPointerInput pointerInput = null;
+            var pointerInputWasEnabled = false;
+            try
+            {
+                for (var frame = 0;
+                     frame < 120 && (Screen.width != 2560 || Screen.height != 1440);
+                     frame++) yield return null;
+                Assert.That(Screen.width, Is.EqualTo(2560));
+                Assert.That(Screen.height, Is.EqualTo(1440));
+                yield return LoadOfficialSixPlayerScene();
+
+                var runtime = Root().Runtime;
+                pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+                Assert.That(pointerInput, Is.Not.Null);
+                pointerInputWasEnabled = pointerInput.enabled;
+                pointerInput.enabled = false;
+                var baseBoard = runtime.BoardView.Model;
+                var camera = Object.FindAnyObjectByType<Camera>();
+                var occupied = new HashSet<HexCoordinate>(
+                    baseBoard.Heroes.Select(value => value.Coordinate)
+                        .Concat(baseBoard.Minions.Select(value => value.Coordinate)));
+                var available = runtime.BoardView.TileViews
+                    .Where(value => value.IsPlayable && !occupied.Contains(value.Coordinate))
+                    .OrderBy(value => Vector2.Distance(
+                        camera.WorldToViewportPoint(value.transform.position),
+                        new Vector2(0.58f, 0.58f)))
+                    .Take(3)
+                    .ToArray();
+                Assert.That(available, Has.Length.EqualTo(3));
+
+                var hero = baseBoard.Heroes[0];
+                var supporting = baseBoard.Minions[0];
+                var hindering = baseBoard.Minions[1];
+                var heroAt = available[0].Coordinate;
+                var supportingAt = available[1].Coordinate;
+                var hinderingAt = available[2].Coordinate;
+                var heroes = baseBoard.Heroes.Select(value => value.HeroId.Equals(hero.HeroId)
+                    ? new HeroOccupancy(value.HeroId, heroAt)
+                    : value).ToArray();
+                var minions = baseBoard.Minions.Select(value =>
+                    value.MinionId.Equals(supporting.MinionId)
+                        ? value.WithPosition(default, supportingAt)
+                        : value.MinionId.Equals(hindering.MinionId)
+                            ? value.WithPosition(default, hinderingAt)
+                            : value).ToArray();
+                ValueContributionProjection Contribution(MinionId minionId, int amount) =>
+                    new ValueContributionProjection(
+                        new ValueContribution(
+                            ValueContributionKind.MinionDefenseModifier,
+                            minionId,
+                            PrintedValueChannel.Defense,
+                            amount),
+                        minionId.Value);
+                var preview = new AttackTargetDefensePreviewProjection(
+                    hero.HeroId,
+                    new[]
+                    {
+                        Contribution(supporting.MinionId, 1),
+                        Contribution(hindering.MinionId, -1)
+                    });
+
+                runtime.BoardView.Render(new BoardInteractionViewModel(
+                    baseBoard.Version + 1,
+                    heroes,
+                    minions,
+                    System.Array.Empty<HexCoordinate>(),
+                    new[] { hero.HeroId },
+                    new[] { supporting.MinionId },
+                    hero.HeroId,
+                    attackTargetDefensePreviews: new[] { preview }));
+                runtime.BoardView.SetHoveredCoordinate(heroAt);
+                yield return null;
+                yield return new WaitForEndOfFrame();
+
+                var target = available[0].CornerHighlight;
+                var overlappingContributor = available[1].CornerHighlight;
+                var contributionOnly = available[2].CornerHighlight;
+                Assert.That(target.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+                Assert.That(target.IsHovered, Is.True);
+                Assert.That(overlappingContributor.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+                Assert.That(overlappingContributor.ContributionKind,
+                    Is.EqualTo(HexCornerHighlightKind.DefensePositive));
+                Assert.That(overlappingContributor.VisibleCoreMaterialColor,
+                    Is.EqualTo(HexCornerHighlightTemplate.DefensePositiveColor));
+                Assert.That(contributionOnly.Kind,
+                    Is.EqualTo(HexCornerHighlightKind.DefenseNegative));
+                Assert.That(new[] { target, overlappingContributor, contributionOnly },
+                    Has.All.Matches<HexCornerHighlight>(value => value.VisibleMarkCount == 6));
+                yield return Capture("tmp/8-30i-defense-contributions-2560x1440.png");
+
+                restoreSecond = SelectFixedGameViewResolution(2048, 1152);
+                for (var frame = 0;
+                     frame < 120 && (Screen.width != 2048 || Screen.height != 1152);
+                     frame++) yield return null;
+                Assert.That(Screen.width, Is.EqualTo(2048));
+                Assert.That(Screen.height, Is.EqualTo(1152));
+                runtime.BoardView.SetHoveredCoordinate(heroAt);
+                yield return new WaitForEndOfFrame();
+                Assert.That(overlappingContributor.ContributionKind,
+                    Is.EqualTo(HexCornerHighlightKind.DefensePositive));
+                Assert.That(contributionOnly.Kind,
+                    Is.EqualTo(HexCornerHighlightKind.DefenseNegative));
+                yield return Capture("tmp/8-30i-defense-contributions-2048x1152.png");
+            }
+            finally
+            {
+                if (pointerInput != null) pointerInput.enabled = pointerInputWasEnabled;
+                restoreSecond?.Invoke();
+                restoreFirst();
+            }
+        }
+
         [UnityTest]
         public IEnumerator Scene_RoutesConfiguredMinionAttackCuePointerAndRemovalThroughFeatureBoundary()
         {
@@ -3334,6 +3460,37 @@ namespace GuardsDigital.Tests.PlayMode
 
             Physics.SyncTransforms();
             var heroPointerRay = new Ray(hero.transform.position + (Vector3.up * 10f), Vector3.down);
+            var targetDefensePreview = runtime.ReadModel.PendingAttackTargetDefensePreviews
+                .Single(value => value.HeroId.Equals(heroTargetId));
+            Assert.That(targetDefensePreview.MinionContributions, Is.Not.Empty,
+                "This configured journey must reach a hero with visible minion Defense modifiers.");
+            yield return null;
+            Assert.That(pointerInput.RefreshHoverFromPointerRay(heroPointerRay), Is.True);
+            // The supplied ray redraws synchronously. A yield here would let Update replace it with
+            // the test runner's unrelated live pointer position before the contribution is inspected.
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(beforeHeroTarget),
+                "Hover previews consequences without selecting the target.");
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                    value.Coordinate.Equals(hero.Occupancy.Coordinate)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack));
+            foreach (var contribution in targetDefensePreview.MinionContributions)
+            {
+                var minionState = runtime.BoardView.Model.Minions.Single(value =>
+                    value.MinionId.Equals(contribution.SourceMinionId));
+                var contributionTile = runtime.BoardView.TileViews.Single(value =>
+                    value.Coordinate.Equals(minionState.Coordinate));
+                Assert.That(contributionTile.CornerHighlight.ContributionKind,
+                    Is.EqualTo(contribution.Amount > 0
+                        ? HexCornerHighlightKind.DefensePositive
+                        : HexCornerHighlightKind.DefenseNegative));
+            }
+            runtime.BoardView.SetHoveredCoordinate(null);
+            yield return null;
+            Assert.That(runtime.BoardView.TileViews.Where(value => value.CornerHighlight != null).All(value =>
+                    value.CornerHighlight.ContributionKind == HexCornerHighlightKind.None), Is.True,
+                "Leaving the hero clears only the speculative contribution marks.");
+            Assert.That(pointerInput.RefreshHoverFromPointerRay(heroPointerRay), Is.True);
+            yield return null;
             Assert.That(pointerInput.TryHandlePointerRay(heroPointerRay), Is.True,
                 "The configured Input System ray, hero collider, selector and board presenter must " +
                 "claim the projected hero target.");
@@ -3701,42 +3858,14 @@ namespace GuardsDigital.Tests.PlayMode
                 value.BoundMinionId.Equals(supporting.MinionId));
             var hinderingView = runtime.BoardView.MinionViews.Single(value =>
                 value.BoundMinionId.Equals(hindering.MinionId));
-            Assert.That(supportingView.DefenseCueAmount, Is.EqualTo(1));
-            var supportingCue = supportingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
-                value.gameObject.name == "Defense Contribution Cue");
-            var supportingBacking = supportingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
-                value.gameObject.name == "Defense Contribution Cue Background");
-            Assert.That(supportingCue.text, Is.EqualTo("+1"));
-            Assert.That(supportingCue.characterSize, Is.EqualTo(StandardMinionView.DefenseCueCharacterSize));
-            Assert.That(supportingCue.transform.localScale, Is.EqualTo(new Vector3(-1f, 1f, 1f)));
-            Assert.That(supportingBacking.transform.localScale.y,
-                Is.EqualTo(StandardMinionView.DefenseCueBackgroundVerticalScale));
-            Assert.That(supportingBacking.transform.localScale.y,
-                Is.GreaterThan(supportingBacking.transform.localScale.x));
-            var supportingCenterDelta = supportingView.transform.InverseTransformVector(
-                supportingCue.GetComponent<MeshRenderer>().bounds.center -
-                supportingBacking.GetComponent<MeshRenderer>().bounds.center);
-            Assert.That(supportingCenterDelta.x, Is.EqualTo(0f).Within(0.0001f));
-            Assert.That(supportingCenterDelta.y,
-                Is.EqualTo(StandardMinionView.DefenseCueOpticalVerticalOffset).Within(0.0001f));
-            Assert.That(hinderingView.DefenseCueAmount, Is.EqualTo(-1));
-            var hinderingCue = hinderingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
-                value.gameObject.name == "Defense Contribution Cue");
-            var hinderingBacking = hinderingView.GetComponentsInChildren<TextMesh>(true).Single(value =>
-                value.gameObject.name == "Defense Contribution Cue Background");
-            Assert.That(hinderingCue.text, Is.EqualTo("-1"));
-            Assert.That(hinderingCue.characterSize, Is.EqualTo(StandardMinionView.DefenseCueCharacterSize));
-            Assert.That(hinderingCue.transform.localScale, Is.EqualTo(new Vector3(-1f, 1f, 1f)));
-            Assert.That(hinderingBacking.transform.localScale.y,
-                Is.EqualTo(StandardMinionView.DefenseCueBackgroundVerticalScale));
-            Assert.That(hinderingBacking.transform.localScale.y,
-                Is.GreaterThan(hinderingBacking.transform.localScale.x));
-            var hinderingCenterDelta = hinderingView.transform.InverseTransformVector(
-                hinderingCue.GetComponent<MeshRenderer>().bounds.center -
-                hinderingBacking.GetComponent<MeshRenderer>().bounds.center);
-            Assert.That(hinderingCenterDelta.x, Is.EqualTo(0f).Within(0.0001f));
-            Assert.That(hinderingCenterDelta.y,
-                Is.EqualTo(StandardMinionView.DefenseCueOpticalVerticalOffset).Within(0.0001f));
+            Assert.That(supportingView.GetComponentsInChildren<TextMesh>(true), Is.Empty);
+            Assert.That(hinderingView.GetComponentsInChildren<TextMesh>(true), Is.Empty);
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                    value.Coordinate.Equals(supporting.Coordinate)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.DefensePositive));
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                    value.Coordinate.Equals(hindering.Coordinate)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.DefenseNegative));
 
             var resolutionId = new ActionResolutionId("configured-preview-resolution");
             var choiceId = new ActionResolutionStepId("configured-preview-choice");
@@ -3749,7 +3878,13 @@ namespace GuardsDigital.Tests.PlayMode
                 "ATTACK:\n  +3 — Test Attack Card\nATTACK TOTAL: 3\n\n" +
                 "DEFENSE:\n  CARD: TEST DEFENSE CARD\n  +3 — Test Defense Card\n" +
                 "DEFENSE TOTAL: 3\nRESULT: DEFENDED",
-                AttackResolutionOutcome.SuccessfullyDefended);
+                AttackResolutionOutcome.SuccessfullyDefended,
+                new[] { new DefenseContributionRowViewModel(3, "Test Attack Card") },
+                3,
+                new[] { new DefenseContributionRowViewModel(3, "Test Defense Card") },
+                3,
+                DefenseBlockResult.None,
+                "DEFENDED");
             var declineBreakdown = new DefenseBreakdownViewModel(
                 12,
                 resolutionId,
@@ -3758,7 +3893,13 @@ namespace GuardsDigital.Tests.PlayMode
                 "DECLINE PREVIEW",
                 "ATTACK:\n  +3 — Test Attack Card\nATTACK TOTAL: 3\n\n" +
                 "DEFENSE:\n  NO DEFENSE TOTAL\nRESULT: NO DEFENSE TOTAL - ATTACK SUCCEEDS",
-                AttackResolutionOutcome.AttackSuccessful);
+                AttackResolutionOutcome.AttackSuccessful,
+                new[] { new DefenseContributionRowViewModel(3, "Test Attack Card") },
+                3,
+                System.Array.Empty<DefenseContributionRowViewModel>(),
+                null,
+                DefenseBlockResult.None,
+                "NO DEFENSE — ATTACK SUCCEEDS");
             var currentRound = runtime.RoundView.Model;
             var cardInvocation = new TypedInvocationViewModel(
                 "DISCARD TEST DEFENSE CARD\nPRINTED DEFENSE 3",
@@ -3788,9 +3929,13 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(runtime.RoundView.ActiveDefensePreview.Text,
                 Does.Contain("NO DEFENSE TOTAL - ATTACK SUCCEEDS"));
-            Assert.That(supportingView.DefenseCueAmount, Is.EqualTo(1),
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                    value.Coordinate.Equals(supporting.Coordinate)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.DefensePositive),
                 "Moving between Defense choices must not rebuild attack-scoped cues.");
-            Assert.That(hinderingView.DefenseCueAmount, Is.EqualTo(-1));
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                    value.Coordinate.Equals(hindering.Coordinate)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.DefenseNegative));
 
             if (!UnityEngine.Application.isBatchMode)
             {
@@ -3804,6 +3949,99 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
                 Assert.That(File.Exists(screenshotPath), Is.True,
                     "The targeted Game View visual evidence must be captured under tmp/.");
+            }
+        }
+
+        /// <summary>Milestone 8.30i's final structured Defense-panel visual evidence.</summary>
+        [UnityTest]
+        public IEnumerator Scene_CapturesStructuredDefensePreviewAtBothSupportedResolutions()
+        {
+            if (UnityEngine.Application.isBatchMode)
+            {
+                Assert.That(UnityEngine.Application.isBatchMode, Is.True,
+                    "The screenshot branch is exercised by the dedicated nonbatch recipe.");
+                yield break;
+            }
+
+            var restoreFirst = SelectFixedGameViewResolution(2560, 1440);
+            System.Action restoreSecond = null;
+            try
+            {
+                for (var frame = 0;
+                     frame < 120 && (Screen.width != 2560 || Screen.height != 1440);
+                     frame++) yield return null;
+                Assert.That(Screen.width, Is.EqualTo(2560));
+                Assert.That(Screen.height, Is.EqualTo(1440));
+                yield return LoadOfficialSixPlayerScene();
+
+                var runtime = Root().Runtime;
+                var card = runtime.HandsView.Model.ViewedHand.TrayCards.First();
+                var breakdown = new DefenseBreakdownViewModel(
+                    12,
+                    new ActionResolutionId("structured-defense-capture"),
+                    new ActionResolutionStepId("structured-defense-choice"),
+                    card.CardInstanceId,
+                    card.DisplayName.ToUpperInvariant() + " DEFENSE",
+                    "ATTACK:\n  +3 — Test Attack Card\nATTACK TOTAL: 3\n\n" +
+                    "DEFENSE:\n  +2 — Printed Defense\n  +1 — Supporting Minion\n" +
+                    "DEFENSE TOTAL: 3\nRESULT: DEFENDED",
+                    AttackResolutionOutcome.SuccessfullyDefended,
+                    new[] { new DefenseContributionRowViewModel(3, "Test Attack Card") },
+                    3,
+                    new[]
+                    {
+                        new DefenseContributionRowViewModel(2, "Printed Defense"),
+                        new DefenseContributionRowViewModel(1, "Supporting Minion")
+                    },
+                    3,
+                    DefenseBlockResult.None,
+                    "DEFENDED");
+                var offer = new TypedInvocationViewModel(
+                    "DISCARD " + card.DisplayName.ToUpperInvariant(),
+                    DirectorCommand.ChooseDefenseCard(card.CardInstanceId),
+                    breakdown,
+                    card,
+                    CardShineSlot.PrimaryRing);
+                var decline = new TypedInvocationViewModel(
+                    "DECLINE DEFENSE", DirectorCommand.DeclineDefense());
+                var current = runtime.RoundView.Model;
+                runtime.RoundView.Render(new RoundActionViewModel(
+                    12,
+                    current.RoundIndex,
+                    current.TurnIndex,
+                    current.Phase,
+                    "Incoming Attack 3: choose a card to defend with.",
+                    current.Actions,
+                    current.EndTurnInvocation,
+                    current.ContinueEndOfRoundInvocation,
+                    current.InitiativeChoices,
+                    new[] { offer, decline },
+                    current.FastTravelOffers));
+                yield return null;
+                yield return null;
+
+                var control = runtime.RoundView.Root.Q<Button>("gd-defense-card");
+                Assert.That(control, Is.Not.Null);
+                Assert.That(control.worldBound.width, Is.GreaterThan(0f));
+                runtime.RoundView.ShowDefensePreview(breakdown, control.worldBound);
+                yield return new WaitForEndOfFrame();
+                yield return Capture("tmp/8-30i-defense-preview-2560x1440.png");
+
+                restoreSecond = SelectFixedGameViewResolution(2048, 1152);
+                for (var frame = 0;
+                     frame < 120 && (Screen.width != 2048 || Screen.height != 1152);
+                     frame++) yield return null;
+                Assert.That(Screen.width, Is.EqualTo(2048));
+                Assert.That(Screen.height, Is.EqualTo(1152));
+                yield return null;
+                runtime.RoundView.ShowDefensePreview(breakdown, control.worldBound);
+                yield return new WaitForEndOfFrame();
+                yield return Capture("tmp/8-30i-defense-preview-2048x1152.png");
+            }
+            finally
+            {
+                restoreSecond?.Invoke();
+                restoreFirst();
             }
         }
 
@@ -4268,10 +4506,11 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadScene();
             var first = Root();
             Assert.That(first.OwnsGeneratedHighlightMaterial, Is.False);
-            // 8.30h owns two fixed meshes and twelve shared shine materials. The retired destination
-            // fill and rim resources are not allocated by configured composition.
+            // 8.30i owns two fixed meshes and sixteen shared shine materials: 8.30h's six board-cue
+            // pairs plus the two signed Defense-contribution pairs. The retired destination fill and
+            // rim resources are not allocated by configured composition.
             // The 210 tiles retain renderers only; none owns a material or mesh of its own.
-            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(14));
+            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(18));
             Assert.That(CountHighlightMaterials(), Is.Zero);
             Assert.That(CountResultingSpaceMaterials(), Is.Zero);
             AssertCurrentMinionBindings(first);
@@ -4298,8 +4537,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Has.All.Matches<Material>(value => value == null),
                 "The runtime Destroy branch releases keyline, consequence, and wash materials.");
             var second = Root();
-            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(14),
-                "and a reload rebuilds the same bounded fourteen rather than accumulating them.");
+            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(18),
+                "and a reload rebuilds the same bounded eighteen rather than accumulating them.");
             Assert.That(CountHighlightMaterials(), Is.Zero);
             Assert.That(CountResultingSpaceMaterials(), Is.Zero);
             AssertCurrentMinionBindings(second);

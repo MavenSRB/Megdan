@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Replay;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -246,6 +247,95 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.SetPlayerViewport(
                 restoreWidth, restoreHeight, "8.30g restore prior viewport");
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator DraggingADefenseCardOntoTheMap_SubmitsThatExactProjectedOfferOnce()
+        {
+            UiPlayer.EnsurePlayerViewport();
+            yield return LoadSeatScene(0);
+            var root = Root();
+            var runtime = root.Runtime;
+            var model = runtime.RoundView.Model;
+            var card = runtime.HandsView.Model.ViewedHand.TrayCards.First();
+            var offer = new TypedInvocationViewModel(
+                "DISCARD " + card.DisplayName.ToUpperInvariant(),
+                DirectorCommand.ChooseDefenseCard(card.CardInstanceId),
+                null,
+                card,
+                CardShineSlot.SecondaryDefense);
+            var decline = new TypedInvocationViewModel(
+                "DECLINE DEFENSE", DirectorCommand.DeclineDefense());
+            TypedInvocationViewModel submitted = null;
+            var submissionCount = 0;
+            runtime.RoundView.InvocationSubmitted += invocation =>
+            {
+                if (object.ReferenceEquals(invocation, offer))
+                {
+                    submitted = invocation;
+                    submissionCount++;
+                }
+            };
+            runtime.RoundView.Render(new RoundActionViewModel(
+                model.Version,
+                model.RoundIndex,
+                model.TurnIndex,
+                model.Phase,
+                model.Status,
+                model.Actions,
+                model.EndTurnInvocation,
+                model.ContinueEndOfRoundInvocation,
+                model.InitiativeChoices,
+                new[] { offer, decline }));
+            yield return null;
+
+            var control = Named(runtime.RoundView.Root, "gd-defense-card");
+            var slot = control.parent;
+            var declineControl = Named(root.Hud.RootElement, "gd-decline-defense-control");
+            var declineCenter = declineControl.worldBound.center;
+            var expectedDeclineCenter = root.Hud.ConfirmFacedownControlRect.center;
+            var snap = UiPlayer.PixelSnapping();
+            Assert.That(declineCenter.x, Is.EqualTo(expectedDeclineCenter.x).Within(snap));
+            Assert.That(declineCenter.y, Is.EqualTo(expectedDeclineCenter.y).Within(snap));
+            var director = Named(root.Hud.RootElement, "gd-director-toggle").worldBound;
+            Assert.That(declineControl.worldBound.yMin - director.yMax,
+                Is.EqualTo(ConfiguredMatchHudRenderer.ConfirmDirectorGap).Within(snap * 2f),
+                "The Defense decline occupies the same immediately-below-Director lane as Confirm.");
+            // The runner's hardware pointer can already be resting over the freshly composed card.
+            // Normalize that external hover before the explicit pointer-enter journey below.
+            UiPlayer.PointAway(control);
+            using (ConfiguredCardShine.UseTextureLoader(_ => Texture2D.whiteTexture))
+            {
+                UiPlayer.PointAt(control);
+            }
+            yield return null;
+            var hoverPreview = Named(root.Hud.RootElement, "gd-defense-card-hover-preview");
+            Assert.That(hoverPreview.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(hoverPreview.Q<VisualElement>("gd-card-preview"), Is.Not.Null,
+                "An offered Defense card raises the ordinary hand's complete-face peek.");
+            var hoverShine = UiPlayer.Descendants(hoverPreview)
+                .OfType<Image>()
+                .SingleOrDefault(element => element.name == "gd-card-shine");
+            Assert.That(hoverShine, Is.Not.Null,
+                "The hover replacement must retain the offered Defense shield shine.");
+            Assert.That(hoverShine.userData, Is.EqualTo(CardShineSlot.SecondaryDefense));
+            Assert.That(slot.resolvedStyle.opacity, Is.Zero.Within(0.001f),
+                "The peek replaces its overlapped source slot exactly as the ordinary hand does.");
+            var drop = root.Hud.CameraSafeLayout.UpperRegion.center;
+            var target = BeginDrag(control, out _);
+            SendPointerMove(target, drop);
+            var proxy = Named(root.Hud.RootElement, "gd-defense-card-drag-proxy");
+            Assert.That(proxy.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(proxy.Q<VisualElement>("gd-card-preview"), Is.Not.Null,
+                "Defense uses the same complete-card drag reading as facedown commitment.");
+            Assert.That(slot.resolvedStyle.visibility, Is.EqualTo(Visibility.Hidden));
+
+            SendPointerUp(target, drop);
+            yield return null;
+
+            Assert.That(submitted, Is.SameAs(offer));
+            Assert.That(submissionCount, Is.EqualTo(1));
+            Assert.That(proxy.resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
         }
 
         /// <summary>

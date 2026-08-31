@@ -86,6 +86,32 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void AttackTargetDefensePreviewsReachOnlyTheSeatChoosingThatTarget()
+        {
+            var host = MatchHost.Compose(CreateOfficialInitialState());
+            DriveThroughSeats(
+                host,
+                1800,
+                projection => projection.PendingAttackTargetChoice != null);
+
+            var choice = host.Projection.PendingAttackTargetChoice;
+            Assert.That(choice, Is.Not.Null,
+                "The deterministic seat walk must reach an Attack-target decision.");
+            var owner = host.Seats.FindByHero(choice.ChooserId);
+            var ownerProjection = host.ProjectionForSeat(owner.Id);
+            Assert.That(ownerProjection.PendingAttackTargetDefensePreviews.Select(value =>
+                    value.HeroId),
+                Is.EqualTo(choice.LegalTargetHeroIds));
+            foreach (var waiting in host.Seats.Seats.Where(value => !value.Id.Equals(owner.Id)))
+            {
+                Assert.That(host.ProjectionForSeat(waiting.Id)
+                        .PendingAttackTargetDefensePreviews,
+                    Is.Empty,
+                    "A waiting seat receives no consequence projection for a choice it cannot answer.");
+            }
+        }
+
+        [Test]
         public void AFacedownCommitmentIsAbsentFromEveryOtherSeatUntilItIsRevealed()
         {
             var host = MatchHost.Compose(CreateOfficialInitialState());
@@ -368,12 +394,20 @@ namespace GuardsDigital.Tests.EditMode
         /// Plays a bounded prefix of a real match through the seats themselves, so that whatever the
         /// other cases inspect was produced the way a client would produce it.
         /// </summary>
-        internal static int DriveThroughSeats(IMatchHost host, int commandBudget)
+        internal static int DriveThroughSeats(
+            IMatchHost host,
+            int commandBudget,
+            Func<IMatchReadModel, bool> stopBeforeCommand = null)
         {
             var random = new MatchLoopRandom(2);
             var submitted = 0;
             while (submitted < commandBudget)
             {
+                if (stopBeforeCommand?.Invoke(host.Projection) == true)
+                {
+                    break;
+                }
+
                 var legal = DeterministicMatchLoop.EnumerateLegalCommands(host.Projection);
                 if (legal.Count == 0)
                 {

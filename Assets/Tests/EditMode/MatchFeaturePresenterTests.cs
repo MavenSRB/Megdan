@@ -105,16 +105,12 @@ namespace GuardsDigital.Tests.EditMode
                 new TypedInvocationViewModel(
                     longestCurrentLabel,
                     DirectorCommand.DeclineDefense(
-                        new ActionResolutionId("r"), new ActionResolutionStepId("s"))),
-                new TypedInvocationViewModel(
-                    "DECLINE DEFENSE",
-                    DirectorCommand.DeclineDefense(
-                        new ActionResolutionId("r"), new ActionResolutionStepId("s2")))
+                        new ActionResolutionId("r"), new ActionResolutionStepId("s")))
             }));
 
             var controls = Buttons(view.Root).ToArray();
             Assert.That(controls.Select(button => button.text),
-                Is.EquivalentTo(new[] { longestCurrentLabel, "DECLINE DEFENSE" }),
+                Is.EquivalentTo(new[] { longestCurrentLabel }),
                 "Every projected Defense choice is drawn, carrying its complete label.");
             foreach (var control in controls)
             {
@@ -1313,6 +1309,38 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void HoveringALegalHeroAttackTarget_PreviewsItsAuthorityProjectedMinionDefenseContributions()
+        {
+            var session = CreateDefensePreviewSession();
+            StartTiedTurn(session, ActionKind.Attack);
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Attack);
+            Assert.That(session.Execute(
+                DirectorCommand.StartAction(attack.ActionDefinitionId)).Accepted, Is.True);
+
+            var previews = session.Projection.PendingAttackTargetDefensePreviews;
+            Assert.That(previews, Has.Count.EqualTo(
+                session.Projection.PendingAttackTargetChoice.LegalTargetHeroIds.Count));
+            var preview = previews.Single();
+            Assert.That(preview.HeroId,
+                Is.EqualTo(session.Projection.PendingAttackTargetChoice.LegalTargetHeroIds.Single()));
+            Assert.That(preview.MinionContributions.Select(value =>
+                    (value.SourceMinionId.Value, value.Amount)),
+                Is.EquivalentTo(new[]
+                {
+                    ("blue-defense-support", 1),
+                    ("red-defense-hinder", -1),
+                    ("red-ranged-hinder", -1)
+                }));
+            var boardView = new CapturingBoardView();
+            new BoardInteractionPresenter(session, boardView).Refresh();
+            Assert.That(boardView.Model.AttackTargetDefensePreviews, Is.EqualTo(previews),
+                "The passive view model copies the immutable sequence but retains each projected preview.");
+            Assert.That(boardView.Model.MinionDefenseCues, Is.Empty,
+                "Before hover, the speculative contribution preview does not light the whole board.");
+        }
+
+        [Test]
         public void DefensePreview_HoverSwitchDismissalAndVersionResetNeverSubmitACommand()
         {
             var session = CreateDefensePreviewSession();
@@ -1402,16 +1430,30 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(RoundActionUnityView.DefensePreviewBackgroundColor.a, Is.EqualTo(1f),
                 "The breakdown must be fully opaque over the card HUD.");
 
-            var anchor = new UnityEngine.Rect(300f, 260f, 180f, 46f);
+            var anchor = new UnityEngine.Rect(120f, 40f, 300f, 220f);
             var popup = RoundActionUnityView.CalculateDefensePreviewRect(
                 anchor,
-                new UnityEngine.Vector2(778f, 300f),
-                new UnityEngine.Vector2(440f, 220f));
+                new UnityEngine.Vector2(1536f, 864f),
+                new UnityEngine.Vector2(440f, 240f));
+            Assert.That(popup.xMin, Is.EqualTo(anchor.xMax + 8f),
+                "The breakdown opens immediately to the right of the complete Defense-card fan.");
+            Assert.That(popup.yMin, Is.EqualTo(anchor.yMin),
+                "The right-side breakdown aligns with the top of the available cards.");
             Assert.That(popup.xMin, Is.GreaterThanOrEqualTo(0f));
             Assert.That(popup.yMin, Is.GreaterThanOrEqualTo(0f));
-            Assert.That(popup.xMax, Is.LessThanOrEqualTo(778f));
-            Assert.That(popup.yMax, Is.LessThanOrEqualTo(300f));
+            Assert.That(popup.xMax, Is.LessThanOrEqualTo(1536f));
+            Assert.That(popup.yMax, Is.LessThanOrEqualTo(864f));
             Assert.That(popup.Overlaps(anchor), Is.False);
+
+            var rightEdgeAnchor = new UnityEngine.Rect(1200f, 700f, 300f, 150f);
+            var leftFallback = RoundActionUnityView.CalculateDefensePreviewRect(
+                rightEdgeAnchor,
+                new UnityEngine.Vector2(1536f, 864f),
+                new UnityEngine.Vector2(440f, 240f));
+            Assert.That(leftFallback.xMax, Is.EqualTo(rightEdgeAnchor.xMin - 8f),
+                "Only a constrained right edge moves the breakdown to the fan's left.");
+            Assert.That(leftFallback.yMax, Is.LessThanOrEqualTo(864f));
+            Assert.That(leftFallback.Overlaps(rightEdgeAnchor), Is.False);
         }
 
         [Test]

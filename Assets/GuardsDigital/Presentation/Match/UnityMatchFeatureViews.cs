@@ -86,9 +86,11 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentNullException(nameof(submitDestination));
         }
 
-        public void Render(BoardInteractionViewModel model)
+        public void Render(BoardInteractionViewModel model) => Render(model, false);
+
+        private void Render(BoardInteractionViewModel model, bool refreshHover)
         {
-            if (ReferenceEquals(Model, model))
+            if (!refreshHover && ReferenceEquals(Model, model))
             {
                 return;
             }
@@ -184,6 +186,30 @@ namespace GuardsDigital.Presentation.Match
             attackCoordinates.UnionWith(model.Minions
                 .Where(value => attackMinionIds.Contains(value.MinionId))
                 .Select(value => value.Coordinate));
+            var activeDefenseCues = model.MinionDefenseCues;
+            if (activeDefenseCues.Count == 0 && hoveredCoordinate.HasValue)
+            {
+                var hoveredHero = model.Heroes.FirstOrDefault(value =>
+                    value.Coordinate.Equals(hoveredCoordinate.Value));
+                var targetPreview = !hoveredHero.HeroId.IsDefined
+                    ? null
+                    : model.AttackTargetDefensePreviews.FirstOrDefault(value =>
+                        value.HeroId.Equals(hoveredHero.HeroId));
+                if (targetPreview != null)
+                {
+                    activeDefenseCues = Array.AsReadOnly(targetPreview.MinionContributions
+                        .Select(value => new MinionDefenseCueViewModel(
+                            value.SourceMinionId, value.Amount))
+                        .ToArray());
+                }
+            }
+            var minionCoordinates = model.Minions.ToDictionary(
+                value => value.MinionId, value => value.Coordinate);
+            var defenseCoordinates = activeDefenseCues.ToDictionary(
+                value => minionCoordinates[value.MinionId],
+                value => value.Amount > 0
+                    ? HexCornerHighlightKind.DefensePositive
+                    : HexCornerHighlightKind.DefenseNegative);
             var allyCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>();
             foreach (var cue in model.PieceTargetCues.Where(value =>
                          value.State != BoardTargetCueState.None &&
@@ -229,7 +255,10 @@ namespace GuardsDigital.Presentation.Match
                     tile.SetCornerHighlighted(
                         kind,
                         hoveredCoordinate.HasValue &&
-                        hoveredCoordinate.Value.Equals(tile.Coordinate));
+                        hoveredCoordinate.Value.Equals(tile.Coordinate),
+                        defenseCoordinates.TryGetValue(tile.Coordinate, out var defenseKind)
+                            ? defenseKind
+                            : HexCornerHighlightKind.None);
                 }
             }
         }
@@ -272,16 +301,7 @@ namespace GuardsDigital.Presentation.Match
         {
             if (Nullable.Equals(hoveredCoordinate, coordinate)) return;
             hoveredCoordinate = coordinate;
-            foreach (var tile in tiles.Where(value => value != null && value.IsPlayable))
-            {
-                var cue = tile.CornerHighlight;
-                if (cue != null && cue.Kind != HexCornerHighlightKind.None)
-                {
-                    tile.SetCornerHighlighted(
-                        cue.Kind,
-                        coordinate.HasValue && coordinate.Value.Equals(tile.Coordinate));
-                }
-            }
+            if (Model != null) Render(Model, true);
         }
 
         public void ReplaceMinionViews(IEnumerable<StandardMinionView> currentMinions)
@@ -300,7 +320,6 @@ namespace GuardsDigital.Presentation.Match
         private void RenderMinions(BoardInteractionViewModel model)
         {
             var projectedMinions = model.Minions.ToDictionary(value => value.MinionId);
-            var defenseCues = model.MinionDefenseCues.ToDictionary(value => value.MinionId, value => value.Amount);
             foreach (var minion in minions)
             {
                 var boundId = minion.BoundMinionId;
@@ -312,15 +331,12 @@ namespace GuardsDigital.Presentation.Match
                         minion.Configure(state, minion.OuterRadius);
                     }
 
-                    minion.SetDefenseContributionCue(
-                        defenseCues.TryGetValue(boundId, out var amount) ? amount : 0);
                     minion.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
 
                     projectedMinions.Remove(state.MinionId);
                 }
                 else
                 {
-                    minion.SetDefenseContributionCue(0);
                     minion.SetTargetCue(
                         BoardTargetCueState.None,
                         BoardTargetConsequenceIntent.None);

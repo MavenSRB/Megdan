@@ -719,6 +719,11 @@ namespace GuardsDigital.Presentation.Match
             root.Add(hands.DragProxyRoot);
             hands.SetMapDropPredicate(IsMapDropPoint);
             root.Add(round.PreviewRoot);
+            round.DefenseCardHoverPreviewRoot.RemoveFromHierarchy();
+            root.Add(round.DefenseCardHoverPreviewRoot);
+            round.DefenseDragProxyRoot.RemoveFromHierarchy();
+            root.Add(round.DefenseDragProxyRoot);
+            round.SetMapDropPredicate(IsMapDropPoint);
 
             // Milestone 8.30b, by the user-approved amendment. Two of this view's surfaces leave the
             // contextual region: the narration goes into the top status bar, which is the widest line
@@ -738,6 +743,9 @@ namespace GuardsDigital.Presentation.Match
             hands.ConfirmActionRoot.style.position = Position.Absolute;
             hands.SetConfirmLayoutReady(false);
             root.Add(hands.ConfirmActionRoot);
+            round.DeclineDefenseRoot.RemoveFromHierarchy();
+            round.DeclineDefenseRoot.style.position = Position.Absolute;
+            root.Add(round.DeclineDefenseRoot);
             if (heroOverviews != null)
             {
                 // Only the revealed face leaves the rail layer. Keeping the rail columns where they
@@ -1167,6 +1175,13 @@ namespace GuardsDigital.Presentation.Match
                 return live;
             }
 
+            var decline = round?.DeclineDefenseRoot?.Q<VisualElement>(
+                "gd-decline-defense-control");
+            if (TryLiveRect(decline, out live))
+            {
+                return live;
+            }
+
             return CalculateConfirmFacedownControlRect(CalculateDirectorToggleRect());
         }
 
@@ -1285,6 +1300,17 @@ namespace GuardsDigital.Presentation.Match
                 confirm.style.width = confirmRect.width;
                 confirm.style.height = confirmRect.height;
                 hands.SetConfirmLayoutReady(true);
+            }
+
+            var decline = round?.DeclineDefenseRoot;
+            if (decline != null)
+            {
+                var declineRect = CalculateConfirmFacedownControlRect(
+                    CalculateDirectorToggleRect());
+                decline.style.left = declineRect.x;
+                decline.style.top = declineRect.y;
+                decline.style.width = declineRect.width;
+                decline.style.height = declineRect.height;
             }
         }
 

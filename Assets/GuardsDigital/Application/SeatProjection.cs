@@ -113,6 +113,9 @@ namespace GuardsDigital.Application
             InitiativeChoice = ownsDecision ? source.PendingInitiativeChoice : null;
             MovementChoice = ownsDecision ? source.PendingMovementChoice : null;
             AttackTargetChoice = ownsDecision ? source.PendingAttackTargetChoice : null;
+            AttackTargetDefensePreviews = ownsDecision
+                ? source.PendingAttackTargetDefensePreviews
+                : Array.Empty<AttackTargetDefensePreviewProjection>();
             DefenseChoice = ownsDecision ? source.PendingDefenseChoice : null;
             DefensePreview = ownsDecision ? source.PendingDefensePreview : null;
             EffectChoice = ownsDecision ? source.PendingEffectChoice : null;
@@ -145,6 +148,7 @@ namespace GuardsDigital.Application
         public PendingInitiativeChoice InitiativeChoice { get; }
         public PendingMovementChoice MovementChoice { get; }
         public PendingAttackTargetChoice AttackTargetChoice { get; }
+        public IReadOnlyList<AttackTargetDefensePreviewProjection> AttackTargetDefensePreviews { get; }
         public PendingDefenseResponseChoice DefenseChoice { get; }
         public PendingDefensePreviewProjection DefensePreview { get; }
         public PendingEffectChoice EffectChoice { get; }
@@ -347,6 +351,8 @@ namespace GuardsDigital.Application
         public PendingMovementChoice PendingMovementChoice => pending.MovementChoice;
         public PendingAttackResolution PendingAttackResolution => pending.AttackResolution;
         public PendingAttackTargetChoice PendingAttackTargetChoice => pending.AttackTargetChoice;
+        public IReadOnlyList<AttackTargetDefensePreviewProjection>
+            PendingAttackTargetDefensePreviews => pending.AttackTargetDefensePreviews;
         public PendingDefenseResponseChoice PendingDefenseChoice => pending.DefenseChoice;
         public PendingDefensePreviewProjection PendingDefensePreview => pending.DefensePreview;
 

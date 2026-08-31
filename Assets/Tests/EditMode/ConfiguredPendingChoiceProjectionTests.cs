@@ -509,6 +509,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             nameof(MatchSessionProjection.PendingMovementResolution),
             nameof(MatchSessionProjection.PendingAttackResolution),
+            nameof(MatchSessionProjection.PendingAttackTargetDefensePreviews),
             nameof(MatchSessionProjection.PendingSkillResolution),
             nameof(MatchSessionProjection.PendingEffectChoicePreview),
             nameof(MatchSessionProjection.PendingDefensePreview),

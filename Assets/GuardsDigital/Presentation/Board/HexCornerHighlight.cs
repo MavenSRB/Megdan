@@ -12,7 +12,9 @@ namespace GuardsDigital.Presentation.Board
         Respawn = 3,
         Effect = 4,
         EffectResult = 5,
-        Ally = 6
+        Ally = 6,
+        DefensePositive = 7,
+        DefenseNegative = 8
     }
 
     /// <summary>
@@ -35,6 +37,10 @@ namespace GuardsDigital.Presentation.Board
         public const string EffectResultCoreMaterialName = "Effect Result Corner Shine Core";
         public const string AllyHaloMaterialName = "Teammate Corner Shine Halo";
         public const string AllyCoreMaterialName = "Teammate Corner Shine Core";
+        public const string DefensePositiveHaloMaterialName = "Positive Defense Corner Shine Halo";
+        public const string DefensePositiveCoreMaterialName = "Positive Defense Corner Shine Core";
+        public const string DefenseNegativeHaloMaterialName = "Negative Defense Corner Shine Halo";
+        public const string DefenseNegativeCoreMaterialName = "Negative Defense Corner Shine Core";
 
         // The whole board now speaks one six-corner language. Green is travel, cyan is return to the
         // board, blood red is an Attack or removal, warm ivory is a teammate, and cool neutral grey
@@ -45,6 +51,8 @@ namespace GuardsDigital.Presentation.Board
         public static readonly Color AllyColor = new Color(0.92f, 0.90f, 0.80f, 1f);
         public static readonly Color EffectColor = new Color(0.62f, 0.68f, 0.72f, 1f);
         public static readonly Color EffectResultColor = new Color(0.42f, 0.48f, 0.55f, 1f);
+        public static readonly Color DefensePositiveColor = new Color(0.02f, 0.70f, 0.18f, 1f);
+        public static readonly Color DefenseNegativeColor = new Color(1f, 0.16f, 0.05f, 1f);
 
         private readonly Mesh haloMesh;
         private readonly Mesh coreMesh;
@@ -60,6 +68,10 @@ namespace GuardsDigital.Presentation.Board
         private readonly Material effectResultCore;
         private readonly Material allyHalo;
         private readonly Material allyCore;
+        private readonly Material defensePositiveHalo;
+        private readonly Material defensePositiveCore;
+        private readonly Material defenseNegativeHalo;
+        private readonly Material defenseNegativeCore;
 
         public HexCornerHighlightTemplate(float outerRadius)
         {
@@ -85,12 +97,22 @@ namespace GuardsDigital.Presentation.Board
                 Color.Lerp(EffectResultColor, Color.white, 0.82f));
             allyHalo = CreateMaterial(AllyHaloMaterialName, AllyColor);
             allyCore = CreateMaterial(AllyCoreMaterialName, Color.Lerp(AllyColor, Color.white, 0.82f));
+            defensePositiveHalo = CreateMaterial(
+                DefensePositiveHaloMaterialName, DefensePositiveColor);
+            defensePositiveCore = CreateMaterial(
+                DefensePositiveCoreMaterialName,
+                Color.Lerp(DefensePositiveColor, Color.white, 0.78f));
+            defenseNegativeHalo = CreateMaterial(
+                DefenseNegativeHaloMaterialName, DefenseNegativeColor);
+            defenseNegativeCore = CreateMaterial(
+                DefenseNegativeCoreMaterialName,
+                Color.Lerp(DefenseNegativeColor, Color.white, 0.78f));
         }
 
         public Mesh HaloMesh => haloMesh;
         public Mesh CoreMesh => coreMesh;
         public int MarkCount => CornerCount;
-        public int OwnedNativeResourceCount => 14;
+        public int OwnedNativeResourceCount => 18;
 
         public Material Halo(HexCornerHighlightKind kind) => kind == HexCornerHighlightKind.Movement
             ? movementHalo
@@ -104,6 +126,10 @@ namespace GuardsDigital.Presentation.Board
                             ? effectResultHalo
                             : kind == HexCornerHighlightKind.Ally
                                 ? allyHalo
+                                : kind == HexCornerHighlightKind.DefensePositive
+                                    ? defensePositiveHalo
+                                    : kind == HexCornerHighlightKind.DefenseNegative
+                                        ? defenseNegativeHalo
                             : null;
 
         public Material Core(HexCornerHighlightKind kind) => kind == HexCornerHighlightKind.Movement
@@ -118,6 +144,10 @@ namespace GuardsDigital.Presentation.Board
                             ? effectResultCore
                             : kind == HexCornerHighlightKind.Ally
                                 ? allyCore
+                                : kind == HexCornerHighlightKind.DefensePositive
+                                    ? defensePositiveCore
+                                    : kind == HexCornerHighlightKind.DefenseNegative
+                                        ? defenseNegativeCore
                             : null;
 
         private static Mesh BuildSixCornerMesh(float radius, float halfWidthRatio)
@@ -194,6 +224,10 @@ namespace GuardsDigital.Presentation.Board
             DestroyOwned(effectResultCore);
             DestroyOwned(allyHalo);
             DestroyOwned(allyCore);
+            DestroyOwned(defensePositiveHalo);
+            DestroyOwned(defensePositiveCore);
+            DestroyOwned(defenseNegativeHalo);
+            DestroyOwned(defenseNegativeCore);
         }
 
         private static void DestroyOwned(UnityEngine.Object value)
@@ -212,10 +246,17 @@ namespace GuardsDigital.Presentation.Board
         private HexCornerHighlightTemplate template;
         private MaterialPropertyBlock propertyBlock;
 
-        public HexCornerHighlightKind Kind { get; private set; }
+        public HexCornerHighlightKind BaseKind { get; private set; }
+        public HexCornerHighlightKind ContributionKind { get; private set; }
+        public HexCornerHighlightKind Kind => BaseKind != HexCornerHighlightKind.None
+            ? BaseKind
+            : ContributionKind;
         public bool IsHovered { get; private set; }
         public int VisibleMarkCount => Kind == HexCornerHighlightKind.None ? 0 : HexCornerHighlightTemplate.CornerCount;
         public Bounds LocalBounds => core == null ? default : core.localBounds;
+        public Color VisibleCoreMaterialColor => core == null || core.sharedMaterial == null
+            ? default
+            : core.sharedMaterial.color;
 
         public void Configure(HexCornerHighlightTemplate sharedTemplate)
         {
@@ -225,27 +266,46 @@ namespace GuardsDigital.Presentation.Board
             Set(HexCornerHighlightKind.None, false);
         }
 
-        public void Set(HexCornerHighlightKind kind, bool hovered)
+        public void Set(
+            HexCornerHighlightKind kind,
+            bool hovered,
+            HexCornerHighlightKind contributionKind = HexCornerHighlightKind.None)
         {
-            if (kind != HexCornerHighlightKind.None && template == null)
+            if (contributionKind != HexCornerHighlightKind.None &&
+                contributionKind != HexCornerHighlightKind.DefensePositive &&
+                contributionKind != HexCornerHighlightKind.DefenseNegative)
+            {
+                throw new ArgumentOutOfRangeException(nameof(contributionKind));
+            }
+
+            if ((kind != HexCornerHighlightKind.None ||
+                 contributionKind != HexCornerHighlightKind.None) && template == null)
             {
                 throw new InvalidOperationException("The shared corner-highlight template is not configured.");
             }
 
-            Kind = kind;
-            IsHovered = kind != HexCornerHighlightKind.None && hovered;
+            BaseKind = kind;
+            ContributionKind = contributionKind;
+            IsHovered = Kind != HexCornerHighlightKind.None && hovered;
             if (halo == null || core == null) return;
-            var visible = kind != HexCornerHighlightKind.None;
+            var visible = Kind != HexCornerHighlightKind.None;
             halo.enabled = visible;
             core.enabled = visible;
             if (!visible) return;
-            halo.sharedMaterial = template.Halo(kind);
-            core.sharedMaterial = template.Core(kind);
+            var haloKind = kind != HexCornerHighlightKind.None ? kind : contributionKind;
+            var coreKind = contributionKind != HexCornerHighlightKind.None ? contributionKind : kind;
+            var composite = kind != HexCornerHighlightKind.None &&
+                contributionKind != HexCornerHighlightKind.None;
+            var coreMaterial = composite
+                ? template.Halo(coreKind)
+                : template.Core(coreKind);
+            halo.sharedMaterial = template.Halo(haloKind);
+            core.sharedMaterial = coreMaterial;
             halo.transform.localScale = Vector3.one;
             core.transform.localScale = Vector3.one;
             var strength = IsHovered ? 1f : 0.84f;
-            SetColor(halo, WithAlpha(template.Halo(kind).color, IsHovered ? 1f : 0.72f));
-            SetColor(core, WithAlpha(template.Core(kind).color, strength));
+            SetColor(halo, WithAlpha(template.Halo(haloKind).color, IsHovered ? 1f : 0.72f));
+            SetColor(core, WithAlpha(coreMaterial.color, strength));
         }
 
         private MeshRenderer EnsureLayer(string layerName, float localY, Mesh mesh)

@@ -93,7 +93,7 @@ namespace GuardsDigital.Tests.PlayMode
                         new[] { minion.MinionId }));
                 }
 
-                Assert.That(template.OwnedNativeResourceCount, Is.EqualTo(14));
+                Assert.That(template.OwnedNativeResourceCount, Is.EqualTo(18));
                 Assert.That(new[] { movement, heroTile, minionTile }
                     .Select(tile => tile.GetComponentsInChildren<MeshRenderer>(true).Length),
                     Is.EqualTo(layerCounts));

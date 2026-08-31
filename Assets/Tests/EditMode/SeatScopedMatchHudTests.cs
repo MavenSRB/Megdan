@@ -129,6 +129,7 @@ namespace GuardsDigital.Tests.EditMode
                 "Who is being waited on is public, which is what a waiting surface has to show.");
             Assert.That(waitingProjection.PendingMovementChoice, Is.Null);
             Assert.That(waitingProjection.PendingAttackTargetChoice, Is.Null);
+            Assert.That(waitingProjection.PendingAttackTargetDefensePreviews, Is.Empty);
             Assert.That(waitingProjection.PendingEffectChoice, Is.Null);
             Assert.That(waitingProjection.PendingDefenseChoice, Is.Null);
             Assert.That(waitingProjection.AvailableTurnActions, Is.Empty);

@@ -2028,9 +2028,33 @@ namespace GuardsDigital.Tests.EditMode
 
             var decline = Descendants(view.Root).OfType<Button>()
                 .Single(button => button.text == "DECLINE DEFENSE");
-            Assert.That(decline.name, Is.Not.EqualTo("gd-defense-card"));
+            Assert.That(decline.name, Is.EqualTo("gd-decline-defense-control"));
+            Assert.That(Descendants(decline)
+                .Any(element => element.name == "gd-banner-cloth"), Is.True,
+                "Decline uses the same pewter banner surface as CONFIRM FACEDOWN.");
             Assert.That(Descendants(decline).Any(element => element.name == "gd-card-preview"), Is.False,
                 "and it stays a distinct non-card control.");
+            Assert.That(decline.parent, Is.SameAs(view.DeclineDefenseRoot),
+                "Decline is hosted outside the card fan in the facedown confirmation lane.");
+
+            var slots = controls.Select(control => control.parent).ToArray();
+            Assert.That(slots.Select(slot => slot.name),
+                Is.All.EqualTo("gd-defense-card-slot"));
+            Assert.That(slots.Take(slots.Length - 1)
+                    .Select(slot => slot.style.marginRight.value.value),
+                Is.All.EqualTo(-DirectorHandsUnityView.PeekCardOverlap).Within(0.001f),
+                "Defense uses the ordinary hand's exact overlap between card slots.");
+            Assert.That(slots.Last().style.marginRight.value.value, Is.Zero.Within(0.001f));
+            var section = slots[0].parent;
+            Assert.That(Descendants(section).OfType<Label>()
+                    .Any(label => label.text == "DEFENSE"), Is.False,
+                "The redundant labelled box around the Defense choices is removed.");
+            Assert.That(section.style.width.value.value,
+                Is.EqualTo(ConfiguredMatchHudRenderer.CompactHandRightEdge).Within(0.001f));
+            Assert.That(controls.All(control =>
+                    Mathf.Approximately(control.style.width.value.value, CardFootprint.Width)),
+                Is.True,
+                "Each Defense face is the card itself, without the former inset frame.");
         }
 
         [Test]
@@ -2076,6 +2100,28 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void TheDefenseBreakdownPreview_DrawsTypedContributionRowsTotalsAndOutcome()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+            var breakdown = view.Model.DefenseChoices.First(value =>
+                value.DefenseBreakdown != null).DefenseBreakdown;
+
+            view.ShowDefensePreview(breakdown, new Rect(120f, 220f, 190f, 46f));
+            var elements = Descendants(view.PreviewRoot).ToArray();
+
+            Assert.That(elements.Count(value => value.name == "gd-defense-contribution-row"),
+                Is.EqualTo(breakdown.AttackRows.Count + breakdown.DefenseRows.Count));
+            Assert.That(elements.Any(value => value.name == "gd-defense-attack-total"), Is.True);
+            Assert.That(elements.Any(value => value.name == "gd-defense-defense-total"), Is.True);
+            Assert.That(elements.Any(value => value.name == "gd-defense-result"), Is.True);
+            Assert.That(elements.OfType<Label>().Single(value =>
+                    value.name == "gd-defense-result").text,
+                Is.EqualTo(breakdown.ResultStatement));
+        }
+
+        [Test]
         public void FourDefenseCardFacesPlusDecline_FitOneReadableRowWithoutHorizontalScrolling()
         {
             var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
@@ -2090,19 +2136,16 @@ namespace GuardsDigital.Tests.EditMode
                 "milestone 5.1c sized this region for.");
             Assert.That(
                 cards.All(card =>
-                    Mathf.Approximately(
-                        card.style.width.value.value, RoundActionUnityView.DefenseCardFootprint)),
+                    Mathf.Approximately(card.style.width.value.value, CardFootprint.Width)),
                 Is.True,
                 "One width for every offer, so choosing one cannot re-wrap or resize another.");
 
             var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(2048f, 1152f);
-            var occupied = (RoundActionUnityView.DefenseCardFootprint * cards.Length) +
-                (RoundActionUnityView.SectionGap * cards.Length) +
-                RoundActionUnityView.SectionGutterWidth;
-            Assert.That(tray.width - occupied, Is.GreaterThan(120f),
-                "Four enlarged whole faces, their gutters, and DECLINE DEFENSE fit without sideways " +
-                "scrolling.");
-            var section = cards[0].parent;
+            Assert.That(tray.width - ConfiguredMatchHudRenderer.CompactHandRightEdge,
+                Is.GreaterThan(120f),
+                "The overlapped Defense hand fits without sideways scrolling, while Decline is " +
+                "outside that fan in the confirmation lane.");
+            var section = cards[0].parent.parent;
             Assert.That(section.style.flexWrap.value, Is.EqualTo(Wrap.NoWrap),
                 "Defense order remains one row instead of wrapping into a second card stack.");
             Assert.That(CardFootprint.Height, Is.LessThan(tray.height),
@@ -3220,6 +3263,44 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(endTurn.yMin,
                     Is.GreaterThan(ConfiguredMatchHudRenderer.PanelViewport.y / 2f),
                     "End Turn remains in the panel's bottom-right quadrant.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void DeclineDefenseUsesTheFacedownConfirmationPosition()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
+            var hands = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(session, hands).Refresh();
+            var round = new RoundActionUnityView();
+            new RoundActionPresenter(session, round).Refresh();
+            var host = new GameObject("8.30i-decline-defense-layout");
+            try
+            {
+                var hud = host.AddComponent<ConfiguredMatchHudRenderer>();
+                hud.Configure(
+                    hands,
+                    round,
+                    new UndoRestartUnityView(),
+                    new DiagnosticLogUnityView(),
+                    new MinionChoiceUnityView(),
+                    new HeroOverviewsUnityView());
+                hud.ApplyExclusiveContext();
+
+                var decline = Descendants(hud.RootElement).OfType<Button>()
+                    .Single(button => button.text == "DECLINE DEFENSE");
+                Assert.That(decline.parent, Is.SameAs(round.DeclineDefenseRoot));
+                var expected = hud.ConfirmFacedownControlRect;
+                Assert.That(round.DeclineDefenseRoot.style.left.value.value, Is.EqualTo(expected.x));
+                Assert.That(round.DeclineDefenseRoot.style.top.value.value, Is.EqualTo(expected.y));
+                Assert.That(round.DeclineDefenseRoot.style.width.value.value, Is.EqualTo(expected.width));
+                Assert.That(round.DeclineDefenseRoot.style.height.value.value, Is.EqualTo(expected.height));
+                Assert.That(hands.ConfirmActionRoot.style.display.value, Is.EqualTo(DisplayStyle.None),
+                    "A mandatory Defense choice cannot also show facedown commitment confirmation.");
             }
             finally
             {

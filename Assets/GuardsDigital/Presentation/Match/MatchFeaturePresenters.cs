@@ -531,7 +531,8 @@ namespace GuardsDigital.Presentation.Match
             HexCoordinate? heroRespawnHighlight = null,
             IEnumerable<HexCoordinate> heroRespawnDestinations = null,
             IEnumerable<SystemTransitionDestinationViewModel> systemTransitionDestinations = null,
-            IEnumerable<HexCoordinate> effectChoiceMovementDestinations = null)
+            IEnumerable<HexCoordinate> effectChoiceMovementDestinations = null,
+            IEnumerable<AttackTargetDefensePreviewProjection> attackTargetDefensePreviews = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -549,6 +550,8 @@ namespace GuardsDigital.Presentation.Match
                 Enumerable.Empty<HexCoordinate>()).ToArray());
             MinionDefenseCues = Array.AsReadOnly((minionDefenseCues ??
                 Enumerable.Empty<MinionDefenseCueViewModel>()).ToArray());
+            AttackTargetDefensePreviews = Array.AsReadOnly((attackTargetDefensePreviews ??
+                Enumerable.Empty<AttackTargetDefensePreviewProjection>()).ToArray());
             PieceTargetCues = Array.AsReadOnly((pieceTargetCues ??
                 Enumerable.Empty<PieceTargetCueViewModel>()).ToArray());
             if (PieceTargetCues.Select(value => value.Target).Distinct().Count() !=
@@ -570,6 +573,23 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentException(
                     "A target cue must name a piece carried by the same board projection.",
                     nameof(pieceTargetCues));
+            }
+
+            var attackIntentHeroIds = new HashSet<HeroId>(AttackTargets);
+            attackIntentHeroIds.UnionWith(PieceTargetCues
+                .Where(value =>
+                    value.Target.Kind == BoardObjectKind.Hero &&
+                    value.ConsequenceIntent == BoardTargetConsequenceIntent.Attack)
+                .Select(value => value.Target.HeroId));
+            if (AttackTargetDefensePreviews.Any(value => value == null) ||
+                AttackTargetDefensePreviews.Select(value => value.HeroId).Distinct().Count() !=
+                    AttackTargetDefensePreviews.Count ||
+                AttackTargetDefensePreviews.Any(value =>
+                    !attackIntentHeroIds.Contains(value.HeroId)))
+            {
+                throw new ArgumentException(
+                    "Attack-target Defense previews must name unique projected heroes with Attack intent.",
+                    nameof(attackTargetDefensePreviews));
             }
 
             CorrectionDestination = correctionDestination;
@@ -632,6 +652,7 @@ namespace GuardsDigital.Presentation.Match
         public HeroId FocusedHeroId { get; }
         public IReadOnlyList<HexCoordinate> FastTravelDestinations { get; }
         public IReadOnlyList<MinionDefenseCueViewModel> MinionDefenseCues { get; }
+        public IReadOnlyList<AttackTargetDefensePreviewProjection> AttackTargetDefensePreviews { get; }
 
         /// <summary>
         /// The one stable-identity cue projection consumed by hero, minion, and token views. Attack,
@@ -887,7 +908,8 @@ namespace GuardsDigital.Presentation.Match
                     projection.PendingHeroRespawnChoice?.Destinations
                         .Select(destination => destination.Coordinate),
                     CreateSystemTransitionDestinations(projection),
-                    SelectableEffectChoiceMovementDestinations(projection));
+                    SelectableEffectChoiceMovementDestinations(projection),
+                    projection.PendingAttackTargetDefensePreviews);
             }
 
             view.Render(lastViewModel);
@@ -2112,6 +2134,22 @@ namespace GuardsDigital.Presentation.Match
         public TrayCardViewModel Card { get; }
     }
 
+    public sealed class DefenseContributionRowViewModel
+    {
+        public DefenseContributionRowViewModel(int amount, string sourceLabel)
+        {
+            Amount = amount;
+            SourceLabel = string.IsNullOrWhiteSpace(sourceLabel)
+                ? throw new ArgumentException(
+                    "A Defense contribution row requires a source label.", nameof(sourceLabel))
+                : sourceLabel;
+        }
+
+        public int Amount { get; }
+        public string SourceLabel { get; }
+        public string SignedAmount => Amount >= 0 ? $"+{Amount}" : Amount.ToString();
+    }
+
     public sealed class DefenseBreakdownViewModel
     {
         public DefenseBreakdownViewModel(
@@ -2121,7 +2159,13 @@ namespace GuardsDigital.Presentation.Match
             CardInstanceId? cardInstanceId,
             string title,
             string text,
-            AttackResolutionOutcome outcome)
+            AttackResolutionOutcome outcome,
+            IEnumerable<DefenseContributionRowViewModel> attackRows,
+            int attackTotal,
+            IEnumerable<DefenseContributionRowViewModel> defenseRows,
+            int? defenseTotal,
+            DefenseBlockResult blockResult,
+            string resultStatement)
         {
             Version = version;
             ResolutionId = resolutionId;
@@ -2134,6 +2178,23 @@ namespace GuardsDigital.Presentation.Match
                 ? throw new ArgumentException("A Defense breakdown requires text.", nameof(text))
                 : text;
             Outcome = outcome;
+            AttackRows = Array.AsReadOnly((attackRows ??
+                throw new ArgumentNullException(nameof(attackRows))).ToArray());
+            DefenseRows = Array.AsReadOnly((defenseRows ??
+                throw new ArgumentNullException(nameof(defenseRows))).ToArray());
+            if (AttackRows.Sum(value => value.Amount) != attackTotal ||
+                (defenseTotal.HasValue && DefenseRows.Sum(value => value.Amount) != defenseTotal.Value))
+            {
+                throw new ArgumentException(
+                    "Defense breakdown totals must equal their typed contribution rows.");
+            }
+            AttackTotal = attackTotal;
+            DefenseTotal = defenseTotal;
+            BlockResult = blockResult;
+            ResultStatement = string.IsNullOrWhiteSpace(resultStatement)
+                ? throw new ArgumentException(
+                    "A Defense breakdown requires a result statement.", nameof(resultStatement))
+                : resultStatement;
         }
 
         public long Version { get; }
@@ -2143,6 +2204,12 @@ namespace GuardsDigital.Presentation.Match
         public string Title { get; }
         public string Text { get; }
         public AttackResolutionOutcome Outcome { get; }
+        public IReadOnlyList<DefenseContributionRowViewModel> AttackRows { get; }
+        public int AttackTotal { get; }
+        public IReadOnlyList<DefenseContributionRowViewModel> DefenseRows { get; }
+        public int? DefenseTotal { get; }
+        public DefenseBlockResult BlockResult { get; }
+        public string ResultStatement { get; }
     }
 
     public sealed class FastTravelOfferViewModel
@@ -4270,6 +4337,15 @@ namespace GuardsDigital.Presentation.Match
                     : "RESULT: ATTACK SUCCEEDS");
             }
 
+            var resultStatement = choice.BlockResult == DefenseBlockResult.Blocked
+                ? "BLOCK — DEFENDED"
+                : choice.BlockResult == DefenseBlockResult.ConditionUnfulfilled
+                    ? "DEFEATED"
+                    : !choice.DefenseTotal.HasValue
+                        ? "NO DEFENSE — ATTACK SUCCEEDS"
+                        : choice.Outcome == AttackResolutionOutcome.SuccessfullyDefended
+                            ? "DEFENDED"
+                            : "ATTACK SUCCEEDS";
             return new DefenseBreakdownViewModel(
                 version,
                 preview.ResolutionId,
@@ -4279,8 +4355,19 @@ namespace GuardsDigital.Presentation.Match
                     ? "DEFENSE PREVIEW: DECLINE"
                     : $"DEFENSE PREVIEW: {choice.ChoiceLabel.ToUpperInvariant()}",
                 string.Join("\n", lines),
-                choice.Outcome);
+                choice.Outcome,
+                preview.AttackContributions.Select(CreateBreakdownRow),
+                preview.AttackTotal,
+                choice.DefenseContributions.Select(CreateBreakdownRow),
+                choice.DefenseTotal,
+                choice.BlockResult,
+                resultStatement);
         }
+
+        private static DefenseContributionRowViewModel CreateBreakdownRow(
+            ValueContributionProjection contribution) =>
+            new DefenseContributionRowViewModel(
+                contribution.Amount, contribution.SourceLabel);
 
         private static string FormatContribution(ValueContributionProjection contribution)
         {

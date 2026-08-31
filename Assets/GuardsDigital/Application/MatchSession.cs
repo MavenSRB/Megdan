@@ -2,14 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Application
 {
@@ -871,6 +874,11 @@ namespace GuardsDigital.Application
                     .ToArray()
                 : Array.Empty<ClearOptionProjection>();
             var defensePreview = CreateDefensePreview(turn, turnModifications, round.HeroItems);
+            var effectChoicePreview = turn?.DescribePendingEffectChoice(
+                    configuration.CardDefinitions, turnModifications) ??
+                Array.Empty<EffectChoiceCandidatePreview>();
+            var attackTargetDefensePreviews = CreateAttackTargetDefensePreviews(
+                turn, effectChoicePreview);
             // Reads the aggregate's memo rather than re-serializing state the previous command
             // already captured. Neither the payload string nor the diagnostic envelope is built
             // here at all: the projection assembles each on demand from the same immutable capture,
@@ -919,7 +927,7 @@ namespace GuardsDigital.Application
                 turn?.PendingSkillResolution,
                 turn?.PendingEffectChoice,
                 round.PendingDisplacedMinionCorrection,
-                turn?.DescribePendingEffectChoice(configuration.CardDefinitions, turnModifications),
+                effectChoicePreview,
                 availableClearOptions,
                 turn?.PendingImmediateLanePush,
                 round.SystemTransitions.PendingStep,
@@ -936,7 +944,8 @@ namespace GuardsDigital.Application
                 // Milestone 8.23a. The register itself, not a copy of what it said: the same object
                 // p.8's cleanup and p.13's Defeat return markers to, so a reading of it can never
                 // outlive the attachment it describes.
-                round?.Markers.Attachments);
+                round?.Markers.Attachments,
+                attackTargetDefensePreviews);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;
@@ -1105,6 +1114,43 @@ namespace GuardsDigital.Application
                 attack.AttackTotal,
                 projectedChoices,
                 minionContributions.Select(ProjectContribution));
+        }
+
+        private IReadOnlyList<AttackTargetDefensePreviewProjection>
+            CreateAttackTargetDefensePreviews(
+                TurnResolutionAuthority turn,
+                IReadOnlyList<EffectChoiceCandidatePreview> effectChoicePreviews)
+        {
+            var heroIds = new List<HeroId>();
+            var attackChoice = turn?.PendingAttackTargetChoice;
+            if (attackChoice != null)
+            {
+                heroIds.AddRange(attackChoice.LegalTargetHeroIds);
+            }
+
+            var effectChoice = turn?.PendingEffectChoice;
+            if (effectChoice != null)
+            {
+                heroIds.AddRange((effectChoicePreviews ??
+                        throw new ArgumentNullException(nameof(effectChoicePreviews)))
+                    .Where(preview =>
+                        preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Attack &&
+                        preview.Occupant.Kind == BoardObjectKind.Hero &&
+                        effectChoice.SelectInvocations.Any(invocation =>
+                            invocation.Candidate.Equals(
+                                EffectChoiceCandidate.Value_(preview.CandidateValue))))
+                    .Select(preview => preview.Occupant.HeroId));
+            }
+
+            return Array.AsReadOnly(heroIds.Distinct()
+                .Select(heroId => new AttackTargetDefensePreviewProjection(
+                    heroId,
+                    DefenseValueQuery.CalculateMinionContributions(
+                            heroId,
+                            configuration.Participants,
+                            board)
+                        .Select(ProjectContribution)))
+                .ToArray());
         }
 
         private ValueContributionProjection ProjectContribution(ValueContribution contribution)

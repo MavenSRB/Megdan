@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30i Read Defense participation and its breakdown through the corrected shine language completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30i | Authority now projects each legal hero Attack candidate's unique signed minion Defense contributions for ordinary target choice and typed Attack-intent effects such as Brogan's Charge, and presentation consumes that projection without rederiving rules. Hover retains blood-red target corners while lighting all six occupied-hex corners green or red for contributors, including a layered coexistence treatment; leaving clears speculation, minion targets do not preview, and the floating badge is retired. Chosen Defense offers use complete compact faces, exact typed click/drag invocations, the pewter decline lane below `DIRECTOR`, and a structured typed breakdown of rows, totals, block and result. The corrective regression passed 1/1, directly affected Play Mode passed 18/18, the final non-batch visual pair passed 2/2, and the retained final affected Edit Mode run passed 195/195; four fresh captures at 2560x1440 and 2048x1152 were inspected. Review found and closed the label-free Defense row's empty-section misclassification and the deterministic hover-shine fixture mismatch; no remaining player-experience, rules-authority, maintainability, or project-risk defect was demonstrated, and rules, commands, schema v34, compatibility, private artwork and networking remain unchanged. | `pending` |
+
 ## Milestone 8.30h Illuminate board choices through all six printed hex-corner marks completion evidence
 
 | ID | Outcome | Commit |

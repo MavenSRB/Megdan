@@ -158,6 +158,38 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(candidates, Is.Not.Empty,
                 "A unit selection is answered on the map, never as a prompt list. " +
                 Remaining(runtime));
+            var hero = Object.FindObjectsByType<PrimitiveHeroView>()
+                .FirstOrDefault(view => candidates.Any(candidate =>
+                    candidate.Space.Equals(view.Occupancy.Coordinate)));
+            Assert.That(hero, Is.Not.Null,
+                "This charge staging offers the adjacent enemy hero as well as the minion; the " +
+                "hero arm is the regression for its pre-target Defense-contribution hover.");
+            var heroPreview = runtime.ReadModel.PendingAttackTargetDefensePreviews
+                .Single(value => value.HeroId.Equals(hero.Occupancy.HeroId));
+            Assert.That(heroPreview.MinionContributions, Is.Not.Empty,
+                "The staged charge hero needs a minion modifier so its hover proves a visible cue.");
+            Physics.SyncTransforms();
+            yield return null;
+            Assert.That(pointerInput.RefreshHoverFromPointerRay(
+                    new Ray(hero.transform.position + (Vector3.up * 10f), Vector3.down)), Is.True,
+                "Hovering the Attack-intent hero candidate must be claimed without selecting it.");
+            // RefreshHoverFromPointerRay redraws synchronously. Do not yield to the component's live
+            // Update here: the automated pointer is deliberately elsewhere and would describe a
+            // different hover before these assertions can inspect the supplied regression ray.
+            Assert.That(Tile(hero.Occupancy.Coordinate).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack),
+                "The charged hero remains a blood-red Attack target while its Defense is previewed.");
+            foreach (var contribution in heroPreview.MinionContributions)
+            {
+                var state = runtime.BoardView.Model.Minions.Single(value =>
+                    value.MinionId.Equals(contribution.SourceMinionId));
+                Assert.That(Tile(state.Coordinate).CornerHighlight.ContributionKind,
+                    Is.EqualTo(contribution.Amount > 0
+                        ? HexCornerHighlightKind.DefensePositive
+                        : HexCornerHighlightKind.DefenseNegative));
+            }
+            runtime.BoardView.SetHoveredCoordinate(null);
+            yield return null;
             var minion = Object.FindObjectsByType<StandardMinionView>()
                 .FirstOrDefault(view => view.Occupancy != null &&
                     candidates.Any(candidate => candidate.Space.Equals(view.Occupancy.Coordinate)));

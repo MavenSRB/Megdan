@@ -77,6 +77,7 @@ namespace GuardsDigital.Application
         PendingMovementChoice PendingMovementChoice { get; }
         PendingAttackResolution PendingAttackResolution { get; }
         PendingAttackTargetChoice PendingAttackTargetChoice { get; }
+        IReadOnlyList<AttackTargetDefensePreviewProjection> PendingAttackTargetDefensePreviews { get; }
         PendingDefenseResponseChoice PendingDefenseChoice { get; }
         PendingDefensePreviewProjection PendingDefensePreview { get; }
         PendingResolution PendingSkillResolution { get; }
