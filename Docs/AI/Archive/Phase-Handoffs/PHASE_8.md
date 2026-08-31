@@ -6,7 +6,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.30f1 | Unity 6000.5.9f1 and revision `b57deb96f08d` now drive the project, launchers, live recipes and platform authorities; Searcher resolves from 4.9.4 to 4.9.5 and Project Auditor only reorders unchanged thresholds. Smart App Control stayed enforced, Defender stayed active, and no 6000.5.9f1 UI Toolkit source-generator block occurred. The stale Confirm Play assertion recorded its 249/250 failure against End Turn's retired corner, then passed against the accepted below-`DIRECTOR` rectangle; focused Edit is 84/84, the closing Play check 1/1, complete Edit 2,075/2,075, complete Play 250/250, and all launcher contract cases 17/17. No production HUD, rule, command, schema, content, selected networking package, or source artwork changed. | pending |
+| 8.30f1 | Unity 6000.5.9f1 and revision `b57deb96f08d` now drive the project, launchers, live recipes and platform authorities; Searcher resolves from 4.9.4 to 4.9.5 and Project Auditor only reorders unchanged thresholds. Smart App Control stayed enforced, Defender stayed active, and no 6000.5.9f1 UI Toolkit source-generator block occurred. The stale Confirm Play assertion recorded its 249/250 failure against End Turn's retired corner, then passed against the accepted below-`DIRECTOR` rectangle; focused Edit is 84/84, the closing Play check 1/1, complete Edit 2,075/2,075, complete Play 250/250, and all launcher contract cases 17/17. No production HUD, rule, command, schema, content, selected networking package, or source artwork changed. | `166d432f` |
 
 ## Milestone 8.30f Recompose the turn controls and correct small HUD readings completion evidence
 
