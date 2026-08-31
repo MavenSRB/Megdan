@@ -125,6 +125,10 @@ namespace GuardsDigital.Tests.EditMode
                 "`a different empty space` offers only empty spaces.");
             Assert.That(preview.All(value => value.ResultingCoordinate == null), Is.True,
                 "Nothing consumes this choice with an operation that relocates what stands there.");
+            Assert.That(preview.All(value =>
+                    value.ConsequenceIntent == EffectChoiceConsequenceIntent.Movement), Is.True,
+                "A Place destination uses the shared green movement/placement board language even " +
+                "though p.18 does not make Place count as Movement in the rules.");
             Assert.That(preview.Any(value => value.Coordinate.Equals(RedAt)), Is.False,
                 "The actor's own space is not among them, so nothing is previewed for it.");
         }

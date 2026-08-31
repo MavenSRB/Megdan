@@ -164,10 +164,10 @@ namespace GuardsDigital.Tests.EditMode
                         "Selection state is forwarded from the pending choice rather than inferred " +
                         "from hover or occupancy.");
                     Assert.That(cue.ConsequenceIntent,
-                        Is.EqualTo(preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Removal
-                            ? BoardTargetConsequenceIntent.Removal
-                            : BoardTargetConsequenceIntent.Affect),
-                        "The ring palette follows the authority preview's typed invoked consequence.");
+                        Is.EqualTo(ExpectedBoardIntent(
+                            session.Projection, choice.ChooserId, preview)),
+                        "The board palette follows the authority preview's typed invoked consequence " +
+                        "and reserves warm ivory for a teammate.");
                     Assert.That(promptControls, Has.No.Member(command),
                         $"and the candidate on option node '{candidate.OptionNodeId.Value}' keeps no " +
                         "prompt control, because two ways to say one thing is one of them redundant.");
@@ -604,6 +604,35 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingDefenseChoice, Is.Not.Null,
                 "The Attack must reach p.14's Defense response.");
             return session;
+        }
+
+        private static BoardTargetConsequenceIntent ExpectedBoardIntent(
+            IMatchReadModel projection,
+            HeroId chooserId,
+            EffectChoiceCandidatePreview preview)
+        {
+            if (preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Removal)
+            {
+                return BoardTargetConsequenceIntent.Removal;
+            }
+
+            if (preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Attack)
+            {
+                return BoardTargetConsequenceIntent.Attack;
+            }
+
+            var chooserSide = projection.Participants.GetTeamForHero(chooserId).Side;
+            var isTeammate = preview.Occupant.Kind == BoardObjectKind.Hero
+                ? projection.Participants.GetTeamForHero(preview.Occupant.HeroId).Side == chooserSide
+                : preview.Occupant.Kind == BoardObjectKind.Minion
+                    ? projection.Minions.Single(value =>
+                        value.MinionId.Equals(preview.Occupant.MinionId)).TeamSide == chooserSide
+                    : preview.Occupant.Kind == BoardObjectKind.Token &&
+                      projection.Participants.GetTeamForHero(projection.PlacedTokens.Single(value =>
+                          value.Id.Equals(preview.Occupant.TokenInstanceId)).ControllerHeroId).Side == chooserSide;
+            return isTeammate
+                ? BoardTargetConsequenceIntent.Ally
+                : BoardTargetConsequenceIntent.Affect;
         }
 
         private static ActionDefinition ActionOf(IMatchSession session, ActionOffer offer) =>

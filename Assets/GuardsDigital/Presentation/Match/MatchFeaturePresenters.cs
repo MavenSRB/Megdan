@@ -68,7 +68,8 @@ namespace GuardsDigital.Presentation.Match
 
             if (consequenceIntent != BoardTargetConsequenceIntent.Affect &&
                 consequenceIntent != BoardTargetConsequenceIntent.Removal &&
-                consequenceIntent != BoardTargetConsequenceIntent.Attack)
+                consequenceIntent != BoardTargetConsequenceIntent.Attack &&
+                consequenceIntent != BoardTargetConsequenceIntent.Ally)
             {
                 throw new ArgumentOutOfRangeException(nameof(consequenceIntent));
             }
@@ -529,7 +530,8 @@ namespace GuardsDigital.Presentation.Match
             HexCoordinate? effectChoiceResultingSpace = null,
             HexCoordinate? heroRespawnHighlight = null,
             IEnumerable<HexCoordinate> heroRespawnDestinations = null,
-            IEnumerable<SystemTransitionDestinationViewModel> systemTransitionDestinations = null)
+            IEnumerable<SystemTransitionDestinationViewModel> systemTransitionDestinations = null,
+            IEnumerable<HexCoordinate> effectChoiceMovementDestinations = null)
         {
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
@@ -573,6 +575,14 @@ namespace GuardsDigital.Presentation.Match
             CorrectionDestination = correctionDestination;
             EffectChoiceDestinations = Array.AsReadOnly((effectChoiceDestinations ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
+            EffectChoiceMovementDestinations = Array.AsReadOnly((effectChoiceMovementDestinations ??
+                Enumerable.Empty<HexCoordinate>()).ToArray());
+            if (EffectChoiceMovementDestinations.Any(value => !EffectChoiceDestinations.Contains(value)))
+            {
+                throw new ArgumentException(
+                    "An effect movement destination must also be a selectable effect destination.",
+                    nameof(effectChoiceMovementDestinations));
+            }
             HeroRespawnDestinations = Array.AsReadOnly((heroRespawnDestinations ??
                 Enumerable.Empty<HexCoordinate>()).ToArray());
             SystemTransitionDestinations = Array.AsReadOnly((systemTransitionDestinations ??
@@ -650,6 +660,12 @@ namespace GuardsDigital.Presentation.Match
         /// control, because the board already says everything the control would have.
         /// </summary>
         public IReadOnlyList<HexCoordinate> EffectChoiceDestinations { get; }
+
+        /// <summary>
+        /// The subset whose typed consuming operation is a direct Move, Place, Spawn, or token Place.
+        /// It remains an effect choice for submission while sharing Movement's green board language.
+        /// </summary>
+        public IReadOnlyList<HexCoordinate> EffectChoiceMovementDestinations { get; }
 
         /// <summary>
         /// Milestone 8.11a: every space p.7's Hero Respawn offers, marked so the choice is made on the
@@ -870,7 +886,8 @@ namespace GuardsDigital.Presentation.Match
                     highlightedRespawnSpace,
                     projection.PendingHeroRespawnChoice?.Destinations
                         .Select(destination => destination.Coordinate),
-                    CreateSystemTransitionDestinations(projection));
+                    CreateSystemTransitionDestinations(projection),
+                    SelectableEffectChoiceMovementDestinations(projection));
             }
 
             view.Render(lastViewModel);
@@ -1021,6 +1038,19 @@ namespace GuardsDigital.Presentation.Match
         private static IReadOnlyList<HexCoordinate> SelectableEffectChoiceDestinations(
             IMatchReadModel projection) =>
             SelectableEffectChoiceSpaces(projection, emptyOnly: true);
+
+        private static IReadOnlyList<HexCoordinate> SelectableEffectChoiceMovementDestinations(
+            IMatchReadModel projection)
+        {
+            var selectable = new HashSet<HexCoordinate>(SelectableEffectChoiceDestinations(projection));
+            return projection.PendingEffectChoicePreview
+                .Where(value =>
+                    !value.NamesObject &&
+                    value.ConsequenceIntent == EffectChoiceConsequenceIntent.Movement &&
+                    selectable.Contains(value.Coordinate))
+                .Select(value => value.Coordinate)
+                .ToArray();
+        }
 
         /// <summary>
         /// Milestone 8.11a: every space a click can answer this choice on, occupied or not.
@@ -1208,6 +1238,10 @@ namespace GuardsDigital.Presentation.Match
                         isSelected ? BoardTargetCueState.Selected : BoardTargetCueState.Eligible,
                         preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Removal
                             ? BoardTargetConsequenceIntent.Removal
+                            : preview.ConsequenceIntent == EffectChoiceConsequenceIntent.Attack
+                                ? BoardTargetConsequenceIntent.Attack
+                                : IsTeammate(projection, effectChoice.ChooserId, preview.Occupant)
+                                    ? BoardTargetConsequenceIntent.Ally
                             : BoardTargetConsequenceIntent.Affect);
                 }
             }
@@ -1232,6 +1266,34 @@ namespace GuardsDigital.Presentation.Match
                 .OrderBy(value => value.Target.Kind)
                 .ThenBy(value => value.Target.ToString(), StringComparer.Ordinal)
                 .ToArray();
+        }
+
+        private static bool IsTeammate(
+            IMatchReadModel projection,
+            HeroId chooserId,
+            BoardObjectReference target)
+        {
+            if (!chooserId.IsDefined || !target.IsDefined)
+            {
+                return false;
+            }
+
+            var chooserSide = projection.Participants.GetTeamForHero(chooserId).Side;
+            switch (target.Kind)
+            {
+                case BoardObjectKind.Hero:
+                    return projection.Participants.GetTeamForHero(target.HeroId).Side == chooserSide;
+                case BoardObjectKind.Minion:
+                    return projection.Minions.Single(value => value.MinionId.Equals(target.MinionId))
+                        .TeamSide == chooserSide;
+                case BoardObjectKind.Token:
+                    var controller = projection.PlacedTokens
+                        .Single(value => value.Id.Equals(target.TokenInstanceId)).ControllerHeroId;
+                    return controller.IsDefined &&
+                        projection.Participants.GetTeamForHero(controller).Side == chooserSide;
+                default:
+                    return false;
+            }
         }
 
         private static BoardObjectReference BoardReference(RuleObject unit)

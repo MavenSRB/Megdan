@@ -186,6 +186,47 @@ namespace GuardsDigital.Tests.EditMode
                 Is.Not.EqualTo(HexCornerHighlightTemplate.AttackColor));
         }
 
+        [Test]
+        public void TeammateActions_KeepTheWarmIvoryCornersWhileOtherEffectsStayNeutral()
+        {
+            var allyTile = Tile(new HexCoordinate(0, 0));
+            var neutralTile = Tile(new HexCoordinate(1, 0));
+            var ally = new HeroId("ally");
+            var affected = new HeroId("affected");
+            var view = View(new[] { allyTile, neutralTile });
+
+            view.Render(new BoardInteractionViewModel(
+                1,
+                new[]
+                {
+                    new HeroOccupancy(ally, allyTile.Coordinate),
+                    new HeroOccupancy(affected, neutralTile.Coordinate)
+                },
+                Array.Empty<GuardsDigital.Core.Units.Minions.MinionOccupancy>(),
+                Array.Empty<HexCoordinate>(),
+                Array.Empty<HeroId>(),
+                Array.Empty<GuardsDigital.Core.Setup.MinionId>(),
+                default,
+                pieceTargetCues: new[]
+                {
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForHero(ally),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Ally),
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForHero(affected),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Affect)
+                }));
+
+            Assert.That(allyTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Ally));
+            Assert.That(neutralTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Effect));
+            Assert.That(HexCornerHighlightTemplate.AllyColor,
+                Is.EqualTo(new Color(0.92f, 0.90f, 0.80f, 1f)));
+            Assert.That(HexCornerHighlightTemplate.AllyColor,
+                Is.Not.EqualTo(HexCornerHighlightTemplate.EffectColor));
+        }
+
         private HexTileView Tile(HexCoordinate coordinate)
         {
             var gameObject = new GameObject("Tile " + coordinate);

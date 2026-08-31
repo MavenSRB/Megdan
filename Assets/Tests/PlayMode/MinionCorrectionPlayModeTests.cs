@@ -183,7 +183,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "Milestone 6.2d: the board lights the endpoint being pointed at, and only that one.");
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(destinations[1])).CornerHighlight.Kind,
-                Is.EqualTo(HexCornerHighlightKind.Effect));
+                Is.EqualTo(HexCornerHighlightKind.Movement));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(destinations[0])).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.None));

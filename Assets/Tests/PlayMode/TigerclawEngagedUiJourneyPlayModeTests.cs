@@ -105,6 +105,10 @@ namespace GuardsDigital.Tests.PlayMode
             var crossed = offered[0].Occupancy.MinionId;
             var crossedAt = offered[0].Occupancy.Coordinate;
             var line = StandingNode(runtime);
+            Assert.That(Tile(crossedAt).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack),
+                "Although Blink Strike moves Tigerclaw through this piece, the clicked piece is the " +
+                "Attack target and therefore uses blood red.");
 
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, offered[0].transform.position), Is.True,
                 "The line is answered by clicking the unit he crosses.");

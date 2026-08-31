@@ -20,7 +20,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     {
         None = 0,
         Affect = 1,
-        Removal = 2
+        Removal = 2,
+        Movement = 3,
+        Attack = 4
     }
 
     /// <summary>
@@ -62,7 +64,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             }
 
             if (consequenceIntent != EffectChoiceConsequenceIntent.Affect &&
-                consequenceIntent != EffectChoiceConsequenceIntent.Removal)
+                consequenceIntent != EffectChoiceConsequenceIntent.Removal &&
+                consequenceIntent != EffectChoiceConsequenceIntent.Movement &&
+                consequenceIntent != EffectChoiceConsequenceIntent.Attack)
             {
                 throw new ArgumentOutOfRangeException(nameof(consequenceIntent));
             }
@@ -154,8 +158,6 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             var pusherAt = default(HexCoordinate);
             var hasPush = TryFindConsumingPush(definition, choice.NodeId, out var push) &&
                 board.TryGetObjectCoordinate(BoardObjectReference.ForHero(actorId), out pusherAt);
-            var consequenceIntent = DescribeConsequenceIntent(definition, choice.NodeId);
-
             var previews = new List<EffectChoiceCandidatePreview>(values.Length);
             var claimed = new Dictionary<HexCoordinate, EffectValue>();
             foreach (var value in values)
@@ -199,7 +201,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 }
 
                 previews.Add(new EffectChoiceCandidatePreview(
-                    value, space, occupant, resulting, consequenceIntent));
+                    value,
+                    space,
+                    occupant,
+                    resulting,
+                    DescribeConsequenceIntent(definition, choice.NodeId, value.Kind)));
             }
 
             return previews;
@@ -212,28 +218,75 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// Every other consumer remains an ordinary piece-affecting intent.
         /// </summary>
         private static EffectChoiceConsequenceIntent DescribeConsequenceIntent(
-            EffectDefinition definition, EffectNodeId choiceNodeId)
+            EffectDefinition definition,
+            EffectNodeId choiceNodeId,
+            EffectValueKind candidateKind)
         {
             var selection = definition.Nodes.SingleOrDefault(node => node.Id.Equals(choiceNodeId));
-            if (selection == null ||
-                !EffectSelectionDeclaration.TryReadConsumer(selection, out var consumerNodeId))
+            if (selection == null)
             {
                 return EffectChoiceConsequenceIntent.Affect;
             }
 
-            var consumer = definition.Nodes.SingleOrDefault(node => node.Id.Equals(consumerNodeId));
-            if (consumer == null || consumer.Kind != EffectNodeKind.Capability)
+            var consumers = new List<EffectNodeDefinition> { selection };
+            EffectNodeDefinition declaredConsumer = null;
+            if (EffectSelectionDeclaration.TryReadConsumer(selection, out var declaredConsumerId))
             {
-                return EffectChoiceConsequenceIntent.Affect;
+                var declared = definition.Nodes.SingleOrDefault(node => node.Id.Equals(declaredConsumerId));
+                if (declared != null)
+                {
+                    declaredConsumer = declared;
+                    consumers.Add(declared);
+                }
             }
 
-            var capabilityId = consumer.Capability.CapabilityId;
-            return capabilityId.Equals(SyntheticExchangeCapabilities.Remove) ||
-                capabilityId.Equals(SyntheticConsequenceCapabilities.DefeatHero) ||
-                capabilityId.Equals(SyntheticConsequenceCapabilities.DefeatMinion)
-                    ? EffectChoiceConsequenceIntent.Removal
-                    : EffectChoiceConsequenceIntent.Affect;
+            // A compound selection can publish more than one typed answer. Brogan's charge, for
+            // example, publishes a Coordinate to Direct Move and a Hero/Minion to Set Attack Target.
+            // Follow only bindings of this candidate's value kind so each stage gets the meaning of
+            // the operation that will consume that answer.
+            consumers.AddRange(definition.Nodes.Where(node =>
+                node.Inputs.Any(input =>
+                    input.SourceKind == EffectBindingSourceKind.NodeOutput &&
+                    input.SourceNodeId.Equals(choiceNodeId) &&
+                    input.ValueKind == candidateKind)));
+
+            var capabilities = consumers
+                .Where(node => node.Kind == EffectNodeKind.Capability)
+                .Select(node => node.Capability.CapabilityId)
+                .Distinct()
+                .ToArray();
+            if (declaredConsumer != null &&
+                declaredConsumer.Kind == EffectNodeKind.Capability &&
+                IsRemoval(declaredConsumer.Capability.CapabilityId))
+            {
+                return EffectChoiceConsequenceIntent.Removal;
+            }
+
+            if (capabilities.Contains(SyntheticContinuationCapabilities.SetAttackTarget))
+            {
+                return EffectChoiceConsequenceIntent.Attack;
+            }
+
+            if (candidateKind == EffectValueKind.Coordinate && capabilities.Any(IsMovementOrPlacement))
+            {
+                return EffectChoiceConsequenceIntent.Movement;
+            }
+
+            return EffectChoiceConsequenceIntent.Affect;
         }
+
+        private static bool IsRemoval(EffectCapabilityId capabilityId) =>
+            capabilityId.Equals(SyntheticExchangeCapabilities.Remove) ||
+            capabilityId.Equals(SyntheticConsequenceCapabilities.DefeatHero) ||
+            capabilityId.Equals(SyntheticConsequenceCapabilities.DefeatMinion);
+
+        private static bool IsMovementOrPlacement(EffectCapabilityId capabilityId) =>
+            capabilityId.Equals(SyntheticDisplacementCapabilities.DirectMove) ||
+            capabilityId.Equals(SyntheticPlacementCapabilities.Place) ||
+            capabilityId.Equals(SyntheticPlacementCapabilities.PlaceInRange) ||
+            capabilityId.Equals(SyntheticPlacementCapabilities.PlaceInRadius) ||
+            capabilityId.Equals(SyntheticPlacementCapabilities.Spawn) ||
+            capabilityId.Equals(SyntheticComponentCapabilities.PlaceToken);
 
         /// <summary>
         /// The space a candidate's value puts the chooser on: the coordinate it carries, or - milestone

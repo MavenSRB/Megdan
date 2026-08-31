@@ -24,7 +24,8 @@ namespace GuardsDigital.Presentation.Board
         None = 0,
         Affect = 1,
         Removal = 2,
-        Attack = 3
+        Attack = 3,
+        Ally = 4
     }
 
     /// <summary>
@@ -291,7 +292,8 @@ namespace GuardsDigital.Presentation.Board
 
             if (consequenceIntent != BoardTargetConsequenceIntent.Affect &&
                 consequenceIntent != BoardTargetConsequenceIntent.Removal &&
-                consequenceIntent != BoardTargetConsequenceIntent.Attack)
+                consequenceIntent != BoardTargetConsequenceIntent.Attack &&
+                consequenceIntent != BoardTargetConsequenceIntent.Ally)
             {
                 throw new ArgumentOutOfRangeException(nameof(consequenceIntent));
             }

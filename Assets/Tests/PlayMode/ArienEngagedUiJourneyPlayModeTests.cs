@@ -182,7 +182,7 @@ namespace GuardsDigital.Tests.PlayMode
             var destination = destinations[0];
             var tile = Tile(destination);
             Assert.That(tile.IsHighlighted, Is.False);
-            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Effect));
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Movement));
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, tile.transform.position), Is.True);
             yield return null;
 
@@ -730,8 +730,8 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 Assert.That(Tile(space).IsHighlighted, Is.False);
                 Assert.That(Tile(space).CornerHighlight.Kind,
-                    Is.EqualTo(HexCornerHighlightKind.Effect),
-                    $"Every offered space must carry neutral corners before it is clicked; {space} does not.");
+                    Is.EqualTo(HexCornerHighlightKind.Movement),
+                    $"Every offered Place space must carry green corners before it is clicked; {space} does not.");
             }
 
             var destination = targets[0];

@@ -11,7 +11,8 @@ namespace GuardsDigital.Presentation.Board
         Attack = 2,
         Respawn = 3,
         Effect = 4,
-        EffectResult = 5
+        EffectResult = 5,
+        Ally = 6
     }
 
     /// <summary>
@@ -32,15 +33,18 @@ namespace GuardsDigital.Presentation.Board
         public const string EffectCoreMaterialName = "Effect Corner Shine Core";
         public const string EffectResultHaloMaterialName = "Effect Result Corner Shine Halo";
         public const string EffectResultCoreMaterialName = "Effect Result Corner Shine Core";
+        public const string AllyHaloMaterialName = "Teammate Corner Shine Halo";
+        public const string AllyCoreMaterialName = "Teammate Corner Shine Core";
 
         // The whole board now speaks one six-corner language. Green is travel, cyan is return to the
-        // board, blood red is an Attack or removal, and neutral ivory is every other selectable
-        // effect. A cooler grey keeps an effect's projected landing space distinct from its choice.
+        // board, blood red is an Attack or removal, warm ivory is a teammate, and cool neutral grey
+        // is every other selectable effect. A darker slate keeps a projected result distinct.
         public static readonly Color MovementColor = new Color(0.22f, 1f, 0.48f, 1f);
         public static readonly Color AttackColor = new Color(0.72f, 0.025f, 0.035f, 1f);
         public static readonly Color RespawnColor = new Color(0.05f, 0.78f, 1f, 1f);
-        public static readonly Color EffectColor = new Color(0.92f, 0.90f, 0.80f, 1f);
-        public static readonly Color EffectResultColor = new Color(0.62f, 0.68f, 0.72f, 1f);
+        public static readonly Color AllyColor = new Color(0.92f, 0.90f, 0.80f, 1f);
+        public static readonly Color EffectColor = new Color(0.62f, 0.68f, 0.72f, 1f);
+        public static readonly Color EffectResultColor = new Color(0.42f, 0.48f, 0.55f, 1f);
 
         private readonly Mesh haloMesh;
         private readonly Mesh coreMesh;
@@ -54,6 +58,8 @@ namespace GuardsDigital.Presentation.Board
         private readonly Material effectCore;
         private readonly Material effectResultHalo;
         private readonly Material effectResultCore;
+        private readonly Material allyHalo;
+        private readonly Material allyCore;
 
         public HexCornerHighlightTemplate(float outerRadius)
         {
@@ -77,12 +83,14 @@ namespace GuardsDigital.Presentation.Board
             effectResultHalo = CreateMaterial(EffectResultHaloMaterialName, EffectResultColor);
             effectResultCore = CreateMaterial(EffectResultCoreMaterialName,
                 Color.Lerp(EffectResultColor, Color.white, 0.82f));
+            allyHalo = CreateMaterial(AllyHaloMaterialName, AllyColor);
+            allyCore = CreateMaterial(AllyCoreMaterialName, Color.Lerp(AllyColor, Color.white, 0.82f));
         }
 
         public Mesh HaloMesh => haloMesh;
         public Mesh CoreMesh => coreMesh;
         public int MarkCount => CornerCount;
-        public int OwnedNativeResourceCount => 12;
+        public int OwnedNativeResourceCount => 14;
 
         public Material Halo(HexCornerHighlightKind kind) => kind == HexCornerHighlightKind.Movement
             ? movementHalo
@@ -94,6 +102,8 @@ namespace GuardsDigital.Presentation.Board
                         ? effectHalo
                         : kind == HexCornerHighlightKind.EffectResult
                             ? effectResultHalo
+                            : kind == HexCornerHighlightKind.Ally
+                                ? allyHalo
                             : null;
 
         public Material Core(HexCornerHighlightKind kind) => kind == HexCornerHighlightKind.Movement
@@ -106,6 +116,8 @@ namespace GuardsDigital.Presentation.Board
                         ? effectCore
                         : kind == HexCornerHighlightKind.EffectResult
                             ? effectResultCore
+                            : kind == HexCornerHighlightKind.Ally
+                                ? allyCore
                             : null;
 
         private static Mesh BuildSixCornerMesh(float radius, float halfWidthRatio)
@@ -180,6 +192,8 @@ namespace GuardsDigital.Presentation.Board
             DestroyOwned(effectCore);
             DestroyOwned(effectResultHalo);
             DestroyOwned(effectResultCore);
+            DestroyOwned(allyHalo);
+            DestroyOwned(allyCore);
         }
 
         private static void DestroyOwned(UnityEngine.Object value)

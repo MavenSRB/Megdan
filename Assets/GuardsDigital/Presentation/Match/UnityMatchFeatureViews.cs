@@ -130,18 +130,15 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 6.4b highlighted every correction route endpoint and Place space at once;
             // milestone 6.2d lights the one whose control is being pointed at, because each of them
             // carries its own control and the board was saying nothing the controls did not already.
-            if (model.CorrectionDestination.HasValue)
-            {
-                targetCoordinates.Add(model.CorrectionDestination.Value);
-            }
+            var movementEffectCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
+                model.EffectChoiceMovementDestinations);
             // Milestone 6.5c: an empty effect-choice candidate is a destination like any other, and
             // is the whole surface for that candidate - no control is drawn for it anywhere.
-            targetCoordinates.UnionWith(model.EffectChoiceDestinations);
+            targetCoordinates.UnionWith(model.EffectChoiceDestinations.Where(value =>
+                !movementEffectCoordinates.Contains(value)));
             // Milestone 8.16c: a minion whose Spawn point is blocked is Placed into one of the
             // equally-nearest empty spaces. Those answers are spaces, so every one is lit before the
             // pointer moves and the HUD needs no destination control.
-            targetCoordinates.UnionWith(
-                model.SystemTransitionDestinations.Select(value => value.Destination));
             if (model.EffectChoiceTargetSpace.HasValue)
             {
                 targetCoordinates.Add(model.EffectChoiceTargetSpace.Value);
@@ -166,6 +163,13 @@ namespace GuardsDigital.Presentation.Match
             // projection still distinguishes its typed invocation; only the six-corner treatment is
             // shared here.
             movementCoordinates.UnionWith(model.FastTravelDestinations);
+            movementCoordinates.UnionWith(movementEffectCoordinates);
+            movementCoordinates.UnionWith(
+                model.SystemTransitionDestinations.Select(value => value.Destination));
+            if (model.CorrectionDestination.HasValue)
+            {
+                movementCoordinates.Add(model.CorrectionDestination.Value);
+            }
             var respawnCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
                 model.HeroRespawnDestinations);
             if (model.HeroRespawnHighlight.HasValue)
@@ -180,6 +184,7 @@ namespace GuardsDigital.Presentation.Match
             attackCoordinates.UnionWith(model.Minions
                 .Where(value => attackMinionIds.Contains(value.MinionId))
                 .Select(value => value.Coordinate));
+            var allyCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>();
             foreach (var cue in model.PieceTargetCues.Where(value =>
                          value.State != BoardTargetCueState.None &&
                          (value.ConsequenceIntent == BoardTargetConsequenceIntent.Attack ||
@@ -188,6 +193,15 @@ namespace GuardsDigital.Presentation.Match
                 if (TryResolveCoordinate(model, cue.Target, out var coordinate))
                 {
                     attackCoordinates.Add(coordinate);
+                }
+            }
+            foreach (var cue in model.PieceTargetCues.Where(value =>
+                         value.State != BoardTargetCueState.None &&
+                         value.ConsequenceIntent == BoardTargetConsequenceIntent.Ally))
+            {
+                if (TryResolveCoordinate(model, cue.Target, out var coordinate))
+                {
+                    allyCoordinates.Add(coordinate);
                 }
             }
             foreach (var tile in tiles.Where(value => value.IsPlayable))
@@ -203,7 +217,9 @@ namespace GuardsDigital.Presentation.Match
                         : respawnCoordinates.Contains(tile.Coordinate)
                             ? HexCornerHighlightKind.Respawn
                             : movementCoordinates.Contains(tile.Coordinate)
-                                ? HexCornerHighlightKind.Movement
+                            ? HexCornerHighlightKind.Movement
+                            : allyCoordinates.Contains(tile.Coordinate)
+                                ? HexCornerHighlightKind.Ally
                                 : targetCoordinates.Contains(tile.Coordinate)
                                     ? HexCornerHighlightKind.Effect
                                     : resultingSpace.HasValue &&

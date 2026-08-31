@@ -153,9 +153,9 @@ namespace GuardsDigital.Tests.PlayMode
                 value.Target.Equals(targetReference));
             Assert.That(projected.State, Is.EqualTo(BoardTargetCueState.Eligible));
             Assert.That(projected.ConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Affect),
-                "This exchange mode affects the token; presentation does not infer removal from its " +
-                "name or from a predicted outcome.");
+                Is.EqualTo(BoardTargetConsequenceIntent.Ally),
+                "The token is controlled by the chooser, so this teammate action uses the warm " +
+                "ally language without inferring it from the token's name.");
 
             var marked = runtime.BoardView.TokenViews.Single(value =>
                 value.BoundTokenId.Equals(target.TokenId));
@@ -164,7 +164,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(retainedRing.IsVisible, Is.False);
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(placed)).CornerHighlight.Kind,
-                Is.EqualTo(HexCornerHighlightKind.Effect));
+                Is.EqualTo(HexCornerHighlightKind.Ally));
 
             runtime.HighlightEffectChoiceTarget(placed);
             yield return null;
@@ -176,7 +176,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(placed)).CornerHighlight.Kind,
-                Is.EqualTo(HexCornerHighlightKind.Effect));
+                Is.EqualTo(HexCornerHighlightKind.Ally));
 
             runtime.HighlightEffectChoiceTarget(null);
             yield return null;
@@ -189,7 +189,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(retainedRing.IsVisible, Is.False);
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(placed)).CornerHighlight.Kind,
-                Is.EqualTo(HexCornerHighlightKind.Effect));
+                Is.EqualTo(HexCornerHighlightKind.Ally));
         }
 
         /// <summary>

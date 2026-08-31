@@ -507,7 +507,7 @@ namespace GuardsDigital.Tests.PlayMode
             var tile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(destination));
             Assert.That(tile.IsHighlighted, Is.False);
-            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Effect));
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Movement));
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, tile.transform.position), Is.True);
             yield return null;
@@ -713,8 +713,8 @@ namespace GuardsDigital.Tests.PlayMode
                 var offered = tiles.Single(tile => tile.Coordinate.Equals(destination.Destination));
                 Assert.That(offered.IsHighlighted, Is.False);
                 Assert.That(offered.CornerHighlight.Kind,
-                    Is.EqualTo(HexCornerHighlightKind.Effect),
-                    $"Offered space {destination.Destination} lacks neutral corner marks.");
+                    Is.EqualTo(HexCornerHighlightKind.Movement),
+                    $"Offered placement space {destination.Destination} lacks green corner marks.");
             }
 
             Assert.That(UiPlayer.Describe(root.Hud), Does.Not.Contain("PLACE AT"),

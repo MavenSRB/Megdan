@@ -4268,10 +4268,10 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadScene();
             var first = Root();
             Assert.That(first.OwnsGeneratedHighlightMaterial, Is.False);
-            // 8.30h owns two fixed meshes and ten shared shine materials. The retired destination
+            // 8.30h owns two fixed meshes and twelve shared shine materials. The retired destination
             // fill and rim resources are not allocated by configured composition.
             // The 210 tiles retain renderers only; none owns a material or mesh of its own.
-            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(12));
+            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(14));
             Assert.That(CountHighlightMaterials(), Is.Zero);
             Assert.That(CountResultingSpaceMaterials(), Is.Zero);
             AssertCurrentMinionBindings(first);
@@ -4298,8 +4298,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Has.All.Matches<Material>(value => value == null),
                 "The runtime Destroy branch releases keyline, consequence, and wash materials.");
             var second = Root();
-            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(12),
-                "and a reload rebuilds the same bounded twelve rather than accumulating them.");
+            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(14),
+                "and a reload rebuilds the same bounded fourteen rather than accumulating them.");
             Assert.That(CountHighlightMaterials(), Is.Zero);
             Assert.That(CountResultingSpaceMaterials(), Is.Zero);
             AssertCurrentMinionBindings(second);

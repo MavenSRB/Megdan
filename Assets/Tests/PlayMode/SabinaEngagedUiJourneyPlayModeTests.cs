@@ -172,8 +172,8 @@ namespace GuardsDigital.Tests.PlayMode
             var swapNode = StandingNode(runtime);
             Assert.That(partner.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
             Assert.That(Tile(partnerAt).CornerHighlight.Kind,
-                Is.EqualTo(HexCornerHighlightKind.Effect),
-                "The swap partner is marked by neutral corners where it stands.");
+                Is.EqualTo(HexCornerHighlightKind.Ally),
+                "The friendly swap partner uses the warm teammate corners where it stands.");
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, partner.transform.position), Is.True,
                 "The swap partner is chosen by clicking the miniature where it stands.");
             yield return null;
@@ -324,7 +324,7 @@ namespace GuardsDigital.Tests.PlayMode
             var chosen = FirstClickableSpace(pointerInput, destinations);
             Assert.That(Tile(chosen).IsHighlighted, Is.False);
             Assert.That(Tile(chosen).CornerHighlight.Kind,
-                Is.EqualTo(HexCornerHighlightKind.Effect));
+                Is.EqualTo(HexCornerHighlightKind.Movement));
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, Tile(chosen).transform.position),
                 Is.True);
             yield return null;

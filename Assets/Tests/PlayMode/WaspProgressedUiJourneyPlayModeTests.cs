@@ -710,7 +710,7 @@ namespace GuardsDigital.Tests.PlayMode
             var destination = destinations.First();
             Assert.That(TileAt(destination).IsHighlighted, Is.False);
             Assert.That(TileAt(destination).CornerHighlight.Kind,
-                Is.EqualTo(HexCornerHighlightKind.Effect));
+                Is.EqualTo(HexCornerHighlightKind.Movement));
             return destination;
         }
 

@@ -1105,6 +1105,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Select(value => value.Candidate.Value.Coordinate)
                 .ToArray();
             Assert.That(view.Model.EffectChoiceDestinations, Is.EqualTo(offered));
+            Assert.That(view.Model.EffectChoiceMovementDestinations, Is.EqualTo(offered),
+                "Place is not rules Movement, but choosing where to Place shares the green " +
+                "movement/placement board language.");
             Assert.That(view.Model.EffectChoiceTargetSpace, Is.Null);
             Assert.That(view.Model.EffectChoiceResultingSpace, Is.Null);
 

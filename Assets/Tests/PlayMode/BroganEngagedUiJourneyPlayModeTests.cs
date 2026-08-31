@@ -136,7 +136,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "Every offered line is the two spaces the face prints.");
             Assert.That(Tile(destination).IsHighlighted, Is.False);
             Assert.That(Tile(destination).CornerHighlight.Kind,
-                Is.EqualTo(HexCornerHighlightKind.Effect));
+                Is.EqualTo(HexCornerHighlightKind.Movement),
+                "A before-Attack Move destination uses the same green language as every Move.");
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(destination).transform.position), Is.True);
             yield return null;
@@ -164,6 +165,10 @@ namespace GuardsDigital.Tests.PlayMode
                 "The charge must end beside a miniature this journey can click. Offered: " +
                 string.Join(", ", candidates.Select(candidate => candidate.Space.ToString())));
             var attackedId = minion.Occupancy.MinionId;
+            Assert.That(Tile(minion.Occupancy.Coordinate).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack),
+                "The second half names the Attack target, so it is blood red rather than inheriting " +
+                "the earlier Move's colour or a generic effect colour.");
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, minion.transform.position), Is.True,
                 "The charged-into unit is chosen by clicking it where it stands.");
             yield return null;
