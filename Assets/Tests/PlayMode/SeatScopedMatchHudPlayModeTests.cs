@@ -166,8 +166,9 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>
         /// Milestone 8.30g's successful route at both supported desktop resolutions. The events are
         /// genuine UI Toolkit pointer down/move/up events, the release lands in the board camera's
-        /// live safe surface, and the exact card commits through the seat client without ever drawing
-        /// the click path's confirmation control.
+        /// live safe surface, and the exact full printed face leaves its hand slot and follows the
+        /// pointer before committing through the seat client without ever drawing the click path's
+        /// confirmation control.
         /// </summary>
         [UnityTest]
         public IEnumerator DraggingAnEligibleHandCardOntoTheMap_CommitsItOnceWithoutConfirmation()
@@ -197,8 +198,18 @@ namespace GuardsDigital.Tests.PlayMode
 
                 var target = BeginDrag(card, out _);
                 SendPointerMove(target, drop);
-                Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
-                    .resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+                var dragProxy = Named(root.Hud.RootElement, "gd-card-drag-proxy");
+                Assert.That(dragProxy.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+                Assert.That(dragProxy.Q<VisualElement>("gd-card-preview"), Is.Not.Null,
+                    "Dragging must use the shared complete-card face, not a name-only abstraction.");
+                Assert.That(card.parent.resolvedStyle.visibility, Is.EqualTo(Visibility.Hidden),
+                    "The picked-up card must disappear from its hand slot while the drag stands.");
+                var sourceArtwork = card.Q<Image>("gd-card-artwork")?.image;
+                if (sourceArtwork != null)
+                {
+                    Assert.That(dragProxy.Q<Image>("gd-card-artwork")?.image, Is.SameAs(sourceArtwork),
+                        "A prepared front must carry the exact same card picture under the pointer.");
+                }
                 Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
                     .Any(element => element.name == "gd-confirm-control" && UiPlayer.IsShown(element)),
                     Is.False, "The drag path never selects first and never flashes confirmation.");
@@ -261,6 +272,8 @@ namespace GuardsDigital.Tests.PlayMode
             SendDrag(card, hudChrome);
             yield return null;
             Assert.That(runtime.Host.Version, Is.EqualTo(before));
+            Assert.That(card.parent.resolvedStyle.visibility, Is.EqualTo(Visibility.Visible),
+                "Cancelling the drag must return the exact card to its hand slot.");
             Assert.That(runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId, Is.Null,
                 "An off-map release is cancellation, not click selection.");
 
@@ -269,6 +282,8 @@ namespace GuardsDigital.Tests.PlayMode
             var belowThreshold = start + new Vector2(
                 DirectorHandsUnityView.CardDragThreshold * 0.25f, 0f);
             SendPointerMove(target, belowThreshold);
+            Assert.That(card.parent.resolvedStyle.visibility, Is.EqualTo(Visibility.Visible),
+                "Movement below the threshold must not pick the card up from the hand.");
             SendPointerUp(target, belowThreshold);
             yield return null;
             Assert.That(runtime.Host.Version, Is.EqualTo(before));
@@ -283,6 +298,7 @@ namespace GuardsDigital.Tests.PlayMode
             SendPointerMove(target, root.Hud.CameraSafeLayout.UpperRegion.center);
             Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
                 .resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(card.parent.resolvedStyle.visibility, Is.EqualTo(Visibility.Hidden));
             var oldHost = runtime.Host;
             var seat = runtime.Seat.Id;
 

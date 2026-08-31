@@ -1635,15 +1635,9 @@ namespace GuardsDigital.Presentation.Match
             dragProxy = new VisualElement { name = "gd-card-drag-proxy" };
             dragProxy.style.position = Position.Absolute;
             dragProxy.style.display = DisplayStyle.None;
-            dragProxy.style.width = DragProxyWidth;
-            dragProxy.style.height = DragProxyHeight;
-            dragProxy.style.opacity = 0.86f;
-            dragProxy.style.backgroundColor = MatchHudTheme.PanelBackground;
-            dragProxy.style.flexDirection = FlexDirection.Column;
-            dragProxy.style.justifyContent = Justify.Center;
-            dragProxy.style.alignItems = Align.Center;
+            dragProxy.style.width = CardFootprint.Width;
+            dragProxy.style.height = CardFootprint.Height;
             dragProxy.pickingMode = PickingMode.Ignore;
-            HudElements.Border(dragProxy, MatchHudTheme.SelectedOutline, 3f, 10f);
             // Milestone 8.30d, the user's follow-up decision: the hand-status bar is dead. Its
             // two commands live on as corner banners instead, and the identity/hint line it
             // carried is not rebuilt - the narration and the rails already say it.
@@ -1673,13 +1667,12 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement dragProxy;
         private readonly CardCommitmentDragState dragState = new CardCommitmentDragState();
         private VisualElement dragCapture;
+        private VisualElement draggedCardSlot;
         private Func<Vector2, bool> isMapDropPoint;
         private bool confirmLayoutReady;
         private bool trayHidden;
 
         public const float CardDragThreshold = 12f;
-        internal const float DragProxyWidth = 150f;
-        internal const float DragProxyHeight = 210f;
 
         /// <summary>One corner banner's height; two of them stack inside End Turn's corner rect.</summary>
         public const float CornerBannerHeight = 44f;
@@ -1919,8 +1912,6 @@ namespace GuardsDigital.Presentation.Match
                 name = "gd-card-choice"
             };
             button.text = string.Empty;
-            BindCardDrag(button, card);
-
             // The shared builder owns both complete-face shapes: a prepared printed front at its
             // verified source aspect, or the taller typed generated fallback when no resource exists.
             ConfiguredCardFaceView.Build(button, card);
@@ -1996,6 +1987,7 @@ namespace GuardsDigital.Presentation.Match
                 : card.Face.EmptyTextLabel;
             button.tooltip = $"{card.AssistiveLabel} - {printed}";
             slot.Add(button);
+            BindCardDrag(button, slot, card);
             if (compactPeekMode && !card.IsResolving)
             {
                 // The button, not its overlapping layout slot, owns the pointer. Enter/leave events
@@ -2011,7 +2003,7 @@ namespace GuardsDigital.Presentation.Match
             return slot;
         }
 
-        private void BindCardDrag(Button button, TrayCardViewModel card)
+        private void BindCardDrag(Button button, VisualElement slot, TrayCardViewModel card)
         {
             button.RegisterCallback<PointerDownEvent>(evt =>
             {
@@ -2032,7 +2024,7 @@ namespace GuardsDigital.Presentation.Match
                     return;
                 }
 
-                ShowDragProxy(card, evt.position);
+                ShowDragProxy(card, slot, evt.position);
             }, TrickleDown.TrickleDown);
 
             button.RegisterCallback<PointerUpEvent>(evt =>
@@ -2068,27 +2060,30 @@ namespace GuardsDigital.Presentation.Match
             button.RegisterCallback<DetachFromPanelEvent>(_ => CancelCardDrag());
         }
 
-        private void ShowDragProxy(TrayCardViewModel card, Vector2 pointerPosition)
+        private void ShowDragProxy(
+            TrayCardViewModel card,
+            VisualElement sourceSlot,
+            Vector2 pointerPosition)
         {
             if (dragProxy.childCount == 0)
             {
-                var name = new Label(card.DisplayName)
-                {
-                    name = "gd-card-drag-proxy-name"
-                };
-                name.style.whiteSpace = WhiteSpace.Normal;
-                name.style.unityTextAlign = TextAnchor.MiddleCenter;
-                name.style.unityFontStyleAndWeight = FontStyle.Bold;
-                name.style.fontSize = 16f;
-                name.style.color = MatchHudTheme.PrimaryText;
-                name.style.paddingLeft = 10f;
-                name.style.paddingRight = 10f;
-                dragProxy.Add(name);
+                var face = BuildStandaloneCard(card);
+                IgnorePickingRecursively(face);
+                dragProxy.Add(face);
                 dragProxy.tooltip = "Commit " + card.DisplayName + " facedown";
             }
 
-            dragProxy.style.left = pointerPosition.x - (DragProxyWidth * 0.5f);
-            dragProxy.style.top = pointerPosition.y - (DragProxyHeight * 0.5f);
+            // Keep the hand geometry stable while making it visually unambiguous that the player
+            // picked this one card up. `visibility` removes the painted face without letting the
+            // overlapped siblings close over its slot; cancellation restores exactly that slot.
+            if (draggedCardSlot == null)
+            {
+                draggedCardSlot = sourceSlot;
+                draggedCardSlot.style.visibility = Visibility.Hidden;
+            }
+
+            dragProxy.style.left = pointerPosition.x - (CardFootprint.Width * 0.5f);
+            dragProxy.style.top = pointerPosition.y - (CardFootprint.Height * 0.5f);
             dragProxy.style.display = DisplayStyle.Flex;
             dragProxy.BringToFront();
         }
@@ -2117,6 +2112,12 @@ namespace GuardsDigital.Presentation.Match
 
         private void HideDragProxy()
         {
+            if (draggedCardSlot != null)
+            {
+                draggedCardSlot.style.visibility = Visibility.Visible;
+                draggedCardSlot = null;
+            }
+
             dragProxy.style.display = DisplayStyle.None;
             dragProxy.Clear();
             dragProxy.tooltip = string.Empty;
