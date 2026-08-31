@@ -2092,13 +2092,26 @@ namespace GuardsDigital.Presentation.Match
             bool available,
             bool usesPreparedArtwork)
         {
-            // Milestone 8.30d: the replacement controls wear the card's own banner language - a
-            // swallowtail ribbon grown from the region of the action each replaces (Fast Travel
-            // from the Movement it replaces, Clear from the Attack) - instead of the dark
-            // utility chips that sat beside the art belonging to nothing. The cloth follows the
-            // CARD's printed colour (the user's correction to the original all-gold cut), and
+            // The replacement controls wear the card's own banner language instead of the dark
+            // utility chips that sat beside the art belonging to nothing. A prepared Primary uses
+            // the symmetric title tab approved at 8.30f2; Secondary Fast Travel keeps 8.30d's
+            // side-mounted swallowtail. The cloth follows the CARD's printed colour, and remains
             // text-first by the standing rule: this HUD invents no action glyph.
-            var chip = new ReplacementRibbon(available ? selected : null, available, region.CardColor)
+            var clearAbovePreparedAttack = usesPreparedArtwork &&
+                region.ActionKind == ActionKind.Attack &&
+                string.Equals(label, "CLEAR", StringComparison.Ordinal);
+            var fastTravelAbovePreparedMovement = usesPreparedArtwork &&
+                region.ActionKind == ActionKind.Movement &&
+                string.Equals(label, "FAST TRAVEL", StringComparison.Ordinal);
+            var attachedToPreparedPrimaryTitle =
+                (clearAbovePreparedAttack || fastTravelAbovePreparedMovement) &&
+                region.InvocationContext == ActionInvocationContext.PrintedPrimary;
+            var attachedAbovePreparedAction = attachedToPreparedPrimaryTitle;
+            var chip = new ReplacementRibbon(
+                available ? selected : null,
+                available,
+                region.CardColor,
+                attachedToPreparedPrimaryTitle)
             {
                 name = "gd-action-replacement-chip",
                 text = label,
@@ -2107,21 +2120,35 @@ namespace GuardsDigital.Presentation.Match
                     : $"{label} replaces {region.ActionKind} - unavailable",
                 userData = region
             };
+            if (attachedToPreparedPrimaryTitle)
+            {
+                chip.AddToClassList("gd-replacement-primary-tab");
+            }
             chip.SetVisibleLabel(label);
+            if (string.Equals(label, "FAST TRAVEL", StringComparison.Ordinal))
+            {
+                chip.SetTextColor(Color.black);
+            }
             chip.style.position = Position.Absolute;
-            var clearAbovePreparedAttack = usesPreparedArtwork &&
-                region.ActionKind == ActionKind.Attack &&
-                string.Equals(label, "CLEAR", StringComparison.Ordinal);
+            var titleBandTop = actionBounds.y +
+                ((region.ActionKind == ActionKind.Attack ? 40f : 36f) *
+                    CardFootprint.ArtworkHeight / CardFootprint.ArtworkSourceHeight);
+            var attachmentCenterX = attachedToPreparedPrimaryTitle
+                ? CardFootprint.ArtworkWidth * 0.5f
+                : actionBounds.center.x;
             var placeBesidePreparedRegion = usesPreparedArtwork &&
                 !clearAbovePreparedAttack &&
                 actionBounds.xMax + 96f <= CardFootprint.ArtworkWidth;
-            chip.style.left = clearAbovePreparedAttack
-                ? actionBounds.xMax - 92f
+            chip.style.left = attachedAbovePreparedAction
+                ? Mathf.Clamp(
+                    attachmentCenterX - 46f,
+                    0f,
+                    CardFootprint.ArtworkWidth - 92f)
                 : placeBesidePreparedRegion
                     ? actionBounds.xMax - 2f
                     : actionBounds.xMax - 96f;
-            chip.style.top = clearAbovePreparedAttack
-                ? actionBounds.y - 26f
+            chip.style.top = attachedAbovePreparedAction
+                ? (attachedToPreparedPrimaryTitle ? titleBandTop : actionBounds.y) - 22f
                 : placeBesidePreparedRegion
                     ? actionBounds.y + Mathf.Max(0f, (actionBounds.height - 26f) * 0.5f)
                     : usesPreparedArtwork
@@ -2214,11 +2241,10 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// A replacement offer as a gold swallowtail ribbon - the cloth the card's own left banner
-        /// is cut from, hung off the printed action it replaces. It is still exactly the button the
-        /// dark chip was: same forwarding, same availability semantics, same anchor; only the
-        /// clothes changed (milestone 8.30d, user-approved mock). Pointing at it gives the ribbon
-        /// the shared warm shine, so the highlight follows what the player is about to pick.
+        /// A replacement offer in the cloth of its card: a symmetric trapezoid when attached to a
+        /// prepared Primary title, or the established side-mounted swallowtail for Secondary Fast
+        /// Travel. It remains exactly the projected button: same forwarding and availability
+        /// semantics. Pointing at it gives the cloth the shared warm shine.
         /// </summary>
         private sealed class ReplacementRibbon : Button
         {
@@ -2226,18 +2252,25 @@ namespace GuardsDigital.Presentation.Match
 
             private readonly bool available;
             private readonly CardColor cardColor;
+            private readonly bool symmetricTab;
             private bool shineHovered;
 
             private readonly VisualElement cloth;
 
-            internal ReplacementRibbon(Action selected, bool available, CardColor cardColor)
+            internal ReplacementRibbon(
+                Action selected,
+                bool available,
+                CardColor cardColor,
+                bool symmetricTab)
                 : base(selected)
             {
                 this.available = available;
                 this.cardColor = cardColor;
+                this.symmetricTab = symmetricTab;
                 style.backgroundColor = Color.clear;
                 HudElements.Border(this, Color.clear, 0f, 0f);
                 HudElements.Padding(this, 0f);
+                style.paddingLeft = symmetricTab ? NotchDepth : 0f;
                 style.paddingRight = NotchDepth;
                 style.fontSize = 9f;
                 style.unityFontStyleAndWeight = FontStyle.Bold;
@@ -2276,7 +2309,7 @@ namespace GuardsDigital.Presentation.Match
                     focusable = false
                 };
                 visibleLabel.style.position = Position.Absolute;
-                visibleLabel.style.left = 0f;
+                visibleLabel.style.left = symmetricTab ? NotchDepth : 0f;
                 visibleLabel.style.top = 0f;
                 visibleLabel.style.right = NotchDepth;
                 visibleLabel.style.bottom = 0f;
@@ -2295,6 +2328,12 @@ namespace GuardsDigital.Presentation.Match
             internal void SetVisibleLabel(string label)
             {
                 visibleLabel.text = label ?? string.Empty;
+            }
+
+            internal void SetTextColor(Color color)
+            {
+                style.color = color;
+                visibleLabel.style.color = color;
             }
 
             internal void SetShineHovered(bool hovered)
@@ -2336,11 +2375,17 @@ namespace GuardsDigital.Presentation.Match
                     : new Color(0.42f, 0.40f, 0.36f, 1f);
                 DrawBanner(painter, rect, right, mid, fabric, Color.clear, 0f);
 
-                // The darker lower fold that keeps it reading as cloth rather than plastic.
+                // The darker lower fold keeps it reading as cloth rather than plastic. Primary
+                // title tabs use the same inset on both sides; the established Secondary ribbon
+                // keeps its right-hand swallowtail unchanged.
                 painter.fillColor = new Color(0f, 0f, 0f, available ? 0.14f : 0.10f);
                 painter.BeginPath();
-                painter.MoveTo(new Vector2(rect.xMin, mid));
-                painter.LineTo(new Vector2(right - NotchDepth, mid));
+                painter.MoveTo(new Vector2(
+                    symmetricTab ? rect.xMin + (NotchDepth * 0.5f) : rect.xMin,
+                    mid));
+                painter.LineTo(new Vector2(
+                    symmetricTab ? right - (NotchDepth * 0.5f) : right - NotchDepth,
+                    mid));
                 painter.LineTo(new Vector2(right, rect.yMax));
                 painter.LineTo(new Vector2(rect.xMin, rect.yMax));
                 painter.ClosePath();
@@ -2352,14 +2397,21 @@ namespace GuardsDigital.Presentation.Match
                         : new Color(0.25f, 0.25f, 0.25f, 1f), 2f);
             }
 
-            private static void DrawBanner(
+            private void DrawBanner(
                 Painter2D painter, Rect rect, float right, float mid,
                 Color fill, Color stroke, float strokeWidth)
             {
                 painter.BeginPath();
-                painter.MoveTo(new Vector2(rect.xMin, rect.yMin));
-                painter.LineTo(new Vector2(right, rect.yMin));
-                painter.LineTo(new Vector2(right - NotchDepth, mid));
+                painter.MoveTo(new Vector2(
+                    symmetricTab ? rect.xMin + NotchDepth : rect.xMin,
+                    rect.yMin));
+                painter.LineTo(new Vector2(
+                    symmetricTab ? right - NotchDepth : right,
+                    rect.yMin));
+                if (!symmetricTab)
+                {
+                    painter.LineTo(new Vector2(right - NotchDepth, mid));
+                }
                 painter.LineTo(new Vector2(right, rect.yMax));
                 painter.LineTo(new Vector2(rect.xMin, rect.yMax));
                 painter.ClosePath();

@@ -326,7 +326,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void PreparedClearChip_SitsImmediatelyAboveItsAttackBox()
+        public void PreparedClearFlag_TouchesAndCentersAboveThePrintedAttackTitle()
         {
             var session = StartAttackTurnBesideAHazard(out _, out _);
             var round = new RoundActionUnityView();
@@ -351,11 +351,16 @@ namespace GuardsDigital.Tests.EditMode
             });
 
             Assert.That(clear.style.top.value.value + clear.style.height.value.value,
-                Is.EqualTo(actionBounds.y - 4f).Within(0.001f),
-                "CLEAR sits above the Attack glow with a visible gap, never inside it.");
-            Assert.That(clear.style.left.value.value + clear.style.width.value.value,
-                Is.EqualTo(actionBounds.xMax).Within(0.001f),
-                "The chip is right-aligned to the Attack box it replaces.");
+                Is.EqualTo(actionBounds.y +
+                    (40f * CardFootprint.ArtworkHeight / CardFootprint.ArtworkSourceHeight))
+                    .Within(0.001f),
+                "CLEAR touches the printed Attack title like a tab instead of floating above " +
+                "the Attack region's larger hit box.");
+            Assert.That(clear.style.left.value.value,
+                Is.EqualTo((CardFootprint.ArtworkWidth * 0.5f) - 46f).Within(0.001f),
+                "The little flag is centered over the card-wide Attack heading it replaces.");
+            Assert.That(clear.ClassListContains("gd-replacement-primary-tab"), Is.True,
+                "Clear uses the same symmetric primary-title trapezoid as primary Fast Travel.");
         }
 
         [Test]

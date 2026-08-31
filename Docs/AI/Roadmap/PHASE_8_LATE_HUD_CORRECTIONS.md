@@ -47,9 +47,28 @@ Non-goals: No HUD production change, new layout decision, rule or command change
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830f1-migrate-the-editor-patch-and-reconcile-the-stale-confirm-geometry-gate-completion-evidence).
 
+### [x] 8.30f2 Attach primary replacement flags to their printed title bands
+
+Blocked by: Milestone 8.30f establishes the replacement-ribbon surface and milestone 8.30f1 establishes the validated editor baseline.
+
+Observable outcome: Fast Travel replacing a prepared primary Movement and Clear replacing a prepared primary Attack appear as compact, symmetric card-colour trapezoid flags attached immediately above the centred printed action title, while a Fast Travel replacing a Secondary Movement retains its accepted side-mounted swallowtail; `FAST TRAVEL` uses black lettering in both placements.
+
+Acceptance checks:
+
+- A primary Fast Travel flag is centred over and touches the printed `MOVEMENT` title band rather than following the primary Movement boot's separate hit/highlight bounds. Clear uses the same primary-title geometry over `ATTACK`.
+- Both primary flags have equal left and right slopes. The Secondary Fast Travel control retains its established right-notch swallowtail, side placement, size, invocation, hit region and hover behavior.
+- `FAST TRAVEL` is black on both primary and Secondary cloth. Clear retains its card-aware ink. Availability, command routing, source artwork and every action/rule contract remain unchanged.
+- Focused Edit Mode geometry/style checks, the existing real-input Fast Travel routing journey, and targeted live Game View inspection pass at the approved revision.
+
+Closing checks: `PreparedFastTravelFlag_TouchesAndCentersAboveThePrintedMovementTitle` and `PreparedClearFlag_TouchesAndCentersAboveThePrintedAttackTitle` distinguish primary title tabs from the unchanged Secondary ribbon and pass after the correction.
+
+Non-goals: No Secondary redesign, action eligibility or command change, card/action definition change, source-artwork edit, highlight treatment change, generated-face redesign, board change, networking work, or milestone 8.30g scope.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830f2-attach-primary-replacement-flags-to-their-printed-title-bands-completion-evidence).
+
 ### [ ] 8.30g Drag an eligible hand card onto the map to commit it facedown
 
-Blocked by: Milestones 8.30f and 8.30f1 must establish the final hand and commitment-control layout and validated editor baseline against which the additional pointer path is tested.
+Blocked by: Milestones 8.30f-8.30f2 must establish the final hand, commitment-control, replacement-flag layout and validated editor baseline against which the additional pointer path is tested.
 
 Observable outcome: In addition to the unchanged click-then-confirm path, a player may drag an eligible card from their hand onto the map and release it to commit that exact card facedown immediately, without a separate confirmation press.
 

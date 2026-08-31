@@ -8,13 +8,15 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The route has completed approved HUD corrections **8.29a-8.29b1b** and **8.30f**, editor/gate corrective **8.30f1**, offer and lifecycle corrections **8.29d-8.29f**, transport-neutral session boundary **8.30**, owner-scoped seat projections **8.30a**, and the complete local six-seat player gate **8.30c**. **The loaded match is rulebook p.5's six-player Quick Game**: six heroes, three Waves, five Lives a side, the Tie Breaker, twelve minions, and 108 playable cards. Its deterministic director and six independently authorized local seat clients prove all victory causes plus replay, restore, retained-prefix Undo, restart, snapshots, and event logs. Unity 6000.5.9f1 with URP 17.5 is the checked-in editor/rendering baseline; the six-hero board/HUD and Win64 smoke path are intact. All six heroes pass the permanent player-path gate, all 114 roster fronts are source-verified, and schema v34 persists every pause and pins the registered content contract set. `RISK-SCALE-001` is retired; the serialized one-question-at-a-time director remains an accepted UX tradeoff. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
+The route has completed approved HUD corrections **8.29a-8.29b1b**, **8.30f** and **8.30f2**, editor/gate corrective **8.30f1**, offer and lifecycle corrections **8.29d-8.29f**, transport-neutral session boundary **8.30**, owner-scoped seat projections **8.30a**, and the complete local six-seat player gate **8.30c**. **The loaded match is rulebook p.5's six-player Quick Game**: six heroes, three Waves, five Lives a side, the Tie Breaker, twelve minions, and 108 playable cards. Its deterministic director and six independently authorized local seat clients prove all victory causes plus replay, restore, retained-prefix Undo, restart, snapshots, and event logs. Unity 6000.5.9f1 with URP 17.5 is the checked-in editor/rendering baseline; the six-hero board/HUD and Win64 smoke path are intact. All six heroes pass the permanent player-path gate, all 114 roster fronts are source-verified, and schema v34 persists every pause and pins the registered content contract set. `RISK-SCALE-001` is retired; the serialized one-question-at-a-time director remains an accepted UX tradeoff. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the routed shards below.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.30f1**.
+- Current completed milestone: **8.30f2**.
 - Active authorized milestone: **none**.
 - Next proposed milestone: **8.30g**.
+
+Milestone **8.30f2** completed on 2026-08-31. Primary Fast Travel and Clear replacements are centred symmetric trapezoid tabs attached to their printed `MOVEMENT` or `ATTACK` title bands; Secondary Fast Travel retains its accepted side-mounted swallowtail. `FAST TRAVEL` uses black lettering in both placements. The user approved the final live shape and placement.
 
 Milestone **8.30f1** completed on 2026-08-31. The project, launchers and live recipes now use Unity 6000.5.9f1 (`b57deb96f08d`), with the editor-resolved Searcher 4.9.5 patch and no selected networking-package change. Smart App Control remained enforced and Defender remained active; the new analyzer hash produced no Code Integrity block. The stale Play Mode assertion that still expected Confirm in End Turn's corner failed in the first 249/250 gate, now verifies the accepted below-`DIRECTOR` rectangle, and closes at 250/250; the final complete Edit gate is 2,075/2,075.
 
@@ -30,7 +32,7 @@ Milestone **8.29** selected one serialized player host over UGS Multiplayer Serv
 
 Earlier Phase 8 milestones established the verified six-hero roster, typed effect/query and pending-decision contracts, official 3v3 setup, deterministic 768-command/12-round gate at current seed 21, source-ratio card faces, production-sized HUD geometry, URP 17.5 baseline, and governance routing. The current implementation inventory and subject shards own live behavior; the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md) owns exact completion evidence and revisions. Corrective **8.28a1** restored the Unity-free harness while retaining Unity Edit Mode coverage; the current complete Unity gates are 2,075/2,075 Edit Mode and 250/250 Play Mode. **Phase 7 is complete** and its exact record is addressed by SHA from the [Phase 7 archive](Archive/Phase-Handoffs/PHASE_7.md).
 
-The **Phase 8** route has completed everything itemized above through the local six-seat gate **8.30c**, late HUD correction **8.30f**, and editor/gate corrective **8.30f1**. Deferred 8.29c remains proposed; no networking package is installed and no online runtime exists yet.
+The **Phase 8** route has completed everything itemized above through the local six-seat gate **8.30c**, late HUD corrections **8.30f/8.30f2**, and editor/gate corrective **8.30f1**. Deferred 8.29c remains proposed; no networking package is installed and no online runtime exists yet.
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 

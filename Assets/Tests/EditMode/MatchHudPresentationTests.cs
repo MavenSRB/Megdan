@@ -2652,6 +2652,101 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void PreparedFastTravelFlag_TouchesAndCentersAboveThePrintedMovementTitle()
+        {
+            var region = new PrintedActionRegionViewModel(
+                new ActionOffer(
+                    new CardInstanceId("fast-travel-ribbon-card"),
+                    new CardDefinitionReference(
+                        new CardDefinitionId("fast-travel-ribbon-definition"), "test-rev"),
+                    new ActionDefinitionId("fast-travel-ribbon-movement"),
+                    new HeroId("fast-travel-ribbon-hero"),
+                    ActionInvocationContext.PrintedPrimary,
+                    true),
+                ActionKind.Movement,
+                "MOVEMENT 2",
+                -1,
+                0,
+                "PRIMARY MOVEMENT 2",
+                null,
+                cardColor: CardColor.Green);
+            var actionBounds = new Rect(6.5f, 266.5f, 64.6f, 66.2f);
+            var factory = typeof(DirectorHandsUnityView).GetMethod(
+                "BuildReplacementChip",
+                System.Reflection.BindingFlags.Static |
+                System.Reflection.BindingFlags.NonPublic);
+            Assert.That(factory, Is.Not.Null,
+                "The regression must exercise the HUD's shared replacement-ribbon placement.");
+
+            var fastTravel = (Button)factory.Invoke(null, new object[]
+            {
+                region,
+                "FAST TRAVEL",
+                actionBounds,
+                (Action)(() => { }),
+                true,
+                true
+            });
+
+            Assert.That(fastTravel.style.top.value.value + fastTravel.style.height.value.value,
+                Is.EqualTo(actionBounds.y +
+                    (36f * CardFootprint.ArtworkHeight / CardFootprint.ArtworkSourceHeight))
+                    .Within(0.001f),
+                "Fast Travel touches the printed Movement title like a tab instead of floating " +
+                "above the Movement badge's larger hit region.");
+            Assert.That(fastTravel.style.left.value.value,
+                Is.EqualTo((CardFootprint.ArtworkWidth * 0.5f) - 46f).Within(0.001f),
+                "The little flag is centered over the card-wide Movement heading it replaces.");
+            Assert.That(fastTravel.ClassListContains("gd-replacement-primary-tab"), Is.True,
+                "A primary replacement uses the symmetric trapezoid tab, not the Secondary's " +
+                "one-sided swallowtail.");
+            Assert.That(
+                fastTravel.Q<Label>("gd-ribbon-label").style.color.value,
+                Is.EqualTo(Color.black),
+                "Primary Fast Travel uses black lettering over its card-colour cloth.");
+
+            var secondaryRegion = new PrintedActionRegionViewModel(
+                new ActionOffer(
+                    new CardInstanceId("fast-travel-secondary-ribbon-card"),
+                    new CardDefinitionReference(
+                        new CardDefinitionId("fast-travel-secondary-ribbon-definition"), "test-rev"),
+                    new ActionDefinitionId("fast-travel-secondary-ribbon-movement"),
+                    new HeroId("fast-travel-secondary-ribbon-hero"),
+                    ActionInvocationContext.PrintedSecondary,
+                    true),
+                ActionKind.Movement,
+                "MOVEMENT 2",
+                0,
+                1,
+                "SECONDARY MOVEMENT 2",
+                null,
+                cardColor: CardColor.Green);
+            var secondaryBounds = new Rect(6.5f, 148.6f, 64.6f, 66.2f);
+            var secondary = (Button)factory.Invoke(null, new object[]
+            {
+                secondaryRegion,
+                "FAST TRAVEL",
+                secondaryBounds,
+                (Action)(() => { }),
+                true,
+                true
+            });
+
+            Assert.That(secondary.ClassListContains("gd-replacement-primary-tab"), Is.False,
+                "The already-approved Secondary keeps its established swallowtail shape.");
+            Assert.That(
+                secondary.Q<Label>("gd-ribbon-label").style.color.value,
+                Is.EqualTo(Color.black),
+                "Secondary Fast Travel uses the same black lettering.");
+            Assert.That(secondary.style.left.value.value,
+                Is.EqualTo(secondaryBounds.xMax - 2f).Within(0.001f));
+            Assert.That(secondary.style.top.value.value,
+                Is.EqualTo(secondaryBounds.y +
+                    Mathf.Max(0f, (secondaryBounds.height - 26f) * 0.5f)).Within(0.001f),
+                "The already-approved Secondary keeps its established side placement.");
+        }
+
+        [Test]
         public void TheResolvingCardsPrintedActionRegions_ForwardOnlyTheirExactProjectedOffers()
         {
             var session = ConfiguredMatchFixtures.CreateConfiguredSession();
