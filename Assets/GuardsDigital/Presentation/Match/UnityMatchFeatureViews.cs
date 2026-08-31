@@ -22,10 +22,8 @@ namespace GuardsDigital.Presentation.Match
         private readonly List<PlacedTokenView> tokens = new List<PlacedTokenView>();
         private readonly Func<PlacedToken, PlacedTokenView> tokenViewFactory;
         private readonly IReadOnlyList<HexTileView> tiles;
-        private readonly Material highlightMaterial;
-        private readonly Material resultingSpaceMaterial;
-        private readonly Material highlightRimMaterial;
-        private readonly Material resultingSpaceRimMaterial;
+        private readonly HexCornerHighlightTemplate cornerHighlightTemplate;
+        private GuardsDigital.Core.Board.HexCoordinate? hoveredCoordinate;
         private Func<HeroId, bool> heroIntentHandler;
         private Func<MinionId, bool> minionIntentHandler;
         private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
@@ -38,7 +36,8 @@ namespace GuardsDigital.Presentation.Match
             Material resultingSpaceMaterial = null,
             Func<PlacedToken, PlacedTokenView> tokenViewFactory = null,
             Material highlightRimMaterial = null,
-            Material resultingSpaceRimMaterial = null)
+            Material resultingSpaceRimMaterial = null,
+            HexCornerHighlightTemplate sharedCornerHighlightTemplate = null)
         {
             this.heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes)))
                 .Where(value => value != null).Distinct().ToArray());
@@ -46,15 +45,16 @@ namespace GuardsDigital.Presentation.Match
                 .Where(value => value != null).Distinct().ToArray());
             this.tiles = Array.AsReadOnly((tiles ?? throw new ArgumentNullException(nameof(tiles)))
                 .Where(value => value != null).Distinct().ToArray());
-            this.highlightMaterial = highlightMaterial ?? throw new ArgumentNullException(nameof(highlightMaterial));
-            // Milestone 6.5c: without its own material the resulting space cannot be drawn at all,
-            // because painting a prediction in the destination color would say "click here".
-            this.resultingSpaceMaterial = resultingSpaceMaterial;
-            // Milestone 8.11a: the perimeter each highlight draws around its space, in the highlight's
-            // own colour. Optional, because a caller that supplies no rim gets the fill-only highlight
-            // this had before - which is what every fixture below the configured scene still uses.
-            this.highlightRimMaterial = highlightRimMaterial;
-            this.resultingSpaceRimMaterial = resultingSpaceRimMaterial;
+            // The material arguments remain source-compatible for lower-level historical fixtures;
+            // the unified configured board consumes only the shared corner template.
+            cornerHighlightTemplate = sharedCornerHighlightTemplate;
+            if (cornerHighlightTemplate != null)
+            {
+                foreach (var tile in this.tiles.Where(value => value.IsPlayable))
+                {
+                    tile.ConfigureCornerHighlight(cornerHighlightTemplate);
+                }
+            }
             // Milestone 6.2d: where a view for a newly placed token comes from. A token has no
             // declared roster - its identity is minted when an effect places it - so unlike heroes and
             // minions its views cannot all exist before the match does. Left unbound, a projected
@@ -94,7 +94,6 @@ namespace GuardsDigital.Presentation.Match
             }
 
             Model = model ?? throw new ArgumentNullException(nameof(model));
-            var pieceTargetCues = model.PieceTargetCues.ToDictionary(value => value.Target);
             foreach (var hero in heroes)
             {
                 var occupancy = model.Heroes.SingleOrDefault(value =>
@@ -114,37 +113,20 @@ namespace GuardsDigital.Presentation.Match
                 hero.Configure(occupancy, hero.OuterRadius);
                 hero.gameObject.SetActive(true);
 
-                var identity = BoardObjectReference.ForHero(occupancy.HeroId);
-                if (pieceTargetCues.TryGetValue(identity, out var targetCue))
-                {
-                    hero.SetTargetCue(targetCue.State, targetCue.ConsequenceIntent);
-                }
-                else
-                {
-                    hero.SetTargetCue(
-                        BoardTargetCueState.None,
-                        BoardTargetConsequenceIntent.None);
-                }
+                // Every board choice is now carried by the occupied hex's six corners. The retained
+                // ring remains part of the reusable piece view, but configured play never activates it.
+                hero.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
             }
 
             RenderMinions(model);
             RenderTokens(model);
 
-            // Milestone 8.11a, at the user's request, and settled by what is actually being chosen
-            // rather than by how many there are.
-            //
-            // <b>Choosing a hex lights the hex.</b> A movement or fast-travel range, a correction
-            // destination, a respawn space, an empty effect-choice candidate - the answer is the space
-            // itself, so the space is what changes. Lighting is also the only thing that can show a
-            // region as a region.
-            //
-            // <b>Choosing a piece marks the piece itself.</b> The fitted ring and translucent wash from
-            // the unified stable-identity projection above apply to the piece view, so movement and
-            // rebuilds follow identity and no tile converts an identity back into a coordinate.
-            // Destination fills remain independent.
+            // Milestone 8.30h's revised board language is deliberately uniform: every answer with a
+            // board coordinate lights the same six fixed corner marks. Stable piece identity is still
+            // projected and clicked as before; this view resolves its current occupied coordinate only
+            // to place the presentation cue. It never invents eligibility.
 
-            var targetCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(model.MovementDestinations);
-            targetCoordinates.UnionWith(model.FastTravelDestinations);
+            var targetCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>();
             // Milestone 6.4b highlighted every correction route endpoint and Place space at once;
             // milestone 6.2d lights the one whose control is being pointed at, because each of them
             // carries its own control and the board was saying nothing the controls did not already.
@@ -155,40 +137,134 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 6.5c: an empty effect-choice candidate is a destination like any other, and
             // is the whole surface for that candidate - no control is drawn for it anywhere.
             targetCoordinates.UnionWith(model.EffectChoiceDestinations);
-            if (model.HeroRespawnHighlight.HasValue)
-            {
-                targetCoordinates.Add(model.HeroRespawnHighlight.Value);
-            }
-            // Milestone 8.11a: and every space the Respawn offers, not only the one a control was
-            // pointing at, now that the board is where the choice is made.
-            targetCoordinates.UnionWith(model.HeroRespawnDestinations);
             // Milestone 8.16c: a minion whose Spawn point is blocked is Placed into one of the
             // equally-nearest empty spaces. Those answers are spaces, so every one is lit before the
             // pointer moves and the HUD needs no destination control.
             targetCoordinates.UnionWith(
                 model.SystemTransitionDestinations.Select(value => value.Destination));
+            if (model.EffectChoiceTargetSpace.HasValue)
+            {
+                targetCoordinates.Add(model.EffectChoiceTargetSpace.Value);
+            }
 
-            // The predicted landing space is drawn in its own color and is never selectable, so it is
-            // resolved after the selectable set and can never be added to it.
-            var resultingSpace = resultingSpaceMaterial == null
-                ? null
-                : model.EffectChoiceResultingSpace;
+            foreach (var cue in model.PieceTargetCues.Where(value =>
+                         value.State != BoardTargetCueState.None &&
+                         value.ConsequenceIntent == BoardTargetConsequenceIntent.Affect))
+            {
+                if (TryResolveCoordinate(model, cue.Target, out var coordinate))
+                {
+                    targetCoordinates.Add(coordinate);
+                }
+            }
+
+            // The predicted landing space uses its own neutral corners and is never selectable, so it
+            // is resolved after the selectable set and can never be added to it.
+            var resultingSpace = model.EffectChoiceResultingSpace;
+            var movementCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
+                model.MovementDestinations);
+            // Fast Travel replaces a Movement action and uses the same destination language. The
+            // projection still distinguishes its typed invocation; only the six-corner treatment is
+            // shared here.
+            movementCoordinates.UnionWith(model.FastTravelDestinations);
+            var respawnCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
+                model.HeroRespawnDestinations);
+            if (model.HeroRespawnHighlight.HasValue)
+            {
+                respawnCoordinates.Add(model.HeroRespawnHighlight.Value);
+            }
+            var attackHeroIds = new HashSet<HeroId>(model.AttackTargets);
+            var attackMinionIds = new HashSet<MinionId>(model.MinionAttackTargets);
+            var attackCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
+                model.Heroes.Where(value => attackHeroIds.Contains(value.HeroId))
+                    .Select(value => value.Coordinate));
+            attackCoordinates.UnionWith(model.Minions
+                .Where(value => attackMinionIds.Contains(value.MinionId))
+                .Select(value => value.Coordinate));
+            foreach (var cue in model.PieceTargetCues.Where(value =>
+                         value.State != BoardTargetCueState.None &&
+                         (value.ConsequenceIntent == BoardTargetConsequenceIntent.Attack ||
+                          value.ConsequenceIntent == BoardTargetConsequenceIntent.Removal)))
+            {
+                if (TryResolveCoordinate(model, cue.Target, out var coordinate))
+                {
+                    attackCoordinates.Add(coordinate);
+                }
+            }
             foreach (var tile in tiles.Where(value => value.IsPlayable))
             {
-                if (resultingSpace.HasValue && tile.Coordinate.Equals(resultingSpace.Value) &&
-                    !targetCoordinates.Contains(tile.Coordinate))
-                {
-                    // The prediction is a space rather than a piece - where this Push would end - so it
-                    // is lit like one, in its own colour and never selectable.
-                    tile.SetHighlighted(true, resultingSpaceMaterial, resultingSpaceRimMaterial);
-                    continue;
-                }
+                // Clear any state left by a pre-8.30h renderer. Configured play no longer activates
+                // whole-hex fills or rims for a board choice or projected result.
+                tile.SetHighlighted(false, null, null);
 
-                var highlighted = targetCoordinates.Contains(tile.Coordinate);
-                tile.SetHighlighted(
-                    highlighted,
-                    highlighted ? highlightMaterial : null,
-                    highlighted ? highlightRimMaterial : null);
+                if (cornerHighlightTemplate != null)
+                {
+                    var kind = attackCoordinates.Contains(tile.Coordinate)
+                        ? HexCornerHighlightKind.Attack
+                        : respawnCoordinates.Contains(tile.Coordinate)
+                            ? HexCornerHighlightKind.Respawn
+                            : movementCoordinates.Contains(tile.Coordinate)
+                                ? HexCornerHighlightKind.Movement
+                                : targetCoordinates.Contains(tile.Coordinate)
+                                    ? HexCornerHighlightKind.Effect
+                                    : resultingSpace.HasValue &&
+                                      resultingSpace.Value.Equals(tile.Coordinate)
+                                        ? HexCornerHighlightKind.EffectResult
+                                        : HexCornerHighlightKind.None;
+                    tile.SetCornerHighlighted(
+                        kind,
+                        hoveredCoordinate.HasValue &&
+                        hoveredCoordinate.Value.Equals(tile.Coordinate));
+                }
+            }
+        }
+
+        private static bool TryResolveCoordinate(
+            BoardInteractionViewModel model,
+            BoardObjectReference target,
+            out GuardsDigital.Core.Board.HexCoordinate coordinate)
+        {
+            if (target.Kind == BoardObjectKind.Hero)
+            {
+                var occupancy = model.Heroes.Single(value => value.HeroId.Equals(target.HeroId));
+                coordinate = occupancy.Coordinate;
+                return true;
+            }
+
+            if (target.Kind == BoardObjectKind.Minion)
+            {
+                var occupancy = model.Minions.Single(value => value.MinionId.Equals(target.MinionId));
+                coordinate = occupancy.Coordinate;
+                return true;
+            }
+
+            if (target.Kind == BoardObjectKind.Token)
+            {
+                var token = model.PlacedTokens.Single(value => value.Id.Equals(target.TokenInstanceId));
+                coordinate = token.Coordinate;
+                return true;
+            }
+
+            coordinate = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Pointer-only visual strength. The projected model still exclusively decides which spaces
+        /// are legal; this may only strengthen a corner construction that Render already made visible.
+        /// </summary>
+        public void SetHoveredCoordinate(GuardsDigital.Core.Board.HexCoordinate? coordinate)
+        {
+            if (Nullable.Equals(hoveredCoordinate, coordinate)) return;
+            hoveredCoordinate = coordinate;
+            foreach (var tile in tiles.Where(value => value != null && value.IsPlayable))
+            {
+                var cue = tile.CornerHighlight;
+                if (cue != null && cue.Kind != HexCornerHighlightKind.None)
+                {
+                    tile.SetCornerHighlighted(
+                        cue.Kind,
+                        coordinate.HasValue && coordinate.Value.Equals(tile.Coordinate));
+                }
             }
         }
 
@@ -209,9 +285,6 @@ namespace GuardsDigital.Presentation.Match
         {
             var projectedMinions = model.Minions.ToDictionary(value => value.MinionId);
             var defenseCues = model.MinionDefenseCues.ToDictionary(value => value.MinionId, value => value.Amount);
-            var targetCues = model.PieceTargetCues
-                .Where(value => value.Target.Kind == BoardObjectKind.Minion)
-                .ToDictionary(value => value.Target.MinionId);
             foreach (var minion in minions)
             {
                 var boundId = minion.BoundMinionId;
@@ -225,16 +298,7 @@ namespace GuardsDigital.Presentation.Match
 
                     minion.SetDefenseContributionCue(
                         defenseCues.TryGetValue(boundId, out var amount) ? amount : 0);
-                    if (targetCues.TryGetValue(boundId, out var targetCue))
-                    {
-                        minion.SetTargetCue(targetCue.State, targetCue.ConsequenceIntent);
-                    }
-                    else
-                    {
-                        minion.SetTargetCue(
-                            BoardTargetCueState.None,
-                            BoardTargetConsequenceIntent.None);
-                    }
+                    minion.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
 
                     projectedMinions.Remove(state.MinionId);
                 }
@@ -275,9 +339,6 @@ namespace GuardsDigital.Presentation.Match
         private void RenderTokens(BoardInteractionViewModel model)
         {
             var projectedTokens = model.PlacedTokens.ToDictionary(value => value.Id);
-            var targetCues = model.PieceTargetCues
-                .Where(value => value.Target.Kind == BoardObjectKind.Token)
-                .ToDictionary(value => value.Target.TokenInstanceId);
             var released = new List<PlacedTokenView>();
             foreach (var token in tokens)
             {
@@ -290,16 +351,7 @@ namespace GuardsDigital.Presentation.Match
                         token.Configure(state, token.OuterRadius);
                     }
 
-                    if (targetCues.TryGetValue(boundId, out var targetCue))
-                    {
-                        token.SetTargetCue(targetCue.State, targetCue.ConsequenceIntent);
-                    }
-                    else
-                    {
-                        token.SetTargetCue(
-                            BoardTargetCueState.None,
-                            BoardTargetConsequenceIntent.None);
-                    }
+                    token.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
                     projectedTokens.Remove(boundId);
                 }
                 else
@@ -328,16 +380,7 @@ namespace GuardsDigital.Presentation.Match
                     view.gameObject.SetActive(true);
                 }
 
-                if (targetCues.TryGetValue(state.Id, out var newCue))
-                {
-                    view.SetTargetCue(newCue.State, newCue.ConsequenceIntent);
-                }
-                else
-                {
-                    view.SetTargetCue(
-                        BoardTargetCueState.None,
-                        BoardTargetConsequenceIntent.None);
-                }
+                view.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
             }
         }
 

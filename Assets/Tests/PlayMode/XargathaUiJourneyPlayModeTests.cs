@@ -176,8 +176,8 @@ namespace GuardsDigital.Tests.PlayMode
             var destination = FirstClickableStep(pointerInput, runtime);
             var tile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(destination));
-            Assert.That(tile.IsHighlighted, Is.True,
-                "A destination a player is about to click must be lit before they click it.");
+            Assert.That(tile.IsHighlighted, Is.False);
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Movement));
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, tile.transform.position), Is.True);
             yield return null;
 

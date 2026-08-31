@@ -170,8 +170,10 @@ namespace GuardsDigital.Tests.PlayMode
             var partnerId = partner.Occupancy.MinionId;
             var partnerAt = partner.Occupancy.Coordinate;
             var swapNode = StandingNode(runtime);
-            Assert.That(partner.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
-                "The miniature a player is about to click is marked where it stands.");
+            Assert.That(partner.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(Tile(partnerAt).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect),
+                "The swap partner is marked by neutral corners where it stands.");
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, partner.transform.position), Is.True,
                 "The swap partner is chosen by clicking the miniature where it stands.");
             yield return null;
@@ -320,8 +322,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             var moveNode = StandingNode(runtime);
             var chosen = FirstClickableSpace(pointerInput, destinations);
-            Assert.That(Tile(chosen).IsHighlighted, Is.True,
-                "The space a player is about to click is lit before they click it.");
+            Assert.That(Tile(chosen).IsHighlighted, Is.False);
+            Assert.That(Tile(chosen).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect));
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, Tile(chosen).transform.position),
                 Is.True);
             yield return null;

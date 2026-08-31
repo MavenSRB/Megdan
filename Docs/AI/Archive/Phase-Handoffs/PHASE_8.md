@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30h Illuminate board choices through all six printed hex-corner marks completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30h | With the user's live revisions, every board-valued choice now uses one steady six-corner language and configured play completely retires the old whole-hex fill/rim and fitted target ring/wash: Movement and selected Fast Travel are green, Respawn is cyan, Attack/Clear/Minion Battle and other removal are blood red, and non-destructive effects, corrections and board-valued transitions are neutral, with cooler neutral for a projected result. Identity-named pieces retain ordinary team frames and pointer surfaces while projected occupancy places the hex cue. Hover changes shared material strength only, never geometry; the board owns one bounded pair of meshes plus ten materials and allocates no retired fill/rim resources. Final T2 evidence is 21/21 affected Edit, 157/157 directly affected Play including all six seat recompositions, and 1/1 targeted non-batch Play with inspected 2560x1440 and 2048x1152 captures. Review found no remaining player-experience, rules-authority, maintainability, or project-risk defect; rules, legality, invocations, schema v34, source artwork, networking, and complete-suite baselines remain unchanged. | `COMMIT_PENDING` |
+
 ## Milestone 8.30g Drag an eligible hand card onto the map to commit it facedown completion evidence
 
 | ID | Outcome | Commit |

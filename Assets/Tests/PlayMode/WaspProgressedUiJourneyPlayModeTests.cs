@@ -708,8 +708,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(destinations, Is.Not.Empty,
                 "The paused frame offers at least one destination on this board.");
             var destination = destinations.First();
-            Assert.That(TileAt(destination).IsHighlighted, Is.True,
-                "The destination a player is about to click is lit.");
+            Assert.That(TileAt(destination).IsHighlighted, Is.False);
+            Assert.That(TileAt(destination).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect));
             return destination;
         }
 

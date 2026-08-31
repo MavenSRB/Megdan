@@ -12,11 +12,11 @@ The route has completed approved HUD corrections **8.29a-8.29b1b** and **8.30f-8
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.30g**.
+- Current completed milestone: **8.30h**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.30h**.
+- Next proposed milestone: **8.30i**.
 
-Milestone **8.30g** completed its user-requested corrective revision on 2026-08-31. Dragging now carries the hand's same complete full-size printed face and hides that exact source slot after the threshold; cancellation restores it and a successful drop commits it through the unchanged command. The user and inspected live captures confirmed the corrected interaction at both supported resolutions, and focused plus directly affected automated checks pass.
+Milestone **8.30h** completed on 2026-08-31 with the user's live revisions. Every board-valued choice now uses one strong six-corner language and no configured legacy whole-hex fill or fitted target ring: Movement and Fast Travel are green, Respawn is cyan, Attack and removal are blood red, and other effects are neutral. Pieces retain their ordinary team frames and pointer surfaces; hover strengthens materials only. Inspected 2560x1440 and 2048x1152 captures plus focused and directly affected checks pass.
 
 Corrective **8.29c** was deferred after its Director Undo symptom could not be reproduced; it remains proposed pending a documented recurrence. The completed correctives around it each own a failing-then-passing check and are defined in [Roadmap/PHASE_8_HANDS_ON_CORRECTIONS.md](Roadmap/PHASE_8_HANDS_ON_CORRECTIONS.md): **8.29b1/8.29b1b** keep Clear and Fast Travel attached to the printed action they replace while End Turn stays external, **8.29d** greys an Attack whose mandatory card text can bind no target, **8.29e** stops an optional branch that can apply nothing from opening p.10's confirm-or-decline, and **8.29f** decides whether p.14 is over from what stands after an Attack's steps rather than from the outcome its resolver reported before them.
 
@@ -28,7 +28,7 @@ The **Phase 8** route has completed everything itemized above through the local 
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
-Roadmap amendment, 2026-08-31: proposed **8.30i** follows 8.30h, retiring the minion +1/-1 badge for six hex-corner marks lit green or red by contribution and rebuilding the Defense hover breakdown from its typed rows, totals, and result; the final pre-network evidence refresh moves to 8.30i, so the remaining route is **8.30h -> 8.30i -> 8.31**.
+Roadmap amendment, 2026-08-31: proposed **8.30i** follows completed 8.30h, retiring the minion +1/-1 badge for six hex-corner marks lit green or red by contribution and rebuilding the Defense hover breakdown from its typed rows, totals, and result; the final pre-network evidence refresh remains there, so the remaining route is **8.30i -> 8.31**.
 
 Standing route exceptions: none remain. Phase 6's exact sequencing lives in its three [Roadmap/](Roadmap/) shards and its per-milestone evidence is addressed by SHA from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md); scheduling is not authorization.
 

@@ -52,6 +52,8 @@ namespace GuardsDigital.Presentation.Board
         /// <summary>True while this space is drawing a highlight rim around its perimeter.</summary>
         public bool IsRimmed => rimmed;
 
+        public HexCornerHighlight CornerHighlight => GetComponent<HexCornerHighlight>();
+
         public void Configure(HexCoordinate coordinate, float radius)
         {
             q = coordinate.Q;
@@ -118,6 +120,25 @@ namespace GuardsDigital.Presentation.Board
 
             ApplyRim(highlighted, rimMaterial);
             IsHighlighted = highlighted;
+        }
+
+        public void ConfigureCornerHighlight(HexCornerHighlightTemplate template)
+        {
+            var highlight = GetComponent<HexCornerHighlight>() ??
+                gameObject.AddComponent<HexCornerHighlight>();
+            highlight.Configure(template);
+        }
+
+        public void SetCornerHighlighted(HexCornerHighlightKind kind, bool hovered)
+        {
+            var highlight = CornerHighlight;
+            if (highlight == null)
+            {
+                if (kind == HexCornerHighlightKind.None) return;
+                throw new System.InvalidOperationException("The tile has no shared corner-highlight template.");
+            }
+
+            highlight.Set(kind, hovered);
         }
 
         private void ApplyRim(bool highlighted, Material rimMaterial)

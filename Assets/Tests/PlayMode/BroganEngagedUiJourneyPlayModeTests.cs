@@ -76,8 +76,10 @@ namespace GuardsDigital.Tests.PlayMode
             var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
             var minionView = MinionView(targetId);
             var vacated = minionView.Occupancy.Coordinate;
-            Assert.That(minionView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
-                "The one legal target is marked where it stands before a player clicks it.");
+            Assert.That(minionView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(Tile(vacated).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack),
+                "The one legal Attack target carries blood-red corners before a player clicks it.");
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, minionView.transform.position), Is.True,
                 "The target is chosen by clicking the miniature where it stands.");
             yield return null;
@@ -132,8 +134,9 @@ namespace GuardsDigital.Tests.PlayMode
             var destination = FirstClickableSpace(pointerInput, lines);
             Assert.That(HexDistanceQuery.Calculate(destination, startedAt), Is.EqualTo(2),
                 "Every offered line is the two spaces the face prints.");
-            Assert.That(Tile(destination).IsHighlighted, Is.True,
-                "The space a player is about to click is lit before they click it.");
+            Assert.That(Tile(destination).IsHighlighted, Is.False);
+            Assert.That(Tile(destination).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect));
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(destination).transform.position), Is.True);
             yield return null;
@@ -453,10 +456,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(drawn.Payments, Has.Count.EqualTo(prompt.Payments.Count),
                 "Presentation composes no option of its own: one control per projected payment.");
             Assert.That(drawn.Decline, Is.Not.Null, "and declining is always drawn.");
-            Assert.That(MinionView(prompt.SubjectMinionId).TargetCueState,
-                Is.Not.EqualTo(BoardTargetCueState.None),
-                "The miniature the price would keep is cued on the board rather than named in the " +
-                "prompt, which is the one place a player can see which one it is.");
+            var subjectMinionView = MinionView(prompt.SubjectMinionId);
+            Assert.That(subjectMinionView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(Tile(subjectMinionView.Occupancy.Coordinate).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack),
+                "The threatened minion is identified by blood-red removal corners on its hex.");
             Assert.That(UiPlayer.HasButton(hud, "END TURN"), Is.False,
                 "No End Turn is drawn beside an exclusive decision.");
 

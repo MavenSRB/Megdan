@@ -164,8 +164,9 @@ namespace GuardsDigital.Tests.PlayMode
                 .First(value => value.Cost == 1).Destination;
             var tile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(destination));
-            Assert.That(tile.IsHighlighted, Is.True,
-                "A destination a player is about to click must be lit before they click it.");
+            Assert.That(tile.IsHighlighted, Is.False);
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Movement),
+                "A destination a player is about to click must carry green corners before the click.");
 
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, tile.transform.position), Is.True);

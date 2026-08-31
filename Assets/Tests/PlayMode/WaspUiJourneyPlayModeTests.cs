@@ -297,8 +297,9 @@ namespace GuardsDigital.Tests.PlayMode
                 .First(value => value.Cost == 1).Destination;
             var tile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(destination));
-            Assert.That(tile.IsHighlighted, Is.True,
-                "The legal destination a player is about to click must be lit on the board.");
+            Assert.That(tile.IsHighlighted, Is.False);
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Movement),
+                "The legal destination must carry green movement corners on the board.");
 
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(

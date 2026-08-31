@@ -59,8 +59,10 @@ namespace GuardsDigital.Tests.PlayMode
             var minionView = Object.FindObjectsByType<StandardMinionView>()
                 .Single(view => view.Occupancy != null &&
                     view.Occupancy.MinionId.Equals(targetId));
-            Assert.That(minionView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
-                "The one legal target is marked where it stands.");
+            Assert.That(minionView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(Object.FindObjectsByType<HexTileView>().Single(value =>
+                    value.Coordinate.Equals(minionView.Occupancy.Coordinate)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack));
 
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(
@@ -504,8 +506,8 @@ namespace GuardsDigital.Tests.PlayMode
                 .First().Command.EffectChoice.Candidate.Value.Coordinate;
             var tile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(destination));
-            Assert.That(tile.IsHighlighted, Is.True,
-                "The orbit destination the player is about to click is lit.");
+            Assert.That(tile.IsHighlighted, Is.False);
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Effect));
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, tile.transform.position), Is.True);
             yield return null;
@@ -708,9 +710,11 @@ namespace GuardsDigital.Tests.PlayMode
             var tiles = Object.FindObjectsByType<HexTileView>();
             foreach (var destination in destinations)
             {
-                Assert.That(tiles.Single(tile => tile.Coordinate.Equals(destination.Destination))
-                    .IsHighlighted, Is.True,
-                    $"Offered space {destination.Destination} is not visibly lit.");
+                var offered = tiles.Single(tile => tile.Coordinate.Equals(destination.Destination));
+                Assert.That(offered.IsHighlighted, Is.False);
+                Assert.That(offered.CornerHighlight.Kind,
+                    Is.EqualTo(HexCornerHighlightKind.Effect),
+                    $"Offered space {destination.Destination} lacks neutral corner marks.");
             }
 
             Assert.That(UiPlayer.Describe(root.Hud), Does.Not.Contain("PLACE AT"),
@@ -772,6 +776,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "The answered space is no longer offered by this or a following pause.");
             Assert.That(chosenTile.IsHighlighted, Is.False,
                 "The accepted answer clears its selectable-space cue.");
+            Assert.That(chosenTile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.None));
             Assert.That(runtime.BoardPresenter.SubmitDestination(chosenDestination.Destination),
                 Is.False,
                 "A repeated click on the answered space executes nothing.");

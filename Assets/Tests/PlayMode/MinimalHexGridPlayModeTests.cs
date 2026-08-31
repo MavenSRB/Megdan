@@ -2638,7 +2638,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// introduced, and moving the occupancy proves the cue follows identity rather than space.
         /// </summary>
         [UnityTest]
-        public IEnumerator Scene_IdentityNamedEffectChoiceUsesHeroTargetRing()
+        public IEnumerator Scene_IdentityNamedEffectChoiceUsesNeutralHexCorners()
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
@@ -2666,15 +2666,11 @@ namespace GuardsDigital.Tests.PlayMode
             var ring = heroView.TargetRing;
             Assert.That(runtime.BoardView.Model.PieceTargetCues.Single().Target,
                 Is.EqualTo(targetReference));
-            Assert.That(heroView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(heroView.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Affect));
-            Assert.That(ring.VisibleConsequenceColor, Is.EqualTo(BoardTargetRing.AffectColor));
-            var retainedWashMaterial = ring.GetComponent<MeshRenderer>().sharedMaterials[2];
-            AssertWash(
-                ring,
-                BoardTargetRing.AffectColor,
-                BoardTargetRing.EligibleWashAlpha);
+            Assert.That(heroView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(ring.IsVisible, Is.False);
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(target.Coordinate)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect));
 
             var occupied = new HashSet<HexCoordinate>(baseBoard.Heroes.Select(value => value.Coordinate));
             occupied.UnionWith(baseBoard.Minions.Select(value => value.Coordinate));
@@ -2697,24 +2693,18 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(heroView.Occupancy.Coordinate, Is.EqualTo(movedTo));
             Assert.That(heroView.TargetRing, Is.SameAs(ring));
-            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(retainedWashMaterial));
-            AssertWash(
-                ring,
-                BoardTargetRing.AffectColor,
-                BoardTargetRing.EligibleWashAlpha);
-            Assert.That(heroView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
-                "The ring follows the stable HeroId to its rebuilt occupancy; no coordinate is the " +
-                "target identity.");
+            Assert.That(ring.IsVisible, Is.False);
+            Assert.That(heroView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(movedTo)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect),
+                "The corner cue follows the stable HeroId to its rebuilt occupancy.");
 
             runtime.BoardPresenter.Refresh();
             yield return null;
             Assert.That(heroView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
             Assert.That(ring.IsVisible, Is.False,
                 "Returning to the live authority projection clears the hand-rendered boundary model.");
-            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(retainedWashMaterial),
-                "Clearing hides the wash with its retained ring instead of replacing its material.");
         }
 
         /// <summary>
@@ -2831,8 +2821,8 @@ namespace GuardsDigital.Tests.PlayMode
                 captureHeroes,
                 captureMinions,
                 new[] { destination },
-                System.Array.Empty<HeroId>(),
-                System.Array.Empty<MinionId>(),
+                new[] { heroes[1].HeroId },
+                new[] { minions[0].MinionId },
                 heroes[0].HeroId,
                 placedTokens: new[] { token },
                 pieceTargetCues: cues));
@@ -2842,93 +2832,32 @@ namespace GuardsDigital.Tests.PlayMode
             var rings = Object.FindObjectsByType<BoardTargetRing>()
                 .Where(value => value.IsVisible)
                 .ToArray();
-            Assert.That(rings, Has.Length.EqualTo(cues.Length));
-            Assert.That(rings.Any(value => value.State == BoardTargetCueState.Eligible), Is.True);
-            Assert.That(rings.Any(value => value.State == BoardTargetCueState.Selected), Is.True);
-            Assert.That(rings.Any(value =>
-                value.ConsequenceIntent == BoardTargetConsequenceIntent.Affect), Is.True);
-            Assert.That(rings.Any(value =>
-                value.ConsequenceIntent == BoardTargetConsequenceIntent.Removal), Is.True);
-            Assert.That(rings.Any(value =>
-                value.ConsequenceIntent == BoardTargetConsequenceIntent.Attack), Is.True,
-                "The inspection frame includes typed Attack in the shared blood-red palette.");
-            var attackRing = rings.Single(value =>
-                value.ConsequenceIntent == BoardTargetConsequenceIntent.Attack);
-            var removalRing = rings.First(value =>
-                value.ConsequenceIntent == BoardTargetConsequenceIntent.Removal);
-            Assert.That(attackRing.VisibleConsequenceColor,
-                Is.EqualTo(BoardTargetRing.BloodRedColor));
-            Assert.That(attackRing.VisibleConsequenceColor,
-                Is.EqualTo(removalRing.VisibleConsequenceColor),
-                "Attack remains typed apart from Removal while sharing its blood-red palette.");
-            Assert.That(rings, Has.All.Matches<BoardTargetRing>(value =>
-                value.VisibleKeylineColor == BoardTargetRing.KeylineColor));
-            foreach (var ring in rings)
-            {
-                var expectedWashAlpha = ring.State == BoardTargetCueState.Eligible
-                    ? BoardTargetRing.EligibleWashAlpha
-                    : BoardTargetRing.SelectedWashAlpha;
-                var expectedWashColor = ring.ConsequenceIntent ==
-                    BoardTargetConsequenceIntent.Affect
-                    ? BoardTargetRing.AffectColor
-                    : BoardTargetRing.BloodRedColor;
-                Assert.That(ring.VisibleWashColor.a,
-                    Is.EqualTo(expectedWashAlpha).Within(0.0001f));
-                Assert.That(ring.VisibleWashColor.r,
-                    Is.EqualTo(expectedWashColor.r).Within(1f / 255f));
-                Assert.That(ring.VisibleWashColor.g,
-                    Is.EqualTo(expectedWashColor.g).Within(1f / 255f));
-                Assert.That(ring.VisibleWashColor.b,
-                    Is.EqualTo(expectedWashColor.b).Within(1f / 255f));
-                Assert.That(ring.VisibleWashColor.a, Is.LessThan(0.3f),
-                    "Every active wash remains transparent enough to preserve the piece artwork.");
-                Assert.That(ring.GeneratedMesh.GetTriangles(2), Is.Not.Empty,
-                    "Every visible ring repeats its typed intent over the actual piece face.");
-                var washMaximumRadius = ring.GeneratedMesh.GetTriangles(2)
-                    .Distinct()
-                    .Select(index => ring.GeneratedMesh.vertices[index])
-                    .Max(vertex => Mathf.Sqrt(
-                        (vertex.x * vertex.x) + (vertex.z * vertex.z)));
-                Assert.That(washMaximumRadius,
-                    Is.EqualTo(ring.InnerRadius).Within(0.0001f),
-                    "Each wash ends at the exact fitted footprint used by its ring.");
-
-                var footprint = ring.transform.parent.GetComponent<Renderer>();
-                Assert.That(footprint, Is.Not.Null);
-                Assert.That(footprint.enabled, Is.True,
-                    "The translucent wash supplements rather than replaces the source art.");
-                if (footprint is SpriteRenderer sprite)
-                {
-                    Assert.That(sprite.sprite, Is.Not.Null);
-                }
-                else
-                {
-                    Assert.That(footprint.GetComponent<MeshFilter>().sharedMesh, Is.Not.Null);
-                }
-
-                var ringRenderer = ring.GetComponent<MeshRenderer>();
-                Assert.That(ringRenderer.sortingLayerID, Is.EqualTo(footprint.sortingLayerID));
-                Assert.That(ringRenderer.sortingOrder, Is.EqualTo(footprint.sortingOrder + 1));
-                foreach (var index in ring.GeneratedMesh.GetTriangles(0)
-                             .Concat(ring.GeneratedMesh.GetTriangles(1))
-                             .Distinct())
-                {
-                    var screen = camera.WorldToScreenPoint(
-                        ring.transform.TransformPoint(ring.GeneratedMesh.vertices[index]));
-                    Assert.That(screen.z, Is.GreaterThan(0f));
-                    Assert.That(screen.x, Is.InRange(0f, Screen.width));
-                    Assert.That(screen.y, Is.InRange(0f, Screen.height));
-                    Assert.That(root.Hud.BlocksPointerAt(new Vector2(screen.x, screen.y)),
-                        Is.False,
-                        "Every inspected ring must remain outside the HUD-covered screen region.");
-                }
-            }
+            Assert.That(rings, Is.Empty,
+                "Configured play uses no fitted piece ring for any board-choice family.");
             Assert.That(runtime.BoardView.TokenViews.Single(value =>
-                value.BoundTokenId.Equals(token.Id)).TargetRing.IsVisible, Is.True,
-                "The representative frame includes the placed-token footprint.");
+                value.BoundTokenId.Equals(token.Id)).TargetRing.IsVisible, Is.False);
+            var movementCorner = runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(destination)).CornerHighlight;
+            Assert.That(movementCorner.Kind, Is.EqualTo(HexCornerHighlightKind.Movement));
+            Assert.That(movementCorner.VisibleMarkCount, Is.EqualTo(6),
+                "The same six fixed marks carry every board-choice family.");
             Assert.That(runtime.BoardView.TileViews.Single(value =>
-                value.Coordinate.Equals(destination)).IsHighlighted, Is.True,
-                "The same frame includes a filled destination beside the piece rings.");
+                value.Coordinate.Equals(eligibleHeroAt)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect));
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(selectedHeroAt)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack));
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(selectedMinionAt)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack));
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(tokenAt)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect));
+            Assert.That(runtime.BoardView.TileViews.Where(value => value.IsPlayable),
+                Has.All.Matches<HexTileView>(value => !value.IsHighlighted));
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(eligibleMinionAt)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack));
             Assert.That(Object.FindObjectsByType<TextMesh>(FindObjectsInactive.Include, FindObjectsSortMode.None),
                 Has.None.Matches<TextMesh>(value => value.text == "▼"));
 
@@ -2937,6 +2866,127 @@ namespace GuardsDigital.Tests.PlayMode
             finally
             {
                 restoreGameView();
+            }
+        }
+
+        /// <summary>Milestone 8.30h's two-resolution hands-on palette and strength evidence.</summary>
+        [UnityTest]
+        public IEnumerator Scene_CapturesMovementAndAttackCornerShineAtBothSupportedResolutions()
+        {
+            if (UnityEngine.Application.isBatchMode)
+            {
+                Assert.That(UnityEngine.Application.isBatchMode, Is.True,
+                    "The screenshot branch is exercised by the dedicated nonbatch recipe.");
+                yield break;
+            }
+
+            var restoreFirst = SelectFixedGameViewResolution(2560, 1440);
+            System.Action restoreSecond = null;
+            try
+            {
+                for (var frame = 0;
+                     frame < 120 && (Screen.width != 2560 || Screen.height != 1440);
+                     frame++) yield return null;
+                Assert.That(Screen.width, Is.EqualTo(2560));
+                Assert.That(Screen.height, Is.EqualTo(1440));
+                yield return LoadOfficialSixPlayerScene();
+
+                var root = Root();
+                var runtime = root.Runtime;
+                var baseBoard = runtime.BoardView.Model;
+                var camera = Object.FindAnyObjectByType<Camera>();
+                var occupied = new HashSet<HexCoordinate>(
+                    baseBoard.Heroes.Select(value => value.Coordinate)
+                        .Concat(baseBoard.Minions.Select(value => value.Coordinate)));
+                var available = runtime.BoardView.TileViews
+                    .Where(value => value.IsPlayable && !occupied.Contains(value.Coordinate))
+                    .OrderBy(value => Vector2.Distance(
+                        camera.WorldToViewportPoint(value.transform.position),
+                        new Vector2(0.58f, 0.58f)))
+                    .Take(6)
+                    .ToArray();
+                Assert.That(available, Has.Length.EqualTo(6));
+                var movementAt = available[0].Coordinate;
+                var heroAt = available[1].Coordinate;
+                var minionAt = available[2].Coordinate;
+                var fastTravelAt = available[3].Coordinate;
+                var respawnAt = available[4].Coordinate;
+                var effectAt = available[5].Coordinate;
+                var hero = baseBoard.Heroes[0];
+                var minion = baseBoard.Minions[0];
+                var heroes = baseBoard.Heroes
+                    .Select(value => value.HeroId.Equals(hero.HeroId)
+                        ? new HeroOccupancy(value.HeroId, heroAt)
+                        : value)
+                    .ToArray();
+                var minions = baseBoard.Minions
+                    .Select(value => value.MinionId.Equals(minion.MinionId)
+                        ? value.WithPosition(default, minionAt)
+                        : value)
+                    .ToArray();
+                var attackCues = new[]
+                {
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForHero(hero.HeroId),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Attack),
+                    new PieceTargetCueViewModel(
+                        BoardObjectReference.ForMinion(minion.MinionId),
+                        BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Removal)
+                };
+                runtime.BoardView.Render(new BoardInteractionViewModel(
+                    baseBoard.Version + 1,
+                    heroes,
+                    minions,
+                    new[] { movementAt },
+                    new[] { hero.HeroId },
+                    System.Array.Empty<MinionId>(),
+                    hero.HeroId,
+                    fastTravelDestinations: new[] { fastTravelAt },
+                    pieceTargetCues: attackCues,
+                    effectChoiceDestinations: new[] { effectAt },
+                    heroRespawnDestinations: new[] { respawnAt }));
+                yield return null;
+                yield return new WaitForEndOfFrame();
+                runtime.BoardView.SetHoveredCoordinate(heroAt);
+
+                var movement = available[0].CornerHighlight;
+                var heroAttack = available[1].CornerHighlight;
+                var minionAttack = available[2].CornerHighlight;
+                var fastTravel = available[3].CornerHighlight;
+                var respawn = available[4].CornerHighlight;
+                var effect = available[5].CornerHighlight;
+                Assert.That(movement.Kind, Is.EqualTo(HexCornerHighlightKind.Movement));
+                Assert.That(fastTravel.Kind, Is.EqualTo(HexCornerHighlightKind.Movement));
+                Assert.That(heroAttack.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+                Assert.That(minionAttack.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+                Assert.That(respawn.Kind, Is.EqualTo(HexCornerHighlightKind.Respawn));
+                Assert.That(effect.Kind, Is.EqualTo(HexCornerHighlightKind.Effect));
+                Assert.That(new[] { movement, fastTravel, heroAttack, minionAttack, respawn, effect },
+                    Has.All.Matches<HexCornerHighlight>(value => value.VisibleMarkCount == 6));
+                Assert.That(available, Has.All.Matches<HexTileView>(value => !value.IsHighlighted));
+                Assert.That(runtime.BoardView.MinionViews.Single(value =>
+                    value.BoundMinionId.Equals(minion.MinionId)).TargetRing.IsVisible, Is.False);
+                Assert.That(heroAttack.IsHovered, Is.True);
+                Assert.That(movement.IsHovered, Is.False);
+                var stableBounds = heroAttack.LocalBounds;
+                yield return Capture("tmp/8-30h-corner-shine-2560x1440.png");
+
+                restoreSecond = SelectFixedGameViewResolution(2048, 1152);
+                for (var frame = 0;
+                     frame < 120 && (Screen.width != 2048 || Screen.height != 1152);
+                     frame++) yield return null;
+                Assert.That(Screen.width, Is.EqualTo(2048));
+                Assert.That(Screen.height, Is.EqualTo(1152));
+                runtime.BoardView.SetHoveredCoordinate(heroAt);
+                Assert.That(heroAttack.LocalBounds, Is.EqualTo(stableBounds));
+                yield return Capture("tmp/8-30h-corner-shine-2048x1152.png");
+            }
+            finally
+            {
+                restoreSecond?.Invoke();
+                restoreFirst();
             }
         }
 
@@ -3171,22 +3221,12 @@ namespace GuardsDigital.Tests.PlayMode
                 "Attack carries its typed blood-red intent even though this live attack will defeat " +
                 "its target; it is distinct from Removal rather than predicted from the result.");
             var retainedRing = minion.TargetRing;
-            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(minion.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Attack));
-            Assert.That(retainedRing.IsVisible, Is.True);
-            Assert.That(retainedRing.VisibleConsequenceColor,
-                Is.EqualTo(BoardTargetRing.BloodRedColor),
-                "Typed Attack and Removal share the approved blood-red palette.");
-            Assert.That(retainedRing.VisibleKeylineColor,
-                Is.EqualTo(BoardTargetRing.KeylineColor));
-            var retainedWashMaterial = retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2];
-            AssertWash(
-                retainedRing,
-                BoardTargetRing.BloodRedColor,
-                BoardTargetRing.EligibleWashAlpha);
-            Assert.That(tile.IsHighlighted, Is.False,
-                "A piece target ring stays distinct from a filled destination hex.");
+            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(retainedRing.IsVisible, Is.False,
+                "Configured play retires the fitted piece ring for every board choice.");
+            Assert.That(tile.IsHighlighted, Is.False);
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
+            Assert.That(tile.CornerHighlight.VisibleMarkCount, Is.EqualTo(6));
             Assert.That(minion.GetComponent<StandardMinionPointerSelector>(), Is.Not.Null);
             var commandCount = runtime.AcceptedCommands.Count;
             Assert.That(pointerInput.TryHandlePointerRay(DownRay(minion.transform.position)), Is.True);
@@ -3219,16 +3259,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Does.Contain(targetId));
             Assert.That(minion.gameObject.activeSelf, Is.True);
             Assert.That(minion.TargetRing, Is.SameAs(retainedRing));
-            Assert.That(retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(retainedWashMaterial));
-            AssertWash(
-                retainedRing,
-                BoardTargetRing.BloodRedColor,
-                BoardTargetRing.EligibleWashAlpha);
-            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(minion.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Attack),
-                "Undo restores typed Attack without turning it into Removal.");
+            Assert.That(retainedRing.IsVisible, Is.False);
+            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack),
+                "Undo restores the projected Attack through the blood-red corner language.");
 
             Assert.That(runtime.Restart(), Is.True);
             yield return null;
@@ -3240,8 +3274,6 @@ namespace GuardsDigital.Tests.PlayMode
                 Has.All.Matches<StandardMinionView>(value =>
                     value.TargetCueState == BoardTargetCueState.None),
                 "Restart rebuilds every retained minion without a stale ring.");
-            Assert.That(retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(retainedWashMaterial));
             Assert.That(retainedRing.IsVisible, Is.False);
 
             Assert.That(runtime.RestoreSnapshot(pendingTargetSnapshot), Is.True, runtime.LastOperationDetail);
@@ -3249,16 +3281,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Does.Contain(targetId));
             Assert.That(minion.gameObject.activeSelf, Is.True);
             Assert.That(minion.TargetRing, Is.SameAs(retainedRing));
-            Assert.That(retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(retainedWashMaterial));
-            AssertWash(
-                retainedRing,
-                BoardTargetRing.BloodRedColor,
-                BoardTargetRing.EligibleWashAlpha);
-            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(minion.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Attack),
-                "and a snapshot restore restores the fitted target ring with the choice.");
+            Assert.That(retainedRing.IsVisible, Is.False);
+            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack),
+                "and snapshot restore restores the blood-red corner cue with the choice.");
             Assert.That(pointerInput.TryHandlePointerRay(DownRay(minion.transform.position)), Is.True);
             yield return null;
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
@@ -3299,7 +3325,11 @@ namespace GuardsDigital.Tests.PlayMode
                     $" active={value.gameObject.activeSelf}")) +
                 $"; heroes on board: {string.Join(", ", runtime.Heroes.Select(value => value.HeroId.Value))}.");
             var heroRing = hero.TargetRing;
-            Assert.That(hero.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
+            Assert.That(hero.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(heroRing.IsVisible, Is.False);
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(hero.Occupancy.Coordinate)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack));
             var beforeHeroTarget = runtime.AcceptedCommands.Count;
 
             Physics.SyncTransforms();
@@ -3411,7 +3441,9 @@ namespace GuardsDigital.Tests.PlayMode
             var fastTravelDestinations = runtime.BoardView.Model.FastTravelDestinations;
             Assert.That(Object.FindObjectsByType<HexTileView>(),
                 Has.All.Matches<HexTileView>(value =>
-                    value.IsHighlighted == fastTravelDestinations.Contains(value.Coordinate)));
+                    !value.IsHighlighted &&
+                    (!fastTravelDestinations.Contains(value.Coordinate) ||
+                     value.CornerHighlight.Kind == HexCornerHighlightKind.Movement)));
         }
 
         [UnityTest]
@@ -3431,7 +3463,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.BoardView.Model.FastTravelDestinations, Is.Empty,
                 "Fast Travel must not be the configured board's default interaction state.");
             Assert.That(Object.FindObjectsByType<HexTileView>(),
-                Has.All.Matches<HexTileView>(value => !value.IsHighlighted));
+                Has.All.Matches<HexTileView>(value =>
+                    !value.IsHighlighted &&
+                    (value.CornerHighlight == null ||
+                     value.CornerHighlight.VisibleMarkCount == 0)));
 
             var fastTravel = Descendants(Root().Hud.RootElement)
                 .OfType<Button>()
@@ -3446,7 +3481,10 @@ namespace GuardsDigital.Tests.PlayMode
             var destination = runtime.BoardView.Model.FastTravelDestinations[0];
             var tile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(destination));
-            Assert.That(tile.IsHighlighted, Is.True);
+            Assert.That(tile.IsHighlighted, Is.False,
+                "Fast Travel uses Movement's corner shine rather than the old whole-hex fill.");
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Movement));
+            Assert.That(tile.CornerHighlight.VisibleMarkCount, Is.EqualTo(6));
             var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             var commandCount = runtime.AcceptedCommands.Count;
 
@@ -3842,24 +3880,16 @@ namespace GuardsDigital.Tests.PlayMode
                 value.BoundMinionId.Equals(blue[1].MinionId));
             var firstRing = firstView.TargetRing;
             var secondRing = secondView.TargetRing;
-            var firstWashMaterial = firstRing.GetComponent<MeshRenderer>().sharedMaterials[2];
-            var secondWashMaterial = secondRing.GetComponent<MeshRenderer>().sharedMaterials[2];
-            Assert.That(firstView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(secondView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(firstView.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
-            Assert.That(secondView.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
-            Assert.That(firstRing.VisibleConsequenceColor, Is.EqualTo(BoardTargetRing.BloodRedColor));
-            Assert.That(secondRing.VisibleKeylineColor, Is.EqualTo(BoardTargetRing.KeylineColor));
-            AssertWash(
-                firstRing,
-                BoardTargetRing.BloodRedColor,
-                BoardTargetRing.EligibleWashAlpha);
-            AssertWash(
-                secondRing,
-                BoardTargetRing.BloodRedColor,
-                BoardTargetRing.EligibleWashAlpha);
+            Assert.That(firstView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(secondView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(firstRing.IsVisible, Is.False);
+            Assert.That(secondRing.IsVisible, Is.False);
+            Assert.That(runtime.BoardView.TileViews.Where(value =>
+                    value.Coordinate.Equals(blue[0].Coordinate) ||
+                    value.Coordinate.Equals(blue[1].Coordinate)),
+                Has.All.Matches<HexTileView>(value =>
+                    value.CornerHighlight.Kind == HexCornerHighlightKind.Attack &&
+                    value.CornerHighlight.VisibleMarkCount == 6));
             Assert.That(firstView.GetComponentsInChildren<TextMesh>(true)
                     .Concat(secondView.GetComponentsInChildren<TextMesh>(true)),
                 Has.None.Matches<TextMesh>(value => value.text == "▼"),
@@ -3906,41 +3936,17 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.MinionChoiceView.Model.Candidates.Single().IsSelected, Is.True);
             Assert.That(runtime.MinionChoiceView.Model.ConfirmInvocation.Command.Kind,
                 Is.EqualTo(DirectorCommandKind.ConfirmMinionBattleRemovals));
-            Assert.That(firstView.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected));
-            Assert.That(secondView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
-                "A selected minion keeps its cue while the player points at another.");
-            Assert.That(firstView.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
-            Assert.That(secondView.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+            Assert.That(firstView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(secondView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
             Assert.That(firstView.TargetRing, Is.SameAs(firstRing));
             Assert.That(secondView.TargetRing, Is.SameAs(secondRing));
-            Assert.That(firstRing.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(firstWashMaterial));
-            Assert.That(secondRing.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(secondWashMaterial));
-            AssertWash(
-                firstRing,
-                BoardTargetRing.BloodRedColor,
-                BoardTargetRing.SelectedWashAlpha);
-            AssertWash(
-                secondRing,
-                BoardTargetRing.BloodRedColor,
-                BoardTargetRing.EligibleWashAlpha);
-            Assert.That(firstRing.GeneratedMesh.vertexCount,
-                Is.GreaterThan(secondRing.GeneratedMesh.vertexCount),
-                "Selected is the shared double-ring construction; eligible remains segmented.");
-            Assert.That(firstRing.VisibleConsequenceColor,
-                Is.EqualTo(secondRing.VisibleConsequenceColor),
-                "Selection is distinguished by the double ring above, while both keep the same " +
-                "typed blood-red removal intent.");
-            var camera = Object.FindAnyObjectByType<Camera>();
-            var selectedOnScreen = camera.WorldToViewportPoint(firstRing.transform.position);
-            Assert.That(selectedOnScreen.z, Is.GreaterThan(0f));
-            Assert.That(selectedOnScreen.x, Is.InRange(0f, 1f));
-            Assert.That(selectedOnScreen.y, Is.InRange(0f, 1f));
-            Assert.That(Vector3.Dot(firstRing.transform.up, Vector3.up), Is.GreaterThan(0.99f),
-                "The double ring lies flat around the minion base under the top-down camera.");
+            Assert.That(firstRing.IsVisible, Is.False);
+            Assert.That(secondRing.IsVisible, Is.False);
+            Assert.That(runtime.BoardView.TileViews.Where(value =>
+                    value.Coordinate.Equals(blue[0].Coordinate) ||
+                    value.Coordinate.Equals(blue[1].Coordinate)),
+                Has.All.Matches<HexTileView>(value =>
+                    value.CornerHighlight.Kind == HexCornerHighlightKind.Attack));
 
             if (!UnityEngine.Application.isBatchMode)
             {
@@ -3992,10 +3998,6 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(secondView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
             Assert.That(firstRing.IsVisible, Is.False);
             Assert.That(secondRing.IsVisible, Is.False);
-            Assert.That(firstRing.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(firstWashMaterial));
-            Assert.That(secondRing.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(secondWashMaterial));
         }
 
         private static void RenderTargetCues(
@@ -4189,7 +4191,12 @@ namespace GuardsDigital.Tests.PlayMode
                 });
             yield return null;
             var retainedRing = blueView.TargetRing;
-            Assert.That(blueView.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected));
+            Assert.That(blueView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(retainedRing.IsVisible, Is.False);
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(blueView.Occupancy.Coordinate)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack),
+                "Minion Battle removal uses the blood-red corner language.");
 
             RenderBoard(
                 runtime,
@@ -4233,10 +4240,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(blueView.Occupancy.Coordinate, Is.EqualTo(returnedCoordinate),
                 "Respawn, Undo, or restore reuses and repositions the configured hero view.");
             Assert.That(blueView.TargetRing, Is.SameAs(retainedRing));
-            Assert.That(blueView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(blueView.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Affect),
-                "The returned identity rebuilds the retained ring from the new projection state.");
+            Assert.That(blueView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(retainedRing.IsVisible, Is.False);
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(returnedCoordinate)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect),
+                "The returned identity rebuilds the neutral corner cue from projection state.");
             // Milestone 8.11b: and it comes back as the piece it went away as. The swap is a mesh and
             // a material on the view's own components, so visibility, position and the piece are one
             // object's state rather than three that could disagree after a Defeat.
@@ -4254,17 +4263,17 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator SceneReload_ReleasesAndReusesExactlyOneOwnedHighlightMaterialOfEachKind()
+        public IEnumerator SceneReload_ReleasesAndReusesTheBoundedSharedHighlightResources()
         {
             yield return LoadScene();
             var first = Root();
-            Assert.That(first.OwnsGeneratedHighlightMaterial, Is.True);
-            // Milestone 8.11a: four rather than two. Each of the two highlight owners now generates a
-            // fill and an opaque rim, and disposes them together - the count is what says neither half
-            // can be leaked without the other.
-            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(4));
-            Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
-            Assert.That(CountResultingSpaceMaterials(), Is.EqualTo(1));
+            Assert.That(first.OwnsGeneratedHighlightMaterial, Is.False);
+            // 8.30h owns two fixed meshes and ten shared shine materials. The retired destination
+            // fill and rim resources are not allocated by configured composition.
+            // The 210 tiles retain renderers only; none owns a material or mesh of its own.
+            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(12));
+            Assert.That(CountHighlightMaterials(), Is.Zero);
+            Assert.That(CountResultingSpaceMaterials(), Is.Zero);
             AssertCurrentMinionBindings(first);
             var firstTargetRings = Object.FindObjectsByType<BoardTargetRing>(
                 FindObjectsInactive.Include,
@@ -4289,10 +4298,10 @@ namespace GuardsDigital.Tests.PlayMode
                 Has.All.Matches<Material>(value => value == null),
                 "The runtime Destroy branch releases keyline, consequence, and wash materials.");
             var second = Root();
-            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(4),
-                "and a reload rebuilds the same four rather than accumulating them.");
-            Assert.That(CountHighlightMaterials(), Is.EqualTo(1));
-            Assert.That(CountResultingSpaceMaterials(), Is.EqualTo(1));
+            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(12),
+                "and a reload rebuilds the same bounded twelve rather than accumulating them.");
+            Assert.That(CountHighlightMaterials(), Is.Zero);
+            Assert.That(CountResultingSpaceMaterials(), Is.Zero);
             AssertCurrentMinionBindings(second);
             var secondTargetRings = Object.FindObjectsByType<BoardTargetRing>(
                 FindObjectsInactive.Include,
@@ -4306,7 +4315,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_RespawnButtonHoverUsesTheMovementDestinationHighlight()
+        public IEnumerator Scene_RespawnButtonHoverUsesCyanSixCornerHighlight()
         {
             yield return LoadScene();
             var runtime = Root().Runtime;
@@ -4319,12 +4328,13 @@ namespace GuardsDigital.Tests.PlayMode
                 baseBoard.Version + 1,
                 baseBoard.Heroes,
                 baseBoard.Minions,
-                new[] { destination },
+                System.Array.Empty<HexCoordinate>(),
                 baseBoard.AttackTargets,
                 baseBoard.MinionAttackTargets,
-                baseBoard.FocusedHeroId));
-            Assert.That(tile.IsHighlighted, Is.True);
-            var movementHighlightMaterial = tile.GetComponent<MeshRenderer>().sharedMaterial;
+                baseBoard.FocusedHeroId,
+                effectChoiceDestinations: new[] { destination }));
+            Assert.That(tile.IsHighlighted, Is.False);
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Effect));
 
             runtime.BoardView.Render(new BoardInteractionViewModel(
                 baseBoard.Version + 2,
@@ -4335,10 +4345,9 @@ namespace GuardsDigital.Tests.PlayMode
                 baseBoard.MinionAttackTargets,
                 baseBoard.FocusedHeroId,
                 heroRespawnHighlight: destination));
-            Assert.That(tile.IsHighlighted, Is.True);
-            Assert.That(tile.GetComponent<MeshRenderer>().sharedMaterial,
-                Is.SameAs(movementHighlightMaterial),
-                "Respawn hover uses the exact movement destination highlight, not a second visual language.");
+            Assert.That(tile.IsHighlighted, Is.False);
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Respawn));
+            Assert.That(tile.CornerHighlight.VisibleMarkCount, Is.EqualTo(6));
 
             var hero = runtime.Setup.Heroes.Single(value => value.TeamSide == TeamSide.Blue).HeroId;
             var card = runtime.Cards.First(value => value.OwnerId.Equals(hero) &&

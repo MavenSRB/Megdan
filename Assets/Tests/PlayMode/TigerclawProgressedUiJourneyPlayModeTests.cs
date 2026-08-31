@@ -595,8 +595,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "A standing movement session lights somewhere to go. " + Remaining(runtime));
             var chosen = FirstClickableSpace(pointerInput, destinations);
             var tile = Tile(chosen);
-            Assert.That(tile.IsHighlighted, Is.True,
-                "A destination a player is about to click must be lit before they click it.");
+            Assert.That(tile.IsHighlighted, Is.False);
+            Assert.That(tile.CornerHighlight.Kind,
+                Is.EqualTo(GuardsDigital.Presentation.Board.HexCornerHighlightKind.Movement));
             Assert.That(UiPlayer.ClickBoard(pointerInput, root.Hud, tile.transform.position), Is.True);
             yield return null;
             yield return null;

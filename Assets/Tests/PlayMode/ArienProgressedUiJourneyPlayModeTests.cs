@@ -56,8 +56,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds, Does.Contain(waspId),
                 "The enemy hero must be reachable at the printed Range 2.");
             var waspView = HeroView(waspId);
-            Assert.That(waspView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
-                "and must be marked where they stand before the click.");
+            Assert.That(waspView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(Tile(waspView.Occupancy.Coordinate).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack),
+                "and must carry blood-red corners where they stand before the click.");
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, waspView.transform.position), Is.True);
             yield return null;

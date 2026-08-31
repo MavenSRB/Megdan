@@ -329,8 +329,11 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.RoundView.Model.RemovalPreventionPrompt, Is.Not.Null,
                 "and the region must have been given it to draw.");
-            Assert.That(MinionView(subject).TargetCueState, Is.Not.EqualTo(BoardTargetCueState.None),
-                "with the miniature the price would keep cued on the board.");
+            var subjectView = MinionView(subject);
+            Assert.That(subjectView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(Tile(subjectView.Occupancy.Coordinate).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack),
+                "with the threatened minion identified by blood-red removal corners.");
 
             var faceName = NameOf(runtime, payingCard.DefinitionReference.DefinitionId);
             UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));

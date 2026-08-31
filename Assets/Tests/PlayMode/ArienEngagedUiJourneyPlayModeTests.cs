@@ -132,8 +132,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null);
             var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
             var minionView = MinionView(targetId);
-            Assert.That(minionView.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
-                "The one legal target is marked where it stands.");
+            Assert.That(minionView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(Tile(minionView.Occupancy.Coordinate).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack),
+                "The one legal Attack target carries blood-red corners where it stands.");
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, minionView.transform.position),
                 Is.True);
             yield return null;
@@ -179,8 +181,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "and every one of them is the one space the printed text allows.");
             var destination = destinations[0];
             var tile = Tile(destination);
-            Assert.That(tile.IsHighlighted, Is.True,
-                "The destination a player is about to click is lit.");
+            Assert.That(tile.IsHighlighted, Is.False);
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Effect));
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, tile.transform.position), Is.True);
             yield return null;
 
@@ -726,8 +728,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(reachable, Is.EqualTo(targets.Length));
             foreach (var space in targets)
             {
-                Assert.That(Tile(space).IsHighlighted, Is.True,
-                    $"Every offered space must be lit before it is clicked; {space} is not.");
+                Assert.That(Tile(space).IsHighlighted, Is.False);
+                Assert.That(Tile(space).CornerHighlight.Kind,
+                    Is.EqualTo(HexCornerHighlightKind.Effect),
+                    $"Every offered space must carry neutral corners before it is clicked; {space} does not.");
             }
 
             var destination = targets[0];

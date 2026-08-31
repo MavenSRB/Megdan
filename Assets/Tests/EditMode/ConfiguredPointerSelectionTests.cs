@@ -226,6 +226,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var objects = new List<GameObject>();
             var highlightMaterial = new Material(Shader.Find("Standard")) { color = Color.yellow };
+            var cornerTemplate = new HexCornerHighlightTemplate(1f);
 
             try
             {
@@ -237,22 +238,33 @@ namespace GuardsDigital.Tests.EditMode
                 var view = new BoardInteractionUnityView(
                     new[] { hero },
                     new[] { tile },
-                    highlightMaterial);
+                    highlightMaterial,
+                    sharedCornerHighlightTemplate: cornerTemplate);
 
-                view.Render(BoardModel(1, occupancy, new[] { destination }));
+                view.Render(new BoardInteractionViewModel(
+                    1,
+                    new[] { occupancy },
+                    Array.Empty<MinionOccupancy>(),
+                    Array.Empty<HexCoordinate>(),
+                    Array.Empty<HeroId>(),
+                    Array.Empty<MinionId>(),
+                    default,
+                    effectChoiceDestinations: new[] { destination }));
 
-                Assert.That(tile.IsHighlighted, Is.True);
-                Assert.That(tile.GetComponent<MeshRenderer>().sharedMaterial, Is.SameAs(highlightMaterial));
+                Assert.That(tile.IsHighlighted, Is.False);
+                Assert.That(tile.GetComponent<MeshRenderer>().sharedMaterial, Is.SameAs(defaultMaterial));
+                Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Effect));
 
                 view.Render(BoardModel(2, occupancy, Array.Empty<HexCoordinate>()));
 
                 Assert.That(tile.IsHighlighted, Is.False);
                 Assert.That(tile.GetComponent<MeshRenderer>().sharedMaterial, Is.SameAs(defaultMaterial),
-                    "Clearing a highlight must restore the tile's own default material by identity, " +
-                    "not merely lower the IsHighlighted flag.");
+                    "The unified corner language never replaces the tile's own material.");
+                Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.None));
             }
             finally
             {
+                cornerTemplate.Dispose();
                 Object.DestroyImmediate(highlightMaterial);
                 DestroyAll(objects);
             }

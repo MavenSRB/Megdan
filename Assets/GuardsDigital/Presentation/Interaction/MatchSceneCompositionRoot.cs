@@ -357,8 +357,7 @@ namespace GuardsDigital.Presentation.Interaction
             "into the saved scene. Enable only to preview, and do not save the scene while enabled.")]
         [SerializeField] private bool composeInEditMode;
 
-        private DestinationHighlightMaterialOwner highlightOwner;
-        private DestinationHighlightMaterialOwner resultingSpaceHighlightOwner;
+        private HexCornerHighlightTemplate cornerHighlightTemplate;
         private ConfiguredMatchHudRenderer hud;
         private ConfiguredMatchSceneRuntime runtime;
 
@@ -400,15 +399,14 @@ namespace GuardsDigital.Presentation.Interaction
         public ConfiguredMatchSceneRuntime Runtime => runtime;
         public IMatchSession Session => runtime?.Session;
         public ConfiguredMatchHudRenderer Hud => hud;
-        public bool OwnsGeneratedHighlightMaterial => highlightOwner?.IsGenerated == true;
+        public bool OwnsGeneratedHighlightMaterial => false;
 
         /// <summary>
-        /// Both generated highlights are owned here and disposed together, so the second one cannot
-        /// become the leak the first one is tested against.
+        /// The configured scene owns only the shared corner construction. Legacy destination fill
+        /// owners remain nullable for source compatibility and are never allocated by composition.
         /// </summary>
         public int OwnedHighlightNativeResourceCount =>
-            (highlightOwner?.OwnedNativeResourceCount ?? 0) +
-            (resultingSpaceHighlightOwner?.OwnedNativeResourceCount ?? 0);
+            (cornerHighlightTemplate?.OwnedNativeResourceCount ?? 0);
 
         public void Compose()
         {
@@ -603,9 +601,7 @@ namespace GuardsDigital.Presentation.Interaction
             var tiles = mapView.CurrentTiles.ToArray();
             var minions = mapView.CurrentMinionViews.ToArray();
             var obstacles = mapView.CurrentObstacles.ToArray();
-            highlightOwner = new DestinationHighlightMaterialOwner(assignedHighlightMaterial);
-            resultingSpaceHighlightOwner = DestinationHighlightMaterialOwner.ForResultingSpace(
-                assignedResultingSpaceMaterial);
+            cornerHighlightTemplate = new HexCornerHighlightTemplate(mapView.OuterRadius);
             hud = GetComponent<ConfiguredMatchHudRenderer>();
             if (hud == null)
             {
@@ -623,19 +619,19 @@ namespace GuardsDigital.Presentation.Interaction
                 minions,
                 tiles,
                 obstacles,
-                highlightOwner.Material,
+                null,
                 hud,
-                resultingSpaceHighlightOwner.Material,
+                null,
                 // Milestone 6.2d: where a view for a newly placed token comes from. The map view owns
                 // the outer radius and keeps every generated board object, so it builds them for the
                 // same reason it builds tiles and minions rather than the board view doing it.
                 mapView.CreateTokenView,
-                // Milestone 8.11a: each highlight's perimeter, in its own colour. The owners generate
-                // and dispose them beside their fills, so the pair is counted and released together.
-                highlightOwner.RimMaterial,
-                resultingSpaceHighlightOwner.RimMaterial,
+                // Retired fill/rim arguments stay null; every configured board choice uses corners.
+                null,
+                null,
                 // Milestone 8.30b: the development-only seat selection, consumed once.
-                TakeRequestedSeat());
+                TakeRequestedSeat(),
+                cornerHighlightTemplate);
 
             foreach (var selector in pointerSelectors.Where(value => value != null))
             {
@@ -908,10 +904,8 @@ namespace GuardsDigital.Presentation.Interaction
                 }
             }
             runtime = null;
-            highlightOwner?.Dispose();
-            highlightOwner = null;
-            resultingSpaceHighlightOwner?.Dispose();
-            resultingSpaceHighlightOwner = null;
+            cornerHighlightTemplate?.Dispose();
+            cornerHighlightTemplate = null;
         }
     }
 }

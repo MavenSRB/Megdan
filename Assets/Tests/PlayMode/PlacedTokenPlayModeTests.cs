@@ -160,18 +160,11 @@ namespace GuardsDigital.Tests.PlayMode
             var marked = runtime.BoardView.TokenViews.Single(value =>
                 value.BoundTokenId.Equals(target.TokenId));
             var retainedRing = marked.TargetRing;
-            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(marked.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Affect));
-            Assert.That(retainedRing.VisibleConsequenceColor,
-                Is.EqualTo(BoardTargetRing.AffectColor));
-            var retainedWashMaterial = retainedRing.GetComponent<MeshRenderer>()
-                .sharedMaterials[2];
-            AssertWash(
-                retainedRing,
-                BoardTargetRing.AffectColor,
-                BoardTargetRing.EligibleWashAlpha);
-            AssertTargetRingIsReadableThroughTheCamera(marked);
+            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(retainedRing.IsVisible, Is.False);
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(placed)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect));
 
             runtime.HighlightEffectChoiceTarget(placed);
             yield return null;
@@ -179,16 +172,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.BoardView.Model.EffectChoiceTargetSpace, Is.EqualTo(placed));
             Assert.That(marked.TargetRing, Is.SameAs(retainedRing),
                 "Pointing changes one retained cue instance rather than building another.");
-            Assert.That(retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(retainedWashMaterial));
-            AssertWash(
-                retainedRing,
-                BoardTargetRing.AffectColor,
-                BoardTargetRing.EligibleWashAlpha);
-            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
-                "Current pointer state does not project the future Hovered construction.");
-            Assert.That(marked.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Affect));
+            Assert.That(retainedRing.IsVisible, Is.False);
+            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(placed)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect));
 
             runtime.HighlightEffectChoiceTarget(null);
             yield return null;
@@ -197,15 +185,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.BoardView.Model.PieceTargetCues.Single(value =>
                     value.Target.Equals(targetReference)).State,
                 Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible),
-                "Leaving the control clears only the pointed-at preview; the static eligible ring " +
-                "stands while the authority still offers that target.");
-            Assert.That(retainedRing.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(retainedWashMaterial));
-            AssertWash(
-                retainedRing,
-                BoardTargetRing.AffectColor,
-                BoardTargetRing.EligibleWashAlpha);
+            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(retainedRing.IsVisible, Is.False);
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(placed)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Effect));
         }
 
         /// <summary>
@@ -264,16 +248,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(eligible.State, Is.EqualTo(BoardTargetCueState.Eligible));
             Assert.That(eligible.ConsequenceIntent,
                 Is.EqualTo(BoardTargetConsequenceIntent.Removal));
-            Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(view.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
-            Assert.That(ring.VisibleConsequenceColor, Is.EqualTo(BoardTargetRing.BloodRedColor));
-            var retainedWashMaterial = ring.GetComponent<MeshRenderer>().sharedMaterials[2];
-            AssertWash(
-                ring,
-                BoardTargetRing.BloodRedColor,
-                BoardTargetRing.EligibleWashAlpha);
-            AssertTargetRingIsReadableThroughTheCamera(view);
+            Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(ring.IsVisible, Is.False);
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(placed)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack),
+                "Clear removal uses the same blood-red destructive corners as Minion Battle.");
 
             // And the marked piece is toggled by clicking it: the pointer ray lands on the token's
             // space, the intent chain finds no destination or respawn use for it, and the open
@@ -287,18 +267,13 @@ namespace GuardsDigital.Tests.PlayMode
                 "The board click on the offered token must be claimed by the Clear selection.");
             yield return null;
 
-            Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.Selected),
-                "A chosen piece keeps its own treatment while the pointer moves on.");
-            Assert.That(view.TargetConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Removal));
+            Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
             Assert.That(view.TargetRing, Is.SameAs(ring),
-                "Selection changes the retained ring's state rather than adding a second cue.");
-            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(retainedWashMaterial));
-            AssertWash(
-                ring,
-                BoardTargetRing.BloodRedColor,
-                BoardTargetRing.SelectedWashAlpha);
+                "Selection does not build a second legacy cue.");
+            Assert.That(ring.IsVisible, Is.False);
+            Assert.That(runtime.BoardView.TileViews.Single(value =>
+                value.Coordinate.Equals(placed)).CornerHighlight.Kind,
+                Is.EqualTo(HexCornerHighlightKind.Attack));
             Assert.That(runtime.ClearSelection.Confirm.Command.TokenInstanceIds,
                 Is.EqualTo(new[] { token.Id }));
 
@@ -311,8 +286,6 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
                 "Removal clears the retained cue before the pooled piece is hidden.");
             Assert.That(ring.IsVisible, Is.False);
-            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(retainedWashMaterial));
             Assert.That(runtime.ClearSelection, Is.Null);
 
             Assert.That(runtime.Undo(), Is.True);
@@ -325,8 +298,6 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
                 "Undo rebuilds the surface from the position as it now is, carrying no cue across.");
             Assert.That(ring.IsVisible, Is.False);
-            Assert.That(ring.GetComponent<MeshRenderer>().sharedMaterials[2],
-                Is.SameAs(retainedWashMaterial));
             Assert.That(runtime.BoardView.Model.PieceTargetCues, Is.Empty);
         }
 

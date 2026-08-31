@@ -44,7 +44,8 @@ namespace GuardsDigital.Presentation.Match
             Func<GuardsDigital.Core.Components.PlacedToken, PlacedTokenView> tokenViewFactory = null,
             UnityEngine.Material highlightRimMaterial = null,
             UnityEngine.Material resultingSpaceRimMaterial = null,
-            SeatId? seat = null)
+            SeatId? seat = null,
+            HexCornerHighlightTemplate cornerHighlightTemplate = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -105,7 +106,8 @@ namespace GuardsDigital.Presentation.Match
 
             BoardView = new BoardInteractionUnityView(
                 heroViews, tileViews, highlightMaterial, minionViews, resultingSpaceMaterial,
-                tokenViewFactory, highlightRimMaterial, resultingSpaceRimMaterial);
+                tokenViewFactory, highlightRimMaterial, resultingSpaceRimMaterial,
+                cornerHighlightTemplate);
             HandsView = new DirectorHandsUnityView();
             RoundView = new RoundActionUnityView();
             UndoRestartView = new UndoRestartUnityView();

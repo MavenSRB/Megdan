@@ -83,12 +83,45 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void Update()
         {
+            RefreshHoverAtCurrentPointer();
             if (!pointerPress.WasPressedThisFrame())
             {
                 return;
             }
 
             TrySelectAtCurrentPointer();
+        }
+
+        private void RefreshHoverAtCurrentPointer()
+        {
+            if (boardView == null || eventCamera == null || Pointer.current == null)
+            {
+                boardView?.SetHoveredCoordinate(null);
+                return;
+            }
+
+            var screenPosition = Pointer.current.position.ReadValue();
+            if (blocksPointer != null && blocksPointer(screenPosition))
+            {
+                boardView.SetHoveredCoordinate(null);
+                return;
+            }
+
+            RefreshHoverFromPointerRay(eventCamera.ScreenPointToRay(screenPosition));
+        }
+
+        /// <summary>Updates only hover strength from the board plane; it never submits an intent.</summary>
+        public bool RefreshHoverFromPointerRay(Ray pointerRay)
+        {
+            EnsureBindings();
+            if (boardView == null)
+            {
+                return false;
+            }
+
+            var tile = FindTileUnderPointer(pointerRay);
+            boardView.SetHoveredCoordinate(tile?.Coordinate);
+            return tile != null;
         }
 
         private bool TrySelectAtCurrentPointer()
