@@ -526,6 +526,51 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 8.30i1. Every configured board piece and overview rail consumes the same one of
+        /// twelve optional prepared faces. The test stays valid in a clean checkout: then both sets
+        /// are empty and all six board pieces retain the generated-prism fallback.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Scene_UsesMatchingPreparedWhiteFieldFacesOnAllSixBoardPiecesAndHeroRails()
+        {
+            UiPlayer.SetPlayerViewport(2560, 1440, "8.30i1 prepared hero tokens");
+            yield return LoadOfficialSixPlayerScene();
+            yield return null;
+            yield return null;
+
+            var root = Root();
+            var heroes = Object.FindObjectsByType<PrimitiveHeroView>();
+            Assert.That(heroes, Has.Length.EqualTo(6));
+            Assert.That(heroes.Select(hero => hero.HasTokenVisual).Distinct().Count(), Is.EqualTo(1),
+                "The ignored roster is present as one complete set or absent as one complete set.");
+
+            var boardTextures = heroes
+                .Where(hero => hero.HasTokenVisual)
+                .Select(hero => hero.GetComponent<MeshRenderer>().sharedMaterials[1].mainTexture)
+                .ToArray();
+            var railTextures = Descendants(root.Hud.RootElement)
+                .Where(element => element.name == "gd-hero-icon")
+                .Select(element => element.style.backgroundImage.value.texture)
+                .Where(texture => texture != null)
+                .ToArray();
+            Assert.That(boardTextures, Has.Length.EqualTo(railTextures.Length));
+            Assert.That(boardTextures, Is.EquivalentTo(railTextures),
+                "Board pieces and hero rails must consume the same prepared resources, not copies " +
+                "or presentation-side recolours.");
+            if (boardTextures.Length > 0)
+            {
+                Assert.That(boardTextures, Has.Length.EqualTo(6));
+                Assert.That(boardTextures.Distinct().Count(), Is.EqualTo(6));
+            }
+
+            yield return Capture("tmp/8-30i1-white-hero-tokens-2560x1440.png");
+            UiPlayer.SetPlayerViewport(2048, 1152, "8.30i1 prepared hero tokens alternate viewport");
+            yield return null;
+            yield return null;
+            yield return Capture("tmp/8-30i1-white-hero-tokens-2048x1152.png");
+        }
+
+        /// <summary>
         /// Milestone 7.8a's visible Game View sweep: the standing HUD, the HUD with the `DIRECTOR`
         /// drawer open, and the contextual region drawing a paused leveling prompt.
         ///

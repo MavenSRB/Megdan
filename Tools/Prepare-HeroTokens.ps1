@@ -34,6 +34,13 @@
     inscribed disc, antialiased across one pixel, and the script verifies both ends of that claim
     before it writes - the corners must be background and the ring must not be.
 
+    Milestone 8.30i1 also measures the flat team-coloured field inside the official ring. The field
+    colour is selected from the dominant low-variance team-coloured cluster in the declared source
+    face, never from a hero-specific mask. Only matching pixels inside the protected ring radius are
+    replaced with opaque white. The route refuses to write unless the field has a bounded area, the
+    portrait retains a substantial non-field area, both official rings still classify correctly,
+    and every non-field source pixel remains byte-for-byte faithful in the prepared bitmap.
+
 .PARAMETER Hero
     Which hero's tokens to prepare, by the content identity the runtime addresses them with. The
     manifest element each name maps to is declared in this script rather than searched for, because
@@ -44,8 +51,9 @@
     project's and the third does not.
 
 .PARAMETER Check
-    Verify only. Reports whether the prepared resources exist and match the declared sprite size,
-    and writes nothing. Exits non-zero when either resource is missing or has the wrong dimensions.
+    Verify only. Rebuilds the expected prepared pixels from the declared source face in memory and
+    compares them with the resources, including size, transparent exterior, opaque white field,
+    retained team ring, and source-faithful portrait pixels. Writes nothing.
 
 .PARAMETER Force
     Rewrite the resources even when correctly sized ones are already present.
@@ -97,21 +105,151 @@ $resources = [ordered]@{
     Blue = [System.IO.Path]::Combine($resourceDirectory, "$Hero-blue.png")
 }
 
-# The PNG IHDR's big-endian width and height, at bytes 16-23 of every PNG.
-#
-# Each byte is widened to [int] before it is shifted. Milestone 8.20 found this the first time
-# anything ran `-Check`: PowerShell's `-shl` yields the type of its left operand, so shifting a
-# [byte] by 24 truncates back into a byte and every 302x302 token measured 46x46 - the low byte of
-# 302 - which made the verify path refuse files it had just written correctly. Nothing that was
-# written was ever wrong; only the reading back of it was.
-function Get-PngSize([string] $path) {
-    $bytes = [System.IO.File]::ReadAllBytes($path)
-    if ($bytes.Length -lt 24) { return $null }
-    $width = ([int] $bytes[16] -shl 24) -bor ([int] $bytes[17] -shl 16) -bor
-        ([int] $bytes[18] -shl 8) -bor [int] $bytes[19]
-    $height = ([int] $bytes[20] -shl 24) -bor ([int] $bytes[21] -shl 16) -bor
-        ([int] $bytes[22] -shl 8) -bor [int] $bytes[23]
-    return [pscustomobject]@{ Width = $width; Height = $height }
+function Get-ColourDistanceSquared($left, $right) {
+    return [Math]::Pow([int] $left.R - [int] $right.R, 2) +
+        [Math]::Pow([int] $left.G - [int] $right.G, 2) +
+        [Math]::Pow([int] $left.B - [int] $right.B, 2)
+}
+
+function Test-TeamColour($pixel, [string] $team) {
+    if ($team -eq 'Red') { return ([int] $pixel.R - [int] $pixel.B) -ge 40 }
+    return ([int] $pixel.B - [int] $pixel.R) -ge 40
+}
+
+function Get-TeamFromRing([System.Drawing.Bitmap] $bitmap, [int] $faceSize) {
+    $centre = ($faceSize - 1) / 2.0
+    $radius = $faceSize / 2.0
+    $red = 0.0; $green = 0.0; $blue = 0.0; $samples = 0
+    for ($angle = 0; $angle -lt 360; $angle += 5) {
+        $radians = $angle * [Math]::PI / 180.0
+        $sampleX = [int] [Math]::Round($centre + ($radius * 0.96 * [Math]::Cos($radians)))
+        $sampleY = [int] [Math]::Round($centre + ($radius * 0.96 * [Math]::Sin($radians)))
+        $pixel = $bitmap.GetPixel($sampleX, $sampleY)
+        $red += $pixel.R; $green += $pixel.G; $blue += $pixel.B; $samples++
+    }
+
+    $average = [System.Drawing.Color]::FromArgb(
+        255,
+        [int] [Math]::Round($red / $samples),
+        [int] [Math]::Round($green / $samples),
+        [int] [Math]::Round($blue / $samples))
+    $team = if (([int] $average.R - [int] $average.B) -ge 40) {
+        'Red'
+    } elseif (([int] $average.B - [int] $average.R) -ge 40) {
+        'Blue'
+    } else {
+        $null
+    }
+    return [pscustomobject]@{ Team = $team; Average = $average }
+}
+
+function Get-PreparedFace([System.Drawing.Bitmap] $square, [int] $faceSize, [string] $team) {
+    $centre = ($faceSize - 1) / 2.0
+    $radius = $faceSize / 2.0
+    $protectedRingStart = $radius * 0.90
+    $bins = @{}
+
+    # JPEG compression leaves a handful of neighbouring values around a visually flat colour.
+    # Eight-value bins find that field without assuming orange/light-blue numbers from one atlas.
+    for ($pixelY = 0; $pixelY -lt $faceSize; $pixelY++) {
+        for ($pixelX = 0; $pixelX -lt $faceSize; $pixelX++) {
+            $distance = [Math]::Sqrt(
+                [Math]::Pow($pixelX - $centre, 2) + [Math]::Pow($pixelY - $centre, 2))
+            if ($distance -ge $protectedRingStart) { continue }
+            $pixel = $square.GetPixel($pixelX, $pixelY)
+            if (-not (Test-TeamColour $pixel $team)) { continue }
+            $key = '{0},{1},{2}' -f (
+                [Math]::Floor($pixel.R / 8)), (
+                [Math]::Floor($pixel.G / 8)), (
+                [Math]::Floor($pixel.B / 8))
+            if (-not $bins.ContainsKey($key)) {
+                $bins[$key] = [pscustomobject]@{ Count = 0; Red = 0L; Green = 0L; Blue = 0L }
+            }
+            $bin = $bins[$key]
+            $bin.Count++
+            $bin.Red += $pixel.R; $bin.Green += $pixel.G; $bin.Blue += $pixel.B
+        }
+    }
+
+    if ($bins.Count -eq 0) {
+        throw "The $team face has no separable team-coloured interior field. Nothing was written."
+    }
+    $fieldBin = @($bins.Values | Sort-Object Count -Descending)[0]
+    $fieldColour = [System.Drawing.Color]::FromArgb(
+        255,
+        [int] [Math]::Round($fieldBin.Red / $fieldBin.Count),
+        [int] [Math]::Round($fieldBin.Green / $fieldBin.Count),
+        [int] [Math]::Round($fieldBin.Blue / $fieldBin.Count))
+
+    $token = New-Object System.Drawing.Bitmap(
+        $faceSize, $faceSize, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $fieldPixels = 0
+    $portraitPixels = 0
+    $fieldDistanceSquared = 32 * 32
+    for ($pixelY = 0; $pixelY -lt $faceSize; $pixelY++) {
+        for ($pixelX = 0; $pixelX -lt $faceSize; $pixelX++) {
+            $distance = [Math]::Sqrt(
+                [Math]::Pow($pixelX - $centre, 2) + [Math]::Pow($pixelY - $centre, 2))
+            $coverage = [Math]::Min(1.0, [Math]::Max(0.0, $radius - $distance))
+            if ($coverage -le 0.0) {
+                $token.SetPixel($pixelX, $pixelY, [System.Drawing.Color]::FromArgb(0, 0, 0, 0))
+                continue
+            }
+
+            $pixel = $square.GetPixel($pixelX, $pixelY)
+            $isField = $distance -lt $protectedRingStart -and
+                (Test-TeamColour $pixel $team) -and
+                (Get-ColourDistanceSquared $pixel $fieldColour) -le $fieldDistanceSquared
+            if ($isField) {
+                $token.SetPixel($pixelX, $pixelY, [System.Drawing.Color]::White)
+                $fieldPixels++
+            } else {
+                $token.SetPixel(
+                    $pixelX,
+                    $pixelY,
+                    [System.Drawing.Color]::FromArgb(
+                        [int] [Math]::Round($coverage * 255), $pixel.R, $pixel.G, $pixel.B))
+                if ($distance -lt $protectedRingStart) { $portraitPixels++ }
+            }
+        }
+    }
+
+    $interiorArea = [Math]::PI * [Math]::Pow($protectedRingStart, 2)
+    $fieldRatio = $fieldPixels / $interiorArea
+    $portraitRatio = $portraitPixels / $interiorArea
+    if ($fieldRatio -lt 0.02 -or $fieldRatio -gt 0.60 -or $portraitRatio -lt 0.30) {
+        $token.Dispose()
+        throw ("The $team face cannot distinguish its flat field from portrait/ring pixels: " +
+            "field=$([Math]::Round($fieldRatio * 100, 1))%, portrait=$([Math]::Round($portraitRatio * 100, 1))%. Nothing was written.")
+    }
+
+    $preparedRing = Get-TeamFromRing $token $faceSize
+    if ($preparedRing.Team -ne $team) {
+        $token.Dispose()
+        throw "The prepared face no longer retains the official $team ring. Nothing was written."
+    }
+
+    return [pscustomobject]@{
+        Bitmap = $token
+        FieldColour = $fieldColour
+        FieldPixels = $fieldPixels
+        PortraitPixels = $portraitPixels
+        FieldRatio = $fieldRatio
+        PortraitRatio = $portraitRatio
+    }
+}
+
+function Assert-BitmapMatches([System.Drawing.Bitmap] $actual, [System.Drawing.Bitmap] $expected, [string] $label) {
+    if ($actual.Width -ne $expected.Width -or $actual.Height -ne $expected.Height) {
+        throw "$label has the wrong dimensions."
+    }
+    for ($pixelY = 0; $pixelY -lt $expected.Height; $pixelY++) {
+        for ($pixelX = 0; $pixelX -lt $expected.Width; $pixelX++) {
+            if ($actual.GetPixel($pixelX, $pixelY).ToArgb() -ne $expected.GetPixel($pixelX, $pixelY).ToArgb()) {
+                throw "$label differs from its deterministic source-derived preparation at ($pixelX,$pixelY)."
+            }
+        }
+    }
 }
 
 # --- The declared crop, read from the manifest rather than assumed ----------
@@ -151,38 +289,6 @@ if ($faces.Count -ne 2) {
 }
 
 Write-Output "Declared: element '$elementName' ($elementId) takes two ${declaredFaceSize}x${declaredFaceSize} faces from '$atlasId' (${atlasWidth}x${atlasHeight}) at ($($faces[0].x),$($faces[0].y)) and ($($faces[1].x),$($faces[1].y))."
-
-# --- Verify-only path ------------------------------------------------------
-
-if ($Check) {
-    $missing = @($resources.Keys | Where-Object { -not (Test-Path -LiteralPath $resources[$_] -PathType Leaf) })
-    if ($missing.Count -gt 0) {
-        Write-Error "Prepared $heroLabel hero tokens are absent: $($missing -join ', '). Run Tools/Prepare-HeroTokens.ps1 -Hero $Hero to write them."
-        exit 1
-    }
-
-    foreach ($team in $resources.Keys) {
-        $size = Get-PngSize $resources[$team]
-        if ($null -eq $size -or $size.Width -ne $declaredFaceSize -or $size.Height -ne $declaredFaceSize) {
-            Write-Error "The prepared $team $heroLabel token does not match the declared ${declaredFaceSize}x${declaredFaceSize}. Run Tools/Prepare-HeroTokens.ps1 -Hero $Hero -Force to rewrite it."
-            exit 1
-        }
-    }
-
-    Write-Output "PASS: both prepared $heroLabel hero tokens present at the declared ${declaredFaceSize}x${declaredFaceSize}."
-    exit 0
-}
-
-$present = @($resources.Keys | Where-Object {
-    $path = $resources[$_]
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $false }
-    $size = Get-PngSize $path
-    $null -ne $size -and $size.Width -eq $declaredFaceSize -and $size.Height -eq $declaredFaceSize
-})
-if ($present.Count -eq $resources.Count -and -not $Force) {
-    Write-Output "SKIP: both prepared $heroLabel hero tokens are already present at the declared size. Pass -Force to rewrite them."
-    exit 0
-}
 
 # --- Resolve the atlas image ----------------------------------------------
 # The extraction names an atlas file after its index, so 'Image_1_Atlas' is '*.sprite1__*'. The
@@ -230,27 +336,14 @@ try {
         }
         finally { $graphics.Dispose() }
 
-        # Which team this face belongs to, measured. The ring is sampled all the way round at 96% of
-        # the radius and averaged, so one dark passage of the portrait cannot decide it; the reviewed
-        # milestone 4.4 mapping then reads that average. Nothing at runtime asks a pixel what team a
-        # hero is on - this decides only which file the face is written to.
-        $centre = ($declaredFaceSize - 1) / 2.0
-        $radius = $declaredFaceSize / 2.0
-        $red = 0.0; $green = 0.0; $blue = 0.0; $samples = 0
-        for ($angle = 0; $angle -lt 360; $angle += 5) {
-            $radians = $angle * [Math]::PI / 180.0
-            $sampleX = [int] [Math]::Round($centre + ($radius * 0.96 * [Math]::Cos($radians)))
-            $sampleY = [int] [Math]::Round($centre + ($radius * 0.96 * [Math]::Sin($radians)))
-            $pixel = $square.GetPixel($sampleX, $sampleY)
-            $red += $pixel.R; $green += $pixel.G; $blue += $pixel.B; $samples++
-        }
-
-        $red = $red / $samples; $green = $green / $samples; $blue = $blue / $samples
-        $team = if ($red - $blue -ge 40) { 'Red' } elseif ($blue - $red -ge 40) { 'Blue' } else { $null }
+        # Which team this face belongs to, measured. Nothing at runtime asks a pixel what team a hero
+        # is on - this decides only which file the face is written to.
+        $ring = Get-TeamFromRing $square $declaredFaceSize
+        $team = $ring.Team
         if ($null -eq $team) {
             $square.Dispose()
             throw ("The face at ($x,$y) has an average ring colour of " +
-                "R$([int]$red) G$([int]$green) B$([int]$blue), which is neither Steam/orange nor Crystal/light-blue. " +
+                "R$($ring.Average.R) G$($ring.Average.G) B$($ring.Average.B), which is neither Steam/orange nor Crystal/light-blue. " +
                 'Nothing was written.')
         }
 
@@ -262,6 +355,7 @@ try {
         # The background is the atlas's own flat fill outside the inscribed circle, which is what the
         # alpha removes. Both ends of that claim are checked here rather than trusted: a corner must
         # be that fill, and the ring must not be.
+        $centre = ($declaredFaceSize - 1) / 2.0
         $corner = $square.GetPixel(0, 0)
         $edge = $square.GetPixel([int] [Math]::Round($centre), 1)
         $cornerToEdge = [Math]::Sqrt(
@@ -272,30 +366,34 @@ try {
                 "differ by only $([int]$cornerToEdge). Nothing was written.")
         }
 
-        # The inscribed disc, antialiased across the outermost pixel so the token's edge is clean
-        # against the board underneath it rather than stepped.
-        $token = New-Object System.Drawing.Bitmap($declaredFaceSize, $declaredFaceSize, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-        for ($pixelY = 0; $pixelY -lt $declaredFaceSize; $pixelY++) {
-            for ($pixelX = 0; $pixelX -lt $declaredFaceSize; $pixelX++) {
-                $distance = [Math]::Sqrt([Math]::Pow($pixelX - $centre, 2) + [Math]::Pow($pixelY - $centre, 2))
-                $coverage = [Math]::Min(1.0, [Math]::Max(0.0, $radius - $distance))
-                if ($coverage -le 0.0) {
-                    $token.SetPixel($pixelX, $pixelY, [System.Drawing.Color]::FromArgb(0, 0, 0, 0))
-                    continue
-                }
-
-                $pixel = $square.GetPixel($pixelX, $pixelY)
-                $token.SetPixel(
-                    $pixelX,
-                    $pixelY,
-                    [System.Drawing.Color]::FromArgb([int] [Math]::Round($coverage * 255), $pixel.R, $pixel.G, $pixel.B))
-            }
-        }
-
+        $facePreparation = Get-PreparedFace $square $declaredFaceSize $team
         $square.Dispose()
-        $prepared[$team] = $token
-        Write-Output ("Measured: the face at ($x,$y) has an average ring colour of R$([int]$red) G$([int]$green) B$([int]$blue), " +
-            "which is project $team under the reviewed Steam/orange-to-Red and Crystal/light-blue-to-Blue mapping.")
+        $prepared[$team] = $facePreparation.Bitmap
+        Write-Output ("Measured: the face at ($x,$y) has an average ring colour of R$($ring.Average.R) G$($ring.Average.G) B$($ring.Average.B), " +
+            "which is project $team; its source-derived flat field is R$($facePreparation.FieldColour.R) G$($facePreparation.FieldColour.G) B$($facePreparation.FieldColour.B) " +
+            "across $($facePreparation.FieldPixels) pixels ($([Math]::Round($facePreparation.FieldRatio * 100, 1))%), while $($facePreparation.PortraitPixels) protected interior pixels remain source-faithful.")
+    }
+
+    if ($Check -or -not $Force) {
+        $missing = @($resources.Keys | Where-Object {
+            -not (Test-Path -LiteralPath $resources[$_] -PathType Leaf)
+        })
+        if ($missing.Count -eq 0) {
+            foreach ($team in $resources.Keys) {
+                $actual = [System.Drawing.Bitmap]::FromFile($resources[$team])
+                try { Assert-BitmapMatches $actual $prepared[$team] "$team $heroLabel token" }
+                finally { $actual.Dispose() }
+            }
+            if ($Check) {
+                Write-Output "PASS: PreparedHeroTokens_UseWhiteInteriorFieldsWhilePreservingPortraitsTeamRingsAndSharedRuntimeAddressing ($heroLabel Red/Blue)."
+                exit 0
+            }
+            Write-Output "SKIP: both prepared $heroLabel hero tokens already match the deterministic white-field preparation. Pass -Force to rewrite them."
+            exit 0
+        }
+        if ($Check) {
+            throw "Prepared $heroLabel hero tokens are absent: $($missing -join ', '). Run Tools/Prepare-HeroTokens.ps1 -Hero $Hero to write them."
+        }
     }
 
     if (-not (Test-Path -LiteralPath $resourceDirectory -PathType Container)) {

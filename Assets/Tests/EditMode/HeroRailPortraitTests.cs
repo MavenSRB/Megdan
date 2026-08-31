@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
@@ -30,6 +31,133 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class HeroRailPortraitTests
     {
+        private const int PreparedTokenSize = 302;
+
+        /// <summary>
+        /// Milestone 8.30i1 closing check. The ignored private resources are optional as a set, but
+        /// when the local preparation route has supplied them all twelve carry the measured white
+        /// field, transparent exterior, official team ring, and substantial untouched portrait.
+        /// Runtime selection stays the same content-id/team address shared by board and rail.
+        /// </summary>
+        [Test]
+        public void PreparedHeroTokens_UseWhiteInteriorFieldsWhilePreservingPortraitsTeamRingsAndSharedRuntimeAddressing()
+        {
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(CreateOfficialSixPlayerSession(), view).Refresh();
+            var configured = view.Model.Heroes;
+            var resources = configured
+                .SelectMany(hero => new[] { TeamSide.Red, TeamSide.Blue }, (hero, team) => new
+                {
+                    hero.ContentId,
+                    Team = team,
+                    ResourcePath = HeroTokenArtwork.ResourcePath(hero.ContentId, team),
+                    FilePath = Path.Combine(
+                        UnityEngine.Application.dataPath,
+                        "Resources",
+                        HeroTokenArtwork.ResourceRoot,
+                        hero.ContentId.Value + "-" + (team == TeamSide.Red ? "red" : "blue") + ".png")
+                })
+                .ToArray();
+
+            Assert.That(resources, Has.Length.EqualTo(12));
+            Assert.That(resources.Select(resource => resource.ResourcePath).Distinct().Count(),
+                Is.EqualTo(12), "Six content identities and two teams address twelve distinct faces.");
+
+            var present = resources.Where(resource => File.Exists(resource.FilePath)).ToArray();
+            Assert.That(present.Length, Is.EqualTo(0).Or.EqualTo(12),
+                "Private token preparation is atomic at roster scale: a checkout has none, or a " +
+                "prepared development workspace has both team faces for every configured hero.");
+            if (present.Length == 0)
+            {
+                foreach (var resource in resources)
+                {
+                    Assert.That(HeroTokenArtwork.TryLoadTexture(
+                        resource.ContentId, resource.Team, out var absent), Is.False);
+                    Assert.That(absent, Is.Null,
+                        "A clean checkout retains the ordinary generated-prism/empty-portrait fallback.");
+                }
+                Assert.Pass("The private corpus is absent, so the tracked fallback contract applies.");
+            }
+
+            foreach (var resource in present)
+            {
+                var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                try
+                {
+                    Assert.That(texture.LoadImage(File.ReadAllBytes(resource.FilePath)), Is.True);
+                    Assert.That(texture.width, Is.EqualTo(PreparedTokenSize));
+                    Assert.That(texture.height, Is.EqualTo(PreparedTokenSize));
+
+                    var pixels = texture.GetPixels32();
+                    Assert.That(Pixel(pixels, 0, 0).a, Is.Zero,
+                        "The exterior remains transparent rather than receiving the white field.");
+                    Assert.That(Pixel(pixels, 301, 0).a, Is.Zero);
+                    Assert.That(Pixel(pixels, 0, 301).a, Is.Zero);
+                    Assert.That(Pixel(pixels, 301, 301).a, Is.Zero);
+
+                    var centre = (PreparedTokenSize - 1) / 2f;
+                    var radius = PreparedTokenSize / 2f;
+                    var whiteInterior = 0;
+                    var retainedInterior = 0;
+                    for (var y = 0; y < PreparedTokenSize; y++)
+                    {
+                        for (var x = 0; x < PreparedTokenSize; x++)
+                        {
+                            var distance = Vector2.Distance(new Vector2(x, y), new Vector2(centre, centre));
+                            if (distance >= radius * 0.90f)
+                            {
+                                continue;
+                            }
+
+                            var pixel = Pixel(pixels, x, y);
+                            if (pixel.r == 255 && pixel.g == 255 && pixel.b == 255 && pixel.a == 255)
+                            {
+                                whiteInterior++;
+                            }
+                            else
+                            {
+                                retainedInterior++;
+                            }
+                        }
+                    }
+
+                    var protectedInteriorArea = Mathf.PI * Mathf.Pow(radius * 0.90f, 2f);
+                    Assert.That(whiteInterior / protectedInteriorArea, Is.GreaterThanOrEqualTo(0.02f),
+                        resource.ResourcePath + " has no measured opaque-white source field.");
+                    Assert.That(retainedInterior / protectedInteriorArea, Is.GreaterThanOrEqualTo(0.30f),
+                        resource.ResourcePath + " erased the portrait while whitening the field.");
+
+                    var ringRed = 0f;
+                    var ringBlue = 0f;
+                    var ringSamples = 0;
+                    for (var angle = 0; angle < 360; angle += 5)
+                    {
+                        var radians = angle * Mathf.Deg2Rad;
+                        var x = Mathf.RoundToInt(centre + radius * 0.96f * Mathf.Cos(radians));
+                        var y = Mathf.RoundToInt(centre + radius * 0.96f * Mathf.Sin(radians));
+                        var pixel = Pixel(pixels, x, y);
+                        ringRed += pixel.r;
+                        ringBlue += pixel.b;
+                        ringSamples++;
+                    }
+                    var signedRingDifference = (ringRed - ringBlue) / ringSamples;
+                    Assert.That(resource.Team == TeamSide.Red
+                            ? signedRingDifference
+                            : -signedRingDifference,
+                        Is.GreaterThanOrEqualTo(40f),
+                        resource.ResourcePath + " no longer retains its official team-coloured ring.");
+
+                    Assert.That(resource.ResourcePath,
+                        Is.EqualTo(HeroTokenArtwork.ResourcePath(resource.ContentId, resource.Team)),
+                        "The prepared file is still selected by the shared board-and-rail address.");
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(texture);
+                }
+            }
+        }
+
         /// <summary>
         /// All six of rulebook p.5's configured heroes address a distinct portrait, and each one is the
         /// resource the board's own piece for that hero is drawn from.
@@ -221,6 +349,9 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<HeroTurnSlotViewModel>(),
                 Array.Empty<TrayCardViewModel>(),
                 false);
+
+        private static Color32 Pixel(Color32[] pixels, int x, int y) =>
+            pixels[(y * PreparedTokenSize) + x];
 
         private static System.Collections.Generic.IEnumerable<VisualElement> Descendants(
             VisualElement element)
