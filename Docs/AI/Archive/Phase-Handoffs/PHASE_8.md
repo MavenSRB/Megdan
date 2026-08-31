@@ -12,7 +12,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.30g correction | The user-rejected half-size name tile is replaced by the shared full-size complete-card face, using the exact prepared artwork when available; crossing the threshold hides that card's source slot without hand reflow, cancellation restores it, and commitment refreshes normally. T2 evidence is 2/2 focused real-pointer Play, 136/136 affected Edit, 19/19 affected Play, and 1/1 targeted non-batch Play with user confirmation and inspected 2560x1440 and 2048x1152 captures. | pending |
+| 8.30g correction | The user-rejected half-size name tile is replaced by the shared full-size complete-card face, using the exact prepared artwork when available; crossing the threshold hides that card's source slot without hand reflow, cancellation restores it, and commitment refreshes normally. T2 evidence is 2/2 focused real-pointer Play, 136/136 affected Edit, 19/19 affected Play, and 1/1 targeted non-batch Play with user confirmation and inspected 2560x1440 and 2048x1152 captures. | `dc733737` |
 
 ## Milestone 8.30f2 Attach primary replacement flags to their printed title bands completion evidence
 
