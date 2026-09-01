@@ -260,7 +260,23 @@ Non-goals: No Unity Editor, package, project setting, test selection, gameplay, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830k1-restart-unity-hub-and-licensing-before-every-validation-run-completion-evidence).
 
-### [ ] 8.30l Move unavailable cards from the playable hand into a right-side HUD group
+### [x] 8.30l1 Isolate the performance baseline from hidden-Editor frame pacing
+
+Blocked by: Milestone 8.30k1 supplies the fixed hidden-window validation route; milestone 8.30l's complete Play Mode run must remain blocked until its observed Phase 4 timing failure has a green disposition.
+
+Observable outcome: The Phase 4 runtime baseline measures uncapped main-thread work rather than Windows/Editor background frame pacing, while restoring every process-global pacing setting after the fixture and retaining all recorded allocation, resource, rebuild, snapshot, refresh, replay, and visual thresholds.
+
+Acceptance checks:
+
+- The fixture saves `Application.runInBackground`, `QualitySettings.vSyncCount`, and `Application.targetFrameRate`; enables background execution, disables VSync, and requests uncapped rendering before its warm-up window; and restores the three prior values in Unity teardown even after an assertion failure.
+- `CompleteMapAndTwoRoundDirectorFlow_StayWithinRecordedPhase4Thresholds` reproduces the hidden-runner cap at about 45 ms per frame before the correction and passes afterward without raising or removing its 10 ms p95 threshold.
+- Both complete Unity suites pass because this is shared test infrastructure; living-document validation and `git diff --check` pass.
+
+Non-goals: No production runtime, project setting, quality level, threshold, sample count, gameplay, presentation, rule, content, schema, launcher, package, scene, or build change; no acceptance or re-baselining of the observed threshold crossing.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830l1-isolate-the-performance-baseline-from-hidden-editor-frame-pacing-completion-evidence).
+
+### [~] 8.30l Move unavailable cards from the playable hand into a right-side HUD group
 
 Blocked by: Milestone 8.30k1 must complete the shared validation-launcher correction after the preceding hero-plaque symbol work and before this separately reviewable hand-composition change begins.
 

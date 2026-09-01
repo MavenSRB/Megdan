@@ -39,6 +39,32 @@ namespace GuardsDigital.Tests.PlayMode
         // assertions and reported instead, so a real collapse still reaches the record.
         private const int WarmUpFrames = 60;
         private const int SteadyStateFrames = 60;
+        private bool priorRunInBackground;
+        private int priorVSyncCount;
+        private int priorTargetFrameRate;
+
+        [UnitySetUp]
+        public IEnumerator DisableExternalFramePacingForMeasurement()
+        {
+            priorRunInBackground = UnityEngine.Application.runInBackground;
+            priorVSyncCount = QualitySettings.vSyncCount;
+            priorTargetFrameRate = UnityEngine.Application.targetFrameRate;
+            UnityEngine.Application.runInBackground = true;
+            QualitySettings.vSyncCount = 0;
+            UnityEngine.Application.targetFrameRate = -1;
+            // Let the Editor apply the pacing change before the scene load and the separately
+            // reported warm-up window. The benchmark owns CPU work, not a hidden window's cadence.
+            yield return null;
+        }
+
+        [UnityTearDown]
+        public IEnumerator RestoreExternalFramePacingAfterMeasurement()
+        {
+            UnityEngine.Application.targetFrameRate = priorTargetFrameRate;
+            QualitySettings.vSyncCount = priorVSyncCount;
+            UnityEngine.Application.runInBackground = priorRunInBackground;
+            yield return null;
+        }
 
         [UnityTest]
         public IEnumerator CompleteMapAndTwoRoundDirectorFlow_StayWithinRecordedPhase4Thresholds()
