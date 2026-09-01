@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30k Replace item abbreviations with printed channel symbols completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30k | Hero-plaque item bonuses and p.15 Upgrade-a-Card item boxes now consume one typed six-channel catalog of code-native printed symbols with stable non-text identities, signed projected values, and full assistive names. Upgrade readings use the user-directed larger, fully opaque near-black box with a bright 26-unit symbol, centred over each candidate's bottom printed item position without changing the complete card footprint or its invocation. The named closing checks moved from 0/2 failing to 2/2 passing; final T2 evidence is 90/90 affected presentation Edit, 3/3 focused Play, 6/6 scaling Edit, and 1/1 targeted non-batch capture with inspected 2560x1440 and 2048x1152 images. Review found no remaining player-experience, rules-authority, maintainability, or project-risk defect; source artwork, rules, projections, commands, persistence, schema v34, privacy and networking are unchanged. | `8efe733c` |
+
 ## Milestone 8.30j Strip the Upgrade-a-Card choice down to cards and centred item boxes completion evidence
 
 | ID | Outcome | Commit |
