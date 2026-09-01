@@ -163,6 +163,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(acceptBanner.worldBound.xMax,
                 Is.LessThanOrEqualTo(declineBanner.worldBound.xMin + UiPlayer.PixelSnapping()),
                 "ACCEPT and DECLINE stand side by side in projected order.");
+            Assert.That(declineBanner.worldBound.xMin - acceptBanner.worldBound.xMax,
+                Is.GreaterThanOrEqualTo(RoundActionUnityView.OptionalStepActionGap -
+                    UiPlayer.PixelSnapping()),
+                "The compact banners retain a clear visual split.");
             Assert.That(Mathf.Max(acceptBanner.worldBound.yMax, declineBanner.worldBound.yMax),
                 Is.LessThanOrEqualTo(handCards.Min(card => card.worldBound.yMin) +
                     UiPlayer.PixelSnapping()),

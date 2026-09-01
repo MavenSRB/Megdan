@@ -218,6 +218,9 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The gap between the optional-step submit banners and the retained hand.</summary>
         public const float OptionalStepHandGap = 8f;
 
+        /// <summary>Room for the pewter banner's outer shine and rounded stroke at the HUD edge.</summary>
+        public const float OptionalStepEdgeClearance = 20f;
+
         /// <summary>
         /// End Turn's own width, in reference units. Milestone 8.30b's user-approved amendment took it
         /// out of the action row and gave it the panel's bottom-right corner.
@@ -1328,8 +1331,8 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Places the optional-step row flush with the compact hand's left edge. The row ends at the
-        /// hand's established right edge, so it occupies no board-safe surface.
+        /// Places a compact optional-step row at the compact hand's left edge, inset only enough to
+        /// retain the banner's complete outline and shine. It occupies no board-safe surface.
         /// </summary>
         private void LayoutOptionalStepControls()
         {
@@ -1349,15 +1352,19 @@ namespace GuardsDigital.Presentation.Match
         public static Rect CalculateOptionalStepControlRect(float panelWidth, float panelHeight)
         {
             var tray = CalculateCardPanelRect(panelWidth, panelHeight);
-            var left = tray.xMin;
-            var right = Mathf.Min(CompactHandRightEdge, Mathf.Max(left, panelWidth - Margin));
+            var left = tray.xMin + OptionalStepEdgeClearance;
+            var right = Mathf.Min(
+                CompactHandRightEdge - OptionalStepEdgeClearance,
+                Mathf.Max(left, panelWidth - Margin));
+            var desiredWidth = RoundActionUnityView.OptionalStepActionWidth * 2f +
+                RoundActionUnityView.OptionalStepActionGap;
             var height = Mathf.Min(
-                DirectorHandsUnityView.CornerBannerHeight,
+                RoundActionUnityView.OptionalStepActionHeight,
                 Mathf.Max(0f, tray.yMin - StatusBarHeight - Margin));
             return new Rect(
                 left,
                 Mathf.Max(StatusBarHeight + Margin, tray.yMin - height - OptionalStepHandGap),
-                Mathf.Max(0f, right - left),
+                Mathf.Min(desiredWidth, Mathf.Max(0f, right - left)),
                 height);
         }
 

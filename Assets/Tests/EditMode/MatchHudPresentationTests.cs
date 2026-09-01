@@ -2678,9 +2678,18 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(new[] { EffectChoiceLabels.AcceptLabel, EffectChoiceLabels.DeclineLabel }));
                 Assert.That(round.OptionalStepActionsRoot.style.flexDirection.value,
                     Is.EqualTo(FlexDirection.Row), "The two submit-style banners stand side by side.");
+                Assert.That(round.OptionalStepActionsRoot.style.overflow.value,
+                    Is.EqualTo(Overflow.Visible),
+                    "The host cannot clip the banner outlines or shine.");
                 Assert.That(controls[0].style.marginRight.value.value,
                     Is.EqualTo(RoundActionUnityView.OptionalStepActionGap).Within(0.01f),
-                    "A small visible gap keeps ACCEPT and DECLINE distinct.");
+                    "A clear visible gap keeps ACCEPT and DECLINE distinct.");
+                Assert.That(controls.All(control =>
+                        Mathf.Abs(control.style.width.value.value -
+                            RoundActionUnityView.OptionalStepActionWidth) <= 0.01f &&
+                        Mathf.Abs(control.style.height.value.value -
+                            RoundActionUnityView.OptionalStepActionHeight) <= 0.01f),
+                    Is.True, "Both answers use the same compact footprint.");
                 Assert.That(controls.All(control =>
                         Descendants(control).Any(element => element.name == "gd-banner-cloth")),
                     Is.True, "Both answers reuse CONFIRM FACEDOWN's pewter cloth construction.");
@@ -2693,8 +2702,14 @@ namespace GuardsDigital.Tests.EditMode
                     Is.False, "No generic duplicate remains in the contextual tray.");
 
                 var expected = hud.OptionalStepControlRect;
-                Assert.That(expected.x, Is.EqualTo(hud.CardPanelRect.xMin).Within(0.01f),
-                    "The optional-step row aligns with the hand's far-left edge.");
+                Assert.That(expected.x,
+                    Is.EqualTo(hud.CardPanelRect.xMin +
+                        ConfiguredMatchHudRenderer.OptionalStepEdgeClearance).Within(0.01f),
+                    "The row aligns left with only enough inset to preserve the complete banner edge.");
+                Assert.That(expected.width,
+                    Is.EqualTo(RoundActionUnityView.OptionalStepActionWidth * 2f +
+                        RoundActionUnityView.OptionalStepActionGap).Within(0.01f),
+                    "The row is compact rather than stretched across the entire hand.");
                 Assert.That(round.OptionalStepActionsRoot.style.left.value.value,
                     Is.EqualTo(expected.x).Within(0.01f));
                 Assert.That(round.OptionalStepActionsRoot.style.top.value.value,

@@ -3547,7 +3547,9 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class RoundActionUnityView : IRoundActionView
     {
-        public const float OptionalStepActionGap = 12f;
+        public const float OptionalStepActionWidth = 240f;
+        public const float OptionalStepActionHeight = 36f;
+        public const float OptionalStepActionGap = 44f;
 
         private const double PreviewDismissDelaySeconds = 0.12d;
 
@@ -3663,7 +3665,8 @@ namespace GuardsDigital.Presentation.Match
             optionalStepActionsHost.pickingMode = PickingMode.Ignore;
             optionalStepActionsHost.style.flexDirection = FlexDirection.Row;
             optionalStepActionsHost.style.alignItems = Align.Stretch;
-            optionalStepActionsHost.style.justifyContent = Justify.SpaceBetween;
+            optionalStepActionsHost.style.justifyContent = Justify.FlexStart;
+            optionalStepActionsHost.style.overflow = Overflow.Visible;
             optionalStepActionsHost.style.display = DisplayStyle.None;
             Root.Add(optionalStepActionsHost);
             defenseCardHoverPreview = new VisualElement { name = "gd-defense-card-hover-preview" };
@@ -5114,9 +5117,11 @@ namespace GuardsDigital.Presentation.Match
                     text = invocation.Label
                 };
                 control.SetVisibleLabel(invocation.Label);
-                control.style.minHeight = DirectorHandsUnityView.CornerBannerHeight;
-                control.style.flexGrow = 1f;
-                control.style.flexBasis = 0f;
+                control.style.width = OptionalStepActionWidth;
+                control.style.minHeight = OptionalStepActionHeight;
+                control.style.height = OptionalStepActionHeight;
+                control.style.flexGrow = 0f;
+                control.style.flexBasis = OptionalStepActionWidth;
                 control.style.flexShrink = 1f;
                 control.style.marginRight = index < Model.EffectChoices.Count - 1
                     ? OptionalStepActionGap
