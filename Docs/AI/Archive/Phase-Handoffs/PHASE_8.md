@@ -721,3 +721,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.30n | Tied Initiative candidate owners publicly revise bounded hero preferences, and all three Minion Battle choosing-team seats agree to or withdraw from the exact standing board selection; only unanimous current agreement submits the existing rules command. The hero-name prompt, permanent ivory hero linkage, hover-only optional banners, frameless purpose-narrated discard/retrieval cards, and End Turn-styled Pass complete the user-directed HUD correction. Unity-free 1,742/1,742, complete Edit 2,108/2,108, and complete Play 263/263 pass; review found no remaining player-experience, rules-authority, maintainability, or project-risk defect. | `531892ae` |
+
+## Milestone 8.30n1 Move empty-hand Pass into End Turn's top-right slot completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30n1 | Empty-hand `PASS - NO CARD` now fills End Turn's mutually exclusive top-right status slot at all supported viewport shapes; the old bottom-right Pass geometry is gone while the existing hero-scoped command and full-shine treatment remain unchanged. Focused and affected Edit/Play checks plus two inspected desktop captures pass without a rule, authority, hand, card, status-strip, map, scene, networking or schema-v34 change. | `3a37083d` |
