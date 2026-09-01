@@ -727,3 +727,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.30n1 | Empty-hand `PASS - NO CARD` now fills End Turn's mutually exclusive top-right status slot at all supported viewport shapes; the old bottom-right Pass geometry is gone while the existing hero-scoped command and full-shine treatment remain unchanged. Focused and affected Edit/Play checks plus two inspected desktop captures pass without a rule, authority, hand, card, status-strip, map, scene, networking or schema-v34 change. | `3a37083d` |
+
+## Milestone 8.30n2 Keep hero plaques stationary under the ivory identity highlight completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30n2 | The warm-ivory board/plaque/tied-Initiative identity link now changes only the permanently reserved two-unit plaque-edge colour; plaque and hero-face bounds remain identical before, during and after highlight while the existing bidirectional cue stays active. Focused and affected Edit/Play checks plus the inspected tied-Initiative capture pass without a rule, authority, agreement, rail composition, map, scene, networking or schema-v34 change. | `4d132b5b` |
