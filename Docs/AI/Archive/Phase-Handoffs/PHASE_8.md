@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30l1 Isolate the performance baseline from hidden-Editor frame pacing completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30l1 | The Phase 4 performance fixture now saves and restores `Application.runInBackground`, `QualitySettings.vSyncCount`, and `Application.targetFrameRate`, measuring uncapped main-thread work rather than a hidden Editor window's cadence. The unchanged 10 ms p95 gate moved from two reproduced 45.4 ms failures to a 0.225 ms pass; complete evidence is 2,097/2,097 Edit Mode and 261/261 Play Mode. Review found no production, project-setting, threshold, sample-count, player-experience, or rules-authority change, and Unity teardown prevents process-global pacing state from leaking across fixtures. | `11bf103a` |
+
 ## Milestone 8.30k1 Restart Unity Hub and licensing before every validation run completion evidence
 
 | ID | Outcome | Commit |
