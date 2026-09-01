@@ -215,6 +215,9 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public const float CompactHandRightEdge = Margin + StatusDockWidth;
 
+        /// <summary>The gap between the optional-step submit banners and the retained hand.</summary>
+        public const float OptionalStepHandGap = 8f;
+
         /// <summary>
         /// End Turn's own width, in reference units. Milestone 8.30b's user-approved amendment took it
         /// out of the action row and gave it the panel's bottom-right corner.
@@ -340,6 +343,8 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The commitment confirmation lane immediately below the Director toggle.</summary>
         public Rect ConfirmFacedownControlRect => GetConfirmFacedownControlRect();
+        public Rect OptionalStepControlRect => CalculateOptionalStepControlRect(
+            PanelViewport.x, PanelViewport.y);
         public Rect RedHeroRailRect =>
             CalculateHeroRailRect(PanelViewport.x, PanelViewport.y, TeamSide.Red);
         public Rect BlueHeroRailRect =>
@@ -746,6 +751,9 @@ namespace GuardsDigital.Presentation.Match
             round.DeclineDefenseRoot.RemoveFromHierarchy();
             round.DeclineDefenseRoot.style.position = Position.Absolute;
             root.Add(round.DeclineDefenseRoot);
+            round.OptionalStepActionsRoot.RemoveFromHierarchy();
+            round.OptionalStepActionsRoot.style.position = Position.Absolute;
+            root.Add(round.OptionalStepActionsRoot);
             if (heroOverviews != null)
             {
                 // Only the revealed face leaves the rail layer. Keeping the rail columns where they
@@ -842,6 +850,7 @@ namespace GuardsDigital.Presentation.Match
                 playfield);
             LayoutDirectorControls();
             LayoutEndTurnControl();
+            LayoutOptionalStepControls();
             diagnostics?.Layout(GetRuleEventLogRect());
             PublishCameraSafeLayout(ordinaryTray, playfield, viewport);
         }
@@ -859,13 +868,16 @@ namespace GuardsDigital.Presentation.Match
             }
 
             hands.SetPrintedActionRegions(round.Model?.PrintedActionRegions);
-            var usesTray = round.HasExclusiveDecision || minionChoice?.Model != null;
+            var retainsOrdinaryHand = round.HasOptionalStepDecision;
+            var usesTray = (round.HasExclusiveDecision && !retainsOrdinaryHand) ||
+                minionChoice?.Model != null;
             var hostChanged = usesTray != contextUsesTray;
             if (hostChanged)
             {
                 HostContextViewsInTray(usesTray);
             }
 
+            hands.SetContextOnly(retainsOrdinaryHand);
             hands.SetHidden(usesTray);
 
             // Milestone 8.8a. The tray's own bound depends on what the contextual region is drawing, and
@@ -1216,6 +1228,7 @@ namespace GuardsDigital.Presentation.Match
             // must follow in the same callback; otherwise it retains the preceding frame's top and
             // separates from DIRECTOR after a resize or first live geometry resolution.
             LayoutEndTurnControl();
+            LayoutOptionalStepControls();
             var viewport = PanelViewport;
             var tray = CalculateCardPanelRect(viewport.x, viewport.y);
             var playfield = CalculatePlayfieldRect(viewport.x, viewport.y, tray);
@@ -1312,6 +1325,40 @@ namespace GuardsDigital.Presentation.Match
                 decline.style.width = declineRect.width;
                 decline.style.height = declineRect.height;
             }
+        }
+
+        /// <summary>
+        /// Places the optional-step row flush with the compact hand's left edge. The row ends at the
+        /// hand's established right edge, so it occupies no board-safe surface.
+        /// </summary>
+        private void LayoutOptionalStepControls()
+        {
+            var host = round?.OptionalStepActionsRoot;
+            if (host == null)
+            {
+                return;
+            }
+
+            var rect = CalculateOptionalStepControlRect(PanelViewport.x, PanelViewport.y);
+            host.style.left = rect.x;
+            host.style.top = rect.y;
+            host.style.width = rect.width;
+            host.style.height = rect.height;
+        }
+
+        public static Rect CalculateOptionalStepControlRect(float panelWidth, float panelHeight)
+        {
+            var tray = CalculateCardPanelRect(panelWidth, panelHeight);
+            var left = tray.xMin;
+            var right = Mathf.Min(CompactHandRightEdge, Mathf.Max(left, panelWidth - Margin));
+            var height = Mathf.Min(
+                DirectorHandsUnityView.CornerBannerHeight,
+                Mathf.Max(0f, tray.yMin - StatusBarHeight - Margin));
+            return new Rect(
+                left,
+                Mathf.Max(StatusBarHeight + Margin, tray.yMin - height - OptionalStepHandGap),
+                Mathf.Max(0f, right - left),
+                height);
         }
 
         private void LayoutDirectorControls()

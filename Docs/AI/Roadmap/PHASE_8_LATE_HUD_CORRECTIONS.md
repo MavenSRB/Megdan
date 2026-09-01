@@ -178,7 +178,7 @@ Non-goals: No effect, card, target, displacement, selection-bound, confirmation-
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830i2-remove-generic-effect-choice-confirmation-buttons-and-keep-spatial-choices-on-the-map-completion-evidence).
 
-### [ ] 8.30i3 Keep the hand visible beneath optional-step banners
+### [x] 8.30i3 Keep the hand visible beneath optional-step banners
 
 Blocked by: Corrective 8.30i2 must establish the final `ACCEPT`/`DECLINE` optional-step commands and map-first selection behavior before this independently requested layout correction begins.
 
@@ -196,6 +196,8 @@ Acceptance checks:
 Closing checks: `OptionalStepBanners_StandAboveTheVisibleOrdinaryHandInTheFacedownSubmitTreatment` fails while the exclusive context hides the cards and draws generic buttons, then passes after the corrected composition; `OptionalStepHand_RemainsNonActionableAndRebuildsWithoutMissingOrDuplicateCards` closes the retained-hand input, privacy, and lifecycle boundary.
 
 Non-goals: No effect, optionality, targeting, selection bound, command, pending-choice, card availability, lifecycle, ordering, hidden-information, snapshot, replay, Undo, or stale-command change; no change to spatial map selection/deselection, `DONE`, `CONFIRM FACEDOWN`, Defense, removal prevention, system transitions, Level Up, card-valued effect choices, minion choices, card faces, card footprint, hero rails, networking, animation, or broader HUD redesign.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830i3-keep-the-hand-visible-beneath-optional-step-banners-completion-evidence).
 
 ### [ ] 8.30j Strip the Upgrade-a-Card choice down to cards and centred gains
 

@@ -150,6 +150,26 @@ namespace GuardsDigital.Tests.PlayMode
                     value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline), Is.True,
                 "and declining must be an offered answer, not an absence. Shown controls: " +
                 UiPlayer.Describe(hud));
+            var acceptBanner = UiPlayer.Button(hud, EffectChoiceLabels.AcceptLabel);
+            var declineBanner = UiPlayer.Button(hud, EffectChoiceLabels.DeclineLabel);
+            var handCards = UiPlayer.Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-card-choice").ToArray();
+            Assert.That(handCards, Is.Not.Empty,
+                "The viewed hero's complete ordinary hand remains visible under the optional step.");
+            Assert.That(handCards.All(card => UiPlayer.IsShown(card) && !card.focusable), Is.True,
+                "The retained cards are visible context, not keyboard choices.");
+            Assert.That(acceptBanner.parent, Is.SameAs(declineBanner.parent));
+            Assert.That(acceptBanner.parent.name, Is.EqualTo("gd-optional-step-actions"));
+            Assert.That(acceptBanner.worldBound.xMax,
+                Is.LessThanOrEqualTo(declineBanner.worldBound.xMin + UiPlayer.PixelSnapping()),
+                "ACCEPT and DECLINE stand side by side in projected order.");
+            Assert.That(Mathf.Max(acceptBanner.worldBound.yMax, declineBanner.worldBound.yMax),
+                Is.LessThanOrEqualTo(handCards.Min(card => card.worldBound.yMin) +
+                    UiPlayer.PixelSnapping()),
+                "The two submit-style banners stand above rather than over the card hand.");
+            Assert.That(UiPlayer.IsShown(UiPlayer.Descendants(hud.RootElement)
+                    .Single(element => element.name == "gd-context-only-hand-blocker")), Is.True,
+                "A transparent input shield keeps even the full-strength resolving card contextual.");
             UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
             yield return null;
 
@@ -192,6 +212,61 @@ namespace GuardsDigital.Tests.PlayMode
                 "The clicked unit stands on the clicked space.");
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
                 "The Attack resumed and completed after its before-attack text.");
+        }
+
+        [UnityTest]
+        public IEnumerator OptionalStep_CapturesSubmitBannersAboveTheHandAtBothDesktopResolutions()
+        {
+            if (UnityEngine.Application.isBatchMode)
+            {
+                Assert.That(UnityEngine.Application.isBatchMode, Is.True,
+                    "The capture branch is exercised by the dedicated nonbatch run.");
+                yield break;
+            }
+
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            UiPlayer.SetPlayerViewport(2560, 1440, "8.30i3 optional banners at reference size");
+            yield return LoadEngagedScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var arienId = ArienSeat(runtime).HeroId;
+            var waspId = OtherHeroId(runtime, arienId);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            Commit(runtime, arienId, ArienCardContent.NobleBlade);
+            Commit(runtime, waspId, WaspCardContent.Shock);
+            yield return PointTrayAt(root, arienId);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
+            Assert.That(UiPlayer.ClickBoard(
+                pointerInput, hud, MinionView(targetId).transform.position), Is.True);
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null);
+            yield return CaptureGameView("8-30i3-optional-step-2560x1440");
+
+            UiPlayer.SetPlayerViewport(2048, 1152, "8.30i3 optional banners at short desktop size");
+            yield return null;
+            runtime.RefreshAll();
+            yield return null;
+            yield return null;
+            var banners = new[]
+            {
+                UiPlayer.Button(hud, EffectChoiceLabels.AcceptLabel),
+                UiPlayer.Button(hud, EffectChoiceLabels.DeclineLabel)
+            };
+            Assert.That(banners.All(banner =>
+                    banner.worldBound.xMin >= 0f && banner.worldBound.yMin >= 0f &&
+                    banner.worldBound.xMax <= ConfiguredMatchHudRenderer.PanelViewport.x +
+                        UiPlayer.PixelSnapping() &&
+                    banner.worldBound.yMax <= ConfiguredMatchHudRenderer.PanelViewport.y +
+                        UiPlayer.PixelSnapping()),
+                Is.True, "Both banners remain inside the short supported desktop viewport.");
+            yield return CaptureGameView("8-30i3-optional-step-2048x1152");
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.30i3 restore the prior viewport");
+            yield return null;
         }
 
         /// <summary>
@@ -333,6 +408,10 @@ namespace GuardsDigital.Tests.PlayMode
                     value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm), Is.True,
                 "with its own confirm-or-decline drawn again rather than the unit selection the " +
                 "Undo dropped. " + Remaining(runtime));
+            Assert.That(UiPlayer.Button(hud, EffectChoiceLabels.AcceptLabel).parent.name,
+                Is.EqualTo("gd-optional-step-actions"));
+            Assert.That(UiPlayer.Button(hud, EffectChoiceLabels.DeclineLabel).parent.name,
+                Is.EqualTo("gd-optional-step-actions"));
 
             // A snapshot taken on the stopped decision, restored onto the same session: the pause has
             // to come back as a pause a player can answer, not as a state that merely deserializes.
@@ -352,6 +431,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.RoundView.Model.EffectChoices.Any(value =>
                     value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm), Is.True,
                 "and the restored pause draws its own controls again. " + Remaining(runtime));
+            Assert.That(UiPlayer.Descendants(hud.RootElement)
+                    .Count(element => element.name == "gd-optional-step-actions"),
+                Is.EqualTo(1), "Restore leaves one optional banner row and no orphaned duplicate.");
 
             // and it is answerable on the same visible surface, by clicking the same real control.
             var confirm = runtime.RoundView.Model.EffectChoices.Single(value =>

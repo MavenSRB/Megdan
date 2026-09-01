@@ -2607,6 +2607,37 @@ namespace GuardsDigital.Tests.EditMode
             return session;
         }
 
+        /// <summary>
+        /// Arien's Noble Blade stopped on its printed before-Attack "may" after the target is chosen.
+        /// The position is reachable through the real verified card, board, commands and presenter.
+        /// </summary>
+        private static MatchSession SessionAwaitingAnOptionalStep()
+        {
+            var session = ConfiguredMatchFixtures.CreateAdjacentHeroAndMinionTargetSession(
+                out var adjacentMinionId, stagedArien: true);
+            var wasp = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Red).HeroId;
+            var arien = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(
+                arien, HandCardOf(session, arien, ArienCardContent.NobleBlade).Id));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(
+                wasp, HandCardOf(session, wasp, WaspCardContent.Shock).Id));
+            ConfiguredMatchFixtures.Accept(
+                session, DirectorCommand.StartAction(ArienCardContent.PrimaryAttack));
+            var target = session.Projection.PendingAttackTargetChoice;
+            Assert.That(target, Is.Not.Null);
+            Assert.That(target.LegalTargetHeroIds, Does.Contain(wasp));
+            Assert.That(session.Projection.Setup.Minions.Any(minion =>
+                    minion.MinionId.Equals(adjacentMinionId)), Is.True,
+                "The reachable optional branch has another unit standing beside Wasp.");
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseAttackTarget(
+                target.ResolutionId, target.ChoiceId, wasp));
+            Assert.That(session.Projection.PendingEffectChoice, Is.Not.Null,
+                "Noble Blade must stand on its reachable before-Attack optional step.");
+            return session;
+        }
+
         private static CardInstance HandCardOf(
             MatchSession session, HeroId heroId, CardDefinitionId definitionId) =>
             session.Projection.Cards.Single(card =>
@@ -2617,6 +2648,129 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
         // One usable interaction context
         // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void OptionalStepBanners_StandAboveTheVisibleOrdinaryHandInTheFacedownSubmitTreatment()
+        {
+            var session = SessionAwaitingAnOptionalStep();
+            var hands = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(session, hands).Refresh();
+            var round = new RoundActionUnityView();
+            new RoundActionPresenter(session, round).Refresh();
+            var host = new GameObject("8.30i3-optional-step-layout");
+            try
+            {
+                var hud = host.AddComponent<ConfiguredMatchHudRenderer>();
+                hud.Configure(
+                    hands,
+                    round,
+                    new UndoRestartUnityView(),
+                    new DiagnosticLogUnityView(),
+                    new MinionChoiceUnityView(),
+                    new HeroOverviewsUnityView());
+                hud.ApplyExclusiveContext();
+
+                Assert.That(round.HasOptionalStepDecision, Is.True);
+                Assert.That(hands.Root.style.display.value, Is.EqualTo(DisplayStyle.Flex),
+                    "This exclusive decision retains the ordinary hand instead of replacing it.");
+                var controls = round.OptionalStepActionsRoot.Children().OfType<Button>().ToArray();
+                Assert.That(controls.Select(control => control.text),
+                    Is.EqualTo(new[] { EffectChoiceLabels.AcceptLabel, EffectChoiceLabels.DeclineLabel }));
+                Assert.That(round.OptionalStepActionsRoot.style.flexDirection.value,
+                    Is.EqualTo(FlexDirection.Row), "The two submit-style banners stand side by side.");
+                Assert.That(controls[0].style.marginRight.value.value,
+                    Is.EqualTo(RoundActionUnityView.OptionalStepActionGap).Within(0.01f),
+                    "A small visible gap keeps ACCEPT and DECLINE distinct.");
+                Assert.That(controls.All(control =>
+                        Descendants(control).Any(element => element.name == "gd-banner-cloth")),
+                    Is.True, "Both answers reuse CONFIRM FACEDOWN's pewter cloth construction.");
+                Assert.That(controls.All(control =>
+                        control is RoundActionUnityView.PewterBanner banner && banner.ShinesFully),
+                    Is.True, "Both answers carry the strong submit-button shine.");
+                Assert.That(Descendants(round.Root).OfType<Button>().Any(control =>
+                        control.text == EffectChoiceLabels.AcceptLabel ||
+                        control.text == EffectChoiceLabels.DeclineLabel),
+                    Is.False, "No generic duplicate remains in the contextual tray.");
+
+                var expected = hud.OptionalStepControlRect;
+                Assert.That(expected.x, Is.EqualTo(hud.CardPanelRect.xMin).Within(0.01f),
+                    "The optional-step row aligns with the hand's far-left edge.");
+                Assert.That(round.OptionalStepActionsRoot.style.left.value.value,
+                    Is.EqualTo(expected.x).Within(0.01f));
+                Assert.That(round.OptionalStepActionsRoot.style.top.value.value,
+                    Is.EqualTo(expected.y).Within(0.01f));
+                Assert.That(round.OptionalStepActionsRoot.style.width.value.value,
+                    Is.EqualTo(expected.width).Within(0.01f));
+                Assert.That(expected.yMax,
+                    Is.LessThanOrEqualTo(hud.CardPanelRect.yMin -
+                        ConfiguredMatchHudRenderer.OptionalStepHandGap + 0.01f),
+                    "The row stands immediately above the hand and covers no card face.");
+                Assert.That(expected.xMax,
+                    Is.LessThanOrEqualTo(ConfiguredMatchHudRenderer.CompactHandRightEdge + 0.01f),
+                    "The banners remain inside the hand-side HUD reservation, outside the board.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        public void OptionalStepHand_RemainsNonActionableAndRebuildsWithoutMissingOrDuplicateCards()
+        {
+            var session = SessionAwaitingAnOptionalStep();
+            var hands = new DirectorHandsUnityView();
+            var handsPresenter = new DirectorHandsPresenter(session, hands);
+            handsPresenter.Refresh();
+            var round = new RoundActionUnityView();
+            var roundPresenter = new RoundActionPresenter(session, round);
+            roundPresenter.Refresh();
+            var host = new GameObject("8.30i3-context-only-hand");
+            try
+            {
+                var hud = host.AddComponent<ConfiguredMatchHudRenderer>();
+                hud.Configure(
+                    hands,
+                    round,
+                    new UndoRestartUnityView(),
+                    new DiagnosticLogUnityView(),
+                    new MinionChoiceUnityView(),
+                    new HeroOverviewsUnityView());
+                hud.ApplyExclusiveContext();
+
+                var expectedIds = hands.Model.ViewedHand.TrayCards
+                    .Select(card => card.CardInstanceId).ToArray();
+                Assert.That(hands.IsContextOnly, Is.True);
+                Assert.That(hands.Root.Q<VisualElement>("gd-context-only-hand-blocker")
+                    .style.display.value, Is.EqualTo(DisplayStyle.Flex),
+                    "One transparent shield owns pointer input while the cards remain visible.");
+                var cards = Descendants(hands.Root)
+                    .Where(element => element.name == "gd-card-choice").ToArray();
+                Assert.That(cards, Has.Length.EqualTo(expectedIds.Length));
+                Assert.That(cards.All(card => !card.focusable), Is.True,
+                    "No retained card remains keyboard-actionable during the optional step.");
+                Assert.That(Descendants(hands.Root)
+                    .Any(element => element.name == "gd-confirm-control"), Is.False,
+                    "The retained hand cannot expose a commitment confirmation.");
+
+                handsPresenter.Refresh();
+                roundPresenter.Refresh();
+                hud.ApplyExclusiveContext();
+                Assert.That(Descendants(hands.Root)
+                        .Count(element => element.name == "gd-card-choice"),
+                    Is.EqualTo(expectedIds.Length),
+                    "A projection rebuild leaves exactly one surface for every retained card.");
+                Assert.That(hands.Model.ViewedHand.TrayCards
+                        .Select(card => card.CardInstanceId),
+                    Is.EqualTo(expectedIds), "The rebuild preserves projected hand order and identity.");
+                Assert.That(round.OptionalStepActionsRoot.Children().OfType<Button>().Count(),
+                    Is.EqualTo(2), "The same rebuild leaves one ACCEPT and one DECLINE banner.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
 
         [Test]
         public void WhileAMandatoryResponseStands_TheOrdinaryTrayIsNotOnScreen()

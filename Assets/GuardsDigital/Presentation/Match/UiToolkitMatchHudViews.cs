@@ -1661,10 +1661,20 @@ namespace GuardsDigital.Presentation.Match
             Root.Add(cards);
             Root.Add(cornerActions);
             Root.Add(confirmAction);
+            contextBlocker = new VisualElement { name = "gd-context-only-hand-blocker" };
+            contextBlocker.style.position = Position.Absolute;
+            contextBlocker.style.left = 0f;
+            contextBlocker.style.top = 0f;
+            contextBlocker.style.right = 0f;
+            contextBlocker.style.bottom = 0f;
+            contextBlocker.style.display = DisplayStyle.None;
+            contextBlocker.pickingMode = PickingMode.Position;
+            Root.Add(contextBlocker);
         }
 
         private readonly VisualElement cornerActions;
         private readonly VisualElement confirmAction;
+        private readonly VisualElement contextBlocker;
         private readonly VisualElement dragProxy;
         private readonly CardCommitmentDragState dragState = new CardCommitmentDragState();
         private VisualElement dragCapture;
@@ -1672,6 +1682,7 @@ namespace GuardsDigital.Presentation.Match
         private Func<Vector2, bool> isMapDropPoint;
         private bool confirmLayoutReady;
         private bool trayHidden;
+        private bool contextOnly;
 
         public const float CardDragThreshold = 12f;
 
@@ -1697,10 +1708,37 @@ namespace GuardsDigital.Presentation.Match
         public void SetConfirmLayoutReady(bool ready)
         {
             confirmLayoutReady = ready;
-            confirmAction.style.display = ready && !trayHidden
+            confirmAction.style.display = ready && !trayHidden && !contextOnly
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
         }
+
+        /// <summary>
+        /// Keeps the ordinary hand visible as context while a separately hosted decision owns input.
+        /// The cards retain their complete-face presentation, but every command path from this view
+        /// is refused until the exclusive decision leaves.
+        /// </summary>
+        public void SetContextOnly(bool value)
+        {
+            if (contextOnly == value)
+            {
+                return;
+            }
+
+            contextOnly = value;
+            CancelCardDrag();
+            ClearPeekPreview();
+            contextBlocker.style.display = contextOnly ? DisplayStyle.Flex : DisplayStyle.None;
+            confirmAction.style.display = confirmLayoutReady && !trayHidden && !contextOnly
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            if (Model != null)
+            {
+                Rebuild();
+            }
+        }
+
+        public bool IsContextOnly => contextOnly;
 
         public VisualElement Root { get; }
 
@@ -1763,7 +1801,7 @@ namespace GuardsDigital.Presentation.Match
 
         public bool ForwardPrintedActionRegion(PrintedActionRegionViewModel region)
         {
-            if (region?.Invocation == null || !printedActionRegions.Any(value =>
+            if (contextOnly || region?.Invocation == null || !printedActionRegions.Any(value =>
                     ReferenceEquals(value, region) &&
                     value.SourceCardInstanceId.Equals(region.SourceCardInstanceId) &&
                     value.ActionDefinitionId.Equals(region.ActionDefinitionId)))
@@ -1825,7 +1863,7 @@ namespace GuardsDigital.Presentation.Match
             // hand-status bar); the corner banners are the surface exclusivity must hide.
             HeaderRoot.style.display = DisplayStyle.None;
             cornerActions.style.display = display;
-            confirmAction.style.display = confirmLayoutReady && !hidden
+            confirmAction.style.display = confirmLayoutReady && !hidden && !contextOnly
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
         }
@@ -1866,7 +1904,13 @@ namespace GuardsDigital.Presentation.Match
             if (hand.CanPass)
             {
                 var pass = new RoundActionUnityView.PewterBanner(
-                    () => PassRequested?.Invoke(hand.HeroId), false,
+                    () =>
+                    {
+                        if (!contextOnly)
+                        {
+                            PassRequested?.Invoke(hand.HeroId);
+                        }
+                    }, false,
                     CornerBannerFontSize, "gd-pass-banner-label")
                 {
                     name = "gd-pass-control",
@@ -1881,7 +1925,13 @@ namespace GuardsDigital.Presentation.Match
             if (hand.SelectedCardInstanceId.HasValue)
             {
                 var confirm = new RoundActionUnityView.PewterBanner(
-                    () => ConfirmRequested?.Invoke(), true,
+                    () =>
+                    {
+                        if (!contextOnly)
+                        {
+                            ConfirmRequested?.Invoke();
+                        }
+                    }, true,
                     CornerBannerFontSize, "gd-confirm-banner-label")
                 {
                     name = "gd-confirm-control",
@@ -1904,7 +1954,7 @@ namespace GuardsDigital.Presentation.Match
         {
             var button = new Button(() =>
             {
-                if (card.IsSelectable)
+                if (!contextOnly && card.IsSelectable)
                 {
                     CardSelected?.Invoke(card.CardInstanceId);
                 }
@@ -1912,6 +1962,7 @@ namespace GuardsDigital.Presentation.Match
             {
                 name = "gd-card-choice"
             };
+            button.focusable = !contextOnly;
             button.text = string.Empty;
             // The shared builder owns both complete-face shapes: a prepared printed front at its
             // verified source aspect, or the taller typed generated fallback when no resource exists.
@@ -2008,7 +2059,7 @@ namespace GuardsDigital.Presentation.Match
         {
             button.RegisterCallback<PointerDownEvent>(evt =>
             {
-                if (evt.button != 0 || !card.IsSelectable ||
+                if (evt.button != 0 || contextOnly || !card.IsSelectable ||
                     !dragState.Begin(evt.pointerId, card.CardInstanceId, evt.position))
                 {
                     return;
@@ -2045,7 +2096,7 @@ namespace GuardsDigital.Presentation.Match
                 // Suppress Button.Clickable's pointer-up path: a drag is one input path and cannot
                 // also select the card or reveal the confirmation banner beneath it.
                 evt.StopImmediatePropagation();
-                if (isMapDropPoint?.Invoke(evt.position) == true)
+                if (!contextOnly && isMapDropPoint?.Invoke(evt.position) == true)
                 {
                     CardDroppedOnMap?.Invoke(cardId);
                 }
@@ -2151,7 +2202,8 @@ namespace GuardsDigital.Presentation.Match
                     name = "gd-printed-action-region",
                     text = string.Empty,
                     tooltip = region.AssistiveLabel,
-                    userData = region
+                    userData = region,
+                    focusable = !contextOnly
                 };
                 ApplyActionBounds(control, bounds, usesPreparedArtwork);
                 control.style.backgroundColor = Color.clear;
@@ -2261,7 +2313,7 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 overlay.Add(control);
-                if (region.FastTravelOffer != null)
+                if (!contextOnly && region.FastTravelOffer != null)
                 {
                     overlay.Add(BuildReplacementChip(
                         region,
@@ -2278,7 +2330,7 @@ namespace GuardsDigital.Presentation.Match
                         usesPreparedArtwork));
                 }
 
-                if (region.ClearOffer != null)
+                if (!contextOnly && region.ClearOffer != null)
                 {
                     overlay.Add(BuildReplacementChip(
                         region,
@@ -3495,6 +3547,8 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class RoundActionUnityView : IRoundActionView
     {
+        public const float OptionalStepActionGap = 12f;
+
         private const double PreviewDismissDelaySeconds = 0.12d;
 
         /// <summary>
@@ -3533,6 +3587,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement rows;
         private readonly VisualElement preview;
         private readonly VisualElement declineDefenseHost;
+        private readonly VisualElement optionalStepActionsHost;
         private readonly VisualElement defenseCardHoverPreview;
         private readonly VisualElement defenseDragProxy;
         private readonly CardCommitmentDragState defenseDragState = new CardCommitmentDragState();
@@ -3604,6 +3659,13 @@ namespace GuardsDigital.Presentation.Match
             declineDefenseHost.style.justifyContent = Justify.FlexStart;
             declineDefenseHost.style.display = DisplayStyle.None;
             Root.Add(declineDefenseHost);
+            optionalStepActionsHost = new VisualElement { name = "gd-optional-step-actions" };
+            optionalStepActionsHost.pickingMode = PickingMode.Ignore;
+            optionalStepActionsHost.style.flexDirection = FlexDirection.Row;
+            optionalStepActionsHost.style.alignItems = Align.Stretch;
+            optionalStepActionsHost.style.justifyContent = Justify.SpaceBetween;
+            optionalStepActionsHost.style.display = DisplayStyle.None;
+            Root.Add(optionalStepActionsHost);
             defenseCardHoverPreview = new VisualElement { name = "gd-defense-card-hover-preview" };
             defenseCardHoverPreview.style.position = Position.Absolute;
             defenseCardHoverPreview.style.display = DisplayStyle.None;
@@ -3623,6 +3685,9 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The Defense decline banner hosted at the facedown confirmation rectangle.</summary>
         public VisualElement DeclineDefenseRoot => declineDefenseHost;
+
+        /// <summary>The two optional-step answers hosted above the retained ordinary hand.</summary>
+        public VisualElement OptionalStepActionsRoot => optionalStepActionsHost;
 
         /// <summary>The ordinary hand-style complete face raised from an overlapped Defense card.</summary>
         public VisualElement DefenseCardHoverPreviewRoot => defenseCardHoverPreview;
@@ -3704,6 +3769,10 @@ namespace GuardsDigital.Presentation.Match
         public bool HasUpgradeComparisonBand =>
             Model?.SystemTransitionPrompt != null &&
             Model.SystemTransitionPrompt.Options.All(option => option.Card != null);
+
+        public bool HasOptionalStepDecision =>
+            Model?.EffectChoicePrompt?.Subject == EffectChoiceSubject.OptionalStep &&
+            Model.EffectChoices.Count > 0;
 
         public bool HasExclusiveDecision =>
             Model != null &&
@@ -3812,6 +3881,8 @@ namespace GuardsDigital.Presentation.Match
             ClearDefenseCardPeekPreview();
             declineDefenseHost.Clear();
             declineDefenseHost.style.display = DisplayStyle.None;
+            optionalStepActionsHost.Clear();
+            optionalStepActionsHost.style.display = DisplayStyle.None;
             status.Clear();
             rows.Clear();
             // Milestone 8.30b: End Turn is rebuilt before the branches below, because four of them
@@ -4989,6 +5060,12 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            if (prompt.Subject == EffectChoiceSubject.OptionalStep)
+            {
+                BuildOptionalStepActions();
+                return;
+            }
+
             var section = Section(prompt.SectionLabel);
             if (Model.EffectChoices.Any(choice => choice.Card != null))
             {
@@ -5016,6 +5093,35 @@ namespace GuardsDigital.Presentation.Match
                 var control = HudElements.Control(unavailable.Label, null);
                 HudElements.MarkUnavailable(control);
                 section.Add(control);
+            }
+        }
+
+        private void BuildOptionalStepActions()
+        {
+            optionalStepActionsHost.style.display = DisplayStyle.Flex;
+            for (var index = 0; index < Model.EffectChoices.Count; index++)
+            {
+                var invocation = Model.EffectChoices[index];
+                var accepts = invocation.Label == EffectChoiceLabels.AcceptLabel;
+                var control = new PewterBanner(
+                    () => ForwardInvocation(invocation), true,
+                    DirectorHandsUnityView.CornerBannerFontSize,
+                    accepts
+                        ? "gd-optional-step-accept-label"
+                        : "gd-optional-step-decline-label")
+                {
+                    name = accepts ? "gd-optional-step-accept" : "gd-optional-step-decline",
+                    text = invocation.Label
+                };
+                control.SetVisibleLabel(invocation.Label);
+                control.style.minHeight = DirectorHandsUnityView.CornerBannerHeight;
+                control.style.flexGrow = 1f;
+                control.style.flexBasis = 0f;
+                control.style.flexShrink = 1f;
+                control.style.marginRight = index < Model.EffectChoices.Count - 1
+                    ? OptionalStepActionGap
+                    : 0f;
+                optionalStepActionsHost.Add(control);
             }
         }
 
