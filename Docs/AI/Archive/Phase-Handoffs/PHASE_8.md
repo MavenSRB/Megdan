@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30j Strip the Upgrade-a-Card choice down to cards and centred item boxes completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30j | The p.15 Upgrade-a-Card choice retains six standard whole-card controls in stable Blue, Green and Red pair order while removing the opaque comparison band, pair captions, pair and option frames, and the `GAINS` prefix. Each candidate keeps its exact projected pointer and keyboard invocation and has one compact backed signed item box centred beneath it; hover/focus strengthens that box without moving or reframing the face. T2 evidence is 1/1 closing Edit, 100/100 focused and affected Edit, 11/11 focused and affected Play, and 1/1 targeted non-batch Play with inspected 2560x1440 and 2048x1152 captures. Review found no remaining player-experience, rules-authority, maintainability or project-risk defect; Level Up rules, authority, persistence, schema v34, hidden information, source artwork and networking are unchanged. | `2d5ed40d` |
+
 ## Milestone 8.30i3 Keep the hand visible beneath optional-step banners completion evidence
 
 | ID | Outcome | Commit |
