@@ -54,9 +54,7 @@ namespace GuardsDigital.Presentation.Match
                 .ToString(System.Globalization.CultureInfo.InvariantCulture);
             WaveLabel = "WAVES " +
                 setup.WaveCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            TieBreakerLabel = !tieBreaker.IsDefined
-                ? "TIE ?"
-                : tieBreaker.RevealedSide == TeamSide.Red ? "TIE [R] RED" : "TIE [B] BLUE";
+            TieBreakerLabel = "TIEBREAKER";
         }
 
         public TieBreakerState TieBreaker { get; }
@@ -163,7 +161,8 @@ namespace GuardsDigital.Presentation.Match
         // Keeps UI Toolkit border/pixel snapping from turning two mathematically adjacent rectangles
         // into a live one-pixel overlap at non-identity panel scales.
         private const float BoardTraySeparation = 2f;
-        private const float TieBreakerWidth = 200f;
+        public const float TieBreakerDiameter = 80f;
+        private const float TieBreakerInset = 8f;
         private const float EventLogPreferredWidth = 720f;
         private const float EventLogPreferredHeight = 360f;
 
@@ -223,7 +222,8 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// End Turn's own width, in reference units. Milestone 8.30b's user-approved amendment took it
-        /// out of the action row and gave it the panel's bottom-right corner.
+        /// out of the action row; milestone 8.30l's final layout places it in the status bar's
+        /// top-right slot.
         ///
         /// <para><b>Why it left the row.</b> It was the last control on an unlabelled line it shared
         /// with every offered action, and milestone 8.29b1b then moved the printed actions onto the
@@ -337,6 +337,8 @@ namespace GuardsDigital.Presentation.Match
 
         public MatchHudHeaderViewModel Header => header;
         public Rect CardPanelRect => GetCardPanelRect();
+        public Rect UnavailableCardGroupRect => CalculateUnavailableCardGroupRect(
+            PanelViewport.x, PanelViewport.y);
         public Rect TieBreakerIndicatorRect => GetTieBreakerIndicatorRect();
         public Rect RuleEventLogPanelRect => GetRuleEventLogRect();
         public Rect StatusBarRect => CalculateStatusBarRect(PanelViewport.x, PanelViewport.y);
@@ -445,6 +447,7 @@ namespace GuardsDigital.Presentation.Match
                     liveStatusDock.Contains(panelPosition)) ||
                 GetTieBreakerIndicatorRect().Contains(panelPosition) ||
                 CalculateStatusBarRect(viewport.x, viewport.y).Contains(panelPosition) ||
+                UnavailableCardsBlockPointerAt(panelPosition) ||
                 // Milestone 8.30b. End Turn's corner sits inside the tray band, and the band blocks
                 // the pointer only across the compact hand's own footprint at the opposite edge - so
                 // without this the board would act on the same click the control consumed. It is asked
@@ -513,6 +516,19 @@ namespace GuardsDigital.Presentation.Match
             var viewport = PanelViewport;
             yield return CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Red);
             yield return CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Blue);
+        }
+
+        private bool UnavailableCardsBlockPointerAt(Vector2 panelPosition)
+        {
+            var host = hands?.UnavailableCardsRoot;
+            if (host == null || host.style.display.value == DisplayStyle.None)
+            {
+                return false;
+            }
+
+            return (TryLiveRect(host, out var live)
+                ? live
+                : UnavailableCardGroupRect).Contains(panelPosition);
         }
 
         /// <summary>
@@ -721,6 +737,9 @@ namespace GuardsDigital.Presentation.Match
             trayScroll.Add(trayFlow);
             trayRegion.Add(trayScroll);
             root.Add(trayRegion);
+            hands.UnavailableCardsRoot.RemoveFromHierarchy();
+            hands.UnavailableCardsRoot.style.position = Position.Absolute;
+            root.Add(hands.UnavailableCardsRoot);
             hands.HoverPreviewRoot.RemoveFromHierarchy();
             root.Add(hands.HoverPreviewRoot);
             hands.DragProxyRoot.RemoveFromHierarchy();
@@ -736,7 +755,7 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.30b, by the user-approved amendment. Two of this view's surfaces leave the
             // contextual region: the narration goes into the top status bar, which is the widest line
             // on the panel and directly under the round and Life counters it qualifies, and End Turn
-            // takes the panel's bottom-right corner as a control of its own. Both are re-parented
+            // takes the status bar's top-right slot as a control of its own. Both are re-parented
             // rather than rebuilt, so the round presenter remains the only thing that derives either.
             statusBar.HostNarration(round.NarrationRoot);
             round.EndTurnRoot.RemoveFromHierarchy();
@@ -844,6 +863,17 @@ namespace GuardsDigital.Presentation.Match
             // be a little taller than the ordinary hand, while every standing surface continues to use
             // ordinaryTray. Opening Level Up therefore never moves a plaque or reframes the board.
             trayRegion.style.maxHeight = tray.height;
+            var unavailableRect = CalculateUnavailableCardGroupRect(width, height);
+            var unavailableHost = hands?.UnavailableCardsRoot;
+            if (unavailableHost != null)
+            {
+                unavailableHost.style.left = unavailableRect.x;
+                unavailableHost.style.top = unavailableRect.y;
+                unavailableHost.style.right = StyleKeyword.Auto;
+                unavailableHost.style.bottom = StyleKeyword.Auto;
+                unavailableHost.style.width = unavailableRect.width;
+                unavailableHost.style.height = unavailableRect.height;
+            }
             var playfield = CalculatePlayfieldRect(width, height, ordinaryTray);
             heroOverviews?.Layout(
                 CalculateHeroRailRect(width, height, TeamSide.Red, ordinaryTray.yMin),
@@ -880,7 +910,6 @@ namespace GuardsDigital.Presentation.Match
 
             hands.SetContextOnly(retainsOrdinaryHand);
             hands.SetHidden(usesTray);
-
             // Milestone 8.8a. The tray's own bound depends on what the contextual region is drawing, and
             // that can change without the header changing - a paused prompt is rendered into the region
             // by its own presenter. Re-laying out only on the transition keeps this a two-state answer
@@ -973,6 +1002,26 @@ namespace GuardsDigital.Presentation.Match
                 tray.y,
                 Mathf.Min(tray.width, CompactHandRightEdge),
                 tray.height);
+        }
+
+        /// <summary>
+        /// Milestone 8.30l's fixed right-side reservation. Five complete faces overlap vertically
+        /// beneath the live Blue rail, leaving the broad map region untouched. The host draws no
+        /// chrome and becomes absent when empty; the fixed reservation
+        /// keeps card lifecycle refreshes from moving the map or hero rails as groups exchange members.
+        /// </summary>
+        public static Rect CalculateUnavailableCardGroupRect(float panelWidth, float panelHeight)
+        {
+            var width = Mathf.Min(panelWidth, DirectorHandsUnityView.PeekCardOuterWidth);
+            var height = Mathf.Min(
+                Mathf.Max(0f, panelHeight - StatusBarHeight),
+                DirectorHandsUnityView.CompactUnavailableStackHeight(OrdinaryHandCardCount));
+            var bottom = Mathf.Max(StatusBarHeight + height, panelHeight - Margin);
+            return new Rect(
+                Mathf.Max(0f, panelWidth - Margin - width),
+                Mathf.Max(StatusBarHeight, bottom - height),
+                width,
+                height);
         }
 
         private static Rect CalculateCardPanelRect(
@@ -1093,48 +1142,51 @@ namespace GuardsDigital.Presentation.Match
             CalculateCardPanelRect(PanelViewport.x, PanelViewport.y);
 
         /// <summary>
-        /// The Tie Breaker chip's own rectangle inside the status strip. Milestone 8.25c made it a
+        /// The Tie Breaker badge's own rectangle in the centre of the status strip. Milestone 8.25c made it a
         /// stated function of the viewport rather than a reader of the current screen, so a check can
         /// ask where it is at a viewport that is not the one the fixture is running at.
         /// </summary>
         public static Rect CalculateTieBreakerIndicatorRect(float panelWidth, float panelHeight)
         {
-            var width = Mathf.Min(TieBreakerWidth, Mathf.Max(120f, panelWidth - (Margin * 2f)));
+            var diameter = Mathf.Min(
+                TieBreakerDiameter,
+                Mathf.Max(0f, panelWidth),
+                Mathf.Max(0f, Mathf.Min(StatusBarHeight, panelHeight) - (TieBreakerInset * 2f)));
             return new Rect(
-                Mathf.Max(Margin, panelWidth - width - Margin),
-                Margin,
-                width,
-                // Milestone 8.30b: the identity row rather than the whole strip. The narration lane
-                // widened the strip below this chip; measuring the chip against the strip would have
-                // stretched it down over the sentence instead of leaving it where it has always been.
-                Mathf.Max(
-                    0f,
-                    Mathf.Min(StatusBarIdentityRowHeight, Mathf.Max(0f, panelHeight)) - (Margin * 2f)));
+                Mathf.Max(0f, (panelWidth - diameter) * 0.5f),
+                Mathf.Max(0f, (Mathf.Min(StatusBarHeight, panelHeight) - diameter) * 0.5f),
+                diameter,
+                diameter);
         }
 
         private static Rect GetTieBreakerIndicatorRect() =>
             CalculateTieBreakerIndicatorRect(PanelViewport.x, PanelViewport.y);
 
         /// <summary>
-        /// End Turn's own rectangle in the panel's bottom-right corner, stated as a function of the
+        /// End Turn's own rectangle in the status bar's top-right slot, stated as a function of the
         /// viewport for the reason <see cref="CalculateTieBreakerIndicatorRect"/> is: a fixture with no
         /// live panel has to be able to ask where it lands at a viewport it is not running at.
         ///
-        /// <para>The corner is free in every state that offers End Turn. The tray band reaches the
-        /// panel's full width, but its ordinary content is the compact five-card hand in the opposite
-        /// corner, and the states that fill the band instead - a Defense response, a removal
-        /// prevention, a paused system transition, a card-valued effect choice - are exactly the
-        /// states in which the turn authority refuses an End Turn, so the presenter projects none and
-        /// this control is not drawn. The hero rails stop at the tray's top edge, so neither reaches
-        /// this band at all.</para>
+        /// <para>The slot replaces the Tie Breaker's former right-side position while the new round
+        /// badge occupies the centre. It is fixed independently of the bottom-right unavailable-card
+        /// fan, so card lifecycle refreshes cannot move the control.</para>
         /// </summary>
         public static Rect CalculateEndTurnControlRect(float panelWidth, float panelHeight)
         {
-            // It yields to the compact hand rather than overlapping it, which is the same answer
-            // `CalculateHeroRailWidth` gives when a panel is too narrow for the width it prefers: the
-            // supported desktop shapes leave 1816 reference units here and receive the full 300, and
-            // only the deliberately degenerate shapes - the ones that already resolve the rail columns
-            // to no height at all - reach the narrowing branch.
+            var width = Mathf.Min(EndTurnControlWidth, Mathf.Max(0f, panelWidth - Margin));
+            var height = Mathf.Min(EndTurnControlHeight, Mathf.Max(0f, panelHeight));
+            return new Rect(
+                Mathf.Max(0f, panelWidth - width - Margin),
+                0f,
+                width,
+                height);
+        }
+
+        private static Rect GetEndTurnControlRect() =>
+            CalculateEndTurnControlRect(PanelViewport.x, PanelViewport.y);
+
+        private static Rect CalculateCornerActionControlRect(float panelWidth, float panelHeight)
+        {
             var handRightEdge = CalculateCompactHandPointerRect(panelWidth, panelHeight).xMax;
             var width = Mathf.Min(
                 EndTurnControlWidth, Mathf.Max(0f, panelWidth - Margin - handRightEdge));
@@ -1147,9 +1199,6 @@ namespace GuardsDigital.Presentation.Match
                 width,
                 height);
         }
-
-        private static Rect GetEndTurnControlRect() =>
-            CalculateEndTurnControlRect(PanelViewport.x, PanelViewport.y);
 
         /// <summary>
         /// Where the `DIRECTOR` toggle stands: directly below the live third Red hero. Level Up no
@@ -1246,7 +1295,10 @@ namespace GuardsDigital.Presentation.Match
             var upperLeft = Mathf.Max(
                 red.xMax + BoardHexUiGap,
                 red.xMin + StatusDockWidth + BoardHexUiGap);
-            var upperRight = Mathf.Max(upperLeft, blue.xMin - BoardHexUiGap);
+            var unavailableRect = CalculateUnavailableCardGroupRect(viewport.x, viewport.y);
+            var upperRight = Mathf.Max(
+                upperLeft,
+                Mathf.Min(blue.xMin, unavailableRect.xMin) - BoardHexUiGap);
             var upperTop = StatusBarHeight + BoardHexUiGap;
             var upperBottom = Mathf.Max(upperTop, viewport.y - BoardHexUiGap);
             var upper = new Rect(
@@ -1268,7 +1320,9 @@ namespace GuardsDigital.Presentation.Match
             // compact slot's left edge plus one standard card width. This keeps a revealed card clear
             // of every playable hex while reclaiming the width the other four full faces used to hold.
             var lowerLeft = CompactHandRightEdge + BoardCardHexUiGap;
-            var lowerRight = Mathf.Max(lowerLeft, viewport.x - BoardHexUiGap);
+            var lowerRight = Mathf.Max(
+                lowerLeft,
+                unavailableRect.xMin - BoardCardHexUiGap);
             var lowerBottom = Mathf.Max(lowerTop, viewport.y - BoardHexUiGap);
             var lower = new Rect(
                 lowerLeft,
@@ -1281,7 +1335,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Places End Turn in the panel's bottom-right corner. Milestone 8.30b.
+        /// Places End Turn in the status bar's top-right slot. Milestone 8.30l.
         /// </summary>
         private void LayoutEndTurnControl()
         {
@@ -1298,10 +1352,12 @@ namespace GuardsDigital.Presentation.Match
             var corner = hands?.CornerActionsRoot;
             if (corner != null)
             {
-                corner.style.left = rect.x;
-                corner.style.top = rect.y;
-                corner.style.width = rect.width;
-                corner.style.height = rect.height;
+                var viewport = PanelViewport;
+                var cornerRect = CalculateCornerActionControlRect(viewport.x, viewport.y);
+                corner.style.left = cornerRect.x;
+                corner.style.top = cornerRect.y;
+                corner.style.width = cornerRect.width;
+                corner.style.height = cornerRect.height;
             }
 
             var confirm = hands?.ConfirmActionRoot;

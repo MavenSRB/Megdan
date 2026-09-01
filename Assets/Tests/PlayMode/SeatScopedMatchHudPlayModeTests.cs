@@ -73,19 +73,27 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the bar is showing exactly the sentence the seat own presenter derived. " +
                 UiPlayer.Describe(root.Hud));
 
-            // The strip is the identity row plus the lane, and the Tie Breaker chip is still measured
-            // against the identity row alone - the amendment widened the strip without moving the chip.
+            // The strip is the identity row plus the lane. Milestone 8.30l centres the Tie Breaker
+            // across that complete height as a round badge while End Turn takes its former right slot.
             var snap = UiPlayer.PixelSnapping();
             Assert.That(topBar.worldBound.height,
                 Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight).Within(snap));
             Assert.That(Named(root.Hud.RootElement, "gd-topbar-identity").worldBound.height,
                 Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarIdentityRowHeight).Within(snap));
-            var chip = Named(root.Hud.RootElement, "gd-tie-breaker").worldBound;
+            var chipElement = Named(root.Hud.RootElement, "gd-tie-breaker");
+            var chip = chipElement.worldBound;
             Assert.That(chip.yMin, Is.EqualTo(root.Hud.TieBreakerIndicatorRect.yMin).Within(snap));
             Assert.That(chip.height,
                 Is.EqualTo(root.Hud.TieBreakerIndicatorRect.height).Within(snap));
-            Assert.That(chip.yMax, Is.LessThanOrEqualTo(lane.worldBound.yMin + snap),
-                "The chip stays inside the identity row rather than reaching down over the sentence.");
+            Assert.That(chip.width, Is.EqualTo(chip.height).Within(snap),
+                "The Tie Breaker is a circle, not the retired wide chip.");
+            Assert.That(chip.center.x,
+                Is.EqualTo(topBar.worldBound.center.x).Within(snap),
+                "The round Tie Breaker badge is centred in the status bar.");
+            var badgeLabel = UiPlayer.Descendants(chipElement).OfType<Label>().Single();
+            Assert.That(badgeLabel.text, Is.EqualTo("TIEBREAKER"));
+            Assert.That(badgeLabel.resolvedStyle.whiteSpace, Is.EqualTo(WhiteSpace.NoWrap),
+                "The requested word remains one line inside the round badge.");
 
             // The narration reads across the bar rather than being clipped into the corner it left.
             Assert.That(narration.worldBound.width,
@@ -125,7 +133,6 @@ namespace GuardsDigital.Tests.PlayMode
                 runtime.RefreshAll();
                 yield return null;
                 yield return null;
-
                 var director = Named(root.Hud.RootElement, "gd-director-toggle").worldBound;
                 var confirm = Named(root.Hud.RootElement, "gd-confirm-control");
                 var drawn = confirm.worldBound;
@@ -190,7 +197,6 @@ namespace GuardsDigital.Tests.PlayMode
                 runtime.RefreshAll();
                 yield return null;
                 yield return null;
-
                 var model = runtime.HandsView.Model.ViewedHand.TrayCards.Last(card => card.IsSelectable);
                 var card = CardControl(root.Hud.RootElement, model);
                 var drop = root.Hud.CameraSafeLayout.UpperRegion.center;
@@ -246,6 +252,135 @@ namespace GuardsDigital.Tests.PlayMode
 
             UiPlayer.SetPlayerViewport(
                 restoreWidth, restoreHeight, "8.30g restore prior viewport");
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator UnavailableCardGroup_RetainsDimmingAndCannotCommitAcrossRefreshAndSessionReplacementAtBothDesktopViewports()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            foreach (var viewport in new[]
+                     {
+                         (Width: 2560u, Height: 1440u, Label: "reference"),
+                         (Width: 2048u, Height: 1152u, Label: "validated desktop")
+                     })
+            {
+                UiPlayer.SetPlayerViewport(
+                    viewport.Width, viewport.Height, "8.30l unavailable " + viewport.Label);
+                yield return LoadSeatScene(0);
+                var root = Root();
+                var runtime = root.Runtime;
+                runtime.RefreshAll();
+                yield return null;
+                yield return null;
+                var safeLayoutBeforeUnavailableGroup = root.Hud.CameraSafeLayout;
+                var chosen = runtime.HandsView.Model.ViewedHand.TrayCards.First(card =>
+                    card.IsSelectable);
+                UiPlayer.Click(CardControl(root.Hud.RootElement, chosen));
+                yield return null;
+                Assert.That(runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId,
+                    Is.EqualTo(chosen.CardInstanceId));
+                var before = runtime.Host.Version;
+                UiPlayer.Click(Named(root.Hud.RootElement, "gd-confirm-control"));
+                yield return null;
+                yield return null;
+
+                Assert.That(runtime.Host.Version, Is.EqualTo(before + 1));
+                var hand = runtime.HandsView.Model.ViewedHand;
+                Assert.That(hand.PlayableTrayCards, Is.Empty,
+                    "After this seat commits, none of its cards carries another commitment command.");
+                Assert.That(hand.UnavailableTrayCards, Has.Count.EqualTo(hand.TrayCards.Count));
+                var playableHost = Named(root.Hud.RootElement, "gd-card-buttons");
+                var unavailableHost = Named(root.Hud.RootElement, "gd-unavailable-card-buttons");
+                Assert.That(UiPlayer.Descendants(playableHost)
+                    .Any(element => element.name == "gd-card-choice"), Is.False);
+                var controls = UiPlayer.Descendants(unavailableHost)
+                    .Where(element => element.name == "gd-card-choice")
+                    .OfType<Button>()
+                    .ToArray();
+                Assert.That(controls, Has.Length.EqualTo(hand.UnavailableTrayCards.Count));
+                Assert.That(controls, Has.All.Matches<Button>(control =>
+                    control.enabledSelf && control.focusable));
+                Assert.That(controls.All(control => UiPlayer.Descendants(control).Count(element =>
+                    element.name == "gd-card-unavailable-veil") == 1), Is.True);
+
+                var group = Named(root.Hud.RootElement, "gd-unavailable-card-group");
+                var stated = root.Hud.UnavailableCardGroupRect;
+                var snap = UiPlayer.PixelSnapping();
+                Assert.That(group.worldBound.xMin, Is.EqualTo(stated.xMin).Within(snap));
+                Assert.That(group.worldBound.xMax, Is.EqualTo(stated.xMax).Within(snap));
+                Assert.That(group.worldBound.Overlaps(root.Hud.RedHeroRailRect), Is.False);
+                var liveRails = UiPlayer.Descendants(root.Hud.RootElement)
+                    .Where(element => element.name == "gd-hero-rail" && UiPlayer.IsShown(element))
+                    .ToArray();
+                var overlappingRailBottom = liveRails
+                    .Where(rail => rail.worldBound.xMax > group.worldBound.xMin)
+                    .Max(rail => rail.worldBound.yMax);
+                Assert.That(group.worldBound.yMin,
+                    Is.GreaterThanOrEqualTo(overlappingRailBottom),
+                    $"The vertical fan begins below the actual right-side rail stack; " +
+                    $"group={group.worldBound}, railBottom={overlappingRailBottom}.");
+                Assert.That(group.worldBound.Overlaps(root.Hud.ConfirmFacedownControlRect), Is.False);
+                Assert.That(root.Hud.CameraSafeLayout.UpperRegion,
+                    Is.EqualTo(safeLayoutBeforeUnavailableGroup.UpperRegion),
+                    "Moving cards between the two hosts must not move or reframe the map.");
+                Assert.That(root.Hud.CameraSafeLayout.LowerRightRegion,
+                    Is.EqualTo(safeLayoutBeforeUnavailableGroup.LowerRightRegion));
+                var endTurn = UiPlayer.Descendants(root.Hud.RootElement)
+                    .SingleOrDefault(element => element.name == "gd-end-turn-control");
+                if (endTurn != null && UiPlayer.IsShown(endTurn))
+                {
+                    Assert.That(group.worldBound.Overlaps(endTurn.worldBound), Is.False,
+                        "The supported five-card fan leaves the action control clear.");
+                }
+
+                var unavailable = controls[controls.Length - 1];
+                UiPlayer.PointAt(unavailable);
+                yield return null;
+                var preview = Named(root.Hud.RootElement, "gd-hand-hover-preview");
+                Assert.That(preview.resolvedStyle.display, Is.EqualTo(DisplayStyle.Flex));
+                Assert.That(UiPlayer.Descendants(preview).Count(element =>
+                    element.name == "gd-card-unavailable-veil"), Is.EqualTo(1),
+                    "Inspecting the whole face retains the unavailable dimming.");
+                UiPlayer.PointAway(unavailable);
+                yield return null;
+
+                UiPlayer.Click(unavailable);
+                yield return null;
+                Assert.That(runtime.Host.Version, Is.EqualTo(before + 1));
+                Assert.That(runtime.HandsView.Model.ViewedHand.SelectedCardInstanceId, Is.Null);
+                SendDrag(unavailable, root.Hud.CameraSafeLayout.UpperRegion.center);
+                yield return null;
+                Assert.That(runtime.Host.Version, Is.EqualTo(before + 1));
+                Assert.That(Named(root.Hud.RootElement, "gd-card-drag-proxy")
+                    .resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+
+                if (!UnityEngine.Application.isBatchMode)
+                {
+                    yield return Capture(
+                        "tmp/milestone-8-30l-unavailable-" + viewport.Width + "x" +
+                        viewport.Height + ".png");
+                }
+
+                var seat = runtime.Seat.Id;
+                yield return ComposeForSeat(seat);
+                root = Root();
+                runtime = root.Runtime;
+                runtime.RefreshAll();
+                yield return null;
+                yield return null;
+                Assert.That(runtime.Host.Version, Is.Zero);
+                Assert.That(Named(root.Hud.RootElement, "gd-unavailable-card-group")
+                    .resolvedStyle.display, Is.EqualTo(DisplayStyle.None));
+                Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
+                    .Count(element => element.name == "gd-card-choice"),
+                    Is.EqualTo(runtime.HandsView.Model.ViewedHand.TrayCards.Count),
+                    "Session replacement rebuilds one complete surface per visible owned card.");
+            }
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.30l restore prior viewport");
             yield return null;
         }
 
@@ -407,16 +542,16 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// The amendment's second half: End Turn is a control of its own in the panel bottom-right
-        /// corner, it is measured where the renderer says it is, and pressing it advances the match
-        /// through the seat own client.
+        /// End Turn is a control of its own, measured where the renderer says it is, and pressing it
+        /// advances the match through the seat own client. Milestone 8.30l moves that control into
+        /// the status bar's top-right slot while the unavailable fan remains bottom-right.
         /// </summary>
         [UnityTest]
         public IEnumerator SeatScene_StandsEndTurnAloneInThePanelCornerAndEndsTheTurnWhenPressed()
         {
-            // A realistic desktop viewport, because this case measures where a control is drawn. The
-            // batch runner's own 640x480 default is a viewport `UiPlayer` itself calls unplayable.
-            UiPlayer.EnsurePlayerViewport();
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            UiPlayer.SetPlayerViewport(2560, 1440, "8.30l top-bar reference viewport");
             yield return LoadSeatSceneForATurnItMayEnd();
             var root = Root();
             var runtime = root.Runtime;
@@ -448,14 +583,35 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(drawn.height, Is.EqualTo(stated.height).Within(snap * 2f));
 
             var panel = ConfiguredMatchHudRenderer.PanelViewport;
+            var unavailable = Named(root.Hud.RootElement, "gd-unavailable-card-group");
+            var playableHand = Named(root.Hud.RootElement, "gd-card-buttons");
+            var resolving = runtime.HandsView.Model.ViewedHand.PlayableTrayCards
+                .Single(card => card.IsResolving);
+            Assert.That(UiPlayer.IsShown(unavailable), Is.True,
+                "The cards no longer playable on this resolving turn stand in their right-side fan.");
+            Assert.That(unavailable.worldBound.xMin, Is.GreaterThan(panel.x / 2f));
+            Assert.That(unavailable.worldBound.yMax,
+                Is.EqualTo(root.Hud.UnavailableCardGroupRect.yMax).Within(snap * 2f),
+                "The unavailable fan is anchored to the panel's bottom-right margin.");
+            Assert.That(drawn.Overlaps(unavailable.worldBound), Is.False,
+                "End Turn's status-bar slot never overlaps the bottom-right unavailable cards.");
+            Assert.That(playableHand.worldBound.xMin, Is.LessThan(panel.x / 2f),
+                "The playable and resolving hand remains on the established left side.");
+            Assert.That(UiPlayer.Descendants(playableHand).Any(element =>
+                    element.name == "gd-card-choice" &&
+                    element.tooltip.Contains(resolving.DisplayName)),
+                Is.True, "The resolving card stays in the left hand instead of joining unavailable cards.");
             Assert.That(drawn.xMax, Is.LessThanOrEqualTo(panel.x + snap),
                 "It is inside the panel right edge,");
-            Assert.That(drawn.yMax, Is.LessThanOrEqualTo(panel.y + snap),
-                "and inside its bottom edge - the corner the amendment asked for.");
+            Assert.That(drawn.yMin, Is.EqualTo(0f).Within(snap),
+                "and anchored to the panel's top edge.");
             Assert.That(drawn.xMin, Is.GreaterThan(panel.x / 2f),
                 "It is on the right half of the panel,");
-            Assert.That(drawn.yMin, Is.GreaterThan(panel.y / 2f),
-                "and the bottom half.");
+            Assert.That(drawn.yMax,
+                Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight).Within(snap * 2f),
+                "and fills the status bar's height.");
+            Assert.That(drawn.Overlaps(root.Hud.TieBreakerIndicatorRect), Is.False,
+                "The centred Tie Breaker badge keeps a clear gap from End Turn.");
 
             // Larger than the row it left. `ActionControlFontSize` is what the action row spends.
             Assert.That(control.resolvedStyle.fontSize,
@@ -472,6 +628,33 @@ namespace GuardsDigital.Tests.PlayMode
                 "Exactly one control on the whole HUD carries this label. " +
                 UiPlayer.Describe(root.Hud));
 
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                yield return Capture("tmp/milestone-8-30l-topbar-2560x1440.png");
+            }
+
+            UiPlayer.SetPlayerViewport(2048, 1152, "8.30l top-bar validated desktop viewport");
+            runtime.RefreshAll();
+            yield return null;
+            yield return null;
+            control = (Button)Named(root.Hud.RootElement, "gd-end-turn-control");
+            drawn = control.worldBound;
+            stated = root.Hud.EndTurnControlRect;
+            Assert.That(drawn.xMin, Is.EqualTo(stated.xMin).Within(snap));
+            Assert.That(drawn.yMin, Is.EqualTo(0f).Within(snap));
+            Assert.That(drawn.yMax,
+                Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight).Within(snap * 2f));
+            Assert.That(drawn.Overlaps(root.Hud.TieBreakerIndicatorRect), Is.False);
+            Assert.That(unavailable.worldBound.xMin,
+                Is.EqualTo(root.Hud.UnavailableCardGroupRect.xMin).Within(snap));
+            Assert.That(unavailable.worldBound.yMax,
+                Is.EqualTo(root.Hud.UnavailableCardGroupRect.yMax).Within(snap * 2f));
+
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                yield return Capture("tmp/milestone-8-30l-topbar-2048x1152.png");
+            }
+
             // And pressing it ends the turn, through the seat own client.
             var version = runtime.Host.Version;
             Assert.That(runtime.Seat, Is.Not.Null, "This scene is composed for a seat.");
@@ -485,6 +668,10 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the turn it ended offers no second End Turn.");
             Assert.That(UiPlayer.IsShown(Named(root.Hud.RootElement, "gd-end-turn")), Is.False,
                 "so the corner is empty rather than holding a control that can only be refused.");
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.30l restore prior viewport");
+            yield return null;
         }
 
         /// <summary>
@@ -507,11 +694,10 @@ namespace GuardsDigital.Tests.PlayMode
             var topBar = Named(root.Hud.RootElement, "gd-topbar").worldBound;
             var narration = Named(root.Hud.RootElement, "gd-narration").worldBound;
             var control = Named(root.Hud.RootElement, "gd-end-turn-control").worldBound;
-            var hand = ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(panel.x, panel.y);
             TestContext.WriteLine(
                 "8.30b short viewport " + Screen.width + "x" + Screen.height + ": panel " + panel +
                 ", topBar " + topBar + ", narration " + narration + ", endTurn " + control +
-                ", compact hand " + hand + ".");
+                ".");
 
             Assert.That(topBar.height,
                 Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight).Within(snap),
@@ -520,11 +706,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(narration.yMax, Is.LessThanOrEqualTo(topBar.yMax + snap));
             Assert.That(control.xMax, Is.LessThanOrEqualTo(panel.x + snap));
             Assert.That(control.yMax, Is.LessThanOrEqualTo(panel.y + snap));
-            Assert.That(control.xMin, Is.GreaterThanOrEqualTo(hand.xMax - snap),
-                "End Turn yields to the compact hand rather than being drawn over it.");
-            Assert.That(control.yMin,
-                Is.GreaterThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight - snap),
-                "and never reaches the strip.");
+            Assert.That(control.yMin, Is.EqualTo(topBar.yMin).Within(snap),
+                "End Turn is anchored to the status bar's top edge.");
+            Assert.That(control.yMax, Is.EqualTo(topBar.yMax).Within(snap * 2f),
+                "and occupies the bar rather than the compact-hand band.");
+            Assert.That(control.Overlaps(root.Hud.TieBreakerIndicatorRect), Is.False,
+                "The centred Tie Breaker badge remains separate on the short viewport.");
 
             UiPlayer.SetPlayerViewport(
                 restoreWidth, restoreHeight, "8.30b restore the viewport this session was running at");

@@ -336,14 +336,12 @@ namespace GuardsDigital.Tests.EditMode
                 ConfiguredMatchHudRenderer.CalculateStatusBarRect(width, height),
                 Is.EqualTo(new Rect(0f, 0f, 2560f, 96f)));
 
-            // What the amendment did NOT move, which is most of the HUD. The chip is measured against
-            // the identity row, so widening the strip left it exactly where 8.25c put it; the tray,
-            // the compact hand, the Level Up card row and the round dock are all placed from
-            // the panel bottom edge and are untouched.
+            // Milestone 8.30l centres a round Tie Breaker badge across the complete strip. The tray,
+            // compact hand, Level Up card row and round dock remain placed from the panel bottom edge.
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(width, height),
-                Is.EqualTo(new Rect(2348f, 12f, 200f, 32f)),
-                "The Tie Breaker chip did not move or grow when the strip below it did.");
+                Is.EqualTo(new Rect(1240f, 8f, 80f, 80f)),
+                "The Tie Breaker is a centred circular badge.");
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculateCardPanelRect(width, height),
                 Is.EqualTo(new Rect(0f, 968f, 2560f, 460f)));
@@ -373,21 +371,15 @@ namespace GuardsDigital.Tests.EditMode
                 "The board starts under the amended strip and still ends exactly where it did, " +
                 "because the tray it stops above did not move.");
 
-            // End Turn corner: inside the band the tray reserves and the compact hand leaves empty,
-            // below both rail columns, and inside the panel.
+            // End Turn replaces the Tie Breaker's former top-right slot and fills the status strip.
             var endTurn = ConfiguredMatchHudRenderer.CalculateEndTurnControlRect(width, height);
-            var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(width, height);
-            Assert.That(endTurn, Is.EqualTo(new Rect(2248f, 1332f, 300f, 96f)));
+            Assert.That(endTurn, Is.EqualTo(new Rect(2248f, 0f, 300f, 96f)));
             Assert.That(endTurn.xMax, Is.EqualTo(width - 12f).Within(0.01f),
                 "It is inset from the panel right edge by the standing margin and no more.");
-            Assert.That(endTurn.yMax, Is.EqualTo(height - 12f).Within(0.01f));
-            Assert.That(endTurn.yMin, Is.GreaterThanOrEqualTo(tray.yMin),
-                "It stands inside the band the tray reserves,");
-            Assert.That(endTurn.xMin, Is.GreaterThanOrEqualTo(
-                ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(width, height).xMax),
-                "clear of the five overlapped faces at the band opposite end,");
-            Assert.That(endTurn.yMin, Is.GreaterThanOrEqualTo(blue.yMax),
-                "and below the rail column, which stops at the tray.");
+            Assert.That(endTurn.yMin, Is.EqualTo(0f));
+            Assert.That(endTurn.yMax, Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
+            Assert.That(endTurn.Overlaps(
+                ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(width, height)), Is.False);
         }
 
         /// <summary>

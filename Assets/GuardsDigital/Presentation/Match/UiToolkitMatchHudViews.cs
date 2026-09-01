@@ -277,6 +277,27 @@ namespace GuardsDigital.Presentation.Match
             element.SetEnabled(false);
             element.style.opacity = 1f;
 
+            AddUnavailableVeil(element);
+        }
+
+        /// <summary>
+        /// Milestone 8.30l's unavailable-card group remains inspectable by pointer and keyboard while
+        /// carrying no command. The view model and every callback still refuse selection/drag; unlike
+        /// the old mixed-hand treatment, the outer face therefore stays enabled so hover and focus can
+        /// expose it without weakening the same opaque veil.
+        /// </summary>
+        internal static void MarkUnavailableOpaqueInspectable(VisualElement element)
+        {
+            element.SetEnabled(true);
+            element.focusable = true;
+            element.style.opacity = 1f;
+
+            AddUnavailableVeil(element);
+        }
+
+        private static void AddUnavailableVeil(VisualElement element)
+        {
+
             var veil = new VisualElement { name = "gd-card-unavailable-veil" };
             veil.style.position = Position.Absolute;
             veil.style.left = 0f;
@@ -510,6 +531,7 @@ namespace GuardsDigital.Presentation.Match
     public sealed class MatchStatusBarUnityView
     {
         private readonly VisualElement tieBreakerChip;
+        private readonly VisualElement tieBreakerDisc;
         private readonly VisualElement content;
         private readonly VisualElement identityRow;
         private readonly VisualElement narrationLane;
@@ -561,7 +583,17 @@ namespace GuardsDigital.Presentation.Match
             tieBreakerChip.style.flexDirection = FlexDirection.Row;
             tieBreakerChip.style.alignItems = Align.Center;
             tieBreakerChip.style.justifyContent = Justify.Center;
-            HudElements.Border(tieBreakerChip, MatchHudTheme.PanelBorder, 1f, 4f);
+            tieBreakerChip.style.backgroundColor = Color.white;
+            HudElements.Border(tieBreakerChip, MatchHudTheme.PanelBorder, 2f, 999f);
+
+            tieBreakerDisc = new VisualElement { name = "gd-tie-breaker-disc" };
+            tieBreakerDisc.style.width = 58f;
+            tieBreakerDisc.style.height = 58f;
+            tieBreakerDisc.style.flexShrink = 0f;
+            tieBreakerDisc.style.alignItems = Align.Center;
+            tieBreakerDisc.style.justifyContent = Justify.Center;
+            HudElements.Border(tieBreakerDisc, Color.clear, 0f, 999f);
+            tieBreakerChip.Add(tieBreakerDisc);
             Root.Add(tieBreakerChip);
         }
 
@@ -607,6 +639,11 @@ namespace GuardsDigital.Presentation.Match
             tieBreakerChip.style.top = chip.y - bar.y;
             tieBreakerChip.style.width = chip.width;
             tieBreakerChip.style.height = chip.height;
+            var leftLaneWidth = Mathf.Max(0f, chip.xMin - bar.xMin - 18f);
+            content.style.width = leftLaneWidth;
+            content.style.maxWidth = leftLaneWidth;
+            narrationLane.style.width = leftLaneWidth;
+            narrationLane.style.maxWidth = leftLaneWidth;
         }
 
         public void Render(MatchHudHeaderViewModel model)
@@ -618,7 +655,7 @@ namespace GuardsDigital.Presentation.Match
 
             Model = model ?? throw new ArgumentNullException(nameof(model));
             content.Clear();
-            tieBreakerChip.Clear();
+            tieBreakerDisc.Clear();
 
             content.Add(HudElements.Text(
                 "GUARDS DIGITAL", 13f, MatchHudTheme.PrimaryText, FontStyle.Bold));
@@ -627,12 +664,14 @@ namespace GuardsDigital.Presentation.Match
             content.Add(HudElements.Text(model.WaveLabel, 12f, MatchHudTheme.MutedText));
             content.Add(TeamChip(TeamSide.Blue, model.BlueLifeLabel));
 
-            tieBreakerChip.style.backgroundColor = model.Color;
+            tieBreakerChip.style.backgroundColor = Color.white;
+            tieBreakerDisc.style.backgroundColor = model.Color;
             var chipLabel = HudElements.Text(
-                model.TieBreakerLabel, 11f, Color.white, FontStyle.Bold);
+                model.TieBreakerLabel, 8f, Color.white, FontStyle.Bold);
             chipLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            chipLabel.style.whiteSpace = WhiteSpace.NoWrap;
             chipLabel.style.flexGrow = 1f;
-            tieBreakerChip.Add(chipLabel);
+            tieBreakerDisc.Add(chipLabel);
             tieBreakerChip.tooltip = model.Text;
         }
 
@@ -1800,14 +1839,28 @@ namespace GuardsDigital.Presentation.Match
         public const float PeekCardOuterWidth = PeekCardWidth +
             (2f * (ActiveOutlineGap + ActiveOutlineWidth));
 
+        public const float PeekCardOuterHeight = PeekCardHeight +
+            (2f * (ActiveOutlineGap + ActiveOutlineWidth));
+
         /// <summary>The left-to-left step of two cards in the overlapped resting hand.</summary>
         public const float PeekCardSlotFootprint =
             (ConfiguredMatchHudRenderer.CompactHandRightEdge - PeekCardOuterWidth) / 4f;
 
         public const float PeekCardOverlap = PeekCardOuterWidth - PeekCardSlotFootprint;
 
+        /// <summary>
+        /// The exposed top strip of each unavailable card in the right-side vertical fan. Five
+        /// complete faces remain individually targetable while the final face stays fully visible.
+        /// </summary>
+        public const float UnavailableCardSlotFootprint = 20f;
+
+        public const float UnavailableCardOverlap =
+            PeekCardOuterHeight - UnavailableCardSlotFootprint;
+
         private readonly VisualElement header;
         private readonly VisualElement cards;
+        private readonly VisualElement unavailableGroup;
+        private readonly VisualElement unavailableCards;
         private readonly VisualElement hoverPreview;
         private bool compactPeekMode;
         private TrayCardViewModel highlightedPeekCard;
@@ -1834,6 +1887,21 @@ namespace GuardsDigital.Presentation.Match
             // the label above it.
             cards.style.marginTop = AvailableCardRaise;
             cards.name = "gd-card-buttons";
+            unavailableGroup = new VisualElement { name = "gd-unavailable-card-group" };
+            unavailableGroup.style.flexDirection = FlexDirection.Column;
+            unavailableGroup.style.justifyContent = Justify.FlexStart;
+            unavailableGroup.style.alignItems = Align.FlexStart;
+            unavailableGroup.style.display = DisplayStyle.None;
+            unavailableGroup.pickingMode = PickingMode.Ignore;
+            unavailableCards = new VisualElement();
+            unavailableCards.name = "gd-unavailable-card-buttons";
+            unavailableCards.style.flexDirection = FlexDirection.Column;
+            unavailableCards.style.alignItems = Align.Stretch;
+            unavailableCards.style.flexWrap = Wrap.NoWrap;
+            unavailableCards.style.flexGrow = 0f;
+            unavailableCards.style.flexShrink = 0f;
+            unavailableCards.pickingMode = PickingMode.Ignore;
+            unavailableGroup.Add(unavailableCards);
             hoverPreview = new VisualElement { name = "gd-hand-hover-preview" };
             hoverPreview.style.position = Position.Absolute;
             hoverPreview.style.display = DisplayStyle.None;
@@ -1864,6 +1932,7 @@ namespace GuardsDigital.Presentation.Match
             confirmAction.style.display = DisplayStyle.None;
             Root.Add(header);
             Root.Add(cards);
+            Root.Add(unavailableGroup);
             Root.Add(cornerActions);
             Root.Add(confirmAction);
             contextBlocker = new VisualElement { name = "gd-context-only-hand-blocker" };
@@ -1891,15 +1960,14 @@ namespace GuardsDigital.Presentation.Match
 
         public const float CardDragThreshold = 12f;
 
-        /// <summary>One corner banner's height; two of them stack inside End Turn's corner rect.</summary>
+        /// <summary>One bottom-corner Pass banner's height.</summary>
         public const float CornerBannerHeight = 44f;
         public const float CornerBannerFontSize = 16f;
 
         /// <summary>
         /// The hand's Pass and Confirm banners. It begins inside <see cref="Root"/> so this view
         /// remains complete in isolation; the configured HUD reparents it into the panel's
-        /// bottom-right corner - the same place End Turn stands, which these two never share a
-        /// moment with (End Turn belongs to a revealed turn, these to choosing a card).
+        /// bottom-right corner. End Turn now occupies the separate top-right status-bar slot.
         /// </summary>
         public VisualElement CornerActionsRoot => cornerActions;
 
@@ -1953,6 +2021,13 @@ namespace GuardsDigital.Presentation.Match
         /// it into the open status dock beside the Red rail, keeping the ordinary card band compact.
         /// </summary>
         public VisualElement HeaderRoot => header;
+
+        /// <summary>
+        /// The right-side unavailable-card group. It begins in <see cref="Root"/> so isolated view
+        /// tests see one complete presentation; the configured HUD reparents and anchors it inside
+        /// the reserved card band without giving the empty host pointer ownership or visible chrome.
+        /// </summary>
+        public VisualElement UnavailableCardsRoot => unavailableGroup;
 
         /// <summary>
         /// The complete face opened from a compact resting-hand card. The configured HUD reparents it
@@ -2064,6 +2139,9 @@ namespace GuardsDigital.Presentation.Match
 
             var display = hidden ? DisplayStyle.None : DisplayStyle.Flex;
             Root.style.display = display;
+            unavailableGroup.style.display = hidden || unavailableCards.childCount == 0
+                ? DisplayStyle.None
+                : DisplayStyle.Flex;
             // The header stays dead either way (the user's follow-up decision retired the
             // hand-status bar); the corner banners are the surface exclusivity must hide.
             HeaderRoot.style.display = DisplayStyle.None;
@@ -2079,6 +2157,8 @@ namespace GuardsDigital.Presentation.Match
             ClearPeekPreview();
             header.Clear();
             cards.Clear();
+            unavailableCards.Clear();
+            unavailableGroup.style.display = DisplayStyle.None;
             var hand = Model.ViewedHand;
             if (hand == null)
             {
@@ -2090,19 +2170,20 @@ namespace GuardsDigital.Presentation.Match
             // buried the action the turn is actually performing under all four siblings. `OrderBy` is
             // stable, so moving that one state to the end does not disturb any other card's order.
             var drawnCards = compactPeekMode
-                ? hand.TrayCards.OrderBy(card => card.IsResolving ? 1 : 0).ToArray()
-                : hand.TrayCards.ToArray();
+                ? hand.PlayableTrayCards.OrderBy(card => card.IsResolving ? 1 : 0).ToArray()
+                : hand.PlayableTrayCards.ToArray();
             var rowWidth = compactPeekMode
-                ? ConfiguredMatchHudRenderer.CompactHandRightEdge
+                ? CompactCardRowWidth(drawnCards.Length)
                 : drawnCards.Length * CardSlotFootprint;
             cards.style.width = rowWidth;
             cards.style.minWidth = rowWidth;
             cards.style.maxWidth = rowWidth;
 
             // Milestone 8.30d, the user's follow-up decision: no hand-status bar. Pass and
-            // Confirm stand in the panel's bottom-right corner as pewter banners - the same
-            // clothes and the same place End Turn wears, one banner language for the button
-            // that moves the game on. The Button texts stay the exact selector strings every
+            // Pass stands in the panel's bottom-right corner as a pewter banner, while commitment
+            // Confirm has its dedicated lane below DIRECTOR and End Turn has the status-bar slot.
+            // The shared clothes retain one banner language for the button that moves the game on.
+            // The Button texts stay the exact selector strings every
             // existing check and driver finds these commands by.
             cornerActions.Clear();
             confirmAction.Clear();
@@ -2151,11 +2232,47 @@ namespace GuardsDigital.Presentation.Match
             {
                 cards.Add(BuildCard(
                     drawnCards[index],
-                    compactPeekMode && index == drawnCards.Length - 1));
+                    compactPeekMode && index == drawnCards.Length - 1,
+                    false));
             }
+
+            var unavailable = hand.UnavailableTrayCards.ToArray();
+            var unavailableWidth = compactPeekMode
+                ? PeekCardOuterWidth
+                : unavailable.Length * CardSlotFootprint;
+            unavailableCards.style.width = unavailableWidth;
+            unavailableCards.style.minWidth = unavailableWidth;
+            unavailableCards.style.maxWidth = unavailableWidth;
+            var unavailableHeight = compactPeekMode
+                ? CompactUnavailableStackHeight(unavailable.Length)
+                : PeekCardOuterHeight;
+            unavailableCards.style.height = unavailableHeight;
+            unavailableCards.style.minHeight = unavailableHeight;
+            unavailableCards.style.maxHeight = unavailableHeight;
+            for (var index = 0; index < unavailable.Length; index++)
+            {
+                unavailableCards.Add(BuildCard(
+                    unavailable[index],
+                    compactPeekMode && index == unavailable.Length - 1,
+                    true));
+            }
+            unavailableGroup.style.display = !trayHidden && unavailable.Length > 0
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
         }
 
-        private VisualElement BuildCard(TrayCardViewModel card, bool isLastPeekCard = false)
+        private static float CompactCardRowWidth(int cardCount) => cardCount <= 0
+            ? 0f
+            : PeekCardOuterWidth + ((cardCount - 1) * PeekCardSlotFootprint);
+
+        public static float CompactUnavailableStackHeight(int cardCount) => cardCount <= 0
+            ? 0f
+            : PeekCardOuterHeight + ((cardCount - 1) * UnavailableCardSlotFootprint);
+
+        private VisualElement BuildCard(
+            TrayCardViewModel card,
+            bool isLastPeekCard = false,
+            bool isUnavailableGroup = false)
         {
             var button = new Button(() =>
             {
@@ -2197,7 +2314,15 @@ namespace GuardsDigital.Presentation.Match
             slot.style.marginRight = CardGap;
             if (compactPeekMode)
             {
-                slot.style.marginRight = isLastPeekCard ? 0f : -PeekCardOverlap;
+                if (isUnavailableGroup)
+                {
+                    slot.style.marginRight = 0f;
+                    slot.style.marginBottom = isLastPeekCard ? 0f : -UnavailableCardOverlap;
+                }
+                else
+                {
+                    slot.style.marginRight = isLastPeekCard ? 0f : -PeekCardOverlap;
+                }
                 slot.style.flexShrink = 0f;
             }
             HudElements.Padding(slot, ActiveOutlineGap);
@@ -2228,7 +2353,12 @@ namespace GuardsDigital.Presentation.Match
                 }
                 else
                 {
-                    if (compactPeekMode)
+                    if (compactPeekMode && isUnavailableGroup)
+                    {
+                        HudElements.MarkUnavailableOpaqueInspectable(button);
+                        button.focusable = !contextOnly;
+                    }
+                    else if (compactPeekMode)
                     {
                         HudElements.MarkUnavailableOpaque(button);
                     }
@@ -2255,7 +2385,10 @@ namespace GuardsDigital.Presentation.Match
                 // raising a standalone copy over it would hide those children precisely on hover.
                 HudElements.OnPointedAt(
                     button,
-                    pointedAt => SetPeekPreview(pointedAt ? card : null, slot));
+                    pointedAt => SetPeekPreview(
+                        pointedAt ? card : null,
+                        slot,
+                        isUnavailableGroup));
             }
             return slot;
         }
@@ -3297,7 +3430,10 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private VisualElement peekAnchor;
 
-        private void SetPeekPreview(TrayCardViewModel card, VisualElement anchor)
+        private void SetPeekPreview(
+            TrayCardViewModel card,
+            VisualElement anchor,
+            bool isUnavailableGroup)
         {
             if (!compactPeekMode || card == null)
             {
@@ -3317,7 +3453,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             highlightedPeekCard = card;
-            PopulatePeekPreview(hoverPreview, card, anchor);
+            PopulatePeekPreview(hoverPreview, card, anchor, isUnavailableGroup);
         }
 
         /// <summary>
@@ -3327,25 +3463,34 @@ namespace GuardsDigital.Presentation.Match
         internal static void PopulatePeekPreview(
             VisualElement preview,
             TrayCardViewModel card,
-            VisualElement anchor)
+            VisualElement anchor,
+            bool isRightSideGroup = false)
         {
             preview.Clear();
             var face = BuildStandaloneCard(card);
+            if (isRightSideGroup)
+            {
+                HudElements.MarkUnavailableOpaqueInspectable(face);
+                face.focusable = false;
+            }
             IgnorePickingRecursively(face);
             preview.Add(face);
             preview.style.display = DisplayStyle.Flex;
             preview.BringToFront();
             var viewport = ConfiguredMatchHudRenderer.PanelViewport;
             var bounds = anchor.worldBound;
-            preview.style.left = Mathf.Clamp(
-                bounds.xMin,
-                0f,
-                Mathf.Max(
+            var rightLimit = isRightSideGroup
+                ? Mathf.Max(0f, viewport.x - CardFootprint.Width - 4f)
+                : Mathf.Max(
                     0f,
                     Mathf.Min(
                         viewport.x,
                         ConfiguredMatchHudRenderer.CompactHandRightEdge) -
-                    CardFootprint.Width));
+                    CardFootprint.Width);
+            preview.style.left = Mathf.Clamp(
+                bounds.xMin,
+                0f,
+                rightLimit);
             preview.style.top = Mathf.Clamp(
                 bounds.yMin,
                 ConfiguredMatchHudRenderer.StatusBarHeight + 4f,
@@ -3812,8 +3957,8 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// End Turn's own surface. Milestone 8.30b's user-approved amendment took the control out of
-        /// the shared action row and gave it the panel's bottom-right corner as a larger control of
-        /// its own; the renderer moves this element out of the contextual region onto the panel and
+        /// the shared action row and gave it a larger control of its own. Milestone 8.30l moves that
+        /// control into the status bar's top-right slot; the renderer moves this element out of the contextual region onto the panel and
         /// places it, exactly as it already does with this view's Defense preview.
         ///
         /// <para>It stays a child of <see cref="Root"/> until something moves it, so a fixture that
@@ -3923,8 +4068,8 @@ namespace GuardsDigital.Presentation.Match
         public VisualElement NarrationRoot => status;
 
         /// <summary>
-        /// End Turn's own element, so the renderer can place it in the panel's bottom-right corner.
-        /// Milestone 8.30b. It is hidden whenever the projection offers no End Turn, which is every
+        /// End Turn's own element, so the renderer can place it in the status bar's top-right slot.
+        /// Milestones 8.30b and 8.30l. It is hidden whenever the projection offers no End Turn, which is every
         /// state in which the turn authority would refuse one.
         /// </summary>
         public VisualElement EndTurnRoot => endTurnHost;
@@ -5005,7 +5150,7 @@ namespace GuardsDigital.Presentation.Match
 
             // Milestone 8.30b, by the user-approved amendment: End Turn is no longer one of these.
             // It is built by `RebuildEndTurn` into its own surface, which the renderer places in the
-            // panel's bottom-right corner.
+            // status bar's top-right slot.
 
             // A trailing gap is useful only between controls, and the row is content-sized: the last
             // control keeps none.

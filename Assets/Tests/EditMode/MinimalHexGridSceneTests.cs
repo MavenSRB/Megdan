@@ -440,7 +440,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_ContainsTopRightAuthoritativeTieBreakerIndicator()
+        public void Scene_ContainsCenteredAuthoritativeTieBreakerIndicator()
         {
             OpenConfiguredScene();
             var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
@@ -452,12 +452,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 root.Hud.Header.Text,
                 Does.Contain(side == TeamSide.Red ? "[R] RED" : "[B] BLUE"));
-            // Milestone 8.25c: the chip's rectangle is in the panel's reference units, so the right
-            // margin is measured off the panel's own width rather than the screen's pixel count.
-            Assert.That(
-                indicatorRect.xMax,
-                Is.EqualTo(ConfiguredMatchHudRenderer.PanelViewport.x - 12f).Within(0.01f));
-            Assert.That(indicatorRect.yMin, Is.EqualTo(12f).Within(0.01f));
+            var bar = root.Hud.StatusBarRect;
+            Assert.That(indicatorRect.center.x, Is.EqualTo(bar.center.x).Within(0.01f));
+            Assert.That(indicatorRect.center.y, Is.EqualTo(bar.center.y).Within(0.01f));
+            Assert.That(indicatorRect.width, Is.EqualTo(indicatorRect.height).Within(0.01f));
         }
 
         [Test]

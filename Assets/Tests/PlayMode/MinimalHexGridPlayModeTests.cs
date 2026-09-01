@@ -135,8 +135,10 @@ namespace GuardsDigital.Tests.PlayMode
             // the margin is measured off the panel's own width and a point on it is turned into the
             // screen pixel a player would click by the same declaration the boundary converts with.
             var panel = ConfiguredMatchHudRenderer.PanelViewport;
-            Assert.That(indicator.xMax, Is.EqualTo(panel.x - 12f).Within(0.01f));
-            Assert.That(indicator.yMin, Is.EqualTo(12f).Within(0.01f));
+            Assert.That(indicator.center.x, Is.EqualTo(panel.x / 2f).Within(0.01f));
+            Assert.That(indicator.center.y,
+                Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight / 2f).Within(0.01f));
+            Assert.That(indicator.width, Is.EqualTo(indicator.height).Within(0.01f));
             Assert.That(
                 root.Hud.BlocksPointerAt(
                     MatchHudPanelScaling.PanelPointToScreen(
@@ -1346,7 +1348,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             var confirmationDock = dockElement.worldBound;
             // Milestone 8.30f: the dock's hand-status bar remains retired, but Confirm alone
-            // moved out of End Turn's corner and into the open lane immediately below DIRECTOR.
+            // moved out of the old shared corner and into the open lane immediately below DIRECTOR.
             var confirmControl = Descendants(root.Hud.RootElement).OfType<Button>()
                 .SingleOrDefault(control => control.text == "CONFIRM FACEDOWN");
             Assert.That(confirmControl, Is.Not.Null,
@@ -1404,7 +1406,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Has.None.EqualTo("ACTIONS"),
                 "The status sentence already names these as actions; no gutter repeats it.");
             // Milestone 8.30b's user-approved amendment. Printed actions moved onto the resolving card
-            // at 8.29b1b and End Turn moved to the panel's own bottom-right corner here, so the dock's
+            // at 8.29b1b and End Turn moved into its own status-bar slot, so the dock's
             // action row is empty in an ordinary turn and `HideEmptySections` hides it rather than
             // reserving a line for nothing.
             var actionControls = actionSection.Children().OfType<Button>().ToArray();
@@ -1429,8 +1431,8 @@ namespace GuardsDigital.Tests.PlayMode
                 .Within(snap * 2f));
             Assert.That(endTurnBox.xMin, Is.GreaterThan(dock.xMax),
                 "It is clear of the dock it used to sit inside.");
-            Assert.That(endTurnBox.yMin, Is.GreaterThanOrEqualTo(dock.yMax),
-                "and below it, in the band the compact hand leaves empty.");
+            Assert.That(endTurnBox.yMin, Is.EqualTo(0f).Within(snap),
+                "and anchored in the status bar's top-right slot.");
             // Milestone 8.30b. This used to assert that wrapped action controls finished with a
             // deliberate gap before the hand-status row. There are no controls left here to wrap:
             // 8.29b1b moved the printed actions onto the resolving card and the amendment moved the
@@ -1472,7 +1474,9 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
 
                 var resolvingCard = Descendants(root.Hud.RootElement)
-                    .Last(element => element.name == "gd-card-choice");
+                    .Single(element => element.name == "gd-card-choice" &&
+                        Descendants(element).Any(child =>
+                            child.name == "gd-printed-action-overlay"));
                 Assert.That(Descendants(resolvingCard)
                         .Count(element => element.name == "gd-printed-action-region"),
                     Is.EqualTo(runtime.RoundView.Model.Actions.Count +
@@ -1525,7 +1529,9 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
                 yield return null;
                 resolvingCard = Descendants(root.Hud.RootElement)
-                    .Last(element => element.name == "gd-card-choice");
+                    .Single(element => element.name == "gd-card-choice" &&
+                        Descendants(element).Any(child =>
+                            child.name == "gd-printed-action-overlay"));
                 regions = Descendants(resolvingCard)
                     .Where(element => element.name == "gd-printed-action-region")
                     .OfType<Button>().ToArray();
@@ -1642,7 +1648,9 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return null;
 
                     var resolvingCard = Descendants(root.Hud.RootElement)
-                        .Last(element => element.name == "gd-card-choice");
+                        .Single(element => element.name == "gd-card-choice" &&
+                            Descendants(element).Any(child =>
+                                child.name == "gd-printed-action-overlay"));
                     Assert.That(Descendants(resolvingCard)
                         .Any(element => element.name == "gd-card-artwork"), Is.True);
                     Assert.That(Descendants(resolvingCard)
@@ -1675,7 +1683,9 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return null;
 
                     var resolvingCard = Descendants(root.Hud.RootElement)
-                        .Last(element => element.name == "gd-card-choice");
+                        .Single(element => element.name == "gd-card-choice" &&
+                            Descendants(element).Any(child =>
+                                child.name == "gd-printed-action-overlay"));
                     var overlay = Descendants(resolvingCard)
                         .Single(element => element.name == "gd-printed-action-overlay");
                     var regions = Descendants(overlay)

@@ -1632,6 +1632,12 @@ namespace GuardsDigital.Presentation.Match
         {
             TrayCards = Array.AsReadOnly((trayCards ??
                 Enumerable.Empty<TrayCardViewModel>()).ToArray());
+            PlayableTrayCards = Array.AsReadOnly(TrayCards
+                .Where(card => card.IsSelectable || card.IsResolving)
+                .ToArray());
+            UnavailableTrayCards = Array.AsReadOnly(TrayCards
+                .Where(card => !card.IsSelectable && !card.IsResolving)
+                .ToArray());
             TeamSide = teamSide;
             HeroId = heroId;
             HeroDisplayName = heroDisplayName ?? throw new ArgumentNullException(nameof(heroDisplayName));
@@ -1679,6 +1685,20 @@ namespace GuardsDigital.Presentation.Match
         /// what this hero has already spent the round on.
         /// </summary>
         public IReadOnlyList<TrayCardViewModel> TrayCards { get; }
+
+        /// <summary>
+        /// The bottom hand's projection-driven composition: cards carrying a current commitment
+        /// command plus the one card whose printed action is resolving. The latter is intentionally
+        /// present even though its outer face carries no commitment command.
+        /// </summary>
+        public IReadOnlyList<TrayCardViewModel> PlayableTrayCards { get; }
+
+        /// <summary>
+        /// Current-round cards that carry neither a commitment command nor the resolving-card role.
+        /// Their lifecycle, identity and relative order remain the ones <see cref="TrayCards"/> owns;
+        /// this is a presentation partition, not a second availability decision.
+        /// </summary>
+        public IReadOnlyList<TrayCardViewModel> UnavailableTrayCards { get; }
 
         private string FormatCommitmentLabel()
         {

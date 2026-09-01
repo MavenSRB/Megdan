@@ -152,7 +152,9 @@ namespace GuardsDigital.Tests.PlayMode
                 UiPlayer.Describe(hud));
             var acceptBanner = UiPlayer.Button(hud, EffectChoiceLabels.AcceptLabel);
             var declineBanner = UiPlayer.Button(hud, EffectChoiceLabels.DeclineLabel);
-            var handCards = UiPlayer.Descendants(hud.RootElement)
+            var playableHand = UiPlayer.Descendants(hud.RootElement)
+                .Single(element => element.name == "gd-card-buttons");
+            var handCards = UiPlayer.Descendants(playableHand)
                 .Where(element => element.name == "gd-card-choice").ToArray();
             Assert.That(handCards, Is.Not.Empty,
                 "The viewed hero's complete ordinary hand remains visible under the optional step.");
