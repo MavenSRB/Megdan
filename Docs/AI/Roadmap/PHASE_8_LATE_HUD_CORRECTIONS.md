@@ -320,7 +320,7 @@ Non-goals: No gameplay, rule, content, card-footprint, source-artwork, hero-rail
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830l3-crop-the-enlarged-tie-breaker-and-keep-the-resolving-card-in-the-stationary-hand-completion-evidence).
 
-### [ ] 8.30l2 Batch compatible focused filters into one Unity invocation
+### [x] 8.30l2 Batch compatible focused filters into one Unity invocation
 
 Blocked by: Corrective 8.30l3 completed the final hand/top-strip composition after milestone 8.30l; this separately reviewable launcher-efficiency correction begins next.
 
@@ -336,6 +336,8 @@ Acceptance checks:
 - The launcher contract checks pass, followed by both complete Unity suites because the shared validation request/launcher infrastructure changed. Living-document validation and `git diff --check` pass.
 
 Non-goals: No reduction, omission, quarantine, or reclassification of required tests; no persistent Editor/test-server process, parallel Unity execution, change to the per-run Hub/licensing restart, test-result aggregation across processes, retry increase, altered pass criteria, gameplay, presentation, rules, content, schema, package, project setting, scene, build, or networking work.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830l2-batch-compatible-focused-filters-into-one-unity-invocation-completion-evidence).
 
 ### [ ] 8.30m Give every in-game card a thick black exterior outline
 

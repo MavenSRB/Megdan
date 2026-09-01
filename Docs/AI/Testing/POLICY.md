@@ -44,13 +44,16 @@ Before invoking it, write `tmp/unity-validation-request.json` with this shape:
 ```json
 {
   "platform": "EditMode",
-  "filter": "GuardsDigital.Tests.EditMode.MatchSessionTests",
+  "filters": [
+    "GuardsDigital.Tests.EditMode.MatchSessionTests",
+    "GuardsDigital.Tests.EditMode.DirectorCommandReplayTests"
+  ],
   "results": "tmp/example-results.xml",
   "log": "tmp/example.log"
 }
 ```
 
-`platform` must be `EditMode` or `PlayMode`. `filter` may be an empty string for an unfiltered suite. Both output paths must be relative paths beneath the project's `tmp` directory. Invoke the launcher with this exact command and request a persistent approval for this exact project-local entry point if no matching approval exists:
+`platform` must be `EditMode` or `PlayMode`. A focused request uses `filters`, an ordered JSON array of distinct, nonempty fixture or test names; the launcher joins that array into one semicolon-separated Unity filter and starts one Editor process. Entries cannot contain semicolons or surrounding whitespace. The compatible scalar `filter` field remains available, and may be an empty string for an unfiltered suite, but a request cannot provide both forms. Group all filters selected by affectedness when they share the same platform, batch/non-batch setting, and process-global setup. Keep Edit Mode, Play Mode, batch, required non-batch visual inspection, and incompatible process-global setup in separate serial requests. Grouping never broadens the affected set: evidence still names every selected fixture and reports its independently discovered NUnit cases and totals. Both output paths must be relative paths beneath the project's `tmp` directory. Invoke the launcher with this exact command and request a persistent approval for this exact project-local entry point if no matching approval exists:
 
 ```powershell
 & 'C:\Projects\Guards Digital\Guards 0.1\Tools\Invoke-UnityValidation.ps1'
@@ -58,7 +61,7 @@ Before invoking it, write `tmp/unity-validation-request.json` with this shape:
 
 The optional request field `"batchMode": false` omits Unity's `-batchmode` argument only when an exact milestone acceptance check requires a targeted non-batch Editor transition. Omit the field, or set it to `true`, for every ordinary focused, affected, and complete automated run. The same fixed launcher, serial-process rule, filter, project-local outputs, licensing preflight, and log/XML pass criteria still apply; this flag is not a route for ad-hoc interactive validation.
 
-The launcher resolves both distinct output paths beneath `tmp/`, deletes exactly those prior XML/log targets, verifies their absence immediately before starting Unity, and then treats exit zero as necessary but insufficient. Its run succeeds only when Unity recreates both files during that invocation; the log is nonempty and free of the precise compilation/import signatures `error CS####:`, `Scripts have compiler errors`, `Compilation failed`, `Asset import failed`, `Error importing`, `Failed to import`, and `Aborting batchmode due to failure`; and the parseable XML has a `<test-run>` root with all required numeric counts, `result="Passed"`, `total > 0`, `passed == total`, zero failed/skipped/inconclusive cases, and no non-green or error-labelled descendant. Do not broaden the log rule to the word `exception`: expected test output may contain it. Failure leaves any freshly written artifacts in place for diagnosis. `Tools/UnityValidationEvidence.ps1` is the one production/test parser contract; `Tools/UnityValidationPreflight.ps1` is the one support-process restart contract. `Tools/Test-UnityValidationLauncher.ps1` injects fake Unity and support-process operations only into those helpers below the parameterless production entry point, never through request JSON or an environment bypass.
+The launcher resolves both distinct output paths beneath `tmp/`, deletes exactly those prior XML/log targets, verifies their absence immediately before starting Unity, and then treats exit zero as necessary but insufficient. Its run succeeds only when Unity recreates both files during that invocation; the log is nonempty and free of the precise compilation/import signatures `error CS####:`, `Scripts have compiler errors`, `Compilation failed`, `Asset import failed`, `Error importing`, `Failed to import`, and `Aborting batchmode due to failure`; and the parseable XML has a `<test-run>` root with all required numeric counts, `result="Passed"`, `total > 0`, `passed == total`, zero failed/skipped/inconclusive cases, and no non-green or error-labelled descendant. Do not broaden the log rule to the word `exception`: expected test output may contain it. Failure leaves any freshly written artifacts in place for diagnosis. `Tools/UnityValidationRequest.ps1` is the one scalar/composite request-filter contract, `Tools/UnityValidationEvidence.ps1` is the one production/test parser contract, and `Tools/UnityValidationPreflight.ps1` is the one support-process restart contract. `Tools/Test-UnityValidationLauncher.ps1` injects fake Unity and support-process operations only into those helpers below the parameterless production entry point, never through request JSON or an environment bypass.
 
 The older direct `Start-Process` command blocks - both below and those retained in the recipe shards - remain test-filter and historical-output references only. Agents translate the applicable values into the request file and must not execute them; every recipe shard holding such blocks carries the same reference-only note.
 

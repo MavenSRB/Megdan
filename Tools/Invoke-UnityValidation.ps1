@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'UnityValidationEvidence.ps1')
 . (Join-Path $PSScriptRoot 'UnityValidationPreflight.ps1')
+. (Join-Path $PSScriptRoot 'UnityValidationRequest.ps1')
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $requestPath = [System.IO.Path]::Combine($projectRoot, 'tmp', 'unity-validation-request.json')
@@ -114,7 +115,7 @@ $logPath = Resolve-ProjectOutputPath -RelativePath ([string] $request.log) -Fiel
 if ([string]::Equals($resultsPath, $logPath, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw 'results and log must resolve to different files.'
 }
-$filter = [string] $request.filter
+$filter = Resolve-UnityValidationFilterExpression -Request $request
 $batchMode = -not ($request.PSObject.Properties.Name -contains 'batchMode') -or [bool] $request.batchMode
 
 if (-not (Test-Path -LiteralPath $unityPath -PathType Leaf)) {

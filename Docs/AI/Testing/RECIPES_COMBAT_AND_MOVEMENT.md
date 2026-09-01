@@ -1,10 +1,10 @@
 # Combat and Card-Movement Test Recipes
 
-Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md).
+Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md). When affectedness selects multiple compatible fixtures, place their exact names in one ordered `filters` array and run one request; platform, batch/non-batch, and process-global boundaries remain separate.
 
 ## Minion obstacle and Defense contribution T2 tests
 
-Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run these requests serially.
+Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run the Edit and Play requests serially; each request already groups its compatible fixtures.
 
 Focused Edit Mode request:
 
@@ -22,7 +22,7 @@ Directly affected Edit Mode request:
 ```json
 {
   "platform": "EditMode",
-  "filter": "GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.FastTravelActionTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests;GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.InitiativeResolutionAuthorityTests",
+  "filters": ["GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests", "GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests", "GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.FastTravelActionTests", "GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.MatchSessionTests", "GuardsDigital.Tests.EditMode.DirectorCommandReplayTests", "GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests", "GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests", "GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests", "GuardsDigital.Tests.EditMode.InitiativeResolutionAuthorityTests"],
   "results": "tmp/milestone-5-3-regression-results.xml",
   "log": "tmp/milestone-5-3-regression.log"
 }
@@ -43,14 +43,14 @@ Expected result: every discovered case passes with no skipped or inconclusive ca
 
 ## Explicit Fast Travel selection T2 tests
 
-Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run these requests serially.
+Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run the Edit and Play requests serially; each request already groups its compatible fixtures.
 
 Final affected Edit Mode request:
 
 ```json
 {
   "platform": "EditMode",
-  "filter": "GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.ApplicationArchitectureBoundaryTests;GuardsDigital.Tests.EditMode.ConfiguredMatchCutoverArchitectureTests;GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.FastTravelActionTests",
+  "filters": ["GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests", "GuardsDigital.Tests.EditMode.ApplicationArchitectureBoundaryTests", "GuardsDigital.Tests.EditMode.ConfiguredMatchCutoverArchitectureTests", "GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests", "GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests", "GuardsDigital.Tests.EditMode.MatchSessionTests", "GuardsDigital.Tests.EditMode.FastTravelActionTests"],
   "results": "tmp/milestone-5.2a-final-affected-edit-results.xml",
   "log": "tmp/milestone-5.2a-final-affected-edit.log"
 }
@@ -71,14 +71,14 @@ Expected result: every discovered case passes with no skipped or inconclusive ca
 
 ## Fast Travel replacement T2 tests
 
-Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run these requests serially.
+Write `tmp/unity-validation-request.json` and invoke the fixed launcher specified in [POLICY.md](POLICY.md). Run the Edit and Play requests serially; each request already groups its compatible fixtures.
 
 Final affected Edit Mode request:
 
 ```json
 {
   "platform": "EditMode",
-  "filter": "GuardsDigital.Tests.EditMode.FastTravelActionTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.CardActionDispatcherCompositionTests;GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests;GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.ApplicationArchitectureBoundaryTests;GuardsDigital.Tests.EditMode.ConfiguredMatchCutoverArchitectureTests;GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests",
+  "filters": ["GuardsDigital.Tests.EditMode.FastTravelActionTests", "GuardsDigital.Tests.EditMode.MatchSessionTests", "GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests", "GuardsDigital.Tests.EditMode.CardActionDispatcherCompositionTests", "GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests", "GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests", "GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.DirectorCommandReplayTests", "GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests", "GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests", "GuardsDigital.Tests.EditMode.ApplicationArchitectureBoundaryTests", "GuardsDigital.Tests.EditMode.ConfiguredMatchCutoverArchitectureTests", "GuardsDigital.Tests.EditMode.MinimalHexGridSceneTests"],
   "results": "tmp/milestone-5.2-final-affected-edit-results.xml",
   "log": "tmp/milestone-5.2-final-affected-edit.log"
 }
@@ -334,7 +334,7 @@ Because `CardAggregateInvarianceTests` is the one Unity-only fixture excluded fr
 ```json
 {
   "platform": "EditMode",
-  "filter": "GuardsDigital.Tests.EditMode.ClearActionTests;GuardsDigital.Tests.EditMode.TokenAndMarkerComponentTests;GuardsDigital.Tests.EditMode.MatchSessionComponentDispatchTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests;GuardsDigital.Tests.EditMode.CardActionDispatcherCompositionTests;GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests;GuardsDigital.Tests.EditMode.ResolverEmittedCheckpointConformanceTests;GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests;GuardsDigital.Tests.EditMode.AppendOnlyEventLogTests;GuardsDigital.Tests.EditMode.ActiveEffectLifecycleTests;GuardsDigital.Tests.EditMode.ComponentLifetimeOwnershipConformanceTests;GuardsDigital.Tests.EditMode.EffectSeamConformanceTests;GuardsDigital.Tests.EditMode.MatchSessionSkillDispatchTests;GuardsDigital.Tests.EditMode.FastTravelActionTests;GuardsDigital.Tests.EditMode.TurnTimingCheckpointOrderTests",
+  "filters": ["GuardsDigital.Tests.EditMode.ClearActionTests", "GuardsDigital.Tests.EditMode.TokenAndMarkerComponentTests", "GuardsDigital.Tests.EditMode.MatchSessionComponentDispatchTests", "GuardsDigital.Tests.EditMode.DirectorCommandReplayTests", "GuardsDigital.Tests.EditMode.CardActionDispatcherCompositionTests", "GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests", "GuardsDigital.Tests.EditMode.ResolverEmittedCheckpointConformanceTests", "GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests", "GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests", "GuardsDigital.Tests.EditMode.MatchSessionTests", "GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests", "GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests", "GuardsDigital.Tests.EditMode.AppendOnlyEventLogTests", "GuardsDigital.Tests.EditMode.ActiveEffectLifecycleTests", "GuardsDigital.Tests.EditMode.ComponentLifetimeOwnershipConformanceTests", "GuardsDigital.Tests.EditMode.EffectSeamConformanceTests", "GuardsDigital.Tests.EditMode.MatchSessionSkillDispatchTests", "GuardsDigital.Tests.EditMode.FastTravelActionTests", "GuardsDigital.Tests.EditMode.TurnTimingCheckpointOrderTests"],
   "results": "tmp/milestone-6-3-affected-results.xml",
   "log": "tmp/milestone-6-3-affected.log"
 }
@@ -359,7 +359,7 @@ The Windows run must include `CardAggregateInvarianceTests`, which is the one Un
 ```json
 {
   "platform": "EditMode",
-  "filter": "GuardsDigital.Tests.EditMode.RuleModificationTests;GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.ActiveEffectLifecycleTests;GuardsDigital.Tests.EditMode.MinionObstacleAndDefenseTests;GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.FastTravelActionTests;GuardsDigital.Tests.EditMode.TokenAndMarkerComponentTests;GuardsDigital.Tests.EditMode.MatchSessionComponentDispatchTests;GuardsDigital.Tests.EditMode.EffectCapabilityCatalogTests;GuardsDigital.Tests.EditMode.EffectSeamConformanceTests;GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests",
+  "filters": ["GuardsDigital.Tests.EditMode.RuleModificationTests", "GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests", "GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests", "GuardsDigital.Tests.EditMode.ActiveEffectLifecycleTests", "GuardsDigital.Tests.EditMode.MinionObstacleAndDefenseTests", "GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.FastTravelActionTests", "GuardsDigital.Tests.EditMode.TokenAndMarkerComponentTests", "GuardsDigital.Tests.EditMode.MatchSessionComponentDispatchTests", "GuardsDigital.Tests.EditMode.EffectCapabilityCatalogTests", "GuardsDigital.Tests.EditMode.EffectSeamConformanceTests", "GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests", "GuardsDigital.Tests.EditMode.MatchSessionTests", "GuardsDigital.Tests.EditMode.DirectorCommandReplayTests"],
   "results": "tmp/milestone-6-8-affected-results.xml",
   "log": "tmp/milestone-6-8-affected.log"
 }
@@ -384,7 +384,7 @@ The Windows run must add the Unity-only fixtures that harness excludes - `CardAg
 ```json
 {
   "platform": "EditMode",
-  "filter": "GuardsDigital.Tests.EditMode.ConfiguredModificationSkillTests;GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests;GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests;GuardsDigital.Tests.EditMode.RuleModificationTests;GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.MinionAttackResolutionTests;GuardsDigital.Tests.EditMode.MinionObstacleAndDefenseTests;GuardsDigital.Tests.EditMode.FastTravelActionTests;GuardsDigital.Tests.EditMode.MatchSessionTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests",
+  "filters": ["GuardsDigital.Tests.EditMode.ConfiguredModificationSkillTests", "GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests", "GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests", "GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests", "GuardsDigital.Tests.EditMode.CardDefinitionInstanceTests", "GuardsDigital.Tests.EditMode.ActionOfferAndPrintedValueTests", "GuardsDigital.Tests.EditMode.RuleModificationTests", "GuardsDigital.Tests.EditMode.AttackActionResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.MinionAttackResolutionTests", "GuardsDigital.Tests.EditMode.MinionObstacleAndDefenseTests", "GuardsDigital.Tests.EditMode.FastTravelActionTests", "GuardsDigital.Tests.EditMode.MatchSessionTests", "GuardsDigital.Tests.EditMode.DirectorCommandReplayTests"],
   "results": "tmp/milestone-6-8a-affected-results.xml",
   "log": "tmp/milestone-6-8a-affected.log"
 }
@@ -411,7 +411,7 @@ The Windows run must add the Unity-only fixtures the harness excludes, together 
 ```json
 {
   "platform": "EditMode",
-  "filter": "GuardsDigital.Tests.EditMode.MoveThroughPermissionTests;GuardsDigital.Tests.EditMode.ConfiguredModificationSkillTests;GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.DirectorCommandReplayTests",
+  "filters": ["GuardsDigital.Tests.EditMode.MoveThroughPermissionTests", "GuardsDigital.Tests.EditMode.ConfiguredModificationSkillTests", "GuardsDigital.Tests.EditMode.MovementReachabilityQueryTests", "GuardsDigital.Tests.EditMode.MovementSessionTests", "GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests", "GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests", "GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests", "GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests", "GuardsDigital.Tests.EditMode.RoundResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.DirectorCommandReplayTests"],
   "results": "tmp/milestone-6-8c-affected-results.xml",
   "log": "tmp/milestone-6-8c-affected.log"
 }
@@ -430,7 +430,7 @@ The cross-platform harness covers all eight. The Windows run adds the Unity-only
 ```json
 {
   "platform": "EditMode",
-  "filter": "GuardsDigital.Tests.EditMode.StraightLineQueryTests;GuardsDigital.Tests.EditMode.CloserQueryTests;GuardsDigital.Tests.EditMode.PushPathQueryTests;GuardsDigital.Tests.EditMode.AdmittedDistancesTests;GuardsDigital.Tests.EditMode.BoardDisplacementAuthorityTests;GuardsDigital.Tests.EditMode.DisplacementCapabilityTests;GuardsDigital.Tests.EditMode.OptionalDistanceConformanceTests;GuardsDigital.Tests.EditMode.MatchSessionDisplacementDispatchTests;GuardsDigital.Tests.EditMode.ConfiguredDirectMoveSpawnSkillTests;GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests;GuardsDigital.Tests.EditMode.ConfiguredSceneSerializationTests;GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests;GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests;GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests;GuardsDigital.Tests.EditMode.ModificationSeamConformanceTests;GuardsDigital.Tests.EditMode.EffectSeamConformanceTests;GuardsDigital.Tests.EditMode.EffectResolutionSessionTests;GuardsDigital.Tests.EditMode.EffectNodePolicyTests;GuardsDigital.Tests.EditMode.MatchSessionComponentDispatchTests;GuardsDigital.Tests.EditMode.MatchSessionSkillDispatchTests;GuardsDigital.Tests.EditMode.SkillStartCompletionTests;GuardsDigital.Tests.EditMode.ConfiguredModificationSkillTests;GuardsDigital.Tests.EditMode.CountsAsConsumerTests;GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests;GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests;GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests;GuardsDigital.Tests.EditMode.TerrainObstacleTests;GuardsDigital.Tests.EditMode.MoveThroughPermissionTests;GuardsDigital.Tests.EditMode.MovementSessionTests;GuardsDigital.Tests.EditMode.ActiveEffectInstanceIdentityTests;GuardsDigital.Tests.EditMode.MarkerInstanceIdentityTests;GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests;GuardsDigital.Tests.EditMode.MatchSessionTests",
+  "filters": ["GuardsDigital.Tests.EditMode.StraightLineQueryTests", "GuardsDigital.Tests.EditMode.CloserQueryTests", "GuardsDigital.Tests.EditMode.PushPathQueryTests", "GuardsDigital.Tests.EditMode.AdmittedDistancesTests", "GuardsDigital.Tests.EditMode.BoardDisplacementAuthorityTests", "GuardsDigital.Tests.EditMode.DisplacementCapabilityTests", "GuardsDigital.Tests.EditMode.OptionalDistanceConformanceTests", "GuardsDigital.Tests.EditMode.MatchSessionDisplacementDispatchTests", "GuardsDigital.Tests.EditMode.ConfiguredDirectMoveSpawnSkillTests", "GuardsDigital.Tests.EditMode.CardAggregateInvarianceTests", "GuardsDigital.Tests.EditMode.ConfiguredSceneSerializationTests", "GuardsDigital.Tests.EditMode.MatchFeaturePresenterTests", "GuardsDigital.Tests.EditMode.SnapshotCompatibilityCorpusTests", "GuardsDigital.Tests.EditMode.Phase4ArchitectureConformanceTests", "GuardsDigital.Tests.EditMode.ModificationSeamConformanceTests", "GuardsDigital.Tests.EditMode.EffectSeamConformanceTests", "GuardsDigital.Tests.EditMode.EffectResolutionSessionTests", "GuardsDigital.Tests.EditMode.EffectNodePolicyTests", "GuardsDigital.Tests.EditMode.MatchSessionComponentDispatchTests", "GuardsDigital.Tests.EditMode.MatchSessionSkillDispatchTests", "GuardsDigital.Tests.EditMode.SkillStartCompletionTests", "GuardsDigital.Tests.EditMode.ConfiguredModificationSkillTests", "GuardsDigital.Tests.EditMode.CountsAsConsumerTests", "GuardsDigital.Tests.EditMode.CardActionResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.TurnResolutionAuthorityTests", "GuardsDigital.Tests.EditMode.AdjacentMoveAuthorityTests", "GuardsDigital.Tests.EditMode.TerrainObstacleTests", "GuardsDigital.Tests.EditMode.MoveThroughPermissionTests", "GuardsDigital.Tests.EditMode.MovementSessionTests", "GuardsDigital.Tests.EditMode.ActiveEffectInstanceIdentityTests", "GuardsDigital.Tests.EditMode.MarkerInstanceIdentityTests", "GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests", "GuardsDigital.Tests.EditMode.MatchSessionTests"],
   "results": "tmp/milestone-6-4-results.xml",
   "log": "tmp/milestone-6-4.log"
 }

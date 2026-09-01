@@ -5,6 +5,11 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'UnityValidationEvidence.ps1')
 . (Join-Path $PSScriptRoot 'UnityValidationPreflight.ps1')
 
+$requestContractPath = Join-Path $PSScriptRoot 'UnityValidationRequest.ps1'
+if (Test-Path -LiteralPath $requestContractPath -PathType Leaf) {
+    . $requestContractPath
+}
+
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $fixtureRoot = [System.IO.Path]::Combine($projectRoot, 'tmp', 'unity-validation-launcher-contract')
 New-Item -ItemType Directory -Path $fixtureRoot -Force | Out-Null
@@ -209,6 +214,138 @@ Invoke-ContractCase -Name 'arbitrary-exception-word-is-allowed' -FakeProcess {
     [pscustomobject]@{ ExitCode = 0 }
 } -ShouldPass $true
 Invoke-ContractCase -Name 'fresh-green-results-and-clean-log' -FakeProcess $writeGreen -ShouldPass $true
+
+Write-Output 'Test-UnityValidationLauncher::CompositeFocusedFilter_UsesOneUnityProcessAndPreservesEveryRequestedFixture'
+
+$compositeFixtures = @(
+    'GuardsDigital.Tests.EditMode.MatchSessionTests',
+    'GuardsDigital.Tests.EditMode.DirectorCommandReplayTests',
+    'GuardsDigital.Tests.EditMode.AuthoritativeSnapshotSerializerTests'
+)
+$compositeLaunches = 0
+$compositeArguments = $null
+$compositeNames = @()
+$compositeTotal = 0
+$compositeError = $null
+
+try {
+    if (-not (Get-Command -Name Resolve-UnityValidationFilterExpression -ErrorAction SilentlyContinue)) {
+        throw 'The validation request contract does not support an ordered filters array.'
+    }
+
+    $compositeRequest = @{ filters = $compositeFixtures } | ConvertTo-Json | ConvertFrom-Json
+    $compositeFilter = Resolve-UnityValidationFilterExpression -Request $compositeRequest
+    $compositeResults = Join-Path $fixtureRoot 'composite-focused-filter-results.xml'
+    $compositeLog = Join-Path $fixtureRoot 'composite-focused-filter.log'
+    $compositeUnityArguments = @('-runTests', '-testFilter', $compositeFilter)
+
+    Invoke-UnityValidationProcessAndRequireEvidence `
+        -UnityPath 'fake-unity' `
+        -UnityArguments $compositeUnityArguments `
+        -ResultsPath $compositeResults `
+        -LogPath $compositeLog `
+        -ProcessInvoker {
+            param($unity, $arguments, $results, $log)
+            $script:compositeLaunches++
+            $script:compositeArguments = @($arguments)
+            $cases = $compositeFixtures | ForEach-Object {
+                '<test-case fullname="{0}.SelectedCase" result="Passed" />' -f $_
+            }
+            $xml = '<test-run result="Passed" total="3" passed="3" failed="0" skipped="0" inconclusive="0">{0}</test-run>' -f ($cases -join '')
+            Write-FixtureArtifacts -ResultsPath $results -LogPath $log -Xml $xml
+            [pscustomobject]@{ ExitCode = 0 }
+        } | Out-Null
+
+    [xml] $compositeDocument = Get-Content -LiteralPath $compositeResults -Raw
+    $compositeTotal = [int] $compositeDocument.DocumentElement.GetAttribute('total')
+    $compositeNames = @($compositeDocument.SelectNodes('//test-case') | ForEach-Object { $_.GetAttribute('fullname') })
+}
+catch {
+    $compositeError = $_.Exception.Message
+}
+
+$compositeArgumentCount = if ($null -eq $compositeArguments) { 0 } else { @($compositeArguments).Count }
+$testFilterIndexes = @(for ($index = 0; $index -lt $compositeArgumentCount; $index++) {
+    if ($compositeArguments[$index] -eq '-testFilter') { $index }
+})
+$hasOneOrderedFilter = $false
+if ($testFilterIndexes.Count -eq 1 -and $testFilterIndexes[0] + 1 -lt $compositeArgumentCount) {
+    $hasOneOrderedFilter = $compositeArguments[$testFilterIndexes[0] + 1] -ceq ($compositeFixtures -join ';')
+}
+$hasEveryFixtureCase = $compositeTotal -eq $compositeFixtures.Count -and
+    $compositeNames.Count -eq $compositeFixtures.Count -and
+    -not @($compositeFixtures | Where-Object {
+        $fixture = $_
+        -not ($compositeNames | Where-Object { $_ -ceq "$fixture.SelectedCase" })
+    }).Count
+
+Assert-ContractCase `
+    -Name 'CompositeFocusedFilter_UsesOneUnityProcessAndPreservesEveryRequestedFixture' `
+    -Condition ($compositeLaunches -eq 1 -and $hasOneOrderedFilter -and $hasEveryFixtureCase) `
+    -Reason $(if ($compositeError) { $compositeError } else { 'composite launch, ordered filter, or NUnit case evidence was incorrect' })
+
+Write-Output 'Test-UnityValidationLauncher::RejectsMalformedCompositeFilterRequestsBeforeLaunch'
+
+function Assert-RequestContractRejection {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Name,
+        [Parameter(Mandatory = $true)] [psobject] $Request,
+        [Parameter(Mandatory = $true)] [string] $ExpectedReason
+    )
+
+    $reason = $null
+    try {
+        Resolve-UnityValidationFilterExpression -Request $Request | Out-Null
+    }
+    catch {
+        $reason = $_.Exception.Message
+    }
+
+    Assert-ContractCase `
+        -Name $Name `
+        -Condition (-not [string]::IsNullOrWhiteSpace($reason) -and $reason -match $ExpectedReason) `
+        -Reason $(if ($reason) { "unexpected rejection: $reason" } else { 'malformed request was accepted' })
+}
+
+Assert-RequestContractRejection `
+    -Name 'mixed-filter-and-filters' `
+    -Request ([pscustomobject]@{ filter = 'FixtureA'; filters = @('FixtureB') }) `
+    -ExpectedReason "both 'filter' and 'filters'"
+Assert-RequestContractRejection `
+    -Name 'filters-must-be-an-array' `
+    -Request ([pscustomobject]@{ filters = 'FixtureA' }) `
+    -ExpectedReason 'JSON array'
+Assert-RequestContractRejection `
+    -Name 'filters-array-cannot-be-empty' `
+    -Request ([pscustomobject]@{ filters = @() }) `
+    -ExpectedReason 'at least one'
+Assert-RequestContractRejection `
+    -Name 'filters-entry-cannot-be-empty' `
+    -Request ([pscustomobject]@{ filters = @('FixtureA', ' ') }) `
+    -ExpectedReason 'nonempty'
+Assert-RequestContractRejection `
+    -Name 'filters-entry-cannot-be-non-string' `
+    -Request ([pscustomobject]@{ filters = @('FixtureA', 42) }) `
+    -ExpectedReason 'must be a string'
+Assert-RequestContractRejection `
+    -Name 'filters-entry-cannot-have-surrounding-whitespace' `
+    -Request ([pscustomobject]@{ filters = @(' FixtureA') }) `
+    -ExpectedReason 'leading or trailing whitespace'
+Assert-RequestContractRejection `
+    -Name 'filters-entry-cannot-contain-semicolon' `
+    -Request ([pscustomobject]@{ filters = @('FixtureA;FixtureB') }) `
+    -ExpectedReason 'semicolon'
+Assert-RequestContractRejection `
+    -Name 'filters-entries-must-be-distinct' `
+    -Request ([pscustomobject]@{ filters = @('FixtureA', 'FixtureA') }) `
+    -ExpectedReason 'distinct'
+
+$unfilteredExpression = Resolve-UnityValidationFilterExpression -Request ([pscustomobject]@{ filter = '' })
+$legacyCompositeExpression = Resolve-UnityValidationFilterExpression -Request ([pscustomobject]@{ filter = 'FixtureA;FixtureB' })
+Assert-ContractCase `
+    -Name 'scalar-filter-remains-compatible-for-unfiltered-and-legacy-requests' `
+    -Condition ($unfilteredExpression -ceq '' -and $legacyCompositeExpression -ceq 'FixtureA;FixtureB') `
+    -Reason 'the existing scalar filter contract changed'
 
 Write-Output "Contract cases: passed=$script:passed failed=$script:failed"
 if ($script:failed -ne 0) {

@@ -38,7 +38,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Prefer tiny deterministic scenarios to complete match replays.
 - Run Play Mode and visual checks only for affected Unity-facing or visible paths.
 - Run complete unfiltered suites only at implementation-phase endpoints, explicit hard gates, broad-risk infrastructure/schema changes, or when affected consumers cannot be confidently enumerated.
-- Run Unity validation serially with the fixed launcher and licensing safeguards in `Docs/AI/TESTING.md`; it refuses an active Editor and otherwise restarts Hub/licensing before every run. A command-runner timeout is not a Unity test result, and an active Unity process is monitored rather than replaced.
+- Run Unity validation serially with the fixed launcher and licensing safeguards in `Docs/AI/TESTING.md`; group only affected filters that share platform, batch/non-batch, and process-global setup into one request. The launcher refuses an active Editor and otherwise restarts Hub/licensing before every run. A command-runner timeout is not a Unity test result, and an active Unity process is monitored rather than replaced.
 - Documentation/source-only work uses diff, reference, traceability, and consistency validation without launching Unity.
 - Visually inspect only the presentation affected by the current milestone.
 - Record the validation tier, exact checks/results, visual or source review, and any intentionally omitted unaffected suite in the completion note.

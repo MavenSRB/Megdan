@@ -10,7 +10,7 @@ Unity-free focused fixtures use:
 dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj --no-restore --filter "FullyQualifiedName~<fixture>"
 ```
 
-Unity focused fixtures use `tmp/unity-validation-request.json` with the exact `platform` and `filter` named below, milestone-specific result/log paths beneath `tmp`, followed by:
+Unity focused fixtures use `tmp/unity-validation-request.json` with the exact `platform` and ordered `filters` selected below, milestone-specific result/log paths beneath `tmp`, followed by the fixed launcher. Compatible filters on one platform and batch-mode boundary use one grouped request; Edit/Play, batch/non-batch, and different process-global setup remain separate serial invocations:
 
 ```powershell
 & 'C:\Projects\Guards Digital\Guards 0.1\Tools\Invoke-UnityValidation.ps1'

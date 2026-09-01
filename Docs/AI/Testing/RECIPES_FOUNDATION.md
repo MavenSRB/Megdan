@@ -1,6 +1,6 @@
 # Foundation Focused Test Recipes
 
-Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md).
+Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md). When affectedness selects multiple compatible fixtures, place their exact names in one ordered `filters` array and run one request; platform, batch/non-batch, and process-global boundaries remain separate.
 
 ## Hex-coordinate focused tests
 

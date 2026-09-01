@@ -2,7 +2,7 @@
 
 <!-- operative-claim:F-DOC-026 status:Historical -->
 
-Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md).
+Canonical active shard. Return to [../TESTING.md](../TESTING.md). The raw `Start-Process` blocks in this shard are test-filter and historical-output references only; write `tmp/unity-validation-request.json` and invoke the fixed launcher per [POLICY.md](POLICY.md). When affectedness selects multiple compatible fixtures, place their exact names in one ordered `filters` array and run one request; Edit/Play and batch/non-batch boundaries remain separate.
 
 ## Placeholder-grid focused Play Mode test
 
