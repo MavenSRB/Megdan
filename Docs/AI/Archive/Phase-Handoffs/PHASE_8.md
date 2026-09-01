@@ -745,3 +745,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.31a | Configuring either private-online driver now opts that one process into background execution, so unfocused or hidden windowed hosts and clients keep pumping their session while a normal launch keeps the checked-in pause-on-focus-loss default. The driver check records its failing-then-passing transition, the harness passes 1,799/1,799 after the exclusion-list change, the rebuilt batch rehearsal passes, and a seven-process never-focused windowed run reaches all six seats with every process exiting on its own - the exact condition that stalled milestone 8.31's first manual run. | `7c89a841` |
+
+## Milestone 8.31b Draw the board's blended overlays correctly in a built player completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.31b | A fully transparent board fill now draws nothing by not being rendered, so no stripped shader variant can turn it into the opaque white sheet that hid the whole playfield in every built player while the Editor looked correct; a highlight turns the renderer back on and spaces stay pickable through the board plane. Blended materials copy shipped Resources templates instead of found shaders. The new board visual smoke gate photographs a built player's own frame and recorded 86.9% flat near-white before and 0.0% after across two fresh builds; harness 1,799/1,799, complete Edit 2,173/2,173, complete Play 264/264, the player-build smoke gate and the loopback rehearsal pass. Highlight blending inside a player stays an explicit residual. | `e8803136` |
