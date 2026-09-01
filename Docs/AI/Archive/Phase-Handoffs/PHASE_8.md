@@ -739,3 +739,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.31 | Under the 2026-09-01 user-directed direct-socket amendment, one dedicated seatless host process seats six Windows TCP clients on one stable seat each, admitting only a matching protocol/build/schema/map/content tuple with session-key proof and refusing duplicate, unknown, reserved, changed, full-session, wrong-key, and malformed/oversized/overdue attempts by name; sockets stay in the deletable Unity-free adapter beneath the transport-neutral port and logs carry opaque ordinals, never addresses. Unity-free 1,799/1,799, complete Edit 2,166/2,166, complete Play 264/264, the player-build smoke gate, and two consecutive loopback rehearsals with ten self-exiting processes pass; the link stays plaintext with the encryption decision owed at 8.32. | `a6dcc4b2` |
+
+## Milestone 8.31a Keep private-online processes running without window focus completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.31a | Configuring either private-online driver now opts that one process into background execution, so unfocused or hidden windowed hosts and clients keep pumping their session while a normal launch keeps the checked-in pause-on-focus-loss default. The driver check records its failing-then-passing transition, the harness passes 1,799/1,799 after the exclusion-list change, the rebuilt batch rehearsal passes, and a seven-process never-focused windowed run reaches all six seats with every process exiting on its own - the exact condition that stalled milestone 8.31's first manual run. | `7c89a841` |
