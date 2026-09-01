@@ -672,6 +672,21 @@ Non-goals: No gameplay over the wire - no command codec, no seat projection on t
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-831-establish-the-private-host-and-six-player-seats-completion-evidence).
 
+### [x] 8.31a Keep private-online processes running without window focus
+
+Blocked by: Completed milestone 8.31's first manual windowed run exposed the defect: the checked-in player pauses its whole loop on focus loss (`runInBackground: 0`), so of seven visible processes only the focused one pumps its session and the handshake silently stalls while unfocused windows freeze before their first rendered frame.
+
+Observable outcome: A process launched with a private-online host or client flag keeps pumping its session while its window is hidden or unfocused, so a windowed host plus six windowed clients on one desktop reach `SEATS_COMPLETE claimed=6/6` exactly as the batch rehearsal does, while a normally launched build keeps the existing pause-on-focus-loss behavior.
+
+Acceptance checks:
+
+- Configuring either private-online driver enables background execution for that one process; no other launch path changes the player's focus behavior.
+- The closing check `PrivateOnlineBackgroundExecutionTests` records its failing-then-passing transition for both drivers, and one windowed non-batch hidden host-plus-six-client run reaches `SEATS_COMPLETE claimed=6/6` with every process self-exiting.
+
+Non-goals: No rehearsal-script topology change, no project-wide `runInBackground` setting change, no reconnect, heartbeat, lobby, or gameplay networking.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-831a-keep-private-online-processes-running-without-window-focus-completion-evidence).
+
 ### [!] 8.32 Enforce owner-scoped projections and command authorization across the network boundary
 
 Blocked by: Milestone 8.31 must establish the private host and six network seats.

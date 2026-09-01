@@ -64,6 +64,10 @@ namespace GuardsDigital.Presentation.Interaction
         {
             compositionRoot = root;
             options = launchOptions;
+            // Milestone 8.31a. A host that pauses on focus loss stops pumping every connection it
+            // holds, so activating the host role opts this one process out of the checked-in
+            // pause-on-focus-loss default; a normal launch never reaches this line.
+            UnityEngine.Application.runInBackground = true;
         }
 
         private void Start()
@@ -235,6 +239,10 @@ namespace GuardsDigital.Presentation.Interaction
         {
             compositionRoot = root;
             options = launchOptions;
+            // Milestone 8.31a. An unfocused client that stops pumping never answers the challenge
+            // and never claims its seat; activating the client role opts this one process out of
+            // the pause-on-focus-loss default, exactly as the host does.
+            UnityEngine.Application.runInBackground = true;
         }
 
         private void Start()
