@@ -604,7 +604,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "PAID 1 COIN - 1 REMAINING",
                 // Milestone 8.8a: the six choices the configured Wasp hand actually produces, in the
                 // order the pause produces them - the Blue pair, the Red pair, the Green pair, each one
-                // upgraded card with p.15's two candidates. The comparison band reorders those into
+                // upgraded card with p.15's two candidates. The transparent card row reorders those into
                 // Blue, Green, Red while leaving the candidates inside each pair untouched.
                 UpgradeOptions(
                         WaspCardContent.LiftUp,
@@ -696,7 +696,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_LevelUpUsesOneContainedBandWithoutMovingTheStandingHud()
+        public IEnumerator Scene_LevelUpUsesOneContainedCardRowWithoutMovingTheStandingHud()
         {
             yield return LoadOfficialSixPlayerScene();
             var root = Root();
@@ -733,6 +733,13 @@ namespace GuardsDigital.Tests.PlayMode
                 "The board keeps its standing safe surface instead of reframing for Level Up.");
 
             var tray = Named(hud.RootElement, "gd-tray-region").worldBound;
+            var trayElement = Named(hud.RootElement, "gd-tray-region");
+            Assert.That(trayElement.resolvedStyle.backgroundColor.a,
+                Is.EqualTo(0f).Within(0.001f),
+                "Upgrade reserves layout but paints no full-width comparison band.");
+            Assert.That(trayElement.resolvedStyle.borderTopWidth,
+                Is.EqualTo(0f).Within(UiPlayer.PixelSnapping()),
+                "The six cards have no enclosing tray outline.");
             var band = Named(hud.RootElement, "gd-upgrade-comparison-band");
             var pairs = Descendants(band)
                 .Where(element => element.name == "gd-upgrade-pair")
@@ -778,7 +785,65 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_CapturesLevelUpComparisonAtBothValidatedDesktopSizes()
+        public IEnumerator Scene_UpgradeCardsAcceptPointerAndKeyboardActivationWithoutFrames()
+        {
+            yield return LoadOfficialSixPlayerScene();
+            var root = Root();
+            RenderArtworkUpgradeChoices(root.Runtime);
+
+            // Isolate the view from the scene presenter so both activations can be observed without an
+            // intentionally presentation-shaped option being submitted to the scene's standing match.
+            var view = new RoundActionUnityView();
+            view.Render(root.Runtime.RoundView.Model);
+            view.Root.style.position = Position.Absolute;
+            view.Root.style.left = 300f;
+            view.Root.style.top = 120f;
+            view.Root.style.width = 1400f;
+            view.Root.style.height = 560f;
+            root.Hud.RootElement.Add(view.Root);
+            try
+            {
+                yield return null;
+                yield return null;
+                var options = Descendants(view.Root)
+                    .Where(element => element.name == "gd-upgrade-option")
+                    .ToArray();
+                Assert.That(options, Has.Length.EqualTo(6));
+                Assert.That(options.Select(option => option.resolvedStyle.borderTopWidth),
+                    Has.All.EqualTo(0f).Within(UiPlayer.PixelSnapping()),
+                    "Pointer and keyboard controls paint no enclosing option outline.");
+
+                var submitted = new List<TypedInvocationViewModel>();
+                view.InvocationSubmitted += submitted.Add;
+                UiPlayer.Click(options[0]);
+                Assert.That(submitted, Has.Count.EqualTo(1));
+                Assert.That(submitted[0].Command,
+                    Is.SameAs(view.Model.SystemTransitionPrompt.Options[0].Command));
+
+                options[1].Focus();
+                yield return null;
+                var focusedFacts = Descendants(options[1])
+                    .Single(element => element.name == "gd-upgrade-facts");
+                Assert.That(focusedFacts.resolvedStyle.opacity, Is.EqualTo(1f).Within(0.001f),
+                    "Keyboard focus strengthens the centred gains row without altering the face.");
+                using (var submit = NavigationSubmitEvent.GetPooled())
+                {
+                    submit.target = options[1];
+                    options[1].SendEvent(submit);
+                }
+
+                Assert.That(submitted, Has.Count.EqualTo(2));
+                Assert.That(submitted[1].Command,
+                    Is.SameAs(view.Model.SystemTransitionPrompt.Options[1].Command));
+            }
+            finally
+            {
+                view.Root.RemoveFromHierarchy();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator Scene_CapturesFrameFreeLevelUpChoicesAtBothValidatedDesktopSizes()
         {
             if (UnityEngine.Application.isBatchMode)
             {
@@ -805,7 +870,7 @@ namespace GuardsDigital.Tests.PlayMode
                 root.Hud.ApplyExclusiveContext();
                 yield return null;
                 yield return new WaitForEndOfFrame();
-                yield return Capture("tmp/milestone-8-29b-level-up-2560x1440.png");
+                yield return Capture("tmp/milestone-8-30j-level-up-2560x1440.png");
 
                 SelectFixedGameViewResolution(2048, 1152);
                 for (var frame = 0;
@@ -833,7 +898,7 @@ namespace GuardsDigital.Tests.PlayMode
                         .All(option => option.worldBound.yMin >= tray.yMin - 0.5f &&
                             option.worldBound.yMax <= tray.yMax + 0.5f),
                     Is.True, "Every complete option and gained-item fact fits the validated view.");
-                yield return Capture("tmp/milestone-8-29b-level-up-2048x1152.png");
+                yield return Capture("tmp/milestone-8-30j-level-up-2048x1152.png");
             }
             finally
             {

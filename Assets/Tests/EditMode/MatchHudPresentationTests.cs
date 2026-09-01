@@ -4097,7 +4097,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheSixUpgradeChoices_AreThreeContainedPairsInOneFullWidthComparisonBand()
+        public void UpgradeChoices_ShowOnlySixCardsWithCenteredGainsAndNoComparisonFrames()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
             var view = new RoundActionUnityView();
@@ -4108,17 +4108,24 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(element => element.name == "gd-upgrade-comparison-band")
                 .ToArray();
             Assert.That(bands, Has.Length.EqualTo(1),
-                "Level Up is one full-width comparison band, not the legacy two-row grid.");
+                "The transparent layout row keeps the six cards in one bounded line.");
 
             var pairs = Descendants(bands[0])
                 .Where(element => element.name == "gd-upgrade-pair")
                 .ToArray();
-            Assert.That(pairs, Has.Length.EqualTo(3), "Blue, Green, Red are three explicit pairs.");
+            Assert.That(pairs, Has.Length.EqualTo(3),
+                "Three transparent layout groups retain p.15's authoritative pairing.");
             foreach (var pair in pairs)
             {
                 Assert.That(Descendants(pair).Count(cell => cell.name == "gd-upgrade-option"),
                     Is.EqualTo(2), "Each source card keeps its two projected candidates together.");
+                Assert.That(pair.style.backgroundColor.value.a, Is.EqualTo(0f).Within(0.001f),
+                    "A source-card pair may group layout but may not paint a container.");
             }
+
+            Assert.That(Descendants(bands[0])
+                    .Count(element => element.name == "gd-upgrade-pair-label"),
+                Is.EqualTo(0), "BLUE PAIR, GREEN PAIR, and RED PAIR are removed.");
 
             // The reading and focus order is the element order, which is what a pointer follows down a
             // pair and what keyboard focus follows through the tree.
@@ -4148,6 +4155,27 @@ namespace GuardsDigital.Tests.EditMode
                 prompt.Options.Select(option => option.Color).Distinct(),
                 Is.Not.EqualTo(new[] { CardColor.Blue, CardColor.Green, CardColor.Red }),
                 "and it is a reordering: the projected order is not already this one.");
+
+            foreach (var control in order)
+            {
+                Assert.That(control.style.width.value.value,
+                    Is.EqualTo(CardFootprint.Width).Within(0.01f),
+                    "The whole-card control has the standard card footprint, with no option plate.");
+                Assert.That(control.style.backgroundColor.value.a, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(control.style.borderTopWidth.value, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(control.style.borderRightWidth.value, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(control.style.borderBottomWidth.value, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(control.style.borderLeftWidth.value, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(control.style.paddingTop.value.value, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(control.style.paddingRight.value.value, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(control.style.paddingBottom.value.value, Is.EqualTo(0f).Within(0.001f));
+                Assert.That(control.style.paddingLeft.value.value, Is.EqualTo(0f).Within(0.001f));
+
+                var gains = Descendants(control)
+                    .Single(element => element.name == "gd-upgrade-item");
+                Assert.That(gains.style.justifyContent.value, Is.EqualTo(Justify.Center),
+                    "Each GAINS row is centred beneath its own card rather than an obsolete frame.");
+            }
 
             for (var pairIndex = 0; pairIndex < 3; pairIndex++)
             {
@@ -4231,7 +4259,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void PointingAtAnUpgradeChoice_MarksExactlyOneWithoutResizingAnyCard()
+        public void PointingAtAnUpgradeChoice_StrengthensOnlyItsCentredGainsRow()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
             var view = new RoundActionUnityView();
@@ -4245,39 +4273,40 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(widths.Distinct().Count(), Is.EqualTo(1), "Every option is one width.");
 
             Assert.That(view.HighlightedUpgradeOption, Is.Null, "Nothing is marked to begin with.");
-            Assert.That(
-                controls.Count(control =>
-                    control.style.borderTopColor.value == MatchHudTheme.SelectedOutline),
-                Is.EqualTo(0));
+            Assert.That(controls.SelectMany(Descendants)
+                    .Where(element => element.name == "gd-upgrade-facts")
+                    .Select(element => element.style.opacity.value),
+                Has.All.EqualTo(0.82f).Within(0.001f));
 
             var chosen = prompt.Options[3];
             view.ForwardUpgradeOptionHighlight(chosen);
             Assert.That(view.HighlightedUpgradeOption, Is.SameAs(chosen));
-            Assert.That(
-                controls.Count(control =>
-                    control.style.borderTopColor.value == MatchHudTheme.SelectedOutline),
+            Assert.That(controls.SelectMany(Descendants)
+                    .Count(element => element.name == "gd-upgrade-facts" &&
+                        Mathf.Abs(element.style.opacity.value - 1f) < 0.001f),
                 Is.EqualTo(1),
-                "Exactly one option wears the HUD's shared selection outline.");
+                "Exactly one option strengthens its existing gains reading without a frame.");
             Assert.That(
                 controls.Select(control => control.style.width.value.value), Is.EqualTo(widths),
                 "and marking it changes no card's width, so nothing re-wraps and no row moves.");
 
-            var marked = controls.Single(control =>
-                control.style.borderTopColor.value == MatchHudTheme.SelectedOutline);
+            var marked = controls.Single(control => Descendants(control)
+                .Any(element => element.name == "gd-upgrade-facts" &&
+                    Mathf.Abs(element.style.opacity.value - 1f) < 0.001f));
             Assert.That(marked.tooltip, Does.Contain(chosen.Label).And.Contain(chosen.Detail),
                 "The selected option states what it is and what taking it does, so the selection is " +
                 "assistive as well as visible.");
 
             view.ForwardUpgradeOptionHighlight(null);
             Assert.That(view.HighlightedUpgradeOption, Is.Null);
-            Assert.That(
-                controls.Count(control =>
-                    control.style.borderTopColor.value == MatchHudTheme.SelectedOutline),
-                Is.EqualTo(0));
+            Assert.That(controls.SelectMany(Descendants)
+                    .Where(element => element.name == "gd-upgrade-facts")
+                    .Select(element => element.style.opacity.value),
+                Has.All.EqualTo(0.82f).Within(0.001f));
         }
 
         [Test]
-        public void TheUpgradeComparisonBand_IsTheOnlyContextAndKeepsEveryOptionReachable()
+        public void TheUpgradeCardRow_IsTheOnlyContextAndKeepsEveryOptionReachable()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
             var view = new RoundActionUnityView();
@@ -4308,7 +4337,7 @@ namespace GuardsDigital.Tests.EditMode
                 "and none of them is drawn as a refusal.");
             Assert.That(Descendants(view.Root)
                     .Count(element => element.name == "gd-upgrade-pair-label"),
-                Is.EqualTo(3), "Every source-card pair is explicitly labelled.");
+                Is.EqualTo(0), "Pairing stays in layout and authority without a visible caption.");
         }
 
         [Test]

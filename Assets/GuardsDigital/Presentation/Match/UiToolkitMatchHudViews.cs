@@ -3565,14 +3565,14 @@ namespace GuardsDigital.Presentation.Match
         private const float OptionWidth = 430f;
 
         /// <summary>
-        /// The frame an upgrade option's card sits in: enough for the shared selection outline and a
-        /// little air, on every side. Milestone 8.29b keeps two of these inside each explicitly labelled
-        /// colour pair, with all three pairs in one full-width comparison band.
+        /// The gap between p.15's two candidates for one source card. Milestone 8.30j removes the
+        /// option and pair frames, so the pair width is now only two standard card faces and this gap.
         /// </summary>
-        private const float UpgradeOptionInset = 6f;
         private const float UpgradePairGap = 4f;
         public const float UpgradePairWidth =
-            (CardFootprint.Width + (UpgradeOptionInset * 2f)) * 2f + UpgradePairGap;
+            (CardFootprint.Width * 2f) + UpgradePairGap;
+
+        private const float UpgradeFactsRestingOpacity = 0.82f;
 
         /// <summary>
         /// The legacy framed footprint retained by other card-valued choice families. Defense itself
@@ -3609,11 +3609,6 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement endTurnHost;
 
         /// <summary>
-        /// The upgrade-option controls this rebuild drew, in the order they were drawn. Milestone 8.8a:
-        /// the selection outline belongs to exactly one of them at a time, so marking one means unmarking
-        /// the rest, and a driver with no pointer has to be able to reach them by option.
-        /// </summary>
-        /// <summary>
         /// The Defense-card controls this rebuild drew. Milestone 8.11b, for milestone 8.8a's reason:
         /// a driver with no pointer has to reach an offer the way its own control does, and an offer
         /// this rebuild did not draw must reach nothing.
@@ -3622,6 +3617,11 @@ namespace GuardsDigital.Presentation.Match
             defenseCardControls =
                 new List<KeyValuePair<TypedInvocationViewModel, VisualElement>>();
 
+        /// <summary>
+        /// The upgrade-option controls this rebuild drew, in their rendered and focus order. The list
+        /// refuses stale option forwarding and lets pointer or keyboard focus strengthen exactly one
+        /// centred gains row without painting an enclosing option frame.
+        /// </summary>
         private readonly List<KeyValuePair<SystemTransitionOptionViewModel, VisualElement>>
             upgradeOptionControls =
                 new List<KeyValuePair<SystemTransitionOptionViewModel, VisualElement>>();
@@ -3766,7 +3766,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         /// <summary>
         /// Whether the region is drawing p.15's six card-faced upgrade choices. The renderer uses this
-        /// to select the contained comparison overlay and short-view vertical fallback while keeping
+        /// to select the contained six-card overlay and short-view vertical fallback while keeping
         /// every standing HUD and board-safe rectangle on its ordinary geometry.
         /// </summary>
         public bool HasUpgradeComparisonBand =>
@@ -4066,7 +4066,7 @@ namespace GuardsDigital.Presentation.Match
                 var upgradeGrid = HudElements.Column(6f);
                 upgradeGrid.style.flexGrow = 1f;
                 rows.Add(upgradeGrid);
-                BuildUpgradeComparisonBand(upgradeGrid, prompt);
+                BuildUpgradeCardRow(upgradeGrid, prompt);
                 return;
             }
 
@@ -4098,7 +4098,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// p.15's options as one comparison band: Blue pair, Green pair, Red pair.
+        /// p.15's six complete candidate cards in the stable Blue, Green, Red reading order.
         ///
         /// <para>The groups are the pairs the pause itself supplied - options for one
         /// upgraded card arrive together, so grouping them is reading the projection rather than sorting
@@ -4112,7 +4112,7 @@ namespace GuardsDigital.Presentation.Match
         /// by. It reorders pairs and nothing else: no option is added, removed, or moved out of its own
         /// pair.</para>
         /// </summary>
-        private void BuildUpgradeComparisonBand(
+        private void BuildUpgradeCardRow(
             VisualElement grid, SystemTransitionPromptViewModel prompt)
         {
             var columns = new List<List<SystemTransitionOptionViewModel>>();
@@ -4139,15 +4139,21 @@ namespace GuardsDigital.Presentation.Match
             band.style.alignItems = Align.FlexStart;
             band.style.justifyContent = Justify.FlexStart;
             band.style.flexWrap = Wrap.NoWrap;
+            band.style.backgroundColor = Color.clear;
             grid.Add(band);
             foreach (var column in ordered)
             {
-                var pair = HudElements.Column(4f);
+                // Pairing remains the authority's grouping and focus order, but 8.30j makes the
+                // group a transparent layout fact: no caption, plate, border, or enclosing outline.
+                var pair = HudElements.Row(UpgradePairGap);
                 pair.name = "gd-upgrade-pair";
                 pair.style.width = UpgradePairWidth;
                 pair.style.minWidth = UpgradePairWidth;
                 pair.style.maxWidth = UpgradePairWidth;
                 pair.style.flexShrink = 0f;
+                pair.style.alignItems = Align.FlexStart;
+                pair.style.flexWrap = Wrap.NoWrap;
+                pair.style.backgroundColor = Color.clear;
                 var label = HudElements.Text(
                     column[0].Color.ToString().ToUpperInvariant() + " PAIR",
                     10f,
@@ -4155,21 +4161,17 @@ namespace GuardsDigital.Presentation.Match
                     FontStyle.Bold);
                 label.name = "gd-upgrade-pair-label";
                 pair.Add(label);
-                var choices = HudElements.Row(UpgradePairGap);
-                choices.style.alignItems = Align.FlexStart;
-                choices.style.flexWrap = Wrap.NoWrap;
                 foreach (var option in column)
                 {
-                    choices.Add(BuildUpgradeOption(option));
+                    pair.Add(BuildUpgradeOption(option));
                 }
 
-                pair.Add(choices);
                 band.Add(pair);
             }
         }
 
         /// <summary>
-        /// One upgrade option: the candidate's whole printed face, and beside it the facts that belong to
+        /// One upgrade option: the candidate's whole printed face, and beneath it the fact that belongs to
         /// taking it rather than to the card.
         ///
         /// <para>The face is <see cref="DirectorHandsUnityView.BuildStandaloneCard"/> - the tray's own
@@ -4179,9 +4181,9 @@ namespace GuardsDigital.Presentation.Match
         /// cards of one colour can see which item each choice leaves them holding, and the card returned
         /// to the deck is named because p.15 takes it out of the hand.</para>
         ///
-        /// <para>The whole control is the option. Its outline is the HUD's shared selection treatment,
-        /// always drawn and only ever changing colour, so focusing or pointing at a candidate cannot
-        /// change a card's width, re-wrap its rules text, or move the row.</para>
+        /// <para>The whole control is the option. It paints no plate or outline; focus and pointer
+        /// strengthen only the already-visible gains row, so the face and every layout measurement stay
+        /// unchanged.</para>
         /// </summary>
         private Button BuildUpgradeOption(SystemTransitionOptionViewModel option)
         {
@@ -4191,16 +4193,16 @@ namespace GuardsDigital.Presentation.Match
                 text = string.Empty
             };
             control.style.flexDirection = FlexDirection.Column;
-            control.style.alignItems = Align.Stretch;
+            control.style.alignItems = Align.Center;
             control.style.flexShrink = 0f;
-            control.style.width = CardFootprint.Width + (UpgradeOptionInset * 2f);
+            control.style.width = CardFootprint.Width;
             control.style.marginLeft = 0f;
             control.style.marginRight = 0f;
             control.style.marginTop = 0f;
             control.style.marginBottom = 0f;
-            HudElements.Padding(control, UpgradeOptionInset);
-            control.style.backgroundColor = MatchHudTheme.PanelBackground;
-            HudElements.MarkSelectedWithoutResizing(control, false);
+            HudElements.Padding(control, 0f);
+            HudElements.Border(control, Color.clear, 0f, 0f);
+            control.style.backgroundColor = Color.clear;
             upgradeOptionControls.Add(
                 new KeyValuePair<SystemTransitionOptionViewModel, VisualElement>(option, control));
             HudElements.OnPointedAt(control, pointedAt =>
@@ -4223,10 +4225,15 @@ namespace GuardsDigital.Presentation.Match
             var facts = HudElements.Column(3f);
             facts.name = "gd-upgrade-facts";
             facts.style.marginTop = 6f;
+            facts.style.width = CardFootprint.Width;
+            facts.style.alignItems = Align.Center;
+            facts.style.opacity = UpgradeFactsRestingOpacity;
 
             var gained = HudElements.Row(4f);
             gained.name = "gd-upgrade-item";
             gained.style.flexWrap = Wrap.NoWrap;
+            gained.style.width = CardFootprint.Width;
+            gained.style.justifyContent = Justify.Center;
             gained.Add(HudElements.Text("GAINS", 9f, MatchHudTheme.MutedText, FontStyle.Bold));
             if (option.ItemIcon == PrintedValueChannel.None)
             {
@@ -4323,8 +4330,14 @@ namespace GuardsDigital.Presentation.Match
                     : null;
             foreach (var entry in upgradeOptionControls)
             {
-                HudElements.MarkSelectedWithoutResizing(
-                    entry.Value, ReferenceEquals(entry.Key, HighlightedUpgradeOption));
+                var facts = entry.Value.Children()
+                    .FirstOrDefault(child => child.name == "gd-upgrade-facts");
+                if (facts != null)
+                {
+                    facts.style.opacity = ReferenceEquals(entry.Key, HighlightedUpgradeOption)
+                        ? 1f
+                        : UpgradeFactsRestingOpacity;
+                }
             }
         }
 
