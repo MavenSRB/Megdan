@@ -239,9 +239,11 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void UnavailableNonResolvingCards_MoveToTheRightSideInTheCurrentHandPresentationWhileThePlayableHandKeepsOnlyLiveCards()
+        public void ResolvingCard_RemainsRightmostInTheStationaryHandWhileOnlyLifecycleUnavailableCardsMoveRight()
         {
-            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            PlayTurns(session, 2);
+            ConfiguredMatchFixtures.CommitBothHands(session);
             var view = new DirectorHandsUnityView();
             view.SetCompactPeekMode(true);
             var presenter = new DirectorHandsPresenter(session, view);
@@ -249,11 +251,17 @@ namespace GuardsDigital.Tests.EditMode
             presenter.SelectViewedHero(ownerId);
 
             var hand = view.Model.ViewedHand;
-            var live = hand.TrayCards.Where(card => card.IsSelectable || card.IsResolving).ToArray();
-            var unavailable = hand.TrayCards.Where(card => !card.IsSelectable && !card.IsResolving)
+            var live = hand.TrayCards
+                .Where(card => card.Group == TrayCardGroup.Available || card.IsResolving)
+                .OrderBy(card => card.IsResolving ? 1 : 0)
                 .ToArray();
-            Assert.That(live, Has.Length.EqualTo(1),
-                "The revealed unresolved turn has exactly its resolving card in the live group.");
+            var unavailable = hand.TrayCards
+                .Where(card => card.Group != TrayCardGroup.Available && !card.IsResolving)
+                .ToArray();
+            Assert.That(live, Has.Length.GreaterThan(1),
+                "Held future-turn cards remain beside the card currently resolving.");
+            Assert.That(live[^1].IsResolving, Is.True,
+                "The resolving card is the rightmost, fully exposed face of the stationary hand.");
             Assert.That(unavailable, Is.Not.Empty,
                 "The closing check needs cards that the projection already marks unavailable.");
 
@@ -267,7 +275,7 @@ namespace GuardsDigital.Tests.EditMode
                 "Unavailable non-resolving cards need their own right-side presentation host.");
 
             Assert.That(CardNames(playableHost), Is.EqualTo(live.Select(card => card.DisplayName)),
-                "Only selectable cards and the resolving card remain in the bottom hand.");
+                "Every held card remains in the bottom-left hand, with the resolving card last.");
             Assert.That(CardNames(unavailableHost),
                 Is.EqualTo(unavailable.Select(card => card.DisplayName)),
                 "The right-side group preserves the projection-derived relative order.");
@@ -291,7 +299,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void UnavailableCards_RetainDimmingAndRebuildWithoutDuplicatesCommandsOrHiddenIdentityLeaks()
         {
-            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            PlayTurns(session, 2);
+            ConfiguredMatchFixtures.CommitBothHands(session);
             var view = new DirectorHandsUnityView();
             view.SetCompactPeekMode(true);
             var presenter = new DirectorHandsPresenter(session, view);
@@ -299,7 +309,8 @@ namespace GuardsDigital.Tests.EditMode
             presenter.SelectViewedHero(ownerId);
 
             var hand = view.Model.ViewedHand;
-            var expected = hand.TrayCards.Where(card => !card.IsSelectable && !card.IsResolving)
+            var expected = hand.TrayCards.Where(card =>
+                    card.Group != TrayCardGroup.Available && !card.IsResolving)
                 .ToArray();
             var unavailableHost = Descendants(view.Root)
                 .SingleOrDefault(element => element.name == "gd-unavailable-card-buttons");
@@ -1353,8 +1364,12 @@ namespace GuardsDigital.Tests.EditMode
                 "but it is the card being played, so it is not dimmed as though it were spent.");
             foreach (var other in buttons.Where(button => !ReferenceEquals(button, resolvingButton)))
             {
-                Assert.That(other.style.opacity.value, Is.LessThan(1f),
-                    "while a card that carries no command and is not in play still reads as unavailable.");
+                Assert.That(other.style.opacity.keyword, Is.EqualTo(StyleKeyword.Null),
+                    "A held future-turn card keeps its normal resolved opacity even while resolution " +
+                    "temporarily removes its command.");
+                Assert.That(Descendants(other)
+                        .Any(element => element.name == "gd-card-unavailable-veil"), Is.False,
+                    "A held future-turn card is not presented as genuinely unavailable.");
             }
 
             view.SetCompactPeekMode(true);
@@ -1364,34 +1379,23 @@ namespace GuardsDigital.Tests.EditMode
             var unavailableButtons = Descendants(view.Root)
                 .Single(element => element.name == "gd-unavailable-card-buttons")
                 .Query<Button>(name: "gd-card-choice").ToList();
-            var unavailableOrder = unavailableButtons
-                .Where(element => element.name == "gd-card-choice")
-                .Select(button => button.tooltip.Split(
-                    new[] { " - " }, StringSplitOptions.None)[0])
-                .ToArray();
             var expectedOrder = hand.TrayCards
-                .Where(card => !card.IsResolving)
+                .Where(card => card.Group == TrayCardGroup.Available)
                 .Select(card => card.DisplayName)
+                .Concat(new[] { resolving.DisplayName })
                 .ToArray();
-            Assert.That(unavailableOrder, Is.EqualTo(expectedOrder),
-                "The right-side group preserves every unavailable sibling's relative order.");
-            Assert.That(playableButtons, Has.Count.EqualTo(1));
-            Assert.That(playableButtons[0].tooltip, Does.Contain(resolving.DisplayName));
-            Assert.That(playableButtons[0].style.opacity.value, Is.EqualTo(1f));
-            Assert.That(Descendants(playableButtons[0])
+            Assert.That(playableButtons.Select(button => button.tooltip.Split(
+                    new[] { " - " }, StringSplitOptions.None)[0]), Is.EqualTo(expectedOrder),
+                "The hand keeps its held cards and exposes the resolving card at the right edge.");
+            Assert.That(unavailableButtons, Is.Empty,
+                "Temporary resolution does not manufacture unavailable cards at bottom-right.");
+            var rightmost = playableButtons[^1];
+            Assert.That(rightmost.tooltip, Does.Contain(resolving.DisplayName));
+            Assert.That(rightmost.style.opacity.value, Is.EqualTo(1f));
+            Assert.That(Descendants(rightmost)
                     .Any(element => element.name == "gd-card-unavailable-veil"),
                 Is.False,
                 "The resolving card remains undimmed in the bottom hand.");
-            foreach (var spent in unavailableButtons)
-            {
-                Assert.That(spent.style.opacity.value, Is.EqualTo(1f),
-                    "Overlapped spent cards keep an opaque surface, so siblings cannot bleed through.");
-                var veil = Descendants(spent).Single(element =>
-                    element.name == "gd-card-unavailable-veil");
-                Assert.That(veil.style.backgroundColor.value.a, Is.GreaterThan(0f),
-                    "A card-local veil still makes the unavailable state visibly dim.");
-                Assert.That(veil.pickingMode, Is.EqualTo(PickingMode.Ignore));
-            }
         }
 
         // -------------------------------------------------------------------------------------------
@@ -2503,12 +2507,15 @@ namespace GuardsDigital.Tests.EditMode
                         "Selection is an overlay and never changes the artwork footprint.");
                     AssertIsTheArtworkFootprint(selected, "the selected tray card");
 
+                    var discardedSession = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+                    PlayTurns(discardedSession, 2);
+                    var discardedHeroId = discardedSession.Projection.Setup.Heroes.First().HeroId;
                     var discardedView = new DirectorHandsUnityView();
-                    new DirectorHandsPresenter(
-                        ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn(),
-                        discardedView).Refresh();
+                    var discardedPresenter = new DirectorHandsPresenter(
+                        discardedSession, discardedView);
+                    discardedPresenter.SelectViewedHero(discardedHeroId);
                     var unavailableCard = discardedView.Model.ViewedHand.TrayCards.First(card =>
-                        !card.IsSelectable && !card.IsResolving);
+                        card.Group == TrayCardGroup.Played);
                     var unavailable = Descendants(discardedView.Root)
                         .Where(element => element.name == "gd-card-choice")
                         .Single(element => element.tooltip.Contains(unavailableCard.DisplayName));
@@ -3604,10 +3611,11 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(endTurn.xMin,
                     Is.GreaterThan(ConfiguredMatchHudRenderer.PanelViewport.x / 2f));
                 Assert.That(endTurn.yMin,
-                    Is.EqualTo(0f),
+                    Is.EqualTo(ConfiguredMatchHudRenderer.EndTurnControlTopInset),
                     "End Turn occupies the status bar's top-right slot.");
                 Assert.That(endTurn.yMax,
-                    Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
+                    Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight),
+                    "The rectangle fills both rows of the compact status bar.");
             }
             finally
             {

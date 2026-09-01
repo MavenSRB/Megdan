@@ -1633,10 +1633,10 @@ namespace GuardsDigital.Presentation.Match
             TrayCards = Array.AsReadOnly((trayCards ??
                 Enumerable.Empty<TrayCardViewModel>()).ToArray());
             PlayableTrayCards = Array.AsReadOnly(TrayCards
-                .Where(card => card.IsSelectable || card.IsResolving)
+                .Where(card => card.Group == TrayCardGroup.Available || card.IsResolving)
                 .ToArray());
             UnavailableTrayCards = Array.AsReadOnly(TrayCards
-                .Where(card => !card.IsSelectable && !card.IsResolving)
+                .Where(card => card.Group != TrayCardGroup.Available && !card.IsResolving)
                 .ToArray());
             TeamSide = teamSide;
             HeroId = heroId;
@@ -1687,16 +1687,16 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<TrayCardViewModel> TrayCards { get; }
 
         /// <summary>
-        /// The bottom hand's projection-driven composition: cards carrying a current commitment
-        /// command plus the one card whose printed action is resolving. The latter is intentionally
-        /// present even though its outer face carries no commitment command.
+        /// The bottom hand's projection-driven composition: every card still in the hero's hand plus
+        /// the one card whose printed action is resolving. Temporary action-resolution exclusivity
+        /// removes commands, not cards from this stationary hand surface.
         /// </summary>
         public IReadOnlyList<TrayCardViewModel> PlayableTrayCards { get; }
 
         /// <summary>
-        /// Current-round cards that carry neither a commitment command nor the resolving-card role.
-        /// Their lifecycle, identity and relative order remain the ones <see cref="TrayCards"/> owns;
-        /// this is a presentation partition, not a second availability decision.
+        /// Genuinely unavailable current-round cards: played or discarded cards other than the card
+        /// currently resolving. Their lifecycle, identity and relative order remain the ones
+        /// <see cref="TrayCards"/> owns; temporary command exclusivity never moves a held card here.
         /// </summary>
         public IReadOnlyList<TrayCardViewModel> UnavailableTrayCards { get; }
 

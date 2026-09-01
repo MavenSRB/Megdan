@@ -1431,8 +1431,9 @@ namespace GuardsDigital.Tests.PlayMode
                 .Within(snap * 2f));
             Assert.That(endTurnBox.xMin, Is.GreaterThan(dock.xMax),
                 "It is clear of the dock it used to sit inside.");
-            Assert.That(endTurnBox.yMin, Is.EqualTo(0f).Within(snap),
-                "and anchored in the status bar's top-right slot.");
+            Assert.That(endTurnBox.yMin,
+                Is.EqualTo(ConfiguredMatchHudRenderer.EndTurnControlTopInset).Within(snap),
+                "and anchored at the status bar's upper-right edge.");
             // Milestone 8.30b. This used to assert that wrapped action controls finished with a
             // deliberate gap before the hand-status row. There are no controls left here to wrap:
             // 8.29b1b moved the printed actions onto the resolving card and the amendment moved the

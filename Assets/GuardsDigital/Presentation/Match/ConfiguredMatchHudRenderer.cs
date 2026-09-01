@@ -161,8 +161,7 @@ namespace GuardsDigital.Presentation.Match
         // Keeps UI Toolkit border/pixel snapping from turning two mathematically adjacent rectangles
         // into a live one-pixel overlap at non-identity panel scales.
         private const float BoardTraySeparation = 2f;
-        public const float TieBreakerDiameter = 80f;
-        private const float TieBreakerInset = 8f;
+        public const float TieBreakerDiameter = 160f;
         private const float EventLogPreferredWidth = 720f;
         private const float EventLogPreferredHeight = 360f;
 
@@ -193,7 +192,8 @@ namespace GuardsDigital.Presentation.Match
         /// amendment re-measured the hero rail column, the playfield and the tray against the taller
         /// value rather than assuming they still fitted.
         /// </summary>
-        public const float StatusBarHeight = StatusBarIdentityRowHeight + StatusBarNarrationHeight;
+        public const float StatusBarHeight =
+            StatusBarIdentityRowHeight + StatusBarNarrationHeight;
 
         /// <summary>
         /// The fixed height of the ordinary round/hand status dock below `DIRECTOR`. It is the height
@@ -232,13 +232,14 @@ namespace GuardsDigital.Presentation.Match
         /// control that ends what the player is doing, so it is now the size and the position that
         /// says so.</para>
         /// </summary>
-        public const float EndTurnControlWidth = 300f;
+        public const float EndTurnControlWidth = HeroRailWidth;
+        private const float CornerActionControlWidth = 240f;
 
         /// <summary>
-        /// End Turn's own height. Roughly twice <c>HudElements.ControlHeight</c>, which is what makes
-        /// it read as its own surface rather than as a wider member of the action row.
+        /// End Turn fills the compact status bar from top to bottom at its right edge.
         /// </summary>
-        public const float EndTurnControlHeight = 96f;
+        public const float EndTurnControlHeight = StatusBarHeight;
+        public const float EndTurnControlTopInset = 0f;
 
         /// <summary>
         /// The compact board camera's width-to-height ratio. The official playable footprint is wider
@@ -445,7 +446,6 @@ namespace GuardsDigital.Presentation.Match
             if (trayBlocksPointer ||
                 (TryLiveRect(statusDock, out var liveStatusDock) &&
                     liveStatusDock.Contains(panelPosition)) ||
-                GetTieBreakerIndicatorRect().Contains(panelPosition) ||
                 CalculateStatusBarRect(viewport.x, viewport.y).Contains(panelPosition) ||
                 UnavailableCardsBlockPointerAt(panelPosition) ||
                 // Milestone 8.30b. End Turn's corner sits inside the tray band, and the band blocks
@@ -491,7 +491,6 @@ namespace GuardsDigital.Presentation.Match
                 screenPosition, viewportWidth, viewportHeight);
             var panel = MatchHudPanelScaling.ReferenceViewport(viewportWidth, viewportHeight);
             return CalculateStatusBarRect(panel.x, panel.y).Contains(panelPosition) ||
-                CalculateTieBreakerIndicatorRect(panel.x, panel.y).Contains(panelPosition) ||
                 CalculateCompactHandPointerRect(panel.x, panel.y).Contains(panelPosition) ||
                 CalculateStatusDockRect(panel.x, panel.y).Contains(panelPosition) ||
                 CalculateHeroRailRect(panel.x, panel.y, TeamSide.Red).Contains(panelPosition) ||
@@ -1148,13 +1147,10 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public static Rect CalculateTieBreakerIndicatorRect(float panelWidth, float panelHeight)
         {
-            var diameter = Mathf.Min(
-                TieBreakerDiameter,
-                Mathf.Max(0f, panelWidth),
-                Mathf.Max(0f, Mathf.Min(StatusBarHeight, panelHeight) - (TieBreakerInset * 2f)));
+            var diameter = Mathf.Min(TieBreakerDiameter, Mathf.Max(0f, panelWidth));
             return new Rect(
                 Mathf.Max(0f, (panelWidth - diameter) * 0.5f),
-                Mathf.Max(0f, (Mathf.Min(StatusBarHeight, panelHeight) - diameter) * 0.5f),
+                (Mathf.Min(StatusBarHeight, Mathf.Max(0f, panelHeight)) - diameter) * 0.5f,
                 diameter,
                 diameter);
         }
@@ -1173,11 +1169,12 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public static Rect CalculateEndTurnControlRect(float panelWidth, float panelHeight)
         {
-            var width = Mathf.Min(EndTurnControlWidth, Mathf.Max(0f, panelWidth - Margin));
+            var blueRail = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Blue);
+            var width = blueRail.width;
             var height = Mathf.Min(EndTurnControlHeight, Mathf.Max(0f, panelHeight));
             return new Rect(
-                Mathf.Max(0f, panelWidth - width - Margin),
-                0f,
+                blueRail.x,
+                Mathf.Min(EndTurnControlTopInset, Mathf.Max(0f, panelHeight - height)),
                 width,
                 height);
         }
@@ -1189,7 +1186,7 @@ namespace GuardsDigital.Presentation.Match
         {
             var handRightEdge = CalculateCompactHandPointerRect(panelWidth, panelHeight).xMax;
             var width = Mathf.Min(
-                EndTurnControlWidth, Mathf.Max(0f, panelWidth - Margin - handRightEdge));
+                CornerActionControlWidth, Mathf.Max(0f, panelWidth - Margin - handRightEdge));
             var height = Mathf.Min(
                 EndTurnControlHeight,
                 Mathf.Max(0f, panelHeight - StatusBarHeight - (Margin * 2f)));
@@ -1260,7 +1257,7 @@ namespace GuardsDigital.Presentation.Match
             return new Rect(
                 toggle.x,
                 top,
-                Mathf.Min(EndTurnControlWidth, Mathf.Max(0f, viewport.x - Margin - toggle.x)),
+                Mathf.Min(CornerActionControlWidth, Mathf.Max(0f, viewport.x - Margin - toggle.x)),
                 Mathf.Min(
                     DirectorHandsUnityView.CornerBannerHeight,
                     Mathf.Max(0f, tray.yMin - top)));

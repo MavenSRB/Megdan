@@ -12,7 +12,7 @@ The route has completed approved HUD corrections **8.29a-8.29b1b** and **8.30f-8
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.30l**.
+- Current completed milestone: **8.30l3**.
 - Active authorized milestone: none.
 - Next proposed milestone: **8.30l2**.
 
@@ -32,6 +32,8 @@ Corrective **8.30l1** completed on 2026-09-01. The Phase 4 performance fixture n
 
 Milestone **8.30l** completed on 2026-09-01. The current-hand projection now partitions selectable and resolving cards into the established bottom-left fan while non-resolving unavailable cards occupy one compact dimmed vertical fan anchored bottom-right under the Blue rails. Every exposed strip remains inspectable, whole-face hover retains dimming, empty groups disappear, and no unavailable face can select, drag, submit, duplicate, leak another hand, move a rail, or reframe the map. End Turn occupies the status bar's top-right slot; the Tie Breaker is an 80-unit centred white roundel with a side-coloured disc and one-line `TIEBREAKER` label. Focused and affected Edit/Play checks pass, the complete Play gate passes, and both supported desktop captures are inspected.
 
+Corrective **8.30l3** completed on 2026-09-01. The unchanged 96-unit status strip crops a centred 160-unit solid Tie Breaker coin with no white outline; its full-width gold narration lane shines behind the coin and the full-height rectangular End Turn control, whose edges match the Blue rail column. Temporarily non-actionable held cards stay in the bottom-left fan, the resolving card is rightmost there, and only genuinely played or discarded non-resolving cards occupy bottom-right. Focused Edit and Play checks pass, as does inspected non-batch output at both supported desktop sizes.
+
 Corrective **8.29c** was deferred after its Director Undo symptom could not be reproduced; it remains proposed pending a documented recurrence. The completed correctives around it each own a failing-then-passing check and are defined in [Roadmap/PHASE_8_HANDS_ON_CORRECTIONS.md](Roadmap/PHASE_8_HANDS_ON_CORRECTIONS.md): **8.29b1/8.29b1b** keep Clear and Fast Travel attached to the printed action they replace while End Turn stays external, **8.29d** greys an Attack whose mandatory card text can bind no target, **8.29e** stops an optional branch that can apply nothing from opening p.10's confirm-or-decline, and **8.29f** decides whether p.14 is over from what stands after an Attack's steps rather than from the outcome its resolver reported before them.
 
 Milestone **8.29** selected one serialized player host over UGS Multiplayer Services 1.2.0 sessions, Relay-DTLS, and Unity Transport 2.6.0 under `guards-private-online/1`. Structural owner projections, host-owned seats, snapshot resync, and terminal host loss are pinned; accounts, matchmaking, telemetry, public distribution, and package installation remain excluded. `RISK-ONLINE-001` stays active until implementation evidence closes it.
@@ -40,7 +42,7 @@ Earlier Phase 8 milestones established the verified six-hero roster, typed effec
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
-Roadmap amendments through 2026-09-01: completed late-HUD work through **8.30l** is summarized above, and completed corrective **8.30l1** isolates the Phase 4 performance baseline from hidden-Editor frame pacing. Scheduled corrective **8.30l2** next groups compatible focused fixtures into one Unity process per platform and batch-mode boundary without reducing selection or per-test evidence. Proposed **8.30m** adds the shared card outline, and **8.30n** replaces both first-accepted team commands with bounded public agreement before the final affected six-seat refresh. The remaining route is **8.30l2 -> 8.30m -> 8.30n -> 8.31**; exact checks live in [the late-HUD roadmap shard](Roadmap/PHASE_8_LATE_HUD_CORRECTIONS.md).
+Roadmap amendments through 2026-09-01: completed late-HUD work through **8.30l3** is summarized above, and completed corrective **8.30l1** isolates the Phase 4 performance baseline from hidden-Editor frame pacing. Scheduled corrective **8.30l2** next groups compatible focused fixtures into one Unity process per platform and batch-mode boundary without reducing selection or per-test evidence. Proposed **8.30m** adds the shared card outline, and **8.30n** replaces both first-accepted team commands with bounded public agreement before the final affected six-seat refresh. The remaining route is **8.30l2 -> 8.30m -> 8.30n -> 8.31**; exact checks live in [the late-HUD roadmap shard](Roadmap/PHASE_8_LATE_HUD_CORRECTIONS.md).
 
 Standing route exceptions: none remain. Phase 6's exact sequencing lives in its three [Roadmap/](Roadmap/) shards and its per-milestone evidence is addressed by SHA from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md); scheduling is not authorization.
 

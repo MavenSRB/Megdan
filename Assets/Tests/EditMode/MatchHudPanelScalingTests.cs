@@ -76,8 +76,6 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     ("the status strip",
                         ConfiguredMatchHudRenderer.CalculateStatusBarRect(panel.x, panel.y)),
-                    ("the Tie Breaker chip",
-                        ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(panel.x, panel.y)),
                     ("the compact card hand",
                         ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(panel.x, panel.y)),
                     ("the fixed status/action dock", statusDock),
@@ -340,8 +338,8 @@ namespace GuardsDigital.Tests.EditMode
             // compact hand, Level Up card row and round dock remain placed from the panel bottom edge.
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(width, height),
-                Is.EqualTo(new Rect(1240f, 8f, 80f, 80f)),
-                "The Tie Breaker is a centred circular badge.");
+                Is.EqualTo(new Rect(1200f, -32f, 160f, 160f)),
+                "The doubled Tie Breaker is centred on the compact strip and cropped by it.");
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculateCardPanelRect(width, height),
                 Is.EqualTo(new Rect(0f, 968f, 2560f, 460f)));
@@ -364,20 +362,22 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(red, Is.EqualTo(new Rect(12f, 108f, 264f, 848f)));
             Assert.That(blue, Is.EqualTo(new Rect(2284f, 108f, 264f, 848f)));
             Assert.That(red.height - 733f, Is.EqualTo(115f).Within(0.01f),
-                "Rulebook p.6 three rails a side clear the amended strip by this margin.");
+                "Rulebook p.6 three rails a side clear the compact strip.");
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculatePlayfieldRect(width, height),
                 Is.EqualTo(new Rect(1228f, 96f, 1044f, 870f)),
-                "The board starts under the amended strip and still ends exactly where it did, " +
-                "because the tray it stops above did not move.");
+                "The board remains directly below the compact clipped strip.");
 
             // End Turn replaces the Tie Breaker's former top-right slot and fills the status strip.
             var endTurn = ConfiguredMatchHudRenderer.CalculateEndTurnControlRect(width, height);
-            Assert.That(endTurn, Is.EqualTo(new Rect(2248f, 0f, 300f, 96f)));
+            Assert.That(endTurn, Is.EqualTo(new Rect(2284f, 0f, 264f, 96f)));
             Assert.That(endTurn.xMax, Is.EqualTo(width - 12f).Within(0.01f),
                 "It is inset from the panel right edge by the standing margin and no more.");
-            Assert.That(endTurn.yMin, Is.EqualTo(0f));
+            Assert.That(endTurn.yMin, Is.EqualTo(ConfiguredMatchHudRenderer.EndTurnControlTopInset));
             Assert.That(endTurn.yMax, Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
+            Assert.That(endTurn.xMin, Is.EqualTo(blue.xMin));
+            Assert.That(endTurn.width, Is.EqualTo(blue.width),
+                "End Turn aligns exactly with the Blue rail column beneath it.");
             Assert.That(endTurn.Overlaps(
                 ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(width, height)), Is.False);
         }
@@ -432,8 +432,6 @@ namespace GuardsDigital.Tests.EditMode
             {
                 ["the status strip"] =
                     ConfiguredMatchHudRenderer.CalculateStatusBarRect(panelWidth, panelHeight),
-                ["the Tie Breaker chip"] =
-                    ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(panelWidth, panelHeight),
                 ["the card tray"] =
                     ConfiguredMatchHudRenderer.CalculateCardPanelRect(panelWidth, panelHeight),
                 ["the board band"] =

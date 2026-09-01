@@ -547,6 +547,7 @@ namespace GuardsDigital.Presentation.Match
             Root.style.flexDirection = FlexDirection.Column;
             Root.style.alignItems = Align.Stretch;
             Root.style.justifyContent = Justify.FlexStart;
+            Root.style.overflow = Overflow.Hidden;
             Root.style.paddingLeft = 14f;
             Root.style.paddingRight = 12f;
             Root.style.borderBottomWidth = 1f;
@@ -571,8 +572,9 @@ namespace GuardsDigital.Presentation.Match
             narrationLane = new VisualElement { name = "gd-narration-lane" };
             narrationLane.style.flexDirection = FlexDirection.Row;
             narrationLane.style.alignItems = Align.Center;
-            narrationLane.style.flexGrow = 1f;
-            narrationLane.style.flexShrink = 1f;
+            narrationLane.style.flexGrow = 0f;
+            narrationLane.style.flexShrink = 0f;
+            narrationLane.style.height = ConfiguredMatchHudRenderer.StatusBarNarrationHeight;
             narrationLane.style.overflow = Overflow.Hidden;
             narrationLane.style.paddingBottom = 4f;
             Root.Add(narrationLane);
@@ -583,12 +585,12 @@ namespace GuardsDigital.Presentation.Match
             tieBreakerChip.style.flexDirection = FlexDirection.Row;
             tieBreakerChip.style.alignItems = Align.Center;
             tieBreakerChip.style.justifyContent = Justify.Center;
-            tieBreakerChip.style.backgroundColor = Color.white;
-            HudElements.Border(tieBreakerChip, MatchHudTheme.PanelBorder, 2f, 999f);
+            tieBreakerChip.style.backgroundColor = Color.clear;
+            HudElements.Border(tieBreakerChip, Color.clear, 0f, 999f);
 
             tieBreakerDisc = new VisualElement { name = "gd-tie-breaker-disc" };
-            tieBreakerDisc.style.width = 58f;
-            tieBreakerDisc.style.height = 58f;
+            tieBreakerDisc.style.width = ConfiguredMatchHudRenderer.TieBreakerDiameter;
+            tieBreakerDisc.style.height = ConfiguredMatchHudRenderer.TieBreakerDiameter;
             tieBreakerDisc.style.flexShrink = 0f;
             tieBreakerDisc.style.alignItems = Align.Center;
             tieBreakerDisc.style.justifyContent = Justify.Center;
@@ -639,11 +641,16 @@ namespace GuardsDigital.Presentation.Match
             tieBreakerChip.style.top = chip.y - bar.y;
             tieBreakerChip.style.width = chip.width;
             tieBreakerChip.style.height = chip.height;
+            tieBreakerDisc.style.width = chip.width;
+            tieBreakerDisc.style.height = chip.height;
             var leftLaneWidth = Mathf.Max(0f, chip.xMin - bar.xMin - 18f);
             content.style.width = leftLaneWidth;
             content.style.maxWidth = leftLaneWidth;
-            narrationLane.style.width = leftLaneWidth;
-            narrationLane.style.maxWidth = leftLaneWidth;
+            // The narration remains one uninterrupted status line. End Turn is intentionally layered
+            // over its right end instead of shortening the gold turn cue.
+            var goldLaneWidth = Mathf.Max(0f, bar.width - 26f);
+            narrationLane.style.width = goldLaneWidth;
+            narrationLane.style.maxWidth = goldLaneWidth;
         }
 
         public void Render(MatchHudHeaderViewModel model)
@@ -664,10 +671,10 @@ namespace GuardsDigital.Presentation.Match
             content.Add(HudElements.Text(model.WaveLabel, 12f, MatchHudTheme.MutedText));
             content.Add(TeamChip(TeamSide.Blue, model.BlueLifeLabel));
 
-            tieBreakerChip.style.backgroundColor = Color.white;
+            tieBreakerChip.style.backgroundColor = Color.clear;
             tieBreakerDisc.style.backgroundColor = model.Color;
             var chipLabel = HudElements.Text(
-                model.TieBreakerLabel, 8f, Color.white, FontStyle.Bold);
+                model.TieBreakerLabel, 14f, Color.white, FontStyle.Bold);
             chipLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
             chipLabel.style.whiteSpace = WhiteSpace.NoWrap;
             chipLabel.style.flexGrow = 1f;
@@ -2345,7 +2352,7 @@ namespace GuardsDigital.Presentation.Match
             // choosing, but the card the current turn is being resolved from is the card in play and
             // reads at full strength - "carries no command" and "is spent" are different facts, and the
             // shared unavailable treatment was saying the second about the first.
-            if (!card.IsSelectable)
+            if (!card.IsSelectable && card.Group != TrayCardGroup.Available)
             {
                 if (card.IsResolving)
                 {
@@ -5212,7 +5219,7 @@ namespace GuardsDigital.Presentation.Match
             EndTurnShinesFully = onlyOfferLeft;
             var control = new PewterBanner(
                 () => ForwardInvocation(invocation), onlyOfferLeft,
-                EndTurnControlFontSize, "gd-end-turn-label")
+                EndTurnControlFontSize, "gd-end-turn-label", rectangular: true)
             {
                 name = "gd-end-turn-control",
                 text = invocation.Label
@@ -5245,18 +5252,24 @@ namespace GuardsDigital.Presentation.Match
 
             private readonly VisualElement cloth;
 
-            internal PewterBanner(Action selected, bool strongShine, float fontSize, string labelName)
+            internal PewterBanner(
+                Action selected,
+                bool strongShine,
+                float fontSize,
+                string labelName,
+                bool rectangular = false)
                 : base(selected)
             {
                 this.strongShine = strongShine;
+                this.rectangular = rectangular;
                 style.backgroundColor = Color.clear;
                 HudElements.Border(this, Color.clear, 0f, 0f);
                 style.marginLeft = 0f;
                 style.marginRight = 0f;
                 style.marginTop = 0f;
                 style.marginBottom = 0f;
-                style.paddingLeft = NotchDepth + 8f;
-                style.paddingRight = NotchDepth + 8f;
+                style.paddingLeft = rectangular ? 12f : NotchDepth + 8f;
+                style.paddingRight = rectangular ? 12f : NotchDepth + 8f;
                 style.paddingTop = 6f;
                 style.paddingBottom = 6f;
                 style.whiteSpace = WhiteSpace.NoWrap;
@@ -5290,9 +5303,9 @@ namespace GuardsDigital.Presentation.Match
                     focusable = false
                 };
                 visibleLabel.style.position = Position.Absolute;
-                visibleLabel.style.left = NotchDepth;
+                visibleLabel.style.left = rectangular ? 0f : NotchDepth;
                 visibleLabel.style.top = 0f;
-                visibleLabel.style.right = NotchDepth;
+                visibleLabel.style.right = rectangular ? 0f : NotchDepth;
                 visibleLabel.style.bottom = 0f;
                 visibleLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
                 visibleLabel.style.fontSize = fontSize;
@@ -5304,6 +5317,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             private readonly Label visibleLabel;
+            private readonly bool rectangular;
 
             /// <summary>The words the banner shows; the Button's own text is the selector only.</summary>
             internal void SetVisibleLabel(string label)
@@ -5313,6 +5327,9 @@ namespace GuardsDigital.Presentation.Match
 
             /// <summary>Whether this banner is in its full-shine "your one move" state.</summary>
             internal bool ShinesFully => strongShine;
+
+            /// <summary>Whether this instance uses the End Turn rectangle instead of swallowtails.</summary>
+            internal bool IsRectangular => rectangular;
 
             private void SetHovered(bool value)
             {
@@ -5338,33 +5355,64 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 var strong = strongShine || hovered;
-                DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
+                DrawShape(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
                     new Color(MatchHudTheme.ShineHalo.r, MatchHudTheme.ShineHalo.g,
                         MatchHudTheme.ShineHalo.b, strong ? 0.30f : 0.10f), strong ? 18f : 8f);
-                DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
+                DrawShape(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
                     new Color(MatchHudTheme.ShineGlow.r, MatchHudTheme.ShineGlow.g,
                         MatchHudTheme.ShineGlow.b, strong ? 0.50f : 0.16f), strong ? 10f : 5f);
                 if (strong)
                 {
-                    DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
+                    DrawShape(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
                         new Color(MatchHudTheme.ShineRim.r, MatchHudTheme.ShineRim.g,
                             MatchHudTheme.ShineRim.b, 0.85f), 4f);
                 }
 
-                DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid,
+                DrawShape(painter, left, right, rect.yMin, rect.yMax, mid,
                     MatchHudTheme.PewterBanner, Color.clear, 0f);
 
                 painter.fillColor = new Color(0f, 0f, 0f, 0.12f);
                 painter.BeginPath();
-                painter.MoveTo(new Vector2(left + NotchDepth, mid));
-                painter.LineTo(new Vector2(right - NotchDepth, mid));
+                painter.MoveTo(new Vector2(rectangular ? left : left + NotchDepth, mid));
+                painter.LineTo(new Vector2(rectangular ? right : right - NotchDepth, mid));
                 painter.LineTo(new Vector2(right, rect.yMax));
                 painter.LineTo(new Vector2(left, rect.yMax));
                 painter.ClosePath();
                 painter.Fill();
 
-                DrawBanner(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
+                DrawShape(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
                     MatchHudTheme.PewterBannerEdge, 3f);
+            }
+
+            private void DrawShape(
+                Painter2D painter, float left, float right, float top, float bottom, float mid,
+                Color fill, Color stroke, float strokeWidth)
+            {
+                if (!rectangular)
+                {
+                    DrawBanner(painter, left, right, top, bottom, mid, fill, stroke, strokeWidth);
+                    return;
+                }
+
+                painter.BeginPath();
+                painter.MoveTo(new Vector2(left, top));
+                painter.LineTo(new Vector2(right, top));
+                painter.LineTo(new Vector2(right, bottom));
+                painter.LineTo(new Vector2(left, bottom));
+                painter.ClosePath();
+                if (fill.a > 0f)
+                {
+                    painter.fillColor = fill;
+                    painter.Fill();
+                }
+
+                if (stroke.a > 0f && strokeWidth > 0f)
+                {
+                    painter.strokeColor = stroke;
+                    painter.lineWidth = strokeWidth;
+                    painter.lineJoin = LineJoin.Round;
+                    painter.Stroke();
+                }
             }
 
             private static void DrawBanner(
@@ -5399,7 +5447,7 @@ namespace GuardsDigital.Presentation.Match
         /// End Turn's type size. Milestone 8.30b: it is the largest label on the HUD, which is the
         /// point - it is the one control that ends what the player is doing.
         /// </summary>
-        public const float EndTurnControlFontSize = 22f;
+        public const float EndTurnControlFontSize = 18f;
 
         private void AddActionInvocation(
             VisualElement section,
