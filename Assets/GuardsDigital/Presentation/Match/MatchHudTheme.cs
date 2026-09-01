@@ -7,13 +7,53 @@ using UnityEngine;
 namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
+    /// The six shapes the second-printing card vocabulary uses for signed value channels. The kind is
+    /// presentation identity, not a rules conversion: its owning definition below remains keyed by the
+    /// typed <see cref="PrintedValueChannel"/> that arrived from the projection.
+    /// </summary>
+    public enum PrintedChannelSymbolKind
+    {
+        InitiativeLightning = 1,
+        AttackCrossedSwords = 2,
+        DefenseShield = 3,
+        MovementBoot = 4,
+        RangeArrow = 5,
+        RadiusBurst = 6
+    }
+
+    /// <summary>One stable, non-text symbol identity in the shared printed-channel catalog.</summary>
+    public sealed class PrintedChannelSymbolDefinition
+    {
+        public PrintedChannelSymbolDefinition(
+            PrintedValueChannel channel,
+            PrintedChannelSymbolKind kind,
+            string resourceId)
+        {
+            if (channel == PrintedValueChannel.None)
+            {
+                throw new ArgumentException("A printed symbol requires a value channel.", nameof(channel));
+            }
+
+            Channel = channel;
+            Kind = kind;
+            ResourceId = string.IsNullOrWhiteSpace(resourceId)
+                ? throw new ArgumentException("A printed symbol requires a stable identity.", nameof(resourceId))
+                : resourceId;
+        }
+
+        public PrintedValueChannel Channel { get; }
+        public PrintedChannelSymbolKind Kind { get; }
+        public string ResourceId { get; }
+    }
+
+    /// <summary>
     /// The one visual vocabulary every configured match surface draws from: the five card colours, the
     /// six printed-value channels, and the shared control states.
     ///
     /// Milestone 7.8a. It exists so that a colour, a symbol, or a state treatment is decided once rather
     /// than at each of the dozen controls that needs it, and so that the accessibility rule is
     /// structural rather than remembered: <see cref="ColorName"/> exists beside <see cref="Face"/>, and
-    /// <see cref="ChannelToken"/> beside <see cref="ChannelName"/>, because nothing in this HUD may mean
+    /// <see cref="ChannelSymbol"/> beside <see cref="ChannelName"/>, because nothing in this HUD may mean
     /// something by colour alone.
     ///
     /// It converts nothing. A <see cref="CardColor"/> and a <see cref="TeamSide"/> are separate types
@@ -23,6 +63,48 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public static class MatchHudTheme
     {
+        private static readonly PrintedChannelSymbolDefinition[] PrintedChannelSymbolCatalog =
+        {
+            new PrintedChannelSymbolDefinition(
+                PrintedValueChannel.Initiative, PrintedChannelSymbolKind.InitiativeLightning,
+                "printed-channel/initiative-lightning"),
+            new PrintedChannelSymbolDefinition(
+                PrintedValueChannel.Attack, PrintedChannelSymbolKind.AttackCrossedSwords,
+                "printed-channel/attack-crossed-swords"),
+            new PrintedChannelSymbolDefinition(
+                PrintedValueChannel.Defense, PrintedChannelSymbolKind.DefenseShield,
+                "printed-channel/defense-shield"),
+            new PrintedChannelSymbolDefinition(
+                PrintedValueChannel.Movement, PrintedChannelSymbolKind.MovementBoot,
+                "printed-channel/movement-boot"),
+            new PrintedChannelSymbolDefinition(
+                PrintedValueChannel.Range, PrintedChannelSymbolKind.RangeArrow,
+                "printed-channel/range-arrow"),
+            new PrintedChannelSymbolDefinition(
+                PrintedValueChannel.Radius, PrintedChannelSymbolKind.RadiusBurst,
+                "printed-channel/radius-burst")
+        };
+
+        /// <summary>
+        /// The complete typed symbol catalog. It reproduces the established lightning, crossed-swords,
+        /// shield, boot and p.9 spatial vocabulary without reading or cropping card pixels at runtime.
+        /// </summary>
+        public static IReadOnlyList<PrintedChannelSymbolDefinition> ChannelSymbols { get; } =
+            Array.AsReadOnly(PrintedChannelSymbolCatalog);
+
+        public static PrintedChannelSymbolDefinition ChannelSymbol(PrintedValueChannel channel)
+        {
+            var index = (int)channel - 1;
+            if (index < 0 || index >= PrintedChannelSymbolCatalog.Length ||
+                PrintedChannelSymbolCatalog[index].Channel != channel)
+            {
+                throw new ArgumentOutOfRangeException(nameof(channel), channel,
+                    "Only a supported printed-value channel has a symbol.");
+            }
+
+            return PrintedChannelSymbolCatalog[index];
+        }
+
         /// <summary>Panel chrome, dark enough that the board reads as the lit surface above it.</summary>
         public static readonly Color PanelBackground = new Color(0.055f, 0.065f, 0.074f, 0.96f);
 

@@ -154,6 +154,14 @@ namespace GuardsDigital.Presentation.Match
             return label;
         }
 
+        /// <summary>One code-native copy of a catalogued printed channel symbol.</summary>
+        internal static VisualElement PrintedChannelSymbol(
+            PrintedValueChannel channel,
+            float size = 15f,
+            Color? color = null) =>
+            new PrintedChannelSymbolElement(
+                MatchHudTheme.ChannelSymbol(channel), size, color ?? MatchHudTheme.MutedText);
+
         /// <summary>
         /// One control. It sizes to its own complete label - no width is ever set - which is what makes
         /// milestone 5.1c's clipping guarantee structural here rather than a measurement: a label cannot
@@ -318,6 +326,176 @@ namespace GuardsDigital.Presentation.Match
             element.style.backgroundColor = background;
             return element;
         }
+    }
+
+    /// <summary>
+    /// A small code-native rendering of one established printed channel symbol. Card fronts and the
+    /// rulebook are reference sources only: this element reads the catalogued typed identity and never
+    /// samples, crops, parses or substitutes pixels from either source.
+    /// </summary>
+    internal sealed class PrintedChannelSymbolElement : VisualElement
+    {
+        private readonly PrintedChannelSymbolDefinition definition;
+        private readonly Color ink;
+
+        internal PrintedChannelSymbolElement(
+            PrintedChannelSymbolDefinition definition,
+            float size,
+            Color ink)
+        {
+            this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
+            this.ink = ink;
+            name = "gd-printed-channel-symbol";
+            viewDataKey = definition.ResourceId;
+            pickingMode = PickingMode.Ignore;
+            focusable = false;
+            style.width = size;
+            style.height = size;
+            style.minWidth = size;
+            style.minHeight = size;
+            style.maxWidth = size;
+            style.maxHeight = size;
+            style.flexShrink = 0f;
+            generateVisualContent += OnGenerateVisualContent;
+        }
+
+        private void OnGenerateVisualContent(MeshGenerationContext context)
+        {
+            var rect = contentRect;
+            if (rect.width < 4f || rect.height < 4f)
+            {
+                return;
+            }
+
+            var painter = context.painter2D;
+            switch (definition.Kind)
+            {
+                case PrintedChannelSymbolKind.InitiativeLightning:
+                    FillPolygon(painter, rect, new[]
+                    {
+                        new Vector2(0.58f, 0.04f), new Vector2(0.20f, 0.56f),
+                        new Vector2(0.47f, 0.56f), new Vector2(0.36f, 0.96f),
+                        new Vector2(0.82f, 0.40f), new Vector2(0.55f, 0.40f)
+                    });
+                    break;
+                case PrintedChannelSymbolKind.AttackCrossedSwords:
+                    DrawSword(painter, rect, new Vector2(0.18f, 0.14f), new Vector2(0.80f, 0.86f));
+                    DrawSword(painter, rect, new Vector2(0.82f, 0.14f), new Vector2(0.20f, 0.86f));
+                    break;
+                case PrintedChannelSymbolKind.DefenseShield:
+                    FillAndStrokePolygon(painter, rect, new[]
+                    {
+                        new Vector2(0.50f, 0.05f), new Vector2(0.86f, 0.20f),
+                        new Vector2(0.80f, 0.67f), new Vector2(0.50f, 0.94f),
+                        new Vector2(0.20f, 0.67f), new Vector2(0.14f, 0.20f)
+                    });
+                    break;
+                case PrintedChannelSymbolKind.MovementBoot:
+                    FillPolygon(painter, rect, new[]
+                    {
+                        new Vector2(0.22f, 0.08f), new Vector2(0.55f, 0.08f),
+                        new Vector2(0.55f, 0.48f), new Vector2(0.72f, 0.65f),
+                        new Vector2(0.92f, 0.68f), new Vector2(0.92f, 0.88f),
+                        new Vector2(0.16f, 0.88f), new Vector2(0.10f, 0.66f),
+                        new Vector2(0.28f, 0.55f)
+                    });
+                    break;
+                case PrintedChannelSymbolKind.RangeArrow:
+                    StrokeLine(painter, rect, new Vector2(0.08f, 0.50f), new Vector2(0.80f, 0.50f), 2.1f);
+                    FillPolygon(painter, rect, new[]
+                    {
+                        new Vector2(0.92f, 0.50f), new Vector2(0.66f, 0.25f),
+                        new Vector2(0.66f, 0.75f)
+                    });
+                    StrokeLine(painter, rect, new Vector2(0.18f, 0.28f), new Vector2(0.18f, 0.72f), 1.7f);
+                    break;
+                case PrintedChannelSymbolKind.RadiusBurst:
+                    StrokePolygon(painter, rect, new[]
+                    {
+                        new Vector2(0.50f, 0.07f), new Vector2(0.80f, 0.20f),
+                        new Vector2(0.93f, 0.50f), new Vector2(0.80f, 0.80f),
+                        new Vector2(0.50f, 0.93f), new Vector2(0.20f, 0.80f),
+                        new Vector2(0.07f, 0.50f), new Vector2(0.20f, 0.20f)
+                    }, 1.8f);
+                    FillPolygon(painter, rect, new[]
+                    {
+                        new Vector2(0.50f, 0.34f), new Vector2(0.66f, 0.50f),
+                        new Vector2(0.50f, 0.66f), new Vector2(0.34f, 0.50f)
+                    });
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private void DrawSword(Painter2D painter, Rect rect, Vector2 start, Vector2 end)
+        {
+            StrokeLine(painter, rect, start, end, 1.7f);
+            var direction = (end - start).normalized;
+            var normal = new Vector2(-direction.y, direction.x) * 0.13f;
+            var guard = start + direction * 0.20f;
+            StrokeLine(painter, rect, guard - normal, guard + normal, 1.5f);
+        }
+
+        private void FillPolygon(Painter2D painter, Rect rect, IReadOnlyList<Vector2> points)
+        {
+            BeginPolygon(painter, rect, points);
+            painter.fillColor = ink;
+            painter.Fill();
+        }
+
+        private void FillAndStrokePolygon(
+            Painter2D painter, Rect rect, IReadOnlyList<Vector2> points)
+        {
+            BeginPolygon(painter, rect, points);
+            painter.fillColor = new Color(ink.r, ink.g, ink.b, ink.a * 0.28f);
+            painter.Fill();
+            BeginPolygon(painter, rect, points);
+            painter.strokeColor = ink;
+            painter.lineWidth = 1.5f;
+            painter.lineJoin = LineJoin.Round;
+            painter.Stroke();
+        }
+
+        private void StrokePolygon(
+            Painter2D painter, Rect rect, IReadOnlyList<Vector2> points, float width)
+        {
+            BeginPolygon(painter, rect, points);
+            painter.strokeColor = ink;
+            painter.lineWidth = width;
+            painter.lineJoin = LineJoin.Round;
+            painter.Stroke();
+        }
+
+        private static void BeginPolygon(
+            Painter2D painter, Rect rect, IReadOnlyList<Vector2> points)
+        {
+            painter.BeginPath();
+            painter.MoveTo(ToRect(rect, points[0]));
+            for (var index = 1; index < points.Count; index++)
+            {
+                painter.LineTo(ToRect(rect, points[index]));
+            }
+
+            painter.ClosePath();
+        }
+
+        private void StrokeLine(
+            Painter2D painter, Rect rect, Vector2 start, Vector2 end, float width)
+        {
+            painter.BeginPath();
+            painter.MoveTo(ToRect(rect, start));
+            painter.LineTo(ToRect(rect, end));
+            painter.strokeColor = ink;
+            painter.lineWidth = width;
+            painter.lineJoin = LineJoin.Round;
+            painter.Stroke();
+        }
+
+        private static Vector2 ToRect(Rect rect, Vector2 normalized) =>
+            new Vector2(
+                Mathf.Lerp(rect.xMin, rect.xMax, normalized.x),
+                Mathf.Lerp(rect.yMin, rect.yMax, normalized.y));
     }
 
     /// <summary>
@@ -898,7 +1076,7 @@ namespace GuardsDigital.Presentation.Match
             itemChips.style.justifyContent = mirrored ? Justify.FlexEnd : Justify.FlexStart;
             foreach (var bonus in hero.ItemBonuses)
             {
-                itemChips.Add(BuildValueChip(bonus.Token, bonus.AmountLabel, bonus.AssistiveLabel));
+                itemChips.Add(BuildPrintedItemBonus(bonus));
             }
 
             if (hero.ItemBonuses.Count == 0)
@@ -1143,8 +1321,35 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// One channel-and-amount chip: the three-letter token in muted ink and the signed amount in
-        /// primary ink, as close together as a pair that is read as one thing should be.
+        /// One item bonus: the established printed symbol and signed projected amount, optically centred
+        /// as one compact reading. Its tooltip keeps the full channel name in words.
+        /// </summary>
+        private static VisualElement BuildPrintedItemBonus(HeroItemBonusViewModel bonus)
+        {
+            var chip = HudElements.Row(2f);
+            chip.name = "gd-value-chip";
+            chip.style.flexWrap = Wrap.NoWrap;
+            chip.style.alignItems = Align.Center;
+            chip.tooltip = bonus.AssistiveLabel;
+
+            var symbol = HudElements.PrintedChannelSymbol(bonus.Channel, 15f);
+            symbol.style.marginTop = 0f;
+            symbol.style.marginBottom = 0f;
+            var amount = HudElements.Text(
+                bonus.AmountLabel, 11f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            amount.style.whiteSpace = WhiteSpace.NoWrap;
+            amount.style.marginLeft = 2f;
+            amount.style.marginTop = 0f;
+            amount.style.marginBottom = 0f;
+            chip.Add(symbol);
+            chip.Add(amount);
+            return chip;
+        }
+
+        /// <summary>
+        /// One marker channel-and-amount chip: the three-letter token in muted ink and the signed amount
+        /// in primary ink. Milestone 8.30k changes item bonuses only; p.18 marker readings retain the
+        /// established textual chip rather than silently expanding the requested surface.
         ///
         /// <para>Milestone 8.23a pulled it out of the item strip so p.18's marker draws the identical
         /// chip rather than a lookalike, and closed the gap between the token and its number from 3 to
@@ -3572,7 +3777,11 @@ namespace GuardsDigital.Presentation.Match
         public const float UpgradePairWidth =
             (CardFootprint.Width * 2f) + UpgradePairGap;
 
-        private const float UpgradeFactsRestingOpacity = 0.82f;
+        /// <summary>
+        /// The printed item sits at the centre of the card's bottom band. The projected sibling item
+        /// covers only that conflicting symbol and remains wholly inside the standard face.
+        /// </summary>
+        private const float UpgradeItemOverlayTop = CardFootprint.Height - 40f;
 
         /// <summary>
         /// The legacy framed footprint retained by other card-valued choice families. Defense itself
@@ -4164,15 +4373,15 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// One upgrade option: the candidate's whole printed face, and beneath it the fact that belongs to
-        /// taking it rather than to the card.
+        /// One upgrade option: the candidate's whole printed face with the fact that belongs to taking
+        /// it centred over the face's bottom item position.
         ///
         /// <para>The face is <see cref="DirectorHandsUnityView.BuildStandaloneCard"/> - the tray's own
         /// builder - so this prompt introduces no second, abbreviated card design and cannot decode a
-        /// printed sentence. Everything the decision costs is drawn under it instead of on it: p.16's
-        /// item is the icon printed on the <em>other</em> candidate, so a player choosing between two
-        /// cards of one colour can see which item each choice leaves them holding, and the card returned
-        /// to the deck is named because p.15 takes it out of the hand.</para>
+        /// printed sentence. p.16's projected item is the icon printed on the <em>other</em> candidate,
+        /// so the compact backed reading covers this candidate's conflicting bottom item symbol and a
+        /// player sees exactly which item this choice leaves them holding. The card returned to the deck
+        /// remains named in the option's assistive reading.</para>
         ///
         /// <para>The whole control is the option. It paints no plate or outline; focus and pointer
         /// strengthen only the already-visible item box, so the face and every layout measurement stay
@@ -4189,6 +4398,7 @@ namespace GuardsDigital.Presentation.Match
             control.style.alignItems = Align.Center;
             control.style.flexShrink = 0f;
             control.style.width = CardFootprint.Width;
+            control.style.height = CardFootprint.Height;
             control.style.marginLeft = 0f;
             control.style.marginRight = 0f;
             control.style.marginTop = 0f;
@@ -4210,29 +4420,34 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// What taking this option does, under the card it would take: p.16's item, which is the icon
-        /// printed on the candidate this option does <em>not</em> take.
+        /// What taking this option does, over the candidate's bottom printed item position: p.16's item,
+        /// which is the icon printed on the candidate this option does <em>not</em> take.
         /// </summary>
         private static VisualElement BuildUpgradeOptionFacts(SystemTransitionOptionViewModel option)
         {
             var facts = HudElements.Column(3f);
             facts.name = "gd-upgrade-facts";
-            facts.style.marginTop = 6f;
+            facts.style.position = Position.Absolute;
+            facts.style.left = 0f;
+            facts.style.top = UpgradeItemOverlayTop;
+            facts.style.marginTop = 0f;
             facts.style.width = CardFootprint.Width;
             facts.style.alignItems = Align.Center;
-            facts.style.opacity = UpgradeFactsRestingOpacity;
+            facts.style.opacity = 1f;
+            facts.pickingMode = PickingMode.Ignore;
 
             var itemBox = HudElements.Row(3f);
             itemBox.name = "gd-upgrade-item";
             itemBox.style.flexWrap = Wrap.NoWrap;
-            itemBox.style.minWidth = 64f;
+            itemBox.style.minWidth = 86f;
             itemBox.style.justifyContent = Justify.Center;
             itemBox.style.paddingLeft = 7f;
             itemBox.style.paddingRight = 7f;
-            itemBox.style.paddingTop = 2f;
-            itemBox.style.paddingBottom = 2f;
-            itemBox.style.backgroundColor = MatchHudTheme.RailBackground;
-            HudElements.Border(itemBox, MatchHudTheme.PanelBorder, 1f, 3f);
+            itemBox.style.paddingTop = 3f;
+            itemBox.style.paddingBottom = 3f;
+            itemBox.style.backgroundColor = new Color(0.035f, 0.042f, 0.047f, 1f);
+            itemBox.pickingMode = PickingMode.Ignore;
+            HudElements.Border(itemBox, MatchHudTheme.PanelBorder, 2f, 3f);
             if (option.ItemIcon == PrintedValueChannel.None)
             {
                 // Two absences p.15 and p.16 produce between them - a deck with no second candidate, and
@@ -4243,11 +4458,12 @@ namespace GuardsDigital.Presentation.Match
             }
             else
             {
-                itemBox.Add(HudElements.Text(
-                    MatchHudTheme.ChannelToken(option.ItemIcon), 9f, MatchHudTheme.MutedText,
-                    FontStyle.Bold));
-                itemBox.Add(HudElements.Text(
-                    MatchHudTheme.Signed(1), 11f, MatchHudTheme.PrimaryText, FontStyle.Bold));
+                itemBox.Add(HudElements.PrintedChannelSymbol(
+                    option.ItemIcon, 26f, MatchHudTheme.PrimaryText));
+                var amount = HudElements.Text(
+                    MatchHudTheme.Signed(1), 13f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+                amount.style.marginLeft = 3f;
+                itemBox.Add(amount);
             }
             itemBox.tooltip = option.Detail;
 
@@ -4324,9 +4540,21 @@ namespace GuardsDigital.Presentation.Match
                     .FirstOrDefault(child => child.name == "gd-upgrade-facts");
                 if (facts != null)
                 {
-                    facts.style.opacity = ReferenceEquals(entry.Key, HighlightedUpgradeOption)
-                        ? 1f
-                        : UpgradeFactsRestingOpacity;
+                    var highlighted = ReferenceEquals(entry.Key, HighlightedUpgradeOption);
+                    var item = facts.Children()
+                        .FirstOrDefault(child => child.name == "gd-upgrade-item");
+                    if (item != null)
+                    {
+                        item.style.backgroundColor = highlighted
+                            ? Color.Lerp(MatchHudTheme.RailBackground, MatchHudTheme.ShineGlow, 0.16f)
+                            : new Color(0.035f, 0.042f, 0.047f, 1f);
+                        item.style.borderTopColor = highlighted
+                            ? MatchHudTheme.ShineRim
+                            : MatchHudTheme.PanelBorder;
+                        item.style.borderRightColor = item.style.borderTopColor;
+                        item.style.borderBottomColor = item.style.borderTopColor;
+                        item.style.borderLeftColor = item.style.borderTopColor;
+                    }
                 }
             }
         }

@@ -1437,6 +1437,65 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(blue.ItemBonuses, Is.Empty, "The hero that did not level gained no item.");
         }
 
+        [Test]
+        public void HeroPlaqueItemBonuses_UsePrintedChannelSymbolsWithSignedValuesAndFullAssistiveNames()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var sourceView = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, sourceView).Refresh();
+            var source = sourceView.Model.Heroes[0];
+            var channels = new[]
+            {
+                PrintedValueChannel.Initiative,
+                PrintedValueChannel.Attack,
+                PrintedValueChannel.Defense,
+                PrintedValueChannel.Movement,
+                PrintedValueChannel.Range,
+                PrintedValueChannel.Radius
+            };
+            var bonuses = channels
+                .Select((channel, index) => new HeroItemBonusViewModel(channel, index + 1))
+                .ToArray();
+            var hero = new HeroOverviewViewModel(
+                source.HeroId, source.TeamSide, source.ContentId, source.HeroDisplayName,
+                source.Level, source.Coins, bonuses, source.TurnSlots, source.DiscardCards,
+                source.IsViewed, source.CurrentCard, source.UltimateCard, source.HeldMarkers);
+            var view = new HeroOverviewsUnityView();
+            view.Render(new HeroOverviewsViewModel(1L, new[] { hero }));
+
+            var itemStrip = Descendants(view.Root)
+                .Single(element => element.name == "gd-item-chips");
+            var symbols = Descendants(itemStrip)
+                .Where(element => element.name == "gd-printed-channel-symbol")
+                .ToArray();
+            Assert.That(symbols, Has.Length.EqualTo(channels.Length),
+                "Every supported item channel is drawn as one non-text printed symbol.");
+            Assert.That(symbols.Select(symbol => symbol.viewDataKey), Is.Unique,
+                "The shared catalog gives every printed channel a stable testable identity.");
+            Assert.That(
+                symbols.Select(symbol => symbol.viewDataKey),
+                Is.EqualTo(channels.Select(channel =>
+                    MatchHudTheme.ChannelSymbol(channel).ResourceId)),
+                "The plaque consumes the one typed channel-to-symbol catalog in channel order.");
+            Assert.That(bonuses.Select(bonus => bonus.Symbol),
+                Is.EqualTo(channels.Select(MatchHudTheme.ChannelSymbol)),
+                "The item view model and renderer address the same catalog definitions.");
+
+            var labels = Descendants(itemStrip).OfType<Label>().Select(label => label.text).ToArray();
+            Assert.That(labels, Is.EqualTo(bonuses.Select(bonus => bonus.AmountLabel)),
+                "Only the signed projected values remain as text in the item strip.");
+            Assert.That(labels.Any(label => new[] { "INI", "ATK", "DEF", "MOV", "RNG", "RAD" }
+                    .Contains(label)),
+                Is.False, "No channel abbreviation remains visible.");
+            foreach (var bonus in bonuses)
+            {
+                Assert.That(bonus.AssistiveLabel,
+                    Does.Contain(MatchHudTheme.ChannelName(bonus.Channel))
+                        .And.Contain(bonus.AmountLabel),
+                    "The compact symbol keeps the full channel and signed value in words.");
+            }
+        }
+
         // -------------------------------------------------------------------------------------------
         // The rail's coin balance (milestone 8.21a)
         // -------------------------------------------------------------------------------------------
@@ -4174,7 +4233,7 @@ namespace GuardsDigital.Tests.EditMode
                 var itemBox = Descendants(control)
                     .Single(element => element.name == "gd-upgrade-item");
                 Assert.That(itemBox.style.justifyContent.value, Is.EqualTo(Justify.Center),
-                    "Each item box centres its channel and value beneath the card.");
+                    "Each item box centres its channel and value on the card's bottom item position.");
                 Assert.That(itemBox.style.backgroundColor.value.a, Is.GreaterThan(0f),
                     "The compact item reading has its own background without framing the option.");
                 Assert.That(Descendants(control).OfType<Label>()
@@ -4199,6 +4258,47 @@ namespace GuardsDigital.Tests.EditMode
                 (DirectorHandsUnityView.CardGap * (pairs.Length - 1));
             Assert.That(width, Is.LessThanOrEqualTo(2048f),
                 "The three complete pairs fit one validated desktop width without horizontal travel.");
+        }
+
+        [Test]
+        public void UpgradeChoices_OverlayPrintedChannelSymbolsAtTheCardsBottomItemPosition()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            var controls = Descendants(view.Root)
+                .Where(element => element.name == "gd-upgrade-option")
+                .ToArray();
+            Assert.That(controls, Has.Length.EqualTo(6));
+            foreach (var control in controls)
+            {
+                var facts = Descendants(control)
+                    .Single(element => element.name == "gd-upgrade-facts");
+                var item = Descendants(facts)
+                    .Single(element => element.name == "gd-upgrade-item");
+                var symbol = Descendants(item)
+                    .Single(element => element.name == "gd-printed-channel-symbol");
+
+                Assert.That(facts.style.position.value, Is.EqualTo(Position.Absolute));
+                Assert.That(facts.style.top.value.value,
+                    Is.GreaterThan(CardFootprint.Height * 0.9f)
+                        .And.LessThan(CardFootprint.Height),
+                    "The item box overlays only the candidate's bottom printed item position.");
+                Assert.That(control.style.height.value.value,
+                    Is.EqualTo(CardFootprint.Height).Within(0.01f),
+                    "The overlay adds no detached row below the complete card.");
+                Assert.That(symbol.viewDataKey, Is.Not.Empty,
+                    "The upgrade choice consumes the same stable non-text symbol identity.");
+                Assert.That(symbol.style.width.value.value, Is.EqualTo(26f).Within(0.01f),
+                    "The printed symbol is large enough to read at real card size.");
+                Assert.That(facts.style.opacity.value, Is.EqualTo(1f).Within(0.001f));
+                Assert.That(item.style.backgroundColor.value.a, Is.EqualTo(1f).Within(0.001f),
+                    "The backed item reading is fully opaque at rest.");
+                Assert.That(Descendants(item).OfType<Label>().Select(label => label.text),
+                    Is.EqualTo(new[] { "+1" }),
+                    "The item box keeps only the signed value as text.");
+            }
         }
 
         [Test]
@@ -4244,7 +4344,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(element => element.name == "gd-upgrade-item")
                 .ToArray();
             Assert.That(items, Has.Length.EqualTo(6),
-                "Every option states the item it gains, beside its card rather than on it.");
+                "Every option states the item it gains once on the card's bottom item position.");
 
             var chosen = prompt.Options[0];
             Assert.That(view.ForwardUpgradeOption(chosen), Is.True);
@@ -4281,23 +4381,28 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(controls.SelectMany(Descendants)
                     .Where(element => element.name == "gd-upgrade-facts")
                     .Select(element => element.style.opacity.value),
-                Has.All.EqualTo(0.82f).Within(0.001f));
+                Has.All.EqualTo(1f).Within(0.001f),
+                "Every resting item box is fully opaque.");
+            Assert.That(controls.SelectMany(Descendants)
+                    .Where(element => element.name == "gd-upgrade-item")
+                    .Select(element => element.style.borderTopColor.value),
+                Has.All.EqualTo(MatchHudTheme.PanelBorder));
 
             var chosen = prompt.Options[3];
             view.ForwardUpgradeOptionHighlight(chosen);
             Assert.That(view.HighlightedUpgradeOption, Is.SameAs(chosen));
             Assert.That(controls.SelectMany(Descendants)
-                    .Count(element => element.name == "gd-upgrade-facts" &&
-                        Mathf.Abs(element.style.opacity.value - 1f) < 0.001f),
+                    .Count(element => element.name == "gd-upgrade-item" &&
+                        element.style.borderTopColor.value == MatchHudTheme.ShineRim),
                 Is.EqualTo(1),
-                "Exactly one option strengthens its existing item box without a frame.");
+                "Exactly one option strengthens its opaque item box without a card frame.");
             Assert.That(
                 controls.Select(control => control.style.width.value.value), Is.EqualTo(widths),
                 "and marking it changes no card's width, so nothing re-wraps and no row moves.");
 
             var marked = controls.Single(control => Descendants(control)
-                .Any(element => element.name == "gd-upgrade-facts" &&
-                    Mathf.Abs(element.style.opacity.value - 1f) < 0.001f));
+                .Any(element => element.name == "gd-upgrade-item" &&
+                    element.style.borderTopColor.value == MatchHudTheme.ShineRim));
             Assert.That(marked.tooltip, Does.Contain(chosen.Label).And.Contain(chosen.Detail),
                 "The selected option states what it is and what taking it does, so the selection is " +
                 "assistive as well as visible.");
@@ -4305,9 +4410,9 @@ namespace GuardsDigital.Tests.EditMode
             view.ForwardUpgradeOptionHighlight(null);
             Assert.That(view.HighlightedUpgradeOption, Is.Null);
             Assert.That(controls.SelectMany(Descendants)
-                    .Where(element => element.name == "gd-upgrade-facts")
-                    .Select(element => element.style.opacity.value),
-                Has.All.EqualTo(0.82f).Within(0.001f));
+                    .Where(element => element.name == "gd-upgrade-item")
+                    .Select(element => element.style.borderTopColor.value),
+                Has.All.EqualTo(MatchHudTheme.PanelBorder));
         }
 
         [Test]

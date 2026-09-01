@@ -1,6 +1,6 @@
 # Guards Digital
 
-For the current handoff route, the project has completed milestones through **8.30j**, including white-field prepared official hero faces, map-first effect choices, side-by-side optional-step banners above the retained hand, and the frame-free six-card Upgrade choice. The complete local six-seat player gate remains 8.30c, accepted 8.30d highlighting landed earlier out of numeric order, **8.30k** is next proposed, and deferred **8.29c** remains proposed.
+For the current handoff route, the project has completed milestones through **8.30k**, including white-field prepared official hero faces, map-first effect choices, side-by-side optional-step banners above the retained hand, and printed item symbols on hero plaques and the six-card Upgrade choice. The complete local six-seat player gate remains 8.30c, accepted 8.30d highlighting landed earlier out of numeric order, **8.30l** is next proposed, and deferred **8.29c** remains proposed.
 
 A public source repository for a private, noncommercial digital prototype of the board game **Guards of Atlantis II** (2nd printing), built in Unity.
 

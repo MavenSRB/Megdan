@@ -220,24 +220,27 @@ Non-goals: No Level Up, card progression, item, eligibility, option-pairing, col
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830j-strip-the-upgrade-a-card-choice-down-to-cards-and-centred-item-boxes-completion-evidence).
 
-### [ ] 8.30k Replace hero-plaque stat abbreviations with printed channel symbols
+### [x] 8.30k Replace item abbreviations with printed channel symbols
 
 Blocked by: Milestone 8.30j must complete the preceding Upgrade-a-Card correction before this independent hero-plaque readability change begins.
 
-Observable outcome: Every signed item bonus in a hero plaque is shown as the established printed channel symbol followed by its signed value, replacing text abbreviations such as `INI`, `ATK`, and `DEF` while keeping the compact strip and its exact projected totals.
+Observable outcome: Every signed item bonus in a hero plaque and every Upgrade-a-Card item box is shown as the established printed channel symbol followed by its signed value, replacing text abbreviations such as `INI`, `ATK`, and `DEF` while keeping the exact projected channel and amount. In the upgrade choice, each compact backed item box is centred over the candidate card's printed bottom item position so the projected sibling-card item replaces the candidate's conflicting printed item reading instead of forming a detached label beneath the card.
 
 Acceptance checks:
 
 - Initiative, Attack, Defense, Movement, Range, and Radius item bonuses use the project's existing matching printed symbols wherever those assets already exist. Any missing channel symbol is reproduced from the second-printing rulebook/card icon vocabulary rather than invented, renamed, or substituted with an unrelated generic icon; one shared typed channel-to-symbol catalog owns the mapping and no hero or card name selects an asset.
-- Each item entry draws exactly one symbol and one signed projected value, with no visible `INI`, `ATK`, `DEF`, `MOV`, `RNG`, or `RAD` token. The sign, magnitude, ordering, composition of multiple items, and distinction between `NO ITEMS` and one or more bonuses remain unchanged.
+- Each hero-plaque item entry and Upgrade-a-Card item box draws exactly one symbol and one signed projected value, with no visible `INI`, `ATK`, `DEF`, `MOV`, `RNG`, or `RAD` token. The sign, magnitude, ordering, composition of multiple items, upgrade-option ordering and pairing, and distinction between `NO ITEMS`/`NO ITEM` and one or more bonuses remain unchanged.
 - The icon and its value are optically centred as one unit inside the existing plaque item strip at one- and two-digit values. Symbols retain a consistent visual height, do not collide with adjacent item entries or the coin disc, do not enlarge the plaque or rail, and remain legible over both team treatments at 2560x1440 and 2048x1152.
+- Each Upgrade-a-Card item box uses the user-approved larger, fully opaque near-black treatment and is centred over the bottom item position of its candidate without moving, resizing, cropping, recolouring or replacing the complete face. Its bright 26-unit symbol and signed value obscure only that candidate's own printed item symbol, which is not the item the option grants; it does not cover the card name, Initiative, actions, rules text, or other printed values, and no detached item box remains below the card.
 - Colour is not the sole channel distinction. Every entry's tooltip and assistive reading names the full channel and signed value, keyboard/focus behavior is unchanged, and the icon resource has a stable non-text identity suitable for tests.
 - Prepared card artwork and rulebook pages remain reference sources only: the milestone neither modifies source artwork nor performs runtime pixel reading, OCR, or printed-text parsing. Generated and configured HUD paths consume the same typed symbol catalog.
-- Focused Edit Mode mapping, hierarchy, geometry, and assistive-reading checks plus focused Play Mode hero-plaque checks pass at both validated desktop resolutions. A targeted non-batch Game View inspection covers at least Initiative, Attack, and Defense bonuses, a plaque with multiple channels, and coexistence with the coin disc.
+- Focused Edit Mode mapping, hierarchy, geometry, and assistive-reading checks plus focused Play Mode hero-plaque and Upgrade-a-Card checks pass at both validated desktop resolutions. A targeted non-batch Game View inspection covers at least Initiative, Attack, and Defense bonuses, a plaque with multiple channels, coexistence with the coin disc, and all six overlaid upgrade item boxes without detached labels or obscured rules text.
 
-Closing check: `HeroPlaqueItemBonuses_UsePrintedChannelSymbolsWithSignedValuesAndFullAssistiveNames` fails against the abbreviation-based item strip and passes when every supported channel uses the shared symbol mapping without changing its projected amount.
+Closing checks: `HeroPlaqueItemBonuses_UsePrintedChannelSymbolsWithSignedValuesAndFullAssistiveNames` and `UpgradeChoices_OverlayPrintedChannelSymbolsAtTheCardsBottomItemPosition` fail against the abbreviation-based item strip and detached text upgrade boxes, then pass when both surfaces use the shared symbol mapping without changing any projected channel or amount.
 
-Non-goals: No item, progression, bonus-composition, coin, card-definition, hero, rule, command, snapshot, replay, rail-width, plaque-height, source-artwork, card-face, networking, or general HUD redesign; no replacement of full channel names in tooltips, assistive readings, rules explanations, tests that intentionally describe content, or non-plaque surfaces.
+Non-goals: No item, progression, bonus-composition, coin, card-definition, hero, rule, command, snapshot, replay, rail-width, plaque-height, source-artwork, card-face construction, networking, or general HUD redesign; no replacement of full channel names in tooltips, assistive readings, rules explanations, tests that intentionally describe content, or surfaces other than hero-plaque item bonuses and Upgrade-a-Card item boxes.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830k-replace-item-abbreviations-with-printed-channel-symbols-completion-evidence).
 
 ### [ ] 8.30l Move unavailable cards from the playable hand into a right-side HUD group
 

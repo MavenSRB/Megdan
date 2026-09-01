@@ -696,6 +696,77 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Scene_ProgressedHeroPlaquesUsePrintedItemSymbolsAtBothValidatedViewports()
+        {
+            MatchSceneCompositionRoot.NextComposedCardContent =
+                SceneCardContent.VerifiedTierTwoEngagedMirror;
+            yield return LoadComposedScene();
+            var root = Root();
+            RenderAllChannelItemPlaque(root.Runtime);
+            var sizes = new[] { new Vector2Int(2560, 1440), new Vector2Int(2048, 1152) };
+
+            foreach (var size in sizes)
+            {
+                UiPlayer.SetPlayerViewport(
+                    (uint)size.x, (uint)size.y, "8.30k printed item symbols");
+                root.Hud.Layout();
+                yield return null;
+                yield return null;
+
+                var projectedBonuses = root.Runtime.HeroOverviewsView.Model.Heroes
+                    .SelectMany(hero => hero.ItemBonuses)
+                    .ToArray();
+                Assert.That(projectedBonuses, Is.Not.Empty,
+                    "The progressed staging must carry real p.16 item bonuses.");
+                var itemStrips = Descendants(root.Hud.RootElement)
+                    .Where(element => element.name == "gd-item-chips")
+                    .ToArray();
+                var symbols = itemStrips.SelectMany(Descendants)
+                    .Where(element => element.name == "gd-printed-channel-symbol")
+                    .ToArray();
+                Assert.That(symbols, Has.Length.EqualTo(projectedBonuses.Length));
+                Assert.That(symbols.Select(symbol => symbol.viewDataKey),
+                    Is.EquivalentTo(projectedBonuses.Select(bonus => bonus.Symbol.ResourceId)),
+                    "Every progressed plaque consumes its typed catalog symbol.");
+                Assert.That(symbols.Select(symbol => symbol.worldBound.height).Distinct().Count(),
+                    Is.EqualTo(1), "Every channel symbol retains one visual height.");
+
+                var populatedStrip = itemStrips.Single(strip => Descendants(strip)
+                    .Count(element => element.name == "gd-printed-channel-symbol") ==
+                    projectedBonuses.Length);
+                var bonusStrip = populatedStrip.parent;
+                var coin = Descendants(bonusStrip)
+                    .Single(element => element.name == "gd-hero-coins");
+                Assert.That(
+                    populatedStrip.worldBound.xMax <= coin.worldBound.xMin + 0.5f ||
+                    coin.worldBound.xMax <= populatedStrip.worldBound.xMin + 0.5f,
+                    Is.True,
+                    $"Multiple item channels and the coin stay separate at {size.x}x{size.y}.");
+
+                foreach (var chip in itemStrips.SelectMany(Descendants)
+                    .Where(element => element.name == "gd-value-chip"))
+                {
+                    var symbol = Descendants(chip)
+                        .Single(element => element.name == "gd-printed-channel-symbol");
+                    var amount = Descendants(chip).OfType<Label>().Single();
+                    Assert.That(symbol.worldBound.xMin,
+                        Is.GreaterThanOrEqualTo(chip.worldBound.xMin - 0.5f));
+                    Assert.That(amount.worldBound.xMax,
+                        Is.LessThanOrEqualTo(chip.worldBound.xMax + 0.5f));
+                    Assert.That(symbol.worldBound.yMin,
+                        Is.GreaterThanOrEqualTo(chip.worldBound.yMin - 0.5f));
+                    Assert.That(symbol.worldBound.yMax,
+                        Is.LessThanOrEqualTo(chip.worldBound.yMax + 0.5f),
+                        $"The symbol and signed value stay inside their plaque chip at {size.x}x{size.y}.");
+                    Assert.That(new[] { "INI", "ATK", "DEF", "MOV", "RNG", "RAD" },
+                        Does.Not.Contain(amount.text));
+                    Assert.That(chip.tooltip, Does.Contain(amount.text),
+                        "The full assistive reading retains the signed value.");
+                }
+            }
+        }
+
+        [UnityTest]
         public IEnumerator Scene_LevelUpUsesOneContainedCardRowWithoutMovingTheStandingHud()
         {
             yield return LoadOfficialSixPlayerScene();
@@ -761,6 +832,24 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(option.worldBound.yMax, Is.LessThanOrEqualTo(tray.yMax + 0.5f),
                     $"A complete Level Up option, including its gained-item fact, must fit inside " +
                     $"the comparison band. Option {option.worldBound}; band {tray}.");
+                var card = Descendants(option)
+                    .Single(element => element.name == "gd-card-preview");
+                var item = Descendants(option)
+                    .Single(element => element.name == "gd-upgrade-item");
+                Assert.That(item.worldBound.center.x,
+                    Is.EqualTo(card.worldBound.center.x).Within(UiPlayer.PixelSnapping()),
+                    "The gained item is centred over the printed bottom item position.");
+                Assert.That(item.worldBound.yMin,
+                    Is.GreaterThan(card.worldBound.yMin + (card.worldBound.height * 0.9f)));
+                Assert.That(item.worldBound.yMax,
+                    Is.LessThanOrEqualTo(card.worldBound.yMax + UiPlayer.PixelSnapping()),
+                    "The backed box remains wholly on the face instead of forming a detached row.");
+                Assert.That(Descendants(item)
+                        .Count(element => element.name == "gd-printed-channel-symbol"),
+                    Is.EqualTo(1));
+                Assert.That(Descendants(item).OfType<Label>().Select(label => label.text),
+                    Is.EqualTo(new[] { "+1" }),
+                    "Only the signed value remains text in the upgrade box.");
             }
             foreach (var card in cards)
             {
@@ -825,7 +914,12 @@ namespace GuardsDigital.Tests.PlayMode
                 var focusedFacts = Descendants(options[1])
                     .Single(element => element.name == "gd-upgrade-facts");
                 Assert.That(focusedFacts.resolvedStyle.opacity, Is.EqualTo(1f).Within(0.001f),
-                    "Keyboard focus strengthens the centred item box without altering the face.");
+                    "Keyboard focus keeps the centred item box fully opaque.");
+                var focusedItem = Descendants(focusedFacts)
+                    .Single(element => element.name == "gd-upgrade-item");
+                Assert.That(focusedItem.resolvedStyle.borderTopColor,
+                    Is.EqualTo(MatchHudTheme.ShineRim),
+                    "Keyboard focus strengthens the box edge without altering the face.");
                 using (var submit = NavigationSubmitEvent.GetPooled())
                 {
                     submit.target = options[1];
@@ -843,7 +937,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Scene_CapturesFrameFreeLevelUpChoicesAtBothValidatedDesktopSizes()
+        public IEnumerator Scene_CapturesPrintedItemSymbolsAtBothValidatedDesktopSizes()
         {
             if (UnityEngine.Application.isBatchMode)
             {
@@ -864,13 +958,20 @@ namespace GuardsDigital.Tests.PlayMode
 
                 Assert.That(Screen.width, Is.EqualTo(2560));
                 Assert.That(Screen.height, Is.EqualTo(1440));
-                yield return LoadOfficialSixPlayerScene();
+                MatchSceneCompositionRoot.NextComposedCardContent =
+                    SceneCardContent.VerifiedTierTwoEngagedMirror;
+                yield return LoadComposedScene();
                 var root = Root();
+                var standing = root.Runtime.RoundView.Model;
+                RenderAllChannelItemPlaque(root.Runtime);
+                yield return null;
+                yield return new WaitForEndOfFrame();
+                yield return Capture("tmp/milestone-8-30k-plaque-symbols-2560x1440.png");
                 RenderArtworkUpgradeChoices(root.Runtime);
                 root.Hud.ApplyExclusiveContext();
                 yield return null;
                 yield return new WaitForEndOfFrame();
-                yield return Capture("tmp/milestone-8-30j-level-up-2560x1440.png");
+                yield return Capture("tmp/milestone-8-30k-level-up-symbols-2560x1440.png");
 
                 SelectFixedGameViewResolution(2048, 1152);
                 for (var frame = 0;
@@ -882,6 +983,14 @@ namespace GuardsDigital.Tests.PlayMode
 
                 Assert.That(Screen.width, Is.EqualTo(2048));
                 Assert.That(Screen.height, Is.EqualTo(1152));
+                root.Runtime.RoundView.Render(standing);
+                root.Hud.ApplyExclusiveContext();
+                root.Hud.Layout();
+                yield return null;
+                yield return new WaitForEndOfFrame();
+                yield return Capture("tmp/milestone-8-30k-plaque-symbols-2048x1152.png");
+                RenderArtworkUpgradeChoices(root.Runtime);
+                root.Hud.ApplyExclusiveContext();
                 root.Hud.Layout();
                 yield return null;
                 yield return new WaitForEndOfFrame();
@@ -898,7 +1007,7 @@ namespace GuardsDigital.Tests.PlayMode
                         .All(option => option.worldBound.yMin >= tray.yMin - 0.5f &&
                             option.worldBound.yMax <= tray.yMax + 0.5f),
                     Is.True, "Every complete option and gained-item fact fits the validated view.");
-                yield return Capture("tmp/milestone-8-30j-level-up-2048x1152.png");
+                yield return Capture("tmp/milestone-8-30k-level-up-symbols-2048x1152.png");
             }
             finally
             {
@@ -2288,6 +2397,40 @@ namespace GuardsDigital.Tests.PlayMode
                 System.Array.Empty<TypedInvocationViewModel>(),
                 System.Array.Empty<TypedInvocationViewModel>(),
                 systemTransitionPrompt: upgrade));
+        }
+
+        private static void RenderAllChannelItemPlaque(ConfiguredMatchSceneRuntime runtime)
+        {
+            var sourceModel = runtime.HeroOverviewsView.Model;
+            var source = sourceModel.Heroes[0];
+            var channels = new[]
+            {
+                PrintedValueChannel.Initiative,
+                PrintedValueChannel.Attack,
+                PrintedValueChannel.Defense,
+                PrintedValueChannel.Movement,
+                PrintedValueChannel.Range,
+                PrintedValueChannel.Radius
+            };
+            var replacement = new HeroOverviewViewModel(
+                source.HeroId,
+                source.TeamSide,
+                source.ContentId,
+                source.HeroDisplayName,
+                source.Level,
+                source.Coins,
+                channels.Select((channel, index) =>
+                    new HeroItemBonusViewModel(channel, index == 0 ? 10 : 1)),
+                source.TurnSlots,
+                source.DiscardCards,
+                source.IsViewed,
+                source.CurrentCard,
+                source.UltimateCard,
+                source.HeldMarkers);
+            runtime.HeroOverviewsView.Render(new HeroOverviewsViewModel(
+                sourceModel.Version,
+                sourceModel.Heroes.Select(hero =>
+                    hero.HeroId.Equals(source.HeroId) ? replacement : hero)));
         }
 
         private static void AssertCompleteFaceArtwork(

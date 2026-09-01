@@ -428,6 +428,7 @@ namespace GuardsDigital.Presentation.Match
             Channel = channel;
             Amount = amount;
             Token = MatchHudTheme.ChannelToken(channel);
+            Symbol = MatchHudTheme.ChannelSymbol(channel);
             AmountLabel = MatchHudTheme.Signed(amount);
             AssistiveLabel = $"{MatchHudTheme.ChannelName(channel)} item bonus {AmountLabel}";
         }
@@ -435,6 +436,7 @@ namespace GuardsDigital.Presentation.Match
         public PrintedValueChannel Channel { get; }
         public int Amount { get; }
         public string Token { get; }
+        public PrintedChannelSymbolDefinition Symbol { get; }
         public string AmountLabel { get; }
         public string AssistiveLabel { get; }
     }
