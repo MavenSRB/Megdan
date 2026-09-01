@@ -82,6 +82,15 @@ namespace GuardsDigital.Tests.EditMode
                         ref sawFacedownCommitment, ref sawRevealedCommitment);
 
                     var command = recording.Commands[index];
+                    if (TeamAgreementTestDriver.SubmitFinalAgreementCommand(
+                        host,
+                        command,
+                        "8-30n-" + scenario.Label + "-" + index,
+                        seat => seatUse[seat.Id]++))
+                    {
+                        continue;
+                    }
+
                     var authorized = host.Seats.Seats
                         .Where(seat => host.ProjectionForSeat(seat.Id)
                             .AuthorizedCommands.Contains(command))
@@ -147,6 +156,8 @@ namespace GuardsDigital.Tests.EditMode
                         if (index + 1 < recording.Commands.Count)
                         {
                             var next = recording.Commands[index + 1];
+                            if (TeamAgreementTestDriver.IsFinalAgreementCommand(next))
+                                continue;
                             var afterRestore = host.Seats.Seats.First(seat =>
                                 host.ProjectionForSeat(seat.Id).AuthorizedCommands.Contains(next));
                             AssertRefusedWithoutMutation(
@@ -347,8 +358,12 @@ namespace GuardsDigital.Tests.EditMode
                 if (owner.IsOwnedBy(seat))
                 {
                     Assert.That(projection.DecisionContract, Is.Not.Null);
-                    Assert.That(projection.AuthorizedCommands,
-                        Is.EqualTo(global.DecisionContract.Commands));
+                    var directCommands = global.DecisionContract.Commands.Where(command =>
+                        !TeamAgreementTestDriver.IsFinalAgreementCommand(command)).ToArray();
+                    Assert.That(projection.AuthorizedCommands, Is.EqualTo(directCommands));
+                    if (global.DecisionContract.Commands.Any(
+                        TeamAgreementTestDriver.IsFinalAgreementCommand))
+                        Assert.That(projection.TeamAgreement, Is.Not.Null);
                 }
                 else
                 {

@@ -209,7 +209,8 @@ namespace GuardsDigital.Application
             PendingDecisionOwner decisionOwner,
             PendingDecisionContract decisionContract,
             IReadOnlyList<DirectorCommand> authorizedCommands,
-            SeatPendingSurface pendingSurface)
+            SeatPendingSurface pendingSurface,
+            TeamAgreementProjection teamAgreement)
         {
             pending = pendingSurface;
             visibleCards = Array.AsReadOnly(ownCards.Concat(publicCards).ToArray());
@@ -244,6 +245,7 @@ namespace GuardsDigital.Application
             DecisionOwner = decisionOwner;
             DecisionContract = decisionContract;
             AuthorizedCommands = authorizedCommands;
+            TeamAgreement = teamAgreement;
         }
 
         public MatchSeat Seat { get; }
@@ -315,6 +317,9 @@ namespace GuardsDigital.Application
         /// this seat's turn to wait.
         /// </summary>
         public IReadOnlyList<DirectorCommand> AuthorizedCommands { get; }
+
+        /// <summary>The public agreement proposal and statements, including only this seat's controls.</summary>
+        public TeamAgreementProjection TeamAgreement { get; }
 
         /// <summary>Whether the authority is waiting on a decision this seat does not own.</summary>
         public bool IsWaitingForAnotherSeat =>
@@ -397,7 +402,10 @@ namespace GuardsDigital.Application
     /// </remarks>
     internal static class SeatProjectionFactory
     {
-        public static SeatProjection ForSeat(MatchSessionProjection source, MatchSeat seat)
+        public static SeatProjection ForSeat(
+            MatchSessionProjection source,
+            MatchSeat seat,
+            TeamAgreementProjection teamAgreement = null)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (seat == null) throw new ArgumentNullException(nameof(seat));
@@ -433,7 +441,8 @@ namespace GuardsDigital.Application
                 owner,
                 ownsDecision ? source.DecisionContract : null,
                 AuthorizedCommands(source, seat, owner),
-                new SeatPendingSurface(source, ownsDecision, isActor));
+                new SeatPendingSurface(source, ownsDecision, isActor),
+                teamAgreement);
         }
 
         /// <summary>
@@ -539,6 +548,23 @@ namespace GuardsDigital.Application
 
             if (source.DecisionContract != null)
             {
+                if (source.DecisionContract.FamilyId.Equals(PendingDecisionFamilies.Initiative))
+                {
+                    // Player seats state bounded public preferences through the host agreement
+                    // coordinator. Only Director mode receives the final rules command directly.
+                    return Array.Empty<DirectorCommand>();
+                }
+
+                if (source.DecisionContract.FamilyId.Equals(PendingDecisionFamilies.MinionBattle))
+                {
+                    // Board selection remains shared team authority; final confirmation is emitted
+                    // only by unanimous host agreement.
+                    return owner.IsOwnedBy(seat)
+                        ? Array.AsReadOnly(source.DecisionContract.Commands.Where(command =>
+                            command.Kind != DirectorCommandKind.ConfirmMinionBattleRemovals).ToArray())
+                        : Array.Empty<DirectorCommand>();
+                }
+
                 return owner.IsOwnedBy(seat)
                     ? source.DecisionContract.Commands
                     : Array.Empty<DirectorCommand>();

@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Board;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -721,8 +723,13 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private readonly Dictionary<object, VisualElement> revealAnchors =
             new Dictionary<object, VisualElement>();
+        private readonly Dictionary<HeroId, VisualElement> heroRails =
+            new Dictionary<HeroId, VisualElement>();
+        private readonly Dictionary<HeroId, Color> heroRailRestingTopColors =
+            new Dictionary<HeroId, Color>();
 
         private object highlighted;
+        private HeroId highlightedHero;
 
         public HeroOverviewsUnityView()
         {
@@ -793,6 +800,7 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Milestone 8.11b: the pointed-at discard icon, on the terms of the two above.</summary>
         public event Action<TrayCardViewModel> DiscardCardHighlighted;
+        public event Action<HeroId> HeroHighlighted;
 
         /// <summary>
         /// Raised after either rail column resolves a new live bound. The configured HUD uses Red's
@@ -842,6 +850,35 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Milestone 8.11b: reports a pointed-at discard icon, for a driver with no pointer.</summary>
         public void ForwardDiscardCardHighlight(TrayCardViewModel card) => SetHighlight(card);
+
+        public void SetHighlightedHero(HeroId heroId) => SetHighlightedHero(heroId, false);
+
+        /// <summary>Reports plaque hover for pointerless drivers and the configured input bridge.</summary>
+        public void ForwardHeroHighlight(HeroId heroId)
+        {
+            SetHighlightedHero(heroId, false);
+            HeroHighlighted?.Invoke(heroId);
+        }
+
+        private void SetHighlightedHero(HeroId heroId, bool notify)
+        {
+            if (highlightedHero.Equals(heroId)) return;
+            if (highlightedHero.IsDefined && heroRails.TryGetValue(highlightedHero, out var previous))
+            {
+                previous.style.borderTopWidth = 2f;
+                previous.style.borderTopColor = heroRailRestingTopColors[highlightedHero];
+            }
+
+            highlightedHero = heroId;
+            if (highlightedHero.IsDefined && heroRails.TryGetValue(highlightedHero, out var current))
+            {
+                current.style.borderTopWidth = 4f;
+                current.style.borderTopColor = HexCornerHighlightTemplate.AllyColor;
+            }
+
+            if (notify)
+                HeroHighlighted?.Invoke(heroId);
+        }
 
         private void SetHighlight(object model)
         {
@@ -966,12 +1003,34 @@ namespace GuardsDigital.Presentation.Match
             // longer drawn.
             SetHighlight(null);
             revealAnchors.Clear();
+            heroRails.Clear();
+            heroRailRestingTopColors.Clear();
             redColumn.Clear();
             blueColumn.Clear();
             foreach (var hero in Model.Heroes)
             {
                 var column = hero.TeamSide == TeamSide.Red ? redColumn : blueColumn;
-                column.Add(BuildOverview(hero));
+                var rail = BuildOverview(hero);
+                heroRails.Add(hero.HeroId, rail);
+                heroRailRestingTopColors.Add(
+                    hero.HeroId,
+                    hero.IsViewed ? MatchHudTheme.SelectedOutline : new Color(0f, 0f, 0f, 0f));
+                HudElements.OnPointedAt(rail, pointedAt =>
+                    ForwardHeroHighlight(pointedAt ? hero.HeroId : default));
+                column.Add(rail);
+            }
+
+            if (highlightedHero.IsDefined)
+            {
+                if (heroRails.TryGetValue(highlightedHero, out var highlightedRail))
+                {
+                    highlightedRail.style.borderTopWidth = 4f;
+                    highlightedRail.style.borderTopColor = HexCornerHighlightTemplate.AllyColor;
+                }
+                else
+                {
+                    highlightedHero = default;
+                }
             }
 
             redColumn.style.display = redColumn.childCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
@@ -2188,10 +2247,10 @@ namespace GuardsDigital.Presentation.Match
             cards.style.minWidth = rowWidth;
             cards.style.maxWidth = rowWidth;
 
-            // Milestone 8.30d, the user's follow-up decision: no hand-status bar. Pass and
-            // Pass stands in the panel's bottom-right corner as a pewter banner, while commitment
+            // No hand-status bar. Pass stays in the panel's bottom-right corner, while commitment
             // Confirm has its dedicated lane below DIRECTOR and End Turn has the status-bar slot.
-            // The shared clothes retain one banner language for the button that moves the game on.
+            // Pass is the empty-hand player's only move, so it uses End Turn's rectangular full-shine
+            // treatment rather than the older swallowtail submit-card treatment.
             // The Button texts stay the exact selector strings every
             // existing check and driver finds these commands by.
             cornerActions.Clear();
@@ -2205,14 +2264,20 @@ namespace GuardsDigital.Presentation.Match
                         {
                             PassRequested?.Invoke(hand.HeroId);
                         }
-                    }, false,
-                    CornerBannerFontSize, "gd-pass-banner-label")
+                    }, true,
+                    RoundActionUnityView.EndTurnControlFontSize, "gd-pass-banner-label",
+                    rectangular: true)
                 {
                     name = "gd-pass-control",
                     text = "PASS - NO CARD"
                 };
                 pass.SetVisibleLabel("PASS - NO CARD");
                 pass.style.minHeight = CornerBannerHeight;
+                pass.style.fontSize = RoundActionUnityView.EndTurnControlFontSize;
+                pass.style.unityFontStyleAndWeight = FontStyle.Bold;
+                pass.style.unityTextAlign = TextAnchor.MiddleCenter;
+                pass.style.flexGrow = 1f;
+                pass.style.flexShrink = 0f;
                 pass.style.marginBottom = 8f;
                 cornerActions.Add(pass);
             }
@@ -3913,6 +3978,7 @@ namespace GuardsDigital.Presentation.Match
         public const float OptionalStepActionWidth = 240f;
         public const float OptionalStepActionHeight = 36f;
         public const float OptionalStepActionGap = 44f;
+        public const float TeamAgreementHeight = 78f;
 
         private const double PreviewDismissDelaySeconds = 0.12d;
 
@@ -3945,14 +4011,6 @@ namespace GuardsDigital.Presentation.Match
             CardFootprint.Height - UpgradeItemOverlayHeight;
         private static readonly Color UpgradeItemOverlayBackground =
             new Color(0.216f, 0.216f, 0.216f, 1f);
-
-        /// <summary>
-        /// The legacy framed footprint retained by other card-valued choice families. Defense itself
-        /// became frameless during milestone 8.30i and uses <see cref="CardFootprint.Width"/> directly.
-        /// </summary>
-        private const float DefenseCardInset = 6f;
-        public const float DefenseCardFootprint =
-            CardFootprint.Width + (DefenseCardInset * 2f);
 
         public static readonly Color DefensePreviewBackgroundColor =
             new Color(0.025f, 0.035f, 0.045f, 1f);
@@ -4100,6 +4158,8 @@ namespace GuardsDigital.Presentation.Match
         public Rect DefensePreviewAnchor => defensePreviewAnchor;
 
         public event Action<TypedInvocationViewModel> InvocationSubmitted;
+        public event Action<TeamAgreementChoiceViewModel> AgreementSubmitted;
+        public event Action<HeroId> AgreementHeroHighlighted;
         public event Action<FastTravelOfferViewModel> FastTravelSelected;
 
         /// <summary>Milestone 6.5c: the named target control that was activated.</summary>
@@ -4149,12 +4209,18 @@ namespace GuardsDigital.Presentation.Match
             Model?.EffectChoicePrompt?.Subject == EffectChoiceSubject.OptionalStep &&
             Model.EffectChoices.Count > 0;
 
+        public bool HasTeamAgreementDecision =>
+            Model?.TeamAgreement?.Kind == TeamAgreementKind.Initiative;
+
+        public bool RetainsOrdinaryHand => HasOptionalStepDecision || HasTeamAgreementDecision;
+
         public bool HasExclusiveDecision =>
             Model != null &&
             (Model.SystemTransitionPrompt != null ||
              Model.RemovalPreventionPrompt != null ||
              Model.DefenseChoices.Count > 0 ||
              Model.InitiativeChoices.Count > 0 ||
+             Model.TeamAgreement != null ||
              Model.EffectChoices.Count > 0 ||
              Model.EffectChoiceTargets.Count > 0 ||
              Model.UnavailableEffectChoices.Count > 0 ||
@@ -4257,6 +4323,7 @@ namespace GuardsDigital.Presentation.Match
             declineDefenseHost.Clear();
             declineDefenseHost.style.display = DisplayStyle.None;
             optionalStepActionsHost.Clear();
+            optionalStepActionsHost.style.flexDirection = FlexDirection.Row;
             optionalStepActionsHost.style.display = DisplayStyle.None;
             status.Clear();
             rows.Clear();
@@ -4295,6 +4362,13 @@ namespace GuardsDigital.Presentation.Match
             narration.style.marginLeft = warm ? 8f : 0f;
             status.Add(narration);
 
+            if (HasTeamAgreementDecision)
+            {
+                BuildTeamAgreement(Model.TeamAgreement);
+                HideEmptySections();
+                return;
+            }
+
             // Milestone 7.8a: a paused system transition is the whole of the region while it stands.
             // Nothing else the model carries can be acted on - the authority refuses every other
             // command - so drawing anything beside it would be drawing refusals.
@@ -4331,6 +4405,48 @@ namespace GuardsDigital.Presentation.Match
 
             BuildActionRow();
             HideEmptySections();
+        }
+
+        private void BuildTeamAgreement(TeamAgreementHudViewModel agreement)
+        {
+            optionalStepActionsHost.Clear();
+            optionalStepActionsHost.style.flexDirection = FlexDirection.Column;
+            optionalStepActionsHost.style.alignItems = Align.Stretch;
+            optionalStepActionsHost.style.display = DisplayStyle.Flex;
+
+            var heading = HudElements.Text(
+                agreement.Heading, 13f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            heading.style.unityTextAlign = TextAnchor.MiddleCenter;
+            heading.style.flexShrink = 0f;
+            optionalStepActionsHost.Add(heading);
+
+            var publicStatus = string.Join("  ·  ", agreement.Participants.Select(participant =>
+                participant.Label + " " + participant.Status));
+            var statusLine = HudElements.Text(
+                publicStatus, 10f, MatchHudTheme.MutedText, FontStyle.Normal);
+            statusLine.style.unityTextAlign = TextAnchor.MiddleCenter;
+            statusLine.style.flexShrink = 0f;
+            optionalStepActionsHost.Add(statusLine);
+
+            var buttons = HudElements.Row(6f);
+            buttons.style.width = Length.Percent(100f);
+            buttons.style.flexGrow = 1f;
+            buttons.style.alignItems = Align.Stretch;
+            foreach (var choice in agreement.Choices)
+            {
+                var captured = choice;
+                var control = HudElements.Control(
+                    choice.Label, () => AgreementSubmitted?.Invoke(captured));
+                control.name = "gd-initiative-preference";
+                control.style.flexGrow = 1f;
+                control.style.flexBasis = 0f;
+                control.style.minWidth = 0f;
+                HudElements.OnPointedAt(control, pointedAt =>
+                    AgreementHeroHighlighted?.Invoke(pointedAt ? captured.HeroId : default));
+                buttons.Add(control);
+            }
+
+            optionalStepActionsHost.Add(buttons);
         }
 
         /// <summary>
@@ -4376,7 +4492,8 @@ namespace GuardsDigital.Presentation.Match
             foreach (var section in rows.Children())
             {
                 var contentCount = section.name == "gd-action-section" ||
-                                   section.name == "gd-defense-section"
+                                   section.name == "gd-defense-section" ||
+                                   section.name == "gd-effect-card-section"
                     ? section.childCount
                     : section.childCount - 1;
                 section.style.display = contentCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
@@ -4467,6 +4584,16 @@ namespace GuardsDigital.Presentation.Match
 
                 row.Add(BuildTransitionOption(option));
             }
+        }
+
+        private VisualElement FramelessEffectCardSection()
+        {
+            var section = HudElements.Row(SectionGap);
+            section.name = "gd-effect-card-section";
+            section.style.flexWrap = Wrap.NoWrap;
+            section.style.alignItems = Align.FlexStart;
+            rows.Add(section);
+            return section;
         }
 
         /// <summary>
@@ -5255,6 +5382,7 @@ namespace GuardsDigital.Presentation.Match
             private const float NotchDepth = 14f;
 
             private readonly bool strongShine;
+            private readonly bool hoverOnlyShine;
             private bool hovered;
 
             private readonly VisualElement cloth;
@@ -5264,10 +5392,12 @@ namespace GuardsDigital.Presentation.Match
                 bool strongShine,
                 float fontSize,
                 string labelName,
-                bool rectangular = false)
+                bool rectangular = false,
+                bool hoverOnlyShine = false)
                 : base(selected)
             {
                 this.strongShine = strongShine;
+                this.hoverOnlyShine = hoverOnlyShine;
                 this.rectangular = rectangular;
                 style.backgroundColor = Color.clear;
                 HudElements.Border(this, Color.clear, 0f, 0f);
@@ -5333,7 +5463,12 @@ namespace GuardsDigital.Presentation.Match
             }
 
             /// <summary>Whether this banner is in its full-shine "your one move" state.</summary>
-            internal bool ShinesFully => strongShine;
+            internal bool ShinesFully => strongShine && !hoverOnlyShine;
+
+            /// <summary>Whether all shine is withheld until the pointer enters this banner.</summary>
+            internal bool LightsOnlyWhenHovered => hoverOnlyShine;
+
+            internal bool IsLit => hovered || (strongShine && !hoverOnlyShine);
 
             /// <summary>Whether this instance uses the End Turn rectangle instead of swallowtails.</summary>
             internal bool IsRectangular => rectangular;
@@ -5361,13 +5496,16 @@ namespace GuardsDigital.Presentation.Match
                     return;
                 }
 
-                var strong = strongShine || hovered;
+                var strong = (strongShine && !hoverOnlyShine) || hovered;
+                var restingGlow = !hoverOnlyShine;
                 DrawShape(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
                     new Color(MatchHudTheme.ShineHalo.r, MatchHudTheme.ShineHalo.g,
-                        MatchHudTheme.ShineHalo.b, strong ? 0.30f : 0.10f), strong ? 18f : 8f);
+                        MatchHudTheme.ShineHalo.b, strong ? 0.30f : restingGlow ? 0.10f : 0f),
+                    strong ? 18f : restingGlow ? 8f : 0f);
                 DrawShape(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
                     new Color(MatchHudTheme.ShineGlow.r, MatchHudTheme.ShineGlow.g,
-                        MatchHudTheme.ShineGlow.b, strong ? 0.50f : 0.16f), strong ? 10f : 5f);
+                        MatchHudTheme.ShineGlow.b, strong ? 0.50f : restingGlow ? 0.16f : 0f),
+                    strong ? 10f : restingGlow ? 5f : 0f);
                 if (strong)
                 {
                     DrawShape(painter, left, right, rect.yMin, rect.yMax, mid, Color.clear,
@@ -5508,7 +5646,12 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            var section = Section(prompt.SectionLabel);
+            // A card-valued choice is already self-identifying through its whole printed faces and
+            // the narration now says why one is being chosen. It therefore uses the same frameless
+            // row as Defense instead of spending a left gutter on redundant `CARD CHOICE` text.
+            var section = prompt.Subject == EffectChoiceSubject.Card
+                ? FramelessEffectCardSection()
+                : Section(prompt.SectionLabel);
             if (Model.EffectChoices.Any(choice => choice.Card != null))
             {
                 section.style.flexWrap = Wrap.NoWrap;
@@ -5546,11 +5689,12 @@ namespace GuardsDigital.Presentation.Match
                 var invocation = Model.EffectChoices[index];
                 var accepts = invocation.Label == EffectChoiceLabels.AcceptLabel;
                 var control = new PewterBanner(
-                    () => ForwardInvocation(invocation), true,
+                    () => ForwardInvocation(invocation), false,
                     DirectorHandsUnityView.CornerBannerFontSize,
                     accepts
                         ? "gd-optional-step-accept-label"
-                        : "gd-optional-step-decline-label")
+                        : "gd-optional-step-decline-label",
+                    hoverOnlyShine: true)
                 {
                     name = accepts ? "gd-optional-step-accept" : "gd-optional-step-decline",
                     text = invocation.Label
@@ -5579,9 +5723,9 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// One card-valued effect choice as the whole printed face, on the terms milestone 8.11b gave
-        /// a legal Defense offer: the tray's own standalone builder inside a fixed-width frame with
-        /// the shared always-drawn selection outline, the whole face forwarding exactly the projected
-        /// invocation, and the card's name in the control's hover and assistive reading.
+        /// a legal Defense offer: the tray's own standalone builder without a surrounding plate,
+        /// inset, or selection outline, the whole face forwarding exactly the projected invocation,
+        /// and the card's name in the control's hover and assistive reading.
         /// </summary>
         private Button BuildEffectCardChoice(TypedInvocationViewModel choice)
         {
@@ -5594,14 +5738,14 @@ namespace GuardsDigital.Presentation.Match
             control.style.alignItems = Align.Stretch;
             control.style.flexShrink = 0f;
             control.style.alignSelf = Align.FlexStart;
-            control.style.width = DefenseCardFootprint;
+            control.style.width = CardFootprint.Width;
             control.style.marginLeft = 0f;
             control.style.marginRight = 0f;
             control.style.marginTop = 0f;
             control.style.marginBottom = 0f;
-            HudElements.Padding(control, DefenseCardInset);
-            control.style.backgroundColor = MatchHudTheme.PanelBackground;
-            HudElements.MarkSelectedWithoutResizing(control, false);
+            HudElements.Padding(control, 0f);
+            control.style.backgroundColor = Color.clear;
+            HudElements.Border(control, Color.clear, 0f, 0f);
 
             var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
             // Milestone 8.30d: a card Defense offer shines exactly the shield it would defend
@@ -5795,6 +5939,7 @@ namespace GuardsDigital.Presentation.Match
 
         public event Action<MinionChoiceCandidateViewModel> CandidateSubmitted;
         public event Action ConfirmRequested;
+        public event Action<TeamAgreementChoiceViewModel> AgreementRequested;
         public event Action<MinionChoiceCandidateViewModel> CandidateHighlighted;
 
         public void Render(MinionChoiceViewModel model)
@@ -5864,6 +6009,23 @@ namespace GuardsDigital.Presentation.Match
                 confirm.style.backgroundColor = MatchHudTheme.ConfirmAccent;
                 confirm.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
                 controls.Add(confirm);
+            }
+
+            if (model.Agreement != null)
+            {
+                var publicStatus = string.Join("  ·  ", model.Agreement.Participants.Select(participant =>
+                    participant.Label + " " + participant.Status));
+                controls.Add(HudElements.Text(
+                    publicStatus, 10f, MatchHudTheme.MutedText, FontStyle.Normal));
+                foreach (var choice in model.Agreement.Choices)
+                {
+                    var captured = choice;
+                    var agreement = HudElements.Control(
+                        choice.Label, () => AgreementRequested?.Invoke(captured));
+                    agreement.style.backgroundColor = MatchHudTheme.ConfirmAccent;
+                    agreement.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
+                    controls.Add(agreement);
+                }
             }
         }
 

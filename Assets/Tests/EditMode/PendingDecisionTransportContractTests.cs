@@ -134,6 +134,9 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static bool SubmitThroughItsSeat(IMatchHost host, DirectorCommand command, string id)
         {
+            if (TeamAgreementTestDriver.SubmitFinalAgreementCommand(host, command, id + "-agreement"))
+                return true;
+
             var seat = host.Seats.Seats.FirstOrDefault(value =>
                 host.ProjectionForSeat(value.Id).AuthorizedCommands.Contains(command));
             Assert.That(seat, Is.Not.Null,
@@ -180,7 +183,11 @@ namespace GuardsDigital.Tests.EditMode
                     owning.Add(seat);
                     Assert.That(seatProjection.DecisionContract, Is.SameAs(contract),
                         "An owning seat receives the exact answers the authority published.");
-                    Assert.That(seatProjection.AuthorizedCommands, Is.EqualTo(contract.Commands));
+                    var directCommands = contract.Commands.Where(command =>
+                        !TeamAgreementTestDriver.IsFinalAgreementCommand(command)).ToArray();
+                    Assert.That(seatProjection.AuthorizedCommands, Is.EqualTo(directCommands));
+                    if (contract.Commands.Any(TeamAgreementTestDriver.IsFinalAgreementCommand))
+                        Assert.That(seatProjection.TeamAgreement, Is.Not.Null);
                     Assert.That(seatProjection.IsWaitingForAnotherSeat, Is.False);
                 }
                 else
@@ -206,7 +213,10 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(owner.TeamSide));
             }
 
-            AssertANonOwnerCannotAnswer(host, owning, contract.Commands[0], family.Value);
+            var directAnswer = contract.Commands.FirstOrDefault(command =>
+                !TeamAgreementTestDriver.IsFinalAgreementCommand(command));
+            if (directAnswer != null)
+                AssertANonOwnerCannotAnswer(host, owning, directAnswer, family.Value);
             return family.Value;
         }
 

@@ -60,6 +60,12 @@ namespace GuardsDigital.Application
         bool IsActiveEffectSource(CardInstanceId cardInstanceId);
 
         /// <summary>
+        /// The host-published public agreement standing over tied Initiative or Minion Battle, or
+        /// <c>null</c> in Director mode and while no such player-seat agreement is active.
+        /// </summary>
+        TeamAgreementProjection TeamAgreement { get; }
+
+        /// <summary>
         /// The cards this reader may name. Whole for the Director; for a seat, its own cards plus the
         /// ones rulebook p.4 calls open information, with another hero's hand and deck absent.
         /// </summary>

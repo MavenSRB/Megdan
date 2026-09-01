@@ -760,8 +760,8 @@ namespace GuardsDigital.Presentation.Match
             round.EndTurnRoot.RemoveFromHierarchy();
             round.EndTurnRoot.style.position = Position.Absolute;
             root.Add(round.EndTurnRoot);
-            // Pass keeps the corner treatment it received at 8.30d. Milestone 8.30f moves only
-            // commitment confirmation into the open lane immediately below DIRECTOR.
+            // Pass keeps its bottom-right host while sharing End Turn's rectangular full-shine
+            // treatment. Commitment confirmation alone uses the lane immediately below DIRECTOR.
             hands.CornerActionsRoot.RemoveFromHierarchy();
             hands.CornerActionsRoot.style.position = Position.Absolute;
             root.Add(hands.CornerActionsRoot);
@@ -898,7 +898,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             hands.SetPrintedActionRegions(round.Model?.PrintedActionRegions);
-            var retainsOrdinaryHand = round.HasOptionalStepDecision;
+            var retainsOrdinaryHand = round.RetainsOrdinaryHand;
             var usesTray = (round.HasExclusiveDecision && !retainsOrdinaryHand) ||
                 minionChoice?.Model != null;
             var hostChanged = usesTray != contextUsesTray;
@@ -1393,7 +1393,9 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            var rect = CalculateOptionalStepControlRect(PanelViewport.x, PanelViewport.y);
+            var rect = round.HasTeamAgreementDecision
+                ? CalculateTeamAgreementControlRect(PanelViewport.x, PanelViewport.y)
+                : CalculateOptionalStepControlRect(PanelViewport.x, PanelViewport.y);
             host.style.left = rect.x;
             host.style.top = rect.y;
             host.style.width = rect.width;
@@ -1416,6 +1418,23 @@ namespace GuardsDigital.Presentation.Match
                 left,
                 Mathf.Max(StatusBarHeight + Margin, tray.yMin - height - OptionalStepHandGap),
                 Mathf.Min(desiredWidth, Mathf.Max(0f, right - left)),
+                height);
+        }
+
+        public static Rect CalculateTeamAgreementControlRect(float panelWidth, float panelHeight)
+        {
+            var tray = CalculateCardPanelRect(panelWidth, panelHeight);
+            var left = tray.xMin + OptionalStepEdgeClearance;
+            var right = Mathf.Min(
+                CompactHandRightEdge - OptionalStepEdgeClearance,
+                Mathf.Max(left, panelWidth - Margin));
+            var height = Mathf.Min(
+                RoundActionUnityView.TeamAgreementHeight,
+                Mathf.Max(0f, tray.yMin - StatusBarHeight - Margin));
+            return new Rect(
+                left,
+                Mathf.Max(StatusBarHeight + Margin, tray.yMin - height - OptionalStepHandGap),
+                Mathf.Max(0f, right - left),
                 height);
         }
 

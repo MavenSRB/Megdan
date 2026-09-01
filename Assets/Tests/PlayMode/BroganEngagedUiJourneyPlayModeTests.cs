@@ -20,6 +20,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 using static GuardsDigital.Tests.PlayMode.BroganUiJourneyPlayModeTests;
 
 namespace GuardsDigital.Tests.PlayMode
@@ -177,8 +178,9 @@ namespace GuardsDigital.Tests.PlayMode
             // Update here: the automated pointer is deliberately elsewhere and would describe a
             // different hover before these assertions can inspect the supplied regression ray.
             Assert.That(Tile(hero.Occupancy.Coordinate).CornerHighlight.Kind,
-                Is.EqualTo(HexCornerHighlightKind.Attack),
-                "The charged hero remains a blood-red Attack target while its Defense is previewed.");
+                Is.EqualTo(HexCornerHighlightKind.Ally),
+                "The permanent hero-hover channel gives the charged hero its warm-ivory glow " +
+                "while its Attack Defense is previewed.");
             foreach (var contribution in heroPreview.MinionContributions)
             {
                 var state = runtime.BoardView.Model.Minions.Single(value =>
@@ -416,6 +418,20 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.RoundView.Model.EffectChoices.Any(value =>
                     value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline), Is.True,
                 "and declining must be drawn, because the face prints `may`.");
+            var broganName = runtime.Setup.Heroes
+                .Single(hero => hero.HeroId.Equals(broganId)).DisplayName;
+            Assert.That(runtime.RoundView.Model.Status,
+                Does.EndWith($" card for {broganName} to retrieve, or decline."),
+                "The same frameless card chooser names retrieval rather than describing only its candidates.");
+            Assert.That(UiPlayer.Descendants(hud.RootElement).OfType<Label>()
+                    .Any(label => UiPlayer.IsShown(label) && label.text == "CARD CHOICE"),
+                Is.False,
+                "Retrieval uses the same unlabelled card row as discard.");
+            Assert.That(UiPlayer.Descendants(hud.RootElement)
+                    .Any(element => element.name == "gd-effect-card-section" &&
+                        UiPlayer.IsShown(element)),
+                Is.True,
+                "The whole-face retrieval controls remain visible in their frameless row.");
             var faceName = NameOf(runtime, discarded[0]);
             UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
             yield return null;

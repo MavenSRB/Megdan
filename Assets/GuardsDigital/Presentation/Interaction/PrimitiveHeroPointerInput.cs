@@ -97,6 +97,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (boardView == null || eventCamera == null || Pointer.current == null)
             {
                 boardView?.SetHoveredCoordinate(null);
+                boardView?.SetPointerHoveredHero(default);
                 return;
             }
 
@@ -104,6 +105,7 @@ namespace GuardsDigital.Presentation.Interaction
             if (blocksPointer != null && blocksPointer(screenPosition))
             {
                 boardView.SetHoveredCoordinate(null);
+                boardView.SetPointerHoveredHero(default);
                 return;
             }
 
@@ -121,6 +123,13 @@ namespace GuardsDigital.Presentation.Interaction
 
             var tile = FindTileUnderPointer(pointerRay);
             boardView.SetHoveredCoordinate(tile?.Coordinate);
+            var hoveredHero = default(GuardsDigital.Core.Units.Heroes.HeroId);
+            foreach (var selector in selectors ?? System.Array.Empty<PrimitiveHeroPointerSelector>())
+            {
+                if (selector != null && selector.TryGetHeroFromPointerRay(pointerRay, out hoveredHero))
+                    break;
+            }
+            boardView.SetPointerHoveredHero(hoveredHero);
             return tile != null;
         }
 

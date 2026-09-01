@@ -46,6 +46,8 @@ namespace GuardsDigital.Application
         IMatchReadModel Projection { get; }
 
         MatchClientResult Submit(DirectorCommand command);
+
+        MatchClientResult SubmitAgreement(TeamAgreementCommand command);
     }
 
     /// <summary>
@@ -72,6 +74,13 @@ namespace GuardsDigital.Application
                 !result.Accepted &&
                 result.RejectionReason == MatchSessionRejectionReason.CommandUnavailable);
         }
+
+        public MatchClientResult SubmitAgreement(TeamAgreementCommand command) =>
+            new MatchClientResult(
+                false,
+                "Director mode resolves team choices directly.",
+                session.Projection,
+                true);
     }
 
     /// <summary>
@@ -116,6 +125,20 @@ namespace GuardsDigital.Application
                 result.Projection,
                 !result.Accepted &&
                 result.RejectionReason != SeatSubmissionRejectionReason.SessionRefused);
+        }
+
+        public MatchClientResult SubmitAgreement(TeamAgreementCommand command)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+
+            var projection = client.Projection;
+            var result = client.SubmitAgreement(new TeamAgreementSubmission(
+                NextSubmissionId(), projection.Version, command));
+            return new MatchClientResult(
+                result.Accepted,
+                result.Detail,
+                result.Projection,
+                !result.Accepted);
         }
 
         private static SubmissionId NextSubmissionId() =>

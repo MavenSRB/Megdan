@@ -3738,7 +3738,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "Hover previews consequences without selecting the target.");
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                     value.Coordinate.Equals(hero.Occupancy.Coordinate)).CornerHighlight.Kind,
-                Is.EqualTo(HexCornerHighlightKind.Attack));
+                Is.EqualTo(HexCornerHighlightKind.Ally),
+                "The permanent hero hover link gives the hovered hero's warm ivory ally cue precedence over the resting attack-target cue.");
             foreach (var contribution in targetDefensePreview.MinionContributions)
             {
                 var minionState = runtime.BoardView.Model.Minions.Single(value =>

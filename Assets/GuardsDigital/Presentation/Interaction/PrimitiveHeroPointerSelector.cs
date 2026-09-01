@@ -35,6 +35,18 @@ namespace GuardsDigital.Presentation.Interaction
             return boardView.TryForwardHeroIntent(hero.Occupancy.HeroId);
         }
 
+        public bool TryGetHeroFromPointerRay(
+            Ray pointerRay, out GuardsDigital.Core.Units.Heroes.HeroId heroId,
+            float maxDistance = 500f)
+        {
+            heroId = default;
+            if (!isActiveAndEnabled ||
+                !GetComponent<CapsuleCollider>().Raycast(pointerRay, out _, maxDistance))
+                return false;
+            heroId = GetComponent<PrimitiveHeroView>().Occupancy.HeroId;
+            return heroId.IsDefined;
+        }
+
         /// <summary>
         /// Builds the pointer target from the piece the hero is actually drawn as.
         ///

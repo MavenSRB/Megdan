@@ -361,7 +361,7 @@ Non-goals: No card rule, definition, availability, lifecycle, ordering, commitme
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830m-give-every-in-game-card-a-thick-black-exterior-outline-completion-evidence).
 
-### [ ] 8.30n Require public teammate agreement for tied Initiative and Minion Battle removal
+### [x] 8.30n Require public teammate agreement for tied Initiative and Minion Battle removal
 
 Blocked by: Milestone 8.30m must complete the shared card-surface correction and its affected six-seat evidence before this separately reviewable team-decision correction begins.
 
@@ -385,3 +385,5 @@ Acceptance checks:
 Closing checks: `TiedInitiative_PlayerSeatsWaitForUnanimousPublicCandidatePreferenceBeforeChoosingTheActor`, `MinionBattle_PlayerSeatsWaitForUnanimousPublicConfirmationOfTheCurrentRemovalSet`, and `TeamAgreement_RefusesIneligibleOrStaleStatementsAndSubmitsOneFamilyRulesChoice` fail against the current first-accepted-team-command flows and pass when the transport-neutral agreement coordinator and six-seat prompts are in place.
 
 Non-goals: No change to Initiative values, Initiative or Minion Battle candidate calculation, required removal count, Heavy-last ordering, Tie Breaker ownership or flip timing, reveal timing, action resolution, card visibility, hidden information, snapshots, deterministic gameplay replay, Director mode, team composition, or any team-owned choice other than tied Initiative and the final Minion Battle removal confirmation; no networking package, message serialization, lobby, reconnect implementation, voice/text chat, free-form communication, captain system, timer, automatic choice, AI, Phase 9 styling, or general HUD redesign.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830n-require-public-teammate-agreement-for-tied-initiative-and-minion-battle-removal-completion-evidence).

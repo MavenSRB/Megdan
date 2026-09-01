@@ -418,6 +418,10 @@ namespace GuardsDigital.Tests.EditMode
             public SeatSubmissionResult SubmitForSeat(SeatId seat, SeatSubmission submission) =>
                 inner.SubmitForSeat(seat, submission);
 
+            public TeamAgreementSubmissionResult SubmitAgreementForSeat(
+                SeatId seat, TeamAgreementSubmission submission) =>
+                inner.SubmitAgreementForSeat(seat, submission);
+
             public ISeatClient ClientForSeat(SeatId seat) => inner.ClientForSeat(seat);
         }
 

@@ -194,7 +194,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "A standing decision carries the prompt that names it.");
             Assert.That(prompt.SectionLabel, Is.EqualTo("CARD CHOICE"));
             Assert.That(runtime.RoundView.Model.Status, Does.StartWith("Choose 1 of "));
-            Assert.That(runtime.RoundView.Model.Status, Does.EndWith(" cards."));
+            Assert.That(runtime.RoundView.Model.Status,
+                Does.EndWith(" cards for Wasp to discard."),
+                "The narrative bar says why these cards are being chosen.");
             Assert.That(runtime.RoundView.Model.Status,
                 Does.Not.Contain("choose an action, or end your turn"),
                 "which is the line this discard chooser used to arrive under.");
@@ -203,13 +205,16 @@ namespace GuardsDigital.Tests.PlayMode
                 .OfType<Label>()
                 .Where(label => UiPlayer.IsShown(label) && label.text == prompt.SectionLabel)
                 .ToArray();
-            Assert.That(heading, Has.Length.EqualTo(1),
-                "The heading is drawn once, over this decision. " + UiPlayer.Describe(hud));
+            Assert.That(heading, Is.Empty,
+                "The redundant CARD CHOICE text is absent. " + UiPlayer.Describe(hud));
+            var choiceSection = UiPlayer.Descendants(hud.RootElement)
+                .Single(element => element.name == "gd-effect-card-section" &&
+                    UiPlayer.IsShown(element));
             Assert.That(
-                UiPlayer.Descendants(heading[0].hierarchy.parent)
+                UiPlayer.Descendants(choiceSection)
                     .Count(element => element.name == "gd-effect-card" && UiPlayer.IsShown(element)),
                 Is.EqualTo(EffectCardChoices(runtime).Length),
-                "and every offered face is inside the section it heads. " + UiPlayer.Describe(hud));
+                "Every offered face remains in the frameless row. " + UiPlayer.Describe(hud));
 
             yield return null;
             yield return UiPlayer.CaptureGameView(

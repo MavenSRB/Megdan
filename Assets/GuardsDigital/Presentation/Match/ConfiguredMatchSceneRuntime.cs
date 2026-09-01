@@ -169,6 +169,12 @@ namespace GuardsDigital.Presentation.Match
                 }
             };
             RoundView.InvocationSubmitted += invocation => RoundPresenter.Submit(invocation);
+            RoundView.AgreementSubmitted += choice => RoundPresenter.SubmitAgreement(choice);
+            RoundView.AgreementHeroHighlighted += heroId =>
+            {
+                BoardView.SetHoveredHero(heroId);
+                HeroOverviewsView?.SetHighlightedHero(heroId);
+            };
             RoundView.FastTravelSelected += selection => RoundPresenter.SelectFastTravel(selection);
             RoundView.TargetSubmitted += target => RoundPresenter.SubmitTarget(target);
             RoundView.TargetHighlighted += target =>
@@ -226,6 +232,15 @@ namespace GuardsDigital.Presentation.Match
             DiagnosticView.ToggleRequested += () => DiagnosticPresenter?.Toggle();
             MinionChoiceView.CandidateSubmitted += candidate => MinionChoicePresenter.Submit(candidate);
             MinionChoiceView.ConfirmRequested += () => MinionChoicePresenter.Confirm();
+            MinionChoiceView.AgreementRequested += choice =>
+                MinionChoicePresenter.SubmitAgreement(choice);
+            BoardView.HeroHighlighted += heroId =>
+                HeroOverviewsView?.SetHighlightedHero(heroId);
+            if (HeroOverviewsView != null)
+            {
+                HeroOverviewsView.HeroHighlighted += heroId =>
+                    BoardView.SetHoveredHero(heroId);
+            }
             MinionChoiceView.CandidateHighlighted += candidate =>
             {
                 // Only the board is refreshed here. This fires from inside the HUD's own draw, and

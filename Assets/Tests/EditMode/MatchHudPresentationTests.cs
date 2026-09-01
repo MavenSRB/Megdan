@@ -50,6 +50,74 @@ namespace GuardsDigital.Tests.EditMode
             generatedCardFallbackScope = null;
         }
 
+        [TestCase(2)]
+        [TestCase(3)]
+        public void InitiativeAgreement_UsesHeroNamesAcrossOneFixedEqualWidthRow(int candidateCount)
+        {
+            var proposal = new TeamAgreementProposalId("initiative-ui");
+            var choices = Enumerable.Range(1, candidateCount).Select(index =>
+            {
+                var hero = new HeroId("hero-" + index);
+                var card = new CardInstanceId("card-" + index);
+                return new TeamAgreementChoiceViewModel(
+                    "HERO " + index,
+                    hero,
+                    TeamAgreementCommand.Prefer(proposal, card));
+            }).ToArray();
+            var agreement = new TeamAgreementHudViewModel(
+                TeamAgreementKind.Initiative,
+                "WHO ACTS FIRST?",
+                choices.Select(choice =>
+                    new TeamAgreementParticipantViewModel(choice.Label, "is choosing")),
+                choices);
+            var model = new RoundActionViewModel(
+                1, 1, 1, RoundResolutionPhase.ResolvingTurn, string.Empty,
+                Array.Empty<TypedInvocationViewModel>(), null, null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>(),
+                teamAgreement: agreement);
+            var view = new RoundActionUnityView();
+
+            view.Render(model);
+
+            Assert.That(view.RetainsOrdinaryHand, Is.True);
+            Assert.That(Descendants(view.OptionalStepActionsRoot).OfType<Label>()
+                .Any(label => label.text == "WHO ACTS FIRST?"), Is.True);
+            var buttons = view.OptionalStepActionsRoot
+                .Query<Button>(name: "gd-initiative-preference").ToList();
+            Assert.That(buttons.Select(button => button.text),
+                Is.EqualTo(choices.Select(choice => choice.Label)),
+                "Only hero names appear on the voting buttons.");
+            Assert.That(buttons, Has.Count.EqualTo(candidateCount));
+            Assert.That(buttons.Select(button => button.style.flexGrow.value),
+                Is.All.EqualTo(1f));
+            Assert.That(buttons.Select(button => button.style.flexBasis.value.value),
+                Is.All.EqualTo(0f),
+                "Two heroes split the same row in halves; three split it in thirds.");
+        }
+
+        [Test]
+        public void HeroHoverLink_IsAlwaysAvailableBetweenTheMapAndEveryPlaque()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+            var hero = view.Model.Heroes[0].HeroId;
+            var rail = RailOf(view, hero);
+            var forwarded = default(HeroId);
+            view.HeroHighlighted += value => forwarded = value;
+
+            view.SetHighlightedHero(hero);
+            Assert.That(rail.style.borderTopWidth.value, Is.EqualTo(4f));
+            Assert.That(rail.style.borderTopColor.value, Is.EqualTo(HexCornerHighlightTemplate.AllyColor));
+
+            view.ForwardHeroHighlight(hero);
+            Assert.That(forwarded, Is.EqualTo(hero),
+                "Plaque hover forwards the same hero identity back to the map channel.");
+            view.ForwardHeroHighlight(default);
+            Assert.That(forwarded.IsDefined, Is.False);
+        }
+
         // -------------------------------------------------------------------------------------------
         // The rail's Ultimate marker (milestone 8.15)
         // -------------------------------------------------------------------------------------------
@@ -3014,8 +3082,9 @@ namespace GuardsDigital.Tests.EditMode
                         Descendants(control).Any(element => element.name == "gd-banner-cloth")),
                     Is.True, "Both answers reuse CONFIRM FACEDOWN's pewter cloth construction.");
                 Assert.That(controls.All(control =>
-                        control is RoundActionUnityView.PewterBanner banner && banner.ShinesFully),
-                    Is.True, "Both answers carry the strong submit-button shine.");
+                        control is RoundActionUnityView.PewterBanner banner &&
+                        banner.LightsOnlyWhenHovered && !banner.IsLit && !banner.ShinesFully),
+                    Is.True, "Both answers stay unlit until the pointer enters their own banner.");
                 Assert.That(Descendants(round.Root).OfType<Button>().Any(control =>
                         control.text == EffectChoiceLabels.AcceptLabel ||
                         control.text == EffectChoiceLabels.DeclineLabel),
@@ -4140,6 +4209,31 @@ namespace GuardsDigital.Tests.EditMode
                 UnityEngine.Object.DestroyImmediate(artwork);
                 UnityEngine.Object.DestroyImmediate(shine);
             }
+        }
+
+        [Test]
+        public void PassNoCard_UsesEndTurnsRectangularFullShineTreatment()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithAPassingHero(
+                out var passingHeroId);
+            ConfiguredMatchFixtures.CommitAndHoldOneTurn(session);
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            Assert.That(presenter.SelectViewedHero(passingHeroId), Is.True);
+            Assert.That(view.Model.ViewedHand.CanPass, Is.True,
+                "The trimmed hero must have reached the empty-hand commitment where Pass is offered.");
+
+            var pass = Descendants(view.CornerActionsRoot)
+                .OfType<RoundActionUnityView.PewterBanner>()
+                .Single(control => control.name == "gd-pass-control");
+            Assert.That(pass.IsRectangular, Is.True,
+                "Pass uses End Turn's rectangle rather than the retired swallowtail.");
+            Assert.That(pass.ShinesFully, Is.True,
+                "An empty-hand Pass is the player's only response and receives full shine.");
+            Assert.That(pass.style.fontSize.value.value,
+                Is.EqualTo(RoundActionUnityView.EndTurnControlFontSize));
+            Assert.That(pass.style.unityFontStyleAndWeight.value, Is.EqualTo(FontStyle.Bold));
+            Assert.That(pass.style.unityTextAlign.value, Is.EqualTo(TextAnchor.MiddleCenter));
         }
 
         [Test]

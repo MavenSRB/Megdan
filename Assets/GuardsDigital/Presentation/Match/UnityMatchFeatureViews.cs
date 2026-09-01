@@ -24,6 +24,9 @@ namespace GuardsDigital.Presentation.Match
         private readonly IReadOnlyList<HexTileView> tiles;
         private readonly HexCornerHighlightTemplate cornerHighlightTemplate;
         private GuardsDigital.Core.Board.HexCoordinate? hoveredCoordinate;
+        private HeroId hoveredHeroId;
+        private HeroId pointerHoveredHeroId;
+        private HeroId interfaceHoveredHeroId;
         private Func<HeroId, bool> heroIntentHandler;
         private Func<MinionId, bool> minionIntentHandler;
         private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
@@ -72,6 +75,7 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<HexTileView> TileViews => tiles;
 
         public event Action<HeroId> HeroSubmitted;
+        public event Action<HeroId> HeroHighlighted;
         public event Action<MinionId> MinionSubmitted;
         public event Action<GuardsDigital.Core.Board.HexCoordinate> DestinationSubmitted;
 
@@ -211,6 +215,14 @@ namespace GuardsDigital.Presentation.Match
                     ? HexCornerHighlightKind.DefensePositive
                     : HexCornerHighlightKind.DefenseNegative);
             var allyCoordinates = new HashSet<GuardsDigital.Core.Board.HexCoordinate>();
+            GuardsDigital.Core.Board.HexCoordinate? hoveredHeroCoordinate = null;
+            if (hoveredHeroId.IsDefined)
+            {
+                var hoveredHero = model.Heroes.FirstOrDefault(value =>
+                    value.HeroId.Equals(hoveredHeroId));
+                if (hoveredHero.HeroId.IsDefined)
+                    hoveredHeroCoordinate = hoveredHero.Coordinate;
+            }
             foreach (var cue in model.PieceTargetCues.Where(value =>
                          value.State != BoardTargetCueState.None &&
                          (value.ConsequenceIntent == BoardTargetConsequenceIntent.Attack ||
@@ -238,8 +250,11 @@ namespace GuardsDigital.Presentation.Match
 
                 if (cornerHighlightTemplate != null)
                 {
-                    var kind = attackCoordinates.Contains(tile.Coordinate)
-                        ? HexCornerHighlightKind.Attack
+                    var kind = hoveredHeroCoordinate.HasValue &&
+                               hoveredHeroCoordinate.Value.Equals(tile.Coordinate)
+                        ? HexCornerHighlightKind.Ally
+                        : attackCoordinates.Contains(tile.Coordinate)
+                            ? HexCornerHighlightKind.Attack
                         : respawnCoordinates.Contains(tile.Coordinate)
                             ? HexCornerHighlightKind.Respawn
                             : movementCoordinates.Contains(tile.Coordinate)
@@ -301,6 +316,33 @@ namespace GuardsDigital.Presentation.Match
         {
             if (Nullable.Equals(hoveredCoordinate, coordinate)) return;
             hoveredCoordinate = coordinate;
+            if (Model != null) Render(Model, true);
+        }
+
+        /// <summary>
+        /// Standing presentation-only hero linkage shared by the map, hero plaques and Initiative
+        /// preference buttons. It never submits or changes selection.
+        /// </summary>
+        public void SetHoveredHero(HeroId heroId)
+        {
+            interfaceHoveredHeroId = heroId;
+            ApplyHoveredHero();
+        }
+
+        public void SetPointerHoveredHero(HeroId heroId)
+        {
+            pointerHoveredHeroId = heroId;
+            ApplyHoveredHero();
+        }
+
+        private void ApplyHoveredHero()
+        {
+            var next = interfaceHoveredHeroId.IsDefined
+                ? interfaceHoveredHeroId
+                : pointerHoveredHeroId;
+            if (hoveredHeroId.Equals(next)) return;
+            hoveredHeroId = next;
+            HeroHighlighted?.Invoke(next);
             if (Model != null) Render(Model, true);
         }
 

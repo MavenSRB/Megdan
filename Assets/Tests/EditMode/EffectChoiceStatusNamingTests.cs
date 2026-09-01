@@ -50,7 +50,7 @@ namespace GuardsDigital.Tests.EditMode
         /// journey met under the action heading, and the one milestone 8.15a draws as whole faces.
         /// </summary>
         [Test]
-        public void ThePageTenDiscardChooser_IsNamedACardChoiceAndDrawnUnderThatHeading()
+        public void ThePageTenDiscardChooser_IsFramelessAndNarratesWhyTheCardIsChosen()
         {
             var session = ConfiguredMatchFixtures.CreateRadiusDiscardRiderSession(out var minionId);
             AttackTheAdjacentMinion(session, WaspCardContent.Shock, minionId);
@@ -71,16 +71,37 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(model.EffectChoicePrompt, Is.Not.Null);
             Assert.That(model.EffectChoicePrompt.Subject, Is.EqualTo(EffectChoiceSubject.Card));
             Assert.That(model.EffectChoicePrompt.SectionLabel, Is.EqualTo("CARD CHOICE"));
+            var chooserName = session.Projection.Setup.Heroes
+                .Single(hero => hero.HeroId.Equals(choice.ChooserId)).DisplayName;
             Assert.That(model.Status,
-                Is.EqualTo($"Choose 1 of {choice.Candidates.Count} cards."),
-                "The words state the bounds the authority set and what is being chosen among.");
+                Is.EqualTo($"Choose 1 of {choice.Candidates.Count} cards for {chooserName} to discard."),
+                "The narration states both the bounds and why this hero is choosing a card.");
             AssertNamesNoOtherPause(model.Status);
+
+            var view = new RoundActionUnityView();
+            view.Render(model);
+            var cardSection = Descendants(view.Root)
+                .Single(element => element.name == "gd-effect-card-section");
+            Assert.That(Descendants(view.Root).OfType<Label>()
+                .Any(label => label.text == "CARD CHOICE"), Is.False,
+                "Whole card faces plus purpose-bearing narration do not need a CARD CHOICE gutter.");
+            var cardControls = Descendants(cardSection).OfType<Button>()
+                .Where(control => control.name == "gd-effect-card").ToArray();
+            Assert.That(cardControls, Has.Length.EqualTo(choice.Candidates.Count));
+            Assert.That(cardControls.All(control =>
+                    control.style.paddingLeft.value.value == 0f &&
+                    control.style.borderTopWidth.value == 0f &&
+                    control.style.backgroundColor.value.a == 0f), Is.True,
+                "The legacy plate, inset and selection outline are absent around every choice face.");
+            Assert.That(cardControls.All(control => Descendants(control)
+                    .Count(element => element.name == "gd-card-exterior-outline") == 1), Is.True,
+                "The requested choice frame is removed without deleting the shared card silhouette.");
 
             var sections = Render(model);
             AssertEveryControlIsUnderItsOwnHeading(model, sections);
             Assert.That(sections["CARD CHOICE"].Select(control => control.name),
                 Is.All.EqualTo("gd-effect-card"),
-                "Milestone 8.15a's whole printed faces are what the new heading now heads. " +
+                "Milestone 8.15a's whole printed faces remain the complete controls. " +
                 Describe(sections));
             Assert.That(sections.ContainsKey(ActionRowGutter), Is.False,
                 "and nothing is left in the row of actions the player is not being offered. " +
@@ -396,6 +417,21 @@ namespace GuardsDigital.Tests.EditMode
             {
                 sections[model.EffectChoicePrompt.SectionLabel] =
                     Descendants(view.OptionalStepActionsRoot).OfType<Button>().ToList();
+            }
+
+            // Card-valued choices deliberately have no visible gutter. Keep them keyed by their
+            // semantic family here so the general one-control-per-invocation sweep still covers the
+            // frameless row without mistaking a test dictionary key for painted UI text.
+            if (model.EffectChoicePrompt?.Subject == EffectChoiceSubject.Card)
+            {
+                var cardSection = Descendants(view.Root)
+                    .SingleOrDefault(element => element.name == "gd-effect-card-section");
+                if (cardSection != null &&
+                    cardSection.style.display.value != DisplayStyle.None)
+                {
+                    sections[model.EffectChoicePrompt.SectionLabel] =
+                        Descendants(cardSection).OfType<Button>().ToList();
+                }
             }
 
             return sections;

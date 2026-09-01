@@ -334,9 +334,57 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// The gutter label of the region holding this decision's controls. It names the family the
-        /// way <c>DEFENSE</c>, <c>CLEAR</c> and <c>LEVEL UP</c> name theirs, so the controls no longer
-        /// arrive under a heading that says the player is choosing an action.
+        /// Adds the rules-facing purpose that can be read from the standing card candidates. A
+        /// hand-only card set is the configured discard family; the configured retrieval family
+        /// selects cards already outside the hand. This reads typed lifecycle and owner facts rather
+        /// than a node identity, card name, or printed sentence.
+        /// </summary>
+        public static string StatusLine(
+            PendingEffectChoice choice,
+            EffectChoiceSubject subject,
+            IMatchReadModel projection)
+        {
+            if (projection == null) throw new ArgumentNullException(nameof(projection));
+            if (subject != EffectChoiceSubject.Card)
+                return StatusLine(choice, subject);
+
+            var candidateIds = new HashSet<CardInstanceId>(choice.Candidates
+                .Where(candidate => candidate.Value.Kind == EffectValueKind.CardInstance)
+                .Select(candidate => candidate.Value.CardInstanceId));
+            var cards = projection.Cards
+                .Where(card => candidateIds.Contains(card.Id))
+                .ToArray();
+            if (cards.Length != candidateIds.Count || cards.Length == 0)
+                return StatusLine(choice, subject);
+
+            var owners = cards.Select(card => card.OwnerId).Distinct().ToArray();
+            if (owners.Length != 1)
+                return StatusLine(choice, subject);
+
+            var hero = projection.Setup.Heroes
+                .SingleOrDefault(candidate => candidate.HeroId.Equals(owners[0]));
+            var heroName = hero?.DisplayName ?? owners[0].Value;
+            var count = choice.Candidates.Count;
+            var bounds = choice.MinimumSelections == choice.MaximumSelections
+                ? $"Choose {choice.MinimumSelections}"
+                : choice.MinimumSelections == 0
+                    ? $"Choose up to {choice.MaximumSelections}"
+                    : $"Choose {choice.MinimumSelections} to {choice.MaximumSelections}";
+            var purpose = cards.All(card => card.State.Location == CardLocation.Hand)
+                ? $"for {heroName} to discard"
+                : $"for {heroName} to retrieve";
+            var line = $"{bounds} of {count} {(count == 1 ? "card" : "cards")} {purpose}" +
+                (choice.DeclineInvocation != null ? ", or decline." : ".");
+            return choice.MaximumSelections > 1
+                ? $"{line} {choice.SelectedCandidates.Count} chosen."
+                : line;
+        }
+
+        /// <summary>
+        /// The semantic family label of the region holding this decision's controls. Non-card
+        /// families paint it as their gutter; the whole-face card row deliberately suppresses its
+        /// redundant visible label while retaining this typed classification for tests and assistive
+        /// structure.
         /// </summary>
         public static string SectionLabel(EffectChoiceSubject subject)
         {
@@ -421,8 +469,8 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// The gutter label of the region holding the payments, naming the family the way
-        /// <c>DEFENSE</c> and <c>CARD CHOICE</c> name theirs.
+        /// The gutter label of the region holding the payments, naming the family independently of
+        /// the frameless card-valued effect-choice row.
         /// </summary>
         public const string SectionLabel = "KEEP THE MINION";
 
@@ -1204,6 +1252,16 @@ namespace GuardsDigital.Presentation.Match
                     Add(
                         BoardReference(candidate.Unit),
                         isSelected ? BoardTargetCueState.Selected : BoardTargetCueState.Eligible,
+                        BoardTargetConsequenceIntent.Removal);
+                }
+            }
+            else if (projection.TeamAgreement?.Kind == TeamAgreementKind.MinionBattle)
+            {
+                foreach (var selected in projection.TeamAgreement.SelectedUnits)
+                {
+                    Add(
+                        BoardReference(selected),
+                        BoardTargetCueState.Selected,
                         BoardTargetConsequenceIntent.Removal);
                 }
             }
@@ -2585,11 +2643,12 @@ namespace GuardsDigital.Presentation.Match
 
     /// <summary>
     /// Milestone 8.20d: the standing effect choice as the region that draws it needs to know it -
-    /// what it is asking about, and the gutter label its controls arrive under.
+    /// what it is asking about, and its semantic section label.
     ///
     /// <para>Null whenever no effect choice is pending, and non-null whenever one is, so the region
-    /// cannot draw a decision's controls without the heading that names them. The words are composed
-    /// by <see cref="EffectChoicePromptLabels"/>, which is also where
+    /// cannot draw a decision's controls without knowing their family. Non-card families paint the
+    /// label; card-valued choices use purpose-bearing narration and an unlabelled whole-face row. The
+    /// words are composed by <see cref="EffectChoicePromptLabels"/>, which is also where
     /// <see cref="RoundActionViewModel.Status"/> gets its sentence, so a heading and a status line
     /// describing one pause cannot disagree about which pause it is.</para>
     /// </summary>
@@ -2662,6 +2721,109 @@ namespace GuardsDigital.Presentation.Match
         YourMove = 1
     }
 
+    public sealed class TeamAgreementChoiceViewModel
+    {
+        public TeamAgreementChoiceViewModel(
+            string label, HeroId heroId, TeamAgreementCommand command)
+        {
+            Label = label ?? throw new ArgumentNullException(nameof(label));
+            HeroId = heroId;
+            Command = command ?? throw new ArgumentNullException(nameof(command));
+        }
+
+        public string Label { get; }
+        public HeroId HeroId { get; }
+        public TeamAgreementCommand Command { get; }
+    }
+
+    public sealed class TeamAgreementParticipantViewModel
+    {
+        public TeamAgreementParticipantViewModel(string label, string status)
+        {
+            Label = label ?? throw new ArgumentNullException(nameof(label));
+            Status = status ?? throw new ArgumentNullException(nameof(status));
+        }
+
+        public string Label { get; }
+        public string Status { get; }
+    }
+
+    public sealed class TeamAgreementHudViewModel
+    {
+        public TeamAgreementHudViewModel(
+            TeamAgreementKind kind,
+            string heading,
+            IEnumerable<TeamAgreementParticipantViewModel> participants,
+            IEnumerable<TeamAgreementChoiceViewModel> choices)
+        {
+            Kind = kind;
+            Heading = heading ?? throw new ArgumentNullException(nameof(heading));
+            Participants = Array.AsReadOnly((participants ??
+                throw new ArgumentNullException(nameof(participants))).ToArray());
+            Choices = Array.AsReadOnly((choices ??
+                Enumerable.Empty<TeamAgreementChoiceViewModel>()).ToArray());
+        }
+
+        public TeamAgreementKind Kind { get; }
+        public string Heading { get; }
+        public IReadOnlyList<TeamAgreementParticipantViewModel> Participants { get; }
+        public IReadOnlyList<TeamAgreementChoiceViewModel> Choices { get; }
+    }
+
+    internal static class TeamAgreementHudPresentation
+    {
+        public static TeamAgreementHudViewModel Create(IMatchReadModel projection)
+        {
+            var agreement = projection?.TeamAgreement;
+            if (agreement == null)
+                return null;
+
+            var heroNames = projection.Setup.Heroes.ToDictionary(
+                hero => hero.HeroId,
+                hero => hero.DisplayName.ToUpperInvariant());
+            string Name(HeroId heroId) => heroNames.TryGetValue(heroId, out var name)
+                ? name
+                : heroId.Value.ToUpperInvariant();
+
+            if (agreement.Kind == TeamAgreementKind.Initiative)
+            {
+                var candidateNames = agreement.Candidates.ToDictionary(
+                    candidate => candidate.CardInstanceId,
+                    candidate => Name(candidate.HeroId));
+                return new TeamAgreementHudViewModel(
+                    agreement.Kind,
+                    "WHO ACTS FIRST?",
+                    agreement.Participants.Select(participant =>
+                        new TeamAgreementParticipantViewModel(
+                            Name(participant.HeroId),
+                            participant.HasStatement
+                                ? "chose " + candidateNames[participant.PreferredCardInstanceId]
+                                : "is choosing")),
+                    agreement.AuthorizedCommands.Select(command =>
+                        new TeamAgreementChoiceViewModel(
+                            candidateNames[command.PreferredCardInstanceId],
+                            agreement.Candidates.Single(candidate =>
+                                candidate.CardInstanceId.Equals(command.PreferredCardInstanceId)).HeroId,
+                            command)));
+            }
+
+            return new TeamAgreementHudViewModel(
+                agreement.Kind,
+                "TEAM AGREEMENT",
+                agreement.Participants.Select(participant =>
+                    new TeamAgreementParticipantViewModel(
+                        Name(participant.HeroId),
+                        participant.Agreed ? "agreed" : "is deciding")),
+                agreement.AuthorizedCommands.Select(command =>
+                    new TeamAgreementChoiceViewModel(
+                        command.Kind == TeamAgreementCommandKind.WithdrawMinionBattleAgreement
+                            ? "WITHDRAW MY AGREEMENT"
+                            : "AGREE WITH THIS SELECTION",
+                        default,
+                        command)));
+        }
+    }
+
     public sealed class RoundActionViewModel
     {
         public RoundActionViewModel(
@@ -2688,11 +2850,13 @@ namespace GuardsDigital.Presentation.Match
             SystemTransitionPromptViewModel systemTransitionPrompt = null,
             EffectChoicePromptViewModel effectChoicePrompt = null,
             RemovalPreventionPromptViewModel removalPreventionPrompt = null,
-            IEnumerable<PrintedActionRegionViewModel> printedActionRegions = null)
+            IEnumerable<PrintedActionRegionViewModel> printedActionRegions = null,
+            TeamAgreementHudViewModel teamAgreement = null)
         {
             SystemTransitionPrompt = systemTransitionPrompt;
             EffectChoicePrompt = effectChoicePrompt;
             RemovalPreventionPrompt = removalPreventionPrompt;
+            TeamAgreement = teamAgreement;
             Version = version;
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
@@ -2767,6 +2931,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public NarrationVoice Voice =>
             DefenseChoices.Count > 0 ||
+            TeamAgreement?.Choices.Count > 0 ||
             InitiativeChoices.Count > 0 ||
             EffectChoices.Count > 0 ||
             EffectChoiceTargets.Count > 0 ||
@@ -2789,6 +2954,8 @@ namespace GuardsDigital.Presentation.Match
         public TypedInvocationViewModel EndTurnInvocation { get; }
         public TypedInvocationViewModel ContinueEndOfRoundInvocation { get; }
         public IReadOnlyList<TypedInvocationViewModel> InitiativeChoices { get; }
+
+        public TeamAgreementHudViewModel TeamAgreement { get; }
         public IReadOnlyList<TypedInvocationViewModel> DefenseChoices { get; }
         public IReadOnlyList<FastTravelOfferViewModel> FastTravelOffers { get; }
 
@@ -3173,6 +3340,23 @@ namespace GuardsDigital.Presentation.Match
             return Execute(invocation.Command);
         }
 
+        public bool SubmitAgreement(TeamAgreementChoiceViewModel choice)
+        {
+            if (choice == null)
+                return false;
+            var current = GetOrCreateViewModel(session.Projection);
+            if (current.TeamAgreement?.Choices.Any(value =>
+                    value.Command.Equals(choice.Command)) != true)
+                return false;
+
+            var result = session.SubmitAgreement(choice.Command);
+            if (result.Accepted)
+                SessionProjectionChanged?.Invoke(result.Projection);
+            else
+                Refresh();
+            return result.Accepted;
+        }
+
         /// <summary>
         /// Milestone 8.11a, at the user's request. Answers a Hero Respawn by clicking the space rather
         /// than a control naming it. Declining to respawn has no board surface, so it stays a control.
@@ -3444,7 +3628,8 @@ namespace GuardsDigital.Presentation.Match
                     FormatActionLabel(projection, offer),
                     offer.ActionDefinitionId))
                 .ToArray();
-            var initiativeChoices = projection.PendingInitiativeChoice == null
+            var initiativeChoices = projection.PendingInitiativeChoice == null ||
+                projection.TeamAgreement?.Kind == TeamAgreementKind.Initiative
                 ? Array.Empty<TypedInvocationViewModel>()
                 : projection.PendingInitiativeChoice.CandidateCardInstanceIds
                     .Select(cardId => new TypedInvocationViewModel(
@@ -3558,7 +3743,8 @@ namespace GuardsDigital.Presentation.Match
                     : new EffectChoicePromptViewModel(EffectChoicePromptLabels.SubjectOf(
                         projection.PendingEffectChoice, projection.PendingEffectChoicePreview)),
                 CreateRemovalPreventionPrompt(projection),
-                printedActionRegions);
+                printedActionRegions,
+                TeamAgreementHudPresentation.Create(projection));
         }
 
         private static IReadOnlyList<PrintedActionRegionViewModel> CreatePrintedActionRegions(
@@ -4465,6 +4651,18 @@ namespace GuardsDigital.Presentation.Match
 
         private static string FormatStatus(IMatchReadModel projection)
         {
+            var agreement = projection.TeamAgreement;
+            if (agreement?.Kind == TeamAgreementKind.Initiative)
+            {
+                return "Tied Initiative: choose who acts first.";
+            }
+
+            if (agreement?.Kind == TeamAgreementKind.MinionBattle)
+            {
+                return $"Minion Battle: {agreement.SelectedUnits.Count} of " +
+                    $"{agreement.RequiredSelectionCount} minions selected.";
+            }
+
             // Milestone 8.30b, and these two branches are what the user-approved amendment found.
             //
             // Moving this sentence into the top status bar made it the standing report of what the
@@ -4561,7 +4759,8 @@ namespace GuardsDigital.Presentation.Match
                 return EffectChoicePromptLabels.StatusLine(
                     effectChoice,
                     EffectChoicePromptLabels.SubjectOf(
-                        effectChoice, projection.PendingEffectChoicePreview));
+                        effectChoice, projection.PendingEffectChoicePreview),
+                    projection);
             }
 
             if (projection.PendingHeroRespawnChoice != null)
@@ -4723,11 +4922,12 @@ namespace GuardsDigital.Presentation.Match
             int requiredRemovalCount,
             int selectedCount,
             IEnumerable<MinionChoiceCandidateViewModel> candidates,
-            TypedInvocationViewModel confirmInvocation)
+            TypedInvocationViewModel confirmInvocation,
+            TeamAgreementHudViewModel agreement = null)
             : this(
                 version, MinionChoicePromptKind.MinionBattleRemoval, resolutionId, choiceId,
                 default, default, default, choosingTeamId, choosingSide, requiredRemovalCount,
-                selectedCount, candidates, confirmInvocation)
+                selectedCount, candidates, confirmInvocation, agreement)
         {
             if (!resolutionId.IsDefined || !choiceId.IsDefined)
             {
@@ -4773,7 +4973,7 @@ namespace GuardsDigital.Presentation.Match
 
             return new MinionChoiceViewModel(
                 version, kind, default, default, actionResolutionId, actionChoiceId,
-                subjectMinionId, choosingTeamId, choosingSide, 1, 0, candidates, null);
+                subjectMinionId, choosingTeamId, choosingSide, 1, 0, candidates, null, null);
         }
 
         private MinionChoiceViewModel(
@@ -4789,7 +4989,8 @@ namespace GuardsDigital.Presentation.Match
             int requiredRemovalCount,
             int selectedCount,
             IEnumerable<MinionChoiceCandidateViewModel> candidates,
-            TypedInvocationViewModel confirmInvocation)
+            TypedInvocationViewModel confirmInvocation,
+            TeamAgreementHudViewModel agreement)
         {
             if (!choosingTeamId.IsDefined)
             {
@@ -4841,6 +5042,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             ConfirmInvocation = confirmInvocation;
+            Agreement = agreement;
             var team = MinionChoiceLabels.TeamLabel(choosingSide);
             switch (kind)
             {
@@ -4885,6 +5087,7 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Present only while the authoritative choice reports it can be confirmed.</summary>
         public TypedInvocationViewModel ConfirmInvocation { get; }
+        public TeamAgreementHudViewModel Agreement { get; }
         public string PromptLabel { get; }
         public string StatusLabel { get; }
 
@@ -4989,6 +5192,24 @@ namespace GuardsDigital.Presentation.Match
             return Execute(current.ConfirmInvocation.Command);
         }
 
+        public bool SubmitAgreement(TeamAgreementChoiceViewModel choice)
+        {
+            var current = GetOrCreateViewModel(session.Projection);
+            if (choice == null || current?.Agreement?.Choices.Any(value =>
+                    value.Command.Equals(choice.Command)) != true)
+            {
+                Refresh();
+                return false;
+            }
+
+            var result = session.SubmitAgreement(choice.Command);
+            if (result.Accepted)
+                SessionProjectionChanged?.Invoke(result.Projection);
+            else
+                Refresh();
+            return result.Accepted;
+        }
+
         public static MinionChoiceViewModel CreateViewModel(IMatchReadModel projection)
         {
             if (projection == null)
@@ -4999,6 +5220,18 @@ namespace GuardsDigital.Presentation.Match
             var choice = projection.PendingMinionBattleChoice;
             if (choice == null)
             {
+                var publicAgreement = TeamAgreementHudPresentation.Create(projection);
+                if (publicAgreement?.Kind == TeamAgreementKind.MinionBattle)
+                {
+                    var agreement = projection.TeamAgreement;
+                    var team = projection.Participants.Teams.Single(value =>
+                        value.Side == agreement.ChoosingSide);
+                    return new MinionChoiceViewModel(
+                        projection.Version, default, default, team.Id, agreement.ChoosingSide,
+                        agreement.RequiredSelectionCount, agreement.SelectedUnits.Count,
+                        Array.Empty<MinionChoiceCandidateViewModel>(), null, publicAgreement);
+                }
+
                 // At most one minion-choice family is ever pending: the battle is end-of-round state
                 // and the correction pauses mid-turn, so this is a route rather than a priority.
                 return CreateCorrectionViewModel(projection);
@@ -5057,7 +5290,7 @@ namespace GuardsDigital.Presentation.Match
                 choice.RequiredRemovalCount,
                 choice.SelectedUnits.Count,
                 candidates,
-                choice.CanConfirm
+                projection.TeamAgreement == null && choice.CanConfirm
                     ? new TypedInvocationViewModel(
                         choice.RequiredRemovalCount == 1 ? "CONFIRM REMOVAL" : "CONFIRM REMOVALS",
                         PendingDecisionCommandBinding.Require(
@@ -5070,7 +5303,8 @@ namespace GuardsDigital.Presentation.Match
                                     choice.ConfirmInvocation.ResolutionId) &&
                                 command.EndOfRoundChoiceId.Equals(
                                     choice.ConfirmInvocation.ChoiceId)))
-                    : null);
+                    : null,
+                TeamAgreementHudPresentation.Create(projection));
         }
 
         /// <summary>

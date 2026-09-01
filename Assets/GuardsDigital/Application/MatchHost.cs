@@ -300,6 +300,13 @@ namespace GuardsDigital.Application
         SeatSubmissionResult SubmitForSeat(SeatId seat, SeatSubmission submission);
 
         /// <summary>
+        /// Records one bounded public preference/agreement statement as the trusted seat it arrived
+        /// on. It reaches the rules authority only when the coordinator has unanimous agreement.
+        /// </summary>
+        TeamAgreementSubmissionResult SubmitAgreementForSeat(
+            SeatId seat, TeamAgreementSubmission submission);
+
+        /// <summary>
         /// Milestone 8.30a. The client bound to that seat: everything a player surface may see and
         /// do, and nothing the Director may.
         /// </summary>
@@ -349,6 +356,7 @@ namespace GuardsDigital.Application
         private readonly List<MatchHostResultRecord> retained = new List<MatchHostResultRecord>();
         private readonly HashSet<SubmissionId> consumedSubmissionIds = new HashSet<SubmissionId>();
         private readonly Queue<SubmissionId> consumedSubmissionOrder = new Queue<SubmissionId>();
+        private readonly TeamAgreementCoordinator teamAgreement = new TeamAgreementCoordinator();
         private MatchParticipants seatedParticipants;
         private MatchSeatBinding seatBinding;
         private bool executing;
@@ -477,7 +485,7 @@ namespace GuardsDigital.Application
                         "No seat '" + seat + "' is bound in this match.", nameof(seat));
                 }
 
-                return SeatProjectionFactory.ForSeat(session.Projection, bound);
+                return ProjectionForBound(bound);
             }
         }
 
@@ -538,7 +546,7 @@ namespace GuardsDigital.Application
                         "The host is already executing a submission.");
                 }
 
-                var projection = SeatProjectionFactory.ForSeat(session.Projection, bound);
+                var projection = ProjectionForBound(bound);
                 if (submission.ExpectedVersion != projection.Version)
                 {
                     return SeatRefused(
@@ -601,7 +609,79 @@ namespace GuardsDigital.Application
                     inner.Detail,
                     inner.Version,
                     inner.Sequence,
-                    SeatProjectionFactory.ForSeat(session.Projection, bound));
+                    ProjectionForBound(bound));
+            }
+        }
+
+        public TeamAgreementSubmissionResult SubmitAgreementForSeat(
+            SeatId seat, TeamAgreementSubmission submission)
+        {
+            if (submission == null) throw new ArgumentNullException(nameof(submission));
+
+            lock (gate)
+            {
+                var bound = CurrentSeats().Find(seat);
+                if (bound == null)
+                    return AgreementRefused(
+                        null, TeamAgreementSubmissionRejectionReason.UnknownSeat,
+                        "No seat '" + seat + "' is bound in this match.");
+                if (executing)
+                    return AgreementRefused(
+                        bound, TeamAgreementSubmissionRejectionReason.HostRefused,
+                        "The host is already executing a submission.");
+
+                var projection = ProjectionForBound(bound);
+                if (submission.ExpectedVersion != projection.Version)
+                    return AgreementRefused(
+                        bound, TeamAgreementSubmissionRejectionReason.StaleProjection,
+                        "The submission expects version " + submission.ExpectedVersion +
+                        " and the authoritative version is " + projection.Version + ".");
+                if (consumedSubmissionIds.Contains(submission.Id))
+                    return AgreementRefused(
+                        bound, TeamAgreementSubmissionRejectionReason.DuplicateSubmission,
+                        "Submission '" + submission.Id + "' has already been consumed.");
+                if (projection.TeamAgreement == null ||
+                    !projection.TeamAgreement.ProposalId.Equals(submission.Command.ProposalId))
+                    return AgreementRefused(
+                        bound, TeamAgreementSubmissionRejectionReason.StaleProposal,
+                        "The agreement proposal has changed.");
+                if (!projection.TeamAgreement.AuthorizedCommands.Contains(submission.Command))
+                    return AgreementRefused(
+                        bound, TeamAgreementSubmissionRejectionReason.IneligibleSeat,
+                        "This seat was not offered that statement for the current proposal.");
+
+                ConsumeSubmissionId(submission.Id);
+                executing = true;
+                try
+                {
+                    DuringSubmissionForTest?.Invoke();
+                    var applied = teamAgreement.Apply(
+                        session.Projection, CurrentSeats(), bound, submission.Command);
+                    if (!applied.Accepted)
+                        return AgreementRefused(
+                            bound, TeamAgreementSubmissionRejectionReason.UnauthorizedStatement,
+                            applied.Detail);
+
+                    if (applied.FinalCommand == null)
+                        return new TeamAgreementSubmissionResult(
+                            true, TeamAgreementSubmissionRejectionReason.None, string.Empty,
+                            session.Projection.Version, 0, ProjectionForBound(bound));
+
+                    var final = Execute(MatchSubmission.ForCommand(applied.FinalCommand));
+                    if (!final.Accepted)
+                        return AgreementRefused(
+                            bound, TeamAgreementSubmissionRejectionReason.FinalRulesChoiceRefused,
+                            final.Detail);
+
+                    teamAgreement.Clear();
+                    return new TeamAgreementSubmissionResult(
+                        true, TeamAgreementSubmissionRejectionReason.None, string.Empty,
+                        final.Version, final.Sequence, ProjectionForBound(bound));
+                }
+                finally
+                {
+                    executing = false;
+                }
             }
         }
 
@@ -615,6 +695,13 @@ namespace GuardsDigital.Application
             }
 
             return seatBinding;
+        }
+
+        private SeatProjection ProjectionForBound(MatchSeat seat)
+        {
+            var source = session.Projection;
+            var agreement = teamAgreement.ProjectionFor(source, CurrentSeats(), seat);
+            return SeatProjectionFactory.ForSeat(source, seat, agreement);
         }
 
         private void ConsumeSubmissionId(SubmissionId id)
@@ -640,7 +727,15 @@ namespace GuardsDigital.Application
                 detail,
                 session.Projection.Version,
                 0,
-                seat == null ? null : SeatProjectionFactory.ForSeat(session.Projection, seat));
+                seat == null ? null : ProjectionForBound(seat));
+
+        private TeamAgreementSubmissionResult AgreementRefused(
+            MatchSeat seat,
+            TeamAgreementSubmissionRejectionReason reason,
+            string detail) =>
+            new TeamAgreementSubmissionResult(
+                false, reason, detail, session.Projection.Version, 0,
+                seat == null ? null : ProjectionForBound(seat));
 
         /// <summary>
         /// Runs inside a submission, before the authority is reached. The one deterministic way to

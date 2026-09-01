@@ -288,8 +288,8 @@ namespace GuardsDigital.Tests.EditMode
                 "Holding the full-trust read model would make every absence above cosmetic.");
             Assert.That(typeof(ISeatClient).GetMethods().Select(method => method.Name)
                     .Where(name => !name.StartsWith("get_", StringComparison.Ordinal)),
-                Is.EqualTo(new[] { "Submit" }),
-                "Submitting one authorized command is the whole of a player's authority.");
+                Is.EquivalentTo(new[] { "Submit", "SubmitAgreement" }),
+                "A player's authority is limited to rules commands and bounded team statements.");
         }
 
         [Test]
@@ -415,6 +415,13 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 var command = legal[random.Next(legal.Count)];
+                if (TeamAgreementTestDriver.SubmitFinalAgreementCommand(
+                    host, command, "drive-agreement-" + host.Sequence + "-" + submitted))
+                {
+                    submitted++;
+                    continue;
+                }
+
                 var seat = host.Seats.Seats.FirstOrDefault(value =>
                     host.ProjectionForSeat(value.Id).AuthorizedCommands.Contains(command));
                 Assert.That(seat, Is.Not.Null,

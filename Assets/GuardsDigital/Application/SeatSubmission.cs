@@ -194,6 +194,8 @@ namespace GuardsDigital.Application
         SeatProjection Projection { get; }
 
         SeatSubmissionResult Submit(SeatSubmission submission);
+
+        TeamAgreementSubmissionResult SubmitAgreement(TeamAgreementSubmission submission);
     }
 
     /// <summary>
@@ -313,5 +315,8 @@ namespace GuardsDigital.Application
 
         public SeatSubmissionResult Submit(SeatSubmission submission) =>
             host.SubmitForSeat(Seat.Id, submission);
+
+        public TeamAgreementSubmissionResult SubmitAgreement(TeamAgreementSubmission submission) =>
+            host.SubmitAgreementForSeat(Seat.Id, submission);
     }
 }

@@ -1229,6 +1229,9 @@ namespace GuardsDigital.Application
         /// </summary>
         public IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds { get; }
 
+        /// <summary>Director mode answers team choices directly and therefore has no agreement view.</summary>
+        public TeamAgreementProjection TeamAgreement => null;
+
         /// <summary>Whether this card instance currently sources at least one live Active effect.</summary>
         public bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
             ActiveEffectSourceCardInstanceIds.Contains(cardInstanceId);

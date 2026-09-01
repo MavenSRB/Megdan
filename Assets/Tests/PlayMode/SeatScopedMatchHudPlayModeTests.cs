@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -970,6 +973,101 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator SeatScene_TiedInitiativeUsesOneHeroNameRowAndTheStandingHeroHoverLink()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            UiPlayer.SetPlayerViewport(2560, 1440, "8.30n tied initiative");
+            yield return LoadSeatSceneForATiedInitiativeParticipant();
+            var root = Root();
+            var runtime = root.Runtime;
+            var random = new System.Random(2);
+
+            for (var step = 0; step < DriveBudget; step++)
+            {
+                var seatAgreement = runtime.Host.ProjectionForSeat(runtime.Seat.Id).TeamAgreement;
+                if (seatAgreement?.Kind == TeamAgreementKind.Initiative &&
+                    seatAgreement.AuthorizedCommands.Count > 0)
+                    break;
+
+                var publicAgreement = runtime.Host.Seats.Seats
+                    .Select(seat => runtime.Host.ProjectionForSeat(seat.Id).TeamAgreement)
+                    .FirstOrDefault(value => value != null);
+                if (publicAgreement?.Kind == TeamAgreementKind.Initiative)
+                {
+                    SubmitAgreementForEveryParticipant(
+                        runtime.Host, publicAgreement.Candidates[0].CardInstanceId,
+                        "8-30n-skip-initiative-" + step);
+                    continue;
+                }
+
+                if (publicAgreement?.Kind == TeamAgreementKind.MinionBattle &&
+                    publicAgreement.SelectionIsConfirmable)
+                {
+                    SubmitAgreementForEveryParticipant(runtime.Host, default,
+                        "8-30n-skip-minions-" + step);
+                    continue;
+                }
+
+                var command = NextSeatCommand(runtime.Host, random);
+                Assert.That(command, Is.Not.Null,
+                    "The configured match ended before seat zero reached a tied Initiative.");
+
+                var seat = runtime.Host.Seats.Seats.First(value =>
+                    runtime.Host.ProjectionForSeat(value.Id).AuthorizedCommands.Contains(command));
+                Assert.That(new SeatMatchClient(runtime.Host.ClientForSeat(seat.Id)).Submit(command).Accepted,
+                    Is.True);
+            }
+
+            runtime.RefreshAll();
+            yield return null;
+            yield return null;
+            var agreement = runtime.RoundView.Model.TeamAgreement;
+            Assert.That(agreement?.Kind, Is.EqualTo(TeamAgreementKind.Initiative));
+            Assert.That(agreement.Heading, Is.EqualTo("WHO ACTS FIRST?"));
+            var buttons = runtime.RoundView.OptionalStepActionsRoot
+                .Query<Button>(name: "gd-initiative-preference").ToList();
+            Assert.That(buttons.Select(button => button.text),
+                Is.EqualTo(agreement.Choices.Select(choice => choice.Label)));
+            Assert.That(buttons.Select(button => button.worldBound.width).Max() -
+                buttons.Select(button => button.worldBound.width).Min(),
+                Is.LessThanOrEqualTo(UiPlayer.PixelSnapping() * 2f));
+            Assert.That(UiPlayer.Descendants(root.Hud.RootElement)
+                .Any(element => element.name == "gd-card-choice" && UiPlayer.IsShown(element)), Is.True,
+                "The ordinary hand stays visible under the Initiative row.");
+
+            var heroId = agreement.Choices[0].HeroId;
+            var coordinate = runtime.BoardView.Model.Heroes.Single(hero =>
+                hero.HeroId.Equals(heroId)).Coordinate;
+            var tile = runtime.BoardView.TileViews.Single(value => value.Coordinate.Equals(coordinate));
+            var heroIndex = runtime.HeroOverviewsView.Model.Heroes
+                .Select((hero, index) => new { hero, index })
+                .Single(value => value.hero.HeroId.Equals(heroId)).index;
+            var rail = UiPlayer.Descendants(runtime.HeroOverviewsView.Root)
+                .Where(element => element.name == "gd-hero-rail").ElementAt(heroIndex);
+
+            UiPlayer.PointAt(buttons[0]);
+            yield return null;
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Ally));
+            Assert.That(rail.resolvedStyle.borderTopWidth, Is.EqualTo(4f));
+            if (!UnityEngine.Application.isBatchMode)
+                yield return Capture("tmp/milestone-8-30n-tied-initiative-2560x1440.png");
+            UiPlayer.PointAway(buttons[0]);
+
+            UiPlayer.PointAt(rail);
+            yield return null;
+            Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Ally),
+                "Plaque hover highlights the same hero on the map outside any voting-only path.");
+            UiPlayer.PointAway(rail);
+            yield return null;
+            Assert.That(tile.CornerHighlight.Kind, Is.Not.EqualTo(HexCornerHighlightKind.Ally));
+
+            UiPlayer.SetPlayerViewport(
+                restoreWidth, restoreHeight, "8.30n restore the prior viewport");
+            yield return null;
+        }
+
         // -------------------------------------------------------------------------------------------
         // Helpers
         // -------------------------------------------------------------------------------------------
@@ -979,6 +1077,29 @@ namespace GuardsDigital.Tests.PlayMode
 
         /// <summary>How many rounds of the drive policy either drive will take before failing.</summary>
         private const int DriveBudget = 400;
+
+        private static void SubmitAgreementForEveryParticipant(
+            IMatchHost host, CardInstanceId preferredCard, string idPrefix)
+        {
+            var publicAgreement = host.Seats.Seats
+                .Select(seat => host.ProjectionForSeat(seat.Id).TeamAgreement)
+                .First(value => value != null);
+            foreach (var participant in publicAgreement.Participants)
+            {
+                var seat = host.Seats.Seats.Single(value =>
+                    value.HeroId.Equals(participant.HeroId));
+                var projection = host.ProjectionForSeat(seat.Id);
+                var command = projection.TeamAgreement.AuthorizedCommands.Single(value =>
+                    publicAgreement.Kind == TeamAgreementKind.Initiative
+                        ? value.PreferredCardInstanceId.Equals(preferredCard)
+                        : value.Kind == TeamAgreementCommandKind.AgreeToMinionBattleSelection);
+                var result = host.ClientForSeat(seat.Id).SubmitAgreement(new TeamAgreementSubmission(
+                    new SubmissionId(idPrefix + "-" + seat.Id.Value),
+                    projection.Version,
+                    command));
+                Assert.That(result.Accepted, Is.True, result.Detail);
+            }
+        }
 
         private static string Describe(MatchSceneCompositionRoot root, string viewport)
         {
@@ -1031,6 +1152,16 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadComposedScene();
 
             var seat = FindSeatThatReachesATurnItMayEnd(Root().Runtime.Host);
+            yield return ComposeForSeat(seat);
+        }
+
+        private static IEnumerator LoadSeatSceneForATiedInitiativeParticipant()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            yield return LoadComposedScene();
+
+            var seat = FindSeatThatReachesTiedInitiative(Root().Runtime.Host);
             yield return ComposeForSeat(seat);
         }
 
@@ -1087,6 +1218,58 @@ namespace GuardsDigital.Tests.PlayMode
                 "No seat reached a turn it may end within " + DriveBudget + " steps; host version " +
                 host.Version + ".");
             return default;
+        }
+
+        private static SeatId FindSeatThatReachesTiedInitiative(IMatchHost host)
+        {
+            var random = new System.Random(2);
+            for (var step = 0; step < DriveBudget; step++)
+            {
+                var agreement = host.Seats.Seats
+                    .Select(seat => host.ProjectionForSeat(seat.Id).TeamAgreement)
+                    .FirstOrDefault(value => value?.Kind == TeamAgreementKind.Initiative);
+                if (agreement != null)
+                {
+                    var hero = agreement.Participants[0].HeroId;
+                    return host.Seats.Seats.Single(value => value.HeroId.Equals(hero)).Id;
+                }
+
+                var minionAgreement = host.Seats.Seats
+                    .Select(seat => host.ProjectionForSeat(seat.Id).TeamAgreement)
+                    .FirstOrDefault(value => value?.Kind == TeamAgreementKind.MinionBattle);
+                if (minionAgreement?.SelectionIsConfirmable == true)
+                {
+                    SubmitAgreementForEveryParticipant(
+                        host, default, "8-30n-probe-minions-" + step);
+                    continue;
+                }
+
+                var command = NextSeatCommand(host, random);
+                Assert.That(command, Is.Not.Null,
+                    "The probe ended before reaching a tied Initiative.");
+
+                var seat = host.Seats.Seats.First(value =>
+                    host.ProjectionForSeat(value.Id).AuthorizedCommands.Contains(command));
+                Assert.That(new SeatMatchClient(host.ClientForSeat(seat.Id)).Submit(command).Accepted,
+                    Is.True);
+            }
+
+            Assert.Fail("The deterministic probe did not reach tied Initiative within its budget.");
+            return default;
+        }
+
+        private static DirectorCommand NextSeatCommand(IMatchHost host, System.Random random)
+        {
+            var commands = host.Seats.Seats
+                .SelectMany(seat => host.ProjectionForSeat(seat.Id).AuthorizedCommands)
+                .Where(command =>
+                    command.Kind != DirectorCommandKind.DeselectMinionBattleRemoval &&
+                    !(command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                      command.EffectChoice.Kind ==
+                          GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommandKind.Deselect))
+                .Distinct()
+                .ToArray();
+            return commands.Length == 0 ? null : commands[random.Next(commands.Length)];
         }
 
         /// <summary>
