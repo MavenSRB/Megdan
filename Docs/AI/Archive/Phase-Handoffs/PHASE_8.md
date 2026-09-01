@@ -697,3 +697,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.25e6c | Independent probes recovered exact authority from both models across authorization, rules, card/effect, presentation, testing, and privacy bundles and rejected every deliberate integrity failure. Claim records reduce retrieval but still exceed two ordinary group budgets and remain selector-defined, so the current authoritative router is retained; F-GOV-01/F-CONTEXT-01 remain active for route drift or first-batch reassessment, and no migration is scheduled. | `5829cb0` |
+
+## Milestone 8.30l3 Crop the enlarged Tie Breaker and keep the resolving card in the stationary hand completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30l3 | The compact status strip crops a doubled solid Tie Breaker coin, carries the continuous warm narration lane behind a full-height Blue-rail-aligned End Turn rectangle, and keeps held cards bottom-left with the resolving card rightmost while only genuinely unavailable lifecycle cards occupy bottom-right. Focused Edit/Play and both inspected desktop captures pass without a rules, authority, map, content, command, snapshot or schema-v34 change. | `01ae4a25` |
