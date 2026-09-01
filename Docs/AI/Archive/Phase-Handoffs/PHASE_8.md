@@ -709,3 +709,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.30l2 | The fixed request contract groups an ordered array of compatible focused fixture or test names into one Unity filter and one Editor process while rejecting malformed or ambiguous composites before process activity. Scalar compatibility, serial platform/batch boundaries, fresh per-test NUnit evidence, and every prior launcher safeguard remain intact; the launcher contract and both complete T3 Unity suites pass without a gameplay, presentation, rules, schema, project-setting, package, scene, build, or networking change. | `4ccf02f2` |
+
+## Milestone 8.30m Give every in-game card a thick black exterior outline completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30m | Every prepared and generated complete-card surface now receives one shared four-unit solid black rounded perimeter outside its unchanged content box; occupied rail miniatures and current/facedown markers use the scaled equivalent. Layout reserves the pointer-transparent edge without changing card content, hit regions, state treatments, authority or schema v34. Both named closing checks record their missing-outline failure and final pass; 168/168 affected Edit, 60/60 affected Play, and the inspected two-resolution non-batch desktop captures pass. | `78df1f64` |
