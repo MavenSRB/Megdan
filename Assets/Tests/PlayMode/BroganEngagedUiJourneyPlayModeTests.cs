@@ -305,7 +305,6 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, Tile(stepTo).transform.position),
                 Is.True);
             yield return null;
-            yield return ConfirmIfStillStanding(root);
 
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(broganId)).Coordinate,
                 Is.EqualTo(stepTo), "Brogan took the optional step to the clicked space.");
@@ -329,7 +328,6 @@ namespace GuardsDigital.Tests.PlayMode
                 UiPlayer.ClickBoard(pointerInput, hud, PieceAt(pushedFrom)), Is.True,
                 "The pushed piece is chosen by clicking it where it stands.");
             yield return null;
-            yield return ConfirmIfStillStanding(root);
 
             // "up to 1 space" - the distance, on its own controls. Nought and one are both offered,
             // because "up to" is the actor's decision and not the declaration's.
@@ -345,7 +343,6 @@ namespace GuardsDigital.Tests.PlayMode
             var farthest = distances.Last();
             UiPlayer.Click(UiPlayer.Button(hud, farthest.Label));
             yield return null;
-            yield return ConfirmIfStillStanding(root);
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The Skill's three questions are answered. " + Remaining(runtime));

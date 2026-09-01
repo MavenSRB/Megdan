@@ -500,7 +500,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(runtime.SubmitAction(movement.ActionDefinitionId), Is.True);
 
             var highlightedCoordinates = tiles
-                .Where(tile => tile.IsHighlighted)
+                .Where(tile => tile.CornerHighlight != null &&
+                               tile.CornerHighlight.Kind == HexCornerHighlightKind.Movement)
                 .Select(tile => tile.Coordinate)
                 .ToArray();
 
@@ -511,8 +512,8 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 tiles.Single(tile => tile.Coordinate.Equals(runtime.Projection.PendingMovementChoice.Origin))
-                    .IsHighlighted,
-                Is.False);
+                    .CornerHighlight.Kind,
+                Is.Not.EqualTo(HexCornerHighlightKind.Movement));
             // Milestone 8.25: five other heroes stand on this board rather than one, and an occupied
             // space is not a destination whichever of them is standing on it.
             var actor = runtime.Projection.SelectedActor.ActorId;

@@ -388,6 +388,16 @@ namespace GuardsDigital.Tests.EditMode
                 sections[gutter.text] = Descendants(element).OfType<Button>().ToList();
             }
 
+            // Milestone 8.30i3 moved confirm-or-decline answers above the retained hand. They still
+            // belong to the prompt's named decision family even though that dedicated host no longer
+            // spends horizontal room on the contextual region's gutter label.
+            if (model.EffectChoicePrompt?.Subject == EffectChoiceSubject.OptionalStep &&
+                view.OptionalStepActionsRoot.style.display.value != DisplayStyle.None)
+            {
+                sections[model.EffectChoicePrompt.SectionLabel] =
+                    Descendants(view.OptionalStepActionsRoot).OfType<Button>().ToList();
+            }
+
             return sections;
         }
 

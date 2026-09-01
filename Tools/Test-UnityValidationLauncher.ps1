@@ -3,6 +3,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'UnityValidationEvidence.ps1')
+. (Join-Path $PSScriptRoot 'UnityValidationPreflight.ps1')
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $fixtureRoot = [System.IO.Path]::Combine($projectRoot, 'tmp', 'unity-validation-launcher-contract')
@@ -10,6 +11,23 @@ New-Item -ItemType Directory -Path $fixtureRoot -Force | Out-Null
 
 $script:passed = 0
 $script:failed = 0
+
+function Assert-ContractCase {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Name,
+        [Parameter(Mandatory = $true)] [bool] $Condition,
+        [string] $Reason = 'contract condition was false'
+    )
+
+    if ($Condition) {
+        $script:passed++
+        Write-Output "PASS $Name"
+        return
+    }
+
+    $script:failed++
+    Write-Output "FAIL $Name - $Reason"
+}
 
 function Write-FixtureArtifacts {
     param(
@@ -79,6 +97,33 @@ $writeGreen = {
     Write-FixtureArtifacts -ResultsPath $results -LogPath $log -Xml $greenXml
     [pscustomobject]@{ ExitCode = 0 }
 }
+
+Write-Output 'Test-UnityValidationLauncher::AlwaysRestartsHubAndLicensingBeforeLaunch'
+
+$preflightCalls = [System.Collections.Generic.List[string]]::new()
+$supportReady = $true
+Restart-UnityValidationSupportProcesses -HubPath 'fake-hub' `
+    -ProcessLookup {
+        param($name)
+        $preflightCalls.Add("lookup:$name")
+        if ($supportReady) { return [pscustomobject]@{ Name = $name } }
+    } `
+    -StopSupportProcesses {
+        $preflightCalls.Add('stop')
+        $script:supportReady = $false
+    } `
+    -StartHub {
+        param($path)
+        $preflightCalls.Add("start:$path")
+        $script:supportReady = $true
+    } `
+    -WaitOneSecond { $preflightCalls.Add('wait') } `
+    -ReadClock { [datetime]'2026-09-01T00:00:00Z' }
+
+Assert-ContractCase `
+    -Name 'healthy-support-processes-are-stopped-and-restarted' `
+    -Condition (($preflightCalls -join ',') -eq 'stop,start:fake-hub,wait,lookup:Unity Hub,lookup:Unity.Licensing.Client') `
+    -Reason "unexpected preflight call order: $($preflightCalls -join ',')"
 
 Write-Output 'Test-UnityValidationLauncher::RejectsStaleMissingMalformedAndNonGreenResults'
 

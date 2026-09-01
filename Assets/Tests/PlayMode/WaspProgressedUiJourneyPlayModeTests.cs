@@ -253,8 +253,6 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, root.Hud, engaged.transform.position), Is.True);
             yield return null;
-
-            yield return ClickEffectConfirm(root);
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "A fixed distance of 3 opens no second question.");
 
@@ -475,7 +473,6 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, root.Hud, engaged.transform.position), Is.True);
             yield return null;
-            yield return ClickEffectConfirm(root);
 
             // "3 or 4 spaces": after the units are named, the distance is one decision out of two,
             // offered as two real controls that read as the printed numbers themselves.

@@ -112,13 +112,6 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.True,
                 "The removed miniature is named by clicking it where it stands.");
             yield return null;
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            Assert.That(confirm, Is.Not.Null,
-                "A printed \"up to\" is closed by its own confirm rather than by reaching a count. " +
-                Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
-            yield return null;
             yield return null;
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
@@ -240,14 +233,6 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
             yield return null;
             UiPlayer.Click(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
-            yield return null;
-
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            Assert.That(confirm, Is.Not.Null,
-                "A printed \"may\" is closed by its own confirm rather than by reaching a count. " +
-                Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
             yield return null;
 
             Assert.That(runtime.Cards.Any(card =>

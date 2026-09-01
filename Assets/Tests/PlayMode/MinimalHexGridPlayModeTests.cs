@@ -4068,7 +4068,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "Each offer's whole-card control identifies its own card whether the visible arm is " +
                 "prepared artwork or the generated fallback.");
             Assert.That(
-                Descendants(runtime.RoundView.Root).OfType<UnityEngine.UIElements.Button>()
+                Descendants(runtime.RoundView.DeclineDefenseRoot)
+                    .OfType<UnityEngine.UIElements.Button>()
                     .Single(button => button.text == "DECLINE DEFENSE").name,
                 Is.Not.EqualTo("gd-defense-card"));
             yield return Capture("tmp/milestone-8-11b-defense.png");

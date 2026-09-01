@@ -4,6 +4,7 @@ param()
 $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'UnityValidationEvidence.ps1')
+. (Join-Path $PSScriptRoot 'UnityValidationPreflight.ps1')
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $requestPath = [System.IO.Path]::Combine($projectRoot, 'tmp', 'unity-validation-request.json')
@@ -128,25 +129,8 @@ if ($activeEditor) {
     throw 'A Unity Editor process is already active. Monitor that process instead of starting another validation run.'
 }
 
-$hub = Get-Process -Name 'Unity Hub' -ErrorAction SilentlyContinue
-$licensing = Get-Process -Name 'Unity.Licensing.Client' -ErrorAction SilentlyContinue
-if (-not $hub -or -not $licensing) {
-    $hubPath = Resolve-ToolPath -OverrideVariable 'GUARDS_UNITY_HUB_PATH' -Candidates $hubCandidates -Description 'Unity Hub'
-
-    Get-Process -Name 'Unity Hub','Unity.Licensing.Client' -ErrorAction SilentlyContinue | Stop-Process -Force
-    Start-Process -FilePath $hubPath -WindowStyle Hidden | Out-Null
-
-    $deadline = (Get-Date).AddSeconds(45)
-    do {
-        Start-Sleep -Seconds 1
-        $hub = Get-Process -Name 'Unity Hub' -ErrorAction SilentlyContinue
-        $licensing = Get-Process -Name 'Unity.Licensing.Client' -ErrorAction SilentlyContinue
-    } until (($hub -and $licensing) -or (Get-Date) -ge $deadline)
-
-    if (-not $hub -or -not $licensing) {
-        throw 'Unity Hub/licensing preflight did not become ready.'
-    }
-}
+$hubPath = Resolve-ToolPath -OverrideVariable 'GUARDS_UNITY_HUB_PATH' -Candidates $hubCandidates -Description 'Unity Hub'
+Restart-UnityValidationSupportProcesses -HubPath $hubPath
 
 $unityArguments = @()
 if ($batchMode) {

@@ -115,6 +115,9 @@ namespace GuardsDigital.Tests.PlayMode
         private const string UltimateJourney =
             "LivingTsunami_IsDrawnOnTheRailAndOffersItsOneSpaceStepBeforeAnAttack";
 
+        private const string OptionalStepBannerJourney =
+            "OptionalStep_CapturesSubmitBannersAboveTheHandAtBothDesktopResolutions";
+
         /// <summary>Milestone 8.20c: every verified Arien face measured against the standard footprint.</summary>
         private const string FootprintConformance =
             "Scene_DrawsEveryArienFaceAtTheStandardCardFootprint";
@@ -146,6 +149,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(BeforeAttackTextPause, NobleBladeJourney),
                         Prove(BeforeAttackTextPause, NothingToOffer),
                         Prove(ConfirmOrDecline, NobleBladeJourney),
+                        Prove(ConfirmOrDecline, OptionalStepBannerJourney),
                         Prove(BoardUnitSelection, NobleBladeJourney),
                         Prove(BoardSpaceSelection, NobleBladeJourney)
                     },

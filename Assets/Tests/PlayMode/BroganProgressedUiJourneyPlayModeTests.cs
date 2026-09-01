@@ -72,7 +72,6 @@ namespace GuardsDigital.Tests.PlayMode
                 "board while the mode is being chosen.");
             UiPlayer.Click(UiPlayer.Button(hud, bullets[1].Label));
             yield return null;
-            yield return ConfirmIfStillStanding(root);
 
             // "You may discard a card" - the printed may, answered on the whole face of the card spent.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
@@ -90,7 +89,6 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             UiPlayer.Click(UiPlayer.NamedElementWithText(hud, "gd-effect-card", spentName));
             yield return null;
-            yield return ConfirmIfStillStanding(root);
 
             Assert.That(DiscardOf(runtime, broganId), Has.Length.EqualTo(discardBefore + 1),
                 "The clicked face was spent, which is the condition the rest of the bullet reads.");
@@ -116,7 +114,6 @@ namespace GuardsDigital.Tests.PlayMode
                 "and every candidate is inside the printed Range 2 the bullet bought.");
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, minion.transform.position), Is.True);
             yield return null;
-            yield return ConfirmIfStillStanding(root);
             yield return null;
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,

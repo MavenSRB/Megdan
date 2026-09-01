@@ -490,15 +490,8 @@ namespace GuardsDigital.Tests.PlayMode
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(stepTo).transform.position), Is.True);
             yield return null;
 
-            // A step a player may refuse is taken in two moves rather than one: the space is marked
-            // by the click and spent by the confirm, so the click that names it is not also the one
-            // that commits to moving at all. The decline stands beside it the whole time.
-            var take = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            Assert.That(take, Is.Not.Null,
-                "The marked space is spent by its own confirm. " + Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, take.Label));
-            yield return null;
+            // Milestone 8.30i2 makes a filled one-space selection one player action: the board click
+            // selects and immediately confirms the only candidate this step allows.
 
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(arienId)).Coordinate,
                 Is.EqualTo(stepTo),

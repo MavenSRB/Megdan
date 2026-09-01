@@ -558,7 +558,7 @@ namespace GuardsDigital.Tests.EditMode
                 "minion-battle", "movement", "removal-prevention", "system-transition"
             }));
             Assert.That(DecisionFamilyInventory.AuditProductionInventory(), Is.Empty);
-            Assert.That(DecisionFamilyInventory.CompanionProjectionMembers, Has.Length.EqualTo(8));
+            Assert.That(DecisionFamilyInventory.CompanionProjectionMembers, Has.Length.EqualTo(9));
             Assert.That(DecisionFamilyInventory.Families, Has.Length.EqualTo(10));
             Assert.That(DecisionFamilyInventory.Families.Sum(value => value.Answers.Count), Is.EqualTo(30));
         }
