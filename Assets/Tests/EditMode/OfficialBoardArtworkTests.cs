@@ -240,9 +240,16 @@ namespace GuardsDigital.Tests.EditMode
 
                 var tile = view.CurrentTiles.First();
                 var renderer = tile.GetComponent<MeshRenderer>();
-                Assert.That(renderer.enabled, Is.True, "The renderer stays on, so a highlight can use it.");
                 Assert.That(renderer.sharedMaterial.color.a, Is.EqualTo(0f).Within(1e-3f),
-                    "and its fill is fully transparent, so the face below is what reads.");
+                    "Its fill is fully transparent, so the face below is what reads.");
+                // Milestone 8.31b: a fully transparent fill draws nothing by not being rendered,
+                // rather than by being rendered at zero alpha. Blending is a shader variant and a
+                // built player keeps only the variants its build data asks for, so the zero-alpha
+                // fill came out opaque there and hid the whole board; a renderer that is off draws
+                // nothing on any build. This assertion used to require the opposite, for the reason
+                // the next one still keeps true.
+                Assert.That(renderer.enabled, Is.False,
+                    "so nothing of the tile is drawn over the face.");
                 Assert.That(tile.GetComponentInChildren<LineRenderer>(true).enabled, Is.False,
                     "The debug edge is switched off rather than restyled.");
 
@@ -250,11 +257,14 @@ namespace GuardsDigital.Tests.EditMode
                 tile.SetHighlighted(true, highlight);
                 Assert.That(renderer.sharedMaterial, Is.SameAs(highlight),
                     "The highlight path is untouched by any of this.");
+                Assert.That(renderer.enabled, Is.True,
+                    "and a highlight turns the renderer back on, which is what keeps that path whole.");
                 Assert.That(tile.IsHighlighted, Is.True);
 
                 tile.SetHighlighted(false, highlight);
                 Assert.That(renderer.sharedMaterial.color.a, Is.EqualTo(0f).Within(1e-3f),
                     "and clearing it returns the tile to the suppressed fill, not to a zone colour.");
+                Assert.That(renderer.enabled, Is.False, "and to drawing nothing again.");
             }
             finally
             {

@@ -125,3 +125,25 @@ Required at: milestone `6.1d`, where it was first proven; the Phase 6 gate `6.13
 Milestone 7.9 is the reason `7.9` is on that list, and the run is the argument for the list being longer rather than shorter. The gate had not been run since milestone 7.8a replaced the HUD's immediate-mode drawing with a runtime UI Toolkit panel, because 7.8a is not a milestone this gate is required at. The player it built logged 71 warnings and 17 `NullReferenceException`s out of `UITKTextHandle.ShapeText`. The player states the cause itself: the ICU data its text shaper needs ships only when the **build contains at least one `PanelSettings` asset**, and a HUD that created its settings entirely at runtime gave the build none. Present with a graphics device as well as under `-nographics`, so it was a defect in the artifact and not a headless artefact, and invisible to every Editor tier because the Editor has the data loaded either way. Fixed by committing `Assets/Resources/UI/GuardsRuntimePanelSettings.asset` and copying the panel from it; the gate then reported zero of both. The asset's own `m_ICUDataAsset` field is empty on disk and is not what carries the data - its presence in the build is - so do not "fix" that field.
 
 Do not run this gate as a substitute for the Unity test suites. It proves the artifact runs; it does not prove the rules are right.
+
+## Board visual smoke gate
+
+Added at milestone 8.31b, because the player-build smoke gate above proves a player *runs* and never looks at what it *draws*. Every other visual check in this project is an Editor capture, and the Editor holds every shader variant and asset a build may strip. In that gap, every hex tile over the official board artwork rendered opaque white in every built player - hiding the entire playfield - while both complete suites, the smoke gate and every inspected capture stayed green. A human saw it in a screenshot; nothing else could.
+
+Run from the project root:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Invoke-BoardVisualSmoke.ps1
+```
+
+The script builds through the same fixed entry point, then launches the player **windowed** - not `-nographics`, since a player that draws nothing cannot be photographed - with `-guardsBoardCapture <path>`. That flag is the only thing that attaches `BoardVisualCaptureDriver`, which renders the board camera into a fixed 1920x1080 texture, writes it as PNG, reports whether the official artwork was underneath, and quits. Rendering through the camera rather than grabbing the screen is deliberate: the window is hidden, so there is no swapchain to capture from, and the picture then holds the board with none of the overlay HUD across it.
+
+The script then reads the capture and judges a central block of it: it fails when over half the block is flat near-white, when over half is flat near-black, or when it holds fewer than twelve distinct colours. A drawn board reads as many colours; one flat colour is an opaque overlay, an unrendered frame, or a missing board.
+
+Expected result: exit code `0` and `GATE PASSED`, with a reported near-white fraction at or near zero. Milestone 8.31b recorded both sides of the transition against the same build path: **86.9% near-white over 147 distinct colours before the fix, and 0.0% over 327 after it, on two consecutive fresh builds**.
+
+Two consecutive builds matter here and are not ceremony. The first attempted fix - shipping a transparent template material so the build would retain the blended variant - passed this gate once and then failed the next build identically, which is how variant retention was found to be an unreliable thing to depend on. The fix that holds removes the dependency instead: a fully transparent fill is not rendered at all. Run this gate twice across separate builds whenever a change depends on what a shader variant does.
+
+Required at: any change to a board overlay, highlight, rim or underlay material; any change to how a material's surface state is set; any always-included shader, render pipeline, or stripping-setting change; and alongside the player-build smoke gate at the Phase 8 online gates. Its cost is one build plus a few seconds.
+
+This gate cannot see a rule, a layout, or a colour choice. It answers exactly one question the Editor cannot: does the built player draw a board at all.

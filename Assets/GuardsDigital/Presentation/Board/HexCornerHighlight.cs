@@ -195,18 +195,11 @@ namespace GuardsDigital.Presentation.Board
             triangles[triangle + 5] = vertex + 2;
         }
 
-        private static Material CreateMaterial(string name, Color color)
-        {
-            var shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null)
-            {
-                throw new InvalidOperationException("Hex corner highlights require the URP Unlit shader.");
-            }
-
-            var material = new Material(shader) { name = name, color = color };
-            BoardOverlayMaterial.ApplyBlending(material);
-            return material;
-        }
+        // Milestone 8.31b. Copied from the shipped blended Unlit template rather than built from a
+        // found shader: a corner mark blended only at runtime has no variant in a player build and
+        // draws opaque there, which is the defect that hid the whole board.
+        private static Material CreateMaterial(string name, Color color) =>
+            BoardOverlayMaterial.CreateUnlitBlended(name, color);
 
         public void Dispose()
         {

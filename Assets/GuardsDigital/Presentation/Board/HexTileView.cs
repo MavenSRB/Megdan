@@ -80,6 +80,7 @@ namespace GuardsDigital.Presentation.Board
             if (meshRenderer != null)
             {
                 meshRenderer.sharedMaterial = material;
+                meshRenderer.enabled = DrawsAnything(material);
             }
             IsHighlighted = false;
             ApplyLayout();
@@ -115,7 +116,9 @@ namespace GuardsDigital.Presentation.Board
 
             if (meshRenderer != null)
             {
-                meshRenderer.sharedMaterial = highlighted ? highlightMaterial : defaultMaterial;
+                var applied = highlighted ? highlightMaterial : defaultMaterial;
+                meshRenderer.sharedMaterial = applied;
+                meshRenderer.enabled = DrawsAnything(applied);
             }
 
             ApplyRim(highlighted, rimMaterial);
@@ -174,6 +177,21 @@ namespace GuardsDigital.Presentation.Board
             edge.endWidth = defaultEdgeWidth;
             rimmed = false;
         }
+
+        /// <summary>
+        /// Whether a fill draws anything at all. A fully transparent fill draws nothing by not
+        /// being rendered, rather than by being rendered at zero alpha.
+        ///
+        /// <para><b>Milestone 8.31b, and the distinction is the whole defect.</b> Blending is a
+        /// shader variant, and a built player keeps only the variants its build data asks for, so a
+        /// fill blended purely at runtime came out opaque there: every space over the official
+        /// artwork drew solid white and hid the board, while the Editor - which holds every variant
+        /// - looked correct. A renderer that is switched off draws nothing on any build, under any
+        /// stripping. Spaces stay pickable either way, because a space is chosen by where the
+        /// pointer ray meets the board plane and never by what is drawn on it.</para>
+        /// </summary>
+        private static bool DrawsAnything(Material material) =>
+            material != null && material.color.a > 0.001f;
 
         private void CaptureDefaultMaterial(MeshRenderer meshRenderer)
         {

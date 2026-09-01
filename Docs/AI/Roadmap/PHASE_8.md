@@ -687,6 +687,23 @@ Non-goals: No rehearsal-script topology change, no project-wide `runInBackground
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-831a-keep-private-online-processes-running-without-window-focus-completion-evidence).
 
+### [x] 8.31b Draw the board's blended overlays correctly in a built player
+
+Blocked by: Corrective 8.31a's first windowed run exposed the defect: in a built player every hex tile over the official artwork renders as opaque white instead of transparent, hiding the whole playfield, while the same scene is correct in the Editor. Every board overlay is a runtime-created URP Lit material blended by keyword, so nothing in the build data declares a transparent Lit material and its variant does not survive the build.
+
+Observable outcome: A built player draws the official board artwork with its playfield visible rather than covered, and a build-time visual check looks at the running player's own pixels rather than assuming them.
+
+Acceptance checks:
+
+- A board fill that is fully transparent draws nothing by not being rendered at all, so no stripped shader variant can turn it into an opaque cover; spaces stay pickable, because a space is chosen by where the pointer ray meets the board plane and never by what is drawn on it.
+- Board materials that must genuinely blend derive their surface state from template material assets that ship under `Resources`, so the configuration is present in build data rather than only asserted at runtime, and no board source blends a material it built from a found shader.
+- A named build-time visual gate builds the disposable Win64 player, launches it, captures the running player's own frame, and fails when the playfield is one flat colour; it records the defect's failing observation and the fixed passing observation across separate builds.
+- The Editor keeps its current board appearance: existing artwork registration, overlay alpha, rim, highlight and resource-lifetime checks pass unchanged.
+
+Non-goals: No board artwork change, no camera or registration change, no new overlay treatment, no project-wide render-pipeline or stripping-setting change, and no networking change. **Known residual:** this corrective proves the playfield is not covered; it does not prove that a partly blended overlay - a highlight at its overlay alpha - reaches a built player blended rather than opaque, because shipping a transparent template alone was observed to retain that variant on one build and not on the next. The templates are kept as the best available retention, and a later slice owns proving highlight fidelity inside a player, most likely through a preloaded shader-variant collection.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-831b-draw-the-boards-blended-overlays-correctly-in-a-built-player-completion-evidence).
+
 ### [!] 8.32 Enforce owner-scoped projections and command authorization across the network boundary
 
 Blocked by: Milestone 8.31 must establish the private host and six network seats.

@@ -19,6 +19,32 @@ namespace GuardsDigital.Presentation.Board
     public static class BoardOverlayMaterial
     {
         /// <summary>
+        /// The shipped material this project's blended overlays are copied from.
+        ///
+        /// <para><b>Milestone 8.31b, and it is the whole reason these are copies rather than fresh
+        /// materials.</b> A URP Lit material is opaque until its surface state is set, and setting
+        /// that state at runtime is not enough for a built player: the keyword is a shader feature,
+        /// so the build keeps its variant only when some material in build data uses it. Every
+        /// overlay here was created at runtime, no material on disk was transparent, the variant was
+        /// stripped, and every tile fill over the board artwork rendered opaque white in the player
+        /// while the Editor - which holds every variant - looked correct. Copying from an asset
+        /// carries the keyword set into the build and into the copy at once. This is the same shape
+        /// as the ICU/PanelSettings fix recorded in the player-build smoke gate: what a build ships
+        /// is decided by what is in it, not by what runs.</para>
+        /// </summary>
+        public const string OverlayTemplateResourcePath = "Rendering/BoardOverlayTemplate";
+
+        /// <summary>The opaque emissive counterpart; see <see cref="OverlayTemplateResourcePath"/>.</summary>
+        public const string RimTemplateResourcePath = "Rendering/BoardRimTemplate";
+
+        /// <summary>
+        /// The blended Unlit counterpart, for overlays that must read at exactly their own colour.
+        /// A separate asset because a variant belongs to one shader: the Lit template carries
+        /// nothing for Unlit.
+        /// </summary>
+        public const string UnlitOverlayTemplateResourcePath = "Rendering/BoardUnlitOverlayTemplate";
+
+        /// <summary>
         /// How solid a board overlay is drawn. Low, and deliberately so: the rim carries the shape, so
         /// the fill only has to make the space look lit rather than painted. The board's own artwork,
         /// including whatever icon it prints on that space, reads straight through it.
@@ -33,17 +59,42 @@ namespace GuardsDigital.Presentation.Board
         /// </summary>
         public static Material Create(string name, Color color)
         {
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null)
-            {
-                throw new InvalidOperationException(
-                    $"The generated board overlay material '{name}' requires the URP Lit shader.");
-            }
-
-            var material = new Material(shader) { name = name, color = color };
-            material.hideFlags = HideFlags.DontSave;
+            var material = CopyOfTemplate(OverlayTemplateResourcePath, name);
+            material.color = color;
             ApplyBlending(material);
             return material;
+        }
+
+        /// <summary>
+        /// The blended Unlit overlay, for a cue that must be exactly its own colour rather than a
+        /// lit one. Copied from its own shipped template for the reason
+        /// <see cref="OverlayTemplateResourcePath"/> gives.
+        /// </summary>
+        public static Material CreateUnlitBlended(string name, Color color)
+        {
+            var material = CopyOfTemplate(UnlitOverlayTemplateResourcePath, name);
+            material.color = color;
+            ApplyBlending(material);
+            return material;
+        }
+
+        /// <summary>
+        /// A fresh material with the template's shader, properties and keyword set. The keywords are
+        /// what matter: they come from an asset that is in the build, so the variant the copy needs
+        /// is in the build too.
+        /// </summary>
+        private static Material CopyOfTemplate(string resourcePath, string name)
+        {
+            var template = Resources.Load<Material>(resourcePath);
+            if (template == null)
+            {
+                throw new InvalidOperationException(
+                    $"The generated board material '{name}' requires the shipped template at " +
+                    $"Resources/{resourcePath}. Without it the build keeps no variant for this " +
+                    "material's surface state and a player draws it opaque.");
+            }
+
+            return new Material(template) { name = name, hideFlags = HideFlags.DontSave };
         }
 
         /// <summary>
@@ -87,18 +138,14 @@ namespace GuardsDigital.Presentation.Board
         public static Material CreateRim(string name, Color color)
         {
             var opaque = new Color(color.r, color.g, color.b, 1f);
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null)
-            {
-                throw new InvalidOperationException(
-                    $"The generated board rim material '{name}' requires the URP Lit shader.");
-            }
 
             // Purely emissive, for the reason the board underlay is: a lit albedo on top of the
             // emission would add the scene's lighting to a line whose whole job is to be exactly one
-            // colour. Black albedo, colour in the emission.
-            var material = new Material(shader) { name = name, color = Color.black };
-            material.hideFlags = HideFlags.DontSave;
+            // colour. Black albedo, colour in the emission. Copied from the shipped rim template so
+            // the emissive and environment-off keywords reach the build; see
+            // <see cref="OverlayTemplateResourcePath"/> for why that is required rather than tidy.
+            var material = CopyOfTemplate(RimTemplateResourcePath, name);
+            material.color = Color.black;
             material.EnableKeyword("_EMISSION");
             material.SetColor("_EmissionColor", opaque);
             material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.EmissiveIsBlack;

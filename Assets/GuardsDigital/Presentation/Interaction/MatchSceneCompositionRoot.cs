@@ -877,6 +877,28 @@ namespace GuardsDigital.Presentation.Interaction
             Compose();
             AttachSmokeDriverWhenRequested();
             AttachPrivateOnlineDriverWhenRequested();
+            AttachBoardVisualCaptureDriverWhenRequested();
+        }
+
+        /// <summary>
+        /// Milestone 8.31b. Only a player launched with the capture flag photographs itself; a
+        /// normally launched build carries no capture hook, exactly as it carries no smoke hook.
+        /// </summary>
+        private void AttachBoardVisualCaptureDriverWhenRequested()
+        {
+            if (!UnityEngine.Application.isPlaying)
+            {
+                return;
+            }
+
+            var path = BoardVisualCaptureDriver.RequestedPath();
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
+            gameObject.AddComponent<BoardVisualCaptureDriver>()
+                .Configure(this, path, eventCamera, mapView);
         }
 
         /// <summary>
