@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30k1 Restart Unity Hub and licensing before every validation run completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30k1 | The fixed parameterless Unity launcher still refuses any active Editor and now unconditionally stops and restarts Unity Hub/licensing, waits up to 45 seconds for both exact process names, and only then begins the requested serial run. The injectable launcher contract passes 18/18, including exact healthy-pair restart order. Reproducibly stale assertions were reconciled with the already-completed optional-step host, filled-choice auto-confirm, six-corner board cue, Defense decline host and nine-member companion-projection contracts without changing runtime behavior. Final complete evidence is 2,097/2,097 Edit Mode and 261/261 Play Mode; one initial Play performance outlier passed in the permitted fresh-process complete-suite retry. Review found no player-experience or rules-authority change; maintainability and validation isolation improved, while active-Editor, timeout, serial-run, licensing-ownership, fresh-evidence and all-green gates remain enforced. | `02acabf2` |
+
 ## Milestone 8.30k Replace item abbreviations with printed channel symbols completion evidence
 
 | ID | Outcome | Commit |

@@ -242,9 +242,27 @@ Non-goals: No item, progression, bonus-composition, coin, card-definition, hero,
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830k-replace-item-abbreviations-with-printed-channel-symbols-completion-evidence).
 
+### [x] 8.30k1 Restart Unity Hub and licensing before every validation run
+
+Blocked by: Milestone 8.30k is the current completed route point; no Unity Editor process may be active when the validation preflight restarts its support processes.
+
+Observable outcome: Every agent-started Unity validation invocation refuses to proceed while an Editor is active; otherwise the one fixed project launcher fully restarts Unity Hub and `Unity.Licensing.Client`, waits for both to become live, and only then starts the requested serial Unity run, even when both support processes appeared healthy beforehand.
+
+Acceptance checks:
+
+- `Tools/Invoke-UnityValidation.ps1` retains its parameterless request-file contract and checks for an active `Unity` process before stopping or starting either support process.
+- With no Editor active, one shared preflight helper unconditionally stops any existing Hub/licensing pair, starts the configured Hub executable, waits at most 45 seconds for process names `Unity Hub` and `Unity.Licensing.Client`, and fails before Editor launch if either is absent.
+- The launcher contract test simulates a healthy pre-existing support pair and proves the exact stop, start, wait, and two-name readiness order; all existing fresh-artifact, result-parser, log-signature, and non-green rejection cases remain green.
+- The shared testing policy tells every agent that the restart occurs on every launcher invocation and retains serial execution, elevated normal-user context, one recovered retry, fresh XML/log evidence, and the prohibition on killing or replacing an active Unity run.
+- Because the fixed launcher is shared validation infrastructure, its contract check and both complete Unity suites pass before handoff; living-document validation and `git diff --check` pass without changing game behavior.
+
+Non-goals: No Unity Editor, package, project setting, test selection, gameplay, presentation, rule, content, schema, scene, networking, user sign-in, license activation, retry-count, timeout, evidence-parser, or output-path change; no direct per-agent Hub command outside the fixed launcher.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830k1-restart-unity-hub-and-licensing-before-every-validation-run-completion-evidence).
+
 ### [ ] 8.30l Move unavailable cards from the playable hand into a right-side HUD group
 
-Blocked by: Milestone 8.30k must complete the preceding hero-plaque symbol correction before this separately reviewable hand-composition change begins.
+Blocked by: Milestone 8.30k1 must complete the shared validation-launcher correction after the preceding hero-plaque symbol work and before this separately reviewable hand-composition change begins.
 
 Observable outcome: Cards that the current projection marks unavailable and that are not the card presently resolving no longer occupy the bottom playable hand; they appear as a separate ordered group on the right side, rendered with the same complete-card layout as the current hand and the same unavailable dimming they already carry there, while playable cards and the resolving card remain in the established bottom hand.
 
