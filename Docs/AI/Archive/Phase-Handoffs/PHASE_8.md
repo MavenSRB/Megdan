@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30i3 Keep the hand visible beneath optional-step banners completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30i3 | A confirm-or-decline optional pause now retains the viewed hero's complete ordinary hand as non-actionable context and places exactly one projected-order `ACCEPT` and `DECLINE` side by side immediately above it in the shared strong-shine pewter-banner treatment. The row is flush with the hand's far-left edge and a 12-unit gap separates the choices. A transparent input shield plus guarded card paths prevent commitment, selection, drag and printed-action commands while the pause stands; other exclusive contexts retain their dedicated surfaces. The closing checks moved from 0/2 under the pre-fix hand-retention knockout to 2/2 after restoration; focused Edit Mode passed 125/125, focused Play Mode passed 6/6, and the final alignment check and targeted non-batch capture journey passed 2/2 and 1/1 with inspected 2560x1440 and 2048x1152 captures. Review found no remaining player-experience, rules-authority, maintainability or project-risk defect; rules, typed invocations, privacy, persistence, schema v34 and networking are unchanged. | `f9374600` |
+
 ## Milestone 8.30i2 Remove generic effect-choice confirmation buttons and keep spatial choices on the map completion evidence
 
 | ID | Outcome | Commit |
