@@ -41,7 +41,35 @@ namespace GuardsDigital.Tests.EditMode
             typeof(MatchHostResult),
             typeof(MatchHostResultRecord),
             typeof(MatchHostResultStreamRead),
-            typeof(LocalDirectorMatchClient)
+            typeof(LocalDirectorMatchClient),
+            // Milestone 8.31: the transport-neutral session layer. Every socket type lives in the
+            // GuardsDigital.Network adapter beneath these, so any of them naming one fails here.
+            typeof(PrivateSessionProtocol),
+            typeof(PrivateSessionIdentity),
+            typeof(PrivateSessionContentDigest),
+            typeof(PrivateSessionKeyProof),
+            typeof(PrivateSessionHost),
+            typeof(PrivateSessionClient),
+            typeof(PrivateSessionClientState),
+            typeof(PrivateSessionEventKind),
+            typeof(PrivateSessionEventRecord),
+            typeof(PrivateSessionFrameCodec),
+            typeof(PrivateSessionFrameAssembler),
+            typeof(SessionFrame),
+            typeof(SessionMessageKind),
+            typeof(SessionRejectionReason),
+            typeof(SeatOccupancyState),
+            typeof(SeatRosterEntry),
+            typeof(SessionChallengeMessage),
+            typeof(SessionHelloMessage),
+            typeof(SessionWelcomeMessage),
+            typeof(SessionRejectMessage),
+            typeof(SeatClaimMessage),
+            typeof(SeatGrantedMessage),
+            typeof(SeatRosterMessage),
+            typeof(IPrivateSessionOutbox),
+            typeof(IPrivateSessionClientOutbox),
+            typeof(IPrivateSessionNonceSource)
         };
 
         [Test]

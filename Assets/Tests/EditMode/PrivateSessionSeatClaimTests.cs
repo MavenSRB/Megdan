@@ -1,0 +1,192 @@
+using System.Linq;
+using GuardsDigital.Application;
+using GuardsDigital.Core.Participants;
+using NUnit.Framework;
+
+namespace GuardsDigital.Tests.EditMode
+{
+    /// <summary>
+    /// Milestone 8.31. One stable seat per connection: six distinct claims fill the official
+    /// configuration, and every way a claim can be wrong is refused by its own name with the seat
+    /// map left exactly as it was.
+    /// </summary>
+    public sealed class PrivateSessionSeatClaimTests
+    {
+        [Test]
+        public void SixDistinctClaims_FillTheOfficialConfiguration()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            var expected = new[]
+            {
+                ("blue-player-01", "hero-arien", TeamSide.Blue),
+                ("blue-player-02", "hero-brogan", TeamSide.Blue),
+                ("blue-player-03", "hero-sabina", TeamSide.Blue),
+                ("red-player-01", "hero-wasp", TeamSide.Red),
+                ("red-player-02", "hero-xargatha", TeamSide.Red),
+                ("red-player-03", "hero-tigerclaw", TeamSide.Red)
+            };
+
+            Assert.That(driver.Session.Roster.Select(entry => entry.Seat.Value),
+                Is.EqualTo(expected.Select(seat => seat.Item1)),
+                "Seats are derived from the participant graph in its stable order.");
+
+            for (var index = 0; index < expected.Length; index++)
+            {
+                driver.Seat(index + 1, expected[index].Item1);
+            }
+
+            Assert.That(driver.Session.ClaimedSeatCount, Is.EqualTo(6));
+            Assert.That(driver.Session.IsComplete, Is.True);
+            foreach (var (seat, hero, side) in expected)
+            {
+                var entry = driver.Session.Roster.Single(row => row.Seat.Value == seat);
+                Assert.That(entry.Hero.Value, Is.EqualTo(hero));
+                Assert.That(entry.TeamSide, Is.EqualTo(side));
+                Assert.That(entry.Occupancy, Is.EqualTo(SeatOccupancyState.Claimed));
+            }
+        }
+
+        [Test]
+        public void AGrant_NamesTheSeatHeroTeamAndRunningCount()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            driver.Admit(1);
+            driver.Claim(1, "red-player-01");
+
+            var granted = driver.Outbox.FramesFor(1)
+                .Single(frame => frame.Kind == SessionMessageKind.SeatGranted);
+            Assert.That(PrivateSessionFrameCodec.TryDecodeSeatGranted(granted.Payload, out var decoded), Is.True);
+            Assert.That(decoded.Seat.Seat.Value, Is.EqualTo("red-player-01"));
+            Assert.That(decoded.Seat.Hero.Value, Is.EqualTo("hero-wasp"));
+            Assert.That(decoded.Seat.TeamSide, Is.EqualTo(TeamSide.Red));
+            Assert.That(decoded.ClaimedSeats, Is.EqualTo(1));
+            Assert.That(decoded.TotalSeats, Is.EqualTo(6));
+        }
+
+        [Test]
+        public void AClaimOfAHeldSeat_IsRefusedAndChangesNothing()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            driver.Seat(1, "red-player-01");
+            driver.Admit(2);
+            driver.Claim(2, "red-player-01");
+
+            Assert.That(driver.Outbox.RejectFor(2).Reason,
+                Is.EqualTo(SessionRejectionReason.SeatAlreadyClaimed));
+            Assert.That(driver.Outbox.WasClosed(2), Is.True);
+            Assert.That(driver.Outbox.WasClosed(1), Is.False,
+                "Only the claiming connection is disconnected.");
+            Assert.That(driver.Session.ClaimedSeatCount, Is.EqualTo(1));
+            Assert.That(driver.Session.TryGetSeatForConnection(1, out var seat), Is.True);
+            Assert.That(seat.Id.Value, Is.EqualTo("red-player-01"));
+        }
+
+        [Test]
+        public void AClaimOfAnUnknownSeat_IsRefusedByName()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            driver.Admit(1);
+            driver.Claim(1, "green-player-09");
+
+            Assert.That(driver.Outbox.RejectFor(1).Reason,
+                Is.EqualTo(SessionRejectionReason.UnknownSeat));
+            Assert.That(driver.Session.ClaimedSeatCount, Is.Zero);
+        }
+
+        [Test]
+        public void ASecondClaimFromASeatedConnection_IsRefusedWithoutUnseatingIt()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            driver.Seat(1, "red-player-01");
+            driver.Claim(1, "red-player-02");
+
+            Assert.That(driver.Outbox.RejectFor(1).Reason,
+                Is.EqualTo(SessionRejectionReason.SeatChangeRefused));
+            Assert.That(driver.Outbox.WasClosed(1), Is.False,
+                "The refused change leaves the connection seated where it was.");
+            Assert.That(driver.Session.ClaimedSeatCount, Is.EqualTo(1));
+            Assert.That(driver.Session.TryGetSeatForConnection(1, out var seat), Is.True);
+            Assert.That(seat.Id.Value, Is.EqualTo("red-player-01"));
+            Assert.That(driver.Session.Roster.Single(row => row.Seat.Value == "red-player-02").Occupancy,
+                Is.EqualTo(SeatOccupancyState.Open));
+        }
+
+        [Test]
+        public void ADisconnectedClaimedSeat_IsReservedNotReleased()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            driver.Seat(1, "red-player-01");
+            driver.Session.OnDisconnected(1);
+
+            Assert.That(driver.Session.Roster.Single(row => row.Seat.Value == "red-player-01").Occupancy,
+                Is.EqualTo(SeatOccupancyState.Reserved));
+            Assert.That(driver.Session.ClaimedSeatCount, Is.Zero);
+
+            driver.Admit(2);
+            driver.Claim(2, "red-player-01");
+            Assert.That(driver.Outbox.RejectFor(2).Reason,
+                Is.EqualTo(SessionRejectionReason.SeatReserved),
+                "With no identity to recognize a returning player, the seat is nobody else's.");
+            Assert.That(driver.Session.Roster.Single(row => row.Seat.Value == "red-player-01").Occupancy,
+                Is.EqualTo(SeatOccupancyState.Reserved));
+        }
+
+        [Test]
+        public void AGoodbyeFromASeatedConnection_ReservesItsSeat()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            driver.Seat(1, "blue-player-03");
+            driver.Session.OnFrame(1, PrivateSessionTestDriver.Decode(
+                PrivateSessionFrameCodec.GoodbyeFrame()));
+
+            Assert.That(driver.Outbox.WasClosed(1), Is.True);
+            Assert.That(driver.Session.Roster.Single(row => row.Seat.Value == "blue-player-03").Occupancy,
+                Is.EqualTo(SeatOccupancyState.Reserved));
+        }
+
+        [Test]
+        public void AClaim_BroadcastsTheRosterToEveryAdmittedConnection()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            driver.Admit(1);
+            driver.Admit(2);
+            driver.Claim(1, "red-player-01");
+
+            var update = driver.Outbox.FramesFor(2)
+                .Single(frame => frame.Kind == SessionMessageKind.RosterUpdate);
+            Assert.That(PrivateSessionFrameCodec.TryDecodeRosterUpdate(update.Payload, out var decoded), Is.True);
+            Assert.That(decoded.Roster.Single(row => row.Seat.Value == "red-player-01").Occupancy,
+                Is.EqualTo(SeatOccupancyState.Claimed));
+        }
+
+        [Test]
+        public void AnUnadmittedConnection_ReceivesNoRosterBroadcast()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            driver.Session.OnConnected(9, 0);
+            driver.Seat(1, "red-player-01");
+
+            Assert.That(driver.Outbox.FramesFor(9)
+                    .Count(frame => frame.Kind == SessionMessageKind.RosterUpdate),
+                Is.Zero, "Before admission a connection is told nothing about the session.");
+        }
+
+        [Test]
+        public void TheHostEvents_RecordTheClaimAndTheCompletion()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            var seats = driver.Session.Roster.Select(entry => entry.Seat.Value).ToArray();
+            for (var index = 0; index < seats.Length; index++)
+            {
+                driver.Seat(index + 1, seats[index]);
+            }
+
+            var events = driver.Session.DrainEvents();
+            Assert.That(events.Count(record => record.Kind == PrivateSessionEventKind.SeatClaimed),
+                Is.EqualTo(6));
+            Assert.That(events.Count(record => record.Kind == PrivateSessionEventKind.SessionComplete),
+                Is.EqualTo(1));
+            Assert.That(driver.Session.DrainEvents(), Is.Empty, "Draining clears the record.");
+        }
+    }
+}

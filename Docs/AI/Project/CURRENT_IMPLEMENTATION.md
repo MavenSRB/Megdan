@@ -8,7 +8,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ### Application, configured presentation, and governance
 
-The project has completed roadmap milestones through **8.30n**. Unity 6000.5.9f1 (`b57deb96f08d`) remains the editor baseline; [PRIVATE_ONLINE_ARCHITECTURE.md](PRIVATE_ONLINE_ARCHITECTURE.md) owns the selected but unimplemented network stack, and deferred 8.29c remains proposed. The Unity-free `MatchHost` authorizes six privacy-scoped seats and refuses unknown, stale, replayed, forged or unpublished submissions. Tied candidate owners and the three Minion Battle choosing-team seats publish bounded agreement; unanimity submits the existing final rule command. Agreement is host-local, while snapshots and replay retain rules state only.
+The project has completed roadmap milestones through **8.31**. Unity 6000.5.9f1 (`b57deb96f08d`) remains the editor baseline; [PRIVATE_ONLINE_ARCHITECTURE.md](PRIVATE_ONLINE_ARCHITECTURE.md) owns the amended direct-socket network decision, and deferred 8.29c remains proposed. One dedicated seatless host now seats six TCP clients by admission tuple, session-key proof, and named refusals; no gameplay byte crosses the wire. The Unity-free `MatchHost` authorizes six privacy-scoped seats and refuses unknown, stale, replayed, forged or unpublished submissions. Tied candidate owners and the three Minion Battle choosing-team seats publish bounded agreement; unanimity submits the existing final rule command. Agreement is host-local, while snapshots and replay retain rules state only.
 
 [MATCH_HUD.md](MATCH_HUD.md) owns current card and interaction composition; [CONFIGURED_PRESENTATION.md](CONFIGURED_PRESENTATION.md) owns board cues and projected Attack-defense preview. Projections derive one stable `PendingDecisionContract`, `MatchSession.Execute` remains legality authority, and replay/Undo/restore/restart rederive it without changing schema v34. [DOCUMENTATION_GOVERNANCE.md](../DOCUMENTATION_GOVERNANCE.md) owns governance evidence and `RISK-GOVERNANCE-001` the retained router.
 
@@ -76,7 +76,7 @@ Minion Battle counts effective minions and its pending/removal identity is a her
 
 The 2026-08-13 out-of-band foundation audit, the corrective milestones 6.1c through 6.1p that closed it, the two audit statements those milestones corrected, and the governance state the sequence left behind are maintained in [FOUNDATION_CORRECTIONS.md](FOUNDATION_CORRECTIONS.md).
 
-The project does not yet implement six separate player inputs, networking, production animation/audio, or retained build/distribution work.
+The project does not yet implement six separate player inputs, gameplay networking beyond session establishment and seat claims, production animation/audio, or retained build/distribution work.
 
 A paused system transition is drawn since 7.8a: the rules that paused describe it as typed facts through `IDescribingSystemTransitionStepRules`, and the projection carries that description beside the pause, plus every hero's Level, coins and per-icon item counts. Since 8.16c, a blocked Lane-Push respawn Place pairs each described destination with its exact continuation invocation in the board model; all are lit and one is clicked on the board, while the contextual HUD carries explanation only. Level Up remains a card-faced HUD decision.
 

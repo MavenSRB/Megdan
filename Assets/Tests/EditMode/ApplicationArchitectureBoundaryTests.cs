@@ -34,6 +34,31 @@ namespace GuardsDigital.Tests.EditMode
             }), Is.EqualTo(new[] { "UnityEditor.CoreModule", "UnityEngine.CoreModule" }));
         }
 
+        /// <summary>
+        /// Milestone 8.31. The amended record's removal-path rule at assembly altitude: the socket
+        /// adapter is its own Unity-free assembly that depends on the Application port, and the
+        /// dependency never points back - so deleting the transport deletes one assembly, and the
+        /// authority cannot name the adapter that is supposed to depend on it.
+        /// </summary>
+        [Test]
+        public void SocketAdapter_IsItsOwnUnityFreeAssemblyBeneathTheApplicationPort()
+        {
+            var adapterAssembly = typeof(GuardsDigital.Network.TcpSessionListener).Assembly;
+            Assert.That(adapterAssembly.GetName().Name, Is.EqualTo("GuardsDigital.Network"),
+                "Socket types must compile into the adapter assembly, not beside the port.");
+
+            var adapterReferences = adapterAssembly.GetReferencedAssemblies()
+                .Select(value => value.Name).ToArray();
+            Assert.That(ApplicationAssemblyDependencyPolicy.FindForbiddenReferences(adapterReferences),
+                Is.Empty, "The adapter is Unity-free so the harness can drive real sockets too.");
+            Assert.That(adapterReferences, Does.Contain("GuardsDigital.Application"));
+
+            var applicationReferences = typeof(MatchSession).Assembly.GetReferencedAssemblies()
+                .Select(value => value.Name).ToArray();
+            Assert.That(applicationReferences, Does.Not.Contain("GuardsDigital.Network"),
+                "The dependency points one way: the adapter holds the port, never the reverse.");
+        }
+
         [Test]
         public void EditorScripts_CompileIntoAnEditorOnlyAssemblyThatCannotReachTheSessionPort()
         {

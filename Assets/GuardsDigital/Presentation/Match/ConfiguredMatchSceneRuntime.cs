@@ -89,6 +89,13 @@ namespace GuardsDigital.Presentation.Match
                     configuration));
             session = new LocalDirectorMatchClient(host);
 
+            // Milestone 8.31. The admission tuple this composition publishes: what another process
+            // must match before it may hold one of this match's seats. Derived here because the
+            // map and configuration are in scope exactly once, at composition.
+            SessionIdentity = PrivateSessionIdentity.ForComposition(
+                map, configuration,
+                UnityEngine.Application.version + "+" + UnityEngine.Application.unityVersion);
+
             // Milestone 8.30b. One composition serves both surfaces. With no seat named this is the
             // Director's runtime exactly as before; named a seat, every presenter below is handed
             // that seat's authorized view and its submissions travel in the envelope 8.30a
@@ -300,6 +307,13 @@ namespace GuardsDigital.Presentation.Match
         /// consumer that needs the ordered result stream reads it here.
         /// </summary>
         public IMatchHost Host => host;
+
+        /// <summary>
+        /// Milestone 8.31. The immutable admission tuple of this composition - protocol, build,
+        /// snapshot schema, map revision, and registered-content digest - published for the
+        /// private host and client drivers to agree on before a seat is held.
+        /// </summary>
+        public PrivateSessionIdentity SessionIdentity { get; }
 
         /// <summary>
         /// Milestone 8.30b. The seat this runtime was composed for, or <c>null</c> for the Director's

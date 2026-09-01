@@ -17,6 +17,7 @@
   <ItemGroup>
     <Compile Include="../../Assets/GuardsDigital/Core/**/*.cs" />
     <Compile Include="../../Assets/GuardsDigital/Application/**/*.cs" />
+    <Compile Include="../../Assets/GuardsDigital/Network/**/*.cs" />
     <Compile Include="Shims/**/*.cs" />
     <Compile Include="HarnessTests/**/*.cs" />
     <Compile Include="../../Assets/Tests/EditMode/*.cs"

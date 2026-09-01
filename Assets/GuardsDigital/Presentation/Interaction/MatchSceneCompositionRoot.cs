@@ -876,6 +876,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             Compose();
             AttachSmokeDriverWhenRequested();
+            AttachPrivateOnlineDriverWhenRequested();
         }
 
         /// <summary>
@@ -891,6 +892,39 @@ namespace GuardsDigital.Presentation.Interaction
 
             var driver = gameObject.AddComponent<PlayerSmokeTestDriver>();
             driver.Configure(this);
+        }
+
+        /// <summary>
+        /// Milestone 8.31. Only a player launched with the private host or client flag constructs
+        /// its driver, the same rule the smoke driver follows: a normally launched build carries no
+        /// network hook at all, and a malformed private-online launch fails loudly instead of
+        /// starting a session nobody configured.
+        /// </summary>
+        private void AttachPrivateOnlineDriverWhenRequested()
+        {
+            if (!UnityEngine.Application.isPlaying)
+            {
+                return;
+            }
+
+            var options = GuardsDigital.Network.PrivateSessionLaunchOptions.Parse(
+                System.Environment.GetCommandLineArgs());
+            if (!options.IsValid)
+            {
+                UnityEngine.Debug.LogError("GUARDS_ONLINE: FAIL " + options.Error);
+                UnityEngine.Application.Quit(2);
+                return;
+            }
+
+            switch (options.Role)
+            {
+                case GuardsDigital.Network.PrivateSessionRole.Host:
+                    gameObject.AddComponent<PrivateHostDriver>().Configure(this, options);
+                    return;
+                case GuardsDigital.Network.PrivateSessionRole.Client:
+                    gameObject.AddComponent<PrivateClientDriver>().Configure(this, options);
+                    return;
+            }
         }
 
         private void OnDestroy()
