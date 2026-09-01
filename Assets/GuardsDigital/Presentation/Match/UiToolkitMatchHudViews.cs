@@ -3620,7 +3620,7 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>
         /// The upgrade-option controls this rebuild drew, in their rendered and focus order. The list
         /// refuses stale option forwarding and lets pointer or keyboard focus strengthen exactly one
-        /// centred gains row without painting an enclosing option frame.
+        /// centred item box without painting an enclosing option frame.
         /// </summary>
         private readonly List<KeyValuePair<SystemTransitionOptionViewModel, VisualElement>>
             upgradeOptionControls =
@@ -4154,13 +4154,6 @@ namespace GuardsDigital.Presentation.Match
                 pair.style.alignItems = Align.FlexStart;
                 pair.style.flexWrap = Wrap.NoWrap;
                 pair.style.backgroundColor = Color.clear;
-                var label = HudElements.Text(
-                    column[0].Color.ToString().ToUpperInvariant() + " PAIR",
-                    10f,
-                    MatchHudTheme.MutedText,
-                    FontStyle.Bold);
-                label.name = "gd-upgrade-pair-label";
-                pair.Add(label);
                 foreach (var option in column)
                 {
                     pair.Add(BuildUpgradeOption(option));
@@ -4182,7 +4175,7 @@ namespace GuardsDigital.Presentation.Match
         /// to the deck is named because p.15 takes it out of the hand.</para>
         ///
         /// <para>The whole control is the option. It paints no plate or outline; focus and pointer
-        /// strengthen only the already-visible gains row, so the face and every layout measurement stay
+        /// strengthen only the already-visible item box, so the face and every layout measurement stay
         /// unchanged.</para>
         /// </summary>
         private Button BuildUpgradeOption(SystemTransitionOptionViewModel option)
@@ -4229,37 +4222,34 @@ namespace GuardsDigital.Presentation.Match
             facts.style.alignItems = Align.Center;
             facts.style.opacity = UpgradeFactsRestingOpacity;
 
-            var gained = HudElements.Row(4f);
-            gained.name = "gd-upgrade-item";
-            gained.style.flexWrap = Wrap.NoWrap;
-            gained.style.width = CardFootprint.Width;
-            gained.style.justifyContent = Justify.Center;
-            gained.Add(HudElements.Text("GAINS", 9f, MatchHudTheme.MutedText, FontStyle.Bold));
+            var itemBox = HudElements.Row(3f);
+            itemBox.name = "gd-upgrade-item";
+            itemBox.style.flexWrap = Wrap.NoWrap;
+            itemBox.style.minWidth = 64f;
+            itemBox.style.justifyContent = Justify.Center;
+            itemBox.style.paddingLeft = 7f;
+            itemBox.style.paddingRight = 7f;
+            itemBox.style.paddingTop = 2f;
+            itemBox.style.paddingBottom = 2f;
+            itemBox.style.backgroundColor = MatchHudTheme.RailBackground;
+            HudElements.Border(itemBox, MatchHudTheme.PanelBorder, 1f, 3f);
             if (option.ItemIcon == PrintedValueChannel.None)
             {
                 // Two absences p.15 and p.16 produce between them - a deck with no second candidate, and
                 // a dashboard with no slot for the icon that one prints - and `Detail` already states
                 // which of the two this is. The chip is not drawn at all rather than drawn empty.
-                gained.Add(HudElements.Text("NO ITEM", 10f, MatchHudTheme.PrimaryText, FontStyle.Bold));
+                itemBox.Add(HudElements.Text(
+                    "NO ITEM", 10f, MatchHudTheme.PrimaryText, FontStyle.Bold));
             }
             else
             {
-                var chip = HudElements.Row(3f);
-                chip.style.flexWrap = Wrap.NoWrap;
-                chip.style.paddingLeft = 5f;
-                chip.style.paddingRight = 5f;
-                chip.style.paddingTop = 1f;
-                chip.style.paddingBottom = 1f;
-                chip.style.backgroundColor = MatchHudTheme.RailBackground;
-                HudElements.Border(chip, MatchHudTheme.PanelBorder, 1f, 3f);
-                chip.Add(HudElements.Text(
+                itemBox.Add(HudElements.Text(
                     MatchHudTheme.ChannelToken(option.ItemIcon), 9f, MatchHudTheme.MutedText,
                     FontStyle.Bold));
-                chip.Add(HudElements.Text(
+                itemBox.Add(HudElements.Text(
                     MatchHudTheme.Signed(1), 11f, MatchHudTheme.PrimaryText, FontStyle.Bold));
-                chip.tooltip = option.Detail;
-                gained.Add(chip);
             }
+            itemBox.tooltip = option.Detail;
 
             // The user's 2026-08-22 Game View decision: the item is the only one of the three facts
             // written under the card. Which card is set aside and which is returned to the deck are
@@ -4267,7 +4257,7 @@ namespace GuardsDigital.Presentation.Match
             // returned card is the one whose colour the column is - so spelling them out six times
             // said what the grid says. Both stay in the option's hover and assistive reading, where
             // this HUD already keeps a fact a surface stops drawing.
-            facts.Add(gained);
+            facts.Add(itemBox);
             return facts;
         }
 

@@ -4097,7 +4097,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void UpgradeChoices_ShowOnlySixCardsWithCenteredGainsAndNoComparisonFrames()
+        public void UpgradeChoices_ShowOnlySixCardsWithCenteredItemBoxesAndNoComparisonFrames()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
             var view = new RoundActionUnityView();
@@ -4171,10 +4171,15 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(control.style.paddingBottom.value.value, Is.EqualTo(0f).Within(0.001f));
                 Assert.That(control.style.paddingLeft.value.value, Is.EqualTo(0f).Within(0.001f));
 
-                var gains = Descendants(control)
+                var itemBox = Descendants(control)
                     .Single(element => element.name == "gd-upgrade-item");
-                Assert.That(gains.style.justifyContent.value, Is.EqualTo(Justify.Center),
-                    "Each GAINS row is centred beneath its own card rather than an obsolete frame.");
+                Assert.That(itemBox.style.justifyContent.value, Is.EqualTo(Justify.Center),
+                    "Each item box centres its channel and value beneath the card.");
+                Assert.That(itemBox.style.backgroundColor.value.a, Is.GreaterThan(0f),
+                    "The compact item reading has its own background without framing the option.");
+                Assert.That(Descendants(control).OfType<Label>()
+                        .Any(label => label.text == "GAINS"),
+                    Is.False, "The redundant GAINS prefix is removed.");
             }
 
             for (var pairIndex = 0; pairIndex < 3; pairIndex++)
@@ -4259,7 +4264,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void PointingAtAnUpgradeChoice_StrengthensOnlyItsCentredGainsRow()
+        public void PointingAtAnUpgradeChoice_StrengthensOnlyItsCentredItemBox()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _);
             var view = new RoundActionUnityView();
@@ -4285,7 +4290,7 @@ namespace GuardsDigital.Tests.EditMode
                     .Count(element => element.name == "gd-upgrade-facts" &&
                         Mathf.Abs(element.style.opacity.value - 1f) < 0.001f),
                 Is.EqualTo(1),
-                "Exactly one option strengthens its existing gains reading without a frame.");
+                "Exactly one option strengthens its existing item box without a frame.");
             Assert.That(
                 controls.Select(control => control.style.width.value.value), Is.EqualTo(widths),
                 "and marking it changes no card's width, so nothing re-wraps and no row moves.");

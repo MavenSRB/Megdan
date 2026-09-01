@@ -156,8 +156,8 @@ namespace GuardsDigital.Presentation.Match
         // physical hand; hovering or focusing one redraws that same complete face above its siblings.
         // Mandatory card decisions continue to use the separately calculated tall tray.
         public const float CardPanelHeight = DirectorHandsUnityView.PeekCardHeight + 40f;
-        // One horizontal Level Up comparison: a complete card, its option facts, the pair label and
-        // the prompt line. It may extend a little above the ordinary hand, but never changes the hero
+        // One horizontal Level Up choice row: a complete card, its centred item box, and the prompt
+        // line. It may extend a little above the ordinary hand, but never changes the hero
         // columns or the camera-safe board surface around the legacy near-full-height context.
         public const float UpgradeComparisonBandHeight = CardFootprint.Height + 130f;
         // Keeps UI Toolkit border/pixel snapping from turning two mathematically adjacent rectangles
@@ -835,14 +835,12 @@ namespace GuardsDigital.Presentation.Match
             trayRegion.style.width = tray.width;
             trayRegion.style.height = tray.height;
             trayRegion.style.maxWidth = tray.width;
-            trayRegion.style.backgroundColor = trayShowsUpgradeComparison
-                ? MatchHudTheme.PanelBackground
-                : new Color(0f, 0f, 0f, 0f);
-            trayRegion.style.borderTopWidth = trayShowsUpgradeComparison ? 1f : 0f;
-            trayRegion.style.borderTopColor = trayShowsUpgradeComparison
-                ? MatchHudTheme.PanelBorder
-                : new Color(0f, 0f, 0f, 0f);
-            // Milestone 8.29b: the comparison band is only one card row. Its own bounded rectangle may
+            // Milestone 8.30j: Upgrade keeps the bounded layout reservation and short-view scroll
+            // fallback but paints no comparison band or enclosing edge around its six cards.
+            trayRegion.style.backgroundColor = Color.clear;
+            trayRegion.style.borderTopWidth = 0f;
+            trayRegion.style.borderTopColor = Color.clear;
+            // Milestone 8.29b: the upgrade surface is only one card row. Its own bounded rectangle may
             // be a little taller than the ordinary hand, while every standing surface continues to use
             // ordinaryTray. Opening Level Up therefore never moves a plaque or reframes the board.
             trayRegion.style.maxHeight = tray.height;

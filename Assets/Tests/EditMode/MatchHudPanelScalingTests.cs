@@ -338,7 +338,7 @@ namespace GuardsDigital.Tests.EditMode
 
             // What the amendment did NOT move, which is most of the HUD. The chip is measured against
             // the identity row, so widening the strip left it exactly where 8.25c put it; the tray,
-            // the compact hand, the Level Up comparison band and the round dock are all placed from
+            // the compact hand, the Level Up card row and the round dock are all placed from
             // the panel bottom edge and are untouched.
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(width, height),

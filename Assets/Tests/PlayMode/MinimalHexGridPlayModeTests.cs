@@ -825,7 +825,7 @@ namespace GuardsDigital.Tests.PlayMode
                 var focusedFacts = Descendants(options[1])
                     .Single(element => element.name == "gd-upgrade-facts");
                 Assert.That(focusedFacts.resolvedStyle.opacity, Is.EqualTo(1f).Within(0.001f),
-                    "Keyboard focus strengthens the centred gains row without altering the face.");
+                    "Keyboard focus strengthens the centred item box without altering the face.");
                 using (var submit = NavigationSubmitEvent.GetPooled())
                 {
                     submit.target = options[1];
