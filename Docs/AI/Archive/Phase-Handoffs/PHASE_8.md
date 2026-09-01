@@ -733,3 +733,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.30n2 | The warm-ivory board/plaque/tied-Initiative identity link now changes only the permanently reserved two-unit plaque-edge colour; plaque and hero-face bounds remain identical before, during and after highlight while the existing bidirectional cue stays active. Focused and affected Edit/Play checks plus the inspected tied-Initiative capture pass without a rule, authority, agreement, rail composition, map, scene, networking or schema-v34 change. | `4d132b5b` |
+
+## Milestone 8.31 Establish the private host and six player seats completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.31 | Under the 2026-09-01 user-directed direct-socket amendment, one dedicated seatless host process seats six Windows TCP clients on one stable seat each, admitting only a matching protocol/build/schema/map/content tuple with session-key proof and refusing duplicate, unknown, reserved, changed, full-session, wrong-key, and malformed/oversized/overdue attempts by name; sockets stay in the deletable Unity-free adapter beneath the transport-neutral port and logs carry opaque ordinals, never addresses. Unity-free 1,799/1,799, complete Edit 2,166/2,166, complete Play 264/264, the player-build smoke gate, and two consecutive loopback rehearsals with ten self-exiting processes pass; the link stays plaintext with the encryption decision owed at 8.32. | `a6dcc4b2` |
