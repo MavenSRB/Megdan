@@ -29,6 +29,13 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public static class CardFootprint
     {
+        /// <summary>
+        /// The solid black perimeter reserved outside every complete card face. It is presentation
+        /// geometry rather than part of the printed content rectangle, so the 372:520 source crop and
+        /// the generated fallback keep the dimensions below.
+        /// </summary>
+        public const float ExteriorOutlineWidth = 4f;
+
         /// <summary>The verified private front's native pixel width.</summary>
         public const float ArtworkSourceWidth = 372f;
 

@@ -2341,6 +2341,145 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         [Test]
+        public void EveryCompleteCardSurface_UsesOneSharedThickBlackExteriorOutline()
+        {
+            var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);
+            try
+            {
+                using (ConfiguredCardArtwork.UseTextureLoader(_ => texture))
+                {
+                    var tray = new DirectorHandsUnityView();
+                    new DirectorHandsPresenter(
+                        ConfiguredMatchFixtures.CreateVerifiedMirrorSession(), tray).Refresh();
+
+                    var defense = new RoundActionUnityView();
+                    new RoundActionPresenter(
+                        ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse(), defense)
+                        .Refresh();
+
+                    var upgrade = new RoundActionUnityView();
+                    new RoundActionPresenter(
+                        ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out _),
+                        upgrade).Refresh();
+
+                    var chooser = new RoundActionUnityView();
+                    new RoundActionPresenter(SessionAwaitingACardValuedEffectChoice(), chooser)
+                        .Refresh();
+
+                    var rail = new HeroOverviewsUnityView();
+                    var resolved = ConfiguredMatchFixtures.CreateSessionWithADiscardedCard(out _);
+                    new HeroOverviewsPresenter(resolved, rail).Refresh();
+                    rail.ForwardTurnSlotHighlight(rail.Model.Heroes
+                        .SelectMany(hero => hero.TurnSlots).First(slot => slot.IsOccupied));
+
+                    var directFallback = new VisualElement();
+                    directFallback.Add(DirectorHandsUnityView.BuildStandaloneCard(
+                        CurrentRoundCards.DeckCard(
+                            new CardInstanceId("outline-generated-fallback"),
+                            new CardDefinition(
+                                new CardDefinitionId("outline-generated-fallback"),
+                                "test-outline-rev-1",
+                                "OUTLINE FALLBACK",
+                                new InitiativeValue(1),
+                                CardContentAuthority.SyntheticTestFixture,
+                                CardProgressionProfile.NotStated))));
+
+                    var surfaces = new (string Name, VisualElement Root)[]
+                    {
+                        ("the prepared hand, resolving and unavailable groups", tray.Root),
+                        ("Defense cards and their shared preview", defense.Root),
+                        ("Upgrade-a-Card candidates", upgrade.Root),
+                        ("a card-valued effect choice", chooser.Root),
+                        ("current, played and discarded rail previews", rail.Root),
+                        ("the generated fallback", directFallback)
+                    };
+
+                    foreach (var surface in surfaces)
+                    {
+                        var faces = Descendants(surface.Root)
+                            .Where(element =>
+                                element.name == "gd-card-choice" ||
+                                element.name == "gd-card-preview")
+                            .ToArray();
+                        Assert.That(faces, Is.Not.Empty, $"{surface.Name} exposes no complete face.");
+                        foreach (var face in faces)
+                        {
+                            var outlines = Descendants(face)
+                                .Where(element => element.name == "gd-card-exterior-outline")
+                                .ToArray();
+                            Assert.That(outlines, Has.Length.EqualTo(1),
+                                $"{surface.Name} must receive exactly one perimeter from the shared " +
+                                "complete-card builder.");
+                            var outline = outlines[0];
+                            Assert.That(outline.style.borderTopColor.value, Is.EqualTo(Color.black));
+                            Assert.That(outline.style.borderTopWidth.value,
+                                Is.EqualTo(4f), "The signed-off standard perimeter is four units.");
+                            Assert.That(outline.pickingMode, Is.EqualTo(PickingMode.Ignore));
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
+        [Test]
+        public void CardOutline_PreservesContentGeometryInputAndLifecycleAcrossEveryPresenter()
+        {
+            var states = new[]
+            {
+                ConfiguredMatchFixtures.CreateVerifiedMirrorSession(),
+                ConfiguredMatchFixtures.CreateSessionWithAFacedownCommitment(out _),
+                ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn(),
+                ConfiguredMatchFixtures.CreateSessionWithADiscardedCard(out _),
+                ConfiguredMatchFixtures.CreateSessionWithALiveActiveEffect(out _)
+            };
+
+            foreach (var session in states)
+            {
+                var view = new DirectorHandsUnityView();
+                var presenter = new DirectorHandsPresenter(session, view);
+                presenter.Refresh();
+                presenter.Refresh();
+
+                var faces = Descendants(view.Root)
+                    .Where(element => element.name == "gd-card-choice")
+                    .ToArray();
+                Assert.That(faces, Is.Not.Empty);
+                foreach (var face in faces)
+                {
+                    AssertIsTheStandardFootprint(face, "an outlined lifecycle state");
+                    Assert.That(face.pickingMode, Is.EqualTo(PickingMode.Position),
+                        "The unchanged card face remains the hit region; its perimeter never picks.");
+                    Assert.That(Descendants(face).Count(element =>
+                            element.name == "gd-card-exterior-outline"),
+                        Is.EqualTo(1),
+                        "A projection rebuild cannot accumulate perimeter geometry.");
+                    var content = Descendants(face).Single(element =>
+                        element.name == "gd-card-content-clip");
+                    Assert.That(content.style.width.value.value,
+                        Is.EqualTo(CardFootprint.Width).Within(0.01f));
+                    Assert.That(content.style.height.value.value,
+                        Is.EqualTo(CardFootprint.Height).Within(0.01f));
+                }
+            }
+
+            var facedown = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(
+                ConfiguredMatchFixtures.CreateSessionWithAFacedownCommitment(out _), facedown)
+                .Refresh();
+            var backs = Descendants(facedown.Root)
+                .Where(element => element.name == "gd-current-card-back")
+                .ToArray();
+            Assert.That(backs, Is.Not.Empty, "The reached facedown position must paint card backs.");
+            Assert.That(backs.All(back => Descendants(back.parent).Count(element =>
+                    element.name == "gd-card-exterior-outline") == 1),
+                Is.True, "Every visible compact back receives the scaled shared perimeter.");
+        }
+
+        [Test]
         public void EveryCompleteFaceConsumer_UsesTheOneArtworkAwareBuilder()
         {
             var texture = new Texture2D(372, 520, TextureFormat.RGBA32, false);

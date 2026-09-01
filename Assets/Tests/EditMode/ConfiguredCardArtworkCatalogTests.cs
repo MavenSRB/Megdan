@@ -194,8 +194,12 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(artwork.image, Is.SameAs(texture));
                 Assert.That(artwork.scaleMode, Is.EqualTo(ScaleMode.ScaleToFit),
                     "A verified 372x520 front is fitted without cropping or distortion.");
-                Assert.That(face.style.overflow.value, Is.EqualTo(Overflow.Hidden),
-                    "The exact artwork box clips only at the printed card boundary.");
+                Assert.That(face.style.overflow.value, Is.EqualTo(Overflow.Visible),
+                    "The outer surface leaves room for the perimeter beyond the printed boundary.");
+                var contentClip = Descendants(face).Single(element =>
+                    element.name == "gd-card-content-clip");
+                Assert.That(contentClip.style.overflow.value, Is.EqualTo(Overflow.Hidden),
+                    "The dedicated content box still clips exactly at the printed card boundary.");
                 Assert.That(Descendants(face).Any(element => element.name == "gd-card-frame"),
                     Is.False, "Prepared artwork does not construct the generated shell.");
                 Assert.That(Descendants(face).Any(element => element.name == "gd-card-history"),
@@ -237,7 +241,13 @@ namespace GuardsDigital.Tests.EditMode
 
                 AssertArtworkFootprint(face);
                 Assert.That(Descendants(face).Select(element => element.name),
-                    Is.EquivalentTo(new[] { "gd-card-preview", "gd-card-artwork" }));
+                    Is.EquivalentTo(new[]
+                    {
+                        "gd-card-preview",
+                        "gd-card-exterior-outline",
+                        "gd-card-content-clip",
+                        "gd-card-artwork"
+                    }));
                 Assert.That(face.style.borderTopWidth.value, Is.Zero);
                 Assert.That(face.style.borderRightWidth.value, Is.Zero);
                 Assert.That(face.style.borderBottomWidth.value, Is.Zero);

@@ -1596,6 +1596,7 @@ namespace GuardsDigital.Presentation.Match
             var element = BuildMiniCardShape(name);
             element.style.backgroundColor = MatchHudTheme.Face(card.Color);
             HudElements.Border(element, MatchHudTheme.PanelBorder, 1f, 3f);
+            ConfiguredCardFaceView.AddExteriorOutline(element, 1.5f, 4.5f);
 
             var band = new VisualElement { name = "gd-mini-card-band" };
             band.style.height = 4f;
@@ -1690,6 +1691,7 @@ namespace GuardsDigital.Presentation.Match
                 ? MatchHudTheme.CardBack
                 : MatchHudTheme.FaceFlag(current.Color);
             HudElements.Border(marker, new Color(ink.r, ink.g, ink.b, 0.45f), 2f, 6f);
+            ConfiguredCardFaceView.AddExteriorOutline(marker, 1.5f, 7.5f);
             marker.tooltip = current.AssistiveLabel;
 
             if (current.IsFacedown)
@@ -1824,7 +1826,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public const float ActiveOutlineWidth = 2f;
 
-        public const float ActiveOutlineGap = 3f;
+        public const float ActiveOutlineGap = 3f + CardFootprint.ExteriorOutlineWidth;
 
         /// <summary>
         /// The configured match's resting-hand footprint. The screenshot-approved safe area is tall
@@ -3487,21 +3489,25 @@ namespace GuardsDigital.Presentation.Match
             var viewport = ConfiguredMatchHudRenderer.PanelViewport;
             var bounds = anchor.worldBound;
             var rightLimit = isRightSideGroup
-                ? Mathf.Max(0f, viewport.x - CardFootprint.Width - 4f)
+                ? Mathf.Max(
+                    CardFootprint.ExteriorOutlineWidth,
+                    viewport.x - CardFootprint.Width - CardFootprint.ExteriorOutlineWidth)
                 : Mathf.Max(
-                    0f,
+                    CardFootprint.ExteriorOutlineWidth,
                     Mathf.Min(
                         viewport.x,
                         ConfiguredMatchHudRenderer.CompactHandRightEdge) -
-                    CardFootprint.Width);
+                    CardFootprint.Width - CardFootprint.ExteriorOutlineWidth);
             preview.style.left = Mathf.Clamp(
                 bounds.xMin,
-                0f,
+                CardFootprint.ExteriorOutlineWidth,
                 rightLimit);
             preview.style.top = Mathf.Clamp(
                 bounds.yMin,
                 ConfiguredMatchHudRenderer.StatusBarHeight + 4f,
-                Mathf.Max(0f, viewport.y - CardFootprint.Height - 4f));
+                Mathf.Max(
+                    CardFootprint.ExteriorOutlineWidth,
+                    viewport.y - CardFootprint.Height - CardFootprint.ExteriorOutlineWidth));
         }
 
         private void ClearPeekPreview()
@@ -3927,7 +3933,8 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private const float UpgradePairGap = 4f;
         public const float UpgradePairWidth =
-            (CardFootprint.Width * 2f) + UpgradePairGap;
+            (CardFootprint.Width * 2f) + UpgradePairGap +
+            (CardFootprint.ExteriorOutlineWidth * 4f);
 
         /// <summary>
         /// The printed item sits at the centre of the card's bottom band. The projected sibling item
@@ -4555,10 +4562,10 @@ namespace GuardsDigital.Presentation.Match
             control.style.flexShrink = 0f;
             control.style.width = CardFootprint.Width;
             control.style.height = CardFootprint.Height;
-            control.style.marginLeft = 0f;
-            control.style.marginRight = 0f;
-            control.style.marginTop = 0f;
-            control.style.marginBottom = 0f;
+            control.style.marginLeft = CardFootprint.ExteriorOutlineWidth;
+            control.style.marginRight = CardFootprint.ExteriorOutlineWidth;
+            control.style.marginTop = CardFootprint.ExteriorOutlineWidth;
+            control.style.marginBottom = CardFootprint.ExteriorOutlineWidth;
             HudElements.Padding(control, 0f);
             HudElements.Border(control, Color.clear, 0f, 0f);
             control.style.backgroundColor = Color.clear;

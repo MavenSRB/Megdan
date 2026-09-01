@@ -139,22 +139,104 @@ namespace GuardsDigital.Presentation.Match
             surface.style.flexDirection = FlexDirection.Column;
             surface.style.alignItems = Align.Stretch;
             surface.style.justifyContent = Justify.FlexStart;
-            surface.style.overflow = Overflow.Hidden;
+            surface.style.overflow = Overflow.Visible;
+            surface.style.backgroundColor = Color.clear;
             HudElements.Padding(surface, 0f);
+            HudElements.Border(surface, Color.clear, 0f, 0f);
+            CardFootprint.Apply(surface);
+
+            AddExteriorOutline(
+                surface,
+                CardFootprint.ExteriorOutlineWidth,
+                CornerRadius(CardFootprint.Width) + CardFootprint.ExteriorOutlineWidth);
+
+            // The perimeter must be allowed to paint beyond the unchanged content rectangle, while
+            // the printed scan must still clip to its rounded corners. A dedicated inner clip gives
+            // those two layers independent overflow contracts.
+            var content = new VisualElement
+            {
+                name = "gd-card-content-clip",
+                pickingMode = PickingMode.Ignore,
+                focusable = false
+            };
+            content.style.position = Position.Absolute;
+            content.style.left = 0f;
+            content.style.top = 0f;
+            content.style.right = 0f;
+            content.style.bottom = 0f;
+            content.style.flexDirection = FlexDirection.Column;
+            content.style.alignItems = Align.Stretch;
+            content.style.justifyContent = Justify.FlexStart;
+            content.style.overflow = Overflow.Hidden;
+            HudElements.Padding(content, 0f);
+            HudElements.Border(content, Color.clear, 0f, CornerRadius(CardFootprint.Width));
+            surface.Add(content);
 
             if (ConfiguredCardArtwork.TryLoadTexture(
                     card.DefinitionReference,
                     out var texture,
                     out _))
             {
-                BuildArtwork(surface, card, texture);
+                BuildArtwork(content, card, texture);
+                if (card.IsSelected)
+                {
+                    AddSelectionOutline(surface);
+                }
             }
             else
             {
-                BuildGeneratedFallback(surface, card);
+                BuildGeneratedFallback(content, card);
+                HudElements.MarkSelectedWithoutResizing(surface, card.IsSelected);
             }
 
             return surface;
+        }
+
+        private static void AddSelectionOutline(VisualElement surface)
+        {
+            var selection = new VisualElement
+            {
+                name = "gd-card-selection-outline",
+                pickingMode = PickingMode.Ignore,
+                focusable = false
+            };
+            selection.style.position = Position.Absolute;
+            selection.style.left = 0f;
+            selection.style.top = 0f;
+            selection.style.right = 0f;
+            selection.style.bottom = 0f;
+            HudElements.Border(
+                selection, MatchHudTheme.SelectedOutline, 3f,
+                CornerRadius(CardFootprint.ArtworkWidth));
+            surface.Add(selection);
+        }
+
+        /// <summary>
+        /// Adds the one pointer-transparent perimeter used by complete faces and scaled compact card
+        /// renderings. The negative inset keeps the entire line outside the existing content box.
+        /// </summary>
+        internal static VisualElement AddExteriorOutline(
+            VisualElement surface,
+            float width,
+            float radius)
+        {
+            if (surface == null) throw new ArgumentNullException(nameof(surface));
+            var outline = new VisualElement
+            {
+                name = "gd-card-exterior-outline",
+                pickingMode = PickingMode.Ignore,
+                focusable = false
+            };
+            outline.style.position = Position.Absolute;
+            outline.style.left = -width;
+            outline.style.top = -width;
+            outline.style.right = -width;
+            outline.style.bottom = -width;
+            outline.style.backgroundColor = Color.clear;
+            HudElements.Border(outline, Color.black, width, radius);
+            surface.Add(outline);
+            outline.SendToBack();
+            return outline;
         }
 
         /// <summary>
@@ -194,24 +276,6 @@ namespace GuardsDigital.Presentation.Match
             artwork.style.flexShrink = 0f;
             surface.Add(artwork);
 
-            if (card.IsSelected)
-            {
-                var selection = new VisualElement
-                {
-                    name = "gd-card-selection-outline",
-                    pickingMode = PickingMode.Ignore,
-                    focusable = false
-                };
-                selection.style.position = Position.Absolute;
-                selection.style.left = 0f;
-                selection.style.top = 0f;
-                selection.style.right = 0f;
-                selection.style.bottom = 0f;
-                HudElements.Border(
-                    selection, MatchHudTheme.SelectedOutline, 3f,
-                    CornerRadius(CardFootprint.ArtworkWidth));
-                surface.Add(selection);
-            }
         }
 
         private static void BuildGeneratedFallback(
@@ -222,7 +286,6 @@ namespace GuardsDigital.Presentation.Match
             surface.style.backgroundColor = MatchHudTheme.Face(card.Color);
             HudElements.Border(surface, MatchHudTheme.PanelBorder, 3f, 8f);
             surface.Add(DirectorHandsUnityView.BuildGeneratedCardFrame(card));
-            HudElements.MarkSelectedWithoutResizing(surface, card.IsSelected);
         }
     }
 }

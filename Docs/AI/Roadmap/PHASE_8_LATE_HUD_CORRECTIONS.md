@@ -339,7 +339,7 @@ Non-goals: No reduction, omission, quarantine, or reclassification of required t
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830l2-batch-compatible-focused-filters-into-one-unity-invocation-completion-evidence).
 
-### [ ] 8.30m Give every in-game card a thick black exterior outline
+### [x] 8.30m Give every in-game card a thick black exterior outline
 
 Blocked by: Milestone 8.30l2 must complete the focused-validation batching correction after 8.30l establishes the final playable-hand, resolving-card, and right-side unavailable-card composition and before this shared card-edge treatment is applied and validated across every card surface.
 
@@ -358,6 +358,8 @@ Acceptance checks:
 Closing checks: `EveryCompleteCardSurface_UsesOneSharedThickBlackExteriorOutline` and `CardOutline_PreservesContentGeometryInputAndLifecycleAcrossEveryPresenter` fail against the current mixed edge treatments and pass when the finite surface inventory shares one unclipped, invariant perimeter through all tested states.
 
 Non-goals: No card rule, definition, availability, lifecycle, ordering, commitment, Defense, Level Up, command, snapshot, replay, Undo, hidden-information, card content, source-artwork, generated-face anatomy, card-footprint, hover-preview, drag, spent-group, or Upgrade layout change; no runtime image processing, private-asset publication, networking implementation, new accessibility/settings suite, or broader HUD redesign.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830m-give-every-in-game-card-a-thick-black-exterior-outline-completion-evidence).
 
 ### [ ] 8.30n Require public teammate agreement for tied Initiative and Minion Battle removal
 
