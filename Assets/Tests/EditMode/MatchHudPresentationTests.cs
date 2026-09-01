@@ -4282,7 +4282,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(facts.style.position.value, Is.EqualTo(Position.Absolute));
                 Assert.That(facts.style.top.value.value,
-                    Is.GreaterThan(CardFootprint.Height * 0.9f)
+                    Is.GreaterThan(CardFootprint.Height * 0.88f)
                         .And.LessThan(CardFootprint.Height),
                     "The item box overlays only the candidate's bottom printed item position.");
                 Assert.That(control.style.height.value.value,
@@ -4295,6 +4295,9 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(facts.style.opacity.value, Is.EqualTo(1f).Within(0.001f));
                 Assert.That(item.style.backgroundColor.value.a, Is.EqualTo(1f).Within(0.001f),
                     "The backed item reading is fully opaque at rest.");
+                Assert.That(item.style.height.value.value,
+                    Is.EqualTo(46f).Within(0.01f),
+                    "The opaque box fully masks the candidate's original printed item icon.");
                 Assert.That(Descendants(item).OfType<Label>().Select(label => label.text),
                     Is.EqualTo(new[] { "+1" }),
                     "The item box keeps only the signed value as text.");
@@ -4385,8 +4388,9 @@ namespace GuardsDigital.Tests.EditMode
                 "Every resting item box is fully opaque.");
             Assert.That(controls.SelectMany(Descendants)
                     .Where(element => element.name == "gd-upgrade-item")
-                    .Select(element => element.style.borderTopColor.value),
-                Has.All.EqualTo(MatchHudTheme.PanelBorder));
+                    .All(element => element.style.borderTopColor.value ==
+                        element.style.backgroundColor.value),
+                Is.True, "The resting mask blends into the card-bottom colour without an edge.");
 
             var chosen = prompt.Options[3];
             view.ForwardUpgradeOptionHighlight(chosen);
@@ -4411,8 +4415,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(view.HighlightedUpgradeOption, Is.Null);
             Assert.That(controls.SelectMany(Descendants)
                     .Where(element => element.name == "gd-upgrade-item")
-                    .Select(element => element.style.borderTopColor.value),
-                Has.All.EqualTo(MatchHudTheme.PanelBorder));
+                    .All(element => element.style.borderTopColor.value ==
+                        element.style.backgroundColor.value),
+                Is.True, "Leaving focus restores the seamless card-bottom treatment.");
         }
 
         [Test]

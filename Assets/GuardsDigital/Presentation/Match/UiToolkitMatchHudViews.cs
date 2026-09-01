@@ -3781,7 +3781,11 @@ namespace GuardsDigital.Presentation.Match
         /// The printed item sits at the centre of the card's bottom band. The projected sibling item
         /// covers only that conflicting symbol and remains wholly inside the standard face.
         /// </summary>
-        private const float UpgradeItemOverlayTop = CardFootprint.Height - 40f;
+        private const float UpgradeItemOverlayHeight = 46f;
+        private const float UpgradeItemOverlayTop =
+            CardFootprint.Height - UpgradeItemOverlayHeight;
+        private static readonly Color UpgradeItemOverlayBackground =
+            new Color(0.216f, 0.216f, 0.216f, 1f);
 
         /// <summary>
         /// The legacy framed footprint retained by other card-valued choice families. Defense itself
@@ -4440,14 +4444,18 @@ namespace GuardsDigital.Presentation.Match
             itemBox.name = "gd-upgrade-item";
             itemBox.style.flexWrap = Wrap.NoWrap;
             itemBox.style.minWidth = 86f;
+            itemBox.style.height = UpgradeItemOverlayHeight;
+            itemBox.style.minHeight = UpgradeItemOverlayHeight;
+            itemBox.style.maxHeight = UpgradeItemOverlayHeight;
             itemBox.style.justifyContent = Justify.Center;
+            itemBox.style.alignItems = Align.Center;
             itemBox.style.paddingLeft = 7f;
             itemBox.style.paddingRight = 7f;
             itemBox.style.paddingTop = 3f;
             itemBox.style.paddingBottom = 3f;
-            itemBox.style.backgroundColor = new Color(0.035f, 0.042f, 0.047f, 1f);
+            itemBox.style.backgroundColor = UpgradeItemOverlayBackground;
             itemBox.pickingMode = PickingMode.Ignore;
-            HudElements.Border(itemBox, MatchHudTheme.PanelBorder, 2f, 3f);
+            HudElements.Border(itemBox, UpgradeItemOverlayBackground, 2f, 3f);
             if (option.ItemIcon == PrintedValueChannel.None)
             {
                 // Two absences p.15 and p.16 produce between them - a deck with no second candidate, and
@@ -4546,11 +4554,11 @@ namespace GuardsDigital.Presentation.Match
                     if (item != null)
                     {
                         item.style.backgroundColor = highlighted
-                            ? Color.Lerp(MatchHudTheme.RailBackground, MatchHudTheme.ShineGlow, 0.16f)
-                            : new Color(0.035f, 0.042f, 0.047f, 1f);
+                            ? Color.Lerp(UpgradeItemOverlayBackground, MatchHudTheme.ShineGlow, 0.16f)
+                            : UpgradeItemOverlayBackground;
                         item.style.borderTopColor = highlighted
                             ? MatchHudTheme.ShineRim
-                            : MatchHudTheme.PanelBorder;
+                            : UpgradeItemOverlayBackground;
                         item.style.borderRightColor = item.style.borderTopColor;
                         item.style.borderBottomColor = item.style.borderTopColor;
                         item.style.borderLeftColor = item.style.borderTopColor;

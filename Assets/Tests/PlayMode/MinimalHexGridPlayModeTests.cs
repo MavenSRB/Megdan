@@ -840,10 +840,13 @@ namespace GuardsDigital.Tests.PlayMode
                     Is.EqualTo(card.worldBound.center.x).Within(UiPlayer.PixelSnapping()),
                     "The gained item is centred over the printed bottom item position.");
                 Assert.That(item.worldBound.yMin,
-                    Is.GreaterThan(card.worldBound.yMin + (card.worldBound.height * 0.9f)));
+                    Is.GreaterThan(card.worldBound.yMin + (card.worldBound.height * 0.88f)));
                 Assert.That(item.worldBound.yMax,
                     Is.LessThanOrEqualTo(card.worldBound.yMax + UiPlayer.PixelSnapping()),
                     "The backed box remains wholly on the face instead of forming a detached row.");
+                Assert.That(item.worldBound.height,
+                    Is.EqualTo(46f).Within(UiPlayer.PixelSnapping()),
+                    "The opaque box is tall enough to mask the candidate's printed item icon.");
                 Assert.That(Descendants(item)
                         .Count(element => element.name == "gd-printed-channel-symbol"),
                     Is.EqualTo(1));
