@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.30l Move unavailable cards from the playable hand into a right-side HUD group completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30l | The current-hand projection partitions selectable and resolving cards into the established bottom-left hand and non-resolving unavailable cards into a dimmed, inspectable bottom-right fan. End Turn occupies the status bar's top-right slot while an 80-unit white round Tie Breaker badge with side-coloured disc and one-line `TIEBREAKER` label is centred. Unavailable faces cannot select, drag or submit, and lifecycle refreshes do not duplicate cards, leak another hand, move rails or reframe the map. Affected Edit, focused and complete Play, non-batch two-resolution captures, governance and living-document checks pass; review found no remaining player-experience, rules-authority, maintainability or project-risk defect. | `e6e1649b` |
+
 ## Milestone 8.30l1 Isolate the performance baseline from hidden-Editor frame pacing completion evidence
 
 | ID | Outcome | Commit |
