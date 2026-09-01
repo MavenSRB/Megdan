@@ -703,3 +703,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.30l3 | The compact status strip crops a doubled solid Tie Breaker coin, carries the continuous warm narration lane behind a full-height Blue-rail-aligned End Turn rectangle, and keeps held cards bottom-left with the resolving card rightmost while only genuinely unavailable lifecycle cards occupy bottom-right. Focused Edit/Play and both inspected desktop captures pass without a rules, authority, map, content, command, snapshot or schema-v34 change. | `01ae4a25` |
+
+## Milestone 8.30l2 Batch compatible focused filters into one Unity invocation completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.30l2 | The fixed request contract groups an ordered array of compatible focused fixture or test names into one Unity filter and one Editor process while rejecting malformed or ambiguous composites before process activity. Scalar compatibility, serial platform/batch boundaries, fresh per-test NUnit evidence, and every prior launcher safeguard remain intact; the launcher contract and both complete T3 Unity suites pass without a gameplay, presentation, rules, schema, project-setting, package, scene, build, or networking change. | `4ccf02f2` |
