@@ -1152,13 +1152,22 @@ namespace GuardsDigital.Tests.PlayMode
                 .Single(value => value.hero.HeroId.Equals(heroId)).index;
             var rail = UiPlayer.Descendants(runtime.HeroOverviewsView.Root)
                 .Where(element => element.name == "gd-hero-rail").ElementAt(heroIndex);
+            var face = Named(rail, "gd-hero-icon");
+            var railBefore = rail.worldBound;
+            var faceBefore = face.worldBound;
+            var snap = UiPlayer.PixelSnapping();
 
             UiPlayer.PointAt(buttons[0]);
             yield return null;
             Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Ally));
-            Assert.That(rail.resolvedStyle.borderTopWidth, Is.EqualTo(4f));
+            Assert.That(rail.resolvedStyle.borderTopWidth,
+                Is.EqualTo(HeroOverviewsUnityView.HeroIdentityEdgeWidth));
+            AssertBoundsEqual(railBefore, rail.worldBound, snap,
+                "The plaque must not flinch under the ivory identity cue.");
+            AssertBoundsEqual(faceBefore, face.worldBound, snap,
+                "The hero face must remain stationary under the ivory identity cue.");
             if (!UnityEngine.Application.isBatchMode)
-                yield return Capture("tmp/milestone-8-30n-tied-initiative-2560x1440.png");
+                yield return Capture("tmp/milestone-8-30n2-stationary-hero-highlight-2560x1440.png");
             UiPlayer.PointAway(buttons[0]);
 
             UiPlayer.PointAt(rail);
@@ -1168,6 +1177,10 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.PointAway(rail);
             yield return null;
             Assert.That(tile.CornerHighlight.Kind, Is.Not.EqualTo(HexCornerHighlightKind.Ally));
+            AssertBoundsEqual(railBefore, rail.worldBound, snap,
+                "Clearing the identity cue must not move the plaque.");
+            AssertBoundsEqual(faceBefore, face.worldBound, snap,
+                "Clearing the identity cue must not move the hero face.");
 
             UiPlayer.SetPlayerViewport(
                 restoreWidth, restoreHeight, "8.30n restore the prior viewport");
@@ -1177,6 +1190,14 @@ namespace GuardsDigital.Tests.PlayMode
         // -------------------------------------------------------------------------------------------
         // Helpers
         // -------------------------------------------------------------------------------------------
+
+        private static void AssertBoundsEqual(Rect expected, Rect actual, float tolerance, string message)
+        {
+            Assert.That(actual.x, Is.EqualTo(expected.x).Within(tolerance), message);
+            Assert.That(actual.y, Is.EqualTo(expected.y).Within(tolerance), message);
+            Assert.That(actual.width, Is.EqualTo(expected.width).Within(tolerance * 2f), message);
+            Assert.That(actual.height, Is.EqualTo(expected.height).Within(tolerance * 2f), message);
+        }
 
         /// <summary>An ordinary control height, which End Turn is deliberately well above.</summary>
         private const float HudControlHeightFloor = 46f;

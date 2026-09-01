@@ -406,3 +406,21 @@ Closing check: `PassNoCard_OccupiesEndTurnsTopRightSlotWithoutASecondCornerContr
 Non-goals: No Pass or End Turn availability, command, turn, commitment, hand, card lifecycle, hidden-information, rule, snapshot, replay, Undo, networking, card presentation, status-strip, Tie Breaker, rail, map, scene, package, project-setting, or schema change; no general HUD redesign.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830n1-move-empty-hand-pass-into-end-turns-top-right-slot-completion-evidence).
+
+### [x] 8.30n2 Keep hero plaques stationary under the ivory identity highlight
+
+Blocked by: Milestone 8.30n established the permanent plaque/board/tied-Initiative identity link and its warm-ivory cue; corrective 8.30n1 completed the immediately preceding HUD placement correction.
+
+Observable outcome: Turning the warm-ivory hero identity highlight on, switching it between heroes, or turning it off changes only the reserved plaque edge's colour; the plaque, portrait, text, rows, neighbouring plaques, rails, and board remain stationary.
+
+Acceptance checks:
+
+- Every hero plaque permanently reserves the same two-unit top edge in its resting, viewed, ivory-highlighted, and restored states. Highlight changes only that edge's colour to warm ivory and never changes border width, padding, margin, flex basis, resolved size, or child position.
+- Pointing at a plaque, its board hero, or a tied-Initiative hero button retains the existing bidirectional identity channel and board six-corner glow. Moving between heroes and clearing hover restores the correct transparent or viewed-selection top-edge colour without a one-frame geometry change.
+- Focused Edit Mode style-state coverage and focused Play Mode live-bound coverage prove the plaque and `gd-hero-icon` bounds are identical before, during, and after the highlight, including the tied-Initiative route that introduced the cue. Targeted non-batch inspection confirms that no hero face flinches.
+
+Closing check: `HeroHoverLink_ChangesOnlyTheReservedTopEdgeColorWithoutMovingThePlaqueOrFace` fails while highlight expands the top border from two to four units and passes when all linked states preserve identical geometry.
+
+Non-goals: No hero identity, portrait, team, viewed-selection, board cue, tied-Initiative, agreement, command, rule, rail composition, plaque size, padding, card, hand, map fit, networking, scene, package, project-setting, snapshot, replay, Undo, or schema change; no redesign of the ivory palette or other hover treatments.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830n2-keep-hero-plaques-stationary-under-the-ivory-identity-highlight-completion-evidence).

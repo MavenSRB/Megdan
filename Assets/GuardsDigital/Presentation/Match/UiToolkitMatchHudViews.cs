@@ -708,6 +708,8 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class HeroOverviewsUnityView : IHeroOverviewsView
     {
+        public const float HeroIdentityEdgeWidth = 2f;
+
         private readonly VisualElement redColumn;
         private readonly VisualElement blueColumn;
         private readonly VisualElement preview;
@@ -865,14 +867,16 @@ namespace GuardsDigital.Presentation.Match
             if (highlightedHero.Equals(heroId)) return;
             if (highlightedHero.IsDefined && heroRails.TryGetValue(highlightedHero, out var previous))
             {
-                previous.style.borderTopWidth = 2f;
+                previous.style.borderTopWidth = HeroIdentityEdgeWidth;
                 previous.style.borderTopColor = heroRailRestingTopColors[highlightedHero];
             }
 
             highlightedHero = heroId;
             if (highlightedHero.IsDefined && heroRails.TryGetValue(highlightedHero, out var current))
             {
-                current.style.borderTopWidth = 4f;
+                // Corrective 8.30n2: the identity cue is colour in permanently reserved geometry.
+                // Expanding this edge moved every child, including the hero face, on hover.
+                current.style.borderTopWidth = HeroIdentityEdgeWidth;
                 current.style.borderTopColor = HexCornerHighlightTemplate.AllyColor;
             }
 
@@ -1024,7 +1028,7 @@ namespace GuardsDigital.Presentation.Match
             {
                 if (heroRails.TryGetValue(highlightedHero, out var highlightedRail))
                 {
-                    highlightedRail.style.borderTopWidth = 4f;
+                    highlightedRail.style.borderTopWidth = HeroIdentityEdgeWidth;
                     highlightedRail.style.borderTopColor = HexCornerHighlightTemplate.AllyColor;
                 }
                 else
@@ -1075,7 +1079,7 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.29b. Selection is a colour change inside permanently reserved geometry.
             // Adding this width only to the viewed plaque made Yoga renegotiate that plaque's height
             // and shifted the plaques below it whenever the viewed hero changed.
-            rail.style.borderTopWidth = 2f;
+            rail.style.borderTopWidth = HeroIdentityEdgeWidth;
             rail.style.borderTopColor = hero.IsViewed
                 ? MatchHudTheme.SelectedOutline
                 : new Color(0f, 0f, 0f, 0f);

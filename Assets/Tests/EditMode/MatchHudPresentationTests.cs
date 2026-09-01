@@ -97,25 +97,39 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void HeroHoverLink_IsAlwaysAvailableBetweenTheMapAndEveryPlaque()
+        public void HeroHoverLink_ChangesOnlyTheReservedTopEdgeColorWithoutMovingThePlaqueOrFace()
         {
             var session = ConfiguredMatchFixtures.CreateConfiguredSession();
             var view = new HeroOverviewsUnityView();
             new HeroOverviewsPresenter(session, view).Refresh();
             var hero = view.Model.Heroes[0].HeroId;
             var rail = RailOf(view, hero);
+            var face = Descendants(rail).Single(element => element.name == "gd-hero-icon");
             var forwarded = default(HeroId);
             view.HeroHighlighted += value => forwarded = value;
+            var restingColor = rail.style.borderTopColor.value;
+            var restingWidth = rail.style.borderTopWidth.value;
+            var restingPadding = rail.style.paddingTop.value.value;
+            var restingFaceWidth = face.style.width.value.value;
+            var restingFaceHeight = face.style.height.value.value;
 
             view.SetHighlightedHero(hero);
-            Assert.That(rail.style.borderTopWidth.value, Is.EqualTo(4f));
+            Assert.That(restingWidth, Is.EqualTo(HeroOverviewsUnityView.HeroIdentityEdgeWidth));
+            Assert.That(rail.style.borderTopWidth.value, Is.EqualTo(restingWidth),
+                "The ivory identity cue cannot expand the plaque edge and move its contents.");
             Assert.That(rail.style.borderTopColor.value, Is.EqualTo(HexCornerHighlightTemplate.AllyColor));
+            Assert.That(rail.style.paddingTop.value.value, Is.EqualTo(restingPadding));
+            Assert.That(face.style.width.value.value, Is.EqualTo(restingFaceWidth));
+            Assert.That(face.style.height.value.value, Is.EqualTo(restingFaceHeight));
 
             view.ForwardHeroHighlight(hero);
             Assert.That(forwarded, Is.EqualTo(hero),
                 "Plaque hover forwards the same hero identity back to the map channel.");
             view.ForwardHeroHighlight(default);
             Assert.That(forwarded.IsDefined, Is.False);
+            Assert.That(rail.style.borderTopWidth.value, Is.EqualTo(restingWidth));
+            Assert.That(rail.style.borderTopColor.value, Is.EqualTo(restingColor));
+            Assert.That(rail.style.paddingTop.value.value, Is.EqualTo(restingPadding));
         }
 
         // -------------------------------------------------------------------------------------------

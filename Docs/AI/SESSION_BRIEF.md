@@ -12,11 +12,11 @@ The route has completed approved HUD corrections **8.29a-8.29b1b** and **8.30f-8
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.30n1**.
+- Current completed milestone: **8.30n2**.
 - Active authorized milestone: **none**.
 - Next proposed milestone: **8.31**.
 
-Completed late-HUD work through **8.30n1** keeps map-first choices, optional-step banners, printed item symbols, the stationary bottom-left hand/right-side unavailable fan, the cropped top-strip composition, and public teammate agreement for tied Initiative and Minion Battle confirmation. Empty-hand `PASS - NO CARD` now occupies End Turn's mutually exclusive top-right status slot instead of the bottom-right corner. Exact current behavior lives in [Project/MATCH_HUD.md](Project/MATCH_HUD.md); immutable outcome/evidence lives in the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md).
+Completed late-HUD work through **8.30n2** keeps map-first choices, optional-step banners, printed item symbols, the stationary bottom-left hand/right-side unavailable fan, the cropped top-strip composition, and public teammate agreement for tied Initiative and Minion Battle confirmation. Empty-hand `PASS - NO CARD` occupies End Turn's mutually exclusive top-right status slot, and the ivory hero-link cue changes only the reserved plaque-edge colour without moving the plaque or face. Exact current behavior lives in [Project/MATCH_HUD.md](Project/MATCH_HUD.md); immutable outcome/evidence lives in the [Phase 8 archive](Archive/Phase-Handoffs/PHASE_8.md).
 
 Corrective **8.30l2** completed on 2026-09-01. The fixed validation request now accepts one ordered array of distinct focused fixture or test names, rejects malformed or ambiguous composite requests before support-process activity, and emits one semicolon-separated Unity filter for one Editor process per compatible platform and batch-mode boundary. Scalar unfiltered and legacy requests remain compatible; active recipes group only the smallest affected set and keep incompatible boundaries serial. The launcher contract passes 28/28 after its composite closing check's recorded red-to-green transition, and complete gates pass 2,099/2,099 Edit plus 262/262 Play without a gameplay, presentation, schema, project-setting, package, scene, build, or networking change.
 
@@ -30,7 +30,7 @@ Earlier Phase 8 milestones established the verified six-hero roster, typed effec
 
 The mechanics-showcase amendment is finished; [Roadmap/PHASE_6_SHOWCASE.md](Roadmap/PHASE_6_SHOWCASE.md) owns which card carries which modes.
 
-Roadmap amendments through 2026-09-01: completed late-HUD work through **8.30n1** is summarized above. The remaining route is **8.31**; exact checks live in [the late-HUD roadmap shard](Roadmap/PHASE_8_LATE_HUD_CORRECTIONS.md).
+Roadmap amendments through 2026-09-01: completed late-HUD work through **8.30n2** is summarized above. The remaining route is **8.31**; exact checks live in [the late-HUD roadmap shard](Roadmap/PHASE_8_LATE_HUD_CORRECTIONS.md).
 
 Standing route exceptions: none remain. Phase 6's exact sequencing lives in its three [Roadmap/](Roadmap/) shards and its per-milestone evidence is addressed by SHA from the [Phase 6 archive](Archive/Phase-Handoffs/PHASE_6.md); scheduling is not authorization.
 
