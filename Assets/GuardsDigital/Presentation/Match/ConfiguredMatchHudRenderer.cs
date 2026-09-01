@@ -760,8 +760,10 @@ namespace GuardsDigital.Presentation.Match
             round.EndTurnRoot.RemoveFromHierarchy();
             round.EndTurnRoot.style.position = Position.Absolute;
             root.Add(round.EndTurnRoot);
-            // Pass keeps its bottom-right host while sharing End Turn's rectangular full-shine
-            // treatment. Commitment confirmation alone uses the lane immediately below DIRECTOR.
+            // Empty-hand Pass and End Turn are mutually exclusive projections of the same top-right
+            // status slot. Keeping separate passive views preserves their existing presenters and
+            // commands; the pointer-transparent empty host cannot cover whichever control is live.
+            // Commitment confirmation alone uses the lane immediately below DIRECTOR.
             hands.CornerActionsRoot.RemoveFromHierarchy();
             hands.CornerActionsRoot.style.position = Position.Absolute;
             root.Add(hands.CornerActionsRoot);
@@ -1182,21 +1184,6 @@ namespace GuardsDigital.Presentation.Match
         private static Rect GetEndTurnControlRect() =>
             CalculateEndTurnControlRect(PanelViewport.x, PanelViewport.y);
 
-        private static Rect CalculateCornerActionControlRect(float panelWidth, float panelHeight)
-        {
-            var handRightEdge = CalculateCompactHandPointerRect(panelWidth, panelHeight).xMax;
-            var width = Mathf.Min(
-                CornerActionControlWidth, Mathf.Max(0f, panelWidth - Margin - handRightEdge));
-            var height = Mathf.Min(
-                EndTurnControlHeight,
-                Mathf.Max(0f, panelHeight - StatusBarHeight - (Margin * 2f)));
-            return new Rect(
-                Mathf.Max(handRightEdge, panelWidth - width - Margin),
-                Mathf.Max(StatusBarHeight + Margin, panelHeight - height - Margin),
-                width,
-                height);
-        }
-
         /// <summary>
         /// Where the `DIRECTOR` toggle stands: directly below the live third Red hero. Level Up no
         /// longer relocates it because the comparison surface is one bounded row between the rails.
@@ -1349,12 +1336,10 @@ namespace GuardsDigital.Presentation.Match
             var corner = hands?.CornerActionsRoot;
             if (corner != null)
             {
-                var viewport = PanelViewport;
-                var cornerRect = CalculateCornerActionControlRect(viewport.x, viewport.y);
-                corner.style.left = cornerRect.x;
-                corner.style.top = cornerRect.y;
-                corner.style.width = cornerRect.width;
-                corner.style.height = cornerRect.height;
+                corner.style.left = rect.x;
+                corner.style.top = rect.y;
+                corner.style.width = rect.width;
+                corner.style.height = rect.height;
             }
 
             var confirm = hands?.ConfirmActionRoot;

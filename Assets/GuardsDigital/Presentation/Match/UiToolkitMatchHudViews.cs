@@ -1985,7 +1985,7 @@ namespace GuardsDigital.Presentation.Match
             // carried is not rebuilt - the narration and the rails already say it.
             header.style.display = DisplayStyle.None;
             cornerActions = new VisualElement { name = "gd-hand-corner-actions" };
-            // The host itself must never take the pointer: it shares End Turn's corner rect,
+            // The host itself must never take the pointer: it shares End Turn's top-right rect,
             // and a pickable empty host swallowed every End Turn click (three journeys caught
             // it). Its banner children pick for themselves.
             cornerActions.pickingMode = PickingMode.Ignore;
@@ -2033,9 +2033,9 @@ namespace GuardsDigital.Presentation.Match
         public const float CornerBannerFontSize = 16f;
 
         /// <summary>
-        /// The hand's Pass and Confirm banners. It begins inside <see cref="Root"/> so this view
-        /// remains complete in isolation; the configured HUD reparents it into the panel's
-        /// bottom-right corner. End Turn now occupies the separate top-right status-bar slot.
+        /// The hand's Pass banner. It begins inside <see cref="Root"/> so this view remains complete
+        /// in isolation; the configured HUD reparents it into End Turn's mutually exclusive
+        /// top-right status-bar slot.
         /// </summary>
         public VisualElement CornerActionsRoot => cornerActions;
 
@@ -2247,8 +2247,8 @@ namespace GuardsDigital.Presentation.Match
             cards.style.minWidth = rowWidth;
             cards.style.maxWidth = rowWidth;
 
-            // No hand-status bar. Pass stays in the panel's bottom-right corner, while commitment
-            // Confirm has its dedicated lane below DIRECTOR and End Turn has the status-bar slot.
+            // No hand-status bar. Pass shares End Turn's mutually exclusive top-right status slot,
+            // while commitment Confirm has its dedicated lane below DIRECTOR.
             // Pass is the empty-hand player's only move, so it uses End Turn's rectangular full-shine
             // treatment rather than the older swallowtail submit-card treatment.
             // The Button texts stay the exact selector strings every
@@ -2272,13 +2272,13 @@ namespace GuardsDigital.Presentation.Match
                     text = "PASS - NO CARD"
                 };
                 pass.SetVisibleLabel("PASS - NO CARD");
-                pass.style.minHeight = CornerBannerHeight;
+                pass.style.minHeight = ConfiguredMatchHudRenderer.EndTurnControlHeight;
                 pass.style.fontSize = RoundActionUnityView.EndTurnControlFontSize;
                 pass.style.unityFontStyleAndWeight = FontStyle.Bold;
                 pass.style.unityTextAlign = TextAnchor.MiddleCenter;
                 pass.style.flexGrow = 1f;
                 pass.style.flexShrink = 0f;
-                pass.style.marginBottom = 8f;
+                pass.style.marginBottom = 0f;
                 cornerActions.Add(pass);
             }
 

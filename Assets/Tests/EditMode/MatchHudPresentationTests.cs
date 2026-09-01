@@ -3800,7 +3800,7 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(confirms, Has.Length.EqualTo(1));
                 Assert.That(Descendants(hands.CornerActionsRoot)
                     .Any(element => element.name == "gd-confirm-control"), Is.False,
-                    "Only Pass retains the bottom-right corner host.");
+                    "The Pass host contains no duplicate commitment confirmation.");
                 Assert.That(Descendants(hands.ConfirmActionRoot)
                     .Single(element => element.name == "gd-confirm-control"), Is.SameAs(confirms[0]));
                 Assert.That(hands.ConfirmActionRoot.style.display.value, Is.EqualTo(DisplayStyle.Flex));
@@ -4212,7 +4212,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void PassNoCard_UsesEndTurnsRectangularFullShineTreatment()
+        public void PassNoCard_OccupiesEndTurnsTopRightSlotWithoutASecondCornerControl()
         {
             var session = ConfiguredMatchFixtures.CreateSessionWithAPassingHero(
                 out var passingHeroId);
@@ -4234,6 +4234,38 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(RoundActionUnityView.EndTurnControlFontSize));
             Assert.That(pass.style.unityFontStyleAndWeight.value, Is.EqualTo(FontStyle.Bold));
             Assert.That(pass.style.unityTextAlign.value, Is.EqualTo(TextAnchor.MiddleCenter));
+
+            var host = new GameObject("8.30n1-pass-layout");
+            try
+            {
+                var round = new RoundActionUnityView();
+                var hud = host.AddComponent<ConfiguredMatchHudRenderer>();
+                hud.Configure(
+                    view,
+                    round,
+                    new UndoRestartUnityView(),
+                    new DiagnosticLogUnityView(),
+                    new MinionChoiceUnityView(),
+                    new HeroOverviewsUnityView());
+
+                var expected = hud.EndTurnControlRect;
+                Assert.That(view.CornerActionsRoot.style.left.value.value, Is.EqualTo(expected.x));
+                Assert.That(view.CornerActionsRoot.style.top.value.value, Is.EqualTo(expected.y));
+                Assert.That(view.CornerActionsRoot.style.width.value.value, Is.EqualTo(expected.width));
+                Assert.That(view.CornerActionsRoot.style.height.value.value, Is.EqualTo(expected.height));
+                Assert.That(pass.style.minHeight.value.value, Is.EqualTo(expected.height));
+                Assert.That(pass.style.marginBottom.value.value, Is.Zero,
+                    "Pass fills the top-right status slot rather than retaining its old bottom inset.");
+                Assert.That(Descendants(hud.RootElement)
+                    .Count(element => element.name == "gd-pass-control"), Is.EqualTo(1));
+                Assert.That(round.EndTurnRoot.style.display.value, Is.EqualTo(DisplayStyle.None));
+                Assert.That(round.EndTurnRoot.childCount, Is.Zero,
+                    "The empty-hand Pass state does not paint a competing End Turn control.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
         }
 
         [Test]

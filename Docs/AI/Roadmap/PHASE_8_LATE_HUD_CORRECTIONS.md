@@ -387,3 +387,22 @@ Closing checks: `TiedInitiative_PlayerSeatsWaitForUnanimousPublicCandidatePrefer
 Non-goals: No change to Initiative values, Initiative or Minion Battle candidate calculation, required removal count, Heavy-last ordering, Tie Breaker ownership or flip timing, reveal timing, action resolution, card visibility, hidden information, snapshots, deterministic gameplay replay, Director mode, team composition, or any team-owned choice other than tied Initiative and the final Minion Battle removal confirmation; no networking package, message serialization, lobby, reconnect implementation, voice/text chat, free-form communication, captain system, timer, automatic choice, AI, Phase 9 styling, or general HUD redesign.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830n-require-public-teammate-agreement-for-tied-initiative-and-minion-battle-removal-completion-evidence).
+
+### [x] 8.30n1 Move empty-hand Pass into End Turn's top-right slot
+
+Blocked by: Milestone 8.30n established the accepted full-shine Pass treatment and completed the pre-network six-seat gate.
+
+Observable outcome: `PASS - NO CARD` occupies the same top-right status-bar slot as End Turn whenever the current projected hand offers Pass, while the two commands remain mutually exclusive and preserve their existing authority, label, and rectangular full-shine treatment.
+
+Acceptance checks:
+
+- The configured HUD places the one projected `PASS - NO CARD` control at the exact `EndTurnControlRect` used by End Turn at 2560x1440, 2048x1152, and the supported tall-narrow viewport. The old bottom-right Pass surface is absent.
+- Pass remains present only when `ViewedHand.CanPass` is true, submits the existing hero-scoped Pass request exactly once, and remains hidden during exclusive contexts. End Turn retains its existing projection, command, and placement when offered; the two controls never paint or accept input together.
+- The shared slot retains the existing rectangular, centred, bold, full-shine treatment and responsive Blue-rail alignment without changing the status strip, Tie Breaker, hand fans, hero rails, map-safe surface, focus order, or pointer ownership.
+- Focused Edit Mode hierarchy/geometry tests and focused Play Mode seat/input journeys reproduce the bottom-right placement before the correction and pass after Pass uses the top-right slot. Targeted Game View inspection confirms the visible placement at both validated desktop resolutions.
+
+Closing check: `PassNoCard_OccupiesEndTurnsTopRightSlotWithoutASecondCornerControl` fails against the bottom-right host and passes when the mutually exclusive Pass control occupies End Turn's exact status slot.
+
+Non-goals: No Pass or End Turn availability, command, turn, commitment, hand, card lifecycle, hidden-information, rule, snapshot, replay, Undo, networking, card presentation, status-strip, Tie Breaker, rail, map, scene, package, project-setting, or schema change; no general HUD redesign.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-830n1-move-empty-hand-pass-into-end-turns-top-right-slot-completion-evidence).

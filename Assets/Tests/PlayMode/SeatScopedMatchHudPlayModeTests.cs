@@ -5,6 +5,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
@@ -34,6 +35,111 @@ namespace GuardsDigital.Tests.PlayMode
     /// </remarks>
     public sealed class SeatScopedMatchHudPlayModeTests
     {
+        /// <summary>
+        /// Corrective 8.30n1: empty-hand Pass uses End Turn's exact live top-right slot and remains
+        /// the hand presenter's one hero-scoped command rather than becoming a second round control.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator PassNoCard_OccupiesEndTurnsLiveTopRightSlotAndSubmitsOnce()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            var heroId = new HeroId("passing-hero");
+            var submittedHero = default(HeroId);
+            var submissionCount = 0;
+            try
+            {
+                foreach (var viewport in new[]
+                         {
+                             (Width: 2560u, Height: 1440u, Label: "reference"),
+                             (Width: 2048u, Height: 1152u, Label: "validated desktop"),
+                             (Width: 756u, Height: 1247u, Label: "tall narrow")
+                         })
+                {
+                    UiPlayer.SetPlayerViewport(
+                        viewport.Width, viewport.Height, "8.30n1 Pass " + viewport.Label);
+                    yield return null;
+                    yield return null;
+                    var host = new GameObject("8.30n1-pass-live-layout-" + viewport.Label);
+                    var hands = new DirectorHandsUnityView();
+                    hands.Render(new DirectorHandsViewModel(
+                        1L,
+                        new[]
+                        {
+                            new DirectorHandViewModel(
+                                TeamSide.Blue,
+                                heroId,
+                                "Passing Hero",
+                                TurnCardCommitmentStatus.AwaitingResponse,
+                                true,
+                                null,
+                                null,
+                                new CardInstance[0],
+                                new CardDefinition[0],
+                                null)
+                        },
+                        heroId));
+                    hands.PassRequested += submitted =>
+                    {
+                        submittedHero = submitted;
+                        submissionCount++;
+                    };
+                    var round = new RoundActionUnityView();
+                    var hud = host.AddComponent<ConfiguredMatchHudRenderer>();
+                    hud.Configure(
+                        hands,
+                        round,
+                        new UndoRestartUnityView(),
+                        new DiagnosticLogUnityView(),
+                        new MinionChoiceUnityView(),
+                        new HeroOverviewsUnityView());
+                    yield return null;
+                    yield return null;
+
+                    var pass = (Button)Named(hud.RootElement, "gd-pass-control");
+                    var expected = hud.EndTurnControlRect;
+                    Assert.That(UiPlayer.IsShown(pass), Is.True);
+                    Assert.That(hands.CornerActionsRoot.style.left.value.value,
+                        Is.EqualTo(expected.xMin));
+                    Assert.That(hands.CornerActionsRoot.style.top.value.value,
+                        Is.EqualTo(expected.yMin));
+                    Assert.That(hands.CornerActionsRoot.style.width.value.value,
+                        Is.EqualTo(expected.width));
+                    Assert.That(hands.CornerActionsRoot.style.height.value.value,
+                        Is.EqualTo(expected.height));
+                    Assert.That(pass.style.minHeight.value.value, Is.EqualTo(expected.height));
+                    Assert.That(UiPlayer.Descendants(hud.RootElement)
+                        .Count(element => element.name == "gd-pass-control"), Is.EqualTo(1));
+                    Assert.That(UiPlayer.Descendants(hud.RootElement)
+                        .Any(element => element.name == "gd-end-turn-control" &&
+                            UiPlayer.IsShown(element)), Is.False);
+
+                    if (!UnityEngine.Application.isBatchMode && viewport.Width >= 2048u)
+                    {
+                        yield return Capture(
+                            $"tmp/milestone-8-30n1-pass-{viewport.Width}x{viewport.Height}.png");
+                    }
+
+                    if (viewport.Width == 756u)
+                    {
+                        UiPlayer.Click(pass);
+                        yield return null;
+                    }
+
+                    UnityEngine.Object.Destroy(host);
+                    yield return null;
+                }
+
+                Assert.That(submissionCount, Is.EqualTo(1));
+                Assert.That(submittedHero, Is.EqualTo(heroId));
+            }
+            finally
+            {
+                UiPlayer.SetPlayerViewport(
+                    restoreWidth, restoreHeight, "8.30n1 restore prior viewport");
+            }
+        }
+
         /// <summary>
         /// The amendment's first half: the contextual narration is in the top status bar, and it is
         /// there once.
