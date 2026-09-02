@@ -733,7 +733,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-833-synchronize-commands-events-pending-choices-and-snapshots-completion-evidence).
 
-### [!] 8.34 Add disconnect, reconnect, resynchronization, and host-loss policy
+### [x] 8.34 Add disconnect, reconnect, resynchronization, and host-loss policy
 
 Blocked by: Milestone 8.33 must prove authorized synchronization under fault injection.
 
@@ -743,6 +743,8 @@ Acceptance checks:
 
 - Fixed scenarios disconnect and reconnect during commitment, joint reveal, incomplete and disagreed same-team Initiative agreement, partial Minion Battle removal agreement, Movement continuation, Defense reaction, and end-of-round progression, then prove convergence or the documented terminal result. A returning eligible player receives the host's current public statements and standing proposal and may revise only their own; reconnect never converts partial or conflicting statements into agreement.
 - Reconnect to stale, future, incompatible, or unauthorized session state cannot transfer seat control, reveal private information, or partially replace authoritative state.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-834-add-disconnect-reconnect-resynchronization-and-host-loss-policy-completion-evidence).
 
 ### [!] 8.35a Add the primitive private host/join lobby
 

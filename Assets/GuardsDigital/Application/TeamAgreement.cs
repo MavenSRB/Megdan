@@ -181,7 +181,14 @@ namespace GuardsDigital.Application
         IneligibleSeat = 5,
         UnauthorizedStatement = 6,
         HostRefused = 7,
-        FinalRulesChoiceRefused = 8
+        FinalRulesChoiceRefused = 8,
+
+        /// <summary>
+        /// Milestone 8.34. A seat of this match is away and the session is holding still for it,
+        /// so no statement is recorded and no proposal moves. The agreement half of
+        /// <see cref="SeatSubmissionRejectionReason.SessionPaused"/>.
+        /// </summary>
+        SessionPaused = 9
     }
 
     public sealed class TeamAgreementSubmissionResult

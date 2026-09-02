@@ -276,6 +276,50 @@ namespace GuardsDigital.Application
             }
         }
 
+        /// <summary>
+        /// Milestone 8.34. The returning client's reclaim: the seat and the capability, in the
+        /// same bounded shape as a claim.
+        /// </summary>
+        public static byte[] ReclaimSeatFrame(SeatReclaimMessage message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                writer.Write(message.Seat.Value);
+                writer.Write(message.Capability);
+                writer.Flush();
+                return EncodeFrame(SessionMessageKind.ReclaimSeat, stream.ToArray());
+            }
+        }
+
+        public static bool TryDecodeReclaimSeat(byte[] payload, out SeatReclaimMessage message)
+        {
+            message = null;
+            try
+            {
+                using (var stream = new MemoryStream(payload ?? Array.Empty<byte>(), false))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8))
+                {
+                    var seat = reader.ReadString();
+                    var capability = reader.ReadString();
+                    if (string.IsNullOrWhiteSpace(seat) ||
+                        capability.Length > PrivateSessionProtocol.MaxReconnectCapabilityChars ||
+                        stream.Position != stream.Length)
+                    {
+                        return false;
+                    }
+
+                    message = new SeatReclaimMessage(new SeatId(seat), capability);
+                    return true;
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                return false;
+            }
+        }
+
         public static byte[] SeatGrantedFrame(SeatGrantedMessage message)
         {
             if (message == null) throw new ArgumentNullException(nameof(message));
@@ -285,6 +329,8 @@ namespace GuardsDigital.Application
                 WriteRosterEntry(writer, message.Seat);
                 writer.Write(message.ClaimedSeats);
                 writer.Write(message.TotalSeats);
+                writer.Write(message.ConnectionEpoch);
+                writer.Write(message.ReconnectCapability);
                 writer.Flush();
                 return EncodeFrame(SessionMessageKind.SeatGranted, stream.ToArray());
             }
@@ -305,14 +351,18 @@ namespace GuardsDigital.Application
 
                     var claimed = reader.ReadInt32();
                     var total = reader.ReadInt32();
+                    var epoch = reader.ReadInt32();
+                    var capability = reader.ReadString();
                     if (claimed < 0 || total < 0 || claimed > total ||
                         total > PrivateSessionProtocol.MaxSeats ||
+                        epoch < 1 ||
+                        capability.Length > PrivateSessionProtocol.MaxReconnectCapabilityChars ||
                         stream.Position != stream.Length)
                     {
                         return false;
                     }
 
-                    message = new SeatGrantedMessage(entry, claimed, total);
+                    message = new SeatGrantedMessage(entry, claimed, total, epoch, capability);
                     return true;
                 }
             }
@@ -443,7 +493,7 @@ namespace GuardsDigital.Application
         internal static bool TryReadMessageKind(int value, out SessionMessageKind kind)
         {
             if (value >= (int)SessionMessageKind.Challenge &&
-                value <= (int)SessionMessageKind.RequestResync)
+                value <= (int)SessionMessageKind.ReclaimSeat)
             {
                 kind = (SessionMessageKind)value;
                 return true;
@@ -456,7 +506,7 @@ namespace GuardsDigital.Application
         private static bool TryReadRejectionReason(int value, out SessionRejectionReason reason)
         {
             if (value >= (int)SessionRejectionReason.ProtocolFamilyMismatch &&
-                value <= (int)SessionRejectionReason.SealViolation)
+                value <= (int)SessionRejectionReason.ReconnectNotAuthorized)
             {
                 reason = (SessionRejectionReason)value;
                 return true;

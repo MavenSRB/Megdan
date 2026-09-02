@@ -63,7 +63,14 @@ namespace GuardsDigital.Application
         /// asked, or beside a stale-projection refusal. This is the recovery decision the
         /// diagnostics correlate: which seat, and against which authoritative version.
         /// </summary>
-        ResyncServed = 12
+        ResyncServed = 12,
+
+        /// <summary>
+        /// Milestone 8.34. A reserved seat returned: a new connection presented that seat's own
+        /// reconnect capability, the host rotated the seat's connection epoch, and the seat is
+        /// held again. The record carries the seat and the new ordinal - never the capability.
+        /// </summary>
+        SeatReclaimed = 13
     }
 
     /// <summary>
@@ -194,12 +201,35 @@ namespace GuardsDigital.Application
 
             /// <summary>Milestone 8.32. The last gameplay-envelope sequence sent to this connection.</summary>
             public long GameplaySendSequence { get; set; }
+
+            /// <summary>
+            /// Milestone 8.34. The epoch this connection speaks under - its seat's epoch at the
+            /// moment the seat was granted to it. Every gameplay envelope in either direction
+            /// carries it, so a frame stamped with the epoch of the connection this one replaced
+            /// is refused before it can mean anything.
+            /// </summary>
+            public int Epoch { get; set; }
         }
 
         private sealed class SeatHold
         {
             public SeatOccupancyState State { get; set; }
             public int HeldByOrdinal { get; set; }
+
+            /// <summary>
+            /// Milestone 8.34. The seat's current connection epoch: <c>0</c> before the seat has
+            /// ever been held, then <see cref="PrivateSessionProtocol.InitialConnectionEpoch"/>,
+            /// and one higher on every authorized return. It belongs to the seat rather than to a
+            /// connection, because it is what tells this seat's connections apart.
+            /// </summary>
+            public int Epoch { get; set; }
+
+            /// <summary>
+            /// Milestone 8.34. The owner-private capability issued with this seat's grant, and the
+            /// only thing that will bring the seat back while its reservation stands. It is host
+            /// state: it is never broadcast, never projected, and never recorded in an event.
+            /// </summary>
+            public string Capability { get; set; } = string.Empty;
         }
 
         private const int RetainedEventCount = 1024;
@@ -214,6 +244,8 @@ namespace GuardsDigital.Application
         private readonly Dictionary<SeatId, SeatHold> holds = new Dictionary<SeatId, SeatHold>();
         private readonly List<PrivateSessionEventRecord> events =
             new List<PrivateSessionEventRecord>();
+        private int discardedRetiredConnectionFrames;
+        private bool sessionEnded;
 
         public PrivateSessionHost(
             IMatchHost matchHost,
@@ -266,6 +298,52 @@ namespace GuardsDigital.Application
         public bool IsComplete => ClaimedSeatCount == TotalSeats;
 
         public int ConnectionCount => connections.Count;
+
+        /// <summary>
+        /// Milestone 8.34. Whether a seat this session has held is away, which is the condition the
+        /// disconnect policy pauses new authoritative progress under.
+        /// </summary>
+        /// <remarks>
+        /// The pause is what makes the rest of the policy true. A pending family, its ordered
+        /// answers and the board the away player was looking at are preserved because nothing is
+        /// allowed to move them, not because anything copies them aside; and the reprojection a
+        /// returning player receives is therefore the position they left rather than a position
+        /// they have to be told about.
+        /// </remarks>
+        public bool IsPaused
+        {
+            get
+            {
+                foreach (var hold in holds.Values)
+                {
+                    if (hold.State == SeatOccupancyState.Reserved)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.34. How many frames arrived for a connection this host no longer holds and
+        /// were discarded unread.
+        /// </summary>
+        /// <remarks>
+        /// This is the "discard old connection input" half of the reconnect policy, counted so a
+        /// fixture can prove it happened. Discarding is convergence rather than damage: a lost
+        /// connection's frames say nothing about the session its replacement is in, and reading
+        /// one would be the only way a replaced connection could still move the match.
+        /// </remarks>
+        public int DiscardedRetiredConnectionFrames => discardedRetiredConnectionFrames;
+
+        /// <summary>
+        /// Milestone 8.34. The seat's current connection epoch, or <c>0</c> if that seat has never
+        /// been held. Diagnostics only: the epoch is protocol state, and no rule reads it.
+        /// </summary>
+        public int EpochForSeat(SeatId seat) =>
+            holds.TryGetValue(seat, out var hold) ? hold.Epoch : 0;
 
         /// <summary>The current public seat map, in the authoritative seat order.</summary>
         public IReadOnlyList<SeatRosterEntry> Roster
@@ -333,6 +411,11 @@ namespace GuardsDigital.Application
         {
             if (!connections.TryGetValue(connectionOrdinal, out var record))
             {
+                // Milestone 8.34. A frame for a connection the host has let go - the one a
+                // returning seat replaced, or one already refused - is discarded unread. It is
+                // counted rather than silently swallowed so the policy's "discard old connection
+                // input" is observable, and nothing about it can reach a seat or the authority.
+                discardedRetiredConnectionFrames++;
                 return;
             }
 
@@ -379,6 +462,12 @@ namespace GuardsDigital.Application
                     return;
 
                 case ConnectionPhase.Admitted:
+                    if (frame.Kind == SessionMessageKind.ReclaimSeat)
+                    {
+                        HandleReclaim(record, frame.Payload);
+                        return;
+                    }
+
                     if (frame.Kind != SessionMessageKind.ClaimSeat)
                     {
                         RejectAndClose(record, SessionRejectionReason.UnexpectedMessage,
@@ -509,10 +598,16 @@ namespace GuardsDigital.Application
             // Full is answered at admission, before the roster is disclosed: a claim of a specific
             // taken seat gets that seat's own reason below, so this is the only place the plain
             // "there is no seat left for you" answer can live without shadowing those.
-            if (!AnySeatOpen())
+            //
+            // Milestone 8.34. A reserved seat is one a returning player may still take, so it
+            // keeps admission open where an ordinary claim would not: a session whose every seat
+            // is held by a live connection is full, and one holding a reservation is not. The
+            // arriving connection learns only the roster, which is public at a real table, and
+            // its reclaim is still refused unless it presents that seat's own capability.
+            if (!AnySeatClaimable())
             {
                 RejectAndClose(record, SessionRejectionReason.SessionFull,
-                    "Every seat is taken or reserved.");
+                    "Every seat is held by a live connection.");
                 return;
             }
 
@@ -555,27 +650,138 @@ namespace GuardsDigital.Application
                 return;
             }
 
-            targetHold.State = SeatOccupancyState.Claimed;
-            targetHold.HeldByOrdinal = record.Ordinal;
+            GrantSeat(record, seat, targetHold, PrivateSessionEventKind.SeatClaimed);
+        }
+
+        /// <summary>
+        /// Milestone 8.34. A returning client's reclaim of a seat this session reserved for it.
+        /// </summary>
+        /// <remarks>
+        /// <para>The whole of the decision record's reconnect row happens here, in its order:
+        /// reauthenticate the same service identity - which in a session with no account system is
+        /// the capability this host itself issued to that seat's holder - rotate the connection
+        /// epoch, and then send the full compatible owner projection through the ordinary grant
+        /// path. Discarding the old connection's input needs no step of its own: the connection
+        /// this one replaces is already gone, and anything still arriving for it is discarded
+        /// unread by <see cref="OnFrame"/>.</para>
+        /// <para>Seat control never transfers. A live seat is refused by name and left undisturbed;
+        /// a reservation with the wrong capability, or none, is refused before any private
+        /// projection exists to leak - and both wrong-capability cases answer identically, so the
+        /// refusal itself says nothing about the capability that would have worked.</para>
+        /// </remarks>
+        private void HandleReclaim(ConnectionRecord record, byte[] payload)
+        {
+            if (!PrivateSessionFrameCodec.TryDecodeReclaimSeat(payload, out var reclaim))
+            {
+                RejectAndClose(record, SessionRejectionReason.MalformedFrame,
+                    "The reclaim payload did not decode.");
+                return;
+            }
+
+            var seat = matchHost.Seats.Find(reclaim.Seat);
+            if (seat == null)
+            {
+                RejectAndClose(record, SessionRejectionReason.UnknownSeat,
+                    "No seat of that id is bound in this match.");
+                return;
+            }
+
+            var hold = holds[seat.Id];
+            if (hold.State == SeatOccupancyState.Claimed)
+            {
+                RejectAndClose(record, SessionRejectionReason.SeatAlreadyClaimed,
+                    "That seat is held by a live connection.");
+                return;
+            }
+
+            if (hold.State != SeatOccupancyState.Reserved ||
+                hold.Capability.Length == 0 ||
+                !PrivateSessionKeyProof.Matches(hold.Capability, reclaim.Capability))
+            {
+                RejectAndClose(record, SessionRejectionReason.ReconnectNotAuthorized,
+                    "That seat's reconnect was not authorized.");
+                return;
+            }
+
+            GrantSeat(record, seat, hold, PrivateSessionEventKind.SeatReclaimed);
+        }
+
+        /// <summary>
+        /// Binds one connection to one seat and tells it so: the seat's epoch is set for a first
+        /// claim or rotated for a return, the grant carries that epoch and the seat's own
+        /// reconnect capability to exactly one recipient, and the connection receives the full
+        /// owner-scoped projection it may act on.
+        /// </summary>
+        private void GrantSeat(
+            ConnectionRecord record, MatchSeat seat, SeatHold hold, PrivateSessionEventKind kind)
+        {
+            if (hold.Epoch == 0)
+            {
+                hold.Epoch = PrivateSessionProtocol.InitialConnectionEpoch;
+                hold.Capability = MintCapability(seat.Id);
+            }
+            else
+            {
+                // The rotation the decision record asks for, and the reason the envelope has
+                // carried an epoch since 8.32: from here on the replaced connection's epoch is
+                // one this host will never accept again.
+                hold.Epoch++;
+            }
+
+            hold.State = SeatOccupancyState.Claimed;
+            hold.HeldByOrdinal = record.Ordinal;
             record.Phase = ConnectionPhase.Seated;
             record.Seat = seat.Id;
+            record.Epoch = hold.Epoch;
 
             Deliver(record, PrivateSessionFrameCodec.SeatGrantedFrame(
                 new SeatGrantedMessage(
                     new SeatRosterEntry(seat.Id, seat.HeroId, seat.TeamSide, SeatOccupancyState.Claimed),
-                    ClaimedSeatCount, TotalSeats)));
+                    ClaimedSeatCount, TotalSeats, hold.Epoch, hold.Capability)));
             BroadcastRoster();
             // Milestone 8.32. A seated connection immediately receives its own owner-scoped view,
             // encoded per seat - never one shared payload - so what it holds is what 8.30a proved
-            // it may hold.
+            // it may hold. Milestone 8.34: a returning seat receives exactly the same thing, a
+            // freshly encoded complete projection, never a client snapshot or a delta chain.
             SendProjectionTo(record);
-            Record(PrivateSessionEventKind.SeatClaimed, record.Ordinal, seat.Id, seat.HeroId,
+            Record(kind, record.Ordinal, seat.Id, seat.HeroId,
                 seat.TeamSide, SessionRejectionReason.None);
             if (IsComplete)
             {
                 Record(PrivateSessionEventKind.SessionComplete, record.Ordinal,
                     default, default, TeamSide.None, SessionRejectionReason.None);
             }
+        }
+
+        /// <summary>
+        /// Mints one seat's reconnect capability from the injected nonce source, bound to the seat
+        /// and to this session.
+        /// </summary>
+        /// <remarks>
+        /// <para>The Application assembly draws no platform entropy, so the randomness is the
+        /// adapter's: the capability is exactly as unguessable as
+        /// <see cref="IPrivateSessionNonceSource"/> is, and a host composed without one issues no
+        /// capability at all and therefore honours no reclaim.</para>
+        /// <para>The seat and the session correlation are mixed in so that two seats never share a
+        /// capability even where the nonce source is a fixture's constant, and so that a
+        /// capability from one session cannot be presented to another.</para>
+        /// </remarks>
+        private string MintCapability(SeatId seat)
+        {
+            if (nonceSource == null)
+            {
+                return string.Empty;
+            }
+
+            var nonce = nonceSource.NextNonce() ?? Array.Empty<byte>();
+            var material = new System.Text.StringBuilder(nonce.Length * 2 + 64);
+            foreach (var value in nonce)
+            {
+                material.Append(value.ToString("x2", CultureInfo.InvariantCulture));
+            }
+
+            material.Append('|').Append(seat.Value).Append('|').Append(identity.Correlation);
+            return PrivateSessionContentDigest.HashText(material.ToString()).Substring(0, 32);
         }
 
         /// <summary>
@@ -606,6 +812,15 @@ namespace GuardsDigital.Application
             }
 
             if (!AcceptGameplayEnvelope(record, message.Envelope))
+            {
+                return;
+            }
+
+            // Milestone 8.34. New authoritative progress pauses while a seat this session has held
+            // is away. The refusal is answered by name and mutates nothing - not the authority,
+            // not the version, and not the submission identity, which stays unused for the retry
+            // this client will make when the session resumes.
+            if (RefuseWhilePaused(record, message.Envelope.Correlation, message.SubmissionId))
             {
                 return;
             }
@@ -692,6 +907,11 @@ namespace GuardsDigital.Application
                 return;
             }
 
+            if (RefuseAgreementWhilePaused(record, message.Envelope.Correlation, message.SubmissionId))
+            {
+                return;
+            }
+
             var seat = matchHost.Seats.Find(record.Seat);
             var statement = message.Statement;
             var agreement = matchHost.ProjectionForSeat(seat.Id).TeamAgreement;
@@ -766,14 +986,75 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>
-        /// The one envelope rule every gameplay message obeys: right session, current epoch, and
-        /// exactly the next sequence - anything else is a protocol violation that closes the
-        /// connection before any seat-level answer.
+        /// Milestone 8.34. Answers a command submission with the paused refusal when a seat is
+        /// away, and reports whether it did.
         /// </summary>
+        private bool RefuseWhilePaused(ConnectionRecord record, long correlation, string submissionId)
+        {
+            if (!IsPaused)
+            {
+                return false;
+            }
+
+            var seat = matchHost.Seats.Find(record.Seat);
+            Deliver(record, NetworkMessageCodec.SubmissionResultFrame(new NetworkSubmissionResultMessage(
+                NextEnvelope(record, correlation),
+                submissionId,
+                false,
+                SeatSubmissionRejectionReason.SessionPaused,
+                MatchSessionRejectionReason.None,
+                "A seat of this match is away; the session is holding still until it returns.",
+                matchHost.Version,
+                0)));
+            Record(PrivateSessionEventKind.SubmissionRefused, record.Ordinal, record.Seat,
+                seat == null ? default : seat.HeroId,
+                seat == null ? TeamSide.None : seat.TeamSide,
+                SessionRejectionReason.None, SeatSubmissionRejectionReason.SessionPaused,
+                submissionId: submissionId);
+            return true;
+        }
+
+        /// <summary>Milestone 8.34. The agreement half of <see cref="RefuseWhilePaused"/>.</summary>
+        private bool RefuseAgreementWhilePaused(
+            ConnectionRecord record, long correlation, string submissionId)
+        {
+            if (!IsPaused)
+            {
+                return false;
+            }
+
+            var seat = matchHost.Seats.Find(record.Seat);
+            Deliver(record, NetworkMessageCodec.AgreementResultFrame(new NetworkAgreementResultMessage(
+                NextEnvelope(record, correlation),
+                submissionId,
+                false,
+                TeamAgreementSubmissionRejectionReason.SessionPaused,
+                "A seat of this match is away; the session is holding still until it returns.",
+                matchHost.Version)));
+            Record(PrivateSessionEventKind.AgreementRefused, record.Ordinal, record.Seat,
+                seat == null ? default : seat.HeroId,
+                seat == null ? TeamSide.None : seat.TeamSide,
+                SessionRejectionReason.None,
+                agreementRejection: TeamAgreementSubmissionRejectionReason.SessionPaused,
+                submissionId: submissionId);
+            return true;
+        }
+
+        /// <summary>
+        /// The one envelope rule every gameplay message obeys: right session, this connection's
+        /// own epoch, and exactly the next sequence - anything else is a protocol violation that
+        /// closes the connection before any seat-level answer.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 8.34 makes the epoch this connection's own rather than the protocol's first,
+        /// which is what tells a returning seat's frames from those of the connection it replaced:
+        /// a frame stamped with the retired epoch names an epoch this host will never accept
+        /// again, and is refused before it can mean anything.
+        /// </remarks>
         private bool AcceptGameplayEnvelope(ConnectionRecord record, NetworkEnvelope envelope)
         {
             if (!string.Equals(envelope.SessionCorrelation, identity.Correlation, StringComparison.Ordinal) ||
-                envelope.Epoch != PrivateSessionProtocol.InitialConnectionEpoch ||
+                envelope.Epoch != record.Epoch ||
                 envelope.Sequence != record.GameplayReceiveSequence + 1)
             {
                 RejectAndClose(record, SessionRejectionReason.EnvelopeMismatch,
@@ -823,7 +1104,7 @@ namespace GuardsDigital.Application
             record.GameplaySendSequence++;
             return new NetworkEnvelope(
                 identity.Correlation,
-                PrivateSessionProtocol.InitialConnectionEpoch,
+                record.Epoch,
                 record.GameplaySendSequence,
                 correlation);
         }
@@ -847,9 +1128,17 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>
-        /// Ends the session on purpose: every connection is told Goodbye and closed. No seat is
-        /// reserved by an orderly end - there is no session left to hold a reservation.
+        /// Ends the session on purpose: every connection is told Goodbye and closed, and every
+        /// seat is released. No seat is reserved by an orderly end - there is no session left to
+        /// hold a reservation.
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.34 makes that sentence true in code rather than only in prose, and it is
+        /// also the whole of reconnect-eligibility expiry. The architecture record gives a
+        /// reservation exactly one lifetime - the live host session - with no clock anywhere in
+        /// it, so eligibility ends when the session does: the reservation is released, the seat's
+        /// capability is dropped, and nothing arriving afterwards can reclaim anything.
+        /// </remarks>
         public void Shutdown()
         {
             var open = new List<ConnectionRecord>(connections.Values);
@@ -859,13 +1148,29 @@ namespace GuardsDigital.Application
                 outbox.Close(record.Ordinal);
                 connections.Remove(record.Ordinal);
             }
+
+            foreach (var hold in holds.Values)
+            {
+                hold.State = SeatOccupancyState.Open;
+                hold.HeldByOrdinal = 0;
+                hold.Capability = string.Empty;
+            }
+
+            sessionEnded = true;
         }
 
-        private bool AnySeatOpen()
+        /// <summary>Milestone 8.34. Whether an orderly end has already released every seat.</summary>
+        public bool HasEnded => sessionEnded;
+
+        /// <summary>
+        /// Whether any seat could still be taken by an arriving connection: an open one by a
+        /// claim, or a reserved one by its own player's reclaim.
+        /// </summary>
+        private bool AnySeatClaimable()
         {
             foreach (var hold in holds.Values)
             {
-                if (hold.State == SeatOccupancyState.Open)
+                if (hold.State != SeatOccupancyState.Claimed)
                 {
                     return true;
                 }

@@ -130,7 +130,19 @@ namespace GuardsDigital.Application
         SessionRefused = 6,
 
         /// <summary>The host refused before the authority was reached.</summary>
-        HostRefused = 7
+        HostRefused = 7,
+
+        /// <summary>
+        /// Milestone 8.34. A seat of this match is away and the session is holding still for it.
+        /// </summary>
+        /// <remarks>
+        /// The decision record's disconnect policy pauses new authoritative progress while a
+        /// claimed seat is reserved, so that the pending family, the ordered answers, and the
+        /// board the away player left are exactly what that player is reprojected on return. The
+        /// refusal reaches the authority no more than a stale one does: nothing is mutated, no
+        /// version moves, and the submission identity stays unused for the retry that follows.
+        /// </remarks>
+        SessionPaused = 8
     }
 
     /// <summary>

@@ -46,7 +46,23 @@ namespace GuardsDigital.Application
         /// trusts its projection until the next complete projection returns it to
         /// <see cref="Seated"/>.
         /// </summary>
-        Resynchronizing = 8
+        Resynchronizing = 8,
+
+        /// <summary>
+        /// Milestone 8.34. The authority this seat was playing under is gone: the connection ended
+        /// while the seat was held, without the host saying Goodbye and without refusing anything.
+        /// </summary>
+        /// <remarks>
+        /// <para>Terminal, in the sense the decision record's host-loss row means it: nothing is
+        /// submitted from here, no continuation is claimed, no authority migrates, and a surface
+        /// showing this state carries no control a player could still press. What the seat last
+        /// saw is kept, because a player is entitled to see the position they were in; what they
+        /// cannot do is act on it.</para>
+        /// <para>Leaving this state is not resuming from it. <see cref="PrivateSessionClient
+        /// .BeginReconnect"/> starts a complete admission handshake again, and what comes back is
+        /// a whole freshly encoded projection rather than any part of what was held here.</para>
+        /// </remarks>
+        HostLost = 9
     }
 
     /// <summary>
@@ -69,6 +85,21 @@ namespace GuardsDigital.Application
         private PrivateSessionSecureChannel channel;
         private long gameplaySendSequence;
         private long gameplayReceiveSequence;
+
+        /// <summary>
+        /// Milestone 8.34. The capability the host issued with this seat's grant, held here and
+        /// nowhere else. It is deliberately not a property: nothing outside this machine needs to
+        /// read it, and a surface that could read it could log it.
+        /// </summary>
+        private string reconnectCapability = string.Empty;
+        private bool hasHeldSeat;
+
+        /// <summary>
+        /// Milestone 8.34. Whether the host has named a refusal on this connection. A connection
+        /// the host refused and closed ended because it was told no, which is not the same event
+        /// as the host disappearing, however similar the socket looks afterwards.
+        /// </summary>
+        private bool refusalReceived;
 
         public PrivateSessionClient(
             PrivateSessionIdentity identity,
@@ -137,6 +168,66 @@ namespace GuardsDigital.Application
         /// <summary>Milestone 8.33. How many bounded resync requests this client has sent.</summary>
         public int ResyncRequestCount { get; private set; }
 
+        /// <summary>
+        /// Milestone 8.34. The connection epoch this client speaks under, as the host's grant
+        /// named it. Every gameplay envelope it sends carries this, and it refuses to read one
+        /// that does not.
+        /// </summary>
+        public int ConnectionEpoch { get; private set; } =
+            PrivateSessionProtocol.InitialConnectionEpoch;
+
+        /// <summary>
+        /// Milestone 8.34. Whether this machine is on its way back to a seat it already held, so a
+        /// surface can say "reconnecting" rather than "joining" while the handshake runs.
+        /// </summary>
+        public bool IsReconnecting { get; private set; }
+
+        /// <summary>
+        /// Milestone 8.34. Whether a return is even possible: this client held a seat, was issued
+        /// a capability for it, and is in a state a fresh admission may be started from.
+        /// </summary>
+        /// <remarks>
+        /// A refusal is not one of those states. A host that said no - to the tuple, to the key,
+        /// or to the reclaim itself - has answered; asking again with the same answer to give is
+        /// not a recovery, and <see cref="PrivateSessionClientState.Faulted"/> is worse, because
+        /// nothing that stream said is trusted any more.
+        /// </remarks>
+        public bool CanAttemptReconnect =>
+            reconnectCapability.Length > 0 &&
+            (State == PrivateSessionClientState.HostLost ||
+                State == PrivateSessionClientState.Disconnected);
+
+        /// <summary>
+        /// Milestone 8.34. Arms a complete second admission for the seat this client already held,
+        /// to be driven by a new transport connection: the machine returns to its opening state,
+        /// its sealed channel and both sequence counters are dropped because the connection they
+        /// belonged to is gone, and the claim it will make is a reclaim carrying the capability.
+        /// </summary>
+        /// <returns>Whether a return could be armed at all.</returns>
+        /// <remarks>
+        /// The last projection is kept until the host replaces it. It is not carried into the new
+        /// session as state - the host sends a complete projection and this machine adopts that
+        /// whole - it is simply the last thing this player was shown, and blanking the board on
+        /// the way back would tell them less than leaving it.
+        /// </remarks>
+        public bool BeginReconnect()
+        {
+            if (!CanAttemptReconnect)
+            {
+                return false;
+            }
+
+            State = PrivateSessionClientState.None;
+            IsReconnecting = true;
+            channel = null;
+            gameplaySendSequence = 0;
+            gameplayReceiveSequence = 0;
+            RejectionReason = SessionRejectionReason.None;
+            RejectionDetail = string.Empty;
+            refusalReceived = false;
+            return true;
+        }
+
         public void OnConnected()
         {
             if (State != PrivateSessionClientState.None)
@@ -151,7 +242,8 @@ namespace GuardsDigital.Application
         {
             if (State == PrivateSessionClientState.Rejected ||
                 State == PrivateSessionClientState.Disconnected ||
-                State == PrivateSessionClientState.Faulted)
+                State == PrivateSessionClientState.Faulted ||
+                State == PrivateSessionClientState.HostLost)
             {
                 return;
             }
@@ -185,6 +277,7 @@ namespace GuardsDigital.Application
 
                 RejectionReason = reject.Reason;
                 RejectionDetail = reject.Detail;
+                refusalReceived = true;
                 if (State != PrivateSessionClientState.Seated)
                 {
                     // A refusal after seating - a refused seat change - is recorded but does not
@@ -256,7 +349,13 @@ namespace GuardsDigital.Application
                     SessionCorrelation = welcome.SessionCorrelation;
                     roster.Clear();
                     roster.AddRange(welcome.Roster);
-                    Send(PrivateSessionFrameCodec.ClaimSeatFrame(new SeatClaimMessage(targetSeat)));
+                    // Milestone 8.34. A client that already held this seat asks for it back by
+                    // presenting the capability, because an ordinary claim of a reserved seat is
+                    // refused - and must stay refused, or a reservation would be anybody's.
+                    Send(IsReconnecting && reconnectCapability.Length > 0
+                        ? PrivateSessionFrameCodec.ReclaimSeatFrame(
+                            new SeatReclaimMessage(targetSeat, reconnectCapability))
+                        : PrivateSessionFrameCodec.ClaimSeatFrame(new SeatClaimMessage(targetSeat)));
                     State = PrivateSessionClientState.AwaitingSeat;
                     return;
 
@@ -275,6 +374,17 @@ namespace GuardsDigital.Application
                     }
 
                     GrantedSeat = granted.Seat;
+                    // Milestone 8.34. The grant is where this connection learns which epoch it
+                    // speaks under and how it would come back; both are the host's to say, and
+                    // both arrive here and nowhere else.
+                    ConnectionEpoch = granted.ConnectionEpoch;
+                    if (granted.ReconnectCapability.Length > 0)
+                    {
+                        reconnectCapability = granted.ReconnectCapability;
+                    }
+
+                    hasHeldSeat = true;
+                    IsReconnecting = false;
                     State = PrivateSessionClientState.Seated;
                     return;
 
@@ -423,7 +533,7 @@ namespace GuardsDigital.Application
             Send(NetworkMessageCodec.RequestResyncFrame(new NetworkResyncRequestMessage(
                 new NetworkEnvelope(
                     SessionCorrelation,
-                    PrivateSessionProtocol.InitialConnectionEpoch,
+                    ConnectionEpoch,
                     gameplaySendSequence,
                     gameplaySendSequence))));
         }
@@ -448,7 +558,7 @@ namespace GuardsDigital.Application
             Send(NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
                 new NetworkEnvelope(
                     SessionCorrelation,
-                    PrivateSessionProtocol.InitialConnectionEpoch,
+                    ConnectionEpoch,
                     gameplaySendSequence,
                     gameplaySendSequence),
                 submissionId,
@@ -477,7 +587,78 @@ namespace GuardsDigital.Application
             Send(NetworkMessageCodec.SubmitAgreementFrame(new NetworkAgreementSubmissionMessage(
                 new NetworkEnvelope(
                     SessionCorrelation,
-                    PrivateSessionProtocol.InitialConnectionEpoch,
+                    ConnectionEpoch,
+                    gameplaySendSequence,
+                    gameplaySendSequence),
+                submissionId,
+                LatestProjection.Version,
+                statement)));
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 8.34. Sends one submission again under the identity it was first sent with:
+        /// the retry a client makes when a lost connection took the answer with it.
+        /// </summary>
+        /// <remarks>
+        /// <para>Keeping the identity is the whole point. A retry under a new name is a second
+        /// question and the host would be right to execute it; a retry under the same name is the
+        /// same question, and the host answers it from what it already did - the acceptance, or
+        /// the refusal - without running anything twice. That is the failure policy's first row,
+        /// and milestone 8.33's measured retry distance is what says the answer is still
+        /// retained when a reconnect gets around to asking.</para>
+        /// <para>The expected version is this seat's current one, not the one the lost attempt
+        /// carried: a returning client has just been given a complete projection, and a retry that
+        /// insisted on the older number would be answered as stale by a host that has already
+        /// decided the question.</para>
+        /// </remarks>
+        public bool TryResubmitCommand(DirectorCommand command, string submissionId)
+        {
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            if (string.IsNullOrWhiteSpace(submissionId))
+            {
+                throw new ArgumentException(
+                    "A retry names the identity it is retrying.", nameof(submissionId));
+            }
+
+            if (State != PrivateSessionClientState.Seated || LatestProjection == null)
+            {
+                return false;
+            }
+
+            gameplaySendSequence++;
+            Send(NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
+                new NetworkEnvelope(
+                    SessionCorrelation,
+                    ConnectionEpoch,
+                    gameplaySendSequence,
+                    gameplaySendSequence),
+                submissionId,
+                LatestProjection.Version,
+                NetworkCommandCodec.Encode(command))));
+            return true;
+        }
+
+        /// <summary>Milestone 8.34. The agreement half of <see cref="TryResubmitCommand"/>.</summary>
+        public bool TryResubmitAgreement(TeamAgreementCommand statement, string submissionId)
+        {
+            if (statement == null) throw new ArgumentNullException(nameof(statement));
+            if (string.IsNullOrWhiteSpace(submissionId))
+            {
+                throw new ArgumentException(
+                    "A retry names the identity it is retrying.", nameof(submissionId));
+            }
+
+            if (State != PrivateSessionClientState.Seated || LatestProjection == null)
+            {
+                return false;
+            }
+
+            gameplaySendSequence++;
+            Send(NetworkMessageCodec.SubmitAgreementFrame(new NetworkAgreementSubmissionMessage(
+                new NetworkEnvelope(
+                    SessionCorrelation,
+                    ConnectionEpoch,
                     gameplaySendSequence,
                     gameplaySendSequence),
                 submissionId,
@@ -525,7 +706,7 @@ namespace GuardsDigital.Application
         private EnvelopeReading ReadEnvelope(NetworkEnvelope envelope)
         {
             if (!string.Equals(envelope.SessionCorrelation, SessionCorrelation, StringComparison.Ordinal) ||
-                envelope.Epoch != PrivateSessionProtocol.InitialConnectionEpoch)
+                envelope.Epoch != ConnectionEpoch)
             {
                 return EnvelopeReading.Invalid;
             }
@@ -566,15 +747,32 @@ namespace GuardsDigital.Application
             Fault();
         }
 
+        /// <summary>
+        /// The transport says the connection ended.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 8.34 separates the two ways that happens. A connection that ends after an
+        /// orderly close, a refusal, or before this client ever held a seat is simply
+        /// <see cref="PrivateSessionClientState.Disconnected"/> - nothing was lost, and the
+        /// decision record closes a pre-claim connection silently. A connection that ends while
+        /// the seat was held, with nothing said, is the host-loss row: the authority this seat was
+        /// playing under is gone as far as this process can tell, and
+        /// <see cref="PrivateSessionClientState.HostLost"/> is the terminal state the record names
+        /// for it.
+        /// </remarks>
         public void OnDisconnected()
         {
             if (State == PrivateSessionClientState.Rejected ||
-                State == PrivateSessionClientState.Faulted)
+                State == PrivateSessionClientState.Faulted ||
+                State == PrivateSessionClientState.Disconnected ||
+                State == PrivateSessionClientState.HostLost)
             {
                 return;
             }
 
-            State = PrivateSessionClientState.Disconnected;
+            State = hasHeldSeat && !refusalReceived
+                ? PrivateSessionClientState.HostLost
+                : PrivateSessionClientState.Disconnected;
         }
 
         private void Fault()

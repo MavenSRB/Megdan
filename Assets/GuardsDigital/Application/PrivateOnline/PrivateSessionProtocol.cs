@@ -58,10 +58,26 @@ namespace GuardsDigital.Application
 
         /// <summary>
         /// Milestone 8.32. Every connection's first epoch. The gameplay envelope carries the
-        /// sender's epoch so a stale connection's frames can be told from its replacement's;
-        /// rotation on reconnect is milestone 8.34's, so in this slice any other value is refused.
+        /// sender's epoch so a stale connection's frames can be told from its replacement's.
+        ///
+        /// <para>Milestone 8.34 rotates it, exactly as the decision record scheduled: a seat that
+        /// returns under its reconnect capability is granted the next epoch, and the envelope of
+        /// any frame still stamped with the epoch the lost connection used is refused before it
+        /// can reach a seat-level answer.</para>
         /// </summary>
         public const int InitialConnectionEpoch = 1;
+
+        /// <summary>
+        /// Milestone 8.34. The most characters a reconnect capability may carry.
+        /// </summary>
+        /// <remarks>
+        /// The capability is the owner-private token the host issues with a seat grant and
+        /// requires back before it will return that seat to a new connection. It is bounded like
+        /// every other wire string, and it is never the session key: the key is the invitation,
+        /// which every invited player holds, while the capability is one seat's own and is what
+        /// keeps a reconnect from transferring seat control between invited players.
+        /// </remarks>
+        public const int MaxReconnectCapabilityChars = 64;
 
         /// <summary>
         /// Milestone 8.33. How many consumed submission identities the host remembers, so a

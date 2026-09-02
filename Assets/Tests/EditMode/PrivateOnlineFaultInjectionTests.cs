@@ -143,9 +143,16 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// A replayed submission identity - the retry shape - executes nothing twice: the second
-        /// attempt against the current version is refused as the duplicate it is.
+        /// A replayed submission identity - the retry shape - executes nothing twice.
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.34 completed the failure policy's first row here, and this case moved with
+        /// it. An identical repeat is answered from what that submission already did rather than
+        /// refused, because refusing a retry is what makes a client ask again under a new name;
+        /// a repeat of the identity asking something else is still refused outright. Neither runs
+        /// anything twice, which is what the row is for and what the version and the ordered
+        /// stream below are asserted against.
+        /// </remarks>
         [Test]
         public void AReplayedSubmissionIdentity_CannotExecuteTwice()
         {
@@ -161,18 +168,31 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(client.LastSubmissionResult.Accepted, Is.True,
                 client.LastSubmissionResult.Detail);
             var versionAfter = harness.MatchHost.Version;
+            var sequenceAfter = harness.MatchHost.Sequence;
             Assert.That(versionAfter, Is.EqualTo(version + 1));
 
-            // The same identity again, on the next sequence, against the current version: the
-            // stale check cannot shadow the duplicate check, and nothing executes twice.
+            // The same identity asking the same thing again, on the next sequence: answered from
+            // the retained result, with nothing executed and nothing appended.
             harness.SendRaw(2, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
                 new NetworkEnvelope(harness.Identity.Correlation, 1, 2, 2),
                 "wire-replay-1", versionAfter,
                 NetworkCommandCodec.Encode(command))));
-            Assert.That(client.LastSubmissionResult.Accepted, Is.False);
-            Assert.That(client.LastSubmissionResult.RejectionReason,
+            Assert.That(client.LastSubmissionResult.Accepted, Is.True);
+            Assert.That(client.LastSubmissionResult.Version, Is.EqualTo(versionAfter));
+            Assert.That(harness.MatchHost.Version, Is.EqualTo(versionAfter));
+            Assert.That(harness.MatchHost.Sequence, Is.EqualTo(sequenceAfter));
+
+            // The same identity asking something else is a used name, and is refused.
+            var other = harness.Client(3).LatestProjection.AuthorizedCommands[0];
+            harness.SendRaw(3, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
+                new NetworkEnvelope(harness.Identity.Correlation, 1, 1, 1),
+                "wire-replay-1", harness.MatchHost.Version,
+                NetworkCommandCodec.Encode(other))));
+            Assert.That(harness.Client(3).LastSubmissionResult.Accepted, Is.False);
+            Assert.That(harness.Client(3).LastSubmissionResult.RejectionReason,
                 Is.EqualTo(SeatSubmissionRejectionReason.DuplicateSubmission));
             Assert.That(harness.MatchHost.Version, Is.EqualTo(versionAfter));
+            Assert.That(harness.MatchHost.Sequence, Is.EqualTo(sequenceAfter));
             harness.AssertConverged();
         }
 
@@ -321,7 +341,10 @@ namespace GuardsDigital.Tests.EditMode
                 writer.Write(PrivateSessionProtocol.FrameMagic2);
                 writer.Write(PrivateSessionProtocol.FrameMagic3);
                 writer.Write((ushort)PrivateSessionProtocol.Version);
-                writer.Write((ushort)16);
+                // One past the highest kind this protocol defines, so the case stays about an
+                // unknown kind as the vocabulary grows rather than about whichever number was
+                // spare when it was written.
+                writer.Write((ushort)((int)SessionMessageKind.ReclaimSeat + 1));
                 writer.Write(0);
                 writer.Flush();
                 harness.SendRaw(2, stream.ToArray());

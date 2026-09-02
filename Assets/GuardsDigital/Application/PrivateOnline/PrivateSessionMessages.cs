@@ -75,7 +75,15 @@ namespace GuardsDigital.Application
         /// and asks for one bounded current-projection resync. The answer is an ordinary
         /// <see cref="SeatProjection"/> push echoing the request's correlation.
         /// </summary>
-        RequestResync = 15
+        RequestResync = 15,
+
+        /// <summary>
+        /// Milestone 8.34. Client to host: return to a seat this session reserved, presenting the
+        /// reconnect capability the host issued when it granted that seat. A plain
+        /// <see cref="ClaimSeat"/> of a reserved seat stays refused - a reservation is one
+        /// player's, and only the capability says who that player is.
+        /// </summary>
+        ReclaimSeat = 16
     }
 
     /// <summary>
@@ -124,7 +132,18 @@ namespace GuardsDigital.Application
         /// Milestone 8.32. A keyed session received a plaintext frame where only a sealed one is
         /// acceptable, or a sealed frame that failed to unseal.
         /// </summary>
-        SealViolation = 20
+        SealViolation = 20,
+
+        /// <summary>
+        /// Milestone 8.34. A reclaim the host will not honour: no reservation stands for that
+        /// seat, or the presented capability is not the one that seat's grant issued.
+        /// </summary>
+        /// <remarks>
+        /// One reason answers both, deliberately. Which seats are reserved is already public in
+        /// the roster, so nothing is hidden by naming that case; whether a presented capability
+        /// was close to the right one is not something a refusal may say at all.
+        /// </remarks>
+        ReconnectNotAuthorized = 21
     }
 
     /// <summary>Milestone 8.31. Whether a seat is open, held by a live connection, or reserved.</summary>
@@ -134,10 +153,15 @@ namespace GuardsDigital.Application
         Claimed = 1,
 
         /// <summary>
-        /// Claimed, then its connection was lost. Reserved stays unclaimable for the rest of the
-        /// session: with no identity to recognize a returning player, releasing it would hand one
-        /// player's seat to whoever asks next. Milestone 8.34's reconnect work is what turns a
-        /// reservation back into a claim.
+        /// Claimed, then its connection was lost. Reserved stays unclaimable by an ordinary claim
+        /// for the rest of the session: releasing it would hand one player's seat to whoever asks
+        /// next.
+        ///
+        /// <para>Milestone 8.34 gives the reservation its one way back: the connection that held
+        /// the seat received a reconnect capability with its grant, and presenting that capability
+        /// on a <see cref="SessionMessageKind.ReclaimSeat"/> is what turns a reservation into a
+        /// claim again - under a rotated connection epoch, and never for anyone else. The
+        /// reservation lives exactly as long as the host session does.</para>
         /// </summary>
         Reserved = 2
     }
@@ -256,18 +280,88 @@ namespace GuardsDigital.Application
     }
 
     /// <summary>The host's grant: the claimed seat's identity row plus the running count.</summary>
+    /// <remarks>
+    /// Milestone 8.34 adds the two things the grant now has to say beside "this seat is yours":
+    /// which connection epoch this connection speaks under, and the capability that will bring the
+    /// seat back if the connection is lost. Both go to exactly one recipient - the connection that
+    /// was granted the seat - and neither appears in the roster the host broadcasts, in a
+    /// diagnostic record, or in any projection.
+    /// </remarks>
     public sealed class SeatGrantedMessage
     {
-        public SeatGrantedMessage(SeatRosterEntry seat, int claimedSeats, int totalSeats)
+        public SeatGrantedMessage(
+            SeatRosterEntry seat,
+            int claimedSeats,
+            int totalSeats,
+            int connectionEpoch = PrivateSessionProtocol.InitialConnectionEpoch,
+            string reconnectCapability = "")
         {
             Seat = seat ?? throw new ArgumentNullException(nameof(seat));
+            if (connectionEpoch < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(connectionEpoch), connectionEpoch, "A connection epoch counts from 1.");
+            }
+
             ClaimedSeats = claimedSeats;
             TotalSeats = totalSeats;
+            ConnectionEpoch = connectionEpoch;
+            ReconnectCapability = reconnectCapability ?? string.Empty;
+            if (ReconnectCapability.Length > PrivateSessionProtocol.MaxReconnectCapabilityChars)
+            {
+                throw new ArgumentException(
+                    "A reconnect capability is bounded.", nameof(reconnectCapability));
+            }
         }
 
         public SeatRosterEntry Seat { get; }
         public int ClaimedSeats { get; }
         public int TotalSeats { get; }
+
+        /// <summary>
+        /// Milestone 8.34. The epoch every gameplay envelope this connection sends must carry, and
+        /// the one the host stamps on everything it sends back. A returning seat is granted the
+        /// next one, so a frame from the connection it replaced can never be read as current.
+        /// </summary>
+        public int ConnectionEpoch { get; }
+
+        /// <summary>
+        /// Milestone 8.34. The owner-private token that brings this seat back after a lost
+        /// connection, and empty when the host cannot issue one. It is not a rules capability and
+        /// carries no authority of its own: presenting it asks the host to bind a new connection
+        /// to the seat this one already held.
+        /// </summary>
+        public string ReconnectCapability { get; }
+    }
+
+    /// <summary>
+    /// Milestone 8.34. The returning client's request: the seat it held, and the capability the
+    /// host issued when it granted that seat.
+    /// </summary>
+    /// <remarks>
+    /// It names a seat exactly as <see cref="SeatClaimMessage"/> does, and naming one proves
+    /// nothing: the host answers a reclaim only where that seat's own reservation stands and the
+    /// capability is the one it issued for it.
+    /// </remarks>
+    public sealed class SeatReclaimMessage
+    {
+        public SeatReclaimMessage(SeatId seat, string capability)
+        {
+            if (!seat.IsDefined)
+            {
+                throw new ArgumentException("A reclaim requires a seat.", nameof(seat));
+            }
+
+            Seat = seat;
+            Capability = capability ?? string.Empty;
+            if (Capability.Length > PrivateSessionProtocol.MaxReconnectCapabilityChars)
+            {
+                throw new ArgumentException("A reconnect capability is bounded.", nameof(capability));
+            }
+        }
+
+        public SeatId Seat { get; }
+        public string Capability { get; }
     }
 
     /// <summary>The whole current seat map, sent to every admitted connection when it changes.</summary>

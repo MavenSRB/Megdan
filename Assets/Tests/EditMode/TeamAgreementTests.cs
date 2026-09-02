@@ -111,13 +111,32 @@ namespace GuardsDigital.Tests.EditMode
             var first = host.ClientForSeat(eligible.Id).SubmitAgreement(new TeamAgreementSubmission(
                 new SubmissionId("agreement-duplicate"), version, offered));
             Assert.That(first.Accepted, Is.True);
-            var duplicate = host.ClientForSeat(eligible.Id).SubmitAgreement(new TeamAgreementSubmission(
+
+            // Milestone 8.34. An identical repeat is answered from what the statement already did
+            // - the failure policy's retained-result clause, which the agreement path obeys
+            // exactly as the command path does - and records nothing a second time.
+            var repeated = host.ClientForSeat(eligible.Id).SubmitAgreement(new TeamAgreementSubmission(
                 new SubmissionId("agreement-duplicate"), version, offered));
-            Assert.That(duplicate.Accepted, Is.False);
-            Assert.That(duplicate.RejectionReason,
-                Is.EqualTo(TeamAgreementSubmissionRejectionReason.DuplicateSubmission));
+            Assert.That(repeated.Accepted, Is.EqualTo(first.Accepted));
+            Assert.That(repeated.RejectionReason, Is.EqualTo(first.RejectionReason));
+            Assert.That(repeated.Version, Is.EqualTo(first.Version));
             Assert.That(host.Version, Is.EqualTo(version));
             Assert.That(host.Sequence, Is.EqualTo(sequence));
+
+            // The same identity carrying a different statement is a used name, and is refused.
+            var withdrawal = host.ProjectionForSeat(eligible.Id).TeamAgreement.AuthorizedCommands
+                .FirstOrDefault(command => !command.Equals(offered));
+            if (withdrawal != null)
+            {
+                var duplicate = host.ClientForSeat(eligible.Id).SubmitAgreement(
+                    new TeamAgreementSubmission(
+                        new SubmissionId("agreement-duplicate"), version, withdrawal));
+                Assert.That(duplicate.Accepted, Is.False);
+                Assert.That(duplicate.RejectionReason,
+                    Is.EqualTo(TeamAgreementSubmissionRejectionReason.DuplicateSubmission));
+                Assert.That(host.Version, Is.EqualTo(version));
+                Assert.That(host.Sequence, Is.EqualTo(sequence));
+            }
         }
 
         private static IMatchHost ReachAgreement(TeamAgreementKind kind)

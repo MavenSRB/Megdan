@@ -75,21 +75,29 @@ namespace GuardsDigital.Tests.EditMode
             public int Ordinal { get; }
         }
 
+        /// <summary>
+        /// Milestone 8.34. The outbox reads its link's <em>current</em> ordinal rather than the one
+        /// it was built with: a machine that reconnects keeps its identity and gets a new
+        /// connection, which is exactly the distinction the reconnect policy turns on.
+        /// </summary>
         private sealed class ClientOutbox : IPrivateSessionClientOutbox
         {
             private readonly PrivateOnlineWireHarness harness;
-            private readonly int ordinal;
+            private readonly ClientLink link;
 
-            public ClientOutbox(PrivateOnlineWireHarness harness, int ordinal)
+            public ClientOutbox(PrivateOnlineWireHarness harness, ClientLink link)
             {
                 this.harness = harness;
-                this.ordinal = ordinal;
+                this.link = link;
             }
 
-            public void Send(byte[] frame) =>
-                harness.clientQueue.Enqueue(new FrameAction(ordinal, frame));
+            public void Send(byte[] frame)
+            {
+                link.NoteSentSequence(frame);
+                harness.clientQueue.Enqueue(new FrameAction(link.Ordinal, frame));
+            }
 
-            public void Close() => harness.clientQueue.Enqueue(new CloseAction(ordinal));
+            public void Close() => harness.clientQueue.Enqueue(new CloseAction(link.Ordinal));
         }
 
         private sealed class ClientLink
@@ -100,15 +108,66 @@ namespace GuardsDigital.Tests.EditMode
             public PrivateSessionFaultInjector HostToClientInjector;
             public PrivateSessionFaultInjector ClientToHostInjector;
             public byte[] LastProjectionPayload;
+
+            /// <summary>
+            /// Milestone 8.34. Every frame this machine has ever been handed, across connections,
+            /// so a privacy check can read what actually crossed instead of asking the machine
+            /// what it kept.
+            /// </summary>
+            public readonly List<SessionFrame> Delivered = new List<SessionFrame>();
             public string Seat;
+            public int Ordinal;
             public bool HostSideClosed;
             public bool ClientSideClosed;
+
+            /// <summary>
+            /// Milestone 8.34. The gameplay sequence this machine last sent, read off the frame as
+            /// it goes by, so a fixture can compose one raw submission that continues the same
+            /// ordered stream instead of guessing where it is.
+            /// </summary>
+            public long LastClientSequence;
+
+            public void NoteSentSequence(byte[] frame)
+            {
+                if (frame.Length < PrivateSessionProtocol.FrameHeaderBytes)
+                {
+                    return;
+                }
+
+                var kind = (SessionMessageKind)PrivateSessionFrameCodec.ReadUInt16(frame, 6);
+                var payload = new byte[frame.Length - PrivateSessionProtocol.FrameHeaderBytes];
+                Array.Copy(frame, PrivateSessionProtocol.FrameHeaderBytes, payload, 0, payload.Length);
+                switch (kind)
+                {
+                    case SessionMessageKind.SubmitCommand
+                        when NetworkMessageCodec.TryDecodeSubmitCommand(payload, out var submission):
+                        LastClientSequence = submission.Envelope.Sequence;
+                        return;
+                    case SessionMessageKind.SubmitAgreement
+                        when NetworkMessageCodec.TryDecodeSubmitAgreement(payload, out var statement):
+                        LastClientSequence = statement.Envelope.Sequence;
+                        return;
+                    case SessionMessageKind.RequestResync
+                        when NetworkMessageCodec.TryDecodeRequestResync(payload, out var resync):
+                        LastClientSequence = resync.Envelope.Sequence;
+                        return;
+                }
+            }
         }
 
         private readonly Queue<WireAction> hostQueue = new Queue<WireAction>();
         private readonly Queue<WireAction> clientQueue = new Queue<WireAction>();
         private readonly Dictionary<int, ClientLink> links = new Dictionary<int, ClientLink>();
+
+        /// <summary>
+        /// Milestone 8.34. Ordinals the host has let go of, with a stream assembler each, so a
+        /// fixture can deliver bytes to a connection that no longer exists and watch them be
+        /// discarded rather than crash the harness.
+        /// </summary>
+        private readonly Dictionary<int, PrivateSessionFrameAssembler> retired =
+            new Dictionary<int, PrivateSessionFrameAssembler>();
         private readonly string sessionKey;
+        private int nextOrdinal = 100;
 
         private PrivateOnlineWireHarness(
             PrivateSessionHost session,
@@ -126,13 +185,22 @@ namespace GuardsDigital.Tests.EditMode
         public IMatchHost MatchHost { get; }
         public PrivateSessionIdentity Identity { get; }
 
-        public static PrivateOnlineWireHarness Compose(string sessionKey = "")
+        public static PrivateOnlineWireHarness Compose(string sessionKey = "") =>
+            Compose(
+                GuardsDigital.Application.MatchHost.Compose(
+                    OwnerScopedProjectionTests.CreateOfficialInitialState()),
+                sessionKey);
+
+        /// <summary>
+        /// Milestone 8.34. The same wire over an authority a fixture composed itself, so a staged
+        /// pending family - a Defense response, a respawn, a removal-prevention pause - can be put
+        /// on the wire without walking to it.
+        /// </summary>
+        public static PrivateOnlineWireHarness Compose(IMatchHost matchHost, string sessionKey = "")
         {
             var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
             var identity = PrivateSessionIdentity.ForComposition(map, configuration, "sync-build");
-            var matchHost = GuardsDigital.Application.MatchHost.Compose(
-                OwnerScopedProjectionTests.CreateOfficialInitialState());
             PrivateOnlineWireHarness harness = null;
             var session = new PrivateSessionHost(
                 matchHost, identity, sessionKey, new HostOutboxProxy(() => harness),
@@ -178,17 +246,63 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         public PrivateSessionClient Connect(int ordinal, string seat, PrivateSessionIdentity identity = null)
         {
-            var link = new ClientLink
-            {
-                Seat = seat,
-                Machine = new PrivateSessionClient(
-                    identity ?? Identity, new SeatId(seat), sessionKey,
-                    new ClientOutbox(this, ordinal), new CountingNonceSource((byte)ordinal))
-            };
+            var link = new ClientLink { Seat = seat, Ordinal = ordinal };
+            link.Machine = new PrivateSessionClient(
+                identity ?? Identity, new SeatId(seat), sessionKey,
+                new ClientOutbox(this, link), new CountingNonceSource((byte)ordinal));
             links[ordinal] = link;
+            nextOrdinal = Math.Max(nextOrdinal, ordinal + 1);
             link.Machine.OnConnected();
             Session.OnConnected(ordinal, 0);
             return link.Machine;
+        }
+
+        /// <summary>
+        /// Milestone 8.34. Drops one client's connection the way a lost link does: no Goodbye from
+        /// either side, both ends told the transport is gone, and the seat left reserved.
+        /// </summary>
+        public void DisconnectClient(int ordinal)
+        {
+            var link = links[ordinal];
+            link.ClientSideClosed = true;
+            link.HostSideClosed = true;
+            Session.OnDisconnected(ordinal);
+            link.Machine.OnDisconnected();
+            Pump();
+        }
+
+        /// <summary>
+        /// Milestone 8.34. Brings the same client machine back on a new connection: it arms its
+        /// return, dials again as a new ordinal, and re-runs the whole admission handshake, which
+        /// is what makes the reclaim a reclaim rather than a resumed socket.
+        /// </summary>
+        /// <returns>The new connection ordinal.</returns>
+        public int ReconnectClient(int ordinal)
+        {
+            var link = links[ordinal];
+            Assert.That(link.Machine.BeginReconnect(), Is.True,
+                "Seat " + link.Seat + " could not arm a return: it holds no reconnect capability, " +
+                "or its state is not one a fresh admission may be started from (" +
+                link.Machine.State + ").");
+
+            var replacement = nextOrdinal++;
+            links.Remove(ordinal);
+            retired[ordinal] = new PrivateSessionFrameAssembler();
+            link.Ordinal = replacement;
+            link.FromHost = new PrivateSessionFrameAssembler();
+            link.ToHost = new PrivateSessionFrameAssembler();
+            link.HostToClientInjector = null;
+            link.ClientToHostInjector = null;
+            link.LastProjectionPayload = null;
+            link.LastClientSequence = 0;
+            link.HostSideClosed = false;
+            link.ClientSideClosed = false;
+            links[replacement] = link;
+
+            link.Machine.OnConnected();
+            Session.OnConnected(replacement, 0);
+            Pump();
+            return replacement;
         }
 
         /// <summary>Seats every official seat: ordinal 1..6 in the authoritative roster order.</summary>
@@ -263,12 +377,38 @@ namespace GuardsDigital.Tests.EditMode
             Pump();
         }
 
+        /// <summary>
+        /// Milestone 8.34. Submits one command as this seat, naming the expected version rather
+        /// than reading it off the projection - the shape of an answer decided against a view the
+        /// authority has since moved past.
+        /// </summary>
+        /// <remarks>
+        /// It continues the connection's own ordered stream, so it is a real submission from that
+        /// seat rather than a protocol violation wearing one. The machine that owns the stream
+        /// does not know about it, so a fixture that uses this makes it the last thing that
+        /// connection sends.
+        /// </remarks>
+        public void SendSubmissionAtVersion(
+            int ordinal, string submissionId, long expectedVersion, DirectorCommand command)
+        {
+            var link = links[ordinal];
+            link.LastClientSequence++;
+            SendRaw(ordinal, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
+                new NetworkEnvelope(
+                    Identity.Correlation,
+                    link.Machine.ConnectionEpoch,
+                    link.LastClientSequence,
+                    link.LastClientSequence),
+                submissionId,
+                expectedVersion,
+                NetworkCommandCodec.Encode(command))));
+        }
+
         private void DeliverToHost(WireAction action)
         {
             if (action is CloseAction close)
             {
-                var link = links[close.Ordinal];
-                if (!link.ClientSideClosed)
+                if (links.TryGetValue(close.Ordinal, out var link) && !link.ClientSideClosed)
                 {
                     link.ClientSideClosed = true;
                     Session.OnDisconnected(close.Ordinal);
@@ -278,7 +418,14 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             var frame = (FrameAction)action;
-            var target = links[frame.Ordinal];
+            if (!links.TryGetValue(frame.Ordinal, out var target))
+            {
+                // Milestone 8.34. Bytes for a connection the harness has retired still reach the
+                // host's door, exactly as a late socket read would; the host is what discards them.
+                DeliverRetiredBytesToHost(frame.Ordinal, frame.Bytes);
+                return;
+            }
+
             if (target.HostSideClosed)
             {
                 return;
@@ -293,6 +440,25 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var bytes in target.ClientToHostInjector.Process(frame.Bytes))
             {
                 DeliverBytesToHost(frame.Ordinal, bytes);
+            }
+        }
+
+        private void DeliverRetiredBytesToHost(int ordinal, byte[] bytes)
+        {
+            if (!retired.TryGetValue(ordinal, out var assembler))
+            {
+                retired[ordinal] = assembler = new PrivateSessionFrameAssembler();
+            }
+
+            if (!assembler.Add(bytes, 0, bytes.Length))
+            {
+                Session.OnStreamRejected(ordinal, assembler.Rejection);
+                return;
+            }
+
+            while (assembler.TryDequeue(out var frame))
+            {
+                Session.OnFrame(ordinal, frame);
             }
         }
 
@@ -320,8 +486,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             if (action is CloseAction close)
             {
-                var link = links[close.Ordinal];
-                if (!link.HostSideClosed)
+                if (links.TryGetValue(close.Ordinal, out var link) && !link.HostSideClosed)
                 {
                     link.HostSideClosed = true;
                     link.Machine.OnDisconnected();
@@ -331,8 +496,7 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             var frame = (FrameAction)action;
-            var target = links[frame.Ordinal];
-            if (target.ClientSideClosed)
+            if (!links.TryGetValue(frame.Ordinal, out var target) || target.ClientSideClosed)
             {
                 return;
             }
@@ -376,6 +540,7 @@ namespace GuardsDigital.Tests.EditMode
                     candidate = projection.ProjectionPayload;
                 }
 
+                link.Delivered.Add(frame);
                 var before = link.Machine.LatestProjection;
                 link.Machine.OnFrame(frame);
                 if (candidate != null && !ReferenceEquals(link.Machine.LatestProjection, before))
@@ -541,5 +706,68 @@ namespace GuardsDigital.Tests.EditMode
 
         public int OrdinalOf(string seat) =>
             links.Single(pair => pair.Value.Seat == seat).Key;
+
+        /// <summary>Milestone 8.34. Every frame ever delivered to this seat's machine.</summary>
+        public IReadOnlyList<SessionFrame> DeliveredFrames(int ordinal) => links[ordinal].Delivered;
+
+        /// <summary>The live ordinals, lowest first.</summary>
+        public IReadOnlyList<int> Ordinals => links.Keys.OrderBy(value => value).ToArray();
+
+        /// <summary>
+        /// Milestone 8.34. The reconnect capability the host issued to one seat, read out of the
+        /// grant frame that seat actually received.
+        /// </summary>
+        /// <remarks>
+        /// A fixture reads it here rather than from the client, which keeps it private on purpose.
+        /// Reading the wire is also the honest way to check that nobody else received it.
+        /// </remarks>
+        public string CapabilityDeliveredTo(int ordinal)
+        {
+            foreach (var frame in links[ordinal].Delivered)
+            {
+                if (frame.Kind == SessionMessageKind.SeatGranted &&
+                    PrivateSessionFrameCodec.TryDecodeSeatGranted(frame.Payload, out var granted) &&
+                    granted.ReconnectCapability.Length > 0)
+                {
+                    return granted.ReconnectCapability;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Milestone 8.34. Answers the standing decision once from the seat that owns it, however
+        /// that family is answered: a command where the seat's projection offers one, a public
+        /// statement where the family's answer is the team's.
+        /// </summary>
+        /// <returns>The submission identity used, so a retry can present the same one.</returns>
+        public string AnswerOnce(int ordinal, out DirectorCommand command,
+            out TeamAgreementCommand statement)
+        {
+            var client = Client(ordinal);
+            command = null;
+            statement = null;
+            Assert.That(client.State, Is.EqualTo(PrivateSessionClientState.Seated),
+                "Seat " + SeatOf(ordinal) + " cannot answer from state " + client.State + ".");
+
+            if (client.LatestProjection.AuthorizedCommands.Count > 0)
+            {
+                command = client.LatestProjection.AuthorizedCommands[0];
+                Assert.That(client.TrySubmitCommand(command, out var commandId), Is.True);
+                Pump();
+                return commandId;
+            }
+
+            var agreement = client.LatestProjection.Detail.TeamAgreement;
+            Assert.That(agreement, Is.Not.Null,
+                "Seat " + SeatOf(ordinal) + " owns the standing decision but was offered neither a " +
+                "command nor a statement.");
+            Assert.That(agreement.AuthorizedStatements, Is.Not.Empty);
+            statement = agreement.AuthorizedStatements[0];
+            Assert.That(client.TrySubmitAgreement(statement, out var statementId), Is.True);
+            Pump();
+            return statementId;
+        }
     }
 }

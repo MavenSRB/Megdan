@@ -67,6 +67,10 @@ namespace GuardsDigital.Tests.EditMode
             typeof(SeatClaimMessage),
             typeof(SeatGrantedMessage),
             typeof(SeatRosterMessage),
+            // Milestone 8.34: the reconnect slice's one new message. The capability and the epoch
+            // it carries are protocol state like every other field here - transport-neutral, and
+            // beneath the port rather than beside it.
+            typeof(SeatReclaimMessage),
             typeof(IPrivateSessionOutbox),
             typeof(IPrivateSessionClientOutbox),
             typeof(IPrivateSessionNonceSource),

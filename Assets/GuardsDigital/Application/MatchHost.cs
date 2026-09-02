@@ -352,11 +352,45 @@ namespace GuardsDigital.Application
         public const int RetainedSubmissionIdCount =
             PrivateSessionProtocol.SubmissionIdempotencyWindowEntries;
 
+        /// <summary>
+        /// Milestone 8.34. What one consumed submission identity answered, so that an identical
+        /// repeat of it is answered the same way instead of being executed a second time.
+        /// </summary>
+        /// <remarks>
+        /// "Identical" is the whole of it: the same identity, from the same seat, asking the same
+        /// thing. A repeat that matches on the identity alone is a different question wearing a
+        /// used name, and it is refused rather than answered from here.
+        /// </remarks>
+        private sealed class CachedSubmissionOutcome
+        {
+            public SeatId Seat;
+            public DirectorCommand Command;
+            public TeamAgreementCommand Statement;
+            public bool Accepted;
+            public SeatSubmissionRejectionReason SeatReason;
+            public TeamAgreementSubmissionRejectionReason AgreementReason;
+            public MatchSessionRejectionReason SessionReason;
+            public string Detail;
+            public long Version;
+            public long Sequence;
+
+            public bool Answers(SeatId seat, DirectorCommand command) =>
+                Command != null && Statement == null &&
+                Seat.Equals(seat) && Command.Equals(command);
+
+            public bool Answers(SeatId seat, TeamAgreementCommand statement) =>
+                Statement != null && Command == null &&
+                Seat.Equals(seat) && Statement.Equals(statement);
+        }
+
         private readonly IMatchSession session;
         private readonly object gate = new object();
         private readonly List<MatchHostResultRecord> retained = new List<MatchHostResultRecord>();
         private readonly HashSet<SubmissionId> consumedSubmissionIds = new HashSet<SubmissionId>();
         private readonly Queue<SubmissionId> consumedSubmissionOrder = new Queue<SubmissionId>();
+        private readonly Dictionary<SubmissionId, CachedSubmissionOutcome> cachedOutcomes =
+            new Dictionary<SubmissionId, CachedSubmissionOutcome>();
+        private readonly Queue<SubmissionId> cachedOutcomeOrder = new Queue<SubmissionId>();
         private readonly TeamAgreementCoordinator teamAgreement = new TeamAgreementCoordinator();
         private MatchParticipants seatedParticipants;
         private MatchSeatBinding seatBinding;
@@ -547,6 +581,34 @@ namespace GuardsDigital.Application
                         "The host is already executing a submission.");
                 }
 
+                // Milestone 8.34. The identity is asked about before the version is, and the order
+                // is the failure policy's: an identity that already reached the authority is
+                // answered from what it did, not from what the board looks like now. Telling a
+                // retry that its view is stale would invite the client to ask again under a new
+                // name, which is the one way a submission gets executed twice.
+                if (consumedSubmissionIds.Contains(submission.Id))
+                {
+                    if (cachedOutcomes.TryGetValue(submission.Id, out var cached) &&
+                        cached.Answers(bound.Id, submission.Command))
+                    {
+                        return new SeatSubmissionResult(
+                            submission,
+                            cached.Accepted,
+                            cached.SeatReason,
+                            cached.SessionReason,
+                            cached.Detail,
+                            cached.Version,
+                            cached.Sequence,
+                            ProjectionForBound(bound));
+                    }
+
+                    return SeatRefused(
+                        submission,
+                        bound,
+                        SeatSubmissionRejectionReason.DuplicateSubmission,
+                        "Submission '" + submission.Id + "' has already reached the authority.");
+                }
+
                 var projection = ProjectionForBound(bound);
                 if (submission.ExpectedVersion != projection.Version)
                 {
@@ -556,15 +618,6 @@ namespace GuardsDigital.Application
                         SeatSubmissionRejectionReason.StaleProjection,
                         "The submission expects version " + submission.ExpectedVersion +
                         " and the authoritative version is " + projection.Version + ".");
-                }
-
-                if (consumedSubmissionIds.Contains(submission.Id))
-                {
-                    return SeatRefused(
-                        submission,
-                        bound,
-                        SeatSubmissionRejectionReason.DuplicateSubmission,
-                        "Submission '" + submission.Id + "' has already reached the authority.");
                 }
 
                 var claimed = SeatCommandOwnership.Claim(submission.Command);
@@ -600,16 +653,30 @@ namespace GuardsDigital.Application
                     executing = false;
                 }
 
-                return new SeatSubmissionResult(
-                    submission,
-                    inner.Accepted,
-                    inner.Accepted
+                var outcome = new CachedSubmissionOutcome
+                {
+                    Seat = bound.Id,
+                    Command = submission.Command,
+                    Accepted = inner.Accepted,
+                    SeatReason = inner.Accepted
                         ? SeatSubmissionRejectionReason.None
                         : SeatSubmissionRejectionReason.SessionRefused,
-                    inner.SessionRejectionReason,
-                    inner.Detail,
-                    inner.Version,
-                    inner.Sequence,
+                    AgreementReason = TeamAgreementSubmissionRejectionReason.None,
+                    SessionReason = inner.SessionRejectionReason,
+                    Detail = inner.Detail,
+                    Version = inner.Version,
+                    Sequence = inner.Sequence
+                };
+                CacheOutcome(submission.Id, outcome);
+
+                return new SeatSubmissionResult(
+                    submission,
+                    outcome.Accepted,
+                    outcome.SeatReason,
+                    outcome.SessionReason,
+                    outcome.Detail,
+                    outcome.Version,
+                    outcome.Sequence,
                     ProjectionForBound(bound));
             }
         }
@@ -631,16 +698,34 @@ namespace GuardsDigital.Application
                         bound, TeamAgreementSubmissionRejectionReason.HostRefused,
                         "The host is already executing a submission.");
 
+                // Milestone 8.34. The identity before the version, exactly as the command path
+                // orders them: a statement that already reached the coordinator is answered from
+                // what it did there.
+                if (consumedSubmissionIds.Contains(submission.Id))
+                {
+                    if (cachedOutcomes.TryGetValue(submission.Id, out var cached) &&
+                        cached.Answers(bound.Id, submission.Command))
+                    {
+                        return new TeamAgreementSubmissionResult(
+                            cached.Accepted,
+                            cached.AgreementReason,
+                            cached.Detail,
+                            cached.Version,
+                            cached.Sequence,
+                            ProjectionForBound(bound));
+                    }
+
+                    return AgreementRefused(
+                        bound, TeamAgreementSubmissionRejectionReason.DuplicateSubmission,
+                        "Submission '" + submission.Id + "' has already been consumed.");
+                }
+
                 var projection = ProjectionForBound(bound);
                 if (submission.ExpectedVersion != projection.Version)
                     return AgreementRefused(
                         bound, TeamAgreementSubmissionRejectionReason.StaleProjection,
                         "The submission expects version " + submission.ExpectedVersion +
                         " and the authoritative version is " + projection.Version + ".");
-                if (consumedSubmissionIds.Contains(submission.Id))
-                    return AgreementRefused(
-                        bound, TeamAgreementSubmissionRejectionReason.DuplicateSubmission,
-                        "Submission '" + submission.Id + "' has already been consumed.");
                 if (projection.TeamAgreement == null ||
                     !projection.TeamAgreement.ProposalId.Equals(submission.Command.ProposalId))
                     return AgreementRefused(
@@ -659,25 +744,29 @@ namespace GuardsDigital.Application
                     var applied = teamAgreement.Apply(
                         session.Projection, CurrentSeats(), bound, submission.Command);
                     if (!applied.Accepted)
-                        return AgreementRefused(
-                            bound, TeamAgreementSubmissionRejectionReason.UnauthorizedStatement,
-                            applied.Detail);
+                        return CachedAgreementOutcome(
+                            submission, bound, false,
+                            TeamAgreementSubmissionRejectionReason.UnauthorizedStatement,
+                            applied.Detail, session.Projection.Version, 0);
 
                     if (applied.FinalCommand == null)
-                        return new TeamAgreementSubmissionResult(
-                            true, TeamAgreementSubmissionRejectionReason.None, string.Empty,
-                            session.Projection.Version, 0, ProjectionForBound(bound));
+                        return CachedAgreementOutcome(
+                            submission, bound, true,
+                            TeamAgreementSubmissionRejectionReason.None, string.Empty,
+                            session.Projection.Version, 0);
 
                     var final = Execute(MatchSubmission.ForCommand(applied.FinalCommand));
                     if (!final.Accepted)
-                        return AgreementRefused(
-                            bound, TeamAgreementSubmissionRejectionReason.FinalRulesChoiceRefused,
-                            final.Detail);
+                        return CachedAgreementOutcome(
+                            submission, bound, false,
+                            TeamAgreementSubmissionRejectionReason.FinalRulesChoiceRefused,
+                            final.Detail, session.Projection.Version, 0);
 
                     teamAgreement.Clear();
-                    return new TeamAgreementSubmissionResult(
-                        true, TeamAgreementSubmissionRejectionReason.None, string.Empty,
-                        final.Version, final.Sequence, ProjectionForBound(bound));
+                    return CachedAgreementOutcome(
+                        submission, bound, true,
+                        TeamAgreementSubmissionRejectionReason.None, string.Empty,
+                        final.Version, final.Sequence);
                 }
                 finally
                 {
@@ -713,6 +802,57 @@ namespace GuardsDigital.Application
             {
                 consumedSubmissionIds.Remove(consumedSubmissionOrder.Dequeue());
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.34. Remembers what one consumed identity answered, for as long as the
+        /// ordered result stream remembers the record it produced.
+        /// </summary>
+        /// <remarks>
+        /// The two windows are deliberately different sizes, and the difference is the failure
+        /// policy's two clauses. The identity window is the wider one, so a repeat is recognized
+        /// as a repeat long after its answer has aged out; the outcome window is the result
+        /// stream's own, so an answer is replayed only while the host can still account for it.
+        /// A repeat inside the first and outside the second is refused rather than answered - it
+        /// is still never executed twice. Milestone 8.33's measurement is what says a real
+        /// reconnect retry lands inside the narrower one: the worst per-seat distance between two
+        /// of a seat's own consumed identities across the deterministic walk is 27.
+        /// </remarks>
+        private void CacheOutcome(SubmissionId id, CachedSubmissionOutcome outcome)
+        {
+            cachedOutcomes[id] = outcome;
+            cachedOutcomeOrder.Enqueue(id);
+            while (cachedOutcomeOrder.Count > RetainedResultCount)
+            {
+                cachedOutcomes.Remove(cachedOutcomeOrder.Dequeue());
+            }
+        }
+
+        private TeamAgreementSubmissionResult CachedAgreementOutcome(
+            TeamAgreementSubmission submission,
+            MatchSeat bound,
+            bool accepted,
+            TeamAgreementSubmissionRejectionReason reason,
+            string detail,
+            long version,
+            long sequence)
+        {
+            CacheOutcome(submission.Id, new CachedSubmissionOutcome
+            {
+                Seat = bound.Id,
+                Statement = submission.Command,
+                Accepted = accepted,
+                SeatReason = SeatSubmissionRejectionReason.None,
+                AgreementReason = reason,
+                SessionReason = MatchSessionRejectionReason.None,
+                Detail = detail ?? string.Empty,
+                Version = version,
+                Sequence = sequence
+            });
+
+            return new TeamAgreementSubmissionResult(
+                accepted, reason, detail ?? string.Empty, version, sequence,
+                ProjectionForBound(bound));
         }
 
         private SeatSubmissionResult SeatRefused(

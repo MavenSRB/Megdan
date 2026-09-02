@@ -183,6 +183,12 @@ namespace GuardsDigital.Presentation.Interaction
                     PrivateOnlineMarkers.Log(
                         "SEAT_RESERVED ordinal=" + ordinal + " seat=" + record.Seat.Value);
                     return;
+                case PrivateSessionEventKind.SeatReclaimed:
+                    PrivateOnlineMarkers.Log(
+                        "SEAT_RECLAIMED ordinal=" + ordinal + " seat=" + record.Seat.Value +
+                        " epoch=" + session.EpochForSeat(record.Seat)
+                            .ToString(CultureInfo.InvariantCulture));
+                    return;
                 case PrivateSessionEventKind.Rejected:
                     PrivateOnlineMarkers.Log("REJECTED ordinal=" + ordinal + " reason=" + record.Reason);
                     return;
@@ -369,6 +375,17 @@ namespace GuardsDigital.Presentation.Interaction
                     PrivateOnlineMarkers.Log("CLIENT_CLOSED seatedBefore=" +
                         (machine.GrantedSeat != null ? "true" : "false"));
                     Quit(machine.GrantedSeat != null ? SeatedExitCode : FaultExitCode);
+                    return;
+
+                // Milestone 8.34. The host-loss row: this seat's authority ended without saying
+                // so, which is terminal for the session and for anything this process could still
+                // do in it. The seat was held, so the exit code stays the seated one - the
+                // rehearsal reads a lost host from the marker, not from a failure.
+                case PrivateSessionClientState.HostLost:
+                    PrivateOnlineMarkers.Log(
+                        "CLIENT_HOST_LOST seat=" + machine.GrantedSeat.Seat.Value +
+                        " reconnectAvailable=" + (machine.CanAttemptReconnect ? "true" : "false"));
+                    Quit(SeatedExitCode);
                     return;
 
                 case PrivateSessionClientState.Faulted:
