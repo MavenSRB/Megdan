@@ -1,0 +1,198 @@
+using System;
+using GuardsDigital.Application;
+using GuardsDigital.Core.Participants;
+
+namespace GuardsDigital.Presentation.Interaction
+{
+    /// <summary>
+    /// Milestone 8.35a. The invitation as a player types it: where the host is, and the optional
+    /// pre-shared session key that admits them.
+    /// </summary>
+    /// <remarks>
+    /// The 2026-09-01 transport amendment makes this the whole invitation mechanism - an address,
+    /// a port, and a key agreed out of band. There is no code service, no account and no directory
+    /// to look anything up in, so what is dialed is exactly what was typed.
+    /// </remarks>
+    public sealed class PrivateLobbyEntry
+    {
+        public PrivateLobbyEntry(string address, string port, string sessionKey, SeatId seat)
+        {
+            Address = address ?? string.Empty;
+            Port = port ?? string.Empty;
+            SessionKey = sessionKey ?? string.Empty;
+            Seat = seat;
+        }
+
+        public string Address { get; }
+        public string Port { get; }
+        public string SessionKey { get; }
+
+        /// <summary>The seat a join will claim; undefined until one is picked.</summary>
+        public SeatId Seat { get; }
+    }
+
+    /// <summary>
+    /// Milestone 8.35a. The lobby's view port: it is handed a model and draws it. It is told
+    /// nothing else and asked nothing else, so a second surface - a different engine, a console
+    /// listing - is a second implementation of this and no other change.
+    /// </summary>
+    public interface IPrivateLobbyView
+    {
+        void Render(PrivateLobbyModel model);
+    }
+
+    /// <summary>
+    /// Milestone 8.35a. The primitive private lobby's presenter: it reads the session contracts,
+    /// hands the view a model of them, and turns a pressed control back into a session call.
+    /// </summary>
+    /// <remarks>
+    /// <para>Engine-free by construction, so what a Play Mode journey clicks and what an Edit Mode
+    /// fixture reasons about are the same object. It holds a <see cref="PrivateSessionClient"/> or
+    /// a <see cref="PrivateSessionHost"/> and nothing else: no match session, no authority, no
+    /// command. Every question about who holds which seat is answered by the host, in the roster,
+    /// and this only reads the answer - which is the block's fourth acceptance check.</para>
+    /// <para>Opening and closing sockets is deliberately not its job. Pressing HOST, JOIN or
+    /// RECONNECT raises a request the driver answers, because the driver is the one piece that is
+    /// allowed to know a transport exists.</para>
+    /// </remarks>
+    public sealed class PrivateLobbyPresenter
+    {
+        private readonly IPrivateLobbyView view;
+        private System.Collections.Generic.IReadOnlyList<SeatRosterEntry> localSeats =
+            Array.Empty<SeatRosterEntry>();
+        private PrivateSessionClient client;
+        private PrivateSessionHost host;
+        private string feedback = string.Empty;
+
+        public PrivateLobbyPresenter(IPrivateLobbyView view)
+        {
+            this.view = view ?? throw new ArgumentNullException(nameof(view));
+        }
+
+        /// <summary>Raised when a player asked to become the seatless host of a new session.</summary>
+        public event Action<PrivateLobbyEntry> HostRequested;
+
+        /// <summary>Raised when a player asked to join the typed session as the picked seat.</summary>
+        public event Action<PrivateLobbyEntry> JoinRequested;
+
+        /// <summary>Raised when a player asked to leave whatever this process is in.</summary>
+        public event Action LeaveRequested;
+
+        /// <summary>
+        /// Raised when a return has been armed on the session client and needs a new connection
+        /// dialed for it.
+        /// </summary>
+        public event Action ReconnectRequested;
+
+        /// <summary>The model the view was last handed, for a fixture that reads what was drawn.</summary>
+        public PrivateLobbyModel Model { get; private set; }
+
+        /// <summary>
+        /// Returns to the entry form, saying why where there is something to say. Any session this
+        /// presenter was reading is dropped - the driver owns closing it.
+        /// </summary>
+        public void ShowEntry(
+            System.Collections.Generic.IReadOnlyList<SeatRosterEntry> seats, string reason)
+        {
+            localSeats = seats ?? Array.Empty<SeatRosterEntry>();
+            client = null;
+            host = null;
+            feedback = reason ?? string.Empty;
+            Refresh();
+        }
+
+        /// <summary>Shows one invited player's own session client.</summary>
+        public void AttachClient(PrivateSessionClient session)
+        {
+            client = session ?? throw new ArgumentNullException(nameof(session));
+            host = null;
+            feedback = string.Empty;
+            Refresh();
+        }
+
+        /// <summary>Shows the dedicated seatless host's own view of the seats it serves.</summary>
+        public void AttachHost(PrivateSessionHost session, string status)
+        {
+            host = session ?? throw new ArgumentNullException(nameof(session));
+            client = null;
+            feedback = status ?? string.Empty;
+            Refresh();
+        }
+
+        /// <summary>Rebuilds the model from the session as it stands and redraws.</summary>
+        public void Refresh()
+        {
+            Model = client != null
+                ? PrivateLobbyModel.ForClient(client)
+                : host != null
+                    ? PrivateLobbyModel.ForHost(host, feedback)
+                    : PrivateLobbyModel.Entry(localSeats, feedback);
+            view.Render(Model);
+        }
+
+        /// <summary>
+        /// Answers a pressed control.
+        /// </summary>
+        /// <remarks>
+        /// A control the current model does not offer is ignored rather than obeyed: a surface that
+        /// kept a stale button - the case milestone 8.34 makes terminal - must not be able to reach
+        /// the session through it.
+        /// </remarks>
+        /// <returns>Whether the press was one the lobby was offering.</returns>
+        public bool Press(PrivateLobbyControl control, PrivateLobbyEntry entry)
+        {
+            if (Model == null || !Model.Offers(control))
+            {
+                return false;
+            }
+
+            switch (control)
+            {
+                case PrivateLobbyControl.Host:
+                    HostRequested?.Invoke(entry);
+                    return true;
+
+                case PrivateLobbyControl.Join:
+                    if (entry == null || !entry.Seat.IsDefined)
+                    {
+                        feedback = "Pick the seat you will play before joining.";
+                        Refresh();
+                        return true;
+                    }
+
+                    JoinRequested?.Invoke(entry);
+                    return true;
+
+                case PrivateLobbyControl.Ready:
+                case PrivateLobbyControl.Unready:
+                    client?.TrySetReadiness(control == PrivateLobbyControl.Ready);
+                    Refresh();
+                    return true;
+
+                case PrivateLobbyControl.Leave:
+                    if (client != null && client.State == PrivateSessionClientState.Seated)
+                    {
+                        client.SendGoodbye();
+                    }
+
+                    LeaveRequested?.Invoke();
+                    return true;
+
+                case PrivateLobbyControl.Reconnect:
+                    if (client == null || !client.BeginReconnect())
+                    {
+                        feedback = "This seat's return is no longer available.";
+                        Refresh();
+                        return true;
+                    }
+
+                    ReconnectRequested?.Invoke();
+                    Refresh();
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+    }
+}

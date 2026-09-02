@@ -169,6 +169,7 @@ namespace GuardsDigital.Application
             {
                 writer.Write(message.SessionCorrelation);
                 WriteRoster(writer, message.Roster);
+                writer.Write(message.MatchStarted);
                 writer.Flush();
                 return EncodeFrame(SessionMessageKind.Welcome, stream.ToArray());
             }
@@ -184,13 +185,18 @@ namespace GuardsDigital.Application
                 {
                     var correlation = reader.ReadString();
                     if (string.IsNullOrWhiteSpace(correlation) ||
-                        !TryReadRoster(reader, out var roster) ||
-                        stream.Position != stream.Length)
+                        !TryReadRoster(reader, out var roster))
                     {
                         return false;
                     }
 
-                    message = new SessionWelcomeMessage(correlation, roster);
+                    var matchStarted = reader.ReadBoolean();
+                    if (stream.Position != stream.Length)
+                    {
+                        return false;
+                    }
+
+                    message = new SessionWelcomeMessage(correlation, roster, matchStarted);
                     return true;
                 }
             }
@@ -407,6 +413,62 @@ namespace GuardsDigital.Application
             }
         }
 
+        /// <summary>
+        /// Milestone 8.35a. One seated connection's readiness: a single bool, and nothing that
+        /// names a seat.
+        /// </summary>
+        public static byte[] SetReadinessFrame(SeatReadinessMessage message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                writer.Write(message.IsReady);
+                writer.Flush();
+                return EncodeFrame(SessionMessageKind.SetReadiness, stream.ToArray());
+            }
+        }
+
+        public static bool TryDecodeSetReadiness(byte[] payload, out SeatReadinessMessage message)
+        {
+            message = null;
+            try
+            {
+                using (var stream = new MemoryStream(payload ?? Array.Empty<byte>(), false))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8))
+                {
+                    var isReady = reader.ReadBoolean();
+                    if (stream.Position != stream.Length)
+                    {
+                        return false;
+                    }
+
+                    message = new SeatReadinessMessage(isReady);
+                    return true;
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35a. The host's one-way announcement that the lobby is over. It carries no
+        /// payload: the roster the clients already hold says which seats are in it, and a phase
+        /// change that needed arguments would be a second way to say what the roster says.
+        /// </summary>
+        public static byte[] MatchStartedFrame() =>
+            EncodeFrame(SessionMessageKind.MatchStarted, Array.Empty<byte>());
+
+        /// <summary>
+        /// Refuses a <see cref="SessionMessageKind.MatchStarted"/> frame carrying anything at all -
+        /// the same "no trailing bytes" discipline every other payload is read under, stated for a
+        /// payload that is meant to be empty.
+        /// </summary>
+        public static bool TryDecodeMatchStarted(byte[] payload) =>
+            (payload ?? Array.Empty<byte>()).Length == 0;
+
         public static byte[] GoodbyeFrame() => EncodeFrame(SessionMessageKind.Goodbye, Array.Empty<byte>());
 
         private static void WriteRoster(BinaryWriter writer, IReadOnlyList<SeatRosterEntry> roster)
@@ -448,6 +510,9 @@ namespace GuardsDigital.Application
             writer.Write(entry.Hero.Value);
             writer.Write((int)entry.TeamSide);
             writer.Write((int)entry.Occupancy);
+            // Milestone 8.35a. Readiness is public seat state, so it travels with the rest of the
+            // row rather than in a message of its own.
+            writer.Write(entry.IsReady);
         }
 
         private static bool TryReadRosterEntry(BinaryReader reader, out SeatRosterEntry entry)
@@ -457,6 +522,7 @@ namespace GuardsDigital.Application
             var hero = reader.ReadString();
             var teamValue = reader.ReadInt32();
             var occupancyValue = reader.ReadInt32();
+            var isReady = reader.ReadBoolean();
             if (string.IsNullOrWhiteSpace(seat) || string.IsNullOrWhiteSpace(hero) ||
                 !TryReadTeamSide(teamValue, out var team) ||
                 !TryReadOccupancy(occupancyValue, out var occupancy))
@@ -464,7 +530,7 @@ namespace GuardsDigital.Application
                 return false;
             }
 
-            entry = new SeatRosterEntry(new SeatId(seat), new HeroId(hero), team, occupancy);
+            entry = new SeatRosterEntry(new SeatId(seat), new HeroId(hero), team, occupancy, isReady);
             return true;
         }
 
@@ -493,7 +559,7 @@ namespace GuardsDigital.Application
         internal static bool TryReadMessageKind(int value, out SessionMessageKind kind)
         {
             if (value >= (int)SessionMessageKind.Challenge &&
-                value <= (int)SessionMessageKind.ReclaimSeat)
+                value <= (int)SessionMessageKind.MatchStarted)
             {
                 kind = (SessionMessageKind)value;
                 return true;

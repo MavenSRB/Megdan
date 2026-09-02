@@ -149,7 +149,17 @@ namespace GuardsDigital.Tests.EditMode
             typeof(SessionFaultKind),
             typeof(SessionFaultStep),
             typeof(PrivateSessionFaultPlan),
-            typeof(PrivateSessionFaultInjector)
+            typeof(PrivateSessionFaultInjector),
+            // Milestone 8.35a: the lobby's readiness message and the bounded reading of the
+            // session contracts a lobby surface draws. The reading lives beneath the port for the
+            // same reason the seat projection does - what a surface may see is decided where the
+            // state is - so it is held to the same rule: no engine and no transport type in it.
+            typeof(SeatReadinessMessage),
+            typeof(PrivateLobbyRole),
+            typeof(PrivateLobbyControl),
+            typeof(PrivateLobbySeatRow),
+            typeof(PrivateLobbyLabels),
+            typeof(PrivateLobbyModel)
         };
 
         [Test]

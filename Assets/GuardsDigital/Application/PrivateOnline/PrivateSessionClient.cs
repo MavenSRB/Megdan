@@ -140,6 +140,38 @@ namespace GuardsDigital.Application
         public IReadOnlyList<SeatRosterEntry> Roster => roster;
 
         /// <summary>
+        /// Milestone 8.35a. Whether this session has left the lobby, learned from the host's
+        /// announcement or - for a client that was not there to hear it - from the admission
+        /// answer it re-ran on the way back.
+        /// </summary>
+        public bool HasMatchStarted { get; private set; }
+
+        /// <summary>
+        /// Milestone 8.35a. Whether this seat is ready, as the host's own roster states it.
+        /// </summary>
+        /// <remarks>
+        /// Read from the roster rather than remembered from the request, so what a surface shows
+        /// is the public answer six people share rather than one process's belief about it. A
+        /// client that has asked and not yet been answered reads the previous value, which is the
+        /// truth at that moment.
+        /// </remarks>
+        public bool IsReady
+        {
+            get
+            {
+                foreach (var entry in roster)
+                {
+                    if (entry.Seat.Equals(targetSeat))
+                    {
+                        return entry.IsReady;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Milestone 8.32. This seat's latest owner-scoped projection as the host pushed it, or
         /// <c>null</c> before the first push. Everything a surface may show or submit is in here;
         /// nothing else about the match ever reaches this process.
@@ -315,6 +347,28 @@ namespace GuardsDigital.Application
                 return;
             }
 
+            // Milestone 8.35a. The lobby is over. It is a statement about the seats, so only a
+            // seated connection is sent one; hearing it in any other state means this stream is
+            // not the stream this machine thinks it is.
+            if (frame.Kind == SessionMessageKind.MatchStarted)
+            {
+                if (State != PrivateSessionClientState.Seated &&
+                    State != PrivateSessionClientState.Resynchronizing)
+                {
+                    Fault();
+                    return;
+                }
+
+                if (!PrivateSessionFrameCodec.TryDecodeMatchStarted(frame.Payload))
+                {
+                    Fault();
+                    return;
+                }
+
+                HasMatchStarted = true;
+                return;
+            }
+
             switch (State)
             {
                 case PrivateSessionClientState.AwaitingChallenge:
@@ -349,6 +403,9 @@ namespace GuardsDigital.Application
                     SessionCorrelation = welcome.SessionCorrelation;
                     roster.Clear();
                     roster.AddRange(welcome.Roster);
+                    // Milestone 8.35a. The admission answer says which phase the session is in, so
+                    // a returning player knows before it claims anything that the lobby is over.
+                    HasMatchStarted = welcome.MatchStarted;
                     // Milestone 8.34. A client that already held this seat asks for it back by
                     // presenting the capability, because an ordinary claim of a reserved seat is
                     // refused - and must stay refused, or a reservation would be anybody's.
@@ -683,6 +740,29 @@ namespace GuardsDigital.Application
             }
 
             return builder.ToString();
+        }
+
+        /// <summary>
+        /// Milestone 8.35a. Tells the host this seat is ready, or that it is not.
+        /// </summary>
+        /// <remarks>
+        /// <para>It says nothing about whether the seat then <em>is</em> ready:
+        /// <see cref="IsReady"/> answers that, from the roster the host publishes, which is the
+        /// only place readiness exists. A surface that lit its own control on this return value
+        /// would be showing one process's belief instead of the table's shared state.</para>
+        /// <para>Refused before it is sent from any state but <see cref="PrivateSessionClientState
+        /// .Seated"/> and after the match has begun: readiness is a lobby statement about a held
+        /// seat, and a client is the first thing that knows it is in neither position.</para>
+        /// </remarks>
+        public bool TrySetReadiness(bool isReady)
+        {
+            if (State != PrivateSessionClientState.Seated || HasMatchStarted)
+            {
+                return false;
+            }
+
+            Send(PrivateSessionFrameCodec.SetReadinessFrame(new SeatReadinessMessage(isReady)));
+            return true;
         }
 
         /// <summary>An orderly close; plaintext by design, like the host's own Goodbye.</summary>

@@ -746,7 +746,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-834-add-disconnect-reconnect-resynchronization-and-host-loss-policy-completion-evidence).
 
-### [!] 8.35a Add the primitive private host/join lobby
+### [x] 8.35a Add the primitive private host/join lobby
 
 Blocked by: Milestones 8.31-8.34 must establish seats, authorized synchronization, and reconnect/host-loss policy.
 
@@ -760,6 +760,8 @@ Acceptance checks:
 - Lobby state remains presentation-only over the session contracts and cannot assign authoritative match ownership by mutating Unity views.
 
 Non-goals: No account system, friends list, public matchmaking, server browser, text/voice chat, spectator mode, ranking, moderation, general main menu, or production styling.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835a-add-the-primitive-private-hostjoin-lobby-completion-evidence).
 
 ### [!] 8.35b Integrate the proven player HUD with online match flow
 

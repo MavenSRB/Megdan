@@ -9,7 +9,18 @@ namespace GuardsDigital.Network
     {
         None = 0,
         Host = 1,
-        Client = 2
+        Client = 2,
+
+        /// <summary>
+        /// Milestone 8.35a. The interactive lobby: this process shows the primitive host/join
+        /// surface and decides at a pressed control which of the other two roles it becomes.
+        /// </summary>
+        /// <remarks>
+        /// It carries no endpoint and no seat off the command line, because the whole point of the
+        /// lobby is that a player types the invitation in. The two command-line roles are
+        /// untouched: they stay the way the rehearsal script drives six processes.
+        /// </remarks>
+        Lobby = 3
     }
 
     /// <summary>
@@ -28,6 +39,9 @@ namespace GuardsDigital.Network
     {
         public const string HostFlag = "-guardsPrivateHost";
         public const string ClientFlag = "-guardsPrivateClient";
+
+        /// <summary>Milestone 8.35a. Show the interactive private lobby in this process.</summary>
+        public const string LobbyFlag = "-guardsPrivateLobby";
         public const string BindFlag = "-guardsBind";
         public const string PortFlag = "-guardsPort";
         public const string AddressFlag = "-guardsAddress";
@@ -104,6 +118,15 @@ namespace GuardsDigital.Network
                         role = PrivateSessionRole.Client;
                         continue;
 
+                    case LobbyFlag:
+                        if (role != PrivateSessionRole.None)
+                        {
+                            return Refused("The host, client and lobby flags are mutually exclusive.");
+                        }
+
+                        role = PrivateSessionRole.Lobby;
+                        continue;
+
                     case BindFlag:
                         if (!TryTakeValue(args, ref index, out bind))
                         {
@@ -163,6 +186,23 @@ namespace GuardsDigital.Network
                     return new PrivateSessionLaunchOptions(
                         PrivateSessionRole.None, null, default, string.Empty,
                         timeoutSeconds, string.Empty);
+
+                case PrivateSessionRole.Lobby:
+                {
+                    // The lobby is where an invitation is typed, so a command line that also
+                    // carried one would be two answers to the same question.
+                    if (bind != null || portText != null || address != null || seatText != null ||
+                        sessionKey.Length > 0)
+                    {
+                        return Refused(
+                            "The lobby takes no address, bind, port, seat or key; a player types " +
+                            "the invitation into it.");
+                    }
+
+                    return new PrivateSessionLaunchOptions(
+                        PrivateSessionRole.Lobby, null, default, string.Empty,
+                        timeoutSeconds, string.Empty);
+                }
 
                 case PrivateSessionRole.Host:
                 {

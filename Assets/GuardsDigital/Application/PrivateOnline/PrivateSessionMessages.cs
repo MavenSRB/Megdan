@@ -83,7 +83,31 @@ namespace GuardsDigital.Application
         /// <see cref="ClaimSeat"/> of a reserved seat stays refused - a reservation is one
         /// player's, and only the capability says who that player is.
         /// </summary>
-        ReclaimSeat = 16
+        ReclaimSeat = 16,
+
+        /// <summary>
+        /// Milestone 8.35a. Client to host: this seat is ready, or is not. One bool, from a seated
+        /// connection about its own seat and no other.
+        /// </summary>
+        /// <remarks>
+        /// Readiness is a lobby state the protocol had no word for, and the lobby cannot invent it:
+        /// a surface that decided locally who was ready would be deciding when six people start a
+        /// match, which is authority. So it travels, the host owns it, and every seat reads the
+        /// same public answer out of the roster.
+        /// </remarks>
+        SetReadiness = 17,
+
+        /// <summary>
+        /// Milestone 8.35a. Host to every seated connection, exactly once: every seat is claimed by
+        /// a live connection and every seat is ready, so this session has left the lobby.
+        /// </summary>
+        /// <remarks>
+        /// Host-derived and one-way. No client asks for it and none may refuse it; a later
+        /// disconnect reserves a seat without returning the session to the lobby, because a match
+        /// that has begun does not un-begin. A connection admitted but not yet seated never
+        /// receives it - it is a statement about the seats.
+        /// </remarks>
+        MatchStarted = 18
     }
 
     /// <summary>
@@ -172,7 +196,12 @@ namespace GuardsDigital.Application
     /// </summary>
     public sealed class SeatRosterEntry
     {
-        public SeatRosterEntry(SeatId seat, HeroId hero, TeamSide teamSide, SeatOccupancyState occupancy)
+        public SeatRosterEntry(
+            SeatId seat,
+            HeroId hero,
+            TeamSide teamSide,
+            SeatOccupancyState occupancy,
+            bool isReady = false)
         {
             if (!seat.IsDefined)
             {
@@ -183,12 +212,25 @@ namespace GuardsDigital.Application
             Hero = hero;
             TeamSide = teamSide;
             Occupancy = occupancy;
+            IsReady = isReady;
         }
 
         public SeatId Seat { get; }
         public HeroId Hero { get; }
         public TeamSide TeamSide { get; }
         public SeatOccupancyState Occupancy { get; }
+
+        /// <summary>
+        /// Milestone 8.35a. Whether this seat has said it is ready to begin. Public at a real
+        /// table, so it rides the public roster rather than being told to one connection.
+        /// </summary>
+        /// <remarks>
+        /// It is the host's answer, not the client's request: a seat is ready when the host says
+        /// the roster says so. A seat that is not <see cref="SeatOccupancyState.Claimed"/> is never
+        /// ready - a chair nobody is sitting in cannot have agreed to anything - and losing a
+        /// connection before the match begins clears it for that reason.
+        /// </remarks>
+        public bool IsReady { get; }
     }
 
     /// <summary>The host's opening message: the nonce a key proof must answer.</summary>
@@ -224,7 +266,10 @@ namespace GuardsDigital.Application
     /// <summary>The host's admission answer: in, with the current roster.</summary>
     public sealed class SessionWelcomeMessage
     {
-        public SessionWelcomeMessage(string sessionCorrelation, IReadOnlyList<SeatRosterEntry> roster)
+        public SessionWelcomeMessage(
+            string sessionCorrelation,
+            IReadOnlyList<SeatRosterEntry> roster,
+            bool matchStarted = false)
         {
             if (string.IsNullOrWhiteSpace(sessionCorrelation))
             {
@@ -233,12 +278,25 @@ namespace GuardsDigital.Application
 
             SessionCorrelation = sessionCorrelation;
             Roster = roster ?? throw new ArgumentNullException(nameof(roster));
+            MatchStarted = matchStarted;
         }
 
         /// <summary>An opaque, content-derived id for logs; never an address or a secret.</summary>
         public string SessionCorrelation { get; }
 
         public IReadOnlyList<SeatRosterEntry> Roster { get; }
+
+        /// <summary>
+        /// Milestone 8.35a. Whether this session has already left the lobby.
+        /// </summary>
+        /// <remarks>
+        /// The phase rides the admission answer rather than only the
+        /// <see cref="SessionMessageKind.MatchStarted"/> broadcast, because a returning player was
+        /// not there to hear the broadcast: a reconnect re-runs the whole handshake, so the Welcome
+        /// is where it learns that what it is returning to is a match rather than a lobby. It is
+        /// public session state, exactly like the roster beside it.
+        /// </remarks>
+        public bool MatchStarted { get; }
     }
 
     /// <summary>A refusal: the exact reason, and a bounded human-readable detail.</summary>
@@ -362,6 +420,25 @@ namespace GuardsDigital.Application
 
         public SeatId Seat { get; }
         public string Capability { get; }
+    }
+
+    /// <summary>
+    /// Milestone 8.35a. One seated connection's statement about its own readiness.
+    /// </summary>
+    /// <remarks>
+    /// It names no seat, deliberately. The seat is the connection's, bound by the grant, and a
+    /// payload that named one would be a claim about identity - exactly the shape milestone 8.30a's
+    /// caller-identity rule refuses. Setting the value it already holds is accepted and changes
+    /// nothing, so a surface may send what it believes without having to know what the host holds.
+    /// </remarks>
+    public sealed class SeatReadinessMessage
+    {
+        public SeatReadinessMessage(bool isReady)
+        {
+            IsReady = isReady;
+        }
+
+        public bool IsReady { get; }
     }
 
     /// <summary>The whole current seat map, sent to every admitted connection when it changes.</summary>

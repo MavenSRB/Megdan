@@ -70,7 +70,19 @@ namespace GuardsDigital.Application
         /// reconnect capability, the host rotated the seat's connection epoch, and the seat is
         /// held again. The record carries the seat and the new ordinal - never the capability.
         /// </summary>
-        SeatReclaimed = 13
+        SeatReclaimed = 13,
+
+        /// <summary>
+        /// Milestone 8.35a. A seat said it is ready, or that it is not. Public lobby state, so the
+        /// record carries the seat and nothing else about the connection that sent it.
+        /// </summary>
+        SeatReadinessChanged = 14,
+
+        /// <summary>
+        /// Milestone 8.35a. Every seat is claimed and every seat is ready, so this session left the
+        /// lobby. Recorded once, because it happens once.
+        /// </summary>
+        MatchStarted = 15
     }
 
     /// <summary>
@@ -230,6 +242,12 @@ namespace GuardsDigital.Application
             /// state: it is never broadcast, never projected, and never recorded in an event.
             /// </summary>
             public string Capability { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Milestone 8.35a. Whether this seat has said it is ready. Public: it is broadcast in
+            /// every roster, which is what makes six people able to see each other get ready.
+            /// </summary>
+            public bool IsReady { get; set; }
         }
 
         private const int RetainedEventCount = 1024;
@@ -246,6 +264,13 @@ namespace GuardsDigital.Application
             new List<PrivateSessionEventRecord>();
         private int discardedRetiredConnectionFrames;
         private bool sessionEnded;
+
+        /// <summary>
+        /// Milestone 8.35a. Whether this session has left the lobby. It is set once and never
+        /// cleared: a later disconnect reserves a seat, which is what the reconnect policy is for,
+        /// and does not put six people back in a lobby they have already left.
+        /// </summary>
+        private bool matchStarted;
 
         public PrivateSessionHost(
             IMatchHost matchHost,
@@ -345,6 +370,33 @@ namespace GuardsDigital.Application
         public int EpochForSeat(SeatId seat) =>
             holds.TryGetValue(seat, out var hold) ? hold.Epoch : 0;
 
+        /// <summary>
+        /// Milestone 8.35a. Whether every seat is claimed and ready, so this session left the
+        /// lobby. One-way: nothing that happens afterwards puts it back.
+        /// </summary>
+        public bool HasMatchStarted => matchStarted;
+
+        /// <summary>
+        /// Milestone 8.35a. How many claimed seats have said they are ready, for a host-side lobby
+        /// surface and for bounded diagnostics. Public seat state throughout.
+        /// </summary>
+        public int ReadySeatCount
+        {
+            get
+            {
+                var ready = 0;
+                foreach (var hold in holds.Values)
+                {
+                    if (hold.State == SeatOccupancyState.Claimed && hold.IsReady)
+                    {
+                        ready++;
+                    }
+                }
+
+                return ready;
+            }
+        }
+
         /// <summary>The current public seat map, in the authoritative seat order.</summary>
         public IReadOnlyList<SeatRosterEntry> Roster
         {
@@ -353,8 +405,9 @@ namespace GuardsDigital.Application
                 var entries = new List<SeatRosterEntry>(TotalSeats);
                 foreach (var seat in matchHost.Seats.Seats)
                 {
+                    var hold = holds[seat.Id];
                     entries.Add(new SeatRosterEntry(
-                        seat.Id, seat.HeroId, seat.TeamSide, holds[seat.Id].State));
+                        seat.Id, seat.HeroId, seat.TeamSide, hold.State, hold.IsReady));
                 }
 
                 return entries;
@@ -510,6 +563,12 @@ namespace GuardsDigital.Application
                         return;
                     }
 
+                    if (frame.Kind == SessionMessageKind.SetReadiness)
+                    {
+                        HandleReadiness(record, frame.Payload);
+                        return;
+                    }
+
                     RejectAndClose(record, SessionRejectionReason.UnexpectedMessage,
                         "No further session message is defined after seating.");
                     return;
@@ -612,8 +671,12 @@ namespace GuardsDigital.Application
             }
 
             record.Phase = ConnectionPhase.Admitted;
+            // Milestone 8.35a. The admission answer carries the session's public phase beside its
+            // public roster, so a returning player learns from its own handshake that it is coming
+            // back to a match rather than to a lobby - the broadcast that said so happened while it
+            // was away.
             Deliver(record, PrivateSessionFrameCodec.WelcomeFrame(
-                new SessionWelcomeMessage(identity.Correlation, Roster)));
+                new SessionWelcomeMessage(identity.Correlation, Roster, matchStarted)));
             Record(PrivateSessionEventKind.Admitted, record.Ordinal,
                 default, default, TeamSide.None, SessionRejectionReason.None);
         }
@@ -751,6 +814,93 @@ namespace GuardsDigital.Application
                 Record(PrivateSessionEventKind.SessionComplete, record.Ordinal,
                     default, default, TeamSide.None, SessionRejectionReason.None);
             }
+
+            // Milestone 8.35a. A grant is one of the two things that can complete the lobby - the
+            // sixth seat arriving where the other five are already ready - so the transition is
+            // evaluated here as well as on a readiness change.
+            EvaluateMatchStart();
+        }
+
+        /// <summary>
+        /// Milestone 8.35a. One seated connection's readiness for its own seat.
+        /// </summary>
+        /// <remarks>
+        /// <para>The message names no seat and the host looks none up: readiness is recorded
+        /// against the seat this connection was granted, so a seat cannot be readied by anyone but
+        /// the connection holding it. That is milestone 8.30a's caller-identity rule applied to a
+        /// lobby message - the connection-to-seat binding decides, never the payload.</para>
+        /// <para>Setting the value the seat already holds is accepted and broadcasts nothing: a
+        /// surface that resends what it believes cannot make the roster flicker, and a repeat
+        /// cannot be told from the original by anything a client observes.</para>
+        /// <para>After the transition readiness has nothing left to decide, so it is refused by
+        /// name and without disconnecting - the connection is in a running match, and closing it
+        /// over a message that arrived one moment late would cost a player their seat.</para>
+        /// </remarks>
+        private void HandleReadiness(ConnectionRecord record, byte[] payload)
+        {
+            if (!PrivateSessionFrameCodec.TryDecodeSetReadiness(payload, out var readiness))
+            {
+                RejectAndClose(record, SessionRejectionReason.MalformedFrame,
+                    "The readiness payload did not decode.");
+                return;
+            }
+
+            if (matchStarted)
+            {
+                outbox.Send(record.Ordinal, PrivateSessionFrameCodec.RejectFrame(
+                    new SessionRejectMessage(
+                        SessionRejectionReason.UnexpectedMessage,
+                        "Readiness is a lobby state; this match has begun.")));
+                Record(PrivateSessionEventKind.Rejected, record.Ordinal, record.Seat,
+                    default, TeamSide.None, SessionRejectionReason.UnexpectedMessage);
+                return;
+            }
+
+            var hold = holds[record.Seat];
+            if (hold.IsReady == readiness.IsReady)
+            {
+                return;
+            }
+
+            hold.IsReady = readiness.IsReady;
+            var seat = matchHost.Seats.Find(record.Seat);
+            BroadcastRoster();
+            Record(PrivateSessionEventKind.SeatReadinessChanged, record.Ordinal, record.Seat,
+                seat == null ? default : seat.HeroId,
+                seat == null ? TeamSide.None : seat.TeamSide,
+                SessionRejectionReason.None);
+            EvaluateMatchStart();
+        }
+
+        /// <summary>
+        /// Milestone 8.35a. The one place the lobby ends: every seat claimed by a live connection
+        /// and every one of them ready.
+        /// </summary>
+        /// <remarks>
+        /// Host-derived and exactly once - the guard is the flag itself, so however many times this
+        /// is called the announcement is made on one call and never again. It goes to seated
+        /// connections only: a connection that is admitted but has not claimed anything is not part
+        /// of what just started, and would have nowhere to put the statement.
+        /// </remarks>
+        private void EvaluateMatchStart()
+        {
+            if (matchStarted || !IsComplete || ReadySeatCount != TotalSeats)
+            {
+                return;
+            }
+
+            matchStarted = true;
+            var frame = PrivateSessionFrameCodec.MatchStartedFrame();
+            foreach (var connection in connections.Values)
+            {
+                if (connection.Phase == ConnectionPhase.Seated)
+                {
+                    Deliver(connection, frame);
+                }
+            }
+
+            Record(PrivateSessionEventKind.MatchStarted, 0,
+                default, default, TeamSide.None, SessionRejectionReason.None);
         }
 
         /// <summary>
@@ -1154,6 +1304,7 @@ namespace GuardsDigital.Application
                 hold.State = SeatOccupancyState.Open;
                 hold.HeldByOrdinal = 0;
                 hold.Capability = string.Empty;
+                hold.IsReady = false;
             }
 
             sessionEnded = true;
@@ -1202,6 +1353,15 @@ namespace GuardsDigital.Application
             var hold = holds[record.Seat];
             hold.State = SeatOccupancyState.Reserved;
             hold.HeldByOrdinal = 0;
+            // Milestone 8.35a. A reserved lobby seat is not ready: nobody is sitting in it, and
+            // leaving it ready would let five people plus an empty chair start a match. After the
+            // transition the flag has no consumer left, so it is not disturbed - a returning player
+            // should not read "NOT READY" beside a match already under way.
+            if (!matchStarted)
+            {
+                hold.IsReady = false;
+            }
+
             var seat = matchHost.Seats.Find(record.Seat);
             BroadcastRoster();
             Record(PrivateSessionEventKind.SeatReserved, record.Ordinal, record.Seat,

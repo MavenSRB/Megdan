@@ -946,6 +946,11 @@ namespace GuardsDigital.Presentation.Interaction
                 case GuardsDigital.Network.PrivateSessionRole.Client:
                     gameObject.AddComponent<PrivateClientDriver>().Configure(this, options);
                     return;
+                // Milestone 8.35a. The interactive lobby: the same opt-in rule again, so a normally
+                // launched build carries no lobby either.
+                case GuardsDigital.Network.PrivateSessionRole.Lobby:
+                    gameObject.AddComponent<PrivateLobbyDriver>().Configure(this);
+                    return;
             }
         }
 
