@@ -165,6 +165,103 @@ namespace GuardsDigital.Application
     }
 
     /// <summary>
+    /// Milestone 8.33. One public agreement statement as it crosses the wire, in exactly the
+    /// submission shape: the envelope, the wire's own submission identity and the expected
+    /// projection version outside the payload, and the typed statement the seat's own projected
+    /// agreement surface offered.
+    /// </summary>
+    public sealed class NetworkAgreementSubmissionMessage
+    {
+        public NetworkAgreementSubmissionMessage(
+            NetworkEnvelope envelope,
+            string submissionId,
+            long expectedVersion,
+            TeamAgreementCommand statement)
+        {
+            if (string.IsNullOrWhiteSpace(submissionId) ||
+                submissionId.Length > NetworkMessageCodec.MaxSubmissionIdChars)
+            {
+                throw new ArgumentException("A submission id is present and bounded.", nameof(submissionId));
+            }
+
+            if (expectedVersion < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(expectedVersion), expectedVersion, "A projection version is not negative.");
+            }
+
+            Envelope = envelope;
+            SubmissionId = submissionId;
+            ExpectedVersion = expectedVersion;
+            Statement = statement ?? throw new ArgumentNullException(nameof(statement));
+        }
+
+        public NetworkEnvelope Envelope { get; }
+        public string SubmissionId { get; }
+        public long ExpectedVersion { get; }
+
+        /// <summary>The typed statement; the host maps it to its own offered instance, never trusts it.</summary>
+        public TeamAgreementCommand Statement { get; }
+    }
+
+    /// <summary>Milestone 8.33. What the host told one seat about its own agreement statement.</summary>
+    public sealed class NetworkAgreementResultMessage
+    {
+        public NetworkAgreementResultMessage(
+            NetworkEnvelope envelope,
+            string submissionId,
+            bool accepted,
+            TeamAgreementSubmissionRejectionReason rejectionReason,
+            string detail,
+            long version)
+        {
+            if (string.IsNullOrWhiteSpace(submissionId))
+            {
+                throw new ArgumentException("A result names the submission it answers.", nameof(submissionId));
+            }
+
+            Envelope = envelope;
+            SubmissionId = submissionId;
+            Accepted = accepted;
+            RejectionReason = rejectionReason;
+            Detail = detail ?? string.Empty;
+            if (Detail.Length > PrivateSessionProtocol.MaxRejectDetailChars)
+            {
+                Detail = Detail.Substring(0, PrivateSessionProtocol.MaxRejectDetailChars);
+            }
+
+            Version = version;
+        }
+
+        public NetworkEnvelope Envelope { get; }
+        public string SubmissionId { get; }
+        public bool Accepted { get; }
+        public TeamAgreementSubmissionRejectionReason RejectionReason { get; }
+        public string Detail { get; }
+
+        /// <summary>
+        /// The authoritative version after the statement. A statement short of unanimity moves
+        /// nothing; the one that completes it carries the final rules choice's new version.
+        /// </summary>
+        public long Version { get; }
+    }
+
+    /// <summary>
+    /// Milestone 8.33. A seat's request for one bounded current-projection resync: the envelope
+    /// alone, because the seat asking is the connection it arrived on and the answer is that
+    /// seat's ordinary projection push echoing this correlation.
+    /// </summary>
+    public sealed class NetworkResyncRequestMessage
+    {
+        public NetworkResyncRequestMessage(NetworkEnvelope envelope)
+        {
+            Envelope = envelope;
+        }
+
+        public NetworkEnvelope Envelope { get; }
+    }
+
+    /// <summary>
     /// Milestone 8.32. Encodes and decodes the gameplay messages, in the same refuse-on-read
     /// idiom as <see cref="PrivateSessionFrameCodec"/>.
     /// </summary>
@@ -344,6 +441,159 @@ namespace GuardsDigital.Application
                     }
 
                     message = new NetworkSeatProjectionMessage(envelope, projectionPayload);
+                    return true;
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                return false;
+            }
+        }
+
+        public static byte[] SubmitAgreementFrame(NetworkAgreementSubmissionMessage message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                WriteEnvelope(writer, message.Envelope);
+                writer.Write(message.SubmissionId);
+                writer.Write(message.ExpectedVersion);
+                NetworkProjectionDetailCodec.WriteAgreementStatement(writer, message.Statement);
+                writer.Flush();
+                return PrivateSessionFrameCodec.EncodeFrame(
+                    SessionMessageKind.SubmitAgreement, stream.ToArray());
+            }
+        }
+
+        public static bool TryDecodeSubmitAgreement(
+            byte[] payload, out NetworkAgreementSubmissionMessage message)
+        {
+            message = null;
+            try
+            {
+                using (var stream = new MemoryStream(payload ?? Array.Empty<byte>(), false))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8))
+                {
+                    if (!TryReadEnvelope(reader, out var envelope))
+                    {
+                        return false;
+                    }
+
+                    var submissionId = reader.ReadString();
+                    var expectedVersion = reader.ReadInt64();
+                    if (string.IsNullOrWhiteSpace(submissionId) ||
+                        submissionId.Length > MaxSubmissionIdChars ||
+                        expectedVersion < 0 ||
+                        !NetworkProjectionDetailCodec.TryReadAgreementStatement(reader, out var statement) ||
+                        stream.Position != stream.Length)
+                    {
+                        return false;
+                    }
+
+                    message = new NetworkAgreementSubmissionMessage(
+                        envelope, submissionId, expectedVersion, statement);
+                    return true;
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                return false;
+            }
+        }
+
+        public static byte[] AgreementResultFrame(NetworkAgreementResultMessage message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                WriteEnvelope(writer, message.Envelope);
+                writer.Write(message.SubmissionId);
+                writer.Write(message.Accepted);
+                writer.Write((int)message.RejectionReason);
+                writer.Write(message.Detail);
+                writer.Write(message.Version);
+                writer.Flush();
+                return PrivateSessionFrameCodec.EncodeFrame(
+                    SessionMessageKind.AgreementResult, stream.ToArray());
+            }
+        }
+
+        public static bool TryDecodeAgreementResult(
+            byte[] payload, out NetworkAgreementResultMessage message)
+        {
+            message = null;
+            try
+            {
+                using (var stream = new MemoryStream(payload ?? Array.Empty<byte>(), false))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8))
+                {
+                    if (!TryReadEnvelope(reader, out var envelope))
+                    {
+                        return false;
+                    }
+
+                    var submissionId = reader.ReadString();
+                    var accepted = reader.ReadBoolean();
+                    var reasonValue = reader.ReadInt32();
+                    var detail = reader.ReadString();
+                    var version = reader.ReadInt64();
+                    if (string.IsNullOrWhiteSpace(submissionId) ||
+                        submissionId.Length > MaxSubmissionIdChars ||
+                        !Enum.IsDefined(typeof(TeamAgreementSubmissionRejectionReason), reasonValue) ||
+                        detail.Length > PrivateSessionProtocol.MaxRejectDetailChars ||
+                        version < 0 ||
+                        stream.Position != stream.Length)
+                    {
+                        return false;
+                    }
+
+                    message = new NetworkAgreementResultMessage(
+                        envelope,
+                        submissionId,
+                        accepted,
+                        (TeamAgreementSubmissionRejectionReason)reasonValue,
+                        detail,
+                        version);
+                    return true;
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                return false;
+            }
+        }
+
+        public static byte[] RequestResyncFrame(NetworkResyncRequestMessage message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                WriteEnvelope(writer, message.Envelope);
+                writer.Flush();
+                return PrivateSessionFrameCodec.EncodeFrame(
+                    SessionMessageKind.RequestResync, stream.ToArray());
+            }
+        }
+
+        public static bool TryDecodeRequestResync(
+            byte[] payload, out NetworkResyncRequestMessage message)
+        {
+            message = null;
+            try
+            {
+                using (var stream = new MemoryStream(payload ?? Array.Empty<byte>(), false))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8))
+                {
+                    if (!TryReadEnvelope(reader, out var envelope) ||
+                        stream.Position != stream.Length)
+                    {
+                        return false;
+                    }
+
+                    message = new NetworkResyncRequestMessage(envelope);
                     return true;
                 }
             }

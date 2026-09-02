@@ -344,12 +344,13 @@ namespace GuardsDigital.Application
         /// Milestone 8.30a. How many submission identities the host remembers, so that a replay of
         /// one is recognized rather than executed a second time.
         ///
-        /// <para>Bounded for the same reason the result stream is, and generous relative to it: a
-        /// seat can only have one submission in flight, so this covers every seat's recent history
-        /// several times over. The reconnect-sized window a network host actually needs is milestone
-        /// 8.33's, measured there from real retry traffic.</para>
+        /// <para>Milestone 8.33 sized it from measured retry traffic and made it the protocol
+        /// constant the decision record asked for; see
+        /// <see cref="PrivateSessionProtocol.SubmissionIdempotencyWindowEntries"/> for the
+        /// measurement and the growth check that guards it.</para>
         /// </summary>
-        public const int RetainedSubmissionIdCount = 256;
+        public const int RetainedSubmissionIdCount =
+            PrivateSessionProtocol.SubmissionIdempotencyWindowEntries;
 
         private readonly IMatchSession session;
         private readonly object gate = new object();

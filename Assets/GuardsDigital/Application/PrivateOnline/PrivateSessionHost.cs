@@ -47,7 +47,23 @@ namespace GuardsDigital.Application
         /// <see cref="PrivateSessionEventRecord.SubmissionRejection"/>. No command content, hand
         /// or detail text is recorded - the reason and the seat are the whole diagnostic.
         /// </summary>
-        SubmissionRefused = 9
+        SubmissionRefused = 9,
+
+        /// <summary>Milestone 8.33. A seat's public agreement statement was recorded.</summary>
+        AgreementAccepted = 10,
+
+        /// <summary>
+        /// Milestone 8.33. A seat's agreement statement was refused; the reason rides
+        /// <see cref="PrivateSessionEventRecord.AgreementRejection"/>.
+        /// </summary>
+        AgreementRefused = 11,
+
+        /// <summary>
+        /// Milestone 8.33. The host served one bounded current-projection resync - to a seat that
+        /// asked, or beside a stale-projection refusal. This is the recovery decision the
+        /// diagnostics correlate: which seat, and against which authoritative version.
+        /// </summary>
+        ResyncServed = 12
     }
 
     /// <summary>
@@ -66,7 +82,11 @@ namespace GuardsDigital.Application
             SessionRejectionReason reason,
             int claimedSeats,
             int totalSeats,
-            SeatSubmissionRejectionReason submissionRejection = SeatSubmissionRejectionReason.None)
+            SeatSubmissionRejectionReason submissionRejection = SeatSubmissionRejectionReason.None,
+            TeamAgreementSubmissionRejectionReason agreementRejection =
+                TeamAgreementSubmissionRejectionReason.None,
+            long version = 0,
+            string submissionId = null)
         {
             Kind = kind;
             ConnectionOrdinal = connectionOrdinal;
@@ -77,6 +97,9 @@ namespace GuardsDigital.Application
             ClaimedSeats = claimedSeats;
             TotalSeats = totalSeats;
             SubmissionRejection = submissionRejection;
+            AgreementRejection = agreementRejection;
+            Version = version;
+            SubmissionId = submissionId ?? string.Empty;
         }
 
         public PrivateSessionEventKind Kind { get; }
@@ -91,12 +114,30 @@ namespace GuardsDigital.Application
         /// <summary>Milestone 8.32. Why a wire submission was refused; <c>None</c> otherwise.</summary>
         public SeatSubmissionRejectionReason SubmissionRejection { get; }
 
+        /// <summary>Milestone 8.33. Why an agreement statement was refused; <c>None</c> otherwise.</summary>
+        public TeamAgreementSubmissionRejectionReason AgreementRejection { get; }
+
+        /// <summary>
+        /// Milestone 8.33. The authoritative projection version when the event was recorded, so a
+        /// diagnostic line correlates the wire's submission identity with the version it acted
+        /// against - the milestone's third check, without a byte of private state.
+        /// </summary>
+        public long Version { get; }
+
+        /// <summary>Milestone 8.33. The wire's own submission identity, empty where none applies.</summary>
+        public string SubmissionId { get; }
+
         public override string ToString() =>
             Kind + " ordinal=" + ConnectionOrdinal.ToString(CultureInfo.InvariantCulture) +
             (Seat.IsDefined ? " seat=" + Seat.Value : string.Empty) +
+            " version=" + Version.ToString(CultureInfo.InvariantCulture) +
+            (SubmissionId.Length > 0 ? " submission-id=" + SubmissionId : string.Empty) +
             (Reason != SessionRejectionReason.None ? " reason=" + Reason : string.Empty) +
             (SubmissionRejection != SeatSubmissionRejectionReason.None
                 ? " submission=" + SubmissionRejection
+                : string.Empty) +
+            (AgreementRejection != TeamAgreementSubmissionRejectionReason.None
+                ? " agreement=" + AgreementRejection
                 : string.Empty);
     }
 
@@ -368,6 +409,18 @@ namespace GuardsDigital.Application
                         return;
                     }
 
+                    if (frame.Kind == SessionMessageKind.SubmitAgreement)
+                    {
+                        HandleAgreementSubmission(record, frame.Payload);
+                        return;
+                    }
+
+                    if (frame.Kind == SessionMessageKind.RequestResync)
+                    {
+                        HandleResyncRequest(record, frame.Payload);
+                        return;
+                    }
+
                     RejectAndClose(record, SessionRejectionReason.UnexpectedMessage,
                         "No further session message is defined after seating.");
                     return;
@@ -552,16 +605,11 @@ namespace GuardsDigital.Application
                 return;
             }
 
-            if (!string.Equals(message.Envelope.SessionCorrelation, identity.Correlation, StringComparison.Ordinal) ||
-                message.Envelope.Epoch != PrivateSessionProtocol.InitialConnectionEpoch ||
-                message.Envelope.Sequence != record.GameplayReceiveSequence + 1)
+            if (!AcceptGameplayEnvelope(record, message.Envelope))
             {
-                RejectAndClose(record, SessionRejectionReason.EnvelopeMismatch,
-                    "The envelope names the wrong session, epoch, or sequence.");
                 return;
             }
 
-            record.GameplayReceiveSequence = message.Envelope.Sequence;
             if (!NetworkCommandCodec.TryDecode(message.CommandPayload, out var decoded))
             {
                 RejectAndClose(record, SessionRejectionReason.MalformedFrame,
@@ -598,15 +646,146 @@ namespace GuardsDigital.Application
                     ? PrivateSessionEventKind.SubmissionAccepted
                     : PrivateSessionEventKind.SubmissionRefused,
                 record.Ordinal, record.Seat, seat.HeroId, seat.TeamSide,
-                SessionRejectionReason.None, result.RejectionReason);
+                SessionRejectionReason.None, result.RejectionReason,
+                submissionId: message.SubmissionId);
 
             if (result.Accepted)
             {
                 PublishProjections();
             }
+            else if (result.RejectionReason == SeatSubmissionRejectionReason.StaleProjection)
+            {
+                // The failure policy's row: a stale expected version is refused with no mutation
+                // and offered one bounded current-projection resync. Offering it here, unasked,
+                // is what lets a client that answered against an old view converge on the next
+                // frame rather than waiting for someone else's acceptance to push one.
+                SendProjectionTo(record);
+                Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
+                    seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+            }
         }
 
-        private void SendProjectionTo(ConnectionRecord record)
+        /// <summary>
+        /// Milestone 8.33. One public agreement statement from a seated connection, under exactly
+        /// the submission discipline: envelope violations close the connection, the decoded
+        /// statement is mapped to the seat's own projected offer before the coordinator is asked,
+        /// and every seat-level refusal answers by name with nothing mutated.
+        /// </summary>
+        /// <remarks>
+        /// An accepted statement republishes every seat's projection even though most statements
+        /// move no authoritative version: the statement changed what every teammate's agreement
+        /// surface says, and the statement that completes unanimity has moved the match itself.
+        /// The final rules command is only ever composed by the host's coordinator - a seat that
+        /// submits it directly is refused by the offered surface, which the wire tests prove.
+        /// </remarks>
+        private void HandleAgreementSubmission(ConnectionRecord record, byte[] payload)
+        {
+            if (!NetworkMessageCodec.TryDecodeSubmitAgreement(payload, out var message))
+            {
+                RejectAndClose(record, SessionRejectionReason.MalformedFrame,
+                    "The agreement payload did not decode.");
+                return;
+            }
+
+            if (!AcceptGameplayEnvelope(record, message.Envelope))
+            {
+                return;
+            }
+
+            var seat = matchHost.Seats.Find(record.Seat);
+            var statement = message.Statement;
+            var agreement = matchHost.ProjectionForSeat(seat.Id).TeamAgreement;
+            if (agreement != null)
+            {
+                foreach (var offered in agreement.AuthorizedCommands)
+                {
+                    if (offered.Equals(statement))
+                    {
+                        statement = offered;
+                        break;
+                    }
+                }
+            }
+
+            var result = matchHost.SubmitAgreementForSeat(seat.Id, new TeamAgreementSubmission(
+                new SubmissionId(message.SubmissionId), message.ExpectedVersion, statement));
+
+            Deliver(record, NetworkMessageCodec.AgreementResultFrame(new NetworkAgreementResultMessage(
+                NextEnvelope(record, message.Envelope.Correlation),
+                message.SubmissionId,
+                result.Accepted,
+                result.RejectionReason,
+                result.Detail,
+                result.Version)));
+
+            Record(
+                result.Accepted
+                    ? PrivateSessionEventKind.AgreementAccepted
+                    : PrivateSessionEventKind.AgreementRefused,
+                record.Ordinal, record.Seat, seat.HeroId, seat.TeamSide,
+                SessionRejectionReason.None,
+                agreementRejection: result.RejectionReason,
+                submissionId: message.SubmissionId);
+
+            if (result.Accepted)
+            {
+                PublishProjections();
+            }
+            else if (result.RejectionReason == TeamAgreementSubmissionRejectionReason.StaleProjection ||
+                result.RejectionReason == TeamAgreementSubmissionRejectionReason.StaleProposal)
+            {
+                SendProjectionTo(record);
+                Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
+                    seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.33. A seat asked for one bounded current-projection resync. The answer is
+        /// its ordinary projection push echoing the request's correlation - one complete bounded
+        /// projection per request, never a delta chain.
+        /// </summary>
+        private void HandleResyncRequest(ConnectionRecord record, byte[] payload)
+        {
+            if (!NetworkMessageCodec.TryDecodeRequestResync(payload, out var message))
+            {
+                RejectAndClose(record, SessionRejectionReason.MalformedFrame,
+                    "The resync request did not decode.");
+                return;
+            }
+
+            if (!AcceptGameplayEnvelope(record, message.Envelope))
+            {
+                return;
+            }
+
+            var seat = matchHost.Seats.Find(record.Seat);
+            SendProjectionTo(record, message.Envelope.Correlation);
+            Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
+                seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+        }
+
+        /// <summary>
+        /// The one envelope rule every gameplay message obeys: right session, current epoch, and
+        /// exactly the next sequence - anything else is a protocol violation that closes the
+        /// connection before any seat-level answer.
+        /// </summary>
+        private bool AcceptGameplayEnvelope(ConnectionRecord record, NetworkEnvelope envelope)
+        {
+            if (!string.Equals(envelope.SessionCorrelation, identity.Correlation, StringComparison.Ordinal) ||
+                envelope.Epoch != PrivateSessionProtocol.InitialConnectionEpoch ||
+                envelope.Sequence != record.GameplayReceiveSequence + 1)
+            {
+                RejectAndClose(record, SessionRejectionReason.EnvelopeMismatch,
+                    "The envelope names the wrong session, epoch, or sequence.");
+                return false;
+            }
+
+            record.GameplayReceiveSequence = envelope.Sequence;
+            return true;
+        }
+
+        private void SendProjectionTo(ConnectionRecord record, long correlation = 0)
         {
             var seat = matchHost.Seats.Find(record.Seat);
             if (seat == null)
@@ -616,7 +795,7 @@ namespace GuardsDigital.Application
 
             var payload = NetworkSeatProjectionCodec.Encode(matchHost.ProjectionForSeat(seat.Id));
             Deliver(record, NetworkMessageCodec.SeatProjectionFrame(
-                new NetworkSeatProjectionMessage(NextEnvelope(record, 0), payload)));
+                new NetworkSeatProjectionMessage(NextEnvelope(record, correlation), payload)));
         }
 
         /// <summary>Every seated connection receives its own view of the state that just committed.</summary>
@@ -630,6 +809,14 @@ namespace GuardsDigital.Application
                 }
             }
         }
+
+        /// <summary>
+        /// Milestone 8.33. Republishes every seated connection's view after a host-side state
+        /// change the wire never saw - a snapshot restore, restart, or Undo submitted through the
+        /// authority's own port rather than by a seat. Synchronization is the host's obligation
+        /// wherever state moved, not only where a wire submission moved it.
+        /// </summary>
+        public void RepublishProjections() => PublishProjections();
 
         private NetworkEnvelope NextEnvelope(ConnectionRecord record, long correlation)
         {
@@ -763,7 +950,10 @@ namespace GuardsDigital.Application
             HeroId hero,
             TeamSide teamSide,
             SessionRejectionReason reason,
-            SeatSubmissionRejectionReason submissionRejection = SeatSubmissionRejectionReason.None)
+            SeatSubmissionRejectionReason submissionRejection = SeatSubmissionRejectionReason.None,
+            TeamAgreementSubmissionRejectionReason agreementRejection =
+                TeamAgreementSubmissionRejectionReason.None,
+            string submissionId = null)
         {
             if (events.Count >= RetainedEventCount)
             {
@@ -772,7 +962,7 @@ namespace GuardsDigital.Application
 
             events.Add(new PrivateSessionEventRecord(
                 kind, ordinal, seat, hero, teamSide, reason, ClaimedSeatCount, TotalSeats,
-                submissionRejection));
+                submissionRejection, agreementRejection, matchHost.Version, submissionId));
         }
     }
 }

@@ -17,17 +17,17 @@ namespace GuardsDigital.Application
     /// never had a field to travel in, and no client-side hiding is involved. That is acceptance
     /// check four of the milestone, and the authorization fixtures prove it over captured
     /// streams.</para>
-    /// <para>This slice carries the seat's complete <b>acting</b> surface - identity, version, the
-    /// public board and round state, the seat's own and the public cards, the countable hand
+    /// <para>The 8.32 slice carries the seat's complete <b>acting</b> surface - identity, version,
+    /// the public board and round state, the seat's own and the public cards, the countable hand
     /// summaries, commitments, progression, the standing decision's owner and this seat's exact
     /// answer commands - because commands are complete answers: a client holding this record can
-    /// answer everything the host would accept from it. What it defers to milestone 8.33's
-    /// complete-projection codec, named so the deferral is a decision rather than a leak: the
-    /// pending-choice candidate detail and previews, the resolution envelopes, the action-offer
-    /// presentation rows (their invocations already travel as authorized commands), the
-    /// team-agreement statements (8.33's second check owns agreement synchronization), the
-    /// completed-round history, the setup/map/participant/definition content that the admission
-    /// tuple already pins on both sides, and - never - any Director-only surface.</para>
+    /// answer everything the host would accept from it. Milestone 8.33's <see cref="Detail"/> pays
+    /// the deferral that slice named: the pending-choice candidate detail and previews, the
+    /// resolution envelopes, the offer presentation rows, the team-agreement surface, and the
+    /// completed-round history. Still absent, by decision rather than omission: the
+    /// setup/map/participant/definition content the admission tuple already pins on both sides,
+    /// the rules-execution continuation no client may hold, and - never - any Director-only
+    /// surface.</para>
     /// </remarks>
     public sealed class NetworkSeatProjectionRecord
     {
@@ -61,7 +61,8 @@ namespace GuardsDigital.Application
             NetworkDecisionOwnerRecord decisionOwner,
             string decisionContractFamilyId,
             IReadOnlyList<DirectorCommand> decisionContractCommands,
-            IReadOnlyList<DirectorCommand> authorizedCommands)
+            IReadOnlyList<DirectorCommand> authorizedCommands,
+            NetworkProjectionDetailRecord detail)
         {
             Version = version;
             SeatId = seatId;
@@ -93,6 +94,7 @@ namespace GuardsDigital.Application
             DecisionContractFamilyId = decisionContractFamilyId;
             DecisionContractCommands = decisionContractCommands;
             AuthorizedCommands = authorizedCommands;
+            Detail = detail;
         }
 
         public long Version { get; }
@@ -138,6 +140,13 @@ namespace GuardsDigital.Application
 
         /// <summary>Every command this seat may submit against exactly this version.</summary>
         public IReadOnlyList<DirectorCommand> AuthorizedCommands { get; }
+
+        /// <summary>
+        /// Milestone 8.33. The presentation-fidelity half milestone 8.32 deferred by name: the
+        /// pending-choice candidate detail and previews, the resolution envelopes, the offer rows,
+        /// the team-agreement surface, and the completed-round history.
+        /// </summary>
+        public NetworkProjectionDetailRecord Detail { get; }
     }
 
     public sealed class NetworkSelectedActorRecord
@@ -610,6 +619,7 @@ namespace GuardsDigital.Application
                 }
 
                 WriteCommands(writer, projection.AuthorizedCommands);
+                NetworkProjectionDetailCodec.Write(writer, projection);
 
                 writer.Flush();
                 return stream.ToArray();
@@ -968,6 +978,11 @@ namespace GuardsDigital.Application
                         return false;
                     }
 
+                    if (!NetworkProjectionDetailCodec.TryRead(reader, out var detail))
+                    {
+                        return false;
+                    }
+
                     if (stream.Position != stream.Length)
                     {
                         return false;
@@ -992,7 +1007,8 @@ namespace GuardsDigital.Application
                         owner_,
                         contractFamily,
                         contractCommands,
-                        authorizedCommands);
+                        authorizedCommands,
+                        detail);
                     return true;
                 }
             }

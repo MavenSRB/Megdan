@@ -443,7 +443,7 @@ namespace GuardsDigital.Application
         internal static bool TryReadMessageKind(int value, out SessionMessageKind kind)
         {
             if (value >= (int)SessionMessageKind.Challenge &&
-                value <= (int)SessionMessageKind.SeatProjection)
+                value <= (int)SessionMessageKind.RequestResync)
             {
                 kind = (SessionMessageKind)value;
                 return true;

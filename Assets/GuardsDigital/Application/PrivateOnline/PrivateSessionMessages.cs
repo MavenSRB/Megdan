@@ -57,7 +57,25 @@ namespace GuardsDigital.Application
         /// Milestone 8.32. Host to one seated client: that seat's own owner-scoped projection.
         /// Never broadcast as one shared payload - each seat receives its own encoding.
         /// </summary>
-        SeatProjection = 12
+        SeatProjection = 12,
+
+        /// <summary>
+        /// Milestone 8.33. Client to host: one bounded public agreement statement - envelope,
+        /// submission identity, expected projection version, and the typed statement - for the
+        /// tied-Initiative and Minion Battle families whose final rules choice only the host's
+        /// unanimity may submit.
+        /// </summary>
+        SubmitAgreement = 13,
+
+        /// <summary>Milestone 8.33. Host to the stating client: what its statement did.</summary>
+        AgreementResult = 14,
+
+        /// <summary>
+        /// Milestone 8.33. Client to host: this seat detected a gap in the host's ordered stream
+        /// and asks for one bounded current-projection resync. The answer is an ordinary
+        /// <see cref="SeatProjection"/> push echoing the request's correlation.
+        /// </summary>
+        RequestResync = 15
     }
 
     /// <summary>

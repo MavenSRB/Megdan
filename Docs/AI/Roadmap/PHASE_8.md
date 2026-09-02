@@ -719,7 +719,7 @@ Acceptance checks:
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-832-enforce-owner-scoped-projections-and-command-authorization-across-the-network-boundary-completion-evidence).
 
-### [!] 8.33 Synchronize commands, events, pending choices, and snapshots
+### [x] 8.33 Synchronize commands, events, pending choices, and snapshots
 
 Blocked by: Milestone 8.32 must enforce owner-scoped projections and command authorization across the network boundary.
 
@@ -730,6 +730,8 @@ Acceptance checks:
 - Repeatable fault-injection scenarios exercise permitted delay/jitter, duplication, loss, reordering, stale messages, corrupt/incompatible snapshots, and interrupted synchronization; clients either converge on the host's authorized version or enter one explicit recoverable/terminal failure state.
 - Same-team tied-Initiative and Minion Battle removal agreement synchronizes each eligible player's latest public statement, incomplete/disagreed/agreed status, the exact standing proposal, and the host's exactly-once family-specific authoritative choice. Delayed, duplicated, reordered, stale, forged, or conflicting statements cannot manufacture agreement, submit twice, apply to a changed removal set, or diverge any client from the host.
 - Host and client diagnostics correlate session/content/schema version, command identity, authoritative projection version, and recovery decision without logging prohibited private information.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-833-synchronize-commands-events-pending-choices-and-snapshots-completion-evidence).
 
 ### [!] 8.34 Add disconnect, reconnect, resynchronization, and host-loss policy
 

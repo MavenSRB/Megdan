@@ -63,6 +63,22 @@ namespace GuardsDigital.Application
         /// </summary>
         public const int InitialConnectionEpoch = 1;
 
+        /// <summary>
+        /// Milestone 8.33. How many consumed submission identities the host remembers, so a
+        /// retried submission inside the window is recognized as the duplicate it is and one
+        /// older than the window is refused rather than executed twice.
+        ///
+        /// <para>Sized from measured traffic, as the decision record requires: across the
+        /// deterministic seed-2 six-seat walk the longest any one seat goes between two of its own
+        /// consumed submission identities is measured at 27 by
+        /// <c>PrivateOnlineSynchronizationTests.TheIdempotencyWindow_CoversMeasuredRetryTraffic</c>,
+        /// so 256 holds every seat's most recent history several times over - enough for a
+        /// stale-view retry today and for 8.34's reconnect-and-retry to land inside it. That same
+        /// fixture is the growth check: traffic outgrowing the margin fails it, and the constant
+        /// is then re-sized deliberately rather than overtaken silently.</para>
+        /// </summary>
+        public const int SubmissionIdempotencyWindowEntries = 256;
+
         /// <summary>The default host port; an operator may name another.</summary>
         public const int DefaultPort = 45677;
 

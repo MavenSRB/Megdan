@@ -37,7 +37,16 @@ namespace GuardsDigital.Application
         Disconnected = 6,
 
         /// <summary>The host's own stream violated the protocol; nothing further is trusted.</summary>
-        Faulted = 7
+        Faulted = 7,
+
+        /// <summary>
+        /// Milestone 8.33. The one recoverable failure state: this seat detected a gap in the
+        /// host's ordered stream, its view is known stale, and it has asked for one bounded
+        /// current-projection resync. Still seated, still connected; it neither submits nor
+        /// trusts its projection until the next complete projection returns it to
+        /// <see cref="Seated"/>.
+        /// </summary>
+        Resynchronizing = 8
     }
 
     /// <summary>
@@ -109,6 +118,25 @@ namespace GuardsDigital.Application
         /// <summary>Milestone 8.32. The host's answer to this client's newest submission.</summary>
         public NetworkSubmissionResultMessage LastSubmissionResult { get; private set; }
 
+        /// <summary>Milestone 8.33. The host's answer to this client's newest agreement statement.</summary>
+        public NetworkAgreementResultMessage LastAgreementResult { get; private set; }
+
+        /// <summary>
+        /// Milestone 8.33. Stale or replayed host frames set aside unapplied - each one a
+        /// duplicate the ordered stream already delivered. A discard is convergence, not damage.
+        /// </summary>
+        public int DiscardedFrameCount { get; private set; }
+
+        /// <summary>
+        /// Milestone 8.33. Gaps healed by the very frame that revealed them: a complete projection
+        /// that arrived past a missing frame is adopted whole, because a newer complete view is
+        /// exactly what a resync would have answered with.
+        /// </summary>
+        public int RecoveredProjectionGapCount { get; private set; }
+
+        /// <summary>Milestone 8.33. How many bounded resync requests this client has sent.</summary>
+        public int ResyncRequestCount { get; private set; }
+
         public void OnConnected()
         {
             if (State != PrivateSessionClientState.None)
@@ -176,7 +204,8 @@ namespace GuardsDigital.Application
             if (frame.Kind == SessionMessageKind.RosterUpdate)
             {
                 if (State != PrivateSessionClientState.AwaitingSeat &&
-                    State != PrivateSessionClientState.Seated)
+                    State != PrivateSessionClientState.Seated &&
+                    State != PrivateSessionClientState.Resynchronizing)
                 {
                     Fault();
                     return;
@@ -250,41 +279,153 @@ namespace GuardsDigital.Application
                     return;
 
                 case PrivateSessionClientState.Seated:
-                    if (frame.Kind == SessionMessageKind.SeatProjection)
-                    {
-                        if (!NetworkMessageCodec.TryDecodeSeatProjection(frame.Payload, out var projection) ||
-                            !AcceptEnvelope(projection.Envelope) ||
-                            !NetworkSeatProjectionCodec.TryDecode(
-                                projection.ProjectionPayload, out var record))
-                        {
-                            Fault();
-                            return;
-                        }
-
-                        LatestProjection = record;
-                        return;
-                    }
-
-                    if (frame.Kind == SessionMessageKind.SubmissionResult)
-                    {
-                        if (!NetworkMessageCodec.TryDecodeSubmissionResult(frame.Payload, out var result) ||
-                            !AcceptEnvelope(result.Envelope))
-                        {
-                            Fault();
-                            return;
-                        }
-
-                        LastSubmissionResult = result;
-                        return;
-                    }
-
-                    Fault();
+                case PrivateSessionClientState.Resynchronizing:
+                    HandleGameplayFrame(frame);
                     return;
 
                 default:
                     Fault();
                     return;
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.33. The one ordered-stream discipline for every gameplay frame: a stale
+        /// sequence is a duplicate or replay and is discarded unapplied; the next sequence is
+        /// applied; and a gap is an explicit recovery, never a silent continuation - a complete
+        /// projection past the gap converges on its own, while a result past the gap means the
+        /// projection this seat holds is stale, so it asks for one bounded resync and stops
+        /// acting until a complete projection arrives.
+        /// </summary>
+        private void HandleGameplayFrame(SessionFrame frame)
+        {
+            if (frame.Kind == SessionMessageKind.SeatProjection)
+            {
+                if (!NetworkMessageCodec.TryDecodeSeatProjection(frame.Payload, out var projection))
+                {
+                    Fault();
+                    return;
+                }
+
+                var reading = ReadEnvelope(projection.Envelope);
+                if (reading == EnvelopeReading.Invalid)
+                {
+                    Fault();
+                    return;
+                }
+
+                if (reading == EnvelopeReading.Stale)
+                {
+                    DiscardedFrameCount++;
+                    return;
+                }
+
+                if (!NetworkSeatProjectionCodec.TryDecode(projection.ProjectionPayload, out var record))
+                {
+                    Fault();
+                    return;
+                }
+
+                if (reading == EnvelopeReading.Gap)
+                {
+                    RecoveredProjectionGapCount++;
+                }
+
+                gameplayReceiveSequence = projection.Envelope.Sequence;
+                LatestProjection = record;
+                if (State == PrivateSessionClientState.Resynchronizing)
+                {
+                    State = PrivateSessionClientState.Seated;
+                }
+
+                return;
+            }
+
+            if (frame.Kind == SessionMessageKind.SubmissionResult)
+            {
+                if (!NetworkMessageCodec.TryDecodeSubmissionResult(frame.Payload, out var result))
+                {
+                    Fault();
+                    return;
+                }
+
+                var reading = ReadEnvelope(result.Envelope);
+                if (reading == EnvelopeReading.Invalid)
+                {
+                    Fault();
+                    return;
+                }
+
+                if (reading == EnvelopeReading.Stale)
+                {
+                    DiscardedFrameCount++;
+                    return;
+                }
+
+                gameplayReceiveSequence = result.Envelope.Sequence;
+                LastSubmissionResult = result;
+                if (reading == EnvelopeReading.Gap)
+                {
+                    BeginResync();
+                }
+
+                return;
+            }
+
+            if (frame.Kind == SessionMessageKind.AgreementResult)
+            {
+                if (!NetworkMessageCodec.TryDecodeAgreementResult(frame.Payload, out var result))
+                {
+                    Fault();
+                    return;
+                }
+
+                var reading = ReadEnvelope(result.Envelope);
+                if (reading == EnvelopeReading.Invalid)
+                {
+                    Fault();
+                    return;
+                }
+
+                if (reading == EnvelopeReading.Stale)
+                {
+                    DiscardedFrameCount++;
+                    return;
+                }
+
+                gameplayReceiveSequence = result.Envelope.Sequence;
+                LastAgreementResult = result;
+                if (reading == EnvelopeReading.Gap)
+                {
+                    BeginResync();
+                }
+
+                return;
+            }
+
+            Fault();
+        }
+
+        /// <summary>
+        /// Enters the recoverable state and asks for one bounded resync. One request per episode:
+        /// a second gap while one is outstanding adds nothing the first answer will not heal.
+        /// </summary>
+        private void BeginResync()
+        {
+            if (State == PrivateSessionClientState.Resynchronizing)
+            {
+                return;
+            }
+
+            State = PrivateSessionClientState.Resynchronizing;
+            ResyncRequestCount++;
+            gameplaySendSequence++;
+            Send(NetworkMessageCodec.RequestResyncFrame(new NetworkResyncRequestMessage(
+                new NetworkEnvelope(
+                    SessionCorrelation,
+                    PrivateSessionProtocol.InitialConnectionEpoch,
+                    gameplaySendSequence,
+                    gameplaySendSequence))));
         }
 
         /// <summary>
@@ -302,20 +443,7 @@ namespace GuardsDigital.Application
                 return false;
             }
 
-            if (nonceSource == null)
-            {
-                throw new InvalidOperationException(
-                    "Submitting requires a nonce source for the wire's own submission identities.");
-            }
-
-            var nonce = nonceSource.NextNonce() ?? Array.Empty<byte>();
-            var builder = new System.Text.StringBuilder("wire-", 5 + nonce.Length * 2);
-            foreach (var value in nonce)
-            {
-                builder.Append(value.ToString("x2", CultureInfo.InvariantCulture));
-            }
-
-            submissionId = builder.ToString();
+            submissionId = MintSubmissionId();
             gameplaySendSequence++;
             Send(NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
                 new NetworkEnvelope(
@@ -329,20 +457,87 @@ namespace GuardsDigital.Application
             return true;
         }
 
-        /// <summary>An orderly close; plaintext by design, like the host's own Goodbye.</summary>
-        public void SendGoodbye() => outbox.Send(PrivateSessionFrameCodec.GoodbyeFrame());
-
-        private bool AcceptEnvelope(NetworkEnvelope envelope)
+        /// <summary>
+        /// Milestone 8.33. Submits one public agreement statement from this seat's own latest
+        /// projected agreement surface, under exactly the command-submission discipline: the
+        /// wire's own submission identity, the version the statement was decided against, and a
+        /// refusal to act at all while the view is known stale.
+        /// </summary>
+        public bool TrySubmitAgreement(TeamAgreementCommand statement, out string submissionId)
         {
-            if (!string.Equals(envelope.SessionCorrelation, SessionCorrelation, StringComparison.Ordinal) ||
-                envelope.Epoch != PrivateSessionProtocol.InitialConnectionEpoch ||
-                envelope.Sequence != gameplayReceiveSequence + 1)
+            submissionId = null;
+            if (statement == null) throw new ArgumentNullException(nameof(statement));
+            if (State != PrivateSessionClientState.Seated || LatestProjection == null)
             {
                 return false;
             }
 
-            gameplayReceiveSequence = envelope.Sequence;
+            submissionId = MintSubmissionId();
+            gameplaySendSequence++;
+            Send(NetworkMessageCodec.SubmitAgreementFrame(new NetworkAgreementSubmissionMessage(
+                new NetworkEnvelope(
+                    SessionCorrelation,
+                    PrivateSessionProtocol.InitialConnectionEpoch,
+                    gameplaySendSequence,
+                    gameplaySendSequence),
+                submissionId,
+                LatestProjection.Version,
+                statement)));
             return true;
+        }
+
+        private string MintSubmissionId()
+        {
+            if (nonceSource == null)
+            {
+                throw new InvalidOperationException(
+                    "Submitting requires a nonce source for the wire's own submission identities.");
+            }
+
+            var nonce = nonceSource.NextNonce() ?? Array.Empty<byte>();
+            var builder = new System.Text.StringBuilder("wire-", 5 + nonce.Length * 2);
+            foreach (var value in nonce)
+            {
+                builder.Append(value.ToString("x2", CultureInfo.InvariantCulture));
+            }
+
+            return builder.ToString();
+        }
+
+        /// <summary>An orderly close; plaintext by design, like the host's own Goodbye.</summary>
+        public void SendGoodbye() => outbox.Send(PrivateSessionFrameCodec.GoodbyeFrame());
+
+        private enum EnvelopeReading
+        {
+            /// <summary>Wrong session or epoch: a protocol violation, not a delivery fault.</summary>
+            Invalid = 0,
+
+            /// <summary>Exactly the next sequence.</summary>
+            Next = 1,
+
+            /// <summary>Past the next sequence: something between was never delivered.</summary>
+            Gap = 2,
+
+            /// <summary>At or before the last accepted sequence: a duplicate or a replay.</summary>
+            Stale = 3
+        }
+
+        private EnvelopeReading ReadEnvelope(NetworkEnvelope envelope)
+        {
+            if (!string.Equals(envelope.SessionCorrelation, SessionCorrelation, StringComparison.Ordinal) ||
+                envelope.Epoch != PrivateSessionProtocol.InitialConnectionEpoch)
+            {
+                return EnvelopeReading.Invalid;
+            }
+
+            if (envelope.Sequence <= gameplayReceiveSequence)
+            {
+                return EnvelopeReading.Stale;
+            }
+
+            return envelope.Sequence == gameplayReceiveSequence + 1
+                ? EnvelopeReading.Next
+                : EnvelopeReading.Gap;
         }
 
         private void Send(byte[] frame)
