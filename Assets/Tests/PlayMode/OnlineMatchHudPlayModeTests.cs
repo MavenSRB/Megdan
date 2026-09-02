@@ -1,0 +1,260 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Application;
+using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.TestTools;
+using UnityEngine.UIElements;
+
+namespace GuardsDigital.Tests.PlayMode
+{
+    /// <summary>Milestone 8.35b's shipped lobby-to-existing-HUD handoff in a real scene.</summary>
+    public sealed class OnlineMatchHudPlayModeTests
+    {
+        private sealed class Wire
+        {
+            private sealed class NonceSource : IPrivateSessionNonceSource
+            {
+                private byte value;
+
+                public NonceSource(byte seed) => value = seed;
+
+                public byte[] NextNonce()
+                {
+                    value++;
+                    return Enumerable.Repeat(value, 32).ToArray();
+                }
+            }
+
+            private sealed class Link
+            {
+                public PrivateSessionClient Client;
+                public readonly PrivateSessionFrameAssembler ToHost = new PrivateSessionFrameAssembler();
+                public readonly PrivateSessionFrameAssembler ToClient = new PrivateSessionFrameAssembler();
+            }
+
+            private sealed class ClientOutbox : IPrivateSessionClientOutbox
+            {
+                private readonly Wire wire;
+                private readonly int ordinal;
+                public ClientOutbox(Wire wire, int ordinal) { this.wire = wire; this.ordinal = ordinal; }
+                public void Send(byte[] frame) => wire.toHost.Enqueue((ordinal, frame));
+                public void Close() => wire.toHost.Enqueue((ordinal, null));
+            }
+
+            private sealed class HostOutbox : IPrivateSessionOutbox
+            {
+                private readonly System.Func<Wire> wire;
+                public HostOutbox(System.Func<Wire> wire) { this.wire = wire; }
+                public void Send(int ordinal, byte[] frame) => wire().toClient.Enqueue((ordinal, frame));
+                public void Close(int ordinal) => wire().toClient.Enqueue((ordinal, null));
+            }
+
+            private readonly Queue<(int Ordinal, byte[] Frame)> toHost = new Queue<(int, byte[])>();
+            private readonly Queue<(int Ordinal, byte[] Frame)> toClient = new Queue<(int, byte[])>();
+            private readonly Dictionary<int, Link> links = new Dictionary<int, Link>();
+            public PrivateSessionHost Host { get; private set; }
+
+            public static Wire Compose(
+                ConfiguredMatchSceneRuntime runtime,
+                System.Func<long> timeSource = null)
+            {
+                Wire wire = null;
+                wire = new Wire();
+                wire.Host = new PrivateSessionHost(
+                    runtime.Host, runtime.SessionIdentity, string.Empty,
+                    new HostOutbox(() => wire), new NonceSource(1));
+                var ordinal = 0;
+                foreach (var seat in runtime.Host.Seats.Seats)
+                {
+                    ordinal++;
+                    var link = new Link();
+                    link.Client = new PrivateSessionClient(
+                        runtime.SessionIdentity, seat.Id, string.Empty,
+                        new ClientOutbox(wire, ordinal), new NonceSource((byte)(ordinal + 10)),
+                        timeSource);
+                    wire.links.Add(ordinal, link);
+                    link.Client.OnConnected();
+                    wire.Host.OnConnected(ordinal, 0);
+                    wire.Pump();
+                }
+
+                foreach (var link in wire.links.Values)
+                {
+                    Assert.That(link.Client.TrySetReadiness(true), Is.True);
+                    wire.Pump();
+                }
+
+                Assert.That(wire.Host.HasMatchStarted, Is.True);
+                Assert.That(wire.links.Values.All(value =>
+                    value.Client.HasMatchStarted && value.Client.LatestProjection != null), Is.True);
+                return wire;
+            }
+
+            public PrivateSessionClient Client(int ordinal) => links[ordinal].Client;
+
+            public void LoseHostFor(int ordinal)
+            {
+                Host.OnDisconnected(ordinal);
+                links[ordinal].Client.OnDisconnected();
+                Pump();
+            }
+
+            public void Pump()
+            {
+                while (toHost.Count > 0 || toClient.Count > 0)
+                {
+                    if (toHost.Count > 0)
+                    {
+                        var item = toHost.Dequeue();
+                        if (item.Frame == null) { Host.OnDisconnected(item.Ordinal); continue; }
+                        var link = links[item.Ordinal];
+                        Assert.That(link.ToHost.Add(item.Frame, 0, item.Frame.Length), Is.True);
+                        while (link.ToHost.TryDequeue(out var frame)) Host.OnFrame(item.Ordinal, frame);
+                    }
+                    else
+                    {
+                        var item = toClient.Dequeue();
+                        if (item.Frame == null) { links[item.Ordinal].Client.OnDisconnected(); continue; }
+                        var link = links[item.Ordinal];
+                        Assert.That(link.ToClient.Add(item.Frame, 0, item.Frame.Length), Is.True);
+                        while (link.ToClient.TryDequeue(out var frame)) link.Client.OnFrame(frame);
+                    }
+                }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator StartedNetworkSeat_UsesExistingHud_AndHostLossClearsItsControls()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            var load = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            while (!load.isDone) yield return null;
+            yield return null;
+
+            var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            Assert.That(root?.Runtime, Is.Not.Null);
+            var now = 10 * System.TimeSpan.TicksPerSecond;
+            var wire = Wire.Compose(root.Runtime, () => now);
+            var client = wire.Client(1);
+            var lobby = root.gameObject.AddComponent<PrivateLobbyDriver>();
+            lobby.Configure(root);
+            typeof(PrivateLobbyDriver).GetField(
+                    "machine", System.Reflection.BindingFlags.Instance |
+                               System.Reflection.BindingFlags.NonPublic)
+                ?.SetValue(lobby, client);
+            typeof(PrivateLobbyDriver).GetMethod(
+                    "Update", System.Reflection.BindingFlags.Instance |
+                              System.Reflection.BindingFlags.NonPublic)
+                ?.Invoke(lobby, null);
+            yield return null;
+
+            Assert.That(root.Runtime.ReadModel, Is.TypeOf<NetworkMatchReadModel>());
+            Assert.That(root.Runtime.Seat.Id, Is.EqualTo(client.TargetSeat));
+            Assert.That(root.Runtime.ReadModel.Cards.All(card =>
+                card.OwnerId.Equals(root.Runtime.Seat.HeroId) ||
+                card.State.Location != GuardsDigital.Core.Cards.CardLocation.Hand), Is.True);
+            var director = root.Hud.RootElement.Query<Button>().ToList()
+                .SingleOrDefault(button => button.text == "DIRECTOR");
+            Assert.That(director == null || director.style.display.value == DisplayStyle.None, Is.True);
+            var status = lobby.GetComponent<UIDocument>().rootVisualElement.Q<Label>(
+                PrivateLobbyDriver.MatchStatusName);
+            Assert.That(status.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(status.text, Does.Contain("CONNECTED"));
+
+            var initialHands = root.Runtime.HandsView.Model;
+            var initialVersion = client.LatestProjection.Version;
+            var initialReceipt = client.ProjectionRevision;
+            wire.Host.RepublishProjections();
+            wire.Pump();
+            typeof(PrivateLobbyDriver).GetMethod(
+                    "Update", System.Reflection.BindingFlags.Instance |
+                              System.Reflection.BindingFlags.NonPublic)
+                ?.Invoke(lobby, null);
+            Assert.That(client.LatestProjection.Version, Is.EqualTo(initialVersion),
+                "A public/session-only projection receipt need not advance gameplay authority.");
+            Assert.That(client.ProjectionRevision, Is.GreaterThan(initialReceipt));
+            Assert.That(root.Runtime.HandsView.Model, Is.Not.SameAs(initialHands),
+                "A same-version projection receipt must still redraw the attached HUD.");
+
+            initialHands = root.Runtime.HandsView.Model;
+            var homeHero = root.Runtime.Seat.HeroId;
+            var card = initialHands.ViewedHand.PlayableTrayCards.First().CardInstanceId;
+            Assert.That(root.Runtime.HandsPresenter.CommitCardImmediately(card), Is.True);
+            root.Runtime.RefreshAll();
+            var waitingHands = root.Runtime.HandsView.Model;
+            Assert.That(root.Runtime.EnumerateProjectedCommands(), Is.Empty,
+                "The journey helper must not synthesize an End-of-Round or commitment command while input is disabled.");
+            var waitingCardsAreInert = waitingHands.ViewedHand.PlayableTrayCards.All(
+                value => !value.IsSelectable);
+            typeof(PrivateLobbyDriver).GetMethod(
+                    "Update", System.Reflection.BindingFlags.Instance |
+                              System.Reflection.BindingFlags.NonPublic)
+                ?.Invoke(lobby, null);
+            Assert.That(status.text, Does.Contain("WAITING FOR THE HOST"));
+            now += PrivateSessionClient.DelayedHostResponseThresholdTicks;
+            typeof(PrivateLobbyDriver).GetMethod(
+                    "Update", System.Reflection.BindingFlags.Instance |
+                              System.Reflection.BindingFlags.NonPublic)
+                ?.Invoke(lobby, null);
+            Assert.That(status.text, Does.Contain("TAKING LONGER"),
+                "The visible status must refresh when only the presentation clock crosses its delay threshold.");
+            wire.Pump();
+            root.Runtime.RefreshAll();
+            var answeredHands = root.Runtime.HandsView.Model;
+            Assert.That(waitingHands, Is.Not.SameAs(initialHands),
+                "A same-version waiting transition must invalidate presenter caches.");
+            Assert.That(waitingCardsAreInert, Is.True,
+                "No commitment remains actionable while the host answer is in flight.");
+            Assert.That(answeredHands, Is.Not.SameAs(waitingHands),
+                "A received host projection must invalidate presenter caches.");
+            Assert.That(root.Runtime.ViewedHeroId, Is.EqualTo(homeHero),
+                "An online seat keeps its own private tray when the awaited hero advances.");
+
+            var resources = root.OwnedHighlightNativeResourceCount;
+            var children = root.Hud.RootElement.childCount;
+            for (var index = 0; index < 20; index++) root.Runtime.RefreshAll();
+            Assert.That(root.OwnedHighlightNativeResourceCount, Is.EqualTo(resources));
+            Assert.That(root.Hud.RootElement.childCount, Is.EqualTo(children));
+
+            typeof(PrivateLobbyDriver).GetMethod(
+                    "Leave", System.Reflection.BindingFlags.Instance |
+                             System.Reflection.BindingFlags.NonPublic)
+                ?.Invoke(lobby, null);
+            root.Runtime.RefreshAll();
+            Assert.That(root.Runtime.ReadModel.IsInputEnabled, Is.False,
+                "Leaving must disable the retained match surface immediately.");
+            Assert.That(status.style.display.value, Is.EqualTo(DisplayStyle.None));
+            Assert.That(status.text, Is.Empty);
+
+            var replacementWire = Wire.Compose(root.Runtime);
+            var replacement = replacementWire.Client(2);
+            typeof(PrivateLobbyDriver).GetField(
+                    "machine", System.Reflection.BindingFlags.Instance |
+                               System.Reflection.BindingFlags.NonPublic)
+                ?.SetValue(lobby, replacement);
+            typeof(PrivateLobbyDriver).GetMethod(
+                    "Update", System.Reflection.BindingFlags.Instance |
+                              System.Reflection.BindingFlags.NonPublic)
+                ?.Invoke(lobby, null);
+            Assert.That(root.Runtime.Seat.Id, Is.EqualTo(replacement.TargetSeat),
+                "A later join must bind its own seat rather than retaining the departed one.");
+            Assert.That(root.Runtime.ReadModel.IsInputEnabled, Is.True);
+            Assert.That(root.Runtime.ReadModel.Cards.All(value =>
+                    value.OwnerId.Equals(root.Runtime.Seat.HeroId) ||
+                    value.State.Location != GuardsDigital.Core.Cards.CardLocation.Hand), Is.True,
+                "Reattachment must use the new owner projection and the original admitted static content.");
+
+            replacementWire.LoseHostFor(2);
+            root.Runtime.RefreshAll();
+            Assert.That(root.Runtime.ReadModel.DecisionContract, Is.Null);
+            Assert.That(root.Runtime.ReadModel.AvailableTurnActions, Is.Empty);
+            Assert.That(root.Runtime.ReadModel.TeamAgreement, Is.Null);
+        }
+    }
+}

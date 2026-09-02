@@ -275,6 +275,7 @@ namespace GuardsDigital.Presentation.Interaction
     [DisallowMultipleComponent]
     public sealed class PrivateLobbyDriver : MonoBehaviour
     {
+        public const string MatchStatusName = "gd-online-match-status";
         /// <summary>The lobby draws above the match HUD, which sorts at 100.</summary>
         private const float LobbySortingOrder = 200f;
 
@@ -309,6 +310,8 @@ namespace GuardsDigital.Presentation.Interaction
         private string sessionKey = string.Empty;
         private PrivateSessionEndpoint dialled;
         private string signature = string.Empty;
+        private Label matchStatus;
+        private bool onlineHudAttached;
 
         public void Configure(MatchSceneCompositionRoot root)
         {
@@ -336,6 +339,19 @@ namespace GuardsDigital.Presentation.Interaction
             BuildPanel();
             view = new PrivateLobbyUnityView();
             document.rootVisualElement?.Add(view.Root);
+            matchStatus = new Label { name = MatchStatusName };
+            matchStatus.style.position = Position.Absolute;
+            matchStatus.style.top = 92f;
+            matchStatus.style.left = new StyleLength(new Length(35f, LengthUnit.Percent));
+            matchStatus.style.width = new StyleLength(new Length(30f, LengthUnit.Percent));
+            matchStatus.style.minHeight = 44f;
+            matchStatus.style.unityTextAlign = TextAnchor.MiddleCenter;
+            matchStatus.style.fontSize = 18f;
+            matchStatus.style.color = new Color(0.93f, 0.94f, 0.96f, 1f);
+            matchStatus.style.backgroundColor = new Color(0.06f, 0.07f, 0.09f, 0.94f);
+            matchStatus.style.display = DisplayStyle.None;
+            matchStatus.pickingMode = PickingMode.Ignore;
+            document.rootVisualElement?.Add(matchStatus);
             presenter = new PrivateLobbyPresenter(view);
             view.ControlPressed += (control, entry) => presenter.Press(control, entry);
             presenter.HostRequested += BeginHosting;
@@ -405,7 +421,24 @@ namespace GuardsDigital.Presentation.Interaction
             if (!string.Equals(current, signature, StringComparison.Ordinal))
             {
                 signature = current;
+                if (!onlineHudAttached && machine != null && machine.HasMatchStarted &&
+                    machine.State == PrivateSessionClientState.Seated &&
+                    machine.LatestProjection != null)
+                {
+                    compositionRoot.Runtime.AttachOnlineClient(machine);
+                    onlineHudAttached = true;
+                    PrivateOnlineMarkers.Log(
+                        "LOBBY_MATCH_HUD seat=" + machine.TargetSeat.Value +
+                        " version=" + machine.LatestProjection.Version.ToString(CultureInfo.InvariantCulture));
+                }
+
                 presenter.Refresh();
+                if (onlineHudAttached)
+                {
+                    compositionRoot.Runtime.RefreshAll();
+                }
+
+                RenderMatchStatus();
             }
         }
 
@@ -421,7 +454,14 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 builder.Append("client:").Append(machine.State).Append(':')
                     .Append(machine.RejectionReason).Append(':')
-                    .Append(machine.HasMatchStarted ? '1' : '0');
+                    .Append(machine.HasMatchStarted ? '1' : '0').Append(':')
+                    .Append(machine.IsWaitingForHost ? '1' : '0').Append(':')
+                    .Append(machine.IsHostResponseDelayed ? '1' : '0').Append(':')
+                    .Append(machine.MatchFeedback).Append(':')
+                    .Append(machine.LatestProjection?.Version ?? -1).Append(':')
+                    .Append(machine.ProjectionRevision).Append(':')
+                    .Append(machine.LastSubmissionResult?.SubmissionId ?? string.Empty).Append(':')
+                    .Append(machine.LastAgreementResult?.SubmissionId ?? string.Empty);
                 foreach (var entry in machine.Roster)
                 {
                     builder.Append('|').Append(entry.Seat.Value).Append(entry.Occupancy)
@@ -440,6 +480,18 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             return builder.ToString();
+        }
+
+        private void RenderMatchStatus()
+        {
+            if (matchStatus == null)
+            {
+                return;
+            }
+
+            var show = onlineHudAttached && machine != null && machine.HasMatchStarted;
+            matchStatus.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            matchStatus.text = show ? NetworkMatchFeedback.For(machine).ToUpperInvariant() : string.Empty;
         }
 
         private IReadOnlyList<SeatRosterEntry> LocalSeats()
@@ -546,6 +598,9 @@ namespace GuardsDigital.Presentation.Interaction
             OpenTransport();
             if (!Dial())
             {
+                machine.OnReconnectTransportFailed();
+                signature = string.Empty;
+                presenter.AttachClient(machine);
                 return;
             }
 
@@ -562,7 +617,9 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void Leave()
         {
+            var departing = machine;
             DisposeTransport();
+            departing?.OnDisconnected();
             machine = null;
             if (session != null)
             {
@@ -572,6 +629,14 @@ namespace GuardsDigital.Presentation.Interaction
 
             listener?.Dispose();
             listener = null;
+            onlineHudAttached = false;
+            if (matchStatus != null)
+            {
+                matchStatus.text = string.Empty;
+                matchStatus.style.display = DisplayStyle.None;
+            }
+
+            compositionRoot?.Runtime?.RefreshAll();
             signature = string.Empty;
             presenter.ShowEntry(LocalSeats(), string.Empty);
             PrivateOnlineMarkers.Log("LOBBY_LEFT");
@@ -652,6 +717,7 @@ namespace GuardsDigital.Presentation.Interaction
             DisposeTransport();
             listener?.Dispose();
             listener = null;
+            onlineHudAttached = false;
             if (panelSettings != null)
             {
                 Destroy(panelSettings);

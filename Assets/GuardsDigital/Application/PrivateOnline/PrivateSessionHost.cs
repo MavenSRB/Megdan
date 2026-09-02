@@ -1016,7 +1016,7 @@ namespace GuardsDigital.Application
 
             if (result.Accepted)
             {
-                PublishProjections();
+                PublishProjections(record, message.Envelope.Correlation);
             }
             else if (result.RejectionReason == SeatSubmissionRejectionReason.StaleProjection)
             {
@@ -1024,7 +1024,7 @@ namespace GuardsDigital.Application
                 // and offered one bounded current-projection resync. Offering it here, unasked,
                 // is what lets a client that answered against an old view converge on the next
                 // frame rather than waiting for someone else's acceptance to push one.
-                SendProjectionTo(record);
+                SendProjectionTo(record, message.Envelope.Correlation);
                 Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
                     seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
             }
@@ -1099,12 +1099,12 @@ namespace GuardsDigital.Application
 
             if (result.Accepted)
             {
-                PublishProjections();
+                PublishProjections(record, message.Envelope.Correlation);
             }
             else if (result.RejectionReason == TeamAgreementSubmissionRejectionReason.StaleProjection ||
                 result.RejectionReason == TeamAgreementSubmissionRejectionReason.StaleProposal)
             {
-                SendProjectionTo(record);
+                SendProjectionTo(record, message.Envelope.Correlation);
                 Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
                     seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
             }
@@ -1229,14 +1229,22 @@ namespace GuardsDigital.Application
                 new NetworkSeatProjectionMessage(NextEnvelope(record, correlation), payload)));
         }
 
-        /// <summary>Every seated connection receives its own view of the state that just committed.</summary>
-        private void PublishProjections()
+        /// <summary>
+        /// Every seated connection receives its own view of the state that just committed. When a
+        /// seat initiated the publication, only that seat's projection echoes its request
+        /// correlation; every observer still receives an unsolicited zero-correlation push.
+        /// </summary>
+        private void PublishProjections(
+            ConnectionRecord initiatingRecord = null,
+            long initiatingCorrelation = 0)
         {
             foreach (var record in connections.Values)
             {
                 if (record.Phase == ConnectionPhase.Seated)
                 {
-                    SendProjectionTo(record);
+                    SendProjectionTo(
+                        record,
+                        ReferenceEquals(record, initiatingRecord) ? initiatingCorrelation : 0);
                 }
             }
         }

@@ -31,6 +31,13 @@ namespace GuardsDigital.Application
     {
         long Version { get; }
 
+        /// <summary>
+        /// Whether controls derived from this snapshot may currently submit. Local projections are
+        /// always enabled; a network projection disables input while its command is awaiting the
+        /// host, while synchronization is unavailable, or after the session has ended.
+        /// </summary>
+        bool IsInputEnabled { get; }
+
         // Public match state.
         QuickGameSetupState Setup { get; }
         BoardMapDefinition SelectedMap { get; }
@@ -80,13 +87,16 @@ namespace GuardsDigital.Application
         // The pending surface. Every member is scoped to the reader that may answer it.
         PendingInitiativeChoice PendingInitiativeChoice { get; }
         PendingCardActionResolution PendingMovementResolution { get; }
+        bool HasPendingMovementResolution { get; }
         PendingMovementChoice PendingMovementChoice { get; }
         PendingAttackResolution PendingAttackResolution { get; }
+        bool HasPendingAttackResolution { get; }
         PendingAttackTargetChoice PendingAttackTargetChoice { get; }
         IReadOnlyList<AttackTargetDefensePreviewProjection> PendingAttackTargetDefensePreviews { get; }
         PendingDefenseResponseChoice PendingDefenseChoice { get; }
         PendingDefensePreviewProjection PendingDefensePreview { get; }
         PendingResolution PendingSkillResolution { get; }
+        bool HasPendingSkillResolution { get; }
         PendingEffectChoice PendingEffectChoice { get; }
         IReadOnlyList<EffectChoiceCandidatePreview> PendingEffectChoicePreview { get; }
         GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection

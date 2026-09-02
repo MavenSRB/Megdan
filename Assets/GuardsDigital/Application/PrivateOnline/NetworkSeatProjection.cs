@@ -149,16 +149,22 @@ namespace GuardsDigital.Application
         public NetworkProjectionDetailRecord Detail { get; }
     }
 
+    /// <summary>
+    /// Protocol-2 selected-actor state. The final flag is rules-bearing: it preserves the
+    /// authority's deferred Tie Breaker flip after the selected actor resolves.
+    /// </summary>
     public sealed class NetworkSelectedActorRecord
     {
         public NetworkSelectedActorRecord(
-            bool isDefined, string cardInstanceId, string actorId, int teamSide, int initiativeTotal)
+            bool isDefined, string cardInstanceId, string actorId, int teamSide, int initiativeTotal,
+            bool flipTieBreakerAfterResolution)
         {
             IsDefined = isDefined;
             CardInstanceId = cardInstanceId;
             ActorId = actorId;
             TeamSide = teamSide;
             InitiativeTotal = initiativeTotal;
+            FlipTieBreakerAfterResolution = flipTieBreakerAfterResolution;
         }
 
         public bool IsDefined { get; }
@@ -166,6 +172,10 @@ namespace GuardsDigital.Application
         public string ActorId { get; }
         public int TeamSide { get; }
         public int InitiativeTotal { get; }
+        /// <summary>
+        /// Whether completing this actor flips the Tie Breaker; added with private protocol 2.
+        /// </summary>
+        public bool FlipTieBreakerAfterResolution { get; }
     }
 
     public sealed class NetworkOutcomeRecord
@@ -476,6 +486,7 @@ namespace GuardsDigital.Application
                     writer.Write(projection.SelectedActor.ActorId.Value);
                     writer.Write((int)projection.SelectedActor.TeamSide);
                     writer.Write(projection.SelectedActor.InitiativeTotal);
+                    writer.Write(projection.SelectedActor.FlipTieBreakerAfterResolution);
                 }
 
                 writer.Write(projection.Outcome.HasEnded);
@@ -663,17 +674,19 @@ namespace GuardsDigital.Application
                         var actorId = reader.ReadString();
                         var actorSide = reader.ReadInt32();
                         var initiativeTotal = reader.ReadInt32();
+                        var flipTieBreakerAfterResolution = reader.ReadBoolean();
                         if (string.IsNullOrWhiteSpace(actorCard) || string.IsNullOrWhiteSpace(actorId))
                         {
                             return false;
                         }
 
                         selectedActor = new NetworkSelectedActorRecord(
-                            true, actorCard, actorId, actorSide, initiativeTotal);
+                            true, actorCard, actorId, actorSide, initiativeTotal,
+                            flipTieBreakerAfterResolution);
                     }
                     else
                     {
-                        selectedActor = new NetworkSelectedActorRecord(false, null, null, 0, 0);
+                        selectedActor = new NetworkSelectedActorRecord(false, null, null, 0, 0, false);
                     }
 
                     NetworkOutcomeRecord outcome;

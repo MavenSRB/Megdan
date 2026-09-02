@@ -57,7 +57,10 @@ namespace GuardsDigital.Application
         /// <summary>Strictly monotonic per direction per connection, from 1.</summary>
         public long Sequence { get; }
 
-        /// <summary>Echoed by a reply; zero on an unsolicited host push.</summary>
+        /// <summary>
+        /// Echoed by a result and by the initiating seat's promised follow-up projection; zero on
+        /// an unsolicited host push or on the same publication sent to observers.
+        /// </summary>
         public long Correlation { get; }
     }
 

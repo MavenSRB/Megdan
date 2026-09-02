@@ -419,6 +419,22 @@ namespace GuardsDigital.Presentation.Match
             ApplyDirectorDrawerState();
         }
 
+        /// <summary>Removes Director-only tools when the lobby hands this HUD an online seat.</summary>
+        public void SetDirectorToolsVisible(bool visible)
+        {
+            if (directorToggle != null)
+            {
+                directorToggle.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+                directorToggle.pickingMode = visible ? PickingMode.Position : PickingMode.Ignore;
+            }
+
+            if (!visible)
+            {
+                IsDirectorDrawerOpen = false;
+                ApplyDirectorDrawerState();
+            }
+        }
+
         /// <summary>
         /// Whether the HUD consumes the pointer at this screen position, so the board does not also act
         /// on it. Live element bounds are preferred where the panel has laid out, because a rail's

@@ -330,6 +330,25 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void DirectorHandsPresenter_ReboundHomeSurvivesAnAdvancedCommitmentWait()
+        {
+            var session = CreateSession();
+            var view = new CapturingHandsView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            var homeHero = presenter.AwaitedHeroId;
+
+            Assert.That(presenter.SetHomeHero(homeHero), Is.True);
+            var card = view.Model.ViewedHand.PlayableTrayCards.First().CardInstanceId;
+            Assert.That(presenter.CommitCardImmediately(card), Is.True);
+
+            Assert.That(presenter.AwaitedHeroId, Is.Not.EqualTo(homeHero),
+                "The fixture must advance the public commitment wait to another hero.");
+            Assert.That(presenter.ViewedHeroId, Is.EqualTo(homeHero));
+            Assert.That(view.Model.ViewedHand.HeroId, Is.EqualTo(homeHero),
+                "The admitted online seat returns to its own tray when the public wait advances.");
+        }
+
+        [Test]
         public void BoardPresenter_ProjectsAndSubmitsExactPendingMovementChoice()
         {
             var session = CreateSession();
@@ -563,6 +582,34 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(mandatoryModel.Actions, Is.Empty);
             Assert.That(mandatoryModel.EndTurnInvocation, Is.Null,
                 "A mandatory target choice cannot be bypassed by the contextual control.");
+        }
+
+        [Test]
+        public void RoundPresenter_DisabledNetworkView_FabricatesNoEndOfRoundContinuation()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            harness.SeatAll();
+            var submitted = harness.DriveThroughWire(
+                1000,
+                projection => projection.Phase == RoundResolutionPhase.EndOfRound &&
+                    projection.PendingMinionBattleChoice == null &&
+                    projection.PendingSystemTransitionStep == null);
+            Assert.That(submitted, Is.LessThan(1000),
+                "The fixture must reach an ordinary end-of-round continuation boundary.");
+            Assert.That(harness.MatchHost.Projection.Phase,
+                Is.EqualTo(RoundResolutionPhase.EndOfRound));
+
+            var client = harness.Client(1);
+            var disabled = new NetworkMatchReadModel(
+                harness.MatchHost.Projection, MatchContentCatalogs.ForThisBuild());
+            disabled.Replace(client.LatestProjection, false);
+            Assert.That(disabled.IsInputEnabled, Is.False);
+
+            var model = RoundActionPresenter.CreateViewModel(disabled);
+
+            Assert.That(model.ContinueEndOfRoundInvocation, Is.Null,
+                "A waiting, stale, disconnected, or reconnecting network view may retain the " +
+                "public stage, but it cannot mint a control the host did not currently authorize.");
         }
 
         [Test]

@@ -244,12 +244,49 @@ namespace GuardsDigital.Tests.EditMode
         /// own admission identity - the compatibility cases present each mismatched tuple through
         /// exactly this door - and the default is the host's own, which is admitted.
         /// </summary>
-        public PrivateSessionClient Connect(int ordinal, string seat, PrivateSessionIdentity identity = null)
+        public PrivateSessionClient Connect(
+            int ordinal,
+            string seat,
+            PrivateSessionIdentity identity = null,
+            Func<long> timeSource = null)
         {
             var link = new ClientLink { Seat = seat, Ordinal = ordinal };
-            link.Machine = new PrivateSessionClient(
-                identity ?? Identity, new SeatId(seat), sessionKey,
-                new ClientOutbox(this, link), new CountingNonceSource((byte)ordinal));
+            var arguments = new object[]
+            {
+                identity ?? Identity,
+                new SeatId(seat),
+                sessionKey,
+                new ClientOutbox(this, link),
+                new CountingNonceSource((byte)ordinal),
+                timeSource
+            };
+            if (timeSource == null)
+            {
+                link.Machine = new PrivateSessionClient(
+                    (PrivateSessionIdentity)arguments[0],
+                    (SeatId)arguments[1],
+                    (string)arguments[2],
+                    (IPrivateSessionClientOutbox)arguments[3],
+                    (IPrivateSessionNonceSource)arguments[4]);
+            }
+            else
+            {
+                // Reflection keeps the pre-fix closing run executable: before the latency seam is
+                // added, the named test fails on this missing constructor instead of failing to
+                // compile the whole fixture and hiding the other independent review findings.
+                var constructor = typeof(PrivateSessionClient).GetConstructor(new[]
+                {
+                    typeof(PrivateSessionIdentity),
+                    typeof(SeatId),
+                    typeof(string),
+                    typeof(IPrivateSessionClientOutbox),
+                    typeof(IPrivateSessionNonceSource),
+                    typeof(Func<long>)
+                });
+                Assert.That(constructor, Is.Not.Null,
+                    "Latency feedback needs an injected clock so its boundary is deterministic.");
+                link.Machine = (PrivateSessionClient)constructor.Invoke(arguments);
+            }
             links[ordinal] = link;
             nextOrdinal = Math.Max(nextOrdinal, ordinal + 1);
             link.Machine.OnConnected();
@@ -279,6 +316,17 @@ namespace GuardsDigital.Tests.EditMode
         /// <returns>The new connection ordinal.</returns>
         public int ReconnectClient(int ordinal)
         {
+            var replacement = BeginReconnectClient(ordinal);
+            Pump();
+            return replacement;
+        }
+
+        /// <summary>
+        /// Starts a return on a new connection but leaves its queued handshake undelivered, so a
+        /// fixture can inspect the state at the grant/projection boundary one frame at a time.
+        /// </summary>
+        public int BeginReconnectClient(int ordinal)
+        {
             var link = links[ordinal];
             Assert.That(link.Machine.BeginReconnect(), Is.True,
                 "Seat " + link.Seat + " could not arm a return: it holds no reconnect capability, " +
@@ -301,7 +349,6 @@ namespace GuardsDigital.Tests.EditMode
 
             link.Machine.OnConnected();
             Session.OnConnected(replacement, 0);
-            Pump();
             return replacement;
         }
 
@@ -326,23 +373,52 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>Delivers everything in flight, in order, until the wire is quiet.</summary>
         public void Pump()
         {
-            var progressed = true;
-            while (progressed)
+            while (PumpOne())
             {
-                progressed = false;
-                if (clientQueue.Count > 0)
+            }
+        }
+
+        /// <summary>Delivers exactly one queued wire action, preferring client input like <see cref="Pump"/>.</summary>
+        public bool PumpOne()
+        {
+            if (clientQueue.Count > 0)
+            {
+                DeliverToHost(clientQueue.Dequeue());
+                return true;
+            }
+
+            if (hostQueue.Count > 0)
+            {
+                DeliverToClient(hostQueue.Dequeue());
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Delivers the oldest queued host action for one connection without consuming queued
+        /// client input. This models independent-direction timing while preserving that client's
+        /// own host-stream order.
+        /// </summary>
+        public bool PumpOneHostActionFor(int ordinal)
+        {
+            var queued = hostQueue.Count;
+            for (var index = 0; index < queued; index++)
+            {
+                var action = hostQueue.Dequeue();
+                var addressed = action is FrameAction frame && frame.Ordinal == ordinal ||
+                    action is CloseAction close && close.Ordinal == ordinal;
+                if (addressed)
                 {
-                    DeliverToHost(clientQueue.Dequeue());
-                    progressed = true;
-                    continue;
+                    DeliverToClient(action);
+                    return true;
                 }
 
-                if (hostQueue.Count > 0)
-                {
-                    DeliverToClient(hostQueue.Dequeue());
-                    progressed = true;
-                }
+                hostQueue.Enqueue(action);
             }
+
+            return false;
         }
 
         /// <summary>Releases every frame a delay injector still holds, then pumps it through.</summary>

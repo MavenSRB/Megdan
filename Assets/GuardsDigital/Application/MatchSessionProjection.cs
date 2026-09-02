@@ -986,6 +986,7 @@ namespace GuardsDigital.Application
         }
 
         public long Version { get; }
+        public bool IsInputEnabled => true;
         public QuickGameSetupState Setup { get; }
         public BoardMapDefinition SelectedMap { get; }
         public MatchParticipants Participants { get; }
@@ -1055,8 +1056,10 @@ namespace GuardsDigital.Application
         public bool IsTurnStarted { get; }
         public bool IsTurnEnded { get; }
         public PendingCardActionResolution PendingMovementResolution { get; }
+        public bool HasPendingMovementResolution => PendingMovementResolution != null;
         public PendingMovementChoice PendingMovementChoice { get; }
         public PendingAttackResolution PendingAttackResolution { get; }
+        public bool HasPendingAttackResolution => PendingAttackResolution != null;
         public PendingAttackTargetChoice PendingAttackTargetChoice { get; }
         public PendingDefenseResponseChoice PendingDefenseChoice { get; }
 
@@ -1072,6 +1075,7 @@ namespace GuardsDigital.Application
         /// the projected invocations off the choice; it never derives Skill legality itself.
         /// </summary>
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution { get; }
+        public bool HasPendingSkillResolution => PendingSkillResolution != null;
 
         public PendingEffectChoice PendingEffectChoice { get; }
 

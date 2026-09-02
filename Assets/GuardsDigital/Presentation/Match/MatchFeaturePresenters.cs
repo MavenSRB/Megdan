@@ -1822,7 +1822,7 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchClient session;
         private readonly IDirectorHandsView view;
-        private readonly HeroId homeHeroId;
+        private HeroId homeHeroId;
         private CardInstanceId? selectedCardInstanceId;
         private IMatchReadModel lastProjection;
         private CardInstanceId? lastSelectedCardInstanceId;
@@ -1906,6 +1906,29 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
+        /// <summary>
+        /// Binds the tray's durable home after the interactive lobby assigns this runtime its
+        /// admitted online seat. Any Director-era pin or card selection is discarded before the
+        /// network projection is rendered, so a later awaited-hero change returns to this hero.
+        /// </summary>
+        public bool SetHomeHero(HeroId heroId)
+        {
+            var projection = session.Projection;
+            if (!heroId.IsDefined ||
+                !projection.Setup.Heroes.Any(hero => hero.HeroId.Equals(heroId)))
+            {
+                return false;
+            }
+
+            homeHeroId = heroId;
+            pinnedHeroId = default;
+            pinnedAgainstAwaitedHeroId = default;
+            selectedCardInstanceId = null;
+            lastProjection = null;
+            Refresh();
+            return true;
+        }
+
         private HeroId Resolve(IMatchReadModel projection)
         {
             var awaited = Awaited(projection);
@@ -1949,7 +1972,8 @@ namespace GuardsDigital.Presentation.Match
         public void Refresh()
         {
             var projection = session.Projection;
-            if (selectedCardInstanceId.HasValue && !projection.Cards.Any(card =>
+            if (!projection.IsInputEnabled ||
+                selectedCardInstanceId.HasValue && !projection.Cards.Any(card =>
                 card.Id.Equals(selectedCardInstanceId.Value) && card.State.Location == CardLocation.Hand))
             {
                 selectedCardInstanceId = null;
@@ -1972,7 +1996,7 @@ namespace GuardsDigital.Presentation.Match
                             hero.HeroId,
                             hero.DisplayName,
                             commitment.Status,
-                            commitment.CanPass,
+                            projection.IsInputEnabled && commitment.CanPass,
                             commitment.RevealedCardInstanceId,
                             commitment.RevealedCardInstanceId.HasValue
                                 ? projection.Cards.Single(card =>
@@ -2009,7 +2033,8 @@ namespace GuardsDigital.Presentation.Match
             CardInstanceId? selectedCardInstanceId)
         {
             var commitment = projection.GetCommitment(heroId);
-            var canSelect = projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
+            var canSelect = projection.IsInputEnabled &&
+                projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
                 commitment.Status == TurnCardCommitmentStatus.AwaitingResponse;
             // Milestone 8.5b's correction: the card this hero revealed for the current turn is the card
             // in play, and it is drawn at full strength while its turn runs. It carries no commitment
@@ -2089,7 +2114,7 @@ namespace GuardsDigital.Presentation.Match
 
         public bool ConfirmSelectedCard()
         {
-            if (!selectedCardInstanceId.HasValue)
+            if (!selectedCardInstanceId.HasValue || !session.Projection.IsInputEnabled)
             {
                 return false;
             }
@@ -2139,7 +2164,8 @@ namespace GuardsDigital.Presentation.Match
         private static CardInstance FindCommittableCard(
             IMatchReadModel projection, CardInstanceId cardInstanceId)
         {
-            if (projection.Phase != RoundResolutionPhase.AwaitingCommitments)
+            if (!projection.IsInputEnabled ||
+                projection.Phase != RoundResolutionPhase.AwaitingCommitments)
             {
                 return null;
             }
@@ -2155,7 +2181,13 @@ namespace GuardsDigital.Presentation.Match
 
         public bool Pass(HeroId heroId)
         {
-            var commitment = session.Projection.Commitments.SingleOrDefault(value => value.HeroId.Equals(heroId));
+            var projection = session.Projection;
+            if (!projection.IsInputEnabled)
+            {
+                return false;
+            }
+
+            var commitment = projection.Commitments.SingleOrDefault(value => value.HeroId.Equals(heroId));
             if (!commitment.HeroId.IsDefined || !commitment.CanPass)
             {
                 return false;
@@ -3593,9 +3625,9 @@ namespace GuardsDigital.Presentation.Match
         /// of its own.
         /// </summary>
         private static bool IsInsideAnUnfinishedResolution(IMatchReadModel projection) =>
-            projection.PendingMovementResolution != null ||
-            projection.PendingAttackResolution != null ||
-            projection.PendingSkillResolution != null;
+            projection.HasPendingMovementResolution ||
+            projection.HasPendingAttackResolution ||
+            projection.HasPendingSkillResolution;
 
         private static RoundActionViewModel CreateViewModel(
             IMatchReadModel projection,
@@ -3707,7 +3739,8 @@ namespace GuardsDigital.Presentation.Match
                 // stands, so the control that would produce that rejection is not offered. Milestone
                 // 7.8a adds the second such pause on the same terms - a paused system transition is
                 // answered by answering it, and an advance offered beside it could only be refused.
-                projection.Phase == RoundResolutionPhase.EndOfRound &&
+                projection.IsInputEnabled &&
+                    projection.Phase == RoundResolutionPhase.EndOfRound &&
                     projection.PendingMinionBattleChoice == null &&
                     projection.PendingSystemTransitionStep == null
                     ? new TypedInvocationViewModel("CONTINUE END OF ROUND", DirectorCommand.AdvanceEndOfRound())

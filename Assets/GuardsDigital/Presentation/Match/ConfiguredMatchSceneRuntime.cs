@@ -25,7 +25,8 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchHost host;
         private readonly IMatchSession session;
-        private readonly IMatchClient client;
+        private readonly SwitchableMatchClient client;
+        private readonly IMatchReadModel trustedContent;
         private readonly MatchFeatureCoordinator coordinator;
         private readonly ConfiguredMatchHudRenderer hud;
 
@@ -107,9 +108,11 @@ namespace GuardsDigital.Presentation.Match
                     "No seat '" + seat.Value + "' is bound in this match.", nameof(seat));
             }
 
-            client = Seat == null
+            client = new SwitchableMatchClient(Seat == null
                 ? (IMatchClient)new DirectorMatchClient(session)
-                : new SeatMatchClient(host.ClientForSeat(Seat.Id));
+                : new SeatMatchClient(host.ClientForSeat(Seat.Id)));
+            trustedContent = client.Projection;
+            ContentCatalogs = configuration.ContentCatalogs;
 
             BoardView = new BoardInteractionUnityView(
                 heroViews, tileViews, highlightMaterial, minionViews, resultingSpaceMaterial,
@@ -315,12 +318,40 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public PrivateSessionIdentity SessionIdentity { get; }
 
+        public MatchContentCatalogs ContentCatalogs { get; }
+
         /// <summary>
-        /// Milestone 8.30b. The seat this runtime was composed for, or <c>null</c> for the Director's
-        /// own runtime. It is set once at construction and never moves: choosing a different seat
-        /// composes a different runtime, so no live surface can be re-pointed at another player.
+        /// Milestone 8.30b/8.35b. The seat this runtime currently presents, or <c>null</c> before the
+        /// interactive lobby admits an online player. A later explicit lobby join may reattach the
+        /// same retained HUD to its newly admitted seat; the owner-scoped client still supplies all
+        /// mutable state and authority.
         /// </summary>
-        public MatchSeat Seat { get; }
+        public MatchSeat Seat { get; private set; }
+
+        /// <summary>
+        /// Milestone 8.35b. Performs the lobby's one-way handoff to the already-composed HUD. The
+        /// immutable local content remains the trusted dictionary for the admitted digest, while
+        /// every mutable read and every submission switches to this connection's owner-scoped port.
+        /// </summary>
+        public void AttachOnlineClient(PrivateSessionClient online)
+        {
+            if (online == null) throw new ArgumentNullException(nameof(online));
+            if (online.GrantedSeat == null || online.LatestProjection == null || !online.HasMatchStarted)
+            {
+                throw new InvalidOperationException(
+                    "An online HUD attaches only after seating, match start, and its first projection.");
+            }
+
+            Seat = host.Seats.Find(online.TargetSeat) ??
+                throw new InvalidOperationException("The admitted seat is not in this build's participant graph.");
+            client.Replace(new NetworkMatchClient(online, trustedContent, ContentCatalogs));
+            if (!HandsPresenter.SetHomeHero(Seat.HeroId))
+            {
+                throw new InvalidOperationException("The admitted seat's hero is absent from this build's setup.");
+            }
+            hud.SetDirectorToolsVisible(false);
+            RefreshAll();
+        }
 
         public IMatchSession Session => session;
         /// <summary>
@@ -371,7 +402,7 @@ namespace GuardsDigital.Presentation.Match
         {
             var projection = client.Projection;
             var candidates = new List<DirectorCommand>();
-            if (projection.Phase == RoundResolutionPhase.GameEnded)
+            if (!projection.IsInputEnabled || projection.Phase == RoundResolutionPhase.GameEnded)
             {
                 return candidates;
             }

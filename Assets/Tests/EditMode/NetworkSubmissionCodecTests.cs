@@ -496,6 +496,8 @@ namespace GuardsDigital.Tests.EditMode
                         Is.EqualTo(projection.SelectedActor.CardInstanceId.Value));
                     Assert.That(record.SelectedActor.InitiativeTotal,
                         Is.EqualTo(projection.SelectedActor.InitiativeTotal));
+                    Assert.That(record.SelectedActor.FlipTieBreakerAfterResolution,
+                        Is.EqualTo(projection.SelectedActor.FlipTieBreakerAfterResolution));
                 }
 
                 Assert.That(record.Outcome.Cause, Is.EqualTo((int)projection.Outcome.Cause));

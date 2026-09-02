@@ -170,5 +170,37 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 new ReadOnlyCollection<RemovalPreventionPayment>(payments),
                 RemovalPreventionCommand.Decline(decision.RequestId, decision.DecidingHeroId));
         }
+
+        /// <summary>
+        /// Rehydrates the already-derived owner-scoped projection received from an admitted peer.
+        /// It creates no option: every payment is supplied with the exact typed invocation the
+        /// ordinary factory above would mint, and the caller has already validated the bounded DTO.
+        /// </summary>
+        public static RemovalPreventionPrompt FromProjection(
+            string requestId,
+            HeroId decidingHeroId,
+            MinionId subjectMinionId,
+            RemovalPreventionOrigin origin,
+            IEnumerable<RemovalPreventionPayment> payments)
+        {
+            if (string.IsNullOrWhiteSpace(requestId) || !decidingHeroId.IsDefined ||
+                !subjectMinionId.IsDefined)
+            {
+                throw new ArgumentException("A removal-prevention projection requires its stable identities.");
+            }
+
+            var materialized = (payments ?? throw new ArgumentNullException(nameof(payments))).ToArray();
+            if (materialized.Any(value => value == null ||
+                !value.Invocation.DecidingHeroId.Equals(decidingHeroId) ||
+                !string.Equals(value.Invocation.RequestId, requestId, StringComparison.Ordinal)))
+            {
+                throw new ArgumentException("Every projected payment must answer this prompt.", nameof(payments));
+            }
+
+            return new RemovalPreventionPrompt(
+                requestId, decidingHeroId, subjectMinionId, origin,
+                new ReadOnlyCollection<RemovalPreventionPayment>(materialized),
+                RemovalPreventionCommand.Decline(requestId, decidingHeroId));
+        }
     }
 }

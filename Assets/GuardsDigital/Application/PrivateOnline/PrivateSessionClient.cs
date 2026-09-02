@@ -76,15 +76,27 @@ namespace GuardsDigital.Application
     /// </remarks>
     public sealed class PrivateSessionClient
     {
+        /// <summary>
+        /// A local press receives ordinary waiting feedback first, then distinct delayed feedback
+        /// after this bounded interval. This clock affects presentation only, never authority.
+        /// </summary>
+        public const long DelayedHostResponseThresholdTicks = 2L * TimeSpan.TicksPerSecond;
+
         private readonly PrivateSessionIdentity identity;
         private readonly SeatId targetSeat;
         private readonly string sessionKey;
         private readonly IPrivateSessionClientOutbox outbox;
         private readonly IPrivateSessionNonceSource nonceSource;
+        private readonly Func<long> timeSource;
         private readonly List<SeatRosterEntry> roster = new List<SeatRosterEntry>();
         private PrivateSessionSecureChannel channel;
         private long gameplaySendSequence;
         private long gameplayReceiveSequence;
+        private string awaitingCommandResultId;
+        private string awaitingAgreementResultId;
+        private long awaitingProjectionCorrelation;
+        private bool awaitingReconnectProjection;
+        private long waitingStartedTicks;
 
         /// <summary>
         /// Milestone 8.34. The capability the host issued with this seat's grant, held here and
@@ -106,7 +118,8 @@ namespace GuardsDigital.Application
             SeatId targetSeat,
             string sessionKey,
             IPrivateSessionClientOutbox outbox,
-            IPrivateSessionNonceSource nonceSource = null)
+            IPrivateSessionNonceSource nonceSource = null,
+            Func<long> timeSource = null)
         {
             this.identity = identity ?? throw new ArgumentNullException(nameof(identity));
             if (!targetSeat.IsDefined)
@@ -118,6 +131,7 @@ namespace GuardsDigital.Application
             this.sessionKey = sessionKey ?? string.Empty;
             this.outbox = outbox ?? throw new ArgumentNullException(nameof(outbox));
             this.nonceSource = nonceSource;
+            this.timeSource = timeSource ?? UtcNowTicks;
         }
 
         public PrivateSessionClientState State { get; private set; }
@@ -178,11 +192,35 @@ namespace GuardsDigital.Application
         /// </summary>
         public NetworkSeatProjectionRecord LatestProjection { get; private set; }
 
+        /// <summary>
+        /// Monotonic count of complete projections accepted from the host. Unlike the authoritative
+        /// match version this also moves when public session state, such as a teammate's agreement
+        /// statement, is republished at the same gameplay version.
+        /// </summary>
+        public long ProjectionRevision { get; private set; }
+
         /// <summary>Milestone 8.32. The host's answer to this client's newest submission.</summary>
         public NetworkSubmissionResultMessage LastSubmissionResult { get; private set; }
 
         /// <summary>Milestone 8.33. The host's answer to this client's newest agreement statement.</summary>
         public NetworkAgreementResultMessage LastAgreementResult { get; private set; }
+
+        /// <summary>The newest bounded session feedback a match surface must say.</summary>
+        public string MatchFeedback { get; private set; } = string.Empty;
+
+        /// <summary>Whether an accepted local press is still awaiting the host's named answer.</summary>
+        public bool IsWaitingForHost =>
+            !string.IsNullOrEmpty(awaitingCommandResultId) ||
+            !string.IsNullOrEmpty(awaitingAgreementResultId);
+
+        /// <summary>
+        /// Whether one in-flight press has crossed the player-facing delayed threshold. The
+        /// injected clock keeps the boundary deterministic in tests; this state never enters a
+        /// command, projection, snapshot, or host decision.
+        /// </summary>
+        public bool IsHostResponseDelayed =>
+            IsWaitingForHost && timeSource() - waitingStartedTicks >=
+                DelayedHostResponseThresholdTicks;
 
         /// <summary>
         /// Milestone 8.33. Stale or replayed host frames set aside unapplied - each one a
@@ -251,13 +289,40 @@ namespace GuardsDigital.Application
 
             State = PrivateSessionClientState.None;
             IsReconnecting = true;
+            awaitingReconnectProjection = true;
             channel = null;
             gameplaySendSequence = 0;
             gameplayReceiveSequence = 0;
             RejectionReason = SessionRejectionReason.None;
             RejectionDetail = string.Empty;
             refusalReceived = false;
+            ClearWaitingForHost();
+            MatchFeedback = string.Empty;
             return true;
+        }
+
+        /// <summary>
+        /// Reports that a transport could not open the connection armed by
+        /// <see cref="BeginReconnect"/>. The owner-private capability is retained, while the
+        /// half-started handshake is discarded so the player may try another dial.
+        /// </summary>
+        public void OnReconnectTransportFailed()
+        {
+            if (!IsReconnecting ||
+                (State != PrivateSessionClientState.None &&
+                    State != PrivateSessionClientState.AwaitingChallenge))
+            {
+                return;
+            }
+
+            State = PrivateSessionClientState.Disconnected;
+            IsReconnecting = false;
+            awaitingReconnectProjection = false;
+            channel = null;
+            gameplaySendSequence = 0;
+            gameplayReceiveSequence = 0;
+            ClearWaitingForHost();
+            MatchFeedback = "Could not reach the host. Try reconnecting.";
         }
 
         public void OnConnected()
@@ -310,6 +375,9 @@ namespace GuardsDigital.Application
                 RejectionReason = reject.Reason;
                 RejectionDetail = reject.Detail;
                 refusalReceived = true;
+                IsReconnecting = false;
+                awaitingReconnectProjection = false;
+                ClearWaitingForHost();
                 if (State != PrivateSessionClientState.Seated)
                 {
                     // A refusal after seating - a refused seat change - is recorded but does not
@@ -323,6 +391,9 @@ namespace GuardsDigital.Application
             if (frame.Kind == SessionMessageKind.Goodbye)
             {
                 State = PrivateSessionClientState.Disconnected;
+                IsReconnecting = false;
+                awaitingReconnectProjection = false;
+                ClearWaitingForHost();
                 return;
             }
 
@@ -441,8 +512,18 @@ namespace GuardsDigital.Application
                     }
 
                     hasHeldSeat = true;
-                    IsReconnecting = false;
-                    State = PrivateSessionClientState.Seated;
+                    if (awaitingReconnectProjection)
+                    {
+                        // A grant proves who owns the seat, not what match state that seat may now
+                        // act on. The retained pre-disconnect projection stays visible but disabled
+                        // until the complete projection queued after the grant is adopted.
+                        State = PrivateSessionClientState.Resynchronizing;
+                    }
+                    else
+                    {
+                        IsReconnecting = false;
+                        State = PrivateSessionClientState.Seated;
+                    }
                     return;
 
                 case PrivateSessionClientState.Seated:
@@ -500,7 +581,27 @@ namespace GuardsDigital.Application
 
                 gameplayReceiveSequence = projection.Envelope.Sequence;
                 LatestProjection = record;
-                if (State == PrivateSessionClientState.Resynchronizing)
+                ProjectionRevision++;
+                if (IsWaitingForHost && awaitingProjectionCorrelation != 0 &&
+                    projection.Envelope.Correlation == awaitingProjectionCorrelation)
+                {
+                    // The host echoes this submission (or its recovery request) on the initiating
+                    // seat's complete projection. A zero-correlation broadcast from another seat
+                    // can be newer and still says nothing about input queued in this direction.
+                    ClearWaitingForHost();
+                }
+                if ((LastSubmissionResult == null || record.Version > LastSubmissionResult.Version) &&
+                    (LastAgreementResult == null || record.Version > LastAgreementResult.Version))
+                {
+                    MatchFeedback = string.Empty;
+                }
+                if (awaitingReconnectProjection)
+                {
+                    awaitingReconnectProjection = false;
+                    IsReconnecting = false;
+                    State = PrivateSessionClientState.Seated;
+                }
+                else if (State == PrivateSessionClientState.Resynchronizing)
                 {
                     State = PrivateSessionClientState.Seated;
                 }
@@ -531,6 +632,22 @@ namespace GuardsDigital.Application
 
                 gameplayReceiveSequence = result.Envelope.Sequence;
                 LastSubmissionResult = result;
+                MatchFeedback = result.Accepted ? string.Empty :
+                    (string.IsNullOrWhiteSpace(result.Detail)
+                        ? result.RejectionReason.ToString()
+                        : result.Detail);
+                if (string.Equals(awaitingCommandResultId, result.SubmissionId, StringComparison.Ordinal))
+                {
+                    if (result.Accepted ||
+                        result.RejectionReason == SeatSubmissionRejectionReason.StaleProjection)
+                    {
+                        // Keep the submission latch. Its correlated complete projection releases it.
+                    }
+                    else
+                    {
+                        ClearCommandWait();
+                    }
+                }
                 if (reading == EnvelopeReading.Gap)
                 {
                     BeginResync();
@@ -562,6 +679,25 @@ namespace GuardsDigital.Application
 
                 gameplayReceiveSequence = result.Envelope.Sequence;
                 LastAgreementResult = result;
+                MatchFeedback = result.Accepted ? string.Empty :
+                    (string.IsNullOrWhiteSpace(result.Detail)
+                        ? result.RejectionReason.ToString()
+                        : result.Detail);
+                if (string.Equals(awaitingAgreementResultId, result.SubmissionId, StringComparison.Ordinal))
+                {
+                    if (result.Accepted ||
+                        result.RejectionReason ==
+                            TeamAgreementSubmissionRejectionReason.StaleProjection ||
+                        result.RejectionReason ==
+                            TeamAgreementSubmissionRejectionReason.StaleProposal)
+                    {
+                        // Keep the statement latch. Its correlated complete projection releases it.
+                    }
+                    else
+                    {
+                        ClearAgreementWait();
+                    }
+                }
                 if (reading == EnvelopeReading.Gap)
                 {
                     BeginResync();
@@ -587,6 +723,12 @@ namespace GuardsDigital.Application
             State = PrivateSessionClientState.Resynchronizing;
             ResyncRequestCount++;
             gameplaySendSequence++;
+            if (IsWaitingForHost)
+            {
+                // If a gap interrupted an in-flight answer, the explicit recovery projection is
+                // now the exact frame that may release that answer's input latch.
+                awaitingProjectionCorrelation = gameplaySendSequence;
+            }
             Send(NetworkMessageCodec.RequestResyncFrame(new NetworkResyncRequestMessage(
                 new NetworkEnvelope(
                     SessionCorrelation,
@@ -605,13 +747,15 @@ namespace GuardsDigital.Application
         {
             submissionId = null;
             if (command == null) throw new ArgumentNullException(nameof(command));
-            if (State != PrivateSessionClientState.Seated || LatestProjection == null)
+            if (State != PrivateSessionClientState.Seated || LatestProjection == null ||
+                IsWaitingForHost)
             {
                 return false;
             }
 
             submissionId = MintSubmissionId();
             gameplaySendSequence++;
+            BeginCommandWait(submissionId, gameplaySendSequence);
             Send(NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
                 new NetworkEnvelope(
                     SessionCorrelation,
@@ -634,13 +778,15 @@ namespace GuardsDigital.Application
         {
             submissionId = null;
             if (statement == null) throw new ArgumentNullException(nameof(statement));
-            if (State != PrivateSessionClientState.Seated || LatestProjection == null)
+            if (State != PrivateSessionClientState.Seated || LatestProjection == null ||
+                IsWaitingForHost)
             {
                 return false;
             }
 
             submissionId = MintSubmissionId();
             gameplaySendSequence++;
+            BeginAgreementWait(submissionId, gameplaySendSequence);
             Send(NetworkMessageCodec.SubmitAgreementFrame(new NetworkAgreementSubmissionMessage(
                 new NetworkEnvelope(
                     SessionCorrelation,
@@ -678,12 +824,14 @@ namespace GuardsDigital.Application
                     "A retry names the identity it is retrying.", nameof(submissionId));
             }
 
-            if (State != PrivateSessionClientState.Seated || LatestProjection == null)
+            if (State != PrivateSessionClientState.Seated || LatestProjection == null ||
+                IsWaitingForHost)
             {
                 return false;
             }
 
             gameplaySendSequence++;
+            BeginCommandWait(submissionId, gameplaySendSequence);
             Send(NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
                 new NetworkEnvelope(
                     SessionCorrelation,
@@ -706,12 +854,14 @@ namespace GuardsDigital.Application
                     "A retry names the identity it is retrying.", nameof(submissionId));
             }
 
-            if (State != PrivateSessionClientState.Seated || LatestProjection == null)
+            if (State != PrivateSessionClientState.Seated || LatestProjection == null ||
+                IsWaitingForHost)
             {
                 return false;
             }
 
             gameplaySendSequence++;
+            BeginAgreementWait(submissionId, gameplaySendSequence);
             Send(NetworkMessageCodec.SubmitAgreementFrame(new NetworkAgreementSubmissionMessage(
                 new NetworkEnvelope(
                     SessionCorrelation,
@@ -739,8 +889,56 @@ namespace GuardsDigital.Application
                 builder.Append(value.ToString("x2", CultureInfo.InvariantCulture));
             }
 
-            return builder.ToString();
+            // The nonce source is transport-owned and may legitimately use any size admitted by
+            // the session protocol. Hash it to a fixed wire identity so stronger entropy cannot
+            // exceed the submission DTO's bounded text field.
+            return "wire-" + PrivateSessionContentDigest.HashText(builder.ToString())
+                .Substring(0, 32);
         }
+
+        private void BeginCommandWait(string submissionId, long projectionCorrelation)
+        {
+            awaitingCommandResultId = submissionId;
+            awaitingProjectionCorrelation = projectionCorrelation;
+            waitingStartedTicks = timeSource();
+        }
+
+        private void BeginAgreementWait(string submissionId, long projectionCorrelation)
+        {
+            awaitingAgreementResultId = submissionId;
+            awaitingProjectionCorrelation = projectionCorrelation;
+            waitingStartedTicks = timeSource();
+        }
+
+        private void ClearCommandWait()
+        {
+            awaitingCommandResultId = null;
+            awaitingProjectionCorrelation = 0;
+            if (string.IsNullOrEmpty(awaitingAgreementResultId))
+            {
+                waitingStartedTicks = 0;
+            }
+        }
+
+        private void ClearAgreementWait()
+        {
+            awaitingAgreementResultId = null;
+            awaitingProjectionCorrelation = 0;
+            if (string.IsNullOrEmpty(awaitingCommandResultId))
+            {
+                waitingStartedTicks = 0;
+            }
+        }
+
+        private void ClearWaitingForHost()
+        {
+            awaitingCommandResultId = null;
+            awaitingAgreementResultId = null;
+            awaitingProjectionCorrelation = 0;
+            waitingStartedTicks = 0;
+        }
+
+        private static long UtcNowTicks() => DateTime.UtcNow.Ticks;
 
         /// <summary>
         /// Milestone 8.35a. Tells the host this seat is ready, or that it is not.
@@ -853,11 +1051,17 @@ namespace GuardsDigital.Application
             State = hasHeldSeat && !refusalReceived
                 ? PrivateSessionClientState.HostLost
                 : PrivateSessionClientState.Disconnected;
+            IsReconnecting = false;
+            awaitingReconnectProjection = false;
+            ClearWaitingForHost();
         }
 
         private void Fault()
         {
             State = PrivateSessionClientState.Faulted;
+            IsReconnecting = false;
+            awaitingReconnectProjection = false;
+            ClearWaitingForHost();
             outbox.Close();
         }
     }

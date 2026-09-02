@@ -515,7 +515,7 @@ Acceptance checks:
 - The track remains private and invite-only; accounts, public matchmaking, public server browsing, telemetry, monetization, and public distribution remain out of scope.
 - Milestones 8.30-8.36, including the lettered local-UI and rehearsal slices, receive evidence-based implementation boundaries and validation commands before the first implementation milestone is authorized.
 
-Decision and re-baseline: [the version-controlled private-online architecture record](../Project/PRIVATE_ONLINE_ARCHITECTURE.md) selects one player-hosted serialized authority over UGS Multiplayer Services 1.2.0 sessions, Relay-DTLS, and Unity Transport 2.6.0, with anonymous UGS identity, protocol `guards-private-online/1`, structural owner projections, host-bound seats, snapshot resync, and terminal host loss. NGO, Photon, EOS, Steam, dedicated hosting, host migration, accounts, matchmaking, telemetry, and public distribution remain excluded. The thirteen remaining milestones retain their dependency-safe boundaries at an evidence-based **24-41 focused engineering days**, excluding approval latency, external-service outages, invited-tester scheduling, and corrective work. The exact future commands and topology live in [the private-online validation shard](../Testing/PRIVATE_ONLINE.md). A 2026-09-01 user-directed amendment recorded at milestone 8.31 and in the same architecture record supersedes the transport and topology selection - a dedicated seatless host over direct TCP sockets replaces the player-hosted UGS/Relay stack - while the protocol, trust, compatibility, and removal boundaries pinned here stand.
+Decision and re-baseline: [the private-online architecture record](../Project/PRIVATE_ONLINE_ARCHITECTURE.md) initially selected a player-hosted UGS/Relay authority under `guards-private-online/1`. The 2026-09-01 amendment replaced that topology with a dedicated seatless host over direct TCP while retaining owner projections, host-bound seats, snapshot resync, terminal host loss, trust/removal boundaries, and excluded public-service scope. Milestone 8.35b's compatibility assessment advances the current wire to `guards-private-online/2` for a rules-bearing selected-actor field and rejects version 1 without migration. Exact gates remain in [the private-online validation shard](../Testing/PRIVATE_ONLINE.md).
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829-select-the-minimum-private-online-architecture-and-re-baseline-the-track-completion-evidence).
 
@@ -763,7 +763,7 @@ Non-goals: No account system, friends list, public matchmaking, server browser, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835a-add-the-primitive-private-hostjoin-lobby-completion-evidence).
 
-### [!] 8.35b Integrate the proven player HUD with online match flow
+### [x] 8.35b Integrate the proven player HUD with online match flow
 
 Blocked by: Milestone 8.35a must establish the primitive private lobby.
 
@@ -779,7 +779,9 @@ Acceptance checks:
 
 Non-goals: No production HUD redesign, public-service UX, matchmaking, account recovery, telemetry dashboard, tutorial, chat, or Phase 9 polish.
 
-### [!] 8.35c Pass a local six-client playtest-build rehearsal
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835b-integrate-the-proven-player-hud-with-online-match-flow-completion-evidence).
+
+### [ ] 8.35c Pass a local six-client playtest-build rehearsal
 
 Blocked by: Milestone 8.35b must complete primitive online match-flow UI integration.
 

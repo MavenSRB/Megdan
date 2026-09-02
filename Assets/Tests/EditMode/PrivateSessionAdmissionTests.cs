@@ -40,7 +40,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 (driver => driver.IdentityWith(family: "guards-other"),
                     SessionRejectionReason.ProtocolFamilyMismatch),
-                (driver => driver.IdentityWith(version: 2),
+                (driver => driver.IdentityWith(version: driver.Identity.ProtocolVersion + 1),
                     SessionRejectionReason.ProtocolVersionMismatch),
                 (driver => driver.IdentityWith(build: "other-build"),
                     SessionRejectionReason.BuildIdentityMismatch),

@@ -255,6 +255,7 @@ namespace GuardsDigital.Application
         /// version it was decided against, and the host refuses anything else.
         /// </summary>
         public long Version { get; }
+        public bool IsInputEnabled => true;
 
         public QuickGameSetupState Setup { get; }
         public BoardMapDefinition SelectedMap { get; }
@@ -353,8 +354,10 @@ namespace GuardsDigital.Application
 
         public PendingInitiativeChoice PendingInitiativeChoice => pending.InitiativeChoice;
         public PendingCardActionResolution PendingMovementResolution => pending.MovementResolution;
+        public bool HasPendingMovementResolution => PendingMovementResolution != null;
         public PendingMovementChoice PendingMovementChoice => pending.MovementChoice;
         public PendingAttackResolution PendingAttackResolution => pending.AttackResolution;
+        public bool HasPendingAttackResolution => PendingAttackResolution != null;
         public PendingAttackTargetChoice PendingAttackTargetChoice => pending.AttackTargetChoice;
         public IReadOnlyList<AttackTargetDefensePreviewProjection>
             PendingAttackTargetDefensePreviews => pending.AttackTargetDefensePreviews;
@@ -363,6 +366,7 @@ namespace GuardsDigital.Application
 
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>
             pending.SkillResolution;
+        public bool HasPendingSkillResolution => PendingSkillResolution != null;
 
         public PendingEffectChoice PendingEffectChoice => pending.EffectChoice;
 

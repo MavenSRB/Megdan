@@ -19,8 +19,12 @@ namespace GuardsDigital.Application
         /// <summary>The protocol family the amended 8.29 decision record pins.</summary>
         public const string FamilyName = "guards-private-online";
 
-        /// <summary>Protocol version 1: session establishment, admission, and seat claims.</summary>
-        public const int Version = 1;
+        /// <summary>
+        /// Protocol version 2: the complete private-session wire through milestone 8.35b,
+        /// including SelectedActor's FlipTieBreakerAfterResolution meaning. Version 1 peers are
+        /// rejected before either side interprets that changed projection shape.
+        /// </summary>
+        public const int Version = 2;
 
         /// <summary>The four ASCII bytes that open every frame: G, D, P, O.</summary>
         public const byte FrameMagic0 = 0x47;

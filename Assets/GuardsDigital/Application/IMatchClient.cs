@@ -51,6 +51,29 @@ namespace GuardsDigital.Application
     }
 
     /// <summary>
+    /// Milestone 8.35b. One stable client reference for presenters whose authority changes once:
+    /// from the locally composed content projection behind the lobby to the admitted network seat.
+    /// The presenters never learn that a transport exists and therefore keep one rules-facing path.
+    /// </summary>
+    public sealed class SwitchableMatchClient : IMatchClient
+    {
+        private IMatchClient current;
+
+        public SwitchableMatchClient(IMatchClient initial) =>
+            current = initial ?? throw new ArgumentNullException(nameof(initial));
+
+        public IMatchReadModel Projection => current.Projection;
+
+        public void Replace(IMatchClient replacement) =>
+            current = replacement ?? throw new ArgumentNullException(nameof(replacement));
+
+        public MatchClientResult Submit(DirectorCommand command) => current.Submit(command);
+
+        public MatchClientResult SubmitAgreement(TeamAgreementCommand command) =>
+            current.SubmitAgreement(command);
+    }
+
+    /// <summary>
     /// Milestone 8.30b. The Director's client: every command, no envelope, the whole read model.
     /// </summary>
     public sealed class DirectorMatchClient : IMatchClient
