@@ -39,7 +39,7 @@ Run both unfiltered suites only for T3 validation: a final implementation milest
 
 The baseline table and milestone-qualified paragraphs in this section are historical run evidence, not current applicability policy or a live test-total promise. Current tier selection and coverage ownership live in [POLICY.md](POLICY.md); new milestone evidence belongs in its commit body and archive row.
 
-The most recent green unfiltered totals, so a task can tell a regression it introduced from a pre-existing failure without re-running anything first. This is a current reference point, not historical evidence; replace it whenever a milestone legitimately changes a total, and state in that milestone's evidence why the total moved.
+The table below is the frozen snapshot at its named revision and is no longer replaced when a total moves; the most recent green unfiltered totals live in the latest milestone's completion commit body and archive row.
 
 | Suite | Passed | Failed | Skipped | Inconclusive | Revision |
 | --- | ---: | ---: | ---: | ---: | --- |
