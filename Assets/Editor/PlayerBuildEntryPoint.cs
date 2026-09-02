@@ -82,14 +82,34 @@ namespace GuardsDigital.EditorTools
                 Debug.Log($"{MarkerPrefix} SCENE {scene}");
             }
 
-            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            // Milestone 8.32. Each build carries its own identity: the private-online admission
+            // tuple reads Application.version, and two players built from different revisions of
+            // the same coarse version string would otherwise admit each other while speaking
+            // different wire vocabularies. The stamp is set for the build alone and restored
+            // afterward, so the checked-in project settings never change.
+            var baseVersion = PlayerSettings.bundleVersion;
+            BuildReport report;
+            try
             {
-                scenes = scenes,
-                locationPathName = executablePath,
-                target = BuildTarget.StandaloneWindows64,
-                targetGroup = BuildTargetGroup.Standalone,
-                options = BuildOptions.StrictMode
-            });
+                PlayerSettings.bundleVersion = baseVersion + "+" +
+                    DateTime.UtcNow.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture) +
+                    "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
+                Debug.Log($"{MarkerPrefix} STAMP {PlayerSettings.bundleVersion}");
+
+                report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+                {
+                    scenes = scenes,
+                    locationPathName = executablePath,
+                    target = BuildTarget.StandaloneWindows64,
+                    targetGroup = BuildTargetGroup.Standalone,
+                    options = BuildOptions.StrictMode
+                });
+            }
+            finally
+            {
+                PlayerSettings.bundleVersion = baseVersion;
+                AssetDatabase.SaveAssets();
+            }
 
             var summary = report.summary;
             if (summary.result != BuildResult.Succeeded)

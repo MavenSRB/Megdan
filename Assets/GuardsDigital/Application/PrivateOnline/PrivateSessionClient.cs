@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Application
@@ -53,13 +55,18 @@ namespace GuardsDigital.Application
         private readonly SeatId targetSeat;
         private readonly string sessionKey;
         private readonly IPrivateSessionClientOutbox outbox;
+        private readonly IPrivateSessionNonceSource nonceSource;
         private readonly List<SeatRosterEntry> roster = new List<SeatRosterEntry>();
+        private PrivateSessionSecureChannel channel;
+        private long gameplaySendSequence;
+        private long gameplayReceiveSequence;
 
         public PrivateSessionClient(
             PrivateSessionIdentity identity,
             SeatId targetSeat,
             string sessionKey,
-            IPrivateSessionClientOutbox outbox)
+            IPrivateSessionClientOutbox outbox,
+            IPrivateSessionNonceSource nonceSource = null)
         {
             this.identity = identity ?? throw new ArgumentNullException(nameof(identity));
             if (!targetSeat.IsDefined)
@@ -70,6 +77,7 @@ namespace GuardsDigital.Application
             this.targetSeat = targetSeat;
             this.sessionKey = sessionKey ?? string.Empty;
             this.outbox = outbox ?? throw new ArgumentNullException(nameof(outbox));
+            this.nonceSource = nonceSource;
         }
 
         public PrivateSessionClientState State { get; private set; }
@@ -91,6 +99,16 @@ namespace GuardsDigital.Application
         /// <summary>The latest roster the host published.</summary>
         public IReadOnlyList<SeatRosterEntry> Roster => roster;
 
+        /// <summary>
+        /// Milestone 8.32. This seat's latest owner-scoped projection as the host pushed it, or
+        /// <c>null</c> before the first push. Everything a surface may show or submit is in here;
+        /// nothing else about the match ever reaches this process.
+        /// </summary>
+        public NetworkSeatProjectionRecord LatestProjection { get; private set; }
+
+        /// <summary>Milestone 8.32. The host's answer to this client's newest submission.</summary>
+        public NetworkSubmissionResultMessage LastSubmissionResult { get; private set; }
+
         public void OnConnected()
         {
             if (State != PrivateSessionClientState.None)
@@ -107,6 +125,25 @@ namespace GuardsDigital.Application
                 State == PrivateSessionClientState.Disconnected ||
                 State == PrivateSessionClientState.Faulted)
             {
+                return;
+            }
+
+            // Milestone 8.32. The client's half of the seal discipline: once it has answered the
+            // challenge on a keyed session, only sealed frames and plaintext Reject or Goodbye are
+            // trusted from the host - anything else is an injection or a broken peer.
+            if (frame.Kind == SessionMessageKind.Sealed)
+            {
+                if (channel == null || !channel.TryUnseal(frame.Payload, out frame))
+                {
+                    Fault();
+                    return;
+                }
+            }
+            else if (channel != null &&
+                frame.Kind != SessionMessageKind.Reject &&
+                frame.Kind != SessionMessageKind.Goodbye)
+            {
+                Fault();
                 return;
             }
 
@@ -166,8 +203,16 @@ namespace GuardsDigital.Application
                         return;
                     }
 
+                    // The Hello itself is plaintext - the host cannot unseal before it has
+                    // verified the proof inside it - and everything after it travels sealed on a
+                    // keyed session, both ways.
                     outbox.Send(PrivateSessionFrameCodec.HelloFrame(new SessionHelloMessage(
                         identity, PrivateSessionKeyProof.Compute(challenge.Nonce, sessionKey))));
+                    if (sessionKey.Length > 0 && challenge.Nonce.Length > 0)
+                    {
+                        channel = PrivateSessionSecureChannel.ForClient(sessionKey, challenge.Nonce);
+                    }
+
                     State = PrivateSessionClientState.AwaitingWelcome;
                     return;
 
@@ -182,7 +227,7 @@ namespace GuardsDigital.Application
                     SessionCorrelation = welcome.SessionCorrelation;
                     roster.Clear();
                     roster.AddRange(welcome.Roster);
-                    outbox.Send(PrivateSessionFrameCodec.ClaimSeatFrame(new SeatClaimMessage(targetSeat)));
+                    Send(PrivateSessionFrameCodec.ClaimSeatFrame(new SeatClaimMessage(targetSeat)));
                     State = PrivateSessionClientState.AwaitingSeat;
                     return;
 
@@ -204,10 +249,114 @@ namespace GuardsDigital.Application
                     State = PrivateSessionClientState.Seated;
                     return;
 
+                case PrivateSessionClientState.Seated:
+                    if (frame.Kind == SessionMessageKind.SeatProjection)
+                    {
+                        if (!NetworkMessageCodec.TryDecodeSeatProjection(frame.Payload, out var projection) ||
+                            !AcceptEnvelope(projection.Envelope) ||
+                            !NetworkSeatProjectionCodec.TryDecode(
+                                projection.ProjectionPayload, out var record))
+                        {
+                            Fault();
+                            return;
+                        }
+
+                        LatestProjection = record;
+                        return;
+                    }
+
+                    if (frame.Kind == SessionMessageKind.SubmissionResult)
+                    {
+                        if (!NetworkMessageCodec.TryDecodeSubmissionResult(frame.Payload, out var result) ||
+                            !AcceptEnvelope(result.Envelope))
+                        {
+                            Fault();
+                            return;
+                        }
+
+                        LastSubmissionResult = result;
+                        return;
+                    }
+
+                    Fault();
+                    return;
+
                 default:
                     Fault();
                     return;
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.32. Submits one command from this seat's own latest projection: the
+        /// submission identity is the wire's own - drawn from the injected nonce source, never
+        /// composed by presentation - and the expected version is the projection the answer was
+        /// decided against.
+        /// </summary>
+        public bool TrySubmitCommand(DirectorCommand command, out string submissionId)
+        {
+            submissionId = null;
+            if (command == null) throw new ArgumentNullException(nameof(command));
+            if (State != PrivateSessionClientState.Seated || LatestProjection == null)
+            {
+                return false;
+            }
+
+            if (nonceSource == null)
+            {
+                throw new InvalidOperationException(
+                    "Submitting requires a nonce source for the wire's own submission identities.");
+            }
+
+            var nonce = nonceSource.NextNonce() ?? Array.Empty<byte>();
+            var builder = new System.Text.StringBuilder("wire-", 5 + nonce.Length * 2);
+            foreach (var value in nonce)
+            {
+                builder.Append(value.ToString("x2", CultureInfo.InvariantCulture));
+            }
+
+            submissionId = builder.ToString();
+            gameplaySendSequence++;
+            Send(NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
+                new NetworkEnvelope(
+                    SessionCorrelation,
+                    PrivateSessionProtocol.InitialConnectionEpoch,
+                    gameplaySendSequence,
+                    gameplaySendSequence),
+                submissionId,
+                LatestProjection.Version,
+                NetworkCommandCodec.Encode(command))));
+            return true;
+        }
+
+        /// <summary>An orderly close; plaintext by design, like the host's own Goodbye.</summary>
+        public void SendGoodbye() => outbox.Send(PrivateSessionFrameCodec.GoodbyeFrame());
+
+        private bool AcceptEnvelope(NetworkEnvelope envelope)
+        {
+            if (!string.Equals(envelope.SessionCorrelation, SessionCorrelation, StringComparison.Ordinal) ||
+                envelope.Epoch != PrivateSessionProtocol.InitialConnectionEpoch ||
+                envelope.Sequence != gameplayReceiveSequence + 1)
+            {
+                return false;
+            }
+
+            gameplayReceiveSequence = envelope.Sequence;
+            return true;
+        }
+
+        private void Send(byte[] frame)
+        {
+            if (channel == null)
+            {
+                outbox.Send(frame);
+                return;
+            }
+
+            var kind = (SessionMessageKind)PrivateSessionFrameCodec.ReadUInt16(frame, 6);
+            var payload = new byte[frame.Length - PrivateSessionProtocol.FrameHeaderBytes];
+            Array.Copy(frame, PrivateSessionProtocol.FrameHeaderBytes, payload, 0, payload.Length);
+            outbox.Send(channel.Seal(kind, payload));
         }
 
         /// <summary>The transport found the host's byte stream itself invalid.</summary>

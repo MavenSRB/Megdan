@@ -69,7 +69,34 @@ namespace GuardsDigital.Tests.EditMode
             typeof(SeatRosterMessage),
             typeof(IPrivateSessionOutbox),
             typeof(IPrivateSessionClientOutbox),
-            typeof(IPrivateSessionNonceSource)
+            typeof(IPrivateSessionNonceSource),
+            // Milestone 8.32: the gameplay slice - the secure channel, the envelope and its three
+            // messages, the command DTO codec, and the seat-projection wire record. All of it
+            // stays beneath the transport-neutral port; a socket type in any of these fails here.
+            typeof(PrivateSessionSecureChannel),
+            typeof(NetworkEnvelope),
+            typeof(NetworkSubmissionMessage),
+            typeof(NetworkSubmissionResultMessage),
+            typeof(NetworkSeatProjectionMessage),
+            typeof(NetworkMessageCodec),
+            typeof(NetworkCommandCodec),
+            typeof(NetworkSeatProjectionCodec),
+            typeof(NetworkSeatProjectionRecord),
+            typeof(NetworkSelectedActorRecord),
+            typeof(NetworkOutcomeRecord),
+            typeof(NetworkDecisionOwnerRecord),
+            typeof(NetworkLifeCounterRow),
+            typeof(NetworkHeroRow),
+            typeof(NetworkMinionRow),
+            typeof(NetworkObstacleRow),
+            typeof(NetworkTokenRow),
+            typeof(NetworkMarkerRow),
+            typeof(NetworkTurnSlotRow),
+            typeof(NetworkTurnAssignmentRow),
+            typeof(NetworkCommitmentRow),
+            typeof(NetworkHandSummaryRow),
+            typeof(NetworkCardRow),
+            typeof(NetworkProgressionRow)
         };
 
         [Test]

@@ -232,6 +232,7 @@ namespace GuardsDigital.Presentation.Interaction
         private TcpSessionClientTransport transport;
         private PrivateSessionClient machine;
         private PrivateSessionClientState reportedState;
+        private long reportedProjectionVersion = -1;
         private DateTime startedUtc;
         private bool stopped;
 
@@ -302,12 +303,29 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            // Milestone 8.32. One marker per received projection version: proof in a built player
+            // that this seat's owner-scoped view crossed the wire. The marker carries counts and
+            // the version only - never a card identity or another seat's state.
+            if (machine.LatestProjection != null &&
+                machine.LatestProjection.Version != reportedProjectionVersion)
+            {
+                reportedProjectionVersion = machine.LatestProjection.Version;
+                PrivateOnlineMarkers.Log(
+                    "CLIENT_PROJECTION version=" +
+                    reportedProjectionVersion.ToString(CultureInfo.InvariantCulture) +
+                    " seat=" + machine.LatestProjection.SeatId +
+                    " ownCards=" + machine.LatestProjection.OwnCards.Count
+                        .ToString(CultureInfo.InvariantCulture) +
+                    " commands=" + machine.LatestProjection.AuthorizedCommands.Count
+                        .ToString(CultureInfo.InvariantCulture));
+            }
+
             if ((DateTime.UtcNow - startedUtc).TotalSeconds >= options.TimeoutSeconds)
             {
                 if (machine.State == PrivateSessionClientState.Seated)
                 {
                     PrivateOnlineMarkers.Log("CLIENT_BUDGET_ELAPSED seated=true");
-                    transport.Send(PrivateSessionFrameCodec.GoodbyeFrame());
+                    machine.SendGoodbye();
                     Quit(SeatedExitCode);
                     return;
                 }

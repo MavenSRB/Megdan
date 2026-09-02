@@ -35,7 +35,29 @@ namespace GuardsDigital.Application
         RosterUpdate = 7,
 
         /// <summary>Either direction: an orderly close with nothing wrong.</summary>
-        Goodbye = 8
+        Goodbye = 8,
+
+        /// <summary>
+        /// Milestone 8.32. An encrypted, authenticated frame carrying exactly one of the other
+        /// kinds; see <see cref="PrivateSessionSecureChannel"/>. On a keyed session every frame
+        /// after a verified key proof travels as this.
+        /// </summary>
+        Sealed = 9,
+
+        /// <summary>
+        /// Milestone 8.32. Client to host: one gameplay submission - envelope, submission
+        /// identity, expected projection version, and the bounded command DTO.
+        /// </summary>
+        SubmitCommand = 10,
+
+        /// <summary>Milestone 8.32. Host to the submitting client: what its submission did.</summary>
+        SubmissionResult = 11,
+
+        /// <summary>
+        /// Milestone 8.32. Host to one seated client: that seat's own owner-scoped projection.
+        /// Never broadcast as one shared payload - each seat receives its own encoding.
+        /// </summary>
+        SeatProjection = 12
     }
 
     /// <summary>
@@ -72,7 +94,19 @@ namespace GuardsDigital.Application
         OversizedFrame = 15,
         UnexpectedMessage = 16,
         HandshakeTimeout = 17,
-        ProtocolViolation = 18
+        ProtocolViolation = 18,
+
+        /// <summary>
+        /// Milestone 8.32. A gameplay envelope named the wrong session, epoch, or sequence. A
+        /// hostile or broken peer, refused at the protocol layer before any seat-level answer.
+        /// </summary>
+        EnvelopeMismatch = 19,
+
+        /// <summary>
+        /// Milestone 8.32. A keyed session received a plaintext frame where only a sealed one is
+        /// acceptable, or a sealed frame that failed to unseal.
+        /// </summary>
+        SealViolation = 20
     }
 
     /// <summary>Milestone 8.31. Whether a seat is open, held by a live connection, or reserved.</summary>

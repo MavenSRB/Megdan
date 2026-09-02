@@ -37,7 +37,17 @@ namespace GuardsDigital.Application
         SeatReserved = 4,
         Rejected = 5,
         Disconnected = 6,
-        SessionComplete = 7
+        SessionComplete = 7,
+
+        /// <summary>Milestone 8.32. A seat's wire submission reached the authority and was accepted.</summary>
+        SubmissionAccepted = 8,
+
+        /// <summary>
+        /// Milestone 8.32. A seat's wire submission was refused; the seat-level reason rides
+        /// <see cref="PrivateSessionEventRecord.SubmissionRejection"/>. No command content, hand
+        /// or detail text is recorded - the reason and the seat are the whole diagnostic.
+        /// </summary>
+        SubmissionRefused = 9
     }
 
     /// <summary>
@@ -55,7 +65,8 @@ namespace GuardsDigital.Application
             TeamSide teamSide,
             SessionRejectionReason reason,
             int claimedSeats,
-            int totalSeats)
+            int totalSeats,
+            SeatSubmissionRejectionReason submissionRejection = SeatSubmissionRejectionReason.None)
         {
             Kind = kind;
             ConnectionOrdinal = connectionOrdinal;
@@ -65,6 +76,7 @@ namespace GuardsDigital.Application
             Reason = reason;
             ClaimedSeats = claimedSeats;
             TotalSeats = totalSeats;
+            SubmissionRejection = submissionRejection;
         }
 
         public PrivateSessionEventKind Kind { get; }
@@ -76,10 +88,16 @@ namespace GuardsDigital.Application
         public int ClaimedSeats { get; }
         public int TotalSeats { get; }
 
+        /// <summary>Milestone 8.32. Why a wire submission was refused; <c>None</c> otherwise.</summary>
+        public SeatSubmissionRejectionReason SubmissionRejection { get; }
+
         public override string ToString() =>
             Kind + " ordinal=" + ConnectionOrdinal.ToString(CultureInfo.InvariantCulture) +
             (Seat.IsDefined ? " seat=" + Seat.Value : string.Empty) +
-            (Reason != SessionRejectionReason.None ? " reason=" + Reason : string.Empty);
+            (Reason != SessionRejectionReason.None ? " reason=" + Reason : string.Empty) +
+            (SubmissionRejection != SeatSubmissionRejectionReason.None
+                ? " submission=" + SubmissionRejection
+                : string.Empty);
     }
 
     /// <summary>
@@ -123,6 +141,18 @@ namespace GuardsDigital.Application
             public byte[] Nonce { get; }
             public ConnectionPhase Phase { get; set; }
             public SeatId Seat { get; set; }
+
+            /// <summary>
+            /// Milestone 8.32. Armed when this connection's key proof verified on a keyed session;
+            /// null on an unkeyed - loopback-bound - session, which stays plaintext.
+            /// </summary>
+            public PrivateSessionSecureChannel Channel { get; set; }
+
+            /// <summary>Milestone 8.32. The last gameplay-envelope sequence accepted from this connection.</summary>
+            public long GameplayReceiveSequence { get; set; }
+
+            /// <summary>Milestone 8.32. The last gameplay-envelope sequence sent to this connection.</summary>
+            public long GameplaySendSequence { get; set; }
         }
 
         private sealed class SeatHold
@@ -265,6 +295,28 @@ namespace GuardsDigital.Application
                 return;
             }
 
+            // Milestone 8.32. Once this connection's key proof verified, only sealed frames and a
+            // plaintext Goodbye are meaningful: a plaintext frame of any other kind on a sealed
+            // connection is an injection or a broken peer, refused whole. Goodbye and Reject stay
+            // plaintext in both directions - they carry no secret, a pre-admission refusal has no
+            // keys yet, and forging a close signal is the denial of service an on-path party could
+            // already commit with a reset.
+            if (frame.Kind == SessionMessageKind.Sealed)
+            {
+                if (record.Channel == null || !record.Channel.TryUnseal(frame.Payload, out frame))
+                {
+                    RejectAndClose(record, SessionRejectionReason.SealViolation,
+                        "The sealed frame did not verify.");
+                    return;
+                }
+            }
+            else if (record.Channel != null && frame.Kind != SessionMessageKind.Goodbye)
+            {
+                RejectAndClose(record, SessionRejectionReason.SealViolation,
+                    "A sealed connection accepts sealed frames only.");
+                return;
+            }
+
             if (frame.Kind == SessionMessageKind.Goodbye)
             {
                 Depart(record);
@@ -307,6 +359,12 @@ namespace GuardsDigital.Application
                                 "A seat is stable for the session.")));
                         Record(PrivateSessionEventKind.Rejected, record.Ordinal, record.Seat,
                             default, TeamSide.None, SessionRejectionReason.SeatChangeRefused);
+                        return;
+                    }
+
+                    if (frame.Kind == SessionMessageKind.SubmitCommand)
+                    {
+                        HandleSubmission(record, frame.Payload);
                         return;
                     }
 
@@ -389,6 +447,10 @@ namespace GuardsDigital.Application
                         "The key proof did not answer the challenge.");
                     return;
                 }
+
+                // Milestone 8.32. The proof verified, so both ends hold the key and this
+                // connection's nonce: everything after this line travels sealed, both ways.
+                record.Channel = PrivateSessionSecureChannel.ForHost(sessionKey, record.Nonce);
             }
 
             // Full is answered at admission, before the roster is disclosed: a claim of a specific
@@ -402,7 +464,7 @@ namespace GuardsDigital.Application
             }
 
             record.Phase = ConnectionPhase.Admitted;
-            outbox.Send(record.Ordinal, PrivateSessionFrameCodec.WelcomeFrame(
+            Deliver(record, PrivateSessionFrameCodec.WelcomeFrame(
                 new SessionWelcomeMessage(identity.Correlation, Roster)));
             Record(PrivateSessionEventKind.Admitted, record.Ordinal,
                 default, default, TeamSide.None, SessionRejectionReason.None);
@@ -445,11 +507,15 @@ namespace GuardsDigital.Application
             record.Phase = ConnectionPhase.Seated;
             record.Seat = seat.Id;
 
-            outbox.Send(record.Ordinal, PrivateSessionFrameCodec.SeatGrantedFrame(
+            Deliver(record, PrivateSessionFrameCodec.SeatGrantedFrame(
                 new SeatGrantedMessage(
                     new SeatRosterEntry(seat.Id, seat.HeroId, seat.TeamSide, SeatOccupancyState.Claimed),
                     ClaimedSeatCount, TotalSeats)));
             BroadcastRoster();
+            // Milestone 8.32. A seated connection immediately receives its own owner-scoped view,
+            // encoded per seat - never one shared payload - so what it holds is what 8.30a proved
+            // it may hold.
+            SendProjectionTo(record);
             Record(PrivateSessionEventKind.SeatClaimed, record.Ordinal, seat.Id, seat.HeroId,
                 seat.TeamSide, SessionRejectionReason.None);
             if (IsComplete)
@@ -457,6 +523,140 @@ namespace GuardsDigital.Application
                 Record(PrivateSessionEventKind.SessionComplete, record.Ordinal,
                     default, default, TeamSide.None, SessionRejectionReason.None);
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.32. One wire submission from a seated connection: the trusted caller is the
+        /// seat this connection claimed, the submission identity and expected version come from the
+        /// envelope fields outside the command payload, and the command DTO is mapped to the
+        /// seat's own offered instance before the authority is asked.
+        /// </summary>
+        /// <remarks>
+        /// <para>Protocol violations - a wrong session, epoch or sequence, or a payload that does
+        /// not decode - close the connection: a real client of this build cannot produce them.
+        /// Seat-level refusals answer with a <see cref="SessionMessageKind.SubmissionResult"/> and
+        /// leave the connection open, because a stale view or a refused rule answer is an ordinary
+        /// gameplay moment, not an attack.</para>
+        /// <para>The decoded command reaches <see cref="IMatchHost.SubmitForSeat"/> even when it
+        /// matches no offered instance, so 8.30a's own ordered refusals - stale before duplicate
+        /// before ownership before unauthorized - answer with their exact reasons; an unmatched
+        /// command cannot be accepted there, because acceptance requires membership in the same
+        /// offered set the mapping searched.</para>
+        /// </remarks>
+        private void HandleSubmission(ConnectionRecord record, byte[] payload)
+        {
+            if (!NetworkMessageCodec.TryDecodeSubmitCommand(payload, out var message))
+            {
+                RejectAndClose(record, SessionRejectionReason.MalformedFrame,
+                    "The submission payload did not decode.");
+                return;
+            }
+
+            if (!string.Equals(message.Envelope.SessionCorrelation, identity.Correlation, StringComparison.Ordinal) ||
+                message.Envelope.Epoch != PrivateSessionProtocol.InitialConnectionEpoch ||
+                message.Envelope.Sequence != record.GameplayReceiveSequence + 1)
+            {
+                RejectAndClose(record, SessionRejectionReason.EnvelopeMismatch,
+                    "The envelope names the wrong session, epoch, or sequence.");
+                return;
+            }
+
+            record.GameplayReceiveSequence = message.Envelope.Sequence;
+            if (!NetworkCommandCodec.TryDecode(message.CommandPayload, out var decoded))
+            {
+                RejectAndClose(record, SessionRejectionReason.MalformedFrame,
+                    "The command payload did not decode.");
+                return;
+            }
+
+            var seat = matchHost.Seats.Find(record.Seat);
+            var command = decoded;
+            foreach (var offered in matchHost.ProjectionForSeat(seat.Id).AuthorizedCommands)
+            {
+                if (offered.Equals(decoded))
+                {
+                    command = offered;
+                    break;
+                }
+            }
+
+            var result = matchHost.SubmitForSeat(seat.Id, new SeatSubmission(
+                new SubmissionId(message.SubmissionId), message.ExpectedVersion, command));
+
+            Deliver(record, NetworkMessageCodec.SubmissionResultFrame(new NetworkSubmissionResultMessage(
+                NextEnvelope(record, message.Envelope.Correlation),
+                message.SubmissionId,
+                result.Accepted,
+                result.RejectionReason,
+                result.SessionRejectionReason,
+                result.Detail,
+                result.Version,
+                result.Sequence)));
+
+            Record(
+                result.Accepted
+                    ? PrivateSessionEventKind.SubmissionAccepted
+                    : PrivateSessionEventKind.SubmissionRefused,
+                record.Ordinal, record.Seat, seat.HeroId, seat.TeamSide,
+                SessionRejectionReason.None, result.RejectionReason);
+
+            if (result.Accepted)
+            {
+                PublishProjections();
+            }
+        }
+
+        private void SendProjectionTo(ConnectionRecord record)
+        {
+            var seat = matchHost.Seats.Find(record.Seat);
+            if (seat == null)
+            {
+                return;
+            }
+
+            var payload = NetworkSeatProjectionCodec.Encode(matchHost.ProjectionForSeat(seat.Id));
+            Deliver(record, NetworkMessageCodec.SeatProjectionFrame(
+                new NetworkSeatProjectionMessage(NextEnvelope(record, 0), payload)));
+        }
+
+        /// <summary>Every seated connection receives its own view of the state that just committed.</summary>
+        private void PublishProjections()
+        {
+            foreach (var record in connections.Values)
+            {
+                if (record.Phase == ConnectionPhase.Seated)
+                {
+                    SendProjectionTo(record);
+                }
+            }
+        }
+
+        private NetworkEnvelope NextEnvelope(ConnectionRecord record, long correlation)
+        {
+            record.GameplaySendSequence++;
+            return new NetworkEnvelope(
+                identity.Correlation,
+                PrivateSessionProtocol.InitialConnectionEpoch,
+                record.GameplaySendSequence,
+                correlation);
+        }
+
+        /// <summary>
+        /// Sends one composed frame, sealed when this connection's channel is armed. Challenge,
+        /// Reject, and Goodbye do not come through here - they stay plaintext by design.
+        /// </summary>
+        private void Deliver(ConnectionRecord record, byte[] frame)
+        {
+            if (record.Channel == null)
+            {
+                outbox.Send(record.Ordinal, frame);
+                return;
+            }
+
+            var kind = (SessionMessageKind)PrivateSessionFrameCodec.ReadUInt16(frame, 6);
+            var payload = new byte[frame.Length - PrivateSessionProtocol.FrameHeaderBytes];
+            Array.Copy(frame, PrivateSessionProtocol.FrameHeaderBytes, payload, 0, payload.Length);
+            outbox.Send(record.Ordinal, record.Channel.Seal(kind, payload));
         }
 
         /// <summary>
@@ -527,7 +727,7 @@ namespace GuardsDigital.Application
             {
                 if (record.Phase != ConnectionPhase.AwaitingHello)
                 {
-                    outbox.Send(record.Ordinal, frame);
+                    Deliver(record, frame);
                 }
             }
         }
@@ -562,7 +762,8 @@ namespace GuardsDigital.Application
             SeatId seat,
             HeroId hero,
             TeamSide teamSide,
-            SessionRejectionReason reason)
+            SessionRejectionReason reason,
+            SeatSubmissionRejectionReason submissionRejection = SeatSubmissionRejectionReason.None)
         {
             if (events.Count >= RetainedEventCount)
             {
@@ -570,7 +771,8 @@ namespace GuardsDigital.Application
             }
 
             events.Add(new PrivateSessionEventRecord(
-                kind, ordinal, seat, hero, teamSide, reason, ClaimedSeatCount, TotalSeats));
+                kind, ordinal, seat, hero, teamSide, reason, ClaimedSeatCount, TotalSeats,
+                submissionRejection));
         }
     }
 }

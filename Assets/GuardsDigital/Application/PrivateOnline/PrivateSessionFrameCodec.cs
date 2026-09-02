@@ -442,7 +442,8 @@ namespace GuardsDigital.Application
 
         internal static bool TryReadMessageKind(int value, out SessionMessageKind kind)
         {
-            if (value >= (int)SessionMessageKind.Challenge && value <= (int)SessionMessageKind.Goodbye)
+            if (value >= (int)SessionMessageKind.Challenge &&
+                value <= (int)SessionMessageKind.SeatProjection)
             {
                 kind = (SessionMessageKind)value;
                 return true;
@@ -455,7 +456,7 @@ namespace GuardsDigital.Application
         private static bool TryReadRejectionReason(int value, out SessionRejectionReason reason)
         {
             if (value >= (int)SessionRejectionReason.ProtocolFamilyMismatch &&
-                value <= (int)SessionRejectionReason.ProtocolViolation)
+                value <= (int)SessionRejectionReason.SealViolation)
             {
                 reason = (SessionRejectionReason)value;
                 return true;

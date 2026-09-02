@@ -704,7 +704,7 @@ Non-goals: No board artwork change, no camera or registration change, no new ove
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-831b-draw-the-boards-blended-overlays-correctly-in-a-built-player-completion-evidence).
 
-### [!] 8.32 Enforce owner-scoped projections and command authorization across the network boundary
+### [x] 8.32 Enforce owner-scoped projections and command authorization across the network boundary
 
 Blocked by: Milestone 8.31 must establish the private host and six network seats.
 
@@ -716,6 +716,8 @@ Acceptance checks:
 - Automated negative cases cover cross-seat hero commands, unauthorized team choices, hidden-hand/pre-reveal leakage, replayed or duplicated command identities, stale expected projection versions, mismatches between payload targets and ownership derived through `MatchParticipants`, malformed/oversized envelopes, and forged payload identities or versions without partial host mutation.
 - Diagnostic output needed for support does not expose another seat's owner-private hand or pre-reveal commitment identity.
 - Network serialization and delivery preserve the local projection's absence of unauthorized fields rather than sending complete director state and relying on client-side hiding.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-832-enforce-owner-scoped-projections-and-command-authorization-across-the-network-boundary-completion-evidence).
 
 ### [!] 8.33 Synchronize commands, events, pending choices, and snapshots
 

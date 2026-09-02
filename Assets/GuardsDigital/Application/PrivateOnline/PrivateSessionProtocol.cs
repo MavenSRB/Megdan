@@ -56,6 +56,13 @@ namespace GuardsDigital.Application
         /// <summary>How long an accepted connection may stand without completing its handshake.</summary>
         public const int HandshakeTimeoutSeconds = 5;
 
+        /// <summary>
+        /// Milestone 8.32. Every connection's first epoch. The gameplay envelope carries the
+        /// sender's epoch so a stale connection's frames can be told from its replacement's;
+        /// rotation on reconnect is milestone 8.34's, so in this slice any other value is refused.
+        /// </summary>
+        public const int InitialConnectionEpoch = 1;
+
         /// <summary>The default host port; an operator may name another.</summary>
         public const int DefaultPort = 45677;
 

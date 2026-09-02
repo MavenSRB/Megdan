@@ -93,7 +93,8 @@ namespace GuardsDigital.Application
     /// or a submission name. The version is always the one this client last read, so an answer
     /// decided against a board that has since moved is refused as stale instead of applied.</para>
     /// <para>Submission identities are local and monotonic. They exist so a repeat is recognizable;
-    /// milestone 8.32 replaces them with the wire's own, and nothing here depends on their shape.</para>
+    /// on the network path milestone 8.32's <see cref="PrivateSessionClient.TrySubmitCommand"/>
+    /// mints the wire's own random identities instead, and nothing here depends on their shape.</para>
     /// </remarks>
     public sealed class SeatMatchClient : IMatchClient
     {
