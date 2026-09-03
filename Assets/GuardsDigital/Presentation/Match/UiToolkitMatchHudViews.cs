@@ -4041,6 +4041,7 @@ namespace GuardsDigital.Presentation.Match
         /// renders this view alone still finds the control where every other one it draws is.</para>
         /// </summary>
         private readonly VisualElement endTurnHost;
+        private readonly VisualElement seatUndoHost;
 
         /// <summary>
         /// The Defense-card controls this rebuild drew. Milestone 8.11b, for milestone 8.8a's reason:
@@ -4079,9 +4080,15 @@ namespace GuardsDigital.Presentation.Match
             endTurnHost.style.alignItems = Align.Stretch;
             endTurnHost.style.justifyContent = Justify.Center;
             endTurnHost.style.display = DisplayStyle.None;
+            seatUndoHost = new VisualElement { name = "gd-seat-undo" };
+            seatUndoHost.style.flexDirection = FlexDirection.Column;
+            seatUndoHost.style.alignItems = Align.Stretch;
+            seatUndoHost.style.justifyContent = Justify.Center;
+            seatUndoHost.style.display = DisplayStyle.None;
             Root.Add(status);
             Root.Add(rows);
             Root.Add(endTurnHost);
+            Root.Add(seatUndoHost);
             preview = HudElements.Panel(DefensePreviewBackgroundColor);
             preview.name = "gd-defense-preview";
             preview.style.position = Position.Absolute;
@@ -4151,6 +4158,13 @@ namespace GuardsDigital.Presentation.Match
         public VisualElement EndTurnRoot => endTurnHost;
 
         /// <summary>
+        /// Milestone 8.35f. The seat undo square's own element, so the renderer can place it
+        /// immediately to the left of End Turn on the status strip's top edge. Hidden in every state
+        /// where the host has not published this seat a rewind it may take.
+        /// </summary>
+        public VisualElement SeatUndoRoot => seatUndoHost;
+
+        /// <summary>
         /// Whether the drawn End Turn banner is in its full-shine state - ending the turn is the
         /// only offer left. Milestone 8.30d, exposed as a fact a test can read rather than a colour
         /// only a screenshot carries; false whenever the control is hidden.
@@ -4162,6 +4176,12 @@ namespace GuardsDigital.Presentation.Match
         public Rect DefensePreviewAnchor => defensePreviewAnchor;
 
         public event Action<TypedInvocationViewModel> InvocationSubmitted;
+
+        /// <summary>
+        /// Milestone 8.35f. The seat asked to step its own turn back one command. It carries no
+        /// payload because there is none to carry.
+        /// </summary>
+        public event Action SeatUndoRequested;
         public event Action<TeamAgreementChoiceViewModel> AgreementSubmitted;
         public event Action<HeroId> AgreementHeroHighlighted;
         public event Action<FastTravelOfferViewModel> FastTravelSelected;
@@ -4282,6 +4302,13 @@ namespace GuardsDigital.Presentation.Match
         public void ForwardRespawnHighlight(HeroRespawnOptionViewModel option) =>
             SetRespawnHighlight(option);
 
+        /// <summary>
+        /// Milestone 8.35f. Raises the seat's own rewind request the way
+        /// <see cref="ForwardInvocation"/> raises an ordinary one: the drawn square calls it,
+        /// and so can a driver or a fixture that has no live panel to press with.
+        /// </summary>
+        public void RequestSeatUndo() => SeatUndoRequested?.Invoke();
+
         public void ForwardInvocation(TypedInvocationViewModel invocation)
         {
             if (invocation != null)
@@ -4336,6 +4363,7 @@ namespace GuardsDigital.Presentation.Match
             // of those four is a state the turn authority refuses an End Turn in, so the model carries
             // none and this leaves the corner empty rather than leaving a stale control standing.
             RebuildEndTurn();
+            RebuildSeatUndo();
             // Milestone 8.8a: the controls a rebuild is about to discard, and the selection that belonged
             // to them. A highlight belongs to the model it was read from, exactly as every other one here
             // does.
@@ -5307,6 +5335,47 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// Milestone 8.35f. The seat's own UNDO control: a square immediately left of End Turn,
+        /// drawn with a counter-clockwise arrow and no words.
+        /// </summary>
+        /// <remarks>
+        /// <para>The user placed it there and named its shape. It carries no label because a glyph
+        /// says "step back" in every language this build will ever be read in, and because the slot
+        /// is one status-strip height square - there is no room for End Turn's lettering in it.</para>
+        /// <para>It carries no invocation either, which is the structural half: a rewind is not a
+        /// command, so there is nothing here for a view to forward. The press raises an event, the
+        /// presenter asks its client, and the host decides. A view that could compose an undo could
+        /// compose one for another seat.</para>
+        /// </remarks>
+        private void RebuildSeatUndo()
+        {
+            seatUndoHost.Clear();
+            if (Model == null || !Model.SeatUndoAvailable || HasExclusiveDecision)
+            {
+                seatUndoHost.style.display = DisplayStyle.None;
+                return;
+            }
+
+            seatUndoHost.style.display = DisplayStyle.Flex;
+            var control = new PewterBanner(
+                RequestSeatUndo, false,
+                SeatUndoGlyphFontSize, "gd-seat-undo-label", rectangular: true)
+            {
+                name = "gd-seat-undo-control",
+                text = SeatUndoGlyph
+            };
+            control.SetVisibleLabel(SeatUndoGlyph);
+            control.tooltip = SeatUndoTooltip;
+            control.style.minHeight = ConfiguredMatchHudRenderer.SeatUndoControlSide;
+            control.style.fontSize = SeatUndoGlyphFontSize;
+            control.style.unityFontStyleAndWeight = FontStyle.Bold;
+            control.style.unityTextAlign = TextAnchor.MiddleCenter;
+            control.style.flexGrow = 1f;
+            control.style.flexShrink = 0f;
+            seatUndoHost.Add(control);
+        }
+
+        /// <summary>
         /// End Turn, as its own control in its own surface. Milestone 8.30b's user-approved amendment.
         ///
         /// <para>Nothing about what it submits changed: it forwards the same projected invocation the
@@ -5597,6 +5666,16 @@ namespace GuardsDigital.Presentation.Match
         /// point - it is the one control that ends what the player is doing.
         /// </summary>
         public const float EndTurnControlFontSize = 18f;
+
+        /// <summary>
+        /// Milestone 8.35f. The counter-clockwise open-circle arrow the seat undo square draws, and
+        /// the only thing it draws: no words, by the user's own placement decision.
+        /// </summary>
+        public const string SeatUndoGlyph = "↺";
+
+        public const string SeatUndoTooltip = "Step back one action of this turn";
+
+        public const float SeatUndoGlyphFontSize = 40f;
 
         private void AddActionInvocation(
             VisualElement section,

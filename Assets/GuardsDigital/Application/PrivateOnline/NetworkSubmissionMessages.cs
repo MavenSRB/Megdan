@@ -207,6 +207,77 @@ namespace GuardsDigital.Application
         public TeamAgreementCommand Statement { get; }
     }
 
+    /// <summary>
+    /// Milestone 8.35f. One seat's request to step its own turn back by one accepted command.
+    /// </summary>
+    public sealed class NetworkUndoSubmissionMessage
+    {
+        public NetworkUndoSubmissionMessage(
+            NetworkEnvelope envelope, string submissionId, long expectedVersion)
+        {
+            if (string.IsNullOrWhiteSpace(submissionId))
+            {
+                throw new ArgumentException(
+                    "A submission carries its own identity.", nameof(submissionId));
+            }
+
+            if (expectedVersion < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(expectedVersion), expectedVersion, "A projection version is not negative.");
+            }
+
+            Envelope = envelope;
+            SubmissionId = submissionId;
+            ExpectedVersion = expectedVersion;
+        }
+
+        public NetworkEnvelope Envelope { get; }
+        public string SubmissionId { get; }
+        public long ExpectedVersion { get; }
+    }
+
+    /// <summary>Milestone 8.35f. What the host told one seat about its own rewind.</summary>
+    public sealed class NetworkUndoResultMessage
+    {
+        public NetworkUndoResultMessage(
+            NetworkEnvelope envelope,
+            string submissionId,
+            bool accepted,
+            SeatSubmissionRejectionReason rejectionReason,
+            MatchSessionRejectionReason sessionRejectionReason,
+            string detail,
+            long version)
+        {
+            if (string.IsNullOrWhiteSpace(submissionId))
+            {
+                throw new ArgumentException(
+                    "A result names the submission it answers.", nameof(submissionId));
+            }
+
+            Envelope = envelope;
+            SubmissionId = submissionId;
+            Accepted = accepted;
+            RejectionReason = rejectionReason;
+            SessionRejectionReason = sessionRejectionReason;
+            Detail = detail ?? string.Empty;
+            if (Detail.Length > PrivateSessionProtocol.MaxRejectDetailChars)
+            {
+                Detail = Detail.Substring(0, PrivateSessionProtocol.MaxRejectDetailChars);
+            }
+
+            Version = version;
+        }
+
+        public NetworkEnvelope Envelope { get; }
+        public string SubmissionId { get; }
+        public bool Accepted { get; }
+        public SeatSubmissionRejectionReason RejectionReason { get; }
+        public MatchSessionRejectionReason SessionRejectionReason { get; }
+        public string Detail { get; }
+        public long Version { get; }
+    }
+
     /// <summary>Milestone 8.33. What the host told one seat about its own agreement statement.</summary>
     public sealed class NetworkAgreementResultMessage
     {
@@ -557,6 +628,125 @@ namespace GuardsDigital.Application
                         submissionId,
                         accepted,
                         (TeamAgreementSubmissionRejectionReason)reasonValue,
+                        detail,
+                        version);
+                    return true;
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35f. One seat's bounded rewind: the envelope, the submission identity and
+        /// the version it was asked against. There is nothing else in it, because an undo names no
+        /// target and takes exactly one step.
+        /// </summary>
+        public static byte[] SubmitUndoFrame(NetworkUndoSubmissionMessage message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                WriteEnvelope(writer, message.Envelope);
+                writer.Write(message.SubmissionId);
+                writer.Write(message.ExpectedVersion);
+                writer.Flush();
+                return PrivateSessionFrameCodec.EncodeFrame(
+                    SessionMessageKind.SubmitUndo, stream.ToArray());
+            }
+        }
+
+        public static bool TryDecodeSubmitUndo(byte[] payload, out NetworkUndoSubmissionMessage message)
+        {
+            message = null;
+            try
+            {
+                using (var stream = new MemoryStream(payload ?? Array.Empty<byte>(), false))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8))
+                {
+                    if (!TryReadEnvelope(reader, out var envelope))
+                    {
+                        return false;
+                    }
+
+                    var submissionId = reader.ReadString();
+                    var expectedVersion = reader.ReadInt64();
+                    if (string.IsNullOrWhiteSpace(submissionId) ||
+                        submissionId.Length > MaxSubmissionIdChars ||
+                        expectedVersion < 0 ||
+                        stream.Position != stream.Length)
+                    {
+                        return false;
+                    }
+
+                    message = new NetworkUndoSubmissionMessage(envelope, submissionId, expectedVersion);
+                    return true;
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                return false;
+            }
+        }
+
+        public static byte[] UndoResultFrame(NetworkUndoResultMessage message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                WriteEnvelope(writer, message.Envelope);
+                writer.Write(message.SubmissionId);
+                writer.Write(message.Accepted);
+                writer.Write((int)message.RejectionReason);
+                writer.Write((int)message.SessionRejectionReason);
+                writer.Write(message.Detail);
+                writer.Write(message.Version);
+                writer.Flush();
+                return PrivateSessionFrameCodec.EncodeFrame(
+                    SessionMessageKind.UndoResult, stream.ToArray());
+            }
+        }
+
+        public static bool TryDecodeUndoResult(byte[] payload, out NetworkUndoResultMessage message)
+        {
+            message = null;
+            try
+            {
+                using (var stream = new MemoryStream(payload ?? Array.Empty<byte>(), false))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8))
+                {
+                    if (!TryReadEnvelope(reader, out var envelope))
+                    {
+                        return false;
+                    }
+
+                    var submissionId = reader.ReadString();
+                    var accepted = reader.ReadBoolean();
+                    var reasonValue = reader.ReadInt32();
+                    var sessionReasonValue = reader.ReadInt32();
+                    var detail = reader.ReadString();
+                    var version = reader.ReadInt64();
+                    if (string.IsNullOrWhiteSpace(submissionId) ||
+                        submissionId.Length > MaxSubmissionIdChars ||
+                        !Enum.IsDefined(typeof(SeatSubmissionRejectionReason), reasonValue) ||
+                        !Enum.IsDefined(typeof(MatchSessionRejectionReason), sessionReasonValue) ||
+                        detail.Length > PrivateSessionProtocol.MaxRejectDetailChars ||
+                        version < 0 ||
+                        stream.Position != stream.Length)
+                    {
+                        return false;
+                    }
+
+                    message = new NetworkUndoResultMessage(
+                        envelope,
+                        submissionId,
+                        accepted,
+                        (SeatSubmissionRejectionReason)reasonValue,
+                        (MatchSessionRejectionReason)sessionReasonValue,
                         detail,
                         version);
                     return true;

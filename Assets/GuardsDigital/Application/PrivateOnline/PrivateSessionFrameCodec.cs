@@ -559,7 +559,7 @@ namespace GuardsDigital.Application
         internal static bool TryReadMessageKind(int value, out SessionMessageKind kind)
         {
             if (value >= (int)SessionMessageKind.Challenge &&
-                value <= (int)SessionMessageKind.MatchStarted)
+                value <= (int)SessionMessageKind.UndoResult)
             {
                 kind = (SessionMessageKind)value;
                 return true;

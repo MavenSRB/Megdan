@@ -61,6 +61,13 @@ namespace GuardsDigital.Application
         MatchClientResult Submit(DirectorCommand command);
 
         MatchClientResult SubmitAgreement(TeamAgreementCommand command);
+
+        /// <summary>
+        /// Milestone 8.35f. Steps this surface's own seat back by one accepted command, within the
+        /// bounds <see cref="IMatchReadModel.IsSeatUndoAvailable"/> already published. The Director's
+        /// client refuses it: its Undo is its drawer's, and is not seat-scoped.
+        /// </summary>
+        MatchClientResult SubmitUndo();
     }
 
     /// <summary>
@@ -86,6 +93,8 @@ namespace GuardsDigital.Application
 
         public MatchClientResult SubmitAgreement(TeamAgreementCommand command) =>
             current.SubmitAgreement(command);
+
+        public MatchClientResult SubmitUndo() => current.SubmitUndo();
     }
 
     /// <summary>
@@ -119,6 +128,13 @@ namespace GuardsDigital.Application
             new MatchClientResult(
                 false,
                 "Director mode resolves team choices directly.",
+                session.Projection,
+                true);
+
+        public MatchClientResult SubmitUndo() =>
+            new MatchClientResult(
+                false,
+                "Director mode undoes from its own drawer, not from a seat control.",
                 session.Projection,
                 true);
     }
@@ -182,6 +198,19 @@ namespace GuardsDigital.Application
                 result.Detail,
                 result.Projection,
                 !result.Accepted);
+        }
+
+        public MatchClientResult SubmitUndo()
+        {
+            var projection = client.Projection;
+            var result = client.SubmitUndo(
+                new SeatUndoSubmission(NextSubmissionId(), projection.Version));
+            return new MatchClientResult(
+                result.Accepted,
+                result.Detail,
+                result.Projection,
+                !result.Accepted &&
+                result.RejectionReason != SeatSubmissionRejectionReason.SessionRefused);
         }
 
         private static SubmissionId NextSubmissionId() =>

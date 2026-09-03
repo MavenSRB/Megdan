@@ -38,6 +38,19 @@ namespace GuardsDigital.Application
         /// </summary>
         bool IsInputEnabled { get; }
 
+        /// <summary>
+        /// Milestone 8.35f. Whether the seat this view belongs to may step its own turn back by one
+        /// accepted command right now.
+        /// </summary>
+        /// <remarks>
+        /// Published by the host rather than derived by a surface, because the bounds it answers -
+        /// the turn floor, the attack wall and the other-seat wall - are facts about the recorded
+        /// history that no client holds. It is false on the Director's own full-trust view: the
+        /// Director's Undo is its drawer's, unbounded and not seat-scoped, and this flag is only
+        /// ever about the seat control.
+        /// </remarks>
+        bool IsSeatUndoAvailable { get; }
+
         // Public match state.
         QuickGameSetupState Setup { get; }
         BoardMapDefinition SelectedMap { get; }

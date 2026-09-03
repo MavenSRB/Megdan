@@ -242,6 +242,20 @@ namespace GuardsDigital.Presentation.Match
         public const float EndTurnControlTopInset = 0f;
 
         /// <summary>
+        /// Milestone 8.35f. The seat's own UNDO control: a square immediately to the left of End
+        /// Turn, on the same top edge of the status strip.
+        /// </summary>
+        /// <remarks>
+        /// The user asked for a square whose side is End Turn's width. End Turn is
+        /// <see cref="EndTurnControlWidth"/> (the hero rail's 264) wide and
+        /// <see cref="EndTurnControlHeight"/> (the status strip's 96) tall, and a 264-unit square
+        /// cannot stand in a 96-unit strip without hanging 168 units over the board. The square is
+        /// therefore the largest one the strip admits - the strip's own height - which keeps the
+        /// shape, the edge and the neighbour the user named. Recorded as the one deviation.
+        /// </remarks>
+        public const float SeatUndoControlSide = StatusBarHeight;
+
+        /// <summary>
         /// The compact board camera's width-to-height ratio. The official playable footprint is wider
         /// than it is tall; 6:5 keeps its original whole-map scale while avoiding the much wider empty
         /// camera surface that previously centred it across the entire playfield band.
@@ -559,9 +573,25 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            return TryLiveRect(host, out var live)
+            if (TryLiveRect(host, out var live)
                 ? live.Contains(panelPosition)
-                : GetEndTurnControlRect().Contains(panelPosition);
+                : GetEndTurnControlRect().Contains(panelPosition))
+            {
+                return true;
+            }
+
+            // Milestone 8.35f. The seat undo square shares this slot's pointer claim: it stands on
+            // the same strip edge, so a press that lands on it is a press on a control rather than
+            // on the map behind it.
+            var undo = round?.SeatUndoRoot;
+            if (undo == null || undo.style.display.value == DisplayStyle.None)
+            {
+                return false;
+            }
+
+            return TryLiveRect(undo, out var liveUndo)
+                ? liveUndo.Contains(panelPosition)
+                : GetSeatUndoControlRect().Contains(panelPosition);
         }
 
         private static bool TryLiveRect(VisualElement element, out Rect rect)
@@ -776,6 +806,11 @@ namespace GuardsDigital.Presentation.Match
             round.EndTurnRoot.RemoveFromHierarchy();
             round.EndTurnRoot.style.position = Position.Absolute;
             root.Add(round.EndTurnRoot);
+            // Milestone 8.35f. The seat's own undo square takes the slot immediately left of End
+            // Turn on the same edge, re-parented on the same terms and for the same reason.
+            round.SeatUndoRoot.RemoveFromHierarchy();
+            round.SeatUndoRoot.style.position = Position.Absolute;
+            root.Add(round.SeatUndoRoot);
             // Empty-hand Pass and End Turn are mutually exclusive projections of the same top-right
             // status slot. Keeping separate passive views preserves their existing presenters and
             // commands; the pointer-transparent empty host cannot cover whichever control is live.
@@ -1201,6 +1236,25 @@ namespace GuardsDigital.Presentation.Match
             CalculateEndTurnControlRect(PanelViewport.x, PanelViewport.y);
 
         /// <summary>
+        /// Milestone 8.35f. The seat undo square, sharing End Turn's top edge and standing
+        /// immediately to its left. It is clamped to the panel like every other control here, so a
+        /// narrow viewport shrinks it rather than pushing it off the left edge.
+        /// </summary>
+        public static Rect CalculateSeatUndoControlRect(float panelWidth, float panelHeight)
+        {
+            var endTurn = CalculateEndTurnControlRect(panelWidth, panelHeight);
+            var side = Mathf.Min(
+                SeatUndoControlSide,
+                Mathf.Max(0f, Mathf.Min(panelHeight, endTurn.x)));
+            return new Rect(endTurn.x - side, endTurn.y, side, side);
+        }
+
+        public Rect SeatUndoControlRect => GetSeatUndoControlRect();
+
+        private static Rect GetSeatUndoControlRect() =>
+            CalculateSeatUndoControlRect(PanelViewport.x, PanelViewport.y);
+
+        /// <summary>
         /// Where the `DIRECTOR` toggle stands: directly below the live third Red hero. Level Up no
         /// longer relocates it because the comparison surface is one bounded row between the rails.
         /// </summary>
@@ -1347,6 +1401,16 @@ namespace GuardsDigital.Presentation.Match
                 host.style.top = rect.y;
                 host.style.width = rect.width;
                 host.style.height = rect.height;
+            }
+
+            var undoRect = GetSeatUndoControlRect();
+            var undoHost = round?.SeatUndoRoot;
+            if (undoHost != null)
+            {
+                undoHost.style.left = undoRect.x;
+                undoHost.style.top = undoRect.y;
+                undoHost.style.width = undoRect.width;
+                undoHost.style.height = undoRect.height;
             }
 
             var corner = hands?.CornerActionsRoot;

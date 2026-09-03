@@ -107,7 +107,22 @@ namespace GuardsDigital.Application
         /// that has begun does not un-begin. A connection admitted but not yet seated never
         /// receives it - it is a statement about the seats.
         /// </remarks>
-        MatchStarted = 18
+        MatchStarted = 18,
+
+        /// <summary>
+        /// Milestone 8.35f. Seated connection to host: step this seat's own turn back by one
+        /// accepted command.
+        /// </summary>
+        /// <remarks>
+        /// Its own kind rather than a <see cref="SubmitCommand"/> carrying an undo command, for the
+        /// reason <see cref="SeatUndoSubmission"/> gives: an undo removes from the recorded stream
+        /// and can never be in it. The payload is the gameplay envelope, the submission id and the
+        /// expected version, and nothing else - there is nothing to target.
+        /// </remarks>
+        SubmitUndo = 19,
+
+        /// <summary>Milestone 8.35f. Host to that connection: what its rewind did, or why not.</summary>
+        UndoResult = 20
     }
 
     /// <summary>

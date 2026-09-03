@@ -6,7 +6,7 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Phase 8 begins only after the synthetic core match gate. Wasp-specific card work composes proven core actions, keywords, effect operations, queries, modifiers, control flow, and system transitions; it does not defer their first general implementation until a card requires them. The mirrored Wasp setup identities introduced earlier remain an intermediate configuration for the first complete hero gate, not the final pitch roster. After that gate, five additional user-approved heroes enter through source inventory and capability-delta mapping before the final six-distinct-hero 3v3 integration. Once the complete primitive match and URP baseline are proven, a separate private-online track moves the same authority behind a host/session boundary and reaches an invite-only six-human internet playtest before production presentation begins.
 
-The completed definitions of milestones **8.1** through **8.10** - Wasp's source inventory and capability matrix, her verified definitions and both dealt hands, the general card-text seam and the two tray surfaces built on it, her five telekinetic Skills, the declared modifier vocabulary's consumers, the current-card rail, her two kinetic Skills and two basic cards, the tray-faced upgrade grid, the refused empty Clear, and her five printed Attacks - moved verbatim to [PHASE_8_COMPLETED.md](PHASE_8_COMPLETED.md), 8.1 through 8.7a on 2026-08-22 during milestone 8.8a's required warning-threshold ownership review and 8.8 through 8.10 on the same date during milestone 8.11a's; milestones **8.11** through **8.11c** - her Defense cards, the official map underlay and its interaction overlay, the verified card-table visuals, and identity-named effect-choice candidates answered on the board - followed on 2026-08-26 during milestone 8.25a's audit, when two proposed corrective blocks took this shard past its hard limit; and milestones **8.12** through **8.15a** - the Active-effect and continuous trigger windows, High Voltage, her progression and Ultimate unlock, her completed card behaviour and the faced card choices - followed on 2026-08-27 during milestone 8.25d's. Milestones **8.11d** and **8.11e** moved verbatim to [PHASE_8_COMPLETED_2.md](PHASE_8_COMPLETED_2.md) on 2026-08-28 during milestone 8.25f2a's warning-threshold review, and milestones **8.16** through **8.17** - the deterministic Wasp mirror integration gate, its independent card-engine extensibility review, the board-answered Lane-Push respawn placement, and the user's selection of the five additional pitch heroes - followed to the same shard on 2026-08-29 during milestone 8.30's. Milestones **8.18a** through **8.24** - the five hero inventory slices, the capability mapping and 3v3 re-baseline, the Sabina, Tigerclaw and Xargatha completions, and the rail-marker corrective between them - followed to that shard on 2026-09-03 during milestone 8.35a1's required warning-threshold ownership review, which is also where the five 8.18 slices rejoin the split contract they read "above". They remain active authority under the same `Roadmap/` threshold; this is sharding, not archiving, and their per-milestone evidence is still addressed by SHA from the [Phase 8 archive](../Archive/Phase-Handoffs/PHASE_8.md). This shard keeps 8.25 onward, which is what the next milestone reads against.
+The completed definitions of milestones **8.1** through **8.10** - Wasp's source inventory and capability matrix, her verified definitions and both dealt hands, the general card-text seam and the two tray surfaces built on it, her five telekinetic Skills, the declared modifier vocabulary's consumers, the current-card rail, her two kinetic Skills and two basic cards, the tray-faced upgrade grid, the refused empty Clear, and her five printed Attacks - moved verbatim to [PHASE_8_COMPLETED.md](PHASE_8_COMPLETED.md), 8.1 through 8.7a on 2026-08-22 during milestone 8.8a's required warning-threshold ownership review and 8.8 through 8.10 on the same date during milestone 8.11a's; milestones **8.11** through **8.11c** - her Defense cards, the official map underlay and its interaction overlay, the verified card-table visuals, and identity-named effect-choice candidates answered on the board - followed on 2026-08-26 during milestone 8.25a's audit, when two proposed corrective blocks took this shard past its hard limit; and milestones **8.12** through **8.15a** - the Active-effect and continuous trigger windows, High Voltage, her progression and Ultimate unlock, her completed card behaviour and the faced card choices - followed on 2026-08-27 during milestone 8.25d's. Milestones **8.11d** and **8.11e** moved verbatim to [PHASE_8_COMPLETED_2.md](PHASE_8_COMPLETED_2.md) on 2026-08-28 during milestone 8.25f2a's warning-threshold review, and milestones **8.16** through **8.17** - the deterministic Wasp mirror integration gate, its independent card-engine extensibility review, the board-answered Lane-Push respawn placement, and the user's selection of the five additional pitch heroes - followed to the same shard on 2026-08-29 during milestone 8.30's. Milestones **8.18a** through **8.24** - the five hero inventory slices, the capability mapping and 3v3 re-baseline, the Sabina, Tigerclaw and Xargatha completions, and the rail-marker corrective between them - followed to that shard on 2026-09-03 during milestone 8.35a1's required warning-threshold ownership review, which is also where the five 8.18 slices rejoin the split contract they read "above". The 2026-08-28 amendment merging **8.26** into **8.27**, and milestones **8.27** through **8.28b** - the deterministic six-hero 3v3 pitch match gate, the render-pipeline migration to URP, the independent six-hero/URP/networking readiness review, the Unity-free harness restoration that followed it, and the seeded replayable randomness seam - followed to that shard on 2026-09-03 during milestone 8.35f's required warning-threshold ownership review; they are the run between the card-face work and the private-online track's own selection, and 8.29 onward still reads them by id. They remain active authority under the same `Roadmap/` threshold; this is sharding, not archiving, and their per-milestone evidence is still addressed by SHA from the [Phase 8 archive](../Archive/Phase-Handoffs/PHASE_8.md). This shard keeps 8.25 onward, which is what the next milestone reads against.
 
 
 ### [x] 8.25 Replace the staged 1v1 setup with the official six-player Quick Game configuration
@@ -212,112 +212,6 @@ Acceptance checks:
 Non-goals: No production camera, HUD, safe-layout, artwork, map, rule, command, snapshot, replay, schema, content or private-source change. No weakening or removal of full-map containment, board-basis orientation, the configured L-shaped fit, or its live-scene coverage.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f2a-correct-the-stale-pre-l-shaped-fallback-framing-assertion-completion-evidence).
-
-Roadmap amendment, 2026-08-28, user approved: **8.26 is merged into 8.27 and no longer exists as a separately executable milestone.** Its six-owner director flow, joint reveal, Initiative/team interactions, readable resolver/history, and reconstruction obligations were already substantially delivered by the accumulated 8.25 and HUD work. Milestone 8.27 retains every obligation as integrated official-match evidence and corrects any defect that evidence exposes; it does not reimplement behavior merely to satisfy the former boundary.
-
-### [x] 8.27 Complete and prove the deterministic six-hero 3v3 pitch match
-
-Observable outcome: Wasp and the five other distinct verified heroes can start from the official six-player Quick Game setup, play repeated turns and rounds, and end through every victory path with primitive visuals and director/debug UI.
-
-Acceptance checks:
-
-- From the official configuration, one director can access each hero's correct hand and complete every turn: for every hero with a nonempty hand the director chooses exactly one owned card, while an empty hand records a Pass; reveal occurs only after all six heroes respond; and every played card resolves in Initiative order without transferring ownership.
-- Friendly/enemy queries, tied Initiative decisions, assists, reactions, hero-specific pending choices, and actor switching use authoritative team/player/hero relationships throughout the repeated-round match.
-- Played/revealed cards and the active resolver remain readable without presentation owning turn legality. The read-only primitive history groups all three Red and all three Blue heroes and shows each hero's authoritative revealed card or empty-hand Pass for turns 1-4, while current-turn Facedown commitments remain hidden until joint reveal.
-- Every displayed history entry resolves through its stable assignment and card definition; played or Defense-discarded cards cannot reappear merely because presentation rebuilds; and Undo, restart, snapshot restore, replay, and the event log reproduce the same six-hero turns.
-- Every implemented hero rule links to an authoritative source and focused tests; unresolved source or capability entries keep the gate incomplete.
-- The complete six-hero roster exercises legal team interactions, combat, minions, Lane Push, progression, defeat/respawn, and victory without card-name/hero-name branches outside isolated approved handlers.
-- The official six-player setup and only the remaining approved director/debug deviations are represented.
-- Automated configuration and integration checks prove that staged one-hero-per-team, mirrored-definition, fixed-two-response, and controller-as-game-entity assumptions are absent: six distinct heroes map to six distinct controlling player/seats, exactly three heroes belong to each team, and director tooling remains outside match authority.
-- Undo, restart, snapshots, event log, and Tie Breaker override remain deterministic across the complete 3v3 loop.
-- A broader source-linked six-hero integration suite passes.
-- Close 8.16a's F-CORE-10 on `CompleteMatchRuntimeCaptureTests.MeasuresTheOfficialSixHeroCompleteMatch`: observe the check failing at the pre-fix revision because `CreateCompleteMatchSession` still composes the internal two-seat synthetic configuration, then passing after the capture uses the same official six-player configuration and deterministic full-match driver this gate proves. Re-derive the time, allocation, captured-byte-growth, and Undo lines from that run; retain the prior figures beside the new baseline and disposition every crossing rather than silently widening a threshold.
-- `RISK-SCALE-001` is reassessed in full and then retired with its recorded 3v3 bound or its residuals explicitly accepted. This is the first milestone whose acceptance checks reach repeated rounds and progression with six heroes, so it is the first at which rulebook p.15's simultaneous Level Up can be observed as the serialized one-question-at-a-time step the continuation contract makes it, and the first at which the leveling stage's per-round derivation can be sampled against the standing thresholds rather than reasoned about.
-- T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
-
-Non-goals: No hidden-information enforcement, table-talk enforcement, networking, AI, six separate input devices, production presentation, or change to the approved rules.
-
-Hard gate: The networking architecture decision does not begin until the deterministic 3v3 match, URP migration, and independent readiness review at milestone 8.28a are reviewed and approved. Production visual work remains blocked through milestone 8.36a.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-827-complete-and-prove-the-deterministic-six-hero-3v3-pitch-match-completion-evidence).
-
-### [x] 8.28 Render-pipeline migration gate
-
-Observable outcome: The complete primitive six-hero match is ported from Unity's Built-In Render Pipeline to URP, with its existing director/debug presentation and Win64 reference path intact, before production visual assets are introduced.
-
-Planning rationale: Unity deprecated the Built-In Render Pipeline in Unity 6.5, guarantees its availability through at least Unity 6.7 LTS, and has not announced a final removal version. This project can retain Built-In rendering through the primitive-rule phases, but must not begin production presentation work on a pipeline Unity has directed new projects away from. [Unity's 2026 render-pipeline strategy](https://unity.com/topics/render-pipelines-strategy-for-2026).
-
-Acceptance checks:
-
-- URP is the active render pipeline for every configured quality level; the project no longer relies on a Built-In-only default pipeline setting.
-- The existing primitive board, miniatures/tokens, card/HUD panels, highlighting, pointer selection, fixed camera, and event-driven presentation remain readable and functional after conversion.
-- Materials, shaders, lighting, and post-processing used by the retained primitive presentation are URP-compatible; no Built-In-only visual dependency is carried into Phase 9.
-- The authoritative rules assemblies and their deterministic state/event results are unchanged; the migration does not alter game rules, command handling, or timing.
-- Focused Play Mode coverage for the affected presentation paths, a targeted visual inspection, a disposable internal Win64 development-build launch smoke, and both complete unfiltered Edit Mode and Play Mode suites pass.
-
-Non-goals: No production board art, hero/minion production models, animation coverage, final lighting/art direction, new game rules, or player-facing build.
-
-Hard gate: The private-online track uses this accepted URP baseline after milestone 8.28a independently reviews its six-hero and networking-readiness implications. Phase 9 production visual milestones do not begin until milestone 8.36a is also reviewed and approved.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828-render-pipeline-migration-gate-completion-evidence).
-
-### [x] 8.28a Independently review six-hero, URP, and networking readiness
-
-Blocked by: Milestones 8.27 and 8.28 must pass the deterministic six-hero and URP migration gates.
-
-Observable outcome: A fresh analysis-only review converts measured six-hero match, projection, replay/snapshot, and URP behavior into explicit technical constraints for the private-online architecture decision.
-
-Acceptance checks:
-
-- The review measures or verifies representative command/event volume, immutable projection and snapshot size, restore/replay cost, full-match allocation/resource behavior, and frame-time characteristics for the complete primitive 3v3 configuration.
-- It inspects sources of nondeterminism, Unity-thread or scene coupling, host-authority suitability, stable identity/version boundaries, pending-choice transport needs, and current public/private information ownership.
-- It distinguishes actual scaling or confidentiality blockers from concerns that the later networking milestones already own, and does not select a provider or invent a transport design prematurely.
-- Findings follow the common independent-review evidence contract and supply concrete constraints and risks to milestone 8.29's source-backed architecture comparison.
-- Any prerequisite correction is proposed as a separate milestone; no networking, optimization, rendering, rules, or projection implementation occurs here.
-
-Non-goals: No provider/SDK selection, network prototype, public service, production rendering work, speculative scale target beyond the six invited players, or implementation fix.
-
-Hard gate: Milestone 8.29 does not begin until milestone 8.28a and every networking-readiness blocker are reviewed and given an approved disposition.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828a-independently-review-six-hero-urp-and-networking-readiness-completion-evidence).
-
-### [x] 8.28a1 Restore the Unity-free harness after the URP test addition
-
-Corrective milestone for 8.28a finding `F-TEST-10`, approved by the user on 2026-08-28.
-
-Observable outcome: `UrpMigrationTests`, which necessarily references `UnityEditor` and `UnityEngine`, is explicitly excluded from the Unity-free .NET harness so that the harness compiles and runs its intended Core/Application majority again while the URP fixture remains owned by Unity Edit Mode.
-
-Acceptance checks:
-
-- Closing check for `F-TEST-10`: `dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj --no-restore` is recorded failing at the 8.28a review revision with CS0246 on `UrpMigrationTests.cs`, then passing after the one Unity-dependent fixture joins the harness project's explicit exclusion list.
-- The exclusion is limited to `UrpMigrationTests.cs`; no production source, test body, assertion, package, render setting, rule, content, command, projection, snapshot, or schema changes.
-- `UrpMigrationTests` remains compiled and green in Unity Edit Mode, preserving the URP gate rather than hiding it from every executable tier.
-- T3 test-infrastructure validation: the complete Unity-free harness and both complete unfiltered Unity suites pass at the corrected revision.
-
-Non-goals: No networking implementation, provider selection, harness redesign, test rewrite, runtime optimization, rendering change, or relaxation of the harness's default-include tripwire.
-
-Hard gate: `F-TEST-10` closed at 8.28a1, allowing parent milestone 8.28a to resume; milestone 8.29 remained blocked until that review handed off.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828a1-restore-the-unity-free-harness-after-the-urp-test-addition-completion-evidence).
-
-### [x] 8.28b Establish a seeded, replayable randomness seam
-
-Scheduled by the user-approved 2026-08-13 ER2 roadmap amendment; findings and evidence live in the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2). It touches only Core setup, so it may be approved and executed at any earlier point; it must complete before 8.29 begins the online track. The 8.2 re-baseline (2026-08-21, user approved, applying the 7.9a recommendation) resequences it directly after 8.2 in execution order - it is already unblocked, its closing determinism oracle exists since 7.9, and it is a schema/corpus change cheapest while the corpus is eight fixtures rather than after 8.25 - so it is the route's next proposal ahead of 8.3.
-
-Observable outcome: The one Core randomness source - `TieBreakerSetupAuthority.CreateNormalSetupState`, which draws non-seeded `RandomNumberGenerator` output outside the command history - becomes a seeded seam whose draw is recorded in authoritative setup state, so deterministic replay and a future online authority reproduce normal setup exactly.
-
-Acceptance checks:
-
-- Normal setup's coin flip derives from a recorded seed or recorded outcome carried in immutable setup state and the snapshot, not from an unrecorded draw.
-- Replay of a normal-setup match reproduces the identical Tie Breaker side from recorded state alone.
-- The DEV-005 deterministic internal override is unchanged, and normal match flow still flips randomly from the player's perspective per the rulebook.
-- Future randomness consumers have one seam to join; no second unrecorded randomness source is introduced.
-
-Closing check for `F-ER2-04`: a determinism fixture replaying normal setup from recorded state and matching the flip result, observed failing at the pre-fix revision (the draw is unrecorded) and passing at the post-fix revision.
-
-Non-goals: No networking, no new randomness consumers, no rulebook deviation, no change to the tie-breaker's gameplay meaning.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828b-establish-a-seeded-replayable-randomness-seam-completion-evidence).
 
 ### [x] 8.29 Select the minimum private-online architecture and re-baseline the track
 
@@ -672,6 +566,27 @@ Acceptance checks:
 Non-goals: No change to the Minion Battle rules or the agreement flow's authority, the wire protocol version, the persisted snapshot schema, Director-mode rendering, or milestone 8.35d's continuation work; no blanket exception isolation in the refresh loop; the end-of-round stall these crashes produced is recorded here, not as its own milestone.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835e-render-the-minion-battle-agreement-stage-on-every-scoped-seat-and-survive-a-scoped-trays-absent-revealed-card-completion-evidence).
+
+### [x] 8.35f Give each seat a bounded undo inside its own turn's card resolution
+
+Corrective milestone from the user's live multiplayer testing on 2026-09-03, approved the same day ahead of milestone 8.36's human gate and paired with 8.35d and 8.35e. Undo was the Director's alone - `UndoRestartPresenter` is null for a seat-scoped runtime and `SeatSubmission` deliberately could not name it - so a player who misplayed a step of their own resolution had no way back at all. The user's rule is printed: each player gets an undo, usable only while their own cards are being resolved, clickable step by step all the way back to the beginning of their turn, and never through an Attack, because once a target has been selected the defender's answer is information that cannot be un-shown.
+
+Observable outcome: During its own turn's card resolution a seat presses one UNDO control to step the match back one accepted command at a time, as far as the state its turn began in and no further, and never into or through an Attack whose target it has chosen; every other seat sees the board step back with it, and nothing else about who may do what changes.
+
+Acceptance checks:
+
+- A seat resolving its own turn is published a rewind exactly while the latest accepted command stands above the floor its turn began at; each accepted press reverts exactly one command and moves the authoritative version forward; the presses run out at that turn's own beginning rather than reaching its commitments, the Initiative that selected its actor, or a previous turn.
+- After a target is chosen, no sequence of presses ever takes back the target selection or anything inside rulebook p.14's action: the acting seat is published no rewind while the action resolves and is refused by name when it asks anyway, and the floor stands immediately above the settled action.
+- The same claim stated over a whole run rather than one position: a seeded seat walk pressing the control at every third state that offers one never lowers the count of Attack target selections in the recorded stream, and the case fails rather than passes when it observed no Attack or took no rewind.
+- Off-turn seats, teammates and opponents are published no rewind and are refused `UndoUnavailable`; the Director's own unbounded Undo, Restart and snapshots stay unreachable from every player surface, and the seat's own request carries no seat, no count and no target - the host answers all three.
+- A stale expected version and a repeated submission identity rewind exactly once between them, so a double click cannot take two steps; a refused rewind moves no version, no recorded stream and no snapshot.
+- Determinism holds across a rewind: the retained prefix replays to the state the rewind left, and that state's snapshot restores to itself.
+- Across the wire, six clients converge on the rewound board with every other hero's hidden cards still absent from the bytes; a protocol 2 peer is refused before any payload is interpreted, because the seat record carries the new fact in the middle of it; and a rewind asked while a reserved seat holds the session is refused `SessionPaused` without moving anything and is taken after that seat returns.
+- The seat HUD draws the control as a square on the status strip's top edge immediately left of END TURN, glyph only and no words, standing exactly when the host published the rewind and absent from the Director's drawer.
+
+Non-goals: No redo. No undo of commitments, Initiative, agreements, the Minion Battle, end-of-round decisions, or anything outside the acting seat's own resolution; no Director change and no seat restart. No change to the persisted snapshot schema, to rulebook p.14, or to milestone 8.36's execution. The explicit turn release the user amended in on 2026-09-03 is milestone 8.35g's work, not this one's. The pre-existing malformed-checkpoint replay refusal this milestone's own sweep reached at a deep history - which the Director's unbounded Undo answers identically from the same state, and which no part of this milestone introduced - is recorded here and corrected separately.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835f-give-each-seat-a-bounded-undo-inside-its-own-turns-card-resolution-completion-evidence).
 
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 

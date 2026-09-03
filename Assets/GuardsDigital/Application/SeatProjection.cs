@@ -210,8 +210,10 @@ namespace GuardsDigital.Application
             PendingDecisionContract decisionContract,
             IReadOnlyList<DirectorCommand> authorizedCommands,
             SeatPendingSurface pendingSurface,
-            TeamAgreementProjection teamAgreement)
+            TeamAgreementProjection teamAgreement,
+            bool isSeatUndoAvailable)
         {
+            IsSeatUndoAvailable = isSeatUndoAvailable;
             pending = pendingSurface;
             visibleCards = Array.AsReadOnly(ownCards.Concat(publicCards).ToArray());
             ActiveEffectSourceCardInstanceIds = source.ActiveEffectSourceCardInstanceIds;
@@ -256,6 +258,13 @@ namespace GuardsDigital.Application
         /// </summary>
         public long Version { get; }
         public bool IsInputEnabled => true;
+
+        /// <summary>
+        /// Milestone 8.35f. Whether this seat may step its own turn back by one accepted command
+        /// right now. The host publishes it and authorizes the rewind by the same rule, so a
+        /// surface never decides its own undo any more than it decides its own legality.
+        /// </summary>
+        public bool IsSeatUndoAvailable { get; }
 
         public QuickGameSetupState Setup { get; }
         public BoardMapDefinition SelectedMap { get; }
@@ -409,7 +418,8 @@ namespace GuardsDigital.Application
         public static SeatProjection ForSeat(
             MatchSessionProjection source,
             MatchSeat seat,
-            TeamAgreementProjection teamAgreement = null)
+            TeamAgreementProjection teamAgreement = null,
+            bool isSeatUndoAvailable = false)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (seat == null) throw new ArgumentNullException(nameof(seat));
@@ -446,7 +456,8 @@ namespace GuardsDigital.Application
                 ownsDecision ? source.DecisionContract : null,
                 AuthorizedCommands(source, seat, owner),
                 new SeatPendingSurface(source, ownsDecision, isActor),
-                teamAgreement);
+                teamAgreement,
+                isSeatUndoAvailable);
         }
 
         /// <summary>

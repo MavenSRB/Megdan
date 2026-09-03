@@ -180,6 +180,7 @@ namespace GuardsDigital.Presentation.Match
             };
             RoundView.InvocationSubmitted += invocation => RoundPresenter.Submit(invocation);
             RoundView.AgreementSubmitted += choice => RoundPresenter.SubmitAgreement(choice);
+            RoundView.SeatUndoRequested += () => RoundPresenter.SubmitSeatUndo();
             RoundView.AgreementHeroHighlighted += heroId =>
             {
                 BoardView.SetHoveredHero(heroId);
@@ -584,6 +585,12 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public bool SubmitEndTurn() => RoundPresenter.Submit(RoundView.Model?.EndTurnInvocation);
+
+        /// <summary>
+        /// Milestone 8.35f. Presses this seat's own UNDO square, through the same presenter path
+        /// the drawn control raises.
+        /// </summary>
+        public bool SubmitSeatUndo() => RoundPresenter.SubmitSeatUndo();
 
         public bool SelectFastTravel()
         {

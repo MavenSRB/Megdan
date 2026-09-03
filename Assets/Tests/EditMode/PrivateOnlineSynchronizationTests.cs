@@ -416,6 +416,8 @@ namespace GuardsDigital.Tests.EditMode
                 { "GetCommitment", "derived: a lookup over Commitments" },
                 { "SelectedActor", nameof(NetworkSeatProjectionRecord.SelectedActor) },
                 { "IsTurnActive", nameof(NetworkSeatProjectionRecord.IsTurnActive) },
+                { "IsSeatUndoAvailable",
+                    nameof(NetworkSeatProjectionRecord.IsSeatUndoAvailable) },
                 { "TeamLifeCounters", nameof(NetworkSeatProjectionRecord.TeamLifeCounters) },
                 { "HeroProgression", nameof(NetworkSeatProjectionRecord.HeroProgression) },
                 { "Outcome", nameof(NetworkSeatProjectionRecord.Outcome) },

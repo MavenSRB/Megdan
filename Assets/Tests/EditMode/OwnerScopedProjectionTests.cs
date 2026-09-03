@@ -272,6 +272,13 @@ namespace GuardsDigital.Tests.EditMode
                 "not the rule is vacuous.");
         }
 
+        /// <summary>
+        /// The line between a player's surface and the Director's. Milestone 8.35f added the
+        /// one crossing there has ever been - a seat may ask for the bounded rewind of its own
+        /// turn - and this case records the boundary that replaced the old one rather than
+        /// dropping the claim: everything unbounded is still absent, and the request the seat
+        /// does carry is too small to aim.
+        /// </summary>
         [Test]
         public void ThePlayerSurfaceCarriesNoDirectorAuthority()
         {
@@ -310,8 +317,21 @@ namespace GuardsDigital.Tests.EditMode
                 "Holding the full-trust read model would make every absence above cosmetic.");
             Assert.That(typeof(ISeatClient).GetMethods().Select(method => method.Name)
                     .Where(name => !name.StartsWith("get_", StringComparison.Ordinal)),
-                Is.EquivalentTo(new[] { "Submit", "SubmitAgreement" }),
-                "A player's authority is limited to rules commands and bounded team statements.");
+                Is.EquivalentTo(new[] { "Submit", "SubmitAgreement", "SubmitUndo" }),
+                "A player's authority is limited to rules commands, bounded team statements, and " +
+                "the bounded rewind of its own turn.");
+
+            // Milestone 8.35f moved this boundary exactly once, and this is where it now stands.
+            // A seat may ask to step its own turn back; the Director-only absences above are
+            // unchanged, so its unbounded Undo, its Restart and its snapshots stay unreachable.
+            // What keeps the two apart is that the seat's request has no room to say how far,
+            // whose turn, or from which state: it names an identity and the version it was decided
+            // against, and the host answers all three questions itself.
+            Assert.That(typeof(SeatUndoSubmission)
+                    .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Select(property => property.Name),
+                Is.EquivalentTo(new[] { "Id", "ExpectedVersion" }),
+                "A seat's rewind carries nothing it could aim: no seat, no count, no target.");
         }
 
         [Test]

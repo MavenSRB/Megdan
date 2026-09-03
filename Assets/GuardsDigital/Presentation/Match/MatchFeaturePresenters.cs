@@ -2892,8 +2892,10 @@ namespace GuardsDigital.Presentation.Match
             EffectChoicePromptViewModel effectChoicePrompt = null,
             RemovalPreventionPromptViewModel removalPreventionPrompt = null,
             IEnumerable<PrintedActionRegionViewModel> printedActionRegions = null,
-            TeamAgreementHudViewModel teamAgreement = null)
+            TeamAgreementHudViewModel teamAgreement = null,
+            bool seatUndoAvailable = false)
         {
+            SeatUndoAvailable = seatUndoAvailable;
             SystemTransitionPrompt = systemTransitionPrompt;
             EffectChoicePrompt = effectChoicePrompt;
             RemovalPreventionPrompt = removalPreventionPrompt;
@@ -2994,6 +2996,13 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<TypedInvocationViewModel> Actions { get; }
         public TypedInvocationViewModel EndTurnInvocation { get; }
         public TypedInvocationViewModel ContinueEndOfRoundInvocation { get; }
+
+        /// <summary>
+        /// Milestone 8.35f. Whether this seat's own UNDO control stands. It carries no invocation,
+        /// because a rewind is not a command a surface could forward: the control asks the client,
+        /// the client asks the host, and the host decides by the same rule that published this.
+        /// </summary>
+        public bool SeatUndoAvailable { get; }
         public IReadOnlyList<TypedInvocationViewModel> InitiativeChoices { get; }
 
         public TeamAgreementHudViewModel TeamAgreement { get; }
@@ -3297,6 +3306,32 @@ namespace GuardsDigital.Presentation.Match
         public void Refresh()
         {
             view.Render(GetOrCreateViewModel(session.Projection));
+        }
+
+        /// <summary>
+        /// Milestone 8.35f. Steps this seat's own turn back by one accepted command.
+        /// </summary>
+        /// <remarks>
+        /// It takes no invocation and composes no command, because there is none: the control's
+        /// whole content is "the seat that owns this turn asks to step back". The presenter refuses
+        /// to ask when the view it is currently rendering says the control does not stand, so a
+        /// stale click cannot become a question the host has to refuse; the host re-decides anyway.
+        /// </remarks>
+        public bool SubmitSeatUndo()
+        {
+            if (!GetOrCreateViewModel(session.Projection).SeatUndoAvailable)
+            {
+                return false;
+            }
+
+            var result = session.SubmitUndo();
+            if (result.Accepted)
+            {
+                Refresh();
+                SessionProjectionChanged?.Invoke(session.Projection);
+            }
+
+            return result.Accepted;
         }
 
         public bool Submit(TypedInvocationViewModel invocation)
@@ -3805,7 +3840,10 @@ namespace GuardsDigital.Presentation.Match
                         projection.PendingEffectChoice, projection.PendingEffectChoicePreview)),
                 CreateRemovalPreventionPrompt(projection),
                 printedActionRegions,
-                TeamAgreementHudPresentation.Create(projection));
+                TeamAgreementHudPresentation.Create(projection),
+                // Milestone 8.35f. Read straight off the projection: the host publishes whether
+                // this seat may step back, and the control is enabled exactly when it says so.
+                projection.IsSeatUndoAvailable);
         }
 
         private static IReadOnlyList<PrintedActionRegionViewModel> CreatePrintedActionRegions(

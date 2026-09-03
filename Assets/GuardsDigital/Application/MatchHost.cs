@@ -307,6 +307,12 @@ namespace GuardsDigital.Application
             SeatId seat, TeamAgreementSubmission submission);
 
         /// <summary>
+        /// Milestone 8.35f. Steps one seat's own turn back by one accepted command, having
+        /// authorized the rewind against the bounds that seat's own projection published.
+        /// </summary>
+        SeatUndoResult SubmitUndoForSeat(SeatId seat, SeatUndoSubmission submission);
+
+        /// <summary>
         /// Milestone 8.30a. The client bound to that seat: everything a player surface may see and
         /// do, and nothing the Director may.
         /// </summary>
@@ -397,6 +403,12 @@ namespace GuardsDigital.Application
             public bool Answers(SeatId seat, TeamAgreementCommand statement) =>
                 Statement != null && Command == null &&
                 Seat.Equals(seat) && Statement.Equals(statement);
+
+            /// <summary>Milestone 8.35f. An undo carries no payload, so its identity is the whole of it.</summary>
+            public bool IsUndo;
+
+            public bool AnswersUndo(SeatId seat) =>
+                IsUndo && Command == null && Statement == null && Seat.Equals(seat);
         }
 
         private readonly IMatchSession session;
@@ -413,6 +425,14 @@ namespace GuardsDigital.Application
         private MatchSeatBinding seatBinding;
         private bool executing;
         private long sequence;
+
+        // Milestone 8.35f. Where one seat's own undo may not step past, tracked as the match runs
+        // rather than searched for in the history afterwards. Four facts, and each is one clause of
+        // the user's printed rule.
+        private string undoTurnMarker = string.Empty;
+        private SeatId undoActorSeat;
+        private int undoFloor;
+        private bool undoAttackUnderWay;
 
         public MatchHost(IMatchSession session)
         {
@@ -477,15 +497,25 @@ namespace GuardsDigital.Application
                 }
 
                 executing = true;
+                MatchHostResult result;
                 try
                 {
                     DuringSubmissionForTest?.Invoke();
-                    return Execute(submission);
+                    result = Execute(submission);
                 }
                 finally
                 {
                     executing = false;
                 }
+
+                // Milestone 8.35f. The Director's own door keeps the watermark honest without
+                // raising the other-seat wall: a Director command is nobody's seat answer.
+                if (result.Accepted)
+                {
+                    RefreshSeatUndoWatermark(default, submission.Command);
+                }
+
+                return result;
             }
         }
 
@@ -690,6 +720,11 @@ namespace GuardsDigital.Application
                     executing = false;
                 }
 
+                if (inner.Accepted)
+                {
+                    RefreshSeatUndoWatermark(bound.Id, submission.Command);
+                }
+
                 var outcome = new CachedSubmissionOutcome
                 {
                     Seat = bound.Id,
@@ -810,6 +845,7 @@ namespace GuardsDigital.Application
                     // match reaches or leaves an end-of-round stage - p.8's Minion Battle is
                     // confirmed exactly here - so the continuation runs from this door too.
                     ContinueEndOfRound();
+                    RefreshSeatUndoWatermark(bound.Id, applied.FinalCommand);
                     return CachedAgreementOutcome(
                         submission, bound, true,
                         TeamAgreementSubmissionRejectionReason.None, string.Empty,
@@ -838,7 +874,8 @@ namespace GuardsDigital.Application
         {
             var source = session.Projection;
             var agreement = teamAgreement.ProjectionFor(source, CurrentSeats(), seat);
-            return SeatProjectionFactory.ForSeat(source, seat, agreement);
+            return SeatProjectionFactory.ForSeat(
+                source, seat, agreement, CanSeatUndo(seat, out _));
         }
 
         private void ConsumeSubmissionId(SubmissionId id)
@@ -1003,6 +1040,224 @@ namespace GuardsDigital.Application
                 "The end-of-round continuation ran " + EndOfRoundContinuationStageLimit +
                 " advances without leaving end of round or reaching a decision.");
         }
+
+        /// <summary>
+        /// Milestone 8.35f. Where this seat's own undo may not step past, brought up to date after
+        /// every accepted submission.
+        /// </summary>
+        /// <remarks>
+        /// <para>Tracked forward as the match runs rather than reconstructed by walking the
+        /// recorded history backwards, because the two questions the bounds turn on - which seat
+        /// answered a command, and whether an attack action has finished - are answered exactly
+        /// once, at the moment each command is accepted, and nothing in the stream itself records
+        /// them. It is a derived watermark in the same sense as the seat binding: discarding it
+        /// would only cost the seat its undo until its next turn.</para>
+        /// <para>The three bounds are the user's own rule. The <b>turn floor</b> is where the
+        /// actor's card resolution became active with nothing taken yet, so an undo never reaches
+        /// commitments, Initiative, an agreement or a previous turn. The <b>attack wall</b> rises
+        /// the moment a target is chosen and settles above the whole p.14 action once it finishes -
+        /// the defender's answer is information that cannot be un-shown, so the action is never
+        /// undoable and there is no undo at all while it is running. The <b>other-seat wall</b>
+        /// rises above anything a different seat answered inside this turn, so one player's rewind
+        /// can never reach through another player's decision.</para>
+        /// </remarks>
+        private void RefreshSeatUndoWatermark(SeatId submittingSeat, DirectorCommand accepted)
+        {
+            var projection = session.Projection;
+            var marker = TurnMarkerOf(projection);
+            if (!string.Equals(marker, undoTurnMarker, StringComparison.Ordinal))
+            {
+                undoTurnMarker = marker;
+                undoFloor = projection.AcceptedCommands.Count;
+                undoAttackUnderWay = false;
+                var actor = marker.Length == 0
+                    ? null
+                    : CurrentSeats().FindByHero(projection.SelectedActor.ActorId);
+                undoActorSeat = actor == null ? default : actor.Id;
+                return;
+            }
+
+            if (accepted != null && accepted.Kind == DirectorCommandKind.ChooseAttackTarget)
+            {
+                undoAttackUnderWay = true;
+            }
+
+            if (submittingSeat.IsDefined && !submittingSeat.Equals(undoActorSeat))
+            {
+                undoFloor = projection.AcceptedCommands.Count;
+            }
+
+            // The p.14 action is over when nothing of it is still resolving and nothing is being
+            // asked. Milestone 8.29f's rule restated at this layer: what decides whether the action
+            // is still running is what stands once the steps have been applied.
+            if (undoAttackUnderWay &&
+                !projection.HasPendingAttackResolution &&
+                projection.DecisionContract == null)
+            {
+                undoFloor = projection.AcceptedCommands.Count;
+                undoAttackUnderWay = false;
+            }
+        }
+
+        private static string TurnMarkerOf(MatchSessionProjection projection) =>
+            !projection.IsTurnActive || !projection.SelectedActor.IsDefined
+                ? string.Empty
+                : projection.RoundIndex + ":" + projection.TurnIndex + ":" +
+                    projection.SelectedActor.ActorId.Value + ":" +
+                    projection.SelectedActor.CardInstanceId.Value;
+
+        /// <summary>
+        /// Milestone 8.35f. Whether this seat may step back one command right now, and why not when
+        /// it may not. The refusal detail is the same sentence the availability answers.
+        /// </summary>
+        private bool CanSeatUndo(MatchSeat seat, out string detail)
+        {
+            var projection = session.Projection;
+            if (!projection.IsHistoryAvailable)
+            {
+                detail = "This session has no retained history to step back through.";
+                return false;
+            }
+
+            if (undoTurnMarker.Length == 0 || !undoActorSeat.IsDefined)
+            {
+                detail = "No turn is being resolved, so there is nothing of this seat's own to undo.";
+                return false;
+            }
+
+            if (!undoActorSeat.Equals(seat.Id))
+            {
+                detail = "Seat " + seat.Id + " is not resolving this turn.";
+                return false;
+            }
+
+            if (undoAttackUnderWay)
+            {
+                detail = "An Attack whose target has been chosen is resolving, and rulebook p.14's " +
+                    "action is never undone once it has been answered.";
+                return false;
+            }
+
+            if (projection.AcceptedCommands.Count <= undoFloor)
+            {
+                detail = "This turn is already at the earliest state its own seat may return to.";
+                return false;
+            }
+
+            var owner = SeatProjectionFactory.OwnerOfStandingDecision(projection);
+            if (owner.IsDefined && !owner.IsOwnedBy(seat))
+            {
+                detail = "Another seat is answering a standing decision, and a rewind may not " +
+                    "reach under it.";
+                return false;
+            }
+
+            detail = string.Empty;
+            return true;
+        }
+
+        public SeatUndoResult SubmitUndoForSeat(SeatId seat, SeatUndoSubmission submission)
+        {
+            if (submission == null) throw new ArgumentNullException(nameof(submission));
+
+            lock (gate)
+            {
+                var bound = CurrentSeats().Find(seat);
+                if (bound == null)
+                {
+                    return UndoRefused(
+                        submission, null, SeatSubmissionRejectionReason.UnknownSeat,
+                        "No seat '" + seat + "' is bound in this match.");
+                }
+
+                if (executing)
+                {
+                    return UndoRefused(
+                        submission, bound, SeatSubmissionRejectionReason.HostRefused,
+                        "The host is already executing a submission.");
+                }
+
+                // The identity before the version, exactly as the command and agreement paths order
+                // them: a rewind that already happened is answered from what it did, never taken a
+                // second time. This is the whole of what makes a double click safe, because an undo
+                // is not idempotent.
+                if (consumedSubmissionIds.Contains(submission.Id))
+                {
+                    if (cachedOutcomes.TryGetValue(submission.Id, out var cached) &&
+                        cached.AnswersUndo(bound.Id))
+                    {
+                        return new SeatUndoResult(
+                            submission, cached.Accepted, cached.SeatReason, cached.SessionReason,
+                            cached.Detail, cached.Version, cached.Sequence, ProjectionForBound(bound));
+                    }
+
+                    return UndoRefused(
+                        submission, bound, SeatSubmissionRejectionReason.DuplicateSubmission,
+                        "Submission '" + submission.Id + "' has already reached the authority.");
+                }
+
+                var projection = ProjectionForBound(bound);
+                if (submission.ExpectedVersion != projection.Version)
+                {
+                    return UndoRefused(
+                        submission, bound, SeatSubmissionRejectionReason.StaleProjection,
+                        "The submission expects version " + submission.ExpectedVersion +
+                        " and the authoritative version is " + projection.Version + ".");
+                }
+
+                if (!CanSeatUndo(bound, out var why))
+                {
+                    return UndoRefused(
+                        submission, bound, SeatSubmissionRejectionReason.UndoUnavailable, why);
+                }
+
+                ConsumeSubmissionId(submission.Id);
+                executing = true;
+                MatchHostResult inner;
+                try
+                {
+                    DuringSubmissionForTest?.Invoke();
+                    inner = Execute(MatchSubmission.ForUndo());
+                }
+                finally
+                {
+                    executing = false;
+                }
+
+                // The rewind cannot have crossed a turn boundary - the floor is inside this turn -
+                // so this only lets the watermark observe the state it landed on.
+                RefreshSeatUndoWatermark(default, null);
+
+                var outcome = new CachedSubmissionOutcome
+                {
+                    Seat = bound.Id,
+                    IsUndo = true,
+                    Accepted = inner.Accepted,
+                    SeatReason = inner.Accepted
+                        ? SeatSubmissionRejectionReason.None
+                        : SeatSubmissionRejectionReason.SessionRefused,
+                    AgreementReason = TeamAgreementSubmissionRejectionReason.None,
+                    SessionReason = inner.SessionRejectionReason,
+                    Detail = inner.Detail,
+                    Version = inner.Version,
+                    Sequence = inner.Sequence
+                };
+                CacheOutcome(submission.Id, outcome);
+
+                return new SeatUndoResult(
+                    submission, outcome.Accepted, outcome.SeatReason, outcome.SessionReason,
+                    outcome.Detail, outcome.Version, outcome.Sequence, ProjectionForBound(bound));
+            }
+        }
+
+        private SeatUndoResult UndoRefused(
+            SeatUndoSubmission submission,
+            MatchSeat seat,
+            SeatSubmissionRejectionReason reason,
+            string detail) =>
+            new SeatUndoResult(
+                submission, false, reason, MatchSessionRejectionReason.None, detail,
+                session.Projection.Version, 0, seat == null ? null : ProjectionForBound(seat));
 
         private void RecordContinuationRefusal(string detail)
         {

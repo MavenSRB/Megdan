@@ -131,6 +131,16 @@ namespace GuardsDigital.Application
                 !sent);
         }
 
+        public MatchClientResult SubmitUndo()
+        {
+            var sent = session.TrySubmitUndo(out _);
+            return new MatchClientResult(
+                sent,
+                sent ? "Rewind sent to the host." : NetworkMatchFeedback.For(session),
+                Projection,
+                !sent);
+        }
+
         private IMatchReadModel CurrentProjection()
         {
             var record = session.LatestProjection;
@@ -356,6 +366,13 @@ namespace GuardsDigital.Application
 
         public long Version => wire?.Version ?? trusted.Version;
         public bool IsInputEnabled => actionable;
+
+        /// <summary>
+        /// Milestone 8.35f. The host's own answer, carried on the seat record, and withheld while
+        /// this view is not actionable - a waiting, stale, resynchronizing or disconnected client
+        /// may not mint a rewind any more than it may mint a command.
+        /// </summary>
+        public bool IsSeatUndoAvailable => actionable && (wire?.IsSeatUndoAvailable ?? false);
         public QuickGameSetupState Setup => trusted.Setup;
         public BoardMapDefinition SelectedMap => trusted.SelectedMap;
         public MatchParticipants Participants => trusted.Participants;

@@ -355,6 +355,75 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35f. The seat's own UNDO square: drawn in its own surface for the one seat
+        /// the host published a rewind to, drawn for nobody else, and carrying no invocation at all.
+        /// </summary>
+        /// <remarks>
+        /// The absence of an invocation is the structural half. End Turn forwards a projected
+        /// command; a rewind is not a command, so this control raises a bare event and the presenter
+        /// asks the client. A view that could compose an undo could compose one for another seat.
+        /// </remarks>
+        [Test]
+        public void TheSeatUndoSquareIsDrawnForTheSeatThatMayRewindAndForNobodyElse()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            MatchSeat acting = null;
+            for (var driven = 0; driven < 400 && acting == null; driven += 5)
+            {
+                OwnerScopedProjectionTests.DriveThroughSeats(host, 5);
+                acting = host.Seats.Seats.FirstOrDefault(value =>
+                    host.ProjectionForSeat(value.Id).IsSeatUndoAvailable);
+            }
+
+            Assert.That(acting, Is.Not.Null,
+                "The drive must reach a seat the host published a rewind to; a skipped case would " +
+                "be a hole in this milestone's evidence rather than a pass.");
+
+            var actingModel = RoundActionPresenter.CreateViewModel(host.ProjectionForSeat(acting.Id));
+            Assert.That(actingModel.SeatUndoAvailable, Is.True);
+            var actingView = new RoundActionUnityView();
+            actingView.Render(actingModel);
+
+            var control = actingView.SeatUndoRoot.Q<Button>("gd-seat-undo-control");
+            Assert.That(control, Is.Not.Null);
+            Assert.That(actingView.SeatUndoRoot.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(control.text, Is.EqualTo(RoundActionUnityView.SeatUndoGlyph),
+                "It says the glyph and nothing else - the square has no room for lettering.");
+            Assert.That(control.text, Does.Not.Contain("UNDO"),
+                "No words, by the user's own placement decision.");
+            Assert.That(control.style.minHeight.value.value,
+                Is.EqualTo(ConfiguredMatchHudRenderer.SeatUndoControlSide));
+
+            // Taken the way every other Edit Mode case here takes a control's action: an element
+            // with no live panel dispatches no pointer event, so the raising path is exercised
+            // directly and the seat-level fixtures drive the rest of it.
+            var pressed = 0;
+            actingView.SeatUndoRequested += () => pressed++;
+            actingView.RequestSeatUndo();
+
+            Assert.That(pressed, Is.EqualTo(1),
+                "The press raises a bare request; it composes no command of its own.");
+            Assert.That(Descendants(actingView.Root).OfType<Button>()
+                    .Any(button => button.text != null &&
+                        button.text.IndexOf("UNDO", StringComparison.OrdinalIgnoreCase) >= 0),
+                Is.False,
+                "Nothing in a seat's surface spells the word: the Director's drawer owns that one.");
+
+            foreach (var other in host.Seats.Seats.Where(value => !value.Id.Equals(acting.Id)))
+            {
+                var otherProjection = host.ProjectionForSeat(other.Id);
+                Assert.That(otherProjection.IsSeatUndoAvailable, Is.False,
+                    "Only the seat resolving its own turn is published a rewind.");
+                var otherView = new RoundActionUnityView();
+                otherView.Render(RoundActionPresenter.CreateViewModel(otherProjection));
+                Assert.That(otherView.SeatUndoRoot.style.display.value,
+                    Is.EqualTo(DisplayStyle.None),
+                    "A seat with no rewind draws no square - absent rather than standing and inert.");
+                Assert.That(otherView.SeatUndoRoot.childCount, Is.Zero);
+            }
+        }
+
+        /// <summary>
         /// Milestone 8.30b, and this is the behaviour behind the closing check.
         ///
         /// <para>The Minion Battle is one of the two declared pending families the status derivation

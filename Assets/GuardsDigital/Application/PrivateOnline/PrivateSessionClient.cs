@@ -94,6 +94,7 @@ namespace GuardsDigital.Application
         private long gameplayReceiveSequence;
         private string awaitingCommandResultId;
         private string awaitingAgreementResultId;
+        private string awaitingUndoResultId;
         private long awaitingProjectionCorrelation;
         private bool awaitingReconnectProjection;
         private long waitingStartedTicks;
@@ -205,13 +206,17 @@ namespace GuardsDigital.Application
         /// <summary>Milestone 8.33. The host's answer to this client's newest agreement statement.</summary>
         public NetworkAgreementResultMessage LastAgreementResult { get; private set; }
 
+        /// <summary>Milestone 8.35f. The host's answer to this client's newest rewind.</summary>
+        public NetworkUndoResultMessage LastUndoResult { get; private set; }
+
         /// <summary>The newest bounded session feedback a match surface must say.</summary>
         public string MatchFeedback { get; private set; } = string.Empty;
 
         /// <summary>Whether an accepted local press is still awaiting the host's named answer.</summary>
         public bool IsWaitingForHost =>
             !string.IsNullOrEmpty(awaitingCommandResultId) ||
-            !string.IsNullOrEmpty(awaitingAgreementResultId);
+            !string.IsNullOrEmpty(awaitingAgreementResultId) ||
+            !string.IsNullOrEmpty(awaitingUndoResultId);
 
         /// <summary>
         /// Whether one in-flight press has crossed the player-facing delayed threshold. The
@@ -591,7 +596,8 @@ namespace GuardsDigital.Application
                     ClearWaitingForHost();
                 }
                 if ((LastSubmissionResult == null || record.Version > LastSubmissionResult.Version) &&
-                    (LastAgreementResult == null || record.Version > LastAgreementResult.Version))
+                    (LastAgreementResult == null || record.Version > LastAgreementResult.Version) &&
+                    (LastUndoResult == null || record.Version >= LastUndoResult.Version))
                 {
                     MatchFeedback = string.Empty;
                 }
@@ -651,6 +657,50 @@ namespace GuardsDigital.Application
                 if (reading == EnvelopeReading.Gap)
                 {
                     BeginResync();
+                }
+
+                return;
+            }
+
+            if (frame.Kind == SessionMessageKind.UndoResult)
+            {
+                if (!NetworkMessageCodec.TryDecodeUndoResult(frame.Payload, out var undo))
+                {
+                    Fault();
+                    return;
+                }
+
+                var undoReading = ReadEnvelope(undo.Envelope);
+                if (undoReading == EnvelopeReading.Invalid)
+                {
+                    Fault();
+                    return;
+                }
+
+                if (undoReading == EnvelopeReading.Stale)
+                {
+                    DiscardedFrameCount++;
+                    return;
+                }
+
+                gameplayReceiveSequence = undo.Envelope.Sequence;
+                LastUndoResult = undo;
+                MatchFeedback = undo.Accepted ? string.Empty :
+                    (string.IsNullOrWhiteSpace(undo.Detail)
+                        ? undo.RejectionReason.ToString()
+                        : undo.Detail);
+                if (string.Equals(awaitingUndoResultId, undo.SubmissionId, StringComparison.Ordinal))
+                {
+                    if (undo.Accepted ||
+                        undo.RejectionReason == SeatSubmissionRejectionReason.StaleProjection)
+                    {
+                        // Keep the latch. Its correlated complete projection releases it, exactly
+                        // as an accepted command's does - a rewind changes the board it is about.
+                    }
+                    else
+                    {
+                        ClearUndoWait();
+                    }
                 }
 
                 return;
@@ -930,10 +980,64 @@ namespace GuardsDigital.Application
             }
         }
 
+        private void BeginUndoWait(string submissionId, long projectionCorrelation)
+        {
+            awaitingUndoResultId = submissionId;
+            awaitingProjectionCorrelation = projectionCorrelation;
+            waitingStartedTicks = timeSource();
+        }
+
+        private void ClearUndoWait()
+        {
+            awaitingUndoResultId = null;
+            awaitingProjectionCorrelation = 0;
+            if (string.IsNullOrEmpty(awaitingCommandResultId) &&
+                string.IsNullOrEmpty(awaitingAgreementResultId))
+            {
+                waitingStartedTicks = 0;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35f. Asks the host to step this seat's own turn back by one accepted
+        /// command, under exactly the command-submission discipline: the wire's own submission
+        /// identity, the version the rewind was decided against, and a refusal to ask at all while
+        /// the view is not actionable or the host's own answer says there is nothing to take.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="NetworkSeatProjectionRecord.IsSeatUndoAvailable"/> gate here is not the
+        /// authorization - the host re-decides that - but it is what keeps a double click from
+        /// becoming two questions: the second press happens against a projection the first press's
+        /// result has not replaced yet, so this refuses to send it and the latch says why.
+        /// </remarks>
+        public bool TrySubmitUndo(out string submissionId)
+        {
+            submissionId = null;
+            if (State != PrivateSessionClientState.Seated || LatestProjection == null ||
+                IsWaitingForHost || !LatestProjection.IsSeatUndoAvailable)
+            {
+                return false;
+            }
+
+            submissionId = MintSubmissionId();
+            gameplaySendSequence++;
+            BeginUndoWait(submissionId, gameplaySendSequence);
+            Send(NetworkMessageCodec.SubmitUndoFrame(new NetworkUndoSubmissionMessage(
+                new NetworkEnvelope(
+                    SessionCorrelation,
+                    ConnectionEpoch,
+                    gameplaySendSequence,
+                    gameplaySendSequence),
+                submissionId,
+                LatestProjection.Version)));
+            return true;
+        }
+
         private void ClearWaitingForHost()
         {
             awaitingCommandResultId = null;
             awaitingAgreementResultId = null;
+            awaitingUndoResultId = null;
             awaitingProjectionCorrelation = 0;
             waitingStartedTicks = 0;
         }

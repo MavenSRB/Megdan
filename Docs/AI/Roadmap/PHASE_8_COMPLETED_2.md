@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard holding additional Phase 8 milestone definitions that are complete and self-contained. Return to [ROADMAP.md](../ROADMAP.md) or the active shard [PHASE_8.md](PHASE_8.md). Historical completion evidence: [PHASE_8 handoffs](../Archive/Phase-Handoffs/PHASE_8.md).
 
-Created 2026-08-28 during milestone 8.25f2a's required warning-threshold ownership review. Milestones 8.11d and 8.11e moved here verbatim after the main Phase 8 shard reached its warning threshold; milestone 8.29a followed during the 2026-08-29 ownership review, and milestones 8.16 through 8.17 followed during milestone 8.30's on the same date. Milestones 8.18a through 8.24 followed on 2026-09-03 during milestone 8.35a1's, placed in sequence after milestone 8.17 so that the five 8.18 slices again sit below the split contract they read "above". Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
+Created 2026-08-28 during milestone 8.25f2a's required warning-threshold ownership review. Milestones 8.11d and 8.11e moved here verbatim after the main Phase 8 shard reached its warning threshold; milestone 8.29a followed during the 2026-08-29 ownership review, and milestones 8.16 through 8.17 followed during milestone 8.30's on the same date. Milestones 8.18a through 8.24 followed on 2026-09-03 during milestone 8.35a1's, placed in sequence after milestone 8.17 so that the five 8.18 slices again sit below the split contract they read "above". The 2026-08-28 amendment merging 8.26 into 8.27, and milestones 8.27 through 8.28b, followed on 2026-09-03 during milestone 8.35f's, placed ahead of milestone 8.29a so the run still reads in milestone order. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
 
 ### [x] 8.11d Replace piece-target triangles with fitted rings and washes
 
@@ -306,6 +306,111 @@ Non-goals: No six-player setup, networking, production art, alternate miniature,
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-824-complete-and-verify-additional-pitch-hero-slot-e---xargatha-completion-evidence).
 
+Roadmap amendment, 2026-08-28, user approved: **8.26 is merged into 8.27 and no longer exists as a separately executable milestone.** Its six-owner director flow, joint reveal, Initiative/team interactions, readable resolver/history, and reconstruction obligations were already substantially delivered by the accumulated 8.25 and HUD work. Milestone 8.27 retains every obligation as integrated official-match evidence and corrects any defect that evidence exposes; it does not reimplement behavior merely to satisfy the former boundary.
+
+### [x] 8.27 Complete and prove the deterministic six-hero 3v3 pitch match
+
+Observable outcome: Wasp and the five other distinct verified heroes can start from the official six-player Quick Game setup, play repeated turns and rounds, and end through every victory path with primitive visuals and director/debug UI.
+
+Acceptance checks:
+
+- From the official configuration, one director can access each hero's correct hand and complete every turn: for every hero with a nonempty hand the director chooses exactly one owned card, while an empty hand records a Pass; reveal occurs only after all six heroes respond; and every played card resolves in Initiative order without transferring ownership.
+- Friendly/enemy queries, tied Initiative decisions, assists, reactions, hero-specific pending choices, and actor switching use authoritative team/player/hero relationships throughout the repeated-round match.
+- Played/revealed cards and the active resolver remain readable without presentation owning turn legality. The read-only primitive history groups all three Red and all three Blue heroes and shows each hero's authoritative revealed card or empty-hand Pass for turns 1-4, while current-turn Facedown commitments remain hidden until joint reveal.
+- Every displayed history entry resolves through its stable assignment and card definition; played or Defense-discarded cards cannot reappear merely because presentation rebuilds; and Undo, restart, snapshot restore, replay, and the event log reproduce the same six-hero turns.
+- Every implemented hero rule links to an authoritative source and focused tests; unresolved source or capability entries keep the gate incomplete.
+- The complete six-hero roster exercises legal team interactions, combat, minions, Lane Push, progression, defeat/respawn, and victory without card-name/hero-name branches outside isolated approved handlers.
+- The official six-player setup and only the remaining approved director/debug deviations are represented.
+- Automated configuration and integration checks prove that staged one-hero-per-team, mirrored-definition, fixed-two-response, and controller-as-game-entity assumptions are absent: six distinct heroes map to six distinct controlling player/seats, exactly three heroes belong to each team, and director tooling remains outside match authority.
+- Undo, restart, snapshots, event log, and Tie Breaker override remain deterministic across the complete 3v3 loop.
+- A broader source-linked six-hero integration suite passes.
+- Close 8.16a's F-CORE-10 on `CompleteMatchRuntimeCaptureTests.MeasuresTheOfficialSixHeroCompleteMatch`: observe the check failing at the pre-fix revision because `CreateCompleteMatchSession` still composes the internal two-seat synthetic configuration, then passing after the capture uses the same official six-player configuration and deterministic full-match driver this gate proves. Re-derive the time, allocation, captured-byte-growth, and Undo lines from that run; retain the prior figures beside the new baseline and disposition every crossing rather than silently widening a threshold.
+- `RISK-SCALE-001` is reassessed in full and then retired with its recorded 3v3 bound or its residuals explicitly accepted. This is the first milestone whose acceptance checks reach repeated rounds and progression with six heroes, so it is the first at which rulebook p.15's simultaneous Level Up can be observed as the serialized one-question-at-a-time step the continuation contract makes it, and the first at which the leveling stage's per-round derivation can be sampled against the standing thresholds rather than reasoned about.
+- T3 hard gate: both complete unfiltered Edit Mode and Play Mode suites pass.
+
+Non-goals: No hidden-information enforcement, table-talk enforcement, networking, AI, six separate input devices, production presentation, or change to the approved rules.
+
+Hard gate: The networking architecture decision does not begin until the deterministic 3v3 match, URP migration, and independent readiness review at milestone 8.28a are reviewed and approved. Production visual work remains blocked through milestone 8.36a.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-827-complete-and-prove-the-deterministic-six-hero-3v3-pitch-match-completion-evidence).
+
+### [x] 8.28 Render-pipeline migration gate
+
+Observable outcome: The complete primitive six-hero match is ported from Unity's Built-In Render Pipeline to URP, with its existing director/debug presentation and Win64 reference path intact, before production visual assets are introduced.
+
+Planning rationale: Unity deprecated the Built-In Render Pipeline in Unity 6.5, guarantees its availability through at least Unity 6.7 LTS, and has not announced a final removal version. This project can retain Built-In rendering through the primitive-rule phases, but must not begin production presentation work on a pipeline Unity has directed new projects away from. [Unity's 2026 render-pipeline strategy](https://unity.com/topics/render-pipelines-strategy-for-2026).
+
+Acceptance checks:
+
+- URP is the active render pipeline for every configured quality level; the project no longer relies on a Built-In-only default pipeline setting.
+- The existing primitive board, miniatures/tokens, card/HUD panels, highlighting, pointer selection, fixed camera, and event-driven presentation remain readable and functional after conversion.
+- Materials, shaders, lighting, and post-processing used by the retained primitive presentation are URP-compatible; no Built-In-only visual dependency is carried into Phase 9.
+- The authoritative rules assemblies and their deterministic state/event results are unchanged; the migration does not alter game rules, command handling, or timing.
+- Focused Play Mode coverage for the affected presentation paths, a targeted visual inspection, a disposable internal Win64 development-build launch smoke, and both complete unfiltered Edit Mode and Play Mode suites pass.
+
+Non-goals: No production board art, hero/minion production models, animation coverage, final lighting/art direction, new game rules, or player-facing build.
+
+Hard gate: The private-online track uses this accepted URP baseline after milestone 8.28a independently reviews its six-hero and networking-readiness implications. Phase 9 production visual milestones do not begin until milestone 8.36a is also reviewed and approved.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828-render-pipeline-migration-gate-completion-evidence).
+
+### [x] 8.28a Independently review six-hero, URP, and networking readiness
+
+Blocked by: Milestones 8.27 and 8.28 must pass the deterministic six-hero and URP migration gates.
+
+Observable outcome: A fresh analysis-only review converts measured six-hero match, projection, replay/snapshot, and URP behavior into explicit technical constraints for the private-online architecture decision.
+
+Acceptance checks:
+
+- The review measures or verifies representative command/event volume, immutable projection and snapshot size, restore/replay cost, full-match allocation/resource behavior, and frame-time characteristics for the complete primitive 3v3 configuration.
+- It inspects sources of nondeterminism, Unity-thread or scene coupling, host-authority suitability, stable identity/version boundaries, pending-choice transport needs, and current public/private information ownership.
+- It distinguishes actual scaling or confidentiality blockers from concerns that the later networking milestones already own, and does not select a provider or invent a transport design prematurely.
+- Findings follow the common independent-review evidence contract and supply concrete constraints and risks to milestone 8.29's source-backed architecture comparison.
+- Any prerequisite correction is proposed as a separate milestone; no networking, optimization, rendering, rules, or projection implementation occurs here.
+
+Non-goals: No provider/SDK selection, network prototype, public service, production rendering work, speculative scale target beyond the six invited players, or implementation fix.
+
+Hard gate: Milestone 8.29 does not begin until milestone 8.28a and every networking-readiness blocker are reviewed and given an approved disposition.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828a-independently-review-six-hero-urp-and-networking-readiness-completion-evidence).
+
+### [x] 8.28a1 Restore the Unity-free harness after the URP test addition
+
+Corrective milestone for 8.28a finding `F-TEST-10`, approved by the user on 2026-08-28.
+
+Observable outcome: `UrpMigrationTests`, which necessarily references `UnityEditor` and `UnityEngine`, is explicitly excluded from the Unity-free .NET harness so that the harness compiles and runs its intended Core/Application majority again while the URP fixture remains owned by Unity Edit Mode.
+
+Acceptance checks:
+
+- Closing check for `F-TEST-10`: `dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj --no-restore` is recorded failing at the 8.28a review revision with CS0246 on `UrpMigrationTests.cs`, then passing after the one Unity-dependent fixture joins the harness project's explicit exclusion list.
+- The exclusion is limited to `UrpMigrationTests.cs`; no production source, test body, assertion, package, render setting, rule, content, command, projection, snapshot, or schema changes.
+- `UrpMigrationTests` remains compiled and green in Unity Edit Mode, preserving the URP gate rather than hiding it from every executable tier.
+- T3 test-infrastructure validation: the complete Unity-free harness and both complete unfiltered Unity suites pass at the corrected revision.
+
+Non-goals: No networking implementation, provider selection, harness redesign, test rewrite, runtime optimization, rendering change, or relaxation of the harness's default-include tripwire.
+
+Hard gate: `F-TEST-10` closed at 8.28a1, allowing parent milestone 8.28a to resume; milestone 8.29 remained blocked until that review handed off.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828a1-restore-the-unity-free-harness-after-the-urp-test-addition-completion-evidence).
+
+### [x] 8.28b Establish a seeded, replayable randomness seam
+
+Scheduled by the user-approved 2026-08-13 ER2 roadmap amendment; findings and evidence live in the [ER2 record](../Archive/Phase-Handoffs/PHASE_6.md#2026-08-13-external-engineering-review-er2). It touches only Core setup, so it may be approved and executed at any earlier point; it must complete before 8.29 begins the online track. The 8.2 re-baseline (2026-08-21, user approved, applying the 7.9a recommendation) resequences it directly after 8.2 in execution order - it is already unblocked, its closing determinism oracle exists since 7.9, and it is a schema/corpus change cheapest while the corpus is eight fixtures rather than after 8.25 - so it is the route's next proposal ahead of 8.3.
+
+Observable outcome: The one Core randomness source - `TieBreakerSetupAuthority.CreateNormalSetupState`, which draws non-seeded `RandomNumberGenerator` output outside the command history - becomes a seeded seam whose draw is recorded in authoritative setup state, so deterministic replay and a future online authority reproduce normal setup exactly.
+
+Acceptance checks:
+
+- Normal setup's coin flip derives from a recorded seed or recorded outcome carried in immutable setup state and the snapshot, not from an unrecorded draw.
+- Replay of a normal-setup match reproduces the identical Tie Breaker side from recorded state alone.
+- The DEV-005 deterministic internal override is unchanged, and normal match flow still flips randomly from the player's perspective per the rulebook.
+- Future randomness consumers have one seam to join; no second unrecorded randomness source is introduced.
+
+Closing check for `F-ER2-04`: a determinism fixture replaying normal setup from recorded state and matching the flip result, observed failing at the pre-fix revision (the draw is unrecorded) and passing at the post-fix revision.
+
+Non-goals: No networking, no new randomness consumers, no rulebook deviation, no change to the tie-breaker's gameplay meaning.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-828b-establish-a-seeded-replayable-randomness-seam-completion-evidence).
 ### [x] 8.29a Recompose and contain the side hero trays
 
 Approved by the user on 2026-08-29 as the bounded UI correction before transport work resumes.

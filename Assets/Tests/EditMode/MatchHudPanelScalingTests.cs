@@ -383,6 +383,53 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35f. The seat's own UNDO square, where the user put it: on the status strip's
+        /// top edge, immediately left of End Turn, and square.
+        /// </summary>
+        /// <remarks>
+        /// The user asked for a square whose side is End Turn's own width. End Turn is 264 wide in a
+        /// 96-unit strip, and a 264-square cannot stand in one without hanging 168 units over the
+        /// board, so the square is the largest the strip admits - its own height - which keeps the
+        /// shape, the edge and the neighbour that were named. That is the one recorded deviation, and
+        /// it is asserted here rather than described, so a later change to either number fails.
+        /// </remarks>
+        [Test]
+        public void TheSeatUndoSquare_StandsLeftOfEndTurnOnTheSameStripEdge()
+        {
+            var width = MatchHudPanelScaling.ReferenceWidth;
+            var height = MatchHudPanelScaling.ReferenceHeight;
+            var endTurn = ConfiguredMatchHudRenderer.CalculateEndTurnControlRect(width, height);
+            var undo = ConfiguredMatchHudRenderer.CalculateSeatUndoControlRect(width, height);
+
+            Assert.That(undo, Is.EqualTo(new Rect(2188f, 0f, 96f, 96f)));
+            Assert.That(undo.width, Is.EqualTo(undo.height), "It is square.");
+            Assert.That(undo.width, Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight),
+                "The side is the largest the 96-unit strip admits, not End Turn's 264.");
+            Assert.That(ConfiguredMatchHudRenderer.SeatUndoControlSide,
+                Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight));
+            Assert.That(undo.xMax, Is.EqualTo(endTurn.xMin),
+                "It stands immediately left of End Turn with nothing between them.");
+            Assert.That(undo.yMin, Is.EqualTo(endTurn.yMin), "Same top edge.");
+            Assert.That(undo.Overlaps(endTurn), Is.False);
+            Assert.That(undo.yMax, Is.LessThanOrEqualTo(ConfiguredMatchHudRenderer.StatusBarHeight),
+                "It stays inside the strip rather than hanging over the board.");
+
+            // A narrow panel shrinks the square rather than pushing it off the left edge, which is
+            // the same clamping every other control here uses.
+            foreach (var narrow in new[] { new Vector2(778f, 300f), new Vector2(1280f, 800f) })
+            {
+                var narrowEndTurn = ConfiguredMatchHudRenderer.CalculateEndTurnControlRect(
+                    narrow.x, narrow.y);
+                var narrowUndo = ConfiguredMatchHudRenderer.CalculateSeatUndoControlRect(
+                    narrow.x, narrow.y);
+                Assert.That(narrowUndo.width, Is.EqualTo(narrowUndo.height));
+                Assert.That(narrowUndo.xMin, Is.GreaterThanOrEqualTo(0f),
+                    "The square never leaves the panel at " + narrow.x + "x" + narrow.y + ".");
+                Assert.That(narrowUndo.xMax, Is.EqualTo(narrowEndTurn.xMin).Within(0.01f));
+            }
+        }
+
+        /// <summary>
         /// Every region stays inside the panel at every device resolution, including shapes that are
         /// not the reference's - where the scale follows neither axis alone and the panel is a
         /// different rectangle from the reference one.

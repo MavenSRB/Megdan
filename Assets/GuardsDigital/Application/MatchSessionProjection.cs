@@ -987,6 +987,12 @@ namespace GuardsDigital.Application
 
         public long Version { get; }
         public bool IsInputEnabled => true;
+
+        /// <summary>
+        /// Milestone 8.35f. Always false: the seat-scoped undo control belongs to a seat, and the
+        /// Director's own Undo is its drawer's rather than this flag's.
+        /// </summary>
+        public bool IsSeatUndoAvailable => false;
         public QuickGameSetupState Setup { get; }
         public BoardMapDefinition SelectedMap { get; }
         public MatchParticipants Participants { get; }

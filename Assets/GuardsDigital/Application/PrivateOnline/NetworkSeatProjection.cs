@@ -41,6 +41,7 @@ namespace GuardsDigital.Application
             int turnIndex,
             int phase,
             bool isTurnActive,
+            bool isSeatUndoAvailable,
             int? endOfRoundStage,
             int tieBreakerRevealedSide,
             NetworkSelectedActorRecord selectedActor,
@@ -73,6 +74,7 @@ namespace GuardsDigital.Application
             TurnIndex = turnIndex;
             Phase = phase;
             IsTurnActive = isTurnActive;
+            IsSeatUndoAvailable = isSeatUndoAvailable;
             EndOfRoundStage = endOfRoundStage;
             TieBreakerRevealedSide = tieBreakerRevealedSide;
             SelectedActor = selectedActor;
@@ -106,6 +108,9 @@ namespace GuardsDigital.Application
         public int TurnIndex { get; }
         public int Phase { get; }
         public bool IsTurnActive { get; }
+
+        /// <summary>Milestone 8.35f. Whether this seat may step its own turn back one command.</summary>
+        public bool IsSeatUndoAvailable { get; }
         public int? EndOfRoundStage { get; }
         public int TieBreakerRevealedSide { get; }
         public NetworkSelectedActorRecord SelectedActor { get; }
@@ -471,6 +476,7 @@ namespace GuardsDigital.Application
                 writer.Write(projection.TurnIndex);
                 writer.Write((int)projection.Phase);
                 writer.Write(projection.IsTurnActive);
+                writer.Write(projection.IsSeatUndoAvailable);
                 writer.Write(projection.CurrentEndOfRoundStage.HasValue);
                 if (projection.CurrentEndOfRoundStage.HasValue)
                 {
@@ -654,6 +660,7 @@ namespace GuardsDigital.Application
                     var turnIndex = reader.ReadInt32();
                     var phase = reader.ReadInt32();
                     var isTurnActive = reader.ReadBoolean();
+                    var isSeatUndoAvailable = reader.ReadBoolean();
                     int? endOfRoundStage = null;
                     if (reader.ReadBoolean())
                     {
@@ -1003,7 +1010,8 @@ namespace GuardsDigital.Application
 
                     record = new NetworkSeatProjectionRecord(
                         version, seatId, playerId, heroId, teamSide, roundIndex, turnIndex, phase,
-                        isTurnActive, endOfRoundStage, tieBreakerSide, selectedActor, outcome,
+                        isTurnActive, isSeatUndoAvailable, endOfRoundStage, tieBreakerSide,
+                        selectedActor, outcome,
                         Array.AsReadOnly(counters.ToArray()),
                         Array.AsReadOnly(heroes.ToArray()),
                         Array.AsReadOnly(minions.ToArray()),

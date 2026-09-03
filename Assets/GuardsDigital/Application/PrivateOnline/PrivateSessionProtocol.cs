@@ -20,11 +20,14 @@ namespace GuardsDigital.Application
         public const string FamilyName = "guards-private-online";
 
         /// <summary>
-        /// Protocol version 2: the complete private-session wire through milestone 8.35b,
-        /// including SelectedActor's FlipTieBreakerAfterResolution meaning. Version 1 peers are
-        /// rejected before either side interprets that changed projection shape.
+        /// Protocol version 3: milestone 8.35f added the seat's own bounded undo - two message
+        /// kinds and one carried projection fact, <c>IsSeatUndoAvailable</c>, which a client cannot
+        /// derive because the bounds are facts about the host's recorded history. A version 2 peer
+        /// would read that flag out of the middle of a seat record and mis-decode everything after
+        /// it, so it is rejected before either side interprets the payload - the same rule version
+        /// 2 applied to version 1 when milestone 8.35b gave SelectedActor its Tie Breaker meaning.
         /// </summary>
-        public const int Version = 2;
+        public const int Version = 3;
 
         /// <summary>The four ASCII bytes that open every frame: G, D, P, O.</summary>
         public const byte FrameMagic0 = 0x47;

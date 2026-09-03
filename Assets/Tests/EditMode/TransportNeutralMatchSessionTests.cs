@@ -422,6 +422,9 @@ namespace GuardsDigital.Tests.EditMode
                 SeatId seat, TeamAgreementSubmission submission) =>
                 inner.SubmitAgreementForSeat(seat, submission);
 
+            public SeatUndoResult SubmitUndoForSeat(SeatId seat, SeatUndoSubmission submission) =>
+                inner.SubmitUndoForSeat(seat, submission);
+
             public ISeatClient ClientForSeat(SeatId seat) => inner.ClientForSeat(seat);
         }
 

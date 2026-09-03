@@ -53,8 +53,10 @@ namespace GuardsDigital.Application
     /// player, hero and team from that binding and the authoritative participant graph. A
     /// <c>HeroId</c> or <c>TeamSide</c> inside <see cref="Command"/> names what the answer is about;
     /// it is never read as who sent it.</para>
-    /// <para>There is no Undo, restart or snapshot here, and none reachable from the client that
-    /// carries it: those are the Director's, and a player surface must not be able to name them.</para>
+    /// <para>There is no restart or snapshot here, and none reachable from the client that carries
+    /// it: those are the Director's, and a player surface must not be able to name them. Milestone
+    /// 8.35f added a bounded seat undo, and it is deliberately NOT a command in this payload - see
+    /// <see cref="SeatUndoSubmission"/> for why rewinding history cannot be one.</para>
     /// </remarks>
     public sealed class SeatSubmission
     {
@@ -142,7 +144,104 @@ namespace GuardsDigital.Application
         /// refusal reaches the authority no more than a stale one does: nothing is mutated, no
         /// version moves, and the submission identity stays unused for the retry that follows.
         /// </remarks>
-        SessionPaused = 8
+        SessionPaused = 8,
+
+        /// <summary>
+        /// Milestone 8.35f. This seat has nothing it may undo right now.
+        /// </summary>
+        /// <remarks>
+        /// One reason rather than several, because every way of reaching it is the same answer to
+        /// the player: the rewind you asked for is not yours to take. It covers off-turn seats, a
+        /// seat standing at its own turn's beginning, a seat whose attack has been answered, a seat
+        /// whose teammate or opponent answered the last thing that happened, and a session whose
+        /// history is not available at all. The distinctions matter to a fixture and to nobody
+        /// else; <see cref="SeatSubmissionResult.Detail"/> carries which one it was.
+        /// </remarks>
+        UndoUnavailable = 9
+    }
+
+    /// <summary>
+    /// Milestone 8.35f. One seat's request to step its own turn back by exactly one accepted
+    /// command.
+    /// </summary>
+    /// <remarks>
+    /// <para>A separate type from <see cref="SeatSubmission"/> because it is a different kind of
+    /// thing, and the difference is load-bearing: a command is appended to the recorded history and
+    /// replayed forever after, while an undo <em>rewrites</em> that history by dropping its last
+    /// entry. Giving it a <c>DirectorCommandKind</c> would put it into the very stream it removes
+    /// from, and every replay would then try to undo something during the replay. It follows
+    /// <see cref="TeamAgreementSubmission"/>'s precedent instead: its own submission type, its own
+    /// host operation, its own result.</para>
+    /// <para>It carries no target, no count and no direction. One accepted request steps back
+    /// exactly one accepted command, and the host decides whether there is one this seat may take -
+    /// which is what <see cref="SeatProjection.IsSeatUndoAvailable"/> publishes ahead of time, so a
+    /// surface enables the control from the same fact the host authorizes it by.</para>
+    /// <para><see cref="ExpectedVersion"/> is what makes a double click safe. An undo is not
+    /// idempotent - two of them are two steps back - so the second click of a pair names the
+    /// version the first one replaced and is refused as stale, and a genuine repeat of the same
+    /// identity is answered from what that identity already did.</para>
+    /// </remarks>
+    public sealed class SeatUndoSubmission
+    {
+        public SeatUndoSubmission(SubmissionId id, long expectedVersion)
+        {
+            if (!id.IsDefined)
+            {
+                throw new ArgumentException("A submission requires an identity.", nameof(id));
+            }
+
+            if (expectedVersion < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(expectedVersion), expectedVersion, "A projection version is not negative.");
+            }
+
+            Id = id;
+            ExpectedVersion = expectedVersion;
+        }
+
+        public SubmissionId Id { get; }
+
+        /// <summary>The <see cref="SeatProjection.Version"/> this rewind was asked against.</summary>
+        public long ExpectedVersion { get; }
+    }
+
+    /// <summary>Milestone 8.35f. What the host told one seat about its own undo.</summary>
+    public sealed class SeatUndoResult
+    {
+        internal SeatUndoResult(
+            SeatUndoSubmission submission,
+            bool accepted,
+            SeatSubmissionRejectionReason rejectionReason,
+            MatchSessionRejectionReason sessionRejectionReason,
+            string detail,
+            long version,
+            long sequence,
+            SeatProjection projection)
+        {
+            Submission = submission;
+            Accepted = accepted;
+            RejectionReason = rejectionReason;
+            SessionRejectionReason = sessionRejectionReason;
+            Detail = detail;
+            Version = version;
+            Sequence = sequence;
+            Projection = projection;
+        }
+
+        public SeatUndoSubmission Submission { get; }
+        public bool Accepted { get; }
+        public SeatSubmissionRejectionReason RejectionReason { get; }
+        public MatchSessionRejectionReason SessionRejectionReason { get; }
+        public string Detail { get; }
+
+        /// <summary>The authoritative version after the rewind; unmoved by a refusal.</summary>
+        public long Version { get; }
+
+        public long Sequence { get; }
+
+        /// <summary>This seat's view after the rewind, refused or not.</summary>
+        public SeatProjection Projection { get; }
     }
 
     /// <summary>
@@ -208,6 +307,12 @@ namespace GuardsDigital.Application
         SeatSubmissionResult Submit(SeatSubmission submission);
 
         TeamAgreementSubmissionResult SubmitAgreement(TeamAgreementSubmission submission);
+
+        /// <summary>
+        /// Milestone 8.35f. Steps this seat's own turn back by one accepted command, within the
+        /// bounds <see cref="SeatProjection.IsSeatUndoAvailable"/> already published.
+        /// </summary>
+        SeatUndoResult SubmitUndo(SeatUndoSubmission submission);
     }
 
     /// <summary>
@@ -330,5 +435,8 @@ namespace GuardsDigital.Application
 
         public TeamAgreementSubmissionResult SubmitAgreement(TeamAgreementSubmission submission) =>
             host.SubmitAgreementForSeat(Seat.Id, submission);
+
+        public SeatUndoResult SubmitUndo(SeatUndoSubmission submission) =>
+            host.SubmitUndoForSeat(Seat.Id, submission);
     }
 }

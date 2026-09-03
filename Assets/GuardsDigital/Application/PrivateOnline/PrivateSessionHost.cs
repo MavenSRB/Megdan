@@ -557,6 +557,12 @@ namespace GuardsDigital.Application
                         return;
                     }
 
+                    if (frame.Kind == SessionMessageKind.SubmitUndo)
+                    {
+                        HandleUndoSubmission(record, frame.Payload);
+                        return;
+                    }
+
                     if (frame.Kind == SessionMessageKind.RequestResync)
                     {
                         HandleResyncRequest(record, frame.Payload);
@@ -1156,6 +1162,96 @@ namespace GuardsDigital.Application
                 "A seat of this match is away; the session is holding still until it returns.",
                 matchHost.Version,
                 0)));
+            Record(PrivateSessionEventKind.SubmissionRefused, record.Ordinal, record.Seat,
+                seat == null ? default : seat.HeroId,
+                seat == null ? TeamSide.None : seat.TeamSide,
+                SessionRejectionReason.None, SeatSubmissionRejectionReason.SessionPaused,
+                submissionId: submissionId);
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 8.35f. One seat's bounded rewind from a seated connection, under exactly the
+        /// submission discipline: envelope violations close the connection, the pause refuses by
+        /// name, and every seat-level refusal answers with nothing mutated.
+        /// </summary>
+        /// <remarks>
+        /// An accepted rewind republishes every seat's projection rather than only the asking
+        /// one's: a step back is a change to the shared board, and the other five seats have to see
+        /// it. There is nothing to map to an offered instance here - an undo names no target - so
+        /// the identity, the expected version and the seat's own published availability are the
+        /// whole of what the host checks.
+        /// </remarks>
+        private void HandleUndoSubmission(ConnectionRecord record, byte[] payload)
+        {
+            if (!NetworkMessageCodec.TryDecodeSubmitUndo(payload, out var message))
+            {
+                RejectAndClose(record, SessionRejectionReason.MalformedFrame,
+                    "The undo payload did not decode.");
+                return;
+            }
+
+            if (!AcceptGameplayEnvelope(record, message.Envelope))
+            {
+                return;
+            }
+
+            if (RefuseUndoWhilePaused(record, message.Envelope.Correlation, message.SubmissionId))
+            {
+                return;
+            }
+
+            var seat = matchHost.Seats.Find(record.Seat);
+            var result = matchHost.SubmitUndoForSeat(seat.Id, new SeatUndoSubmission(
+                new SubmissionId(message.SubmissionId), message.ExpectedVersion));
+
+            Deliver(record, NetworkMessageCodec.UndoResultFrame(new NetworkUndoResultMessage(
+                NextEnvelope(record, message.Envelope.Correlation),
+                message.SubmissionId,
+                result.Accepted,
+                result.RejectionReason,
+                result.SessionRejectionReason,
+                result.Detail,
+                result.Version)));
+
+            Record(
+                result.Accepted
+                    ? PrivateSessionEventKind.SubmissionAccepted
+                    : PrivateSessionEventKind.SubmissionRefused,
+                record.Ordinal, record.Seat, seat.HeroId, seat.TeamSide,
+                SessionRejectionReason.None, result.RejectionReason,
+                submissionId: message.SubmissionId);
+
+            if (result.Accepted)
+            {
+                PublishProjections(record, message.Envelope.Correlation);
+            }
+            else if (result.RejectionReason == SeatSubmissionRejectionReason.StaleProjection)
+            {
+                SendProjectionTo(record, message.Envelope.Correlation);
+                Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
+                    seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+            }
+        }
+
+        /// <summary>Milestone 8.35f. The undo half of <see cref="RefuseWhilePaused"/>.</summary>
+        private bool RefuseUndoWhilePaused(
+            ConnectionRecord record, long correlation, string submissionId)
+        {
+            if (!IsPaused)
+            {
+                return false;
+            }
+
+            var seat = matchHost.Seats.Find(record.Seat);
+            Deliver(record, NetworkMessageCodec.UndoResultFrame(new NetworkUndoResultMessage(
+                NextEnvelope(record, correlation),
+                submissionId,
+                false,
+                SeatSubmissionRejectionReason.SessionPaused,
+                MatchSessionRejectionReason.None,
+                "A seat of this match is away; the session is holding still until it returns.",
+                matchHost.Version)));
             Record(PrivateSessionEventKind.SubmissionRefused, record.Ordinal, record.Seat,
                 seat == null ? default : seat.HeroId,
                 seat == null ? TeamSide.None : seat.TeamSide,

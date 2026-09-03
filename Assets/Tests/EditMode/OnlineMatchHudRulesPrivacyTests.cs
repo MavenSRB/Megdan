@@ -242,21 +242,38 @@ namespace GuardsDigital.Tests.EditMode
                 "An answer plus its complete projection clears the latency state.");
         }
 
+        /// <summary>
+        /// The wire's own compatibility rule, restated at each version that moved it: an older
+        /// peer is refused by the frame assembler, before either side interprets a payload whose
+        /// shape it would read wrongly.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 8.35b took this to protocol 2, because SelectedActor gained
+        /// FlipTieBreakerAfterResolution. Milestone 8.35f takes it to protocol 3, because the seat
+        /// record gained <c>IsSeatUndoAvailable</c> - a flag in the middle of it, so a protocol 2
+        /// peer would mis-decode everything after it - and because two message kinds were added
+        /// that a protocol 2 host answers with <c>UnexpectedMessage</c>. Both prior versions are
+        /// exercised, so the refusal is about the version and not about the number 2.
+        /// </remarks>
         [Test]
-        public void SelectedActorWireMeaning_UsesProtocolTwo_AndRejectsProtocolOneFrames()
+        public void SeatWireMeaning_UsesProtocolThree_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(2),
-                "SelectedActor now carries FlipTieBreakerAfterResolution; protocol one peers " +
-                "cannot decode that added meaning safely.");
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(3),
+                "The seat record carries IsSeatUndoAvailable and the wire carries SubmitUndo and " +
+                "UndoResult; protocol two peers cannot decode either safely.");
 
-            var bytes = PrivateSessionFrameCodec.ChallengeFrame(
-                new SessionChallengeMessage(new byte[] { 1, 2, 3 }));
-            bytes[4] = 1;
-            bytes[5] = 0;
-            var assembler = new PrivateSessionFrameAssembler();
-            Assert.That(assembler.Add(bytes, 0, bytes.Length), Is.False);
-            Assert.That(assembler.Rejection,
-                Is.EqualTo(SessionRejectionReason.ProtocolVersionMismatch));
+            foreach (var older in new[] { 1, 2 })
+            {
+                var bytes = PrivateSessionFrameCodec.ChallengeFrame(
+                    new SessionChallengeMessage(new byte[] { 1, 2, 3 }));
+                bytes[4] = (byte)older;
+                bytes[5] = 0;
+                var assembler = new PrivateSessionFrameAssembler();
+                Assert.That(assembler.Add(bytes, 0, bytes.Length), Is.False,
+                    "Protocol " + older + " must be refused before any payload is read.");
+                Assert.That(assembler.Rejection,
+                    Is.EqualTo(SessionRejectionReason.ProtocolVersionMismatch));
+            }
         }
 
         private static bool ReadDelayed(PropertyInfo property, PrivateSessionClient client) =>
