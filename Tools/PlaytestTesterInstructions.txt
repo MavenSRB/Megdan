@@ -13,7 +13,9 @@ rule; all six of us are clients of it. Whoever runs that machine can read anythi
 in the match, including the cards in your hand, and could change what the game
 does. Nothing in this build prevents that, and nothing is meant to. The session key
 you are given is an invitation that keeps strangers out and scrambles the traffic on
-the way; it is not protection from your host.
+the way; it is not protection from your host. (The game will not host a match over
+the internet without a key at all - but a key only settles who else can listen in,
+never what the host itself can see.)
 
 This is fine here because six people who know each other are testing a prototype
 together. It is not a competitive service, there are no accounts, and there is no

@@ -6,189 +6,8 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Phase 8 begins only after the synthetic core match gate. Wasp-specific card work composes proven core actions, keywords, effect operations, queries, modifiers, control flow, and system transitions; it does not defer their first general implementation until a card requires them. The mirrored Wasp setup identities introduced earlier remain an intermediate configuration for the first complete hero gate, not the final pitch roster. After that gate, five additional user-approved heroes enter through source inventory and capability-delta mapping before the final six-distinct-hero 3v3 integration. Once the complete primitive match and URP baseline are proven, a separate private-online track moves the same authority behind a host/session boundary and reaches an invite-only six-human internet playtest before production presentation begins.
 
-The completed definitions of milestones **8.1** through **8.10** - Wasp's source inventory and capability matrix, her verified definitions and both dealt hands, the general card-text seam and the two tray surfaces built on it, her five telekinetic Skills, the declared modifier vocabulary's consumers, the current-card rail, her two kinetic Skills and two basic cards, the tray-faced upgrade grid, the refused empty Clear, and her five printed Attacks - moved verbatim to [PHASE_8_COMPLETED.md](PHASE_8_COMPLETED.md), 8.1 through 8.7a on 2026-08-22 during milestone 8.8a's required warning-threshold ownership review and 8.8 through 8.10 on the same date during milestone 8.11a's; milestones **8.11** through **8.11c** - her Defense cards, the official map underlay and its interaction overlay, the verified card-table visuals, and identity-named effect-choice candidates answered on the board - followed on 2026-08-26 during milestone 8.25a's audit, when two proposed corrective blocks took this shard past its hard limit; and milestones **8.12** through **8.15a** - the Active-effect and continuous trigger windows, High Voltage, her progression and Ultimate unlock, her completed card behaviour and the faced card choices - followed on 2026-08-27 during milestone 8.25d's. Milestones **8.11d** and **8.11e** moved verbatim to [PHASE_8_COMPLETED_2.md](PHASE_8_COMPLETED_2.md) on 2026-08-28 during milestone 8.25f2a's warning-threshold review, and milestones **8.16** through **8.17** - the deterministic Wasp mirror integration gate, its independent card-engine extensibility review, the board-answered Lane-Push respawn placement, and the user's selection of the five additional pitch heroes - followed to the same shard on 2026-08-29 during milestone 8.30's. They remain active authority under the same `Roadmap/` threshold; this is sharding, not archiving, and their per-milestone evidence is still addressed by SHA from the [Phase 8 archive](../Archive/Phase-Handoffs/PHASE_8.md). This shard keeps 8.18a onward, which is what the next milestone reads against.
+The completed definitions of milestones **8.1** through **8.10** - Wasp's source inventory and capability matrix, her verified definitions and both dealt hands, the general card-text seam and the two tray surfaces built on it, her five telekinetic Skills, the declared modifier vocabulary's consumers, the current-card rail, her two kinetic Skills and two basic cards, the tray-faced upgrade grid, the refused empty Clear, and her five printed Attacks - moved verbatim to [PHASE_8_COMPLETED.md](PHASE_8_COMPLETED.md), 8.1 through 8.7a on 2026-08-22 during milestone 8.8a's required warning-threshold ownership review and 8.8 through 8.10 on the same date during milestone 8.11a's; milestones **8.11** through **8.11c** - her Defense cards, the official map underlay and its interaction overlay, the verified card-table visuals, and identity-named effect-choice candidates answered on the board - followed on 2026-08-26 during milestone 8.25a's audit, when two proposed corrective blocks took this shard past its hard limit; and milestones **8.12** through **8.15a** - the Active-effect and continuous trigger windows, High Voltage, her progression and Ultimate unlock, her completed card behaviour and the faced card choices - followed on 2026-08-27 during milestone 8.25d's. Milestones **8.11d** and **8.11e** moved verbatim to [PHASE_8_COMPLETED_2.md](PHASE_8_COMPLETED_2.md) on 2026-08-28 during milestone 8.25f2a's warning-threshold review, and milestones **8.16** through **8.17** - the deterministic Wasp mirror integration gate, its independent card-engine extensibility review, the board-answered Lane-Push respawn placement, and the user's selection of the five additional pitch heroes - followed to the same shard on 2026-08-29 during milestone 8.30's. Milestones **8.18a** through **8.24** - the five hero inventory slices, the capability mapping and 3v3 re-baseline, the Sabina, Tigerclaw and Xargatha completions, and the rail-marker corrective between them - followed to that shard on 2026-09-03 during milestone 8.35a1's required warning-threshold ownership review, which is also where the five 8.18 slices rejoin the split contract they read "above". They remain active authority under the same `Roadmap/` threshold; this is sharding, not archiving, and their per-milestone evidence is still addressed by SHA from the [Phase 8 archive](../Archive/Phase-Handoffs/PHASE_8.md). This shard keeps 8.25 onward, which is what the next milestone reads against.
 
-
-### [x] 8.18a Inventory and verify pitch hero slot A
-
-Slot-A hero, assigned by 8.17's approved roster: **Arien the Tidemaster** (Blue).
-
-Observable outcome: the slot-A hero's cards, tiers, values, action types, text, item possibilities, Ultimate, tokens/markers, and other hero-owned components are traceable to source material under the shared 8.18 contract above.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818a-inventory-and-verify-pitch-hero-slot-a-completion-evidence).
-
-### [x] 8.18b Inventory and verify pitch hero slot B
-
-Slot-B hero, assigned by 8.17's approved roster: **Brogan the Destroyer** (Blue).
-
-Observable outcome: the slot-B hero's complete set is source-verified under the shared 8.18 contract above.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818b-inventory-and-verify-pitch-hero-slot-b-completion-evidence).
-
-### [x] 8.18c Inventory and verify pitch hero slot C
-
-Slot-C hero, assigned by 8.17's approved roster: **Sabina the Gunslinger** (Blue). The extraction's dashboard names her `SABINA THE COMMANDER` instead; the conflict is recorded as her shard's question S-01 and changes neither the roster slot nor the hero.
-
-Observable outcome: the slot-C hero's complete set is source-verified under the shared 8.18 contract above.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818c-inventory-and-verify-pitch-hero-slot-c-completion-evidence).
-
-### [x] 8.18d Inventory and verify pitch hero slot D
-
-Slot-D hero, assigned by 8.17's approved roster: **Tigerclaw the Cutpurse** (Red).
-
-Observable outcome: the slot-D hero's complete set is source-verified under the shared 8.18 contract above.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818d-inventory-and-verify-pitch-hero-slot-d-completion-evidence).
-
-### [x] 8.18e Inventory and verify pitch hero slot E
-
-Slot-E hero, assigned by 8.17's approved roster: **Xargatha the Changed** (Red).
-
-Observable outcome: the slot-E hero's complete set is source-verified under the shared 8.18 contract above.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-818e-inventory-and-verify-pitch-hero-slot-e-completion-evidence).
-
-### [x] 8.19 Map the five heroes to capabilities and re-baseline the 3v3 pitch work
-
-Observable outcome: Every verified action and hero-owned component maps to existing or new typed capabilities, and the remaining hero, 3v3 integration, and presentation milestones are re-baselined from evidence.
-
-Acceptance checks:
-
-- A roster-wide matrix distinguishes reused core/Wasp capabilities, reusable refinements, new primitives, and genuinely unique isolated handlers for every verified hero face and component.
-- Every effect node maps to a capability ID/version, typed bindings, policy, failure/atomicity rule, checkpoints, and source-linked tests.
-- The designated roadmap audit applies the matrix to milestones 8.20-8.36 and Phase 9, recommending justified keep/merge/split/defer/remove decisions and recording an updated remaining-effort range.
-- Approved implementation slices are dependency ordered; a shared capability precedes the first hero that needs it, and no hero-name rule branch or runtime text parsing is scheduled.
-- Any schema change is explicit and migration-tested rather than hidden inside a hero milestone.
-
-Non-goals: No effect implementation or production art.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-819-map-the-five-heroes-to-capabilities-and-re-baseline-the-3v3-pitch-work-completion-evidence).
-
-The completed audit, effort range, retained-gate decisions, and dependency-ordered shared foundations
-8.19a, inserted 8.19a1, and 8.19b-8.19c live in
-[PHASE_8_ROSTER_REBASE.md](PHASE_8_ROSTER_REBASE.md).
-
-### [x] 8.22 Complete and verify additional pitch hero slot C - Sabina
-
-Prerequisites satisfied: Milestone 8.21 proved the unique roster system interaction and milestone 8.21a
-closed the public-coin presentation gap without enlarging the side rails, so both named blocks are
-discharged. S-01 is answered - the user selected the rulebook's setup-step-7 epithet, **Sabina the
-Gunslinger**, on 2026-08-25 - so the display label is no longer blocked and this milestone carries it.
-
-Observable outcome: Sabina's complete verified set is defined, dealt, resolved through the ordinary
-player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested, with the
-approved epithet displayed consistently.
-
-Acceptance checks:
-
-- Every Sabina face/component maps exactly as the roster matrix records; conditional Attack values,
-  paired Swap/Heavy override, multi-target Remove, minion direct Move/Repeat, retrieve, discard-or-Defeat,
-  and all After-Attack paths have source-linked scenarios.
-- Big Sodding Gun modifies only Sabina's Basic Attack and its after-Push escalation triggers only on her
-  applied Push of an enemy hero, with exact ordering, restore, repeated action, and no-card Defeat coverage.
-- Up-to-two Remove proves chosen-set legality, deterministic ordered application, removal prevention,
-  immediate Lane Push/game end after either target, and no Defeat reward.
-- The permanent hero player-path gate in `Testing/POLICY.md` has a complete guarded row for every Sabina
-  face/component and distinct interaction shape, exercised through real configured player input and its
-  resulting visible HUD/board state; definitions, progression, complete-set interaction, and directly
-  affected earlier-hero/Wasp/core regressions pass at the applicable tier, and no epithet string drives rules.
-
-Non-goals: No other new hero, six-player setup, networking, or production art.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-822-complete-and-verify-additional-pitch-hero-slot-c---sabina-completion-evidence).
-
-### [x] 8.23 Complete and verify additional pitch hero slot D - Tigerclaw
-
-Prerequisites satisfied: Milestone 8.22 completed the third shared-composition consumer and left the
-staged-hero fixture hero-neutral, so the named block was clear.
-
-Observable outcome: Tigerclaw the Cutpurse's complete verified set and Poison component are defined,
-dealt, resolved through the ordinary player pipeline, progressed through every printed upgrade/item/
-Ultimate stage, and source-tested.
-
-Acceptance checks:
-
-- Every Tigerclaw face/component maps exactly as the roster matrix records; move-through-target Attacks,
-  before/after movement, conditional values, Defense riders/restriction, card retrieval, coin transfer,
-  Poison attachment, and Repeat paths have source-linked scenarios.
-- Poison's one physical supply, Tier-specific -1/-2 Initiative/Attack/Defense source, holder-defeat and
-  end-round return, upgrade boundary, restore, and simultaneous modifier order are authoritative and never
-  inferred from the marker art.
-- Cloak and Daggers repeats every legal Basic action once, excludes the original Attack target, forbids a
-  replacement/recursive repeat, and preserves action/checkpoint/progression semantics across restore and
-  Undo without a Tigerclaw-name branch.
-- The permanent hero player-path gate has a complete guarded row for every Tigerclaw face/component and
-  distinct interaction shape, exercised through real configured player input and its resulting visible
-  HUD/board state; definitions, progression, complete-set interaction, and directly affected earlier-hero/
-  Wasp/core regressions pass at the applicable tier.
-
-Non-goals: No other new hero, six-player setup, networking, or production art.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-823-complete-and-verify-additional-pitch-hero-slot-d---tigerclaw-completion-evidence).
-
-### [x] 8.23a Draw a held marker on a rail that has room for it
-
-Blocked by: Milestone 8.23 must attach the first verified marker.
-
-Observable outcome: A hero holding a rulebook p.19 marker is drawn as holding it, and what that
-marker does to that hero is readable from the same surface, so a rule that lowers three of a
-hero's values is one the player it is applied to can see - on a hero rail compact enough that the
-reading costs no other row its place.
-
-Acceptance checks:
-
-- Every marker a configured hero holds is drawn from the authoritative projection alone - the supply
-  it came from, its printed strength, and the value channels it changes - with no hero-name branch,
-  no presentation-owned accounting, and no schema change.
-- The reading follows the attachment's own lifetime rather than a card's: it appears when the marker
-  is given, and p.13's holder Defeat and p.8's end-of-round return remove it.
-- Restore, replay, retained-prefix Undo, restart and a presentation rebuild reconstruct it from the
-  projection they already preserve, with no stale reading left behind.
-- The hero rail is recomposed to hold the reading rather than grown by it: the discard pile shares
-  its caption's line as p.16's Ultimate row already does, the coin balance is drawn as its own
-  minted disc rather than as a word beside a number, and the rail's width and laid-out height are
-  measured before and after rather than asserted. Every existing rail reading - identity, Level,
-  items, the current-card marker, the four resolved turns, the pile and the Ultimate - survives the
-  recomposition, and the mirror rule and the pile's left-to-right exception are preserved.
-- The recomposed rail's measured height is recorded against a third of the hero-rail rect, so
-  whether milestone 8.25's three-per-side column fits is a measurement this milestone leaves behind
-  rather than a claim. This milestone deals no additional hero and lays out no second rail.
-- The permanent hero player-path gate gains its marker-reading component shape, and milestone 8.23's
-  declared debt for it - recorded in Tigerclaw's matrix because this build drew no held marker
-  anywhere - is closed rather than restated.
-
-Non-goals: No new marker content, no change to what a marker does, no six-player setup, and no
-imported production art - a coin drawn from the panel's own vocabulary is composition rather than
-art, and an imported sprite is out of scope.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-823a-draw-a-held-marker-on-a-rail-that-has-room-for-it-completion-evidence).
-
-### [x] 8.24 Complete and verify additional pitch hero slot E - Xargatha
-
-Blocked by: Milestone 8.23 must complete the marker/general-action Repeat consumer.
-
-Observable outcome: Xargatha the Changed's complete verified set is defined, dealt, resolved through the
-ordinary player pipeline, progressed through every printed upgrade/item/Ultimate stage, and source-tested.
-
-Acceptance checks:
-
-- Every Xargatha face/component maps exactly as the roster matrix records; dynamic Attack/Range,
-  conditional target movement, typed Repeat targets, card retrieval, before/after primary Movement,
-  Heavy override, and End-of-Round Defeat paths have source-linked scenarios.
-- Next-Turn petrification preserves Hero and adds Terrain as effective types, prevents only Movement
-  actions, follows Xargatha's moving radius, respects intrinsic-representation exceptions, and restores/
-  cancels in exact p.17 order without materializing a statue component.
-- Constrict/Final Embrace run before Minion Battle and consume immediate Lane Push/game end correctly;
-  Metamorphosis recalculates Initiative/Movement from presence at each owning query and reuses Move Through.
-- The permanent hero player-path gate has a complete guarded row for every Xargatha face/component and
-  distinct interaction shape, exercised through real configured player input and its resulting visible
-  HUD/board state; definitions, progression, complete-set interaction, and directly affected roster/Wasp/core
-  regressions pass at the applicable tier without an Xargatha-name branch.
-
-Non-goals: No six-player setup, networking, production art, alternate miniature, or statue component.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-824-complete-and-verify-additional-pitch-hero-slot-e---xargatha-completion-evidence).
 
 ### [x] 8.25 Replace the staged 1v1 setup with the official six-player Quick Game configuration
 
@@ -762,6 +581,22 @@ Acceptance checks:
 Non-goals: No account system, friends list, public matchmaking, server browser, text/voice chat, spectator mode, ranking, moderation, general main menu, or production styling.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835a-add-the-primitive-private-hostjoin-lobby-completion-evidence).
+
+### [x] 8.35a1 Refuse an unkeyed bind off loopback from the lobby's host control
+
+Corrective milestone for a gap milestone 8.36's readiness review found, approved by the user on 2026-09-03. An unkeyed session derives no channel keys, so its link stays plaintext, and [the architecture record](../Project/PRIVATE_ONLINE_ARCHITECTURE.md) permits an owner-private byte to cross plaintext only on the loopback interface. The command-line host role has refused an unkeyed non-loopback bind since milestone 8.32; milestone 8.35a's `HOST` control - the path an operator actually uses to host an invited playtest - applied no such rule and would have opened an unkeyed public listener.
+
+Observable outcome: Hosting from the lobby obeys the same rule as the command line - an unkeyed session may bind only loopback, a keyed session may bind any interface - and a refused bind is named on the entry form before any listener exists.
+
+Acceptance checks:
+
+- Closing check `PrivateLobbyPlayModeTests.HostingOffLoopbackWithoutASessionKey_IsRefusedBeforeAnyBind`, recorded failing at the pre-fix revision, where pressing `HOST` on a non-loopback address with an empty key reached a bind attempt and reported the failed bind, and passing after, where the entry form names the missing session key and no session is opened.
+- The rule is stated once and read by both surfaces, so the two cannot drift apart again; each surface keeps its own bounded wording, because a lobby names its key field rather than a command-line flag.
+- No stricter behavior is introduced: an unkeyed loopback bind and a keyed non-loopback bind stay accepted, the latter proven by its own journey.
+
+Non-goals: No new admission rule, key-strength policy, transport, encryption, diagnostic, or lobby redesign; no change to the command-line rule this mirrors or to any other launch path.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835a1-refuse-an-unkeyed-bind-off-loopback-from-the-lobbys-host-control-completion-evidence).
 
 ### [x] 8.35b Integrate the proven player HUD with online match flow
 

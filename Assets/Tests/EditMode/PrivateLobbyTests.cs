@@ -1072,6 +1072,52 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        // --- Which binds an unkeyed session may take ----------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.35a1. An unkeyed session derives no channel keys, so its link stays
+        /// plaintext, and the architecture record permits an owner-private byte to cross plaintext
+        /// only on the loopback interface. The rule now has one statement, because it had two
+        /// surfaces and only the command line obeyed it.
+        /// </summary>
+        [Test]
+        public void AnUnkeyedSession_MayBindOnlyLoopback_AndBothSurfacesSaySo()
+        {
+            Assert.That(PrivateSessionProtocol.BindRequiresSessionKey(true, string.Empty), Is.False,
+                "An unkeyed loopback session is the local default and stays allowed.");
+            Assert.That(PrivateSessionProtocol.BindRequiresSessionKey(false, string.Empty), Is.True,
+                "An unkeyed bind off loopback would put owner-private bytes on a plaintext link.");
+            Assert.That(PrivateSessionProtocol.BindRequiresSessionKey(false, "an-issued-key"),
+                Is.False, "A keyed session is sealed from the key proof on, so it may bind any " +
+                "interface. Refusing it would be a stricter rule than the record states.");
+            Assert.That(PrivateSessionProtocol.BindRequiresSessionKey(true, "an-issued-key"),
+                Is.False);
+
+            var refused = PrivateSessionLaunchOptions.Parse(new[]
+            {
+                PrivateSessionLaunchOptions.HostFlag,
+                PrivateSessionLaunchOptions.BindFlag, "203.0.113.10"
+            });
+            Assert.That(refused.IsValid, Is.False, "The command line refuses the same bind.");
+            Assert.That(refused.Error,
+                Does.Contain(PrivateSessionLaunchOptions.SessionKeyFlag),
+                "A command line is refused in the words of a command line: it names the flag.");
+
+            var accepted = PrivateSessionLaunchOptions.Parse(new[]
+            {
+                PrivateSessionLaunchOptions.HostFlag,
+                PrivateSessionLaunchOptions.BindFlag, "203.0.113.10",
+                PrivateSessionLaunchOptions.SessionKeyFlag, "an-issued-key"
+            });
+            Assert.That(accepted.IsValid, Is.True, accepted.Error);
+
+            Assert.That(PrivateLobbyLabels.UnkeyedPublicBindRefusal, Does.Contain("session key"),
+                "A lobby is refused in the words of a lobby: it names the field, not a flag.");
+            Assert.That(PrivateLobbyLabels.UnkeyedPublicBindRefusal.Length,
+                Is.LessThanOrEqualTo(PrivateLobbyLabels.MaxLabelChars),
+                "A refusal is one bounded line like every other the lobby draws.");
+        }
+
         // --- The one ending an invited playtest reads back out of a process ------------------------
 
         /// <summary>

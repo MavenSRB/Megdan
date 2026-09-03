@@ -102,6 +102,25 @@ namespace GuardsDigital.Application
         /// <summary>The default host port; an operator may name another.</summary>
         public const int DefaultPort = 45677;
 
+        /// <summary>
+        /// Milestone 8.35a1. Whether a session offered this bind and this key must be refused,
+        /// because an unkeyed session may bind only the loopback interface.
+        /// </summary>
+        /// <remarks>
+        /// <para>An unkeyed session has no key to derive channel keys from, so its link stays
+        /// plaintext, and the architecture record permits an owner-private byte to cross plaintext
+        /// only where its on-path observer does not exist - the loopback interface. A keyed session
+        /// is sealed from the key proof on and may bind anything.</para>
+        /// <para>The rule is stated here, once, because it has two callers that must not drift
+        /// apart: the command line's own host role and the lobby's <c>HOST</c> control. It was
+        /// written into the first alone, and milestone 8.36's readiness review found that the
+        /// second - the path an operator actually uses to host an invited playtest - would open an
+        /// unkeyed public listener. Each surface still says so in its own words; only the decision
+        /// is shared.</para>
+        /// </remarks>
+        public static bool BindRequiresSessionKey(bool bindsLoopback, string sessionKey) =>
+            !bindsLoopback && string.IsNullOrEmpty(sessionKey);
+
         /// <summary>The listener's pending-accept backlog.</summary>
         public const int ListenBacklog = 8;
     }

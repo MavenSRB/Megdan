@@ -580,6 +580,17 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            // Milestone 8.35a1. The same rule the command-line host role has always obeyed, read
+            // from the one place that now states it, and read before a listener exists: an unkeyed
+            // session may bind only the loopback interface, because its link stays plaintext.
+            if (PrivateSessionProtocol.BindRequiresSessionKey(
+                    endpoint.IsLoopback, entry == null ? string.Empty : entry.SessionKey))
+            {
+                presenter.ShowEntry(
+                    LocalSeats(), PrivateLobbyLabels.UnkeyedPublicBindRefusal);
+                return;
+            }
+
             try
             {
                 listener = new TcpSessionListener();

@@ -107,6 +107,19 @@ namespace GuardsDigital.Application
         /// <summary>The most characters any single lobby line may carry to a player.</summary>
         public const int MaxLabelChars = 200;
 
+        /// <summary>
+        /// Milestone 8.35a1. Why the lobby will not host off loopback without a session key, in
+        /// the words a player reads.
+        /// </summary>
+        /// <remarks>
+        /// The decision itself is <see cref="PrivateSessionProtocol.BindRequiresSessionKey"/>, so
+        /// the command line and this surface refuse the same binds; only the wording differs,
+        /// because a lobby has a key field rather than a flag to name.
+        /// </remarks>
+        public const string UnkeyedPublicBindRefusal =
+            "Hosting on any address but 127.0.0.1 needs a session key: without one the link " +
+            "would not be encrypted.";
+
         public static string Team(TeamSide side)
         {
             switch (side)

@@ -227,7 +227,10 @@ namespace GuardsDigital.Network
                     // Milestone 8.32. An unkeyed session has no channel keys, so its link stays
                     // plaintext - acceptable only where the record's on-path observer does not
                     // exist. A public listener therefore requires the session key that seals it.
-                    if (!endpoint.IsLoopback && sessionKey.Length == 0)
+                    // Milestone 8.35a1 moved the condition itself into the session layer, so this
+                    // role and the lobby's HOST control refuse exactly the same binds; the words
+                    // below stay this surface's own.
+                    if (PrivateSessionProtocol.BindRequiresSessionKey(endpoint.IsLoopback, sessionKey))
                     {
                         return Refused(
                             "A non-loopback bind requires " + SessionKeyFlag + ": without a key " +

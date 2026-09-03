@@ -426,6 +426,86 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 8.35a1's closing check. An unkeyed session derives no channel keys, so its
+        /// link stays plaintext, and the architecture record permits an owner-private byte to
+        /// cross plaintext only on the loopback interface. The command line has always refused an
+        /// unkeyed non-loopback bind; the lobby's own HOST control - the path an operator actually
+        /// uses to host an invited playtest - did not, which milestone 8.36's readiness review
+        /// found. The refusal has to come before the bind, so it is read here off the entry form.
+        /// </summary>
+        /// <remarks>
+        /// The address is a documentation-range one this machine does not own, so no interface can
+        /// be bound here whatever the rule decides and the test opens no listener of its own. That
+        /// is also what makes the pre-fix observation legible rather than dangerous: before the
+        /// fix this journey reached the bind attempt and the lobby reported the failed bind, which
+        /// on an operator's own public interface would instead have been an unkeyed public host.
+        /// </remarks>
+        [UnityTest]
+        public IEnumerator HostingOffLoopbackWithoutASessionKey_IsRefusedBeforeAnyBind()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+
+            Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "203.0.113.10";
+            Field(driver, PrivateLobbyUnityView.KeyFieldName).value = string.Empty;
+            yield return null;
+
+            UiPlayer.Click(Control(driver, "HOST"));
+            yield return null;
+
+            var said = Text(driver, PrivateLobbyUnityView.FeedbackName);
+            Assert.That(said, Does.Contain("session key"),
+                "An unkeyed bind off loopback must be refused for the reason it is refused for - " +
+                "the missing key - rather than being carried as far as a bind attempt. The lobby " +
+                "said: '" + said + "'.");
+            Assert.That(said.Length, Is.LessThanOrEqualTo(PrivateLobbyLabels.MaxLabelChars),
+                "A refusal is one bounded line like every other the lobby draws.");
+            Assert.That(said.Contains("203.0.113.10"), Is.False,
+                "Milestone 8.31's rule: a player-facing diagnostic never names an address.");
+            Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "HOST", "JOIN" }),
+                "A refused host stays on the entry form with both of its controls.");
+            Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None),
+                "A refused host opened no session.");
+        }
+
+        /// <summary>
+        /// The rule is about the key and not about refusing to host at all: loopback without a key
+        /// is the local default, and it must still reach a listening host.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator HostingLoopbackWithoutASessionKey_IsStillAccepted()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+
+            var probe = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            probe.Start();
+            var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
+            probe.Stop();
+
+            Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "127.0.0.1";
+            Field(driver, PrivateLobbyUnityView.PortFieldName).value =
+                port.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            Field(driver, PrivateLobbyUnityView.KeyFieldName).value = string.Empty;
+            yield return null;
+
+            UiPlayer.Click(Control(driver, "HOST"));
+            yield return null;
+            yield return null;
+            yield return null;
+
+            Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.Host),
+                "An unkeyed loopback host is the local default and must not be refused; the " +
+                "lobby said: '" + Text(driver, PrivateLobbyUnityView.FeedbackName) + "'.");
+
+            // Close the listener this journey opened, through the control a player would use.
+            UiPlayer.Click(Control(driver, "LEAVE"));
+            yield return null;
+            yield return null;
+            Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
+        }
+
+        /// <summary>
         /// Every control the lobby offers can actually be pressed at every supported desktop
         /// validation resolution - drawn inside the panel, and reached by a pointer at its centre.
         /// </summary>
