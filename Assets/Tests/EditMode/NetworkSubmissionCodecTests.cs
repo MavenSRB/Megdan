@@ -166,7 +166,8 @@ namespace GuardsDigital.Tests.EditMode
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             var coveredKinds = new HashSet<DirectorCommandKind>();
             var roundTripped = 0;
-            var submitted = OwnerScopedProjectionTests.DriveThroughSeats(host, 1500, projection =>
+            var submitted = OwnerScopedProjectionTests.DriveThroughSeats(host, 1500, seed: 3,
+                stopBeforeCommand: projection =>
             {
                 foreach (var seat in host.Seats.Seats)
                 {
@@ -194,9 +195,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(submitted, Is.GreaterThan(500),
                 "The seeded walk ended early; the sweep saw less of the match than it must.");
             Assert.That(roundTripped, Is.GreaterThan(1000));
-            // The anti-vacuity floor: what this exact seat-driven seed-2 walk deterministically
-            // reaches. Total kind coverage is the specimen case's, not this sweep's; a floor
-            // violation here means the sweep itself broke, not that a family moved.
+            // The anti-vacuity floor: what this exact seat-driven walk deterministically reaches.
+            // Total kind coverage is the specimen case's, not this sweep's; a floor violation here
+            // means the sweep itself broke, not that a family moved. Milestone 8.35d re-derived
+            // the seed (2 -> 3) and dropped `AdvanceEndOfRound`: the round's advance is no longer
+            // a command any seat's surface offers, so a sweep over offered commands cannot see it.
             Assert.That(coveredKinds, Is.SupersetOf(new[]
             {
                 DirectorCommandKind.CommitCard,
@@ -204,7 +207,6 @@ namespace GuardsDigital.Tests.EditMode
                 DirectorCommandKind.StartAction,
                 DirectorCommandKind.ChooseMovementDestination,
                 DirectorCommandKind.ChooseAttackTarget,
-                DirectorCommandKind.AdvanceEndOfRound,
                 DirectorCommandKind.AnswerEffectChoice,
                 DirectorCommandKind.SelectMinionBattleRemoval,
                 DirectorCommandKind.ConfirmMinionBattleRemovals,

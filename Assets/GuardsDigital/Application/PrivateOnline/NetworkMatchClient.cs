@@ -86,6 +86,9 @@ namespace GuardsDigital.Application
             }
         }
 
+        /// <summary>An admitted seat of a served match, never the Director.</summary>
+        public bool IsDirector => false;
+
         public MatchClientResult Submit(DirectorCommand command)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));

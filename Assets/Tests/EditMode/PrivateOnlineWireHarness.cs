@@ -656,12 +656,19 @@ namespace GuardsDigital.Tests.EditMode
         /// agreement finals as per-seat statements, everything else as a command from that
         /// client's own decoded offered surface.
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.35d added <paramref name="seed"/>, for the reason
+        /// <see cref="OwnerScopedProjectionTests.DriveThroughSeats"/> records: the seat-pressed
+        /// end-of-round advance was one draw per p.8 stage, and removing it moved which families a
+        /// bounded prefix of seed 2 reaches.
+        /// </remarks>
         public int DriveThroughWire(
             int commandBudget,
             Func<IMatchReadModel, bool> stopBeforeCommand = null,
-            Action afterAcceptedStep = null)
+            Action afterAcceptedStep = null,
+            int seed = 2)
         {
-            var random = new MatchLoopRandom(2);
+            var random = new MatchLoopRandom(seed);
             var submitted = 0;
             while (submitted < commandBudget)
             {

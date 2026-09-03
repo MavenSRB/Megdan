@@ -205,17 +205,24 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// End of round is the one phase whose ordinary command carries no choice, so it is
-        /// authorized to every seat and a six-client rehearsal has to pick exactly one seat to
-        /// press it. A decision standing INSIDE end of round is not that command: the round's
-        /// system transition is team-owned and falls to whichever side the rules name, so a rule
-        /// that reserves the whole phase for one fixed seat cannot answer it.
+        /// A decision standing INSIDE end of round is not the round's own advance: a team-owned
+        /// stage question falls to whichever side the rules name, so a rule that reserves the
+        /// whole phase for one fixed seat cannot answer it.
         /// </summary>
         /// <remarks>
-        /// Milestone 8.35c's first live six-process match deadlocked on exactly this shape - a
-        /// Blue-owned end-of-round system transition waiting on a Red seat that held nothing - and
-        /// this is the session fact the correction rests on, pinned here so a later change to who
-        /// may answer an end-of-round decision fails loudly rather than at the next rehearsal.
+        /// <para>Milestone 8.35c's first live six-process match deadlocked on exactly this shape -
+        /// a Blue-owned end-of-round system transition waiting on a Red seat that held nothing -
+        /// and this is the session fact the correction rests on, pinned here so a later change to
+        /// who may answer an end-of-round decision fails loudly rather than at the next
+        /// rehearsal.</para>
+        /// <para>Milestone 8.35d answered the other half of that shape and narrowed this case to
+        /// the team-owned pause it was always about. The phase's advance is no longer authorized
+        /// to any seat at all - the seat-serving host runs the stages itself - so there is no
+        /// single-advancer rule left to collide with; and p.15's upgrade pause, which the walk can
+        /// also stop on here, is now owned by the one hero it names rather than by that hero's
+        /// whole side. <c>EndOfRoundContinuationTests</c> owns that half. The stop condition below
+        /// therefore selects a team-owned end-of-round decision, which is the one this case is
+        /// about.</para>
         /// </remarks>
         [Test]
         public void AnEndOfRoundDecision_IsAnsweredByItsOwningTeamAndNotByWhoeverAdvancesTheRound()
@@ -223,7 +230,12 @@ namespace GuardsDigital.Tests.EditMode
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             var walked = OwnerScopedProjectionTests.DriveThroughSeats(host, 2000,
                 projection => projection.Phase == RoundResolutionPhase.EndOfRound &&
-                    projection.DecisionContract != null);
+                    projection.DecisionContract != null &&
+                    SeatProjectionFactory.OwnerOfStandingDecision(
+                        (MatchSessionProjection)projection).IsTeamOwned,
+                // Milestone 8.35d re-derived the seed: seed 2's Minion Battle - the team-owned
+                // end-of-round pause this case is about - now falls outside this budget.
+                3);
             var source = host.Projection;
 
             Assert.That(source.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound),

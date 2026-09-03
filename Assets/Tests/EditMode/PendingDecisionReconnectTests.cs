@@ -65,9 +65,12 @@ namespace GuardsDigital.Tests.EditMode
             var reached = 0;
             if (staged == null)
             {
+                // Milestone 8.35d re-derived the seed. The walk no longer draws the round's own
+                // advance, which moved seed 2's Attack-target and Minion-Battle pauses outside
+                // this budget; seed 3 reaches every walked family inside 268 steps.
                 reached = harness.DriveThroughWire(WalkBudget, projection =>
                     projection.DecisionContract != null &&
-                    projection.DecisionContract.FamilyId.Value == family);
+                    projection.DecisionContract.FamilyId.Value == family, seed: 3);
             }
 
             Assert.That(harness.MatchHost.Projection.DecisionContract, Is.Not.Null,
@@ -131,8 +134,18 @@ namespace GuardsDigital.Tests.EditMode
             var identity = harness.AnswerOnce(owner, out var answeredCommand, out var answeredStatement);
             var sequenceAfterAnswer = harness.MatchHost.Sequence;
             var versionAfterAnswer = harness.MatchHost.Version;
-            Assert.That(sequenceAfterAnswer - sequenceBeforeAnswer, Is.LessThanOrEqualTo(1),
-                family + ": one answer appended more than one record to the ordered stream.");
+            // Milestone 8.35d. One answer is still one rules command of its own. When that answer
+            // completes an end-of-round stage the seat-serving host runs the rest of rulebook p.8
+            // itself, and those advances are the only other thing this window may contain.
+            var appendedByAnswer = harness.MatchHost.ReadResults(sequenceBeforeAnswer);
+            Assert.That(appendedByAnswer.IsComplete, Is.True, family);
+            Assert.That(
+                appendedByAnswer.Records.Count(record =>
+                    record.Command == null ||
+                    record.Command.Kind != DirectorCommandKind.AdvanceEndOfRound),
+                Is.LessThanOrEqualTo(1),
+                family + ": one answer appended more than one record of its own to the ordered " +
+                "stream.");
 
             harness.DisconnectClient(owner);
             Assert.That(harness.Session.IsPaused, Is.True,

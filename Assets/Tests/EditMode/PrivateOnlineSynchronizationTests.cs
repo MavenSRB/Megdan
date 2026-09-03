@@ -48,14 +48,15 @@ namespace GuardsDigital.Tests.EditMode
                     maxPayloadBytes = Math.Max(
                         maxPayloadBytes, harness.LastProjectionPayload(ordinal).Length);
                 }
-            });
+            }, seed: 3);
 
             Assert.That(submitted, Is.EqualTo(700),
                 "The seeded walk ended early; the sweep saw less of the match than it must.");
 
-            // The anti-vacuity floor: what this exact wire-driven seed-2 walk deterministically
-            // reaches in its first seven hundred steps. A sweep that stops seeing these is a
-            // broken sweep, not a family that moved.
+            // The anti-vacuity floor: what this exact wire-driven walk deterministically reaches
+            // in its first seven hundred steps. A sweep that stops seeing these is a broken sweep,
+            // not a family that moved. Milestone 8.35d re-derived the seed (2 -> 3): the walk no
+            // longer draws the round's own advance, which moved seed 2's whole trajectory.
             Assert.That(families, Is.SupersetOf(new[]
             {
                 "initiative", "movement", "attack-target", "effect", "correction",
@@ -742,7 +743,7 @@ namespace GuardsDigital.Tests.EditMode
             harness.SeatAll();
             harness.DriveThroughWire(1200, projection =>
                 projection.PendingMinionBattleChoice != null &&
-                projection.PendingMinionBattleChoice.CanConfirm);
+                projection.PendingMinionBattleChoice.CanConfirm, seed: 3);
             var choice = harness.MatchHost.Projection.PendingMinionBattleChoice;
             Assert.That(choice, Is.Not.Null,
                 "The deterministic walk must reach a confirmable Minion Battle selection.");
@@ -958,12 +959,25 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(harness.MatchHost.Version, Is.EqualTo(versionBeforeConfirmation + 1));
-            Assert.That(harness.MatchHost.Sequence, Is.EqualTo(sequenceBeforeConfirmation + 1));
-            Assert.That(harness.MatchHost.Projection.AcceptedCommands.Count,
-                Is.EqualTo(commandsBeforeConfirmation + 1));
-            Assert.That(harness.MatchHost.Projection.AcceptedCommands.Last(),
-                Is.EqualTo(expectedConfirm));
+            // Milestone 8.35d. The unanimous statement still performs exactly one final rules
+            // choice, and what follows it in the stream is the seat-serving host running the rest
+            // of rulebook p.8 by itself - confirming the Minion Battle completes that stage.
+            // Asserted as the exact appended shape rather than as a count, so a second
+            // confirmation would still fail here.
+            var appended = harness.MatchHost.Projection.AcceptedCommands
+                .Skip(commandsBeforeConfirmation)
+                .ToArray();
+            Assert.That(appended.First(), Is.EqualTo(expectedConfirm));
+            Assert.That(appended.Skip(1).All(command =>
+                    command.Kind == DirectorCommandKind.AdvanceEndOfRound), Is.True,
+                "Only the host's own end-of-round continuation follows the confirmation.");
+            Assert.That(appended.Count(command =>
+                    command.Kind == DirectorCommandKind.ConfirmMinionBattleRemovals),
+                Is.EqualTo(1), "The final rules choice reaches the authority exactly once.");
+            Assert.That(harness.MatchHost.Version,
+                Is.EqualTo(versionBeforeConfirmation + appended.Length));
+            Assert.That(harness.MatchHost.Sequence,
+                Is.EqualTo(sequenceBeforeConfirmation + appended.Length));
             Assert.That(harness.MatchHost.Projection.PendingMinionBattleChoice, Is.Null);
             Assert.That(harness.Session.DrainEvents().Count(record =>
                     record.Kind == PrivateSessionEventKind.AgreementAccepted),

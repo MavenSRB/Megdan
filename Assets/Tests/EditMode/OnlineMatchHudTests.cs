@@ -21,8 +21,11 @@ namespace GuardsDigital.Tests.EditMode
             var seen = new System.Collections.Generic.HashSet<string>();
 
             AssertAllSeats(harness, seen);
+            // Milestone 8.35d re-derived the seed: with the round's advance no longer drawn by the
+            // walk, seed 2 reaches the Attack target and the Minion Battle far outside this
+            // budget and seed 3 reaches every family inside 268 steps.
             var submitted = harness.DriveThroughWire(700, afterAcceptedStep: () =>
-                AssertAllSeats(harness, seen));
+                AssertAllSeats(harness, seen), seed: 3);
 
             Assert.That(submitted, Is.EqualTo(700));
             Assert.That(seen, Is.SupersetOf(new[]

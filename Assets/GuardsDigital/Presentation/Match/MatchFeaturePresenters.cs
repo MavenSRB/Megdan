@@ -1998,8 +1998,17 @@ namespace GuardsDigital.Presentation.Match
                             commitment.Status,
                             projection.IsInputEnabled && commitment.CanPass,
                             commitment.RevealedCardInstanceId,
+                            // Milestone 8.35e. `Single` here failed the whole tray refresh, and the
+                            // absence it refused is legitimate: rulebook p.8's Retrieve stage puts
+                            // each hero's revealed card back in that hero's hand, and a seat's
+                            // scoped card list withholds another hero's hand and deck together, so
+                            // from that stage until the next round every seat holds five
+                            // commitments naming a card its own projection may not carry. The
+                            // identity stays - it is public, and the label reads REVEALED from it -
+                            // and only the card's detail is missing. `HeroOverviewPresentation`
+                            // already reads the same field this way.
                             commitment.RevealedCardInstanceId.HasValue
-                                ? projection.Cards.Single(card =>
+                                ? projection.Cards.SingleOrDefault(card =>
                                     card.Id.Equals(commitment.RevealedCardInstanceId.Value))
                                 : null,
                             projection.Cards.Where(card =>
@@ -3574,8 +3583,18 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
+        /// <summary>
+        /// The Director-shaped overload, which keeps its own manual end-of-round control. Milestone
+        /// 8.35d added the parameter below rather than changing this signature, so every existing
+        /// caller still describes the surface it always described.
+        /// </summary>
         public static RoundActionViewModel CreateViewModel(IMatchReadModel projection) =>
-            CreateViewModel(projection, default, Array.Empty<TokenInstanceId>());
+            CreateViewModel(projection, default, Array.Empty<TokenInstanceId>(), true);
+
+        public static RoundActionViewModel CreateViewModel(
+            IMatchReadModel projection, bool offersRoundContinuation) =>
+            CreateViewModel(
+                projection, default, Array.Empty<TokenInstanceId>(), offersRoundContinuation);
 
         /// <summary>
         /// Whether the match is waiting on a decision inside this turn, asked in one place.
@@ -3632,7 +3651,8 @@ namespace GuardsDigital.Presentation.Match
         private static RoundActionViewModel CreateViewModel(
             IMatchReadModel projection,
             ActionDefinitionId openClearActionDefinitionId,
-            IReadOnlyList<TokenInstanceId> selectedClearTokenIds)
+            IReadOnlyList<TokenInstanceId> selectedClearTokenIds,
+            bool offersRoundContinuation)
         {
             if (projection == null)
             {
@@ -3739,7 +3759,15 @@ namespace GuardsDigital.Presentation.Match
                 // stands, so the control that would produce that rejection is not offered. Milestone
                 // 7.8a adds the second such pause on the same terms - a paused system transition is
                 // answered by answering it, and an advance offered beside it could only be refused.
-                projection.IsInputEnabled &&
+                //
+                // Milestone 8.35d adds the first clause, and it is why the control was drawn for a
+                // seat that could never submit it: the two pauses below are read from the seat's own
+                // scoped surface, which reports the standing decision it does NOT own as absent, so
+                // five of six seats saw a CONTINUE control beside somebody else's question and
+                // pressing it produced an unauthorized refusal. A seat-served round is now continued
+                // by its host; only the Director's direct surface still steps it by hand.
+                offersRoundContinuation &&
+                    projection.IsInputEnabled &&
                     projection.Phase == RoundResolutionPhase.EndOfRound &&
                     projection.PendingMinionBattleChoice == null &&
                     projection.PendingSystemTransitionStep == null
@@ -4415,7 +4443,7 @@ namespace GuardsDigital.Presentation.Match
             {
                 lastProjection = projection;
                 lastViewModel = CreateViewModel(
-                    projection, clearModeActionDefinitionId, clearSelection);
+                    projection, clearModeActionDefinitionId, clearSelection, session.IsDirector);
             }
 
             return lastViewModel;
@@ -4970,6 +4998,52 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// Milestone 8.35e. The Minion Battle's public stage: milestone 8.30n's team agreement
+        /// standing over a selection whose authoritative pending detail this reader does not hold.
+        /// </summary>
+        /// <remarks>
+        /// <para>Two readers reach it, and both are ordinary. A seat on the side that is not
+        /// choosing never holds the detail at all - <c>SeatPendingSurface</c> gives a decision's own
+        /// content to the seat that answers it - and a seat on the choosing side stops holding it
+        /// for as long as its own accepted press is in flight, because
+        /// <c>NetworkMatchReadModel</c> strips every pending answer while the view is not
+        /// actionable. The public agreement is public in both, so what remains renderable is exactly
+        /// what the table can see: the counts, the agreement's own statements, and the selected
+        /// units the board already cues from <c>TeamAgreement.SelectedUnits</c>.</para>
+        /// <para>It carries no end-of-round identities because there is no pending choice here to
+        /// read them from, which is why it cannot go through the removal-prompt constructor: that
+        /// one's guard exists to refuse exactly the fabricated identities this stage would have to
+        /// invent. Nothing on this form submits a rules command - the choosing side answers through
+        /// <see cref="MinionChoicePresenter.SubmitAgreement"/>, and the other side answers nothing.</para>
+        /// </remarks>
+        public static MinionChoiceViewModel ForPublicAgreement(
+            long version,
+            TeamId choosingTeamId,
+            TeamSide choosingSide,
+            int requiredRemovalCount,
+            int selectedCount,
+            TeamAgreementHudViewModel agreement)
+        {
+            if (agreement == null)
+            {
+                throw new ArgumentNullException(nameof(agreement));
+            }
+
+            if (agreement.Kind != TeamAgreementKind.MinionBattle)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(agreement),
+                    agreement.Kind,
+                    "The public form of this prompt draws the Minion Battle's own team agreement.");
+            }
+
+            return new MinionChoiceViewModel(
+                version, MinionChoicePromptKind.MinionBattleRemoval, default, default,
+                default, default, default, choosingTeamId, choosingSide, requiredRemovalCount,
+                selectedCount, Array.Empty<MinionChoiceCandidateViewModel>(), null, agreement);
+        }
+
+        /// <summary>
         /// Milestone 6.4b's correction form of the same prompt: the displaced subject, the correction
         /// kind, and destination- or subject-valued candidates, addressed by the owning action's
         /// identity rather than an end-of-round one. Selection is the advance for a correction, so it
@@ -5121,6 +5195,16 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Present only while the authoritative choice reports it can be confirmed.</summary>
         public TypedInvocationViewModel ConfirmInvocation { get; }
         public TeamAgreementHudViewModel Agreement { get; }
+
+        /// <summary>
+        /// Milestone 8.35e. Whether this is the battle's public stage rather than an owned removal
+        /// prompt: no authoritative pending detail stands behind it, so it names no end-of-round
+        /// identities, offers no candidates and carries no confirm. Everything it does draw - the
+        /// counts and <see cref="Agreement"/> - is public to all six seats.
+        /// </summary>
+        public bool IsPublicAgreementStage =>
+            Kind == MinionChoicePromptKind.MinionBattleRemoval && !ResolutionId.IsDefined;
+
         public string PromptLabel { get; }
         public string StatusLabel { get; }
 
@@ -5256,13 +5340,19 @@ namespace GuardsDigital.Presentation.Match
                 var publicAgreement = TeamAgreementHudPresentation.Create(projection);
                 if (publicAgreement?.Kind == TeamAgreementKind.MinionBattle)
                 {
+                    // Milestone 8.35e. This went through the removal-prompt constructor with default
+                    // identities, and that constructor's own guard refuses exactly those, so the
+                    // branch threw on every render in the one state it exists to draw - on both
+                    // sides, from the first selection onward, and each throw took the rest of
+                    // MatchFeatureCoordinator.RefreshAll with it. The public stage has its own form
+                    // now; the guarded one is reached only from an owned pending choice below.
                     var agreement = projection.TeamAgreement;
                     var team = projection.Participants.Teams.Single(value =>
                         value.Side == agreement.ChoosingSide);
-                    return new MinionChoiceViewModel(
-                        projection.Version, default, default, team.Id, agreement.ChoosingSide,
+                    return MinionChoiceViewModel.ForPublicAgreement(
+                        projection.Version, team.Id, agreement.ChoosingSide,
                         agreement.RequiredSelectionCount, agreement.SelectedUnits.Count,
-                        Array.Empty<MinionChoiceCandidateViewModel>(), null, publicAgreement);
+                        publicAgreement);
                 }
 
                 // At most one minion-choice family is ever pending: the battle is end-of-round state

@@ -37,13 +37,26 @@ namespace GuardsDigital.Application
     /// Milestone 8.30b. The one door a match surface submits through.
     /// </summary>
     /// <remarks>
-    /// Two implementations, and a presenter cannot tell them apart: the Director submits every
-    /// command as itself, and a seat submits its own inside an envelope the host authorizes. That is
-    /// what lets the proven HUD be scoped to a seat by composition rather than by rewriting it.
+    /// <para>Two implementations, and a presenter cannot tell them apart along the rules-facing
+    /// path: the Director submits every command as itself, and a seat submits its own inside an
+    /// envelope the host authorizes. That is what lets the proven HUD be scoped to a seat by
+    /// composition rather than by rewriting it.</para>
+    /// <para>The one thing a surface may ask is <see cref="IsDirector"/>, and only about controls
+    /// that are not rules answers at all - milestone 8.35d's end-of-round continuation is the
+    /// first. It is asked of the client rather than of the read model because milestone 8.35b's
+    /// <see cref="SwitchableMatchClient"/> replaces a local client with an admitted network seat
+    /// after composition, so a surface that decided this once at construction would decide it
+    /// wrongly.</para>
     /// </remarks>
     public interface IMatchClient
     {
         IMatchReadModel Projection { get; }
+
+        /// <summary>
+        /// Whether this client submits as the Director - the direct surface with no seat, no
+        /// envelope and no authorized set - rather than as one seat of a served match.
+        /// </summary>
+        bool IsDirector { get; }
 
         MatchClientResult Submit(DirectorCommand command);
 
@@ -63,6 +76,8 @@ namespace GuardsDigital.Application
             current = initial ?? throw new ArgumentNullException(nameof(initial));
 
         public IMatchReadModel Projection => current.Projection;
+
+        public bool IsDirector => current.IsDirector;
 
         public void Replace(IMatchClient replacement) =>
             current = replacement ?? throw new ArgumentNullException(nameof(replacement));
@@ -86,6 +101,8 @@ namespace GuardsDigital.Application
         }
 
         public IMatchReadModel Projection => session.Projection;
+
+        public bool IsDirector => true;
 
         public MatchClientResult Submit(DirectorCommand command)
         {
@@ -136,6 +153,8 @@ namespace GuardsDigital.Application
         public SeatProjection SeatProjection => client.Projection;
 
         public IMatchReadModel Projection => client.Projection;
+
+        public bool IsDirector => false;
 
         public MatchClientResult Submit(DirectorCommand command)
         {

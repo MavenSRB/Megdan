@@ -92,7 +92,10 @@ namespace GuardsDigital.Tests.EditMode
             DriveThroughSeats(
                 host,
                 1800,
-                projection => projection.PendingAttackTargetChoice != null);
+                projection => projection.PendingAttackTargetChoice != null,
+                // Milestone 8.35d re-derived the seed: seed 2 now reaches an Attack target around
+                // step 2,540 and seed 3 reaches it at 264.
+                3);
 
             var choice = host.Projection.PendingAttackTargetChoice;
             Assert.That(choice, Is.Not.Null,
@@ -211,9 +214,28 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True);
 
             AssertVisibilityRule(host);
-            DriveThroughSeats(host, 60);
+
+            // Milestone 8.35d. Driven to a state that still carries both hidden shapes rather than
+            // to a fixed step count. The host now runs p.8's stages itself, so the walk no longer
+            // spends a step per stage and a fixed budget lands elsewhere in the round than it used
+            // to - and "sixty commands" was never what this case is about.
+            var stepped = 0;
+            DriveThroughSeats(host, 600, projection =>
+                ++stepped > 60 && CarriesBothHiddenShapes((MatchSessionProjection)projection));
+
             AssertVisibilityRule(host);
         }
+
+        /// <summary>
+        /// Whether the position under test still contains the two shapes this case's claim needs:
+        /// a facedown card, and a face-up card in a hand.
+        /// </summary>
+        private static bool CarriesBothHiddenShapes(MatchSessionProjection projection) =>
+            projection.Cards.Any(card =>
+                card.State.FaceOrientation == CardFaceOrientation.FaceDown) &&
+            projection.Cards.Any(card =>
+                card.State.Location == CardLocation.Hand &&
+                card.State.FaceOrientation == CardFaceOrientation.FaceUp);
 
         private static void AssertVisibilityRule(IMatchHost host)
         {
@@ -394,12 +416,22 @@ namespace GuardsDigital.Tests.EditMode
         /// Plays a bounded prefix of a real match through the seats themselves, so that whatever the
         /// other cases inspect was produced the way a client would produce it.
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.35d added <paramref name="seed"/>. The walk's own draw sequence is what
+        /// decides which pending families a bounded prefix reaches, and removing the seat-pressed
+        /// end-of-round advance removed one draw per p.8 stage - so seed 2 now reaches the Attack
+        /// target and the Minion Battle around step 2,540 rather than inside 1,500. A coverage
+        /// fixture names the seed that reaches what it is about instead of paying for a walk four
+        /// times longer; every caller that does not care keeps seed 2 and its old trajectory
+        /// wherever the round boundary has not moved it.
+        /// </remarks>
         internal static int DriveThroughSeats(
             IMatchHost host,
             int commandBudget,
-            Func<IMatchReadModel, bool> stopBeforeCommand = null)
+            Func<IMatchReadModel, bool> stopBeforeCommand = null,
+            int seed = 2)
         {
-            var random = new MatchLoopRandom(2);
+            var random = new MatchLoopRandom(seed);
             var submitted = 0;
             while (submitted < commandBudget)
             {

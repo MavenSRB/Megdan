@@ -82,6 +82,23 @@ namespace GuardsDigital.Tests.EditMode
                         ref sawFacedownCommitment, ref sawRevealedCommitment);
 
                     var command = recording.Commands[index];
+
+                    // Milestone 8.35d. The Director's recording steps p.8's stages by hand; a
+                    // seat-served host runs them itself the moment the answer before them lands,
+                    // so the recorded advance has already happened here and belongs to no seat by
+                    // design. The two streams stay in step because both drive the same authority:
+                    // one recorded advance for each stage the host continued through.
+                    if (command.Kind == DirectorCommandKind.AdvanceEndOfRound)
+                    {
+                        Assert.That(
+                            host.Projection.Phase != RoundResolutionPhase.EndOfRound ||
+                            host.Projection.DecisionContract != null,
+                            Is.True,
+                            scenario.Label + " command " + index + " is a recorded end-of-round " +
+                            "advance the seat-served host had not already run.");
+                        continue;
+                    }
+
                     if (TeamAgreementTestDriver.SubmitFinalAgreementCommand(
                         host,
                         command,

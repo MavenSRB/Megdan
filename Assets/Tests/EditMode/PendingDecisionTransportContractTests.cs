@@ -6,6 +6,7 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -85,7 +86,10 @@ namespace GuardsDigital.Tests.EditMode
         private static IEnumerable<string> WalkTheOfficialMatch()
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
-            var random = new MatchLoopRandom(2);
+            // Milestone 8.35d re-derived the seed: with the round's own advance no longer drawn
+            // by this walk, seed 2 reaches the Attack target and the Minion Battle far outside
+            // this budget and seed 3 reaches every walked family inside 268 steps.
+            var random = new MatchLoopRandom(3);
             var observed = new List<string>();
             var target = new[]
             {
@@ -123,7 +127,7 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(observed, Is.SupersetOf(target),
-                "Seed 2 of the official six-player board reaches these seven families; a change " +
+                "Seed 3 of the official six-player board reaches these seven families; a change " +
                 "that reroutes it must be understood before this list is edited.");
             return observed;
         }
@@ -296,7 +300,16 @@ namespace GuardsDigital.Tests.EditMode
 
             if (family.Equals(PendingDecisionFamilies.SystemTransition))
             {
-                return (default, projection.PendingSystemTransitionStep.ChoosingSide);
+                // Milestone 8.35d. p.15's Upgrade a Card is the one transition pause a single
+                // player owns, and the authority records that in the paused item rather than in
+                // the step's side: the item names the hero whose level it is. Restated here from
+                // the same source the production rule reads, so the two agree by derivation
+                // rather than by both being written down twice.
+                var step = projection.PendingSystemTransitionStep;
+                return step.DefinitionId.Equals(HeroLevelUpSystemTransition.DefinitionId) &&
+                    step.ItemId.IsDefined
+                    ? (HeroLevelUpItem.Read(step.ItemId).HeroId, TeamSide.None)
+                    : (default, step.ChoosingSide);
             }
 
             if (family.Equals(PendingDecisionFamilies.RemovalPrevention))

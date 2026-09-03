@@ -635,6 +635,26 @@ Non-goals: No invited external tester, public distribution, production service, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835c-pass-a-local-six-client-playtest-build-rehearsal-completion-evidence).
 
+### [x] 8.35d Run the end-of-round sequence automatically and scope each hero's level up to its own player
+
+Corrective milestone for two findings the user reported from live multiplayer testing on 2026-09-03 and approved the same day, ahead of milestone 8.36's human gate. Milestone 8.30a authorized `AdvanceEndOfRound` to every seat because the command carries no choice. Six players sharing that one control stepped rulebook p.8's stages past each other's pauses, and the five seats that did not own the standing question were each drawn a `CONTINUE END OF ROUND` control whose every press the host refused - because a seat's scoped surface reports the decision it does not own as absent, which is the privacy rule working correctly. Separately, p.15's Upgrade a Card was owned by the whole side the transition named, so a teammate could answer another player's upgrade; that is what "leveling was skipped for some players" was.
+
+Observable outcome: In a seat-based hosted session, rulebook p.8's end-of-round sequence runs by itself in stage order the moment the phase is entered, pausing only for decisions somebody owns and resuming automatically once one is answered, and each hero's Upgrade a Card pause is answerable only by the seat that owns that hero.
+
+Acceptance checks:
+
+- Entering end of round with no decision standing advances every applicable stage without any seat submission, in `EndOfRoundStage` order, as ordinary accepted commands in the one recorded stream, so replay, retained-prefix Undo, snapshots and restore see the sequence they always saw.
+- A stage pause of any family - the pre-Minion-Battle triggered-effect question, the Minion Battle selection, the Lane Push Place, the Level Up upgrade - halts the continuation, only the seat that owns it is authorized, and the answer resumes it automatically through to the next pause or the next round's commitments.
+- A hero that can afford no level is passed over with no pause and no item of its own; this already held and is now asserted.
+- Each hero's upgrade pause is answerable only by the seat owning that hero: a teammate's and an opponent's submission are both refused `UnauthorizedCommand` without moving the version, the stream or the snapshot, and the Director still answers it directly.
+- No seat projection offers `AdvanceEndOfRound` in any phase and no seat surface draws `CONTINUE END OF ROUND`; the Director's own direct door runs no stage by itself and still advances one by hand.
+- While a reserved seat holds the session, the continuation holds with it and resumes on the returning player's next accepted answer.
+- A six-client wire regression drives a full end of round, converges every seat on the settled authoritative version rather than on the one the submission alone produced, and records no seat submitting an advance.
+
+Non-goals: No change to rulebook p.8's stages, presentation pacing or animation, Director mode, the wire protocol version, the persisted snapshot schema, or milestone 8.36's execution.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835d-run-the-end-of-round-sequence-automatically-and-scope-each-heros-level-up-to-its-own-player-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

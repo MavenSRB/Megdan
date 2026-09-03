@@ -353,6 +353,22 @@ namespace GuardsDigital.Application
             PrivateSessionProtocol.SubmissionIdempotencyWindowEntries;
 
         /// <summary>
+        /// Milestone 8.35d. The most end-of-round stages one host-authored continuation will run
+        /// before it stops and says so.
+        ///
+        /// <para>Rulebook p.8 has six stages and a round crosses them once, so any number above six
+        /// is only a guard against a rules defect that keeps reporting progress without leaving the
+        /// phase. It exists so that such a defect appears as a recorded refusal rather than as a
+        /// host that never returns from a player's submission.</para>
+        /// </summary>
+        public const int EndOfRoundContinuationStageLimit = 32;
+
+        /// <summary>
+        /// Milestone 8.35d. How many refusals the continuation's own record keeps.
+        /// </summary>
+        public const int RetainedContinuationRefusalCount = 8;
+
+        /// <summary>
         /// Milestone 8.34. What one consumed submission identity answered, so that an identical
         /// repeat of it is answered the same way instead of being executed a second time.
         /// </summary>
@@ -392,6 +408,7 @@ namespace GuardsDigital.Application
             new Dictionary<SubmissionId, CachedSubmissionOutcome>();
         private readonly Queue<SubmissionId> cachedOutcomeOrder = new Queue<SubmissionId>();
         private readonly TeamAgreementCoordinator teamAgreement = new TeamAgreementCoordinator();
+        private readonly List<string> continuationRefusals = new List<string>();
         private MatchParticipants seatedParticipants;
         private MatchSeatBinding seatBinding;
         private bool executing;
@@ -424,6 +441,22 @@ namespace GuardsDigital.Application
         }
 
         public MatchSessionProjection Projection => session.Projection;
+
+        /// <summary>
+        /// Milestone 8.35d. Every reason the host's end-of-round continuation stopped without
+        /// having reached a pause, a phase change or a finished game, oldest first.
+        /// </summary>
+        /// <remarks>
+        /// It is empty in every ordinary match, and a non-empty list is a defect signal rather than
+        /// a gameplay state: the continuation only ever submits the one command the authority
+        /// itself says is the next thing to do, so a refusal means the two disagree. Recorded and
+        /// readable instead of retried, because a host that keeps pressing a refused advance is the
+        /// spin the seat surface was just relieved of.
+        /// </remarks>
+        public IReadOnlyList<string> EndOfRoundContinuationRefusals
+        {
+            get { lock (gate) { return continuationRefusals.ToArray(); } }
+        }
 
         public MatchHostResult Submit(MatchSubmission submission)
         {
@@ -647,6 +680,10 @@ namespace GuardsDigital.Application
                 {
                     DuringSubmissionForTest?.Invoke();
                     inner = Execute(MatchSubmission.ForCommand(submission.Command));
+                    if (inner.Accepted)
+                    {
+                        ContinueEndOfRound();
+                    }
                 }
                 finally
                 {
@@ -664,7 +701,12 @@ namespace GuardsDigital.Application
                     AgreementReason = TeamAgreementSubmissionRejectionReason.None,
                     SessionReason = inner.SessionRejectionReason,
                     Detail = inner.Detail,
-                    Version = inner.Version,
+
+                    // Milestone 8.35d. The version this answer settled on, which is the authority's
+                    // own after anything the host continued through on its back. Reporting the
+                    // version from before the continuation would make every seat's next submission
+                    // stale by construction.
+                    Version = inner.Accepted ? session.Projection.Version : inner.Version,
                     Sequence = inner.Sequence
                 };
                 CacheOutcome(submission.Id, outcome);
@@ -763,10 +805,15 @@ namespace GuardsDigital.Application
                             final.Detail, session.Projection.Version, 0);
 
                     teamAgreement.Clear();
+
+                    // Milestone 8.35d. A unanimous confirmation is the other way a seat-served
+                    // match reaches or leaves an end-of-round stage - p.8's Minion Battle is
+                    // confirmed exactly here - so the continuation runs from this door too.
+                    ContinueEndOfRound();
                     return CachedAgreementOutcome(
                         submission, bound, true,
                         TeamAgreementSubmissionRejectionReason.None, string.Empty,
-                        final.Version, final.Sequence);
+                        session.Projection.Version, final.Sequence);
                 }
                 finally
                 {
@@ -904,6 +951,66 @@ namespace GuardsDigital.Application
                         submission.Kind,
                         "A submission kind the host cannot execute reached it. Every member of " +
                         nameof(MatchSubmissionKind) + " that mutates authority has a case here.");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35d. Runs rulebook p.8's end-of-round sequence for a seat-served match, in
+        /// the authority's own stage order, as far as it goes without asking anybody anything.
+        /// </summary>
+        /// <remarks>
+        /// <para>Reached only from the two seat doors - <see cref="SubmitForSeat"/> and the
+        /// unanimous final of <see cref="SubmitAgreementForSeat"/> - and never from
+        /// <see cref="Submit"/>, which is the Director's. That is the whole of the opt-in: seat-
+        /// served play advances itself and Director mode keeps stepping the round by hand, without
+        /// a policy flag either surface could be composed with the wrong way round. Every path into
+        /// end of round in a seat-served match is an accepted seat submission, so "when the phase
+        /// is entered" and "after every accepted operation" are the same hook.</para>
+        /// <para>It runs inside the caller's own <c>executing</c> window, so a re-entrant
+        /// submission is refused while it works, and each advance is an ordinary accepted
+        /// <see cref="DirectorCommand.AdvanceEndOfRound"/> appended to the one recorded stream.
+        /// Replay, retained-prefix Undo, snapshots and restore therefore see the same command
+        /// sequence they always did - the host authored some of it rather than a player, and
+        /// nothing downstream can tell or needs to.</para>
+        /// <para>It stops on a standing decision of ANY family, on leaving the phase, on the game
+        /// ending, and on a refusal - which is a defect signal, recorded rather than retried.</para>
+        /// </remarks>
+        private void ContinueEndOfRound()
+        {
+            for (var stage = 0; stage < EndOfRoundContinuationStageLimit; stage++)
+            {
+                var projection = session.Projection;
+                if (projection.Phase != RoundResolutionPhase.EndOfRound ||
+                    projection.DecisionContract != null)
+                {
+                    return;
+                }
+
+                var advance = Execute(MatchSubmission.ForCommand(DirectorCommand.AdvanceEndOfRound()));
+                if (!advance.Accepted)
+                {
+                    RecordContinuationRefusal(
+                        "The end-of-round continuation was refused at version " + advance.Version +
+                        " on stage " + (projection.CurrentEndOfRoundStage.HasValue
+                            ? projection.CurrentEndOfRoundStage.Value.ToString()
+                            : "none") +
+                        " as " + advance.SessionRejectionReason + ": " + advance.Detail);
+                    return;
+                }
+            }
+
+            RecordContinuationRefusal(
+                "The end-of-round continuation ran " + EndOfRoundContinuationStageLimit +
+                " advances without leaving end of round or reaching a decision.");
+        }
+
+        private void RecordContinuationRefusal(string detail)
+        {
+            continuationRefusals.Add(detail);
+            if (continuationRefusals.Count > RetainedContinuationRefusalCount)
+            {
+                continuationRefusals.RemoveRange(
+                    0, continuationRefusals.Count - RetainedContinuationRefusalCount);
             }
         }
 

@@ -56,6 +56,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(agreement.SelectionIsConfirmable, Is.True);
             var startingVersion = host.Version;
             var startingSequence = host.Sequence;
+            var acceptedBefore = host.Projection.AcceptedCommands.Count;
 
             for (var index = 0; index < agreement.Participants.Count; index++)
             {
@@ -75,9 +76,20 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
+            // Milestone 8.35d. Unanimity still submits exactly one final rules choice; confirming
+            // the Minion Battle completes rulebook p.8's first stage, so the seat-serving host
+            // then runs the rest of the sequence itself and those advances are in the stream too.
+            var appended = host.Projection.AcceptedCommands.Skip(acceptedBefore).ToArray();
             Assert.That(host.Projection.PendingMinionBattleChoice, Is.Null);
-            Assert.That(host.Version, Is.EqualTo(startingVersion + 1));
-            Assert.That(host.Sequence, Is.EqualTo(startingSequence + 1));
+            Assert.That(appended.First().Kind,
+                Is.EqualTo(DirectorCommandKind.ConfirmMinionBattleRemovals));
+            Assert.That(appended.Count(command =>
+                    command.Kind == DirectorCommandKind.ConfirmMinionBattleRemovals),
+                Is.EqualTo(1), "The final rules choice reaches the authority exactly once.");
+            Assert.That(appended.Skip(1).All(command =>
+                    command.Kind == DirectorCommandKind.AdvanceEndOfRound), Is.True);
+            Assert.That(host.Version, Is.EqualTo(startingVersion + appended.Length));
+            Assert.That(host.Sequence, Is.EqualTo(startingSequence + appended.Length));
         }
 
         [Test]
@@ -139,10 +151,19 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        private static IMatchHost ReachAgreement(TeamAgreementKind kind)
+        /// <summary>
+        /// Milestone 8.35e shares this walk rather than re-deriving a second seed: it is the one
+        /// place that knows how far a seeded seat-served match has to go to reach each agreement
+        /// family, and a second copy would drift from it the next time the walk moves.
+        /// </summary>
+        internal static IMatchHost ReachAgreement(TeamAgreementKind kind)
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
-            var random = new MatchLoopRandom(2);
+
+            // Milestone 8.35d re-derived the seed. This walk no longer draws the round's own
+            // advance - the seat-serving host runs p.8's stages itself - and that moved seed 2's
+            // Minion Battle beyond this budget; seed 3 reaches it at step 268.
+            var random = new MatchLoopRandom(3);
             for (var step = 0; step < 2400; step++)
             {
                 var agreement = host.Seats.Seats.Select(seat => host.ProjectionForSeat(seat.Id).TeamAgreement)
@@ -169,7 +190,7 @@ namespace GuardsDigital.Tests.EditMode
             throw new AssertionException("The seeded match did not reach " + kind + ".");
         }
 
-        private static void CompleteMinionSelection(IMatchHost host, string idPrefix)
+        internal static void CompleteMinionSelection(IMatchHost host, string idPrefix)
         {
             var index = 0;
             while (!host.Projection.PendingMinionBattleChoice.CanConfirm)

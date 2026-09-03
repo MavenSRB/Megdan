@@ -587,22 +587,31 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void RoundPresenter_DisabledNetworkView_FabricatesNoEndOfRoundContinuation()
         {
-            var harness = PrivateOnlineWireHarness.Compose();
-            harness.SeatAll();
-            var submitted = harness.DriveThroughWire(
-                1000,
-                projection => projection.Phase == RoundResolutionPhase.EndOfRound &&
-                    projection.PendingMinionBattleChoice == null &&
-                    projection.PendingSystemTransitionStep == null);
-            Assert.That(submitted, Is.LessThan(1000),
-                "The fixture must reach an ordinary end-of-round continuation boundary.");
-            Assert.That(harness.MatchHost.Projection.Phase,
-                Is.EqualTo(RoundResolutionPhase.EndOfRound));
+            // Milestone 8.35d. The boundary this case needs - end of round with nothing standing -
+            // no longer occurs in a seat-served match at all: the host runs the stage the moment
+            // the answer before it lands, which is the whole of that milestone. It is still an
+            // ordinary Director position, so the fixture is composed at one directly instead of
+            // walking a wire that will never rest there.
+            var session = ConfiguredMatchFixtures.CreateSessionPausedOnLevelUpUpgrade(out _);
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerSystemTransitionStep(
+                session.Projection.PendingSystemTransitionStep.Invocations[0]));
+            Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
+            Assert.That(session.Projection.DecisionContract, Is.Null);
+            Assert.That(RoundActionPresenter.CreateViewModel(session.Projection)
+                    .ContinueEndOfRoundInvocation,
+                Is.Not.Null,
+                "The anti-vacuity arm: an enabled Director view IS offered the control in exactly " +
+                "this position, so the null below is about the disabled view and nothing else.");
 
-            var client = harness.Client(1);
+            var host = new MatchHost(session);
+            var seat = host.Seats.Seats[0];
+            Assert.That(NetworkSeatProjectionCodec.TryDecode(
+                    NetworkSeatProjectionCodec.Encode(host.ProjectionForSeat(seat.Id)),
+                    out var record),
+                Is.True);
             var disabled = new NetworkMatchReadModel(
-                harness.MatchHost.Projection, MatchContentCatalogs.ForThisBuild());
-            disabled.Replace(client.LatestProjection, false);
+                host.Projection, MatchContentCatalogs.ForThisBuild());
+            disabled.Replace(record, false);
             Assert.That(disabled.IsInputEnabled, Is.False);
 
             var model = RoundActionPresenter.CreateViewModel(disabled);

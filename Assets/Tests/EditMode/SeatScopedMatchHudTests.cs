@@ -436,6 +436,36 @@ namespace GuardsDigital.Tests.EditMode
                 "The public completed-match result is identical from all six seats.");
         }
 
+        /// <summary>
+        /// Milestone 8.35e, at the element level. The Minion Battle's public stage is drawn for a
+        /// seat that owns none of it: the prompt, the counts and the choosing side's public standing,
+        /// and not one control. The view needed no change for this - milestone 8.11a already moved
+        /// every candidate onto the board - so what this pins is that the stage reaches the element
+        /// tree at all, which is what the ArgumentException prevented.
+        /// </summary>
+        [Test]
+        public void TheMinionBattlesPublicStageIsDrawnForAnObservingSeatWithNoControls()
+        {
+            var host = TeamAgreementTests.ReachAgreement(TeamAgreementKind.MinionBattle);
+            var choosingSide = host.Projection.PendingMinionBattleChoice.ChoosingSide;
+            var observer = host.Seats.Seats.First(seat => !seat.PlaysFor(choosingSide));
+            var client = new SeatMatchClient(host.ClientForSeat(observer.Id));
+            var view = new MinionChoiceUnityView();
+
+            new MinionChoicePresenter(client, view).Refresh();
+
+            Assert.That(view.Model, Is.Not.Null,
+                "The battle is public; the side that is not choosing reads it and answers nothing.");
+            Assert.That(view.Model.IsPublicAgreementStage, Is.True);
+            Assert.That(view.Root.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(Labels(view.Root), Does.Contain(view.Model.PromptLabel));
+            Assert.That(Labels(view.Root), Does.Contain(view.Model.StatusLabel));
+            Assert.That(Labels(view.Root), Does.Contain(view.Model.SectionLabel));
+            Assert.That(Descendants(view.Root).OfType<Button>().Any(), Is.False,
+                "An observing seat is drawn the stage and no control of any kind - no confirm, no " +
+                "agreement statement, and no candidate.");
+        }
+
         private static System.Collections.Generic.IEnumerable<VisualElement> Descendants(
             VisualElement element)
         {
@@ -451,6 +481,63 @@ namespace GuardsDigital.Tests.EditMode
 
         private static string[] Labels(VisualElement element) =>
             Descendants(element).OfType<Label>().Select(label => label.text).ToArray();
+
+        /// <summary>
+        /// Milestone 8.35d, and this is the control the live playtest read as a stuck game.
+        ///
+        /// <para>The continuation control was drawn from the phase and the two pauses the projection
+        /// reported - and a seat's scoped surface reports the standing decision it does <em>not</em>
+        /// own as absent, by design. So while one player answered an end-of-round question, the
+        /// other five were each shown CONTINUE END OF ROUND, and every press of it was refused as
+        /// an unauthorized command. A seat-served round is now continued by its host, and no seat
+        /// is drawn a control it cannot submit.</para>
+        /// </summary>
+        [Test]
+        public void ASeatWaitingOnAnothersEndOfRoundDecisionIsDrawnNoContinueControl()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var walked = OwnerScopedProjectionTests.DriveThroughSeats(host, 2000,
+                projection => projection.Phase == RoundResolutionPhase.EndOfRound &&
+                    projection.DecisionContract != null);
+
+            Assert.That(host.Projection.DecisionContract, Is.Not.Null,
+                "The seeded seat walk reached no end-of-round decision in " + walked + " commands.");
+            var owner = SeatProjectionFactory.OwnerOfStandingDecision(host.Projection);
+            var waiting = host.Seats.Seats.First(seat => !owner.IsOwnedBy(seat));
+            var client = new SeatMatchClient(host.ClientForSeat(waiting.Id));
+
+            Assert.That(client.SeatProjection.AuthorizedCommands, Is.Empty,
+                "Seat " + waiting.Id + " holds no answer, which is what makes any control it is " +
+                "drawn here a control it cannot press.");
+
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(client, view).Refresh();
+
+            Assert.That(view.Model.ContinueEndOfRoundInvocation, Is.Null,
+                "A seat is drawn no end-of-round continuation, in this state or any other.");
+        }
+
+        /// <summary>
+        /// The Director's own direct surface is untouched by that removal: it still draws the
+        /// manual control, because it is still the surface that steps the round by hand.
+        /// </summary>
+        [Test]
+        public void TheDirectorsSurfaceStillDrawsItsOwnContinueControl()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionPausedOnLevelUpUpgrade(out _);
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerSystemTransitionStep(
+                session.Projection.PendingSystemTransitionStep.Invocations[0]));
+
+            Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
+            Assert.That(session.Projection.DecisionContract, Is.Null);
+
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            Assert.That(view.Model.ContinueEndOfRoundInvocation, Is.Not.Null);
+            Assert.That(view.Model.ContinueEndOfRoundInvocation.Label,
+                Is.EqualTo("CONTINUE END OF ROUND"));
+        }
 
         private sealed class CapturingHandsView : IDirectorHandsView
         {

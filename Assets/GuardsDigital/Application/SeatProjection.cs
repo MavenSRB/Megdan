@@ -511,8 +511,30 @@ namespace GuardsDigital.Application
 
             if (family.Equals(PendingDecisionFamilies.SystemTransition))
             {
-                return PendingDecisionOwner.ForTeam(
-                    family, source.PendingSystemTransitionStep.ChoosingSide);
+                // Milestone 8.35d. Rulebook p.15's Upgrade a Card is one player's own decision
+                // about one player's own deck, and the paused item already says whose: the
+                // level-up transition pauses once per purchased level and names the hero, the
+                // Level and the half of it in the item id. Reading the owner back out of that id
+                // restates the authority rather than deriving anything, in the same sense as every
+                // other arm here, and it needs no new persisted or wire field.
+                //
+                // Live multiplayer testing on 2026-09-03 falsified the team reading below it: all
+                // three seats of a side were authorized to answer one teammate's upgrade, and a
+                // teammate consuming that answer is what made leveling look skipped for the player
+                // whose hero it was about. Every other transition - milestone 6.11's blocked
+                // respawn Place among them - is a question about the team's board and stays with
+                // the side the authority named.
+                var step = source.PendingSystemTransitionStep;
+                if (step.DefinitionId.Equals(
+                        GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId) &&
+                    step.ItemId.IsDefined)
+                {
+                    return PendingDecisionOwner.ForHero(
+                        family,
+                        GuardsDigital.Core.Rules.Progression.HeroLevelUpItem.Read(step.ItemId).HeroId);
+                }
+
+                return PendingDecisionOwner.ForTeam(family, step.ChoosingSide);
             }
 
             if (family.Equals(PendingDecisionFamilies.RemovalPrevention))
@@ -532,13 +554,17 @@ namespace GuardsDigital.Application
         /// </summary>
         /// <remarks>
         /// <para>The order below is the authority's own: a standing decision suspends everything
-        /// else, then the end-of-round advance, then the commitment the authority is currently
-        /// asking for, then the selected actor's turn actions.</para>
-        /// <para><c>AdvanceEndOfRound</c> is the one command with no owner, and deliberately so: it
-        /// carries no choice - the choices inside p.8's stages are their own owned families - so it
-        /// is a continuation any seat may press rather than a decision anyone owns. Milestone 8.30b
-        /// decides how a client presents that; nothing about the match state depends on which seat
-        /// sends it.</para>
+        /// else, then the commitment the authority is currently asking for, then the selected
+        /// actor's turn actions.</para>
+        /// <para><c>AdvanceEndOfRound</c> is offered to nobody, and milestone 8.35d removed the arm
+        /// that offered it to everybody. Milestone 8.30a's reading - that a command carrying no
+        /// choice is "a continuation any seat may press" - was falsified by live multiplayer
+        /// testing on 2026-09-03: six players racing one shared button stepped p.8's stages past
+        /// each other's pauses, and the round read as stuck to everyone who was not the one seat
+        /// holding the standing question. The sequence is now run by the seat-serving host itself
+        /// in <see cref="MatchHost.SubmitForSeat"/>, one stage at a time, stopping only where a
+        /// stage asks somebody something - so a seat's surface holds the answers it owns and never
+        /// the round's pace. The Director's own direct surface still advances manually.</para>
         /// <para><c>BeginSystemTransition</c> is absent: no surface offers it and no rule gives a
         /// player the choice of starting one.</para>
         /// </remarks>
@@ -576,7 +602,10 @@ namespace GuardsDigital.Application
 
             if (source.Phase == RoundResolutionPhase.EndOfRound)
             {
-                return Array.AsReadOnly(new[] { DirectorCommand.AdvanceEndOfRound() });
+                // Milestone 8.35d. Nothing, and that is the whole of it: with no decision standing
+                // inside end of round there is no question for a seat to answer, and the stage the
+                // round is on is the host's to run.
+                return Array.Empty<DirectorCommand>();
             }
 
             if (source.Phase == RoundResolutionPhase.AwaitingCommitments)
