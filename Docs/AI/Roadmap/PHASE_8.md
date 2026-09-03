@@ -588,6 +588,26 @@ Non-goals: No redo. No undo of commitments, Initiative, agreements, the Minion B
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835f-give-each-seat-a-bounded-undo-inside-its-own-turns-card-resolution-completion-evidence).
 
+### [ ] 8.35g Hold a finished turn until its own player releases it
+
+User-approved amendment of 2026-09-03, added to milestone 8.35f's approval the same day once the user saw what the undo could not reach: "If user makes the wrong movement, the turn auto ends, so no undo will fix that. We need to stop auto ending turns." Today a card resolution completing is the hand-off - `TurnResolutionAuthority.AdvanceInitiative` acknowledges the resolved card and selects the next actor inside the same accepted command - so the last action of a turn is unreachable by 8.35f's rewind, whose floor and walls only exist while that turn is still being resolved. A seeded walk shows the shape exactly: at seed 3 an Attack's target selection at command 287 both resolves the attack and ends Arien's turn. This is a digital-UX affordance rather than a rules change: tabletop turn handoff is implicitly consensual, and the release makes that consent explicit online.
+
+Observable outcome: When the acting hero's card resolution completes, the match holds still in a `turn-release` pause owned by that hero's seat instead of advancing. The seat's UNDO keeps working through the pause and reaches back into the resolution it just finished. END TURN, pressed again, is the release: it runs the end-of-turn timing and hands the turn on to the next actor, or into end of round where milestone 8.35d's continuation takes over.
+
+Acceptance checks:
+
+- A completed card resolution leaves the match in the release pause rather than selecting the next actor: the same round, the same turn index, and the acting hero's own seat owning the one standing decision. The pause is the eleventh declared pending family, crossing the projection and the wire like the other owned ones.
+- The release is one recorded `DirectorCommand`, so replay, retained-prefix Undo, snapshots and restore see it as the ordinary stream entry it is. End-of-turn timing - the turn-only cancellation checkpoint and `TurnEnded` - fires at the release and not at resolution completion, so an undo inside the pause never crosses checkpoint state.
+- Milestone 8.35f's rewind is available through the whole pause and steps back into the just-finished resolution under its unchanged floor and walls; the amended availability rule is "while this seat's resolution is active OR while its completed resolution awaits release".
+- Only the seat whose hero resolved the turn may release it: a teammate's and an opponent's release are both refused without moving the version, the stream or the snapshot, and the Director releases directly from its own door.
+- The pause follows every resolution completion uniformly, including one caused by an explicitly labelled END TURN command - a Movement Stop, an effect stop or a Hold - so an explicit stop needs a second press and that second press is the turn's point of no return. A hero that passed or holds an empty hand resolves no card and gets no pause. A resolution stopped by the game ending gets none either, because nothing further is asked of anyone.
+- A mid-turn Lane Push standing at its own checkpoint is answered first and the release pause opens after it, so two decisions never stand at once; the same holds for a triggered effect that stopped on a choice.
+- The persisted pause moves the snapshot schema to v35 with the full re-pin: every superseded version is rejected rather than migrated, the pinned-constant ledger's six documents state v35, the corpus fixtures are renamed and re-digested, and the byte delta against v34 is measured rather than computed.
+- Every driver and seeded journey that ends a turn presses the release: the deterministic match loop, the player smoke driver, the private-online rehearsal driver and the Play Mode journeys. Their re-derived seeds are recorded, because one extra command per turn reroutes every seeded trajectory.
+- Both complete suites pass at the final revision.
+
+Non-goals: No rules change - rulebook p.12's turn structure is untouched and the release adds no step to it. No redo, no change to milestone 8.35f's floor or walls, no Director undo/restart change, no presentation pacing, no wire protocol change beyond the new command kind and the new pending family, and no 8.36 execution.
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.
