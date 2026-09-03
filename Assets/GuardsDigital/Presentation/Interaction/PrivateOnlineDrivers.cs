@@ -32,6 +32,111 @@ namespace GuardsDigital.Presentation.Interaction
             identity.MapContentRevision.ToString(CultureInfo.InvariantCulture) +
             " content=" + identity.ContentDigest +
             " build=" + identity.BuildIdentity;
+
+        /// <summary>
+        /// Formats the host-only event inventory once for both the direct smoke host and the real
+        /// lobby host. The record deliberately contains no payload, remote endpoint, invitation,
+        /// reconnect capability, or rejection detail.
+        /// </summary>
+        public static void LogHostEvent(
+            PrivateSessionEventRecord record, PrivateSessionHost session = null)
+        {
+            var ordinal = record.ConnectionOrdinal.ToString(CultureInfo.InvariantCulture);
+            switch (record.Kind)
+            {
+                case PrivateSessionEventKind.ConnectionOpened:
+                    Log("CONNECTION_OPENED ordinal=" + ordinal);
+                    return;
+                case PrivateSessionEventKind.Admitted:
+                    Log("ADMITTED ordinal=" + ordinal);
+                    return;
+                case PrivateSessionEventKind.SeatClaimed:
+                    Log(
+                        "SEAT_CLAIMED ordinal=" + ordinal +
+                        " seat=" + record.Seat.Value +
+                        " hero=" + record.Hero.Value +
+                        " team=" + record.TeamSide +
+                        " claimed=" + record.ClaimedSeats.ToString(CultureInfo.InvariantCulture) +
+                        "/" + record.TotalSeats.ToString(CultureInfo.InvariantCulture));
+                    return;
+                case PrivateSessionEventKind.SeatReserved:
+                    Log("SEAT_RESERVED ordinal=" + ordinal + " seat=" + record.Seat.Value);
+                    return;
+                case PrivateSessionEventKind.SeatReclaimed:
+                    Log(
+                        "SEAT_RECLAIMED ordinal=" + ordinal + " seat=" + record.Seat.Value +
+                        (session == null
+                            ? string.Empty
+                            : " epoch=" + session.EpochForSeat(record.Seat)
+                                .ToString(CultureInfo.InvariantCulture)));
+                    return;
+                case PrivateSessionEventKind.Rejected:
+                    Log("REJECTED ordinal=" + ordinal + " reason=" + record.Reason);
+                    return;
+                case PrivateSessionEventKind.Disconnected:
+                    Log("CONNECTION_CLOSED ordinal=" + ordinal);
+                    return;
+                case PrivateSessionEventKind.SessionComplete:
+                    Log(
+                        "SEATS_COMPLETE claimed=" +
+                        record.ClaimedSeats.ToString(CultureInfo.InvariantCulture) + "/" +
+                        record.TotalSeats.ToString(CultureInfo.InvariantCulture));
+                    return;
+                case PrivateSessionEventKind.SubmissionAccepted:
+                    Log(
+                        "SUBMISSION_ACCEPTED ordinal=" + ordinal + " seat=" + record.Seat.Value +
+                        " submission=" + SafeDiagnosticToken(record.SubmissionId) + " version=" +
+                        record.Version.ToString(CultureInfo.InvariantCulture));
+                    return;
+                case PrivateSessionEventKind.SubmissionRefused:
+                    Log(
+                        "SUBMISSION_REFUSED ordinal=" + ordinal + " seat=" + record.Seat.Value +
+                        " submission=" + SafeDiagnosticToken(record.SubmissionId) + " reason=" +
+                        record.SubmissionRejection + " version=" +
+                        record.Version.ToString(CultureInfo.InvariantCulture));
+                    return;
+                case PrivateSessionEventKind.AgreementAccepted:
+                    Log(
+                        "AGREEMENT_ACCEPTED ordinal=" + ordinal + " seat=" + record.Seat.Value +
+                        " submission=" + SafeDiagnosticToken(record.SubmissionId) + " version=" +
+                        record.Version.ToString(CultureInfo.InvariantCulture));
+                    return;
+                case PrivateSessionEventKind.AgreementRefused:
+                    Log(
+                        "AGREEMENT_REFUSED ordinal=" + ordinal + " seat=" + record.Seat.Value +
+                        " submission=" + SafeDiagnosticToken(record.SubmissionId) + " reason=" +
+                        record.AgreementRejection + " version=" +
+                        record.Version.ToString(CultureInfo.InvariantCulture));
+                    return;
+                case PrivateSessionEventKind.ResyncServed:
+                    Log(
+                        "RESYNC_SERVED ordinal=" + ordinal + " seat=" + record.Seat.Value +
+                        " version=" + record.Version.ToString(CultureInfo.InvariantCulture));
+                    return;
+                case PrivateSessionEventKind.SeatReadinessChanged:
+                    Log("READINESS_CHANGED ordinal=" + ordinal + " seat=" + record.Seat.Value);
+                    return;
+                case PrivateSessionEventKind.MatchStarted:
+                    Log("MATCH_STARTED");
+                    return;
+            }
+        }
+
+        private static string SafeDiagnosticToken(string value)
+        {
+            value = value ?? string.Empty;
+            var length = Math.Min(value.Length, NetworkMessageCodec.MaxSubmissionIdChars);
+            var safe = new char[length];
+            for (var index = 0; index < length; index++)
+            {
+                var character = value[index];
+                safe[index] = char.IsLetterOrDigit(character) || character == '-' ||
+                    character == '_' || character == '.'
+                    ? character
+                    : '_';
+            }
+            return new string(safe);
+        }
     }
 
     /// <summary>
@@ -136,7 +241,7 @@ namespace GuardsDigital.Presentation.Interaction
             foreach (var record in events)
             {
                 lastActivityUtc = now;
-                LogEvent(record);
+                PrivateOnlineMarkers.LogHostEvent(record, session);
             }
 
             if (session.IsComplete && (now - lastActivityUtc).TotalSeconds >= LingerSeconds)
@@ -156,51 +261,6 @@ namespace GuardsDigital.Presentation.Interaction
                     session.ClaimedSeatCount.ToString(CultureInfo.InvariantCulture) + "/" +
                     session.TotalSeats.ToString(CultureInfo.InvariantCulture));
                 Quit(1);
-            }
-        }
-
-        private void LogEvent(PrivateSessionEventRecord record)
-        {
-            var ordinal = record.ConnectionOrdinal.ToString(CultureInfo.InvariantCulture);
-            switch (record.Kind)
-            {
-                case PrivateSessionEventKind.ConnectionOpened:
-                    PrivateOnlineMarkers.Log("CONNECTION_OPENED ordinal=" + ordinal);
-                    return;
-                case PrivateSessionEventKind.Admitted:
-                    PrivateOnlineMarkers.Log("ADMITTED ordinal=" + ordinal);
-                    return;
-                case PrivateSessionEventKind.SeatClaimed:
-                    PrivateOnlineMarkers.Log(
-                        "SEAT_CLAIMED ordinal=" + ordinal +
-                        " seat=" + record.Seat.Value +
-                        " hero=" + record.Hero.Value +
-                        " team=" + record.TeamSide +
-                        " claimed=" + record.ClaimedSeats.ToString(CultureInfo.InvariantCulture) +
-                        "/" + record.TotalSeats.ToString(CultureInfo.InvariantCulture));
-                    return;
-                case PrivateSessionEventKind.SeatReserved:
-                    PrivateOnlineMarkers.Log(
-                        "SEAT_RESERVED ordinal=" + ordinal + " seat=" + record.Seat.Value);
-                    return;
-                case PrivateSessionEventKind.SeatReclaimed:
-                    PrivateOnlineMarkers.Log(
-                        "SEAT_RECLAIMED ordinal=" + ordinal + " seat=" + record.Seat.Value +
-                        " epoch=" + session.EpochForSeat(record.Seat)
-                            .ToString(CultureInfo.InvariantCulture));
-                    return;
-                case PrivateSessionEventKind.Rejected:
-                    PrivateOnlineMarkers.Log("REJECTED ordinal=" + ordinal + " reason=" + record.Reason);
-                    return;
-                case PrivateSessionEventKind.Disconnected:
-                    PrivateOnlineMarkers.Log("CONNECTION_CLOSED ordinal=" + ordinal);
-                    return;
-                case PrivateSessionEventKind.SessionComplete:
-                    PrivateOnlineMarkers.Log(
-                        "SEATS_COMPLETE claimed=" +
-                        record.ClaimedSeats.ToString(CultureInfo.InvariantCulture) + "/" +
-                        record.TotalSeats.ToString(CultureInfo.InvariantCulture));
-                    return;
             }
         }
 
@@ -263,7 +323,9 @@ namespace GuardsDigital.Presentation.Interaction
 
             PrivateOnlineMarkers.Log("CLIENT_BEGIN seat=" + options.Seat.Value);
             var identity = compositionRoot.Runtime.SessionIdentity;
-            PrivateOnlineMarkers.Log("CLIENT_IDENTITY " + PrivateOnlineMarkers.Describe(identity));
+            PrivateOnlineMarkers.Log(
+                "CLIENT_PROTOCOL version=" +
+                identity.ProtocolVersion.ToString(CultureInfo.InvariantCulture));
             transport = new TcpSessionClientTransport();
             machine = new PrivateSessionClient(identity, options.Seat, options.SessionKey, transport);
             startedUtc = DateTime.UtcNow;
@@ -309,9 +371,9 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            // Milestone 8.32. One marker per received projection version: proof in a built player
-            // that this seat's owner-scoped view crossed the wire. The marker carries counts and
-            // the version only - never a card identity or another seat's state.
+            // One marker per received projection version, containing only the own seat and version
+            // allowed by the client-diagnostic contract. Card/command counts looked harmless but
+            // were still an undeclared side channel and are deliberately absent.
             if (machine.LatestProjection != null &&
                 machine.LatestProjection.Version != reportedProjectionVersion)
             {
@@ -319,18 +381,14 @@ namespace GuardsDigital.Presentation.Interaction
                 PrivateOnlineMarkers.Log(
                     "CLIENT_PROJECTION version=" +
                     reportedProjectionVersion.ToString(CultureInfo.InvariantCulture) +
-                    " seat=" + machine.LatestProjection.SeatId +
-                    " ownCards=" + machine.LatestProjection.OwnCards.Count
-                        .ToString(CultureInfo.InvariantCulture) +
-                    " commands=" + machine.LatestProjection.AuthorizedCommands.Count
-                        .ToString(CultureInfo.InvariantCulture));
+                    " seat=" + machine.LatestProjection.SeatId);
             }
 
             if ((DateTime.UtcNow - startedUtc).TotalSeconds >= options.TimeoutSeconds)
             {
                 if (machine.State == PrivateSessionClientState.Seated)
                 {
-                    PrivateOnlineMarkers.Log("CLIENT_BUDGET_ELAPSED seated=true");
+                    PrivateOnlineMarkers.Log("CLIENT_BUDGET_ELAPSED");
                     machine.SendGoodbye();
                     Quit(SeatedExitCode);
                     return;
@@ -354,26 +412,22 @@ namespace GuardsDigital.Presentation.Interaction
             switch (machine.State)
             {
                 case PrivateSessionClientState.AwaitingSeat:
-                    PrivateOnlineMarkers.Log("CLIENT_ADMITTED correlation=" + machine.SessionCorrelation);
+                    PrivateOnlineMarkers.Log("CLIENT_ADMITTED");
                     return;
 
                 case PrivateSessionClientState.Seated:
                     PrivateOnlineMarkers.Log(
-                        "CLIENT_SEATED seat=" + machine.GrantedSeat.Seat.Value +
-                        " hero=" + machine.GrantedSeat.Hero.Value +
-                        " team=" + machine.GrantedSeat.TeamSide);
+                        "CLIENT_SEATED seat=" + machine.GrantedSeat.Seat.Value);
                     return;
 
                 case PrivateSessionClientState.Rejected:
                     PrivateOnlineMarkers.Log(
-                        "CLIENT_REJECTED reason=" + machine.RejectionReason +
-                        " detail=" + machine.RejectionDetail);
+                        "CLIENT_REJECTED reason=" + machine.RejectionReason);
                     Quit(RejectedExitCode);
                     return;
 
                 case PrivateSessionClientState.Disconnected:
-                    PrivateOnlineMarkers.Log("CLIENT_CLOSED seatedBefore=" +
-                        (machine.GrantedSeat != null ? "true" : "false"));
+                    PrivateOnlineMarkers.Log("CLIENT_CLOSED");
                     Quit(machine.GrantedSeat != null ? SeatedExitCode : FaultExitCode);
                     return;
 
@@ -383,8 +437,7 @@ namespace GuardsDigital.Presentation.Interaction
                 // rehearsal reads a lost host from the marker, not from a failure.
                 case PrivateSessionClientState.HostLost:
                     PrivateOnlineMarkers.Log(
-                        "CLIENT_HOST_LOST seat=" + machine.GrantedSeat.Seat.Value +
-                        " reconnectAvailable=" + (machine.CanAttemptReconnect ? "true" : "false"));
+                        "CLIENT_HOST_LOST seat=" + machine.GrantedSeat.Seat.Value);
                     Quit(SeatedExitCode);
                     return;
 

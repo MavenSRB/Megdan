@@ -18,6 +18,8 @@ Unity focused fixtures use `tmp/unity-validation-request.json` with the exact `p
 
 The exact local multi-process runner selected for the disposable player build is `Tools/Invoke-PrivateOnlineRehearsal.ps1`. Milestone 8.31 creates it with a loopback smoke mode; 8.35c extends the same entry point to `-Topology SixClient -FaultPlan Full`. `-Topology LoopbackSmoke` starts one dedicated seatless host and six client processes and must never bind a non-loopback interface. It must start hidden processes, use only workspace outputs, record exact build/protocol/schema/map/content identities, bound execution, stop only its owned PIDs, and fail on missing/non-green convergence, privacy, or process-exit evidence.
 
+Each topology is paired with exactly one fault plan and the runner refuses any other pairing: `LoopbackSmoke` runs only with `None`, and `SixClient` only with `Full`, because the 8.35c row below names one six-client combination and a weaker run must not be mistaken for that gate. `SixClient` runs two cohorts against one build - a full match cohort and a terminal host-loss cohort - and the host-loss cohort's own host termination is the single deliberate external process kill in either topology; every other process must exit on its own. The invitation endpoint and session key reach each player through that child process's environment block rather than its command line, and the privacy review additionally fails on any log carrying the generated key.
+
 ## Milestone matrix
 
 | Milestone | Exact focused validation | Tier and directly affected evidence |

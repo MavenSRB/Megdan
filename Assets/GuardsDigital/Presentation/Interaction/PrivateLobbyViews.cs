@@ -313,6 +313,13 @@ namespace GuardsDigital.Presentation.Interaction
         private Label matchStatus;
         private bool onlineHudAttached;
 
+        /// <summary>
+        /// Host-only event observation for the opt-in build rehearsal. The ordinary lobby does
+        /// not subscribe; exposing the already privacy-bounded records keeps the automation from
+        /// reaching into match authority or transport internals.
+        /// </summary>
+        internal event Action<PrivateSessionEventRecord> HostEventObserved;
+
         public void Configure(MatchSceneCompositionRoot root)
         {
             compositionRoot = root;
@@ -327,6 +334,12 @@ namespace GuardsDigital.Presentation.Interaction
 
         /// <summary>The view this driver draws into.</summary>
         public PrivateLobbyUnityView View => view;
+
+        internal PrivateSessionClient RehearsalClient => machine;
+
+        internal PrivateSessionHost RehearsalHost => session;
+
+        internal bool RehearsalHudAttached => onlineHudAttached;
 
         private void Start()
         {
@@ -392,7 +405,11 @@ namespace GuardsDigital.Presentation.Interaction
                 }
 
                 session.Sweep(now.Ticks);
-                session.DrainEvents();
+                foreach (var record in session.DrainEvents())
+                {
+                    PrivateOnlineMarkers.LogHostEvent(record, session);
+                    HostEventObserved?.Invoke(record);
+                }
             }
 
             if (machine != null && transport != null)
@@ -607,6 +624,26 @@ namespace GuardsDigital.Presentation.Interaction
             signature = string.Empty;
             presenter.AttachClient(machine);
             PrivateOnlineMarkers.Log("LOBBY_RECONNECTING seat=" + joinedSeat.Value);
+        }
+
+        /// <summary>
+        /// Closes this client's real socket for the opt-in rehearsal, then reports the observed
+        /// loss through the same client state machine the transport would notify. Reconnect still
+        /// has to be pressed through <see cref="PrivateLobbyPresenter"/> and therefore retains the
+        /// same capability-bearing machine while replacing only its transport.
+        /// </summary>
+        internal bool InterruptConnectionForRehearsal()
+        {
+            if (machine == null || machine.State != PrivateSessionClientState.Seated)
+            {
+                return false;
+            }
+
+            DisposeTransport();
+            machine.OnDisconnected();
+            signature = string.Empty;
+            presenter?.Refresh();
+            return true;
         }
 
         private void OpenTransport()

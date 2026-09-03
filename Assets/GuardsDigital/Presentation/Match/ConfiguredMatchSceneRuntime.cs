@@ -508,6 +508,33 @@ namespace GuardsDigital.Presentation.Match
             return result.Accepted;
         }
 
+        /// <summary>
+        /// Submits one agreement statement through the same presenter choice the retained HUD
+        /// currently renders. This is the agreement counterpart to
+        /// <see cref="SubmitProjectedCommand"/> for the opt-in multi-process rehearsal: it may
+        /// select only a host-published choice that is on the visible Initiative or Minion Battle
+        /// surface, so the rehearsal cannot manufacture a final rules command or bypass the
+        /// player-facing unanimity boundary.
+        /// </summary>
+        public bool SubmitProjectedAgreement(TeamAgreementCommand statement)
+        {
+            if (statement == null)
+            {
+                return false;
+            }
+
+            var roundChoice = RoundView.Model?.TeamAgreement?.Choices.FirstOrDefault(value =>
+                value.Command.Equals(statement));
+            if (roundChoice != null)
+            {
+                return RoundPresenter.SubmitAgreement(roundChoice);
+            }
+
+            var minionChoice = MinionChoiceView.Model?.Agreement?.Choices.FirstOrDefault(value =>
+                value.Command.Equals(statement));
+            return minionChoice != null && MinionChoicePresenter.SubmitAgreement(minionChoice);
+        }
+
         public IReadOnlyList<RuleEventLogEntry> DiagnosticEvents => session.Projection.DiagnosticEvents;
         public IReadOnlyList<RoundTurnSlot> TurnSlots => client.Projection.TurnSlots;
         public IReadOnlyList<CompletedRoundRecord> CompletedRounds => client.Projection.CompletedRounds;

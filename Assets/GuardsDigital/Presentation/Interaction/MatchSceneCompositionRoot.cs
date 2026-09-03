@@ -949,7 +949,21 @@ namespace GuardsDigital.Presentation.Interaction
                 // Milestone 8.35a. The interactive lobby: the same opt-in rule again, so a normally
                 // launched build carries no lobby either.
                 case GuardsDigital.Network.PrivateSessionRole.Lobby:
-                    gameObject.AddComponent<PrivateLobbyDriver>().Configure(this);
+                    var lobby = gameObject.AddComponent<PrivateLobbyDriver>();
+                    lobby.Configure(this);
+                    if (PrivateOnlineRehearsalDriver.TryParseRequested(
+                        System.Environment.GetCommandLineArgs(), out var rehearsal, out var error))
+                    {
+                        if (rehearsal == null)
+                        {
+                            UnityEngine.Debug.LogError("GUARDS_ONLINE: FAIL " + error);
+                            UnityEngine.Application.Quit(2);
+                            return;
+                        }
+
+                        gameObject.AddComponent<PrivateOnlineRehearsalDriver>()
+                            .Configure(this, lobby, rehearsal);
+                    }
                     return;
             }
         }

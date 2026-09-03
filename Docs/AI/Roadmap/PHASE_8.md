@@ -781,7 +781,7 @@ Non-goals: No production HUD redesign, public-service UX, matchmaking, account r
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835b-integrate-the-proven-player-hud-with-online-match-flow-completion-evidence).
 
-### [ ] 8.35c Pass a local six-client playtest-build rehearsal
+### [x] 8.35c Pass a local six-client playtest-build rehearsal
 
 Blocked by: Milestone 8.35b must complete primitive online match-flow UI integration.
 
@@ -797,6 +797,8 @@ Acceptance checks:
 - The evidence explicitly states that a same-machine or local-network rehearsal does not prove relay/NAT traversal, external latency behavior, multi-network connectivity, or real-internet reliability.
 
 Non-goals: No invited external tester, public distribution, production service, account system, matchmaking, production presentation, or substitution for milestone 8.36.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835c-pass-a-local-six-client-playtest-build-rehearsal-completion-evidence).
 
 ### [!] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 

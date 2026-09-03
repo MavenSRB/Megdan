@@ -329,6 +329,14 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AnUnknownMessageKind_IsRefusedBeforeDecode()
         {
+            var unknownKindValue = Enum.GetValues(typeof(SessionMessageKind))
+                .Cast<SessionMessageKind>()
+                .Max(kind => (int)kind) + 1;
+            Assert.That(Enum.IsDefined(
+                typeof(SessionMessageKind),
+                unknownKindValue), Is.False,
+                "The hostile wire value must remain outside the declared message vocabulary.");
+
             var harness = PrivateOnlineWireHarness.Compose();
             harness.SeatAll();
             var versionBefore = harness.MatchHost.Version;
@@ -344,7 +352,7 @@ namespace GuardsDigital.Tests.EditMode
                 // One past the highest kind this protocol defines, so the case stays about an
                 // unknown kind as the vocabulary grows rather than about whichever number was
                 // spare when it was written.
-                writer.Write((ushort)((int)SessionMessageKind.ReclaimSeat + 1));
+                writer.Write(checked((ushort)unknownKindValue));
                 writer.Write(0);
                 writer.Flush();
                 harness.SendRaw(2, stream.ToArray());
