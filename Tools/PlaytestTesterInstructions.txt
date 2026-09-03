@@ -42,19 +42,28 @@ refused when you try to join - that is deliberate, not a bug.
 
 1. STARTING THE GAME
 
-Double-clicking the executable starts a local practice mode with no lobby in it.
-That is not what we want. Start it with the lobby flag instead.
+Double-clicking the executable itself starts a local practice mode with no lobby
+in it. That is not what we want. Two launcher files sit next to it; use one of
+those instead:
 
-Easiest way: open the folder, hold Shift and right-click in it, choose "Open in
-Terminal" or "Open PowerShell window here", then paste one line:
+    PLAY - Join Match.bat      the one you want. It starts the game with the
+                               lobby and writes your log file for you, named
+                               playtest-<your Windows username>.log.
+    HOST - Start Server.bat    only for whoever is hosting the match. You can
+                               ignore it.
+
+The first time, Windows may say "Windows protected your PC". Choose "More info",
+then "Run anyway" - the build is unsigned, which is expected for a private
+prototype.
+
+If you would rather start it by hand, open the folder, hold Shift and right-click
+in it, choose "Open in Terminal" or "Open PowerShell window here", then paste one
+line:
 
     .\GuardsDigitalSmoke.exe -guardsPrivateLobby -logFile playtest-YOURNAME.log
 
 Replace YOURNAME with your own name, in lowercase and with no spaces. That second
-flag writes a log file next to the game; we need it afterwards.
-
-If you would rather not use a terminal, make a shortcut to the executable, open its
-Properties, and add the same two flags to the end of the Target box.
+flag writes the log file next to the game; we need it afterwards.
 
 A window headed PRIVATE LOBBY should appear. If it does not, tell us before doing
 anything else.
@@ -130,8 +139,9 @@ Please do not close the game window to fix a problem unless we ask you to.
 
 Two things, please:
 
-  1. Send back the log file the game wrote - playtest-YOURNAME.log, in the same
-     folder as the executable - privately, the same way you received the build.
+  1. Send back the log file the game wrote - playtest-<name>.log, in the same
+     folder as the executable; the launcher names it after your Windows username.
+     Send it privately, the same way you received the build.
      It contains only your own seat, version numbers and the public result. It does
      not contain your hand, your address or the session key.
   2. Tell us what was confusing, what was slow, what you expected to happen and did

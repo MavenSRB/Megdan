@@ -17,6 +17,7 @@
 *.anim text eol=lf whitespace=-blank-at-eol
 *.controller text eol=lf whitespace=-blank-at-eol
 *.inputactions text eol=lf
+*.bat text eol=crlf
 
 # Byte-exact milestone 3.11a preservation baseline
 Docs/AI/Archive/Pre-Governance/config.toml binary
