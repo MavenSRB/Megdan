@@ -655,6 +655,24 @@ Non-goals: No change to rulebook p.8's stages, presentation pacing or animation,
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835d-run-the-end-of-round-sequence-automatically-and-scope-each-heros-level-up-to-its-own-player-completion-evidence).
 
+### [x] 8.35e Render the Minion Battle agreement stage on every scoped seat and survive a scoped tray's absent revealed card
+
+Corrective milestone for two client crashes recorded in the 2026-09-03 invited-playtest logs (`tmp/playtest-mitok-2026-09-03.log` seat red-player-01, `tmp/playtest-Andrej-2026-09-03.log` seat blue-player-01, and `tmp/playtest-sppet-2026-09-03.log` seat red-player-02 on the hosting PC, whose file interleaves the host control's own wire lines), reported the same day ahead of milestone 8.36's re-run. When the Minion Battle's confirm stands as milestone 8.30n's public unanimous agreement, a seat's scoped projection carries the public `TeamAgreement` and no owned `PendingMinionBattleChoice` detail - and `MinionChoicePresenter.CreateViewModel`'s public-agreement branch then constructs `MinionChoiceViewModel` with default end-of-round identities, which that constructor's own guard refuses. All three clients threw that `ArgumentException` on every render - entered from an accepted minion selection's own result refresh, from an accepted agreement choice's (`SubmitAgreement`'s) result refresh, and from every `PrivateLobbyDriver.Update` - and each throw aborts `MatchFeatureCoordinator.RefreshAll` mid-list, so every seat's surface froze at the exact stage the branch exists to draw. The authority itself kept serving throughout: the hosting PC's wire lines record accepted agreements and submissions advancing the authoritative version (92 through 97) under surfaces that could no longer draw them, so the end-of-round stall the players reported is this presentation crash's consequence, ruled the same day as not its own finding. Separately, `DirectorHandsPresenter.Refresh` resolves each hero's commitment `RevealedCardInstanceId` with `Single` over the seat's scoped card list, and all three logs record `InvalidOperationException` tray failures where the named card was absent from that scoped list - mostly at the session tail, and on the hosting PC also inside an accepted round-action submission's own result refresh, so the absence window opens while end-of-round stages are being stepped, not only at teardown.
+
+Observable outcome: In a seat-served session, every seat renders the Minion Battle from first selection through the public unanimous agreement to the applied removal without a presentation exception - the choosing side with its selection controls and then its own agreement choices, the other side read-only - and a seat's hand tray renders every projection its client can legitimately receive.
+
+Acceptance checks:
+
+- A choosing-side seat at the agreement stage renders the public counts, the selected units and its own agreement choices with no candidates and no fabricated identities, and its agreement submission is accepted; the removal-prompt form with its identity guard is constructed only from an owned pending choice, and the guard itself stands unchanged.
+- A non-choosing seat renders the same public stage read-only at every version of the battle, from first selection through confirmation, without an exception.
+- The six-seat wire regression drives a Minion Battle from first selection through the unanimous agreement to the applied removal with every seat's full presenter set refreshed at every version it observes, and no seat records an exception.
+- A commitment naming a revealed card the seat's scoped card list does not carry renders that hero's tray without the card's detail rather than failing the whole refresh - or, if investigation proves the scoped list must always carry that card, the projection is corrected and the invariant asserted; the completion records which reading held and why the playtest projections lacked the card.
+- Both complete suites pass at the corrective revision.
+
+Non-goals: No change to the Minion Battle rules or the agreement flow's authority, the wire protocol version, the persisted snapshot schema, Director-mode rendering, or milestone 8.35d's continuation work; no blanket exception isolation in the refresh loop; the end-of-round stall these crashes produced is recorded here, not as its own milestone.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835e-render-the-minion-battle-agreement-stage-on-every-scoped-seat-and-survive-a-scoped-trays-absent-revealed-card-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.
