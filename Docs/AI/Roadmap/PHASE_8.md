@@ -800,7 +800,7 @@ Non-goals: No invited external tester, public distribution, production service, 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835c-pass-a-local-six-client-playtest-build-rehearsal-completion-evidence).
 
-### [!] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
+### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.
 

@@ -1,0 +1,142 @@
+GUARDS OF ATLANTIS II - DIGITAL PROTOTYPE
+PRIVATE PLAYTEST INSTRUCTIONS FOR INVITED TESTERS
+
+Thank you for testing. This is a private, unfinished prototype. Please read all of
+this once before we start - especially the section headed PLEASE READ THIS ONE.
+The whole session takes roughly two hours.
+
+
+PLEASE READ THIS ONE: WHO YOU ARE TRUSTING
+
+One machine hosts this match. It holds every card in the game and decides every
+rule; all six of us are clients of it. Whoever runs that machine can read anything
+in the match, including the cards in your hand, and could change what the game
+does. Nothing in this build prevents that, and nothing is meant to. The session key
+you are given is an invitation that keeps strangers out and scrambles the traffic on
+the way; it is not protection from your host.
+
+This is fine here because six people who know each other are testing a prototype
+together. It is not a competitive service, there are no accounts, and there is no
+anti-cheat. Please do not play on a host you do not trust.
+
+The build is yours to run and not yours to pass on. Please do not upload it, share
+it, mirror it or post a link to it anywhere. Delete it when we are finished.
+
+
+WHAT YOU NEED
+
+  - A Windows 10 or 11 PC.
+  - The zip you were sent, unpacked to a folder you can write to.
+  - Four things sent to you privately, never in this file:
+        the host ADDRESS       (looks like 203.0.113.10)
+        the host PORT          (a number, often 45677)
+        the SESSION KEY        (a long random string; treat it like a password)
+        YOUR SEAT              (one of red-player-01, red-player-02, red-player-03,
+                                blue-player-01, blue-player-02, blue-player-03)
+
+Everyone must run the exact copy of the build that was sent. A different build is
+refused when you try to join - that is deliberate, not a bug.
+
+
+1. STARTING THE GAME
+
+Double-clicking the executable starts a local practice mode with no lobby in it.
+That is not what we want. Start it with the lobby flag instead.
+
+Easiest way: open the folder, hold Shift and right-click in it, choose "Open in
+Terminal" or "Open PowerShell window here", then paste one line:
+
+    .\GuardsDigitalSmoke.exe -guardsPrivateLobby -logFile playtest-YOURNAME.log
+
+Replace YOURNAME with your own name, in lowercase and with no spaces. That second
+flag writes a log file next to the game; we need it afterwards.
+
+If you would rather not use a terminal, make a shortcut to the executable, open its
+Properties, and add the same two flags to the end of the Target box.
+
+A window headed PRIVATE LOBBY should appear. If it does not, tell us before doing
+anything else.
+
+
+2. JOINING THE MATCH
+
+  1. Type the ADDRESS you were sent into the ADDRESS box, replacing 127.0.0.1.
+  2. Type the PORT into the PORT box.
+  3. Paste the SESSION KEY into the SESSION KEY box. It must match exactly.
+  4. Find YOUR SEAT in the table and press PICK on that row. The line above the
+     table should then read SEAT: <your seat>. Please take only the seat you were
+     given; two people racing for one seat just wastes a join.
+  5. Press JOIN.
+
+You should see your row change to SEATED with YOU beside it, and the other seats
+fill in as everyone arrives.
+
+If something refuses you, the lobby says why in one line. The common ones:
+
+    "That seat is already taken."        Someone took your seat. Tell us; do not
+                                         quietly take a different one.
+    "The session key did not match."     Re-paste the key; watch for a trailing
+                                         space.
+    "The host could not be reached."     The host is not running yet, or the
+                                         address or port is wrong.
+    "The host is running a different
+     build."                             You have the wrong copy of the game.
+
+Once every seat says SEATED, press READY. The match starts by itself the moment all
+six seats are ready - nobody presses a start button. The lobby then disappears and
+the board takes over.
+
+
+3. PLAYING
+
+Play the game normally and take as long as you like over your turns; nothing is on
+a timer. A few things are worth knowing:
+
+  - You can only see your own hand. That is the point of the test.
+  - When your team has to agree on something - which of two tied heroes goes first,
+    or which minion is removed - everyone on that team has to say the same thing
+    before it happens. You can change your mind; changing it un-agrees everyone and
+    the team states it again. There is no captain and no automatic tiebreak.
+  - The interface is deliberately plain. It is being tested for whether it is
+    understandable, not for whether it is pretty. If something is confusing, say
+    so - that is data.
+
+Please tell us, out loud or in chat, whenever anything looks wrong, stops
+responding, disagrees with what someone else is seeing, or takes an oddly long time.
+We are writing all of it down and none of it is a complaint.
+
+
+4. IF YOU GET DISCONNECTED
+
+Nothing is lost and nobody is replaced. Your seat is held for you and the whole
+match stops where it stands until you are back, so the other five will be sitting
+and waiting. The lobby reappears over the board with two buttons:
+
+    RECONNECT   goes back into your own seat and picks up exactly where you were.
+                Use this one.
+    LEAVE       gives up the seat and the session.
+
+Press RECONNECT. If it fails, press it again; if it keeps failing, tell us.
+
+If the host machine itself goes away, every client says HOST LOST and that match is
+over - it cannot be continued or restored. We would start a new one.
+
+Please do not close the game window to fix a problem unless we ask you to.
+
+
+5. AFTER THE MATCH
+
+Two things, please:
+
+  1. Send back the log file the game wrote - playtest-YOURNAME.log, in the same
+     folder as the executable - privately, the same way you received the build.
+     It contains only your own seat, version numbers and the public result. It does
+     not contain your hand, your address or the session key.
+  2. Tell us what was confusing, what was slow, what you expected to happen and did
+     not, and anything you thought was broken. Small annoyances are as useful as
+     crashes.
+
+Then please delete the build.
+
+Thank you. This is the first time this game has been played by six people over the
+internet, and the only way to find out what is wrong with it is to have you play it.

@@ -612,8 +612,8 @@ else {
 
         foreach ($marker in @('GUARDS_ONLINE: LOBBY_HOSTING port=', 'GUARDS_ONLINE: REHEARSAL_TOPOLOGY host=1 clients=6',
                 'GUARDS_ONLINE: SEATS_COMPLETE claimed=6/6', 'GUARDS_ONLINE: MATCH_STARTED',
-                'GUARDS_ONLINE: REHEARSAL_OUTCOME version=', 'GUARDS_ONLINE: REHEARSAL_HOST_COMPLETE',
-                'GUARDS_ONLINE: EXIT 0')) {
+                'GUARDS_ONLINE: REHEARSAL_OUTCOME version=', 'GUARDS_ONLINE: MATCH_OUTCOME version=',
+                'GUARDS_ONLINE: REHEARSAL_HOST_COMPLETE', 'GUARDS_ONLINE: EXIT 0')) {
             if ($matchHostText -notmatch $marker) {
                 Write-Output "FAIL: the match host log is missing '$marker'."
                 $rehearsalFailed = $true
@@ -637,6 +637,22 @@ else {
         $hostOutcome = [regex]::Match($matchHostText, 'REHEARSAL_OUTCOME version=\d+ cause=(?<cause>\S+) winner=(?<winner>\S+)')
         if (-not $hostOutcome.Success) {
             Write-Output 'FAIL: the host recorded no authoritative outcome cause and winner.'
+            $rehearsalFailed = $true
+        }
+
+        # Milestone 8.36. The same ending read off the ordinary lobby path rather than off the
+        # rehearsal driver's own marker. An invited playtest has no rehearsal driver attached, so
+        # this is the line the returned tester logs will actually carry and it has to be proven by
+        # a run that still has both to compare.
+        $hostPlainOutcome = [regex]::Match($matchHostText, 'MATCH_OUTCOME version=\d+ cause=(?<cause>\S+) winner=(?<winner>\S+)')
+        if (-not $hostPlainOutcome.Success) {
+            Write-Output 'FAIL: the host wrote no ordinary-path MATCH_OUTCOME line.'
+            $rehearsalFailed = $true
+        }
+        elseif ($hostOutcome.Success -and
+            ($hostPlainOutcome.Groups['cause'].Value -ne $hostOutcome.Groups['cause'].Value -or
+                $hostPlainOutcome.Groups['winner'].Value -ne $hostOutcome.Groups['winner'].Value)) {
+            Write-Output 'FAIL: the host ordinary-path outcome disagrees with its own rehearsal outcome.'
             $rehearsalFailed = $true
         }
 
@@ -683,6 +699,29 @@ else {
                     Write-Output ("FAIL: seat $($player.Seat) diverged from the host: " +
                         "$($seatOutcome.Groups['cause'].Value)/$($seatOutcome.Groups['winner'].Value) " +
                         "against $($hostOutcome.Groups['cause'].Value)/$($hostOutcome.Groups['winner'].Value).")
+                    $rehearsalFailed = $true
+                }
+            }
+
+            # Milestone 8.36. The seat's own ordinary-path line, named by its seat so six returned
+            # logs can be told apart, and compared with the host's ordinary-path line.
+            $seatPlainOutcome = [regex]::Match($text, 'MATCH_OUTCOME seat=(?<seat>\S+) version=\d+ cause=(?<cause>\S+) winner=(?<winner>\S+)')
+            if (-not $seatPlainOutcome.Success) {
+                Write-Output "FAIL: seat $($player.Seat) wrote no ordinary-path MATCH_OUTCOME line. See $($player.Log)"
+                $rehearsalFailed = $true
+            }
+            else {
+                if ($seatPlainOutcome.Groups['seat'].Value -ne $player.Seat) {
+                    Write-Output ("FAIL: seat $($player.Seat) wrote an outcome naming " +
+                        "$($seatPlainOutcome.Groups['seat'].Value).")
+                    $rehearsalFailed = $true
+                }
+                if ($hostPlainOutcome.Success -and
+                    ($seatPlainOutcome.Groups['cause'].Value -ne $hostPlainOutcome.Groups['cause'].Value -or
+                        $seatPlainOutcome.Groups['winner'].Value -ne $hostPlainOutcome.Groups['winner'].Value)) {
+                    Write-Output ("FAIL: seat $($player.Seat) diverged from the host on the ordinary path: " +
+                        "$($seatPlainOutcome.Groups['cause'].Value)/$($seatPlainOutcome.Groups['winner'].Value) " +
+                        "against $($hostPlainOutcome.Groups['cause'].Value)/$($hostPlainOutcome.Groups['winner'].Value).")
                     $rehearsalFailed = $true
                 }
             }

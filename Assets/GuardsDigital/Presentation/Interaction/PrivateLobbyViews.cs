@@ -312,6 +312,7 @@ namespace GuardsDigital.Presentation.Interaction
         private string signature = string.Empty;
         private Label matchStatus;
         private bool onlineHudAttached;
+        private bool outcomeReported;
 
         /// <summary>
         /// Host-only event observation for the opt-in build rehearsal. The ordinary lobby does
@@ -434,6 +435,8 @@ namespace GuardsDigital.Presentation.Interaction
                 }
             }
 
+            ReportOutcomeOnce();
+
             var current = Signature();
             if (!string.Equals(current, signature, StringComparison.Ordinal))
             {
@@ -457,6 +460,52 @@ namespace GuardsDigital.Presentation.Interaction
 
                 RenderMatchStatus();
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.36. Writes this process's own ending exactly once, so an invited playtest's
+        /// returned logs can be compared with the host's instead of with what a player remembers.
+        /// </summary>
+        /// <remarks>
+        /// The rehearsal driver wrote its own outcome marker and will not be attached when six
+        /// people are playing, which left the ordinary lobby path saying nothing at all about the
+        /// ending it reached. The line is <see cref="PrivateOnlineDiagnostics.OutcomeLine"/>'s, so
+        /// what it may contain is decided by that signature rather than here, and the host form
+        /// omits the seat because a dedicated host holds none.
+        /// </remarks>
+        private void ReportOutcomeOnce()
+        {
+            if (outcomeReported || compositionRoot?.Runtime == null)
+            {
+                return;
+            }
+
+            string line;
+            if (session != null)
+            {
+                var authoritative = compositionRoot.Runtime.Host.Projection;
+                line = PrivateOnlineDiagnostics.OutcomeLine(
+                    string.Empty, authoritative.Version, authoritative.Outcome);
+            }
+            else if (onlineHudAttached && machine?.LatestProjection != null)
+            {
+                line = PrivateOnlineDiagnostics.OutcomeLine(
+                    machine.TargetSeat.Value,
+                    machine.LatestProjection.Version,
+                    compositionRoot.Runtime.ReadModel.Outcome);
+            }
+            else
+            {
+                return;
+            }
+
+            if (line.Length == 0)
+            {
+                return;
+            }
+
+            outcomeReported = true;
+            PrivateOnlineMarkers.Log(line);
         }
 
         /// <summary>
@@ -667,6 +716,7 @@ namespace GuardsDigital.Presentation.Interaction
             listener?.Dispose();
             listener = null;
             onlineHudAttached = false;
+            outcomeReported = false;
             if (matchStatus != null)
             {
                 matchStatus.text = string.Empty;

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.Victory;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Network;
 using NUnit.Framework;
@@ -1069,6 +1070,60 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(model.FeedbackLabel.Contains("127.0.0.1"), Is.False,
                     "A join failure says what happened, never where.");
             }
+        }
+
+        // --- The one ending an invited playtest reads back out of a process ------------------------
+
+        /// <summary>
+        /// Milestone 8.36. Six people press the controls in an invited playtest, so the rehearsal
+        /// driver that wrote milestone 8.35c's convergence markers is not attached and the ordinary
+        /// lobby path said nothing at all about the ending it reached. One bounded line per process
+        /// replaces it: the same shape from the seatless host and from a seat, and silence while
+        /// the match is still being played.
+        /// </summary>
+        [Test]
+        public void AnEndedMatch_IsOnePublicOutcomeLineFromTheHostAndFromASeat()
+        {
+            var ended = MatchOutcome.Won(
+                MatchVictoryCause.FinalWaveFlipped, new TeamId("blue-team"), new TeamId("red-team"));
+
+            Assert.That(
+                PrivateOnlineDiagnostics.OutcomeLine(string.Empty, 2250, ended),
+                Is.EqualTo("MATCH_OUTCOME version=2250 cause=FinalWaveFlipped winner=blue-team"),
+                "The dedicated host names no seat, because it holds none.");
+            Assert.That(
+                PrivateOnlineDiagnostics.OutcomeLine("red-player-02", 2250, ended),
+                Is.EqualTo(
+                    "MATCH_OUTCOME seat=red-player-02 version=2250 cause=FinalWaveFlipped " +
+                    "winner=blue-team"),
+                "A seat names itself, so six returned logs can be told apart and each compared " +
+                "with the host's.");
+            Assert.That(
+                PrivateOnlineDiagnostics.OutcomeLine("red-player-02", 41, MatchOutcome.Unfinished),
+                Is.Empty,
+                "A match still being played has no ending to report, and a process with nothing " +
+                "to report writes nothing.");
+        }
+
+        /// <summary>
+        /// The line cannot carry owner-private state, and that has to be structural rather than
+        /// careful: nothing owner-private has a parameter to arrive through.
+        /// </summary>
+        [Test]
+        public void TheOutcomeLine_IsGivenOnlyASeatAVersionAndThePublicOutcome()
+        {
+            var parameters = typeof(PrivateOnlineDiagnostics)
+                .GetMethod(nameof(PrivateOnlineDiagnostics.OutcomeLine))
+                .GetParameters()
+                .Select(parameter => parameter.ParameterType)
+                .ToArray();
+
+            Assert.That(
+                parameters,
+                Is.EqualTo(new[] { typeof(string), typeof(long), typeof(MatchOutcome) }),
+                "A hand, an unrevealed commitment identity, an owner-only offer or a reconnect " +
+                "capability must have no way in. Widening this signature is how a diagnostic " +
+                "line becomes a side channel.");
         }
 
         // --- Helpers ------------------------------------------------------------------------------

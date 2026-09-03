@@ -55,6 +55,53 @@ The last two rows were recorded with no 3v3 baseline so `RISK-SCALE-001` would b
 
 Completed milestones' gate recipes and their recorded run evidence moved verbatim to the [testing archive](../Archive/TESTING_HISTORY.md#completed-gate-recipes-and-run-evidence-routed-2026-08-14-milestone-61ag) on 2026-08-14.
 
+## Invited six-human internet playtest protocol (milestone 8.36)
+
+Recorded at milestone `8.36`, whose deliverable is six invited people completing one private 3v3 over the internet across at least two external networks. Milestone `8.35c` proved the same topology on one machine, and a same-machine rehearsal establishes no relay, NAT traversal, external latency, multi-network or real-internet claim; obtaining exactly those is why this protocol exists. What it produces is validation evidence, not a retained pitch deliverable, and it authorizes no public distribution.
+
+**Preconditions.** Every check in the `8.36` row of [PRIVATE_ONLINE.md](PRIVATE_ONLINE.md) is green at the one revision the build comes from: the final focused `8.32`-`8.35b` harness, Edit Mode and Play Mode filters; `Tools/Invoke-PrivateOnlineRehearsal.ps1 -Topology SixClient -FaultPlan Full` against a freshly built player; the [player-build](#player-build-smoke-gate) and [board visual](#board-visual-smoke-gate) smoke gates; and the complete unfiltered harness together with both complete unfiltered Unity suites. A change freeze then runs to the end of the milestone: crashes, desynchronization, latency symptoms, confusing flows, unreadable state and tester feedback are recorded and triaged, while no rule and no code changes. A gate-blocking defect ends the playtest and becomes a separately approved corrective milestone, after which the build, the gates and this protocol all begin again at the corrected revision.
+
+**Build and identity.** One disposable private Win64 player is built fresh at that revision - `-ReuseBuild` and any cached artifact are never evidence - and every process in the session, the operator's host and all six clients, runs that same copy. Build identity is part of the admission tuple, so a differently stamped build is refused before any private byte is sent and six admitted clients are themselves proof that all seven processes agree on it. Record with the evidence: the source revision, protocol `guards-private-online/2`, snapshot schema 34, map `official-single-lane` with its pinned revision, the registered content digest, and the per-build stamp the build writes as `GUARDS_BUILD: STAMP`. Keep the build log, because the ordinary lobby path does not restate the tuple the way the rehearsal host does.
+
+**Distribution boundary.** The exact build is distributed privately to the six invited testers and to nobody else, and who received it is recorded. No public link, store listing, mirror or onward redistribution; the package and the returned logs stay private material under the standing repository boundary. Distribution is the user's own action and no automated step performs it.
+
+**Host runbook.** The host is one dedicated seatless process the operator runs. It holds authority, plays no hero, and all six players are clients of it.
+
+1. Forward the chosen TCP port to the host machine and allow it inbound in the Windows firewall. The protocol's default is 45677; any free port may be used instead.
+2. Choose a session key of real length - random, at least twenty characters - and issue it to the six testers over a private channel that is not this game. It is both the invitation and the seal, because the frame keys are derived from it, so a guessed key reads the whole session.
+3. Start the host with `GuardsDigitalSmoke.exe -guardsPrivateLobby -logFile host.log`, type the interface to bind (`0.0.0.0` for every interface, or the machine's own address), the port and the session key into the entry form, and press `HOST`. Do not pick a seat: pressing `HOST` without one is what makes the process seatless.
+4. Confirm the log line `GUARDS_ONLINE: LOBBY_HOSTING port=<port> keyed=true` before anyone is invited in. **`keyed=false` means the link is plaintext and that session must be stopped and restarted with a key.** The lobby's host control does not refuse an unkeyed public bind the way the `-guardsPrivateHost` command line does, so this line is the check that it was sealed.
+5. Leave the host running for the whole match. Every admission, seat claim, readiness change, submission, agreement, resync, reservation and reclaim is written here with its authoritative version, and this log is what every client log is compared against.
+
+The `-guardsPrivateHost` command-line role is the rehearsal's host and is deliberately not the one used here: it stops the session five seconds after the sixth seat is claimed if nothing else happens and fails at its own elapsed timeout, both correct for an automated run and fatal for people who talk between turns.
+
+**Operator trust, stated to testers.** The architecture record's threat model requires this in the playtest instructions, so it is tester-facing text rather than a note: the machine hosting the match holds every card and decides every rule, whoever runs it can read anything including another player's hand and could change what the game does, and nothing in this build prevents that. The session key is an invitation and a seal against outsiders, not protection from the host. This is accepted only because six invited people already trust the operator; it is not a competitive service.
+
+**Tester instructions.** `Tools/PlaytestTesterInstructions.txt` is the tester-facing text, ships inside the package, and carries no real address, port or key. In outline: launch `GuardsDigitalSmoke.exe -guardsPrivateLobby -logFile <name>.log`, because a normally launched build shows no lobby at all; type the operator's address, port and key; pick the assigned seat row - seats are `red-player-01` to `red-player-03` and `blue-player-01` to `blue-player-03`, are assigned in advance so two testers never race for one, and cannot be changed without leaving and rejoining; press `JOIN`, then `READY`. The match begins by itself when all six seats are claimed and ready; no one presses start. If the connection drops, the seat is held and the whole match pauses until that player returns, so nobody else can act meanwhile; the lobby reappears over the board offering `RECONNECT` and `LEAVE`, and `RECONNECT` is the way back into the same seat. At the end, each tester returns their log file privately. At least two of the six must be on different external networks, and which tester was on which network is recorded.
+
+**Required live scenarios.** The session must produce, and the evidence must name: six stable seats through host/join with private hands and every normal player and team-owned choice; complete turns and rounds to a finished match; at least one same-team tied-Initiative disagreement followed by a revised unanimous preference; at least one confirmable Minion Battle removal changed after partial agreement and then unanimously confirmed - both through milestone `8.30n`'s public unanimous-agreement flow and never through a first-click, captain, timer or automatic fallback; the approved bounded latency, disconnect and reconnect cases including at least one deliberate mid-match disconnect and reconnect; and explicit failure handling if the host or a client is lost terminally, where host loss is terminal for that match and no seat inherits authority.
+
+**Evidence, convergence and privacy review.** Assemble the host log and all six client logs under `tmp/milestone-8-36-playtest/` with the build log and the recorded identity tuple. The host log must show six distinct seat claims, the match start, and the authoritative versions its accepted submissions and agreements moved. Each client log must show its own seat, the version its HUD attached at, each reconnect it made, and one `GUARDS_ONLINE: MATCH_OUTCOME seat=<seat> version=<n> cause=<cause> winner=<team>` line; the host writes the same line without a seat. Convergence is the comparison of those seven lines: every cause and winner identical, each seat naming itself. Then review the whole bundle - no log may carry an `ip:port`, the session key, or a degradation pattern:
+
+```powershell
+$logs = Get-ChildItem tmp/milestone-8-36-playtest -Filter *.log
+foreach ($log in $logs) {
+    $text = Get-Content -LiteralPath $log.FullName -Raw
+    [regex]::Matches($text, '\b(\d{1,3}\.){3}\d{1,3}:\d+') | ForEach-Object { "ENDPOINT $($log.Name): $($_.Value)" }
+    if ($text.IndexOf($sessionKey, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { "KEY $($log.Name)" }
+    foreach ($p in @('Shader.*not found','Failed to load','is missing','NullReferenceException')) {
+        [regex]::Matches($text, $p) | ForEach-Object { "DEGRADED $($log.Name): $p" }
+    }
+    [regex]::Matches($text, 'MATCH_OUTCOME[^\r\n]*') | ForEach-Object { "$($log.Name): $($_.Value)" }
+}
+```
+
+Any output but the outcome lines is a finding. The diagnostic vocabulary is allow-listed by the architecture record - protocol version, opaque session correlation, own seat, own submission ID, projection version, message kind and size, bounded rejection code, recovery transition, and the public outcome - so a line outside it is a leak to report rather than a curiosity. Record tester observations and feedback alongside the logs and triage them without changing anything.
+
+**What this proves and does not.** It proves that six people on separate machines and at least two external networks reached one authoritative ending over the selected direct-socket transport with owner-private state confined to its own seat. It does not measure performance, does not establish reliability under adverse networks, does not exercise NAT shapes other than the ones those six testers happened to have, and says nothing about a public service, accounts, matchmaking or anti-cheat.
+
+**Completion.** Both complete unfiltered Unity suites and the complete harness must be green at the applicable final revision; the pre-playtest runs stand as that evidence when no code changed afterwards, and any corrective milestone re-baselines them. The repeat rule for later revisions is the [post-polish multiplayer regression gate](#post-polish-multiplayer-regression-gate) below.
+
 ## Post-polish multiplayer regression gate
 
 Milestone `9.16` owns the final-revision multiplayer regression after presentation polish. It reuses the exact six-client local process/build topology selected at milestone `8.29` and proven at milestone `8.35c`; milestone `8.29` must add the executable command and bounded fault recipe here once those details exist.
