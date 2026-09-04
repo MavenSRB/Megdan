@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard holding additional Phase 8 milestone definitions that are complete and self-contained. Return to [ROADMAP.md](../ROADMAP.md) or the active shard [PHASE_8.md](PHASE_8.md). Historical completion evidence: [PHASE_8 handoffs](../Archive/Phase-Handoffs/PHASE_8.md).
 
-Created 2026-08-28 during milestone 8.25f2a's required warning-threshold ownership review. Milestones 8.11d and 8.11e moved here verbatim after the main Phase 8 shard reached its warning threshold; milestone 8.29a followed during the 2026-08-29 ownership review, and milestones 8.16 through 8.17 followed during milestone 8.30's on the same date. Milestones 8.18a through 8.24 followed on 2026-09-03 during milestone 8.35a1's, placed in sequence after milestone 8.17 so that the five 8.18 slices again sit below the split contract they read "above". The 2026-08-28 amendment merging 8.26 into 8.27, and milestones 8.27 through 8.28b, followed on 2026-09-03 during milestone 8.35f's, placed ahead of milestone 8.29a so the run still reads in milestone order. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
+Created 2026-08-28 during milestone 8.25f2a's required warning-threshold ownership review. Milestones 8.11d and 8.11e moved here verbatim after the main Phase 8 shard reached its warning threshold; milestone 8.29a followed during the 2026-08-29 ownership review, and milestones 8.16 through 8.17 followed during milestone 8.30's on the same date. Milestones 8.18a through 8.24 followed on 2026-09-03 during milestone 8.35a1's, placed in sequence after milestone 8.17 so that the five 8.18 slices again sit below the split contract they read "above". The 2026-08-28 amendment merging 8.26 into 8.27, and milestones 8.27 through 8.28b, followed on 2026-09-03 during milestone 8.35f's, placed ahead of milestone 8.29a so the run still reads in milestone order. Milestones 8.25 through 8.25f2a followed on 2026-09-04 during milestone 8.35h's, placed after milestone 8.24 so the run still reads in milestone order. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
 
 ### [x] 8.11d Replace piece-target triangles with fitted rings and washes
 
@@ -305,6 +305,210 @@ Acceptance checks:
 Non-goals: No six-player setup, networking, production art, alternate miniature, or statue component.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-824-complete-and-verify-additional-pitch-hero-slot-e---xargatha-completion-evidence).
+
+### [x] 8.25 Replace the staged 1v1 setup with the official six-player Quick Game configuration
+
+Observable outcome: Configuration data places three different Red heroes and three different Blue heroes with their own hands and components using the official six-player Quick Game baseline.
+
+Acceptance checks:
+
+- All six stable player/hero identities, ownership relationships, hero spawn positions, hands, dashboards, and hero-owned components resolve without assuming one hero per team.
+- Every authoritative turn slot contains exactly six ownership-validated assignments—one for each configured `HeroId`—and snapshot round-trip preserves their deterministic order and committed-card-or-empty-hand-Pass facts; controlling `PlayerId` and team resolve through the participant graph.
+- Setup uses three Wave counters, five Life counters per team, the normal Tie Breaker flip, and the verified official board/minion setup.
+- Wasp appears once; all six heroes are different and assigned to exactly one team/player.
+- DEV-001 and DEV-002 are marked retired; only approved director/debug deviations remain.
+- Snapshots round-trip the complete six-player setup deterministically.
+- `RISK-SCALE-001`'s payload half is measured rather than computed: the six-player decoded payload is recorded against the staged 1v1 reference of 6,633 bytes and compared with the standing thresholds in `Testing/FUTURE_GATES.md`. This milestone is the first at which 108 card instances and 108 definitions exist, and the risk's own figure for them is arithmetic on measured unit costs rather than a measurement.
+- The player-build smoke gate's pinned `heroes=2 cards=36` markers move to the six-player values in `Testing/FUTURE_GATES.md` in this milestone - the marker line this configuration breaks now has an owner, per the 7.9a documentation correction the 8.2 re-baseline applied.
+
+Non-goals: No networking, hidden per-player devices, AI, matchmaking, or balance changes. No reassessment of `RISK-SCALE-001`'s ordering half, which needs a round boundary this milestone does not reach.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825-replace-the-staged-1v1-setup-with-the-official-six-player-quick-game-configuration-completion-evidence).
+
+### [x] 8.25a Answer an after-action repeat that outlives its actor's Initiative
+
+Proposed by milestone 8.25's independent review, which found it with an offline `DeterministicMatchLoop` run rather than in an active suite. It is a rules/timing correction to milestone 8.23's after-action repeat, is reachable on a board that shipped at 8.23, and 8.25's own acceptance checks name no match loop, so it is scheduled separately rather than folded in.
+
+Observable outcome: a decision the projection offers is answerable. A pending card-action resolution whose actor is not the hero Initiative has currently selected is either not offered, or accepted when answered.
+
+Acceptance checks:
+
+- The demonstrated case is a regression fixture before it is a fix: on the staged Wasp-versus-Tigerclaw board, `DeterministicMatchLoop.Play(session, seed: 1, 4000)` reaches Tigerclaw's Cloak and Daggers repeating Blend Into Shadows and is refused `TurnCommandRejected (SkillCommandRejected)` at command 1047 while `SelectedActor` names the other hero; the same shape appears as a Movement refusal on the official six-player board. Both are observed failing at the pre-fix revision and passing after.
+- Every command the projection offers for a pending resolution is accepted by the rules, or the projection does not offer it. Stated as a property over a seeded sweep rather than over one seed.
+- `TurnResolutionAuthority` no longer discards the backend's `CardActionResolutionRejectionReason`: a refused card-action command reports the reason its backend gave, because the refusal above took a per-destination retry to diagnose.
+- Snapshot restore, replay and retained-prefix Undo reproduce the corrected sequence; the compatibility corpus records whether the schema moved.
+
+Non-goals: No change to which abilities may repeat, to rulebook p.10's repeat rule, or to Initiative order. No six-hero match-loop gate, which milestone 8.27 owns.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825a-answer-an-after-action-repeat-that-outlives-its-actors-initiative-completion-evidence).
+
+### [x] 8.25b Name the configuration types after what they now compose
+
+Proposed by milestone 8.25's independent review. `PlaceholderOneVsOneTestConfiguration`, `PlaceholderOneVsOneParticipants` and `PlaceholderConfigurationRestoreState` are neither placeholders nor one-versus-one since 8.25: the first composes rulebook p.5's six official seats and is the production configuration a player loads. Renaming them is mechanical and touches roughly 250 call sites, so it was deliberately not bundled into a milestone that changed what they mean.
+
+Observable outcome: every configuration type is named after the thing it is, and the temporary-structure register carries no row for a structure that is no longer temporary.
+
+Acceptance checks:
+
+- The three types are renamed with their `.cs` and `.cs.meta` files moved together so Unity GUIDs survive; no behavior, content, digest or schema changes, and the compatibility corpus is byte-identical.
+- The staged one-hero-per-team arms keep names that say they are staged fixtures.
+- `TECHNICAL_RISKS.md`'s temporary-structure register retires the row these types carry, or restates what is still temporary about them with a live owner.
+- Complete unfiltered Edit Mode and Play Mode suites pass, because a rename of this breadth cannot be shown affected-only.
+
+Non-goals: No behavior change, no content change, no new configuration, and no change to the staged boards themselves.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825b-name-the-configuration-types-after-what-they-now-compose-completion-evidence).
+
+### [x] 8.25c Scale the HUD with the viewport and identify each rail with its hero portrait
+
+Proposed at the user's direction on 2026-08-26, after milestone 8.25's six-player HUD was seen on a 2560-wide screen, and amended at the user's direction the same day to replace each rail header's circled initial with that hero's picture while the rail layout is already being re-derived. `ConfiguredMatchHudRenderer.Build` sets `PanelScaleMode.ConstantPixelSize` with `scale = 1`, so every layout number is a literal device pixel: the rail is 192 and a card 186x420 on a 1280-wide screen and on a 2560-wide one alike, and the HUD is half its designed share of the second. The committed panel-settings asset already carries a `1200x800` reference resolution, inert under that mode.
+
+**Most of the layout pressure milestone 8.25 fought is a symptom of this.** Three rails a side not stacking, the tray band being too narrow for rulebook p.6's five-card row below 1392 wide, and the 230-line clip 8.25 accepted where the tray covers the third rail are all one fixed-pixel layout serving viewports from 778 to 2560 wide. A scaled panel makes each region the same fraction of every screen, so those three either dissolve or change shape; this milestone re-derives them rather than assuming either.
+
+Observable outcome: the player-facing HUD occupies the same share of the screen at every supported resolution, every pointer decision it makes stays correct at a panel scale other than 1, and each hero rail identifies its hero with a recognizable hero-specific portrait instead of a letter inside a circle.
+
+Acceptance checks:
+
+- **The pointer boundary is converted before anything else, and its check comes first.** `ConfiguredMatchHudRenderer.BlocksPointerAt` takes a screen position, flips it with `Screen.height - y`, and compares it against rects computed from `Screen.width`/`Screen.height`; that is an identity mapping only while the scale is 1, and every board click in the game passes through it. A wrong conversion throws nothing and blocks the pointer in the wrong places, so the closing check is observed failing at a scale other than 1 before the conversion exists and passing after.
+- The panel declares one scale mode, one reference resolution and one match mode in one place, and the committed asset and the code agree rather than the code overriding the asset as it does today.
+- `CardFootprint`, `HeroRailWidth`, the hero-rail column height and the standing rule that both rails together stay under half the narrowest validated viewport are **restated in reference units** rather than re-measured in device pixels; each keeps the meaning its own milestone gave it.
+- All six configured hero rails replace the circular initial badge with a distinct portrait selected from an explicitly approved hero-image source. The portrait is chosen from the rail's projected hero identity rather than from its display-name text, and neither rules nor control ownership infer identity from the image.
+- Each portrait stays legible, unclipped and aspect-correct at every validated viewport. The written hero name remains beside it, focus/readability does not rely on the portrait or team colour alone, and the six-hero layout has no configured fallback to the former letter badge.
+- The permanent hero player-path completion gate still measures every verified face of every configured hero against one shared footprint, now at the reference resolution, and no hero's content newly fails or newly passes because of the change.
+- The exact-rect expectations at the validated viewports become reference-space expectations, and at least two device resolutions either side of the reference produce the same layout in reference units.
+- Milestone 8.25's two accepted geometry facts are re-derived: whether three rails still stack a side, and whether the tray still covers the third rail. If scaling removes that clip, the milestone records it and the clip goes rather than being preserved for consistency.
+- The board's framing band `CalculatePlayfieldRect` feeds the fixed camera converts out of reference units before it reaches the camera, so milestone 8.5a's framing is unchanged in world terms.
+- Complete unfiltered Edit Mode and Play Mode suites pass, because a change to the panel's coordinate space cannot be shown affected-only.
+
+Non-goals: No broader production-art pipeline or new HUD content beyond the six rail portraits, and no change to any rule, command or projection. No render-pipeline work - this is independent of milestone 8.28 and is cheaper before it, because a scaled layout is what production presentation is authored against. Private or excluded source imagery is not added, published or distributed without the separate authorization and rights already required by the project boundary.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825c-scale-the-hud-with-the-viewport-and-identify-each-rail-with-its-hero-portrait-completion-evidence).
+
+### [x] 8.25d Let a card-text Attack repeat say that it is one
+
+Proposed at the user's direction on 2026-08-26, after milestone 8.25a made a repeated Attack resolution able to carry `ActionInvocationContext.Repeated` and found that the path Xargatha's cards actually use still does not. 8.25a admitted the context on the resolution and left this alone deliberately, because what it changes is which targets two verified cards offer - that milestone's stated non-goal.
+
+`AttackDefenseCardActionStrategyBackend.StartRepeatedAttack` builds the second instance with `completed.InvocationContext`, which is the printed one the first instance ran under, so a card-text Attack repeat reports itself as printed everywhere downstream. Two consequences are live. Xargatha's Cleave and Rapid Thrusts print "May repeat once on a different enemy hero", and the narrowing half of that clause is gated on `resolution.InvocationContext == ActionInvocationContext.Repeated`, so it has never fired: her repeat excludes the unit she just hit - that half travels separately as `ExcludedTarget` - and still admits minions. And the repeated instance's `ActionEnded` checkpoint reports a printed context, so `PendingAfterActionRepeat.For` and `TriggeredEffectResolutionAuthority`'s own guard both read `WasRepeatedInstance` as false, which is what rulebook p.10's "You cannot repeat a repeated action!" is enforced by.
+
+Observable outcome: a repeated Attack instance is one the rules can tell is repeated, and every clause a card prints about its own repeat applies to it.
+
+Acceptance checks:
+
+- `StartRepeatedAttack`'s second instance carries `ActionInvocationContext.Repeated`. The exact set of content this moves is **Wasp's Thunder Boomerang and Xargatha's Cleave and Rapid Thrusts**, which are the only verified Attack texts declaring a `RepeatAction` node; Sabina's and Arien's repeats are Skill and Movement repeats and reach different backends, and Tigerclaw's Cloak and Daggers is the after-action path milestone 8.25a already corrected.
+- Xargatha's repeat offers enemy heroes only. Observed failing at the pre-fix revision on a board where her repeat has both an eligible enemy hero and an eligible minion, and passing after - the minion is offered before and not after, and the exclusion on the unit the first instance took is unchanged in both.
+- **p.10's bound on a card-text Attack repeat is re-derived rather than assumed.** The repeated instance runs its own page, including the step-7 rider that asked for the repeat, and the Attack path carries no `RepeatContinuation`, so whether a second request is possible today is a measurement this milestone owes before it changes what the checkpoint reports. If a chain is reachable, the milestone states where the bound lives; if it is not, it states what stops it.
+- No hero's player-path gate row newly passes or newly fails, and no configured hero's journeys change except where an offered target set legitimately narrows; the two heroes above are re-run at their own tiers.
+- The compatibility corpus records whether any fixture holds an Attack resolution mid-repeat. Milestone 8.11 recorded that none did - "no corpus payload held a paused Thunder repeat" - so the expectation is that no digest and no schema version moves, and the expectation is checked rather than trusted.
+- Complete unfiltered Edit Mode and Play Mode suites pass, because a change to what an action reports at its own completion checkpoint is read by triggers, and cannot be shown affected-only.
+
+Non-goals: No change to any printed text, to which abilities may repeat, or to the after-action repeat path milestone 8.25a owns. No new repeat binding, and no change to `RepeatTargetBinding`'s members.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825d-let-a-card-text-attack-repeat-say-that-it-is-one-completion-evidence).
+
+### [x] 8.25e Perform the repeat that was offered, or stop offering it
+
+Proposed at the user's direction on 2026-08-26, found while auditing milestone 8.25a. It is the same family as that milestone and is deliberately not folded into it: 8.25a corrected *when* an owed repeat runs, and this is about *which actions can be repeated at all*, which 8.25a's block names as a non-goal.
+
+Rulebook p.9 makes every action performed on a Gold or Silver card a basic action, and p.12's Hold, p.11's Fast Travel and p.13's Clear are all performed on one. All three raise the `ActionEnded` checkpoint under their own `ActionKind`, so `PendingAfterActionRepeat.For` holds a subject for them and Tigerclaw's Cloak and Daggers - "After you perform a basic action you may repeat it once" - offers its decision after each. **Taking it does nothing.** `CardActionResolutionAuthority.StartOwedAfterActionRepeat` switches on Attack, Skill and Movement and returns "nothing happened" for the rest, and its comment for that arm says their second instance "is started there", in the turn authority - where nothing starts it. Every consumer of an owed repeat is `TurnResolutionAuthority.TryStartOwedAfterActionRepeat`, which delegates straight back into that switch.
+
+**Why no gate caught it.** The property milestone 8.25a closed on is that every command the projection offers is accepted and no decision stalls. This command *is* accepted; it simply has no effect, so a seeded match-loop sweep of any length passes over it in silence. That is the reusable finding: an offered decision whose answer changes nothing is invisible to a driver that only checks acceptance.
+
+**The audit that produced this block found the same shape on three more arms of the same switch, and this milestone owns all four.** `StartOwedAfterActionRepeat` also reports "nothing happened" when the second instance is attempted and the backend refuses it - `repeatedAttack`, `repeatedSkill` and `repeatedMovement` each fall through to it on `Accepted == false`. The commonest cause is a board with nothing left the card admits, which the code and two comments call "p.10 offering a repeat rather than owing one". **It is reachable on shipped content through the real surface**: driving Tigerclaw's Cloak and Daggers after Blink Strike on `VerifiedTierThreeEngagedStagedTigerclaw`, taking the repeat returns the game to "choose an action or End Turn" with nothing having happened, because the card forbids repeating onto the unit the first instance crossed and that staging has one. Observed in Play Mode during milestone 8.25a's audit.
+
+**The root cause is one predicate, and it is the same for all four.** `TriggeredEffectResolutionAuthority`'s `RepeatIsUnavailable` is `!TriggeringBasicAction.IsDefined || TriggeringBasicAction.WasRepeatedInstance` - a fact about the action that *ended*. Whether the repeat can be performed is a fact about the dispatcher's kind coverage and about the board as it now stands. So the offer admits strictly more than the answer can perform, in two independent ways, and the ability has no way to know it.
+
+Observable outcome: taking a repeat performs the action a second time - or the ability does not offer a repeat it cannot perform, and the page's reason for that is written down. The four arms are one question, not four.
+
+Acceptance checks:
+
+- **The milestone decides which of the two outcomes is correct against the printed page, and records the reading before it builds either.** p.9's supertype says all three are basic; whether p.10's repeat is performable on them - a second Hold on a card already resolved, a second Fast Travel from a Throne the hero now stands in, a Clear with nothing left adjacent - is a rules question, and `RULES_LEDGER.md` owns the answer if the page is not decisive. A repeat that cannot happen is p.10 offering rather than owing one, which the ability already skips in silence; what is refused here is offering it and then dropping it.
+- Observed failing before and passing after, per arm that survives that reading: on a staged board with the Ultimate unlocked, the decision is offered after the action, taking it is accepted, and the second instance is visible in the authoritative state rather than absent. The Blink Strike case above is the one already observed and is the cheapest to write first.
+- The `default:` arm's comment no longer describes behaviour that does not exist, and the two "simply does not happen ... p.10 offers a repeat rather than owing one" comments either carry the reading this milestone records or go. Whatever it decides, the code and the sentences beside it agree.
+- **The three general-rule paths owe the hold milestone 8.25a gave the other three.** `TryPerformHold`, `TryPerformFastTravel` and the Clear path all resolve their source card before the checkpoint runs, so an instance started from their decision would have no unresolved card and no selected actor to run on - the exact state 8.25a removed for Attack, Skill and Movement.
+- A driver-level check exists for the family this escaped: a decision the projection offers and the rules accept changes the authoritative state, or the milestone states why this one does not. One shape, stated once, rather than a case per kind.
+- Complete unfiltered Edit Mode and Play Mode suites pass.
+
+Non-goals: No change to Attack, Skill or Movement repeats, to the after-action hold milestone 8.25a built, or to `RepeatTargetBinding`. No new printed content, and no reinterpretation of which cards are basic - p.9's supertype is settled and this milestone reads it rather than revisiting it.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825e-perform-the-repeat-that-was-offered-or-stop-offering-it-completion-evidence).
+
+Milestones **8.25e1-8.25e7** are defined in the [stabilization and corrective-route shard](PHASE_8_STABILIZATION.md). Completed review 8.25e5c found one missed Constrict ledger field; 8.25e5d corrected it and 8.25e5e freshly verified it. Later Siren's Call corrections 8.25e5f-8.25e5f1 were independently verified at 8.25e5g, reclosing F-SOURCE-01. Completed milestone 8.25e7 closed the surviving 8.16a contract and compatibility findings without reviving the obsolete 8.16b bundle.
+
+### [x] 8.25f Replace generated complete card faces with the verified private faces
+
+Proposed at the user's direction on 2026-08-26. The six configured heroes already have 108 verified definitions and one shared `CardFootprint`, but every complete face the UI draws is still reconstructed from typed content by `ConfiguredCardFaceView.Build`. The private Tabletopia corpus has nineteen action-card fronts for each configured hero: the eighteen-card deck plus the p.20 Handicap card that setup returns to the box. This milestone uses the former 108 deck faces as presentation without making private source material tracked authority or making the rules read pixels.
+
+Observable outcome: when the verified private artwork is prepared locally, every complete identity-known card face for Wasp, Xargatha, Tigerclaw, Arien, Brogan and Sabina shows that definition's real front image at the shared footprint; when private artwork is absent, the same surface shows the current generated face and remains fully playable.
+
+Acceptance checks:
+
+- One explicit presentation catalog maps every configured `CardDefinitionReference` to exactly one of the six heroes' eighteen playable `__front.png` sources, and no source maps to two definitions. A validation check proves the configured 108-definition set and the catalog are bijective, rejects an omitted, duplicate, unknown-hero, dashboard, back-face or revision-mismatched entry, and reports the stable definition and source path that failed.
+- A project-local preparation command reads only the existing private corpus and writes Unity-ready images beneath ignored `Assets/Resources/Private/`; it neither mutates the corpus nor stages, embeds, uploads or distributes source or prepared pixels. It fails with a useful inventory error before writing a partial prepared set, and a clean tracked checkout contains no private image while retaining a working generated fallback.
+- The immutable projected card identity selects the catalog entry and the prepared resource. Rules, ownership, legality, printed values, card text, action offers, lifecycle, accessibility labels and command payloads continue to come from the existing typed projection; no runtime filename parsing, display-name matching, hero-name branch or image analysis becomes authority.
+- The tray, legal Defense responses, card-valued and upgrade choices, current-card or later full-card surfaces, and the shared full-face preview used by revealed turn slots, discard entries and the unlocked Ultimate all go through one artwork-aware complete-face builder. No second artwork lookup or independently styled complete face appears on one of those surfaces.
+- A loaded front is aspect-correct, uncropped and clipped to the existing complete-face boundary at `CardFootprint.StandardWidth` by `CardFootprint.StandardHeight`. It does not change the outer footprint, tray wrapping, scroll ownership, pointer/focus surface or keyboard order. Existing selected, unavailable, hover, focus, lifecycle and team/owner treatments remain readable without obscuring meaningful printed content.
+- The current generated construction remains the per-card fallback when no prepared resource exists or a test deliberately supplies none. A missing or unloadable resource cannot produce an empty control, change its size, remove its assistive reading or make an otherwise legal command unreachable; development diagnostics identify the stable missing mapping without exposing a private absolute path in player-facing UI.
+- Facedown turn commitments remain the neutral identity-free card back and `FACEDOWN`: that projection intentionally carries no card identity, so presentation does not select a real front or leak the committed card. Compact rail lifecycle icons keep their existing non-face meaning; the complete face they reveal on hover uses the real front when available.
+- Focused Edit Mode tests cover the 108-entry bijection, excluded dashboard/back faces, identity-to-resource lookup, all complete-face consumers, one shared footprint, state overlays, absent-art fallback and the facedown information boundary. Directly affected Play Mode coverage exercises an ordinary hand, Defense choice, upgrade choice and rail preview with an injected representative texture and with no texture, so the tracked suite does not depend on private files.
+- T2 validation includes running the private preparation inventory against all six configured heroes and one targeted 2048-by-1152 Game View inspection showing representative cards from all six heroes without clipping or interaction regression. The completion evidence records that private pixels remained ignored and unstaged; no compatibility digest or schema version moves because presentation resources are not authoritative state.
+
+Non-goals: No card-rule, definition, printed-text, action, command, projection, persistence, replay or network change. No OCR, runtime reading of artwork, mutation of source scans, public asset package, distribution or authorization expansion. No redesign of compact rail lifecycle icons, neutral facedown commitments, hero/dashboard faces, card backs, items, or the fixed card footprint, and no removal of the generated clean-checkout fallback.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f-replace-generated-complete-card-faces-with-the-verified-private-faces-completion-evidence).
+
+### [x] 8.25f1 Remove the generated shell from prepared card fronts
+
+Authorized directly by the user's 2026-08-27 correction after inspecting the ordinary tray produced by 8.25f. The prepared 372-by-520 front was being drawn inside the older 186-by-420 generated-face box, while Unity's default non-power-of-two import could resample that source away from its original dimensions. The result was a second coloured frame, a lifecycle strip below the printed face, and visibly distorted artwork.
+
+Observable outcome: whenever a prepared configured front exists, the complete-face surface is only that uncropped front at the source's 372:520 proportions - 186 by 260 reference units - with no generated frame, coloured plate, padding, border or lifecycle band around it. When a prepared front is genuinely unavailable, the existing readable 186-by-420 generated fallback remains playable.
+
+Acceptance checks:
+
+- One scoped Editor importer preserves every PNG beneath ignored `Assets/Resources/Private/Cards/` at its native non-power-of-two dimensions, disables mipmaps that can bleed the printed edge, and changes no other asset folder. The six-hero private inspection proves each loaded representative is still 372 by 520 in Unity rather than a power-of-two resample.
+- The shared complete-face builder chooses its arm before constructing the visible face. Its artwork arm pins 186 by 260, uses an `Image` with aspect-preserving scale-to-fit, draws no synthetic background, border, padding, generated frame or generated lifecycle band, and leaves the source image whole and uncropped. Its fallback arm retains the existing 186-by-420 generated construction.
+- Every complete-face consumer still uses that one builder. The artwork image adds no pointer or keyboard stop; the existing outer card control remains the hit/focus surface. Selection is a conditional overlay that does not resize the image, unavailable cards retain their typed disabled treatment, Active source remains available through the existing tray-slot treatment, and the full typed lifecycle/state reading remains in the tooltip without placing a band over or around the printed face.
+- Focused Edit Mode coverage distinguishes the native-aspect artwork footprint from the generated fallback footprint, proves an unselected prepared card has no synthetic frame, proves selection does not add layout size, and checks all complete-face consumers. The permanent hero conformance check validates the prepared image arm by source aspect and bounds, while retaining its full generated-text fit checks for fallback.
+- Focused Play Mode crosses an ordinary hand, selected card, Defense choice, upgrade choice and rail preview through both injected-art and absent-art arms. One targeted non-batch 2048-by-1152 capture inspects the ordinary production tray with real prepared cards rather than a presentation-only gallery.
+
+Non-goals: No card rule, definition, printed text, lifecycle, action, command, projection, schema, replay, networking or private-source change. No public asset distribution. No removal of the generated clean-checkout fallback, neutral facedown back, compact rail icons, decision-control affordances, selected/Active/unavailable meaning, or source-image border printed in the artwork itself.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f1-remove-the-generated-shell-from-prepared-card-fronts-completion-evidence).
+
+### [x] 8.25f2 Enlarge complete card faces to a readable source-ratio footprint
+
+Authorized directly through the user's 2026-08-27 and 2026-08-28 live inspection sequence after 8.25f1. The source-ratio enlargement exposed the ordinary side-by-side tray's cost to board space; the approved outcome therefore includes the physical-hand composition, the reclaimed map surface and the interaction fixes required to keep both playable.
+
+Observable outcome: every complete card face is approximately 300.46 by 420 reference units. Prepared artwork keeps the exact 372:520 source ratio with no generated shell, crop or distortion, and the generated clean-checkout fallback uses the same outer footprint. Five ordinary cards overlap like a physical hand at the existing bottom-left anchor; each remains clickable and reveals its complete face on hover/focus. Board artwork fills the screen while every playable hex stays clear of the hand, rails and status/action lane.
+
+Acceptance checks:
+
+- `CardFootprint` derives the shared width from the verified 372:520 source ratio and the existing 420-unit readable height. Prepared and generated arms pin that same minimum, preferred and maximum size with no flex growth or shrink, and all complete-face consumers continue through the shared builder.
+- The ordinary hand occupies the panel's bottom-left x=0..732 footprint with five stable ordered, overlapping faces and no tray frame or scrollbar. Every resting card retains a real exposed pointer target; hover/focus reveals exactly one complete face above all HUD siblings without moving the row, blocking the board, obscuring the action dock or changing the click command. The resolving card is stable-sorted rightmost, and unavailable overlapping cards use one opaque local veil rather than stacking translucent faces.
+- Only the painted compact hand blocks board input. The transparent remainder of its full-width layout reservation leaves board pieces - including the lower Blue heroes - clickable. Rail and hand hover previews share the one HUD document, are pointer-transparent and render above status, rail and tray content.
+- The Red rail's third hero is followed by `DIRECTOR`, then one fixed 720-by-128 round/current-card/status dock sized for the largest routine revealed-action state. Awaiting-card, selected-card confirmation and revealed-action states retain that exact footprint instead of resizing as the player clicks. Ordinary action and stop controls occupy one hard no-wrap row with no redundant `ACTIONS` heading; the whole row remains visible while a hand card is hovered. Both three-hero rail stacks remain clear of the cards.
+- The camera renders the decorative board artwork over the full screen. An exact fit places all 210 complete playable hexes in the union of the broad upper safe arm and the reclaimed lower-right arm, preserving the declared visible gap from actual HUD content while allowing artwork and decorative terrain behind it. Repeated rebuilds reuse an unchanged solved frame and remain under the recorded Phase 4 map-rebuild threshold.
+- Ordinary tray scrollers stay hidden. Mandatory multi-card contexts retain the full-width bounded tall tray and vertical `Auto` overflow without horizontal scrolling or card shrink. Prepared and fallback identity remains available to pointer drivers through the outer control's typed tooltip even when the face itself is a single image.
+- Focused Edit Mode covers the shared footprint, artwork/fallback consumers, overlap arithmetic, state treatments and safe-layout geometry. Directly affected Play Mode covers live five-card reachability and hover, resolving/unavailable overlap, the invariant status-dock footprint across awaiting/confirmation/action states, action-strip persistence, topmost rail previews, Blue-hero board clicks, all playable-hex containment, absent scrollbars, short mandatory context and the Phase 4 timing threshold. Targeted non-batch captures inspect the production composition with real prepared cards and the three stable ordinary dock states.
+
+Non-goals: No card rule, definition, printed text, lifecycle, action, command, projection, schema, replay, networking, private source or import-contract change. No return of the generated shell, crop or stretch; no removal of the clean-checkout fallback; no redesign of contextual decision meanings, rail icons, facedown back or state meanings beyond the accepted layout, pointer and preview behavior.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f2-enlarge-complete-card-faces-to-a-readable-source-ratio-footprint-completion-evidence).
+
+### [x] 8.25f2a Correct the stale pre-L-shaped fallback framing assertion
+
+Authorized by the user on 2026-08-28 after milestone 8.25e4's complete Edit Mode run exposed the stable stale assertion left behind by 8.25f2. This correction is completed separately before 8.25e4 resumes.
+
+Observable outcome: `OfficialBoardArtworkTests` states the current no-HUD fallback contract introduced by 8.25f2: when no `BoardCameraSafeLayout` has been supplied, the framing camera centers the complete reviewed map in the whole viewport while retaining the official board basis and containing every reviewed space. The configured scene's L-shaped safe-layout fit remains unchanged and independently covered.
+
+Acceptance checks:
+
+- The pre-correction `OfficialBoardArtworkTests.TheFramingCamera_HoldsEveryReviewedSpaceInTheBandLeftByTheTray` is recorded failing at revision `a7a756ef` in both the 8.25e4 complete Edit Mode run and an isolated rerun: its left and right margins were both `0.220409393f`, disproving only the retired strict right-shift claim.
+- The replacement named check `OfficialBoardArtworkTests.TheFallbackFramingCamera_CentresEveryReviewedSpaceInsideTheViewport` exercises the fallback without calling `ConfigureCameraViewport`, proves the official board basis and straight-down camera orientation, contains every reviewed space, and proves symmetric horizontal margins within floating-point tolerance.
+- Focused Edit Mode runs the replacement check, directly affected Edit Mode runs the whole `OfficialBoardArtworkTests` fixture, and the complete unfiltered Edit Mode suite passes at the corrective revision. This Edit-test-only correction does not require Play Mode; milestone 8.25e4 still owes both complete suites at its later T3 candidate.
+
+Non-goals: No production camera, HUD, safe-layout, artwork, map, rule, command, snapshot, replay, schema, content or private-source change. No weakening or removal of full-map containment, board-basis orientation, the configured L-shaped fit, or its live-scene coverage.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-825f2a-correct-the-stale-pre-l-shaped-fallback-framing-assertion-completion-evidence).
 
 Roadmap amendment, 2026-08-28, user approved: **8.26 is merged into 8.27 and no longer exists as a separately executable milestone.** Its six-owner director flow, joint reveal, Initiative/team interactions, readable resolver/history, and reconstruction obligations were already substantially delivered by the accumulated 8.25 and HUD work. Milestone 8.27 retains every obligation as integrated official-match evidence and corrects any defect that evidence exposes; it does not reimplement behavior merely to satisfy the former boundary.
 

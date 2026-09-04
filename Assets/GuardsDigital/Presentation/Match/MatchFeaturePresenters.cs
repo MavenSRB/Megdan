@@ -2831,6 +2831,30 @@ namespace GuardsDigital.Presentation.Match
                 var candidateNames = agreement.Candidates.ToDictionary(
                     candidate => candidate.CardInstanceId,
                     candidate => Name(candidate.HeroId));
+
+                // Milestone 8.35h. Read with the same tolerance the hero-name lookup above already
+                // has. A bare indexer and a `Single` sat beside that `TryGetValue` fallback in this
+                // one method, which is the shape milestone 8.35e's scoped-seat crash came in: a
+                // presenter shared between the Director and a seat must not assume the Director's
+                // complete collections. A candidate this seat cannot name degrades to its own
+                // identity rather than taking the panel - and, before 8.35h, the whole HUD - down.
+                string CandidateName(CardInstanceId cardInstanceId) =>
+                    candidateNames.TryGetValue(cardInstanceId, out var candidateName)
+                        ? candidateName
+                        : cardInstanceId.Value.ToUpperInvariant();
+                HeroId CandidateHero(CardInstanceId cardInstanceId)
+                {
+                    foreach (var candidate in agreement.Candidates)
+                    {
+                        if (candidate.CardInstanceId.Equals(cardInstanceId))
+                        {
+                            return candidate.HeroId;
+                        }
+                    }
+
+                    return default;
+                }
+
                 return new TeamAgreementHudViewModel(
                     agreement.Kind,
                     "WHO ACTS FIRST?",
@@ -2838,13 +2862,12 @@ namespace GuardsDigital.Presentation.Match
                         new TeamAgreementParticipantViewModel(
                             Name(participant.HeroId),
                             participant.HasStatement
-                                ? "chose " + candidateNames[participant.PreferredCardInstanceId]
+                                ? "chose " + CandidateName(participant.PreferredCardInstanceId)
                                 : "is choosing")),
                     agreement.AuthorizedCommands.Select(command =>
                         new TeamAgreementChoiceViewModel(
-                            candidateNames[command.PreferredCardInstanceId],
-                            agreement.Candidates.Single(candidate =>
-                                candidate.CardInstanceId.Equals(command.PreferredCardInstanceId)).HeroId,
+                            CandidateName(command.PreferredCardInstanceId),
+                            CandidateHero(command.PreferredCardInstanceId),
                             command)));
             }
 
@@ -5779,6 +5802,8 @@ namespace GuardsDigital.Presentation.Match
         private readonly DiagnosticLogPresenter diagnostics;
         private readonly MinionChoicePresenter minionChoice;
         private readonly HeroOverviewsPresenter heroOverviews;
+        private readonly Action<string, Exception> panelRefreshFailed;
+        private IReadOnlyList<string> failedPanelNames = Array.Empty<string>();
 
         public MatchFeatureCoordinator(
             BoardInteractionPresenter board,
@@ -5788,8 +5813,10 @@ namespace GuardsDigital.Presentation.Match
             DiagnosticLogPresenter diagnostics,
             MinionChoicePresenter minionChoice,
             Action<IMatchReadModel> afterSessionChange = null,
-            HeroOverviewsPresenter heroOverviews = null)
+            HeroOverviewsPresenter heroOverviews = null,
+            Action<string, Exception> panelRefreshFailed = null)
         {
+            this.panelRefreshFailed = panelRefreshFailed;
             this.heroOverviews = heroOverviews;
             this.board = board ?? throw new ArgumentNullException(nameof(board));
             this.hands = hands ?? throw new ArgumentNullException(nameof(hands));
@@ -5818,15 +5845,75 @@ namespace GuardsDigital.Presentation.Match
             minionChoice.SessionProjectionChanged += Changed;
         }
 
+        /// <summary>
+        /// Milestone 8.35h. The panels whose refresh threw during the latest <see cref="RefreshAll"/>,
+        /// in fan-out order, so a surface can draw a named failed state instead of leaving a stale
+        /// panel indistinguishable from a current one. Empty after any refresh in which nothing threw.
+        /// </summary>
+        public IReadOnlyList<string> FailedPanelNames => failedPanelNames;
+
+        /// <summary>
+        /// Milestone 8.35h. Refreshes every panel, each independently of the rest.
+        ///
+        /// <para>This ran as a straight line of seven calls until the invited playtest, where one
+        /// view-model defect in the second presenter silently skipped the five behind it on every
+        /// projection change and presented as a whole frozen client rather than one broken panel. The
+        /// authority kept accepting submissions throughout, which is what made the symptom so
+        /// misleading. Isolation is per panel and the failure is never swallowed: a composed HUD is
+        /// told which panel failed and why, and a composition that supplies no sink is raised at
+        /// rather than quietly degraded - the throw simply waits until every other panel has had its
+        /// turn.</para>
+        ///
+        /// <para>It catches broadly on purpose. The point is that no presenter's defect can reach
+        /// another panel, and narrowing the catch to the exception types seen so far would only mean
+        /// the next unfamiliar one takes the client down again.</para>
+        /// </summary>
         public void RefreshAll()
         {
-            board.Refresh();
-            hands.Refresh();
-            round.Refresh();
-            undoRestart?.Refresh();
-            diagnostics?.Refresh();
-            minionChoice.Refresh();
-            heroOverviews?.Refresh();
+            var failed = new List<string>();
+            var errors = new List<Exception>();
+            RefreshPanel("board", board.Refresh, failed, errors);
+            RefreshPanel("hands", hands.Refresh, failed, errors);
+            RefreshPanel("round", round.Refresh, failed, errors);
+            RefreshPanel("undo-restart", () => undoRestart?.Refresh(), failed, errors);
+            RefreshPanel("diagnostics", () => diagnostics?.Refresh(), failed, errors);
+            RefreshPanel("minion-choice", minionChoice.Refresh, failed, errors);
+            RefreshPanel("hero-overviews", () => heroOverviews?.Refresh(), failed, errors);
+
+            failedPanelNames = failed.Count == 0
+                ? Array.Empty<string>()
+                : new ReadOnlyCollection<string>(failed.ToArray());
+            if (failed.Count == 0)
+            {
+                return;
+            }
+
+            if (panelRefreshFailed != null)
+            {
+                for (var index = 0; index < failed.Count; index++)
+                {
+                    panelRefreshFailed(failed[index], errors[index]);
+                }
+
+                return;
+            }
+
+            throw new AggregateException(
+                "HUD panel refresh failed: " + string.Join(", ", failed.ToArray()) + ".", errors);
+        }
+
+        private static void RefreshPanel(
+            string panel, Action refresh, List<string> failed, List<Exception> errors)
+        {
+            try
+            {
+                refresh();
+            }
+            catch (Exception error)
+            {
+                failed.Add(panel);
+                errors.Add(error);
+            }
         }
     }
 }

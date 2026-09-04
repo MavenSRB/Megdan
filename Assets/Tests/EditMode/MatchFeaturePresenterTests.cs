@@ -291,6 +291,146 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(diagnostics.Model, Is.SameAs(firstDiagnostics));
         }
 
+        /// <summary>
+        /// Milestone 8.35h. One panel throwing leaves every other panel rendering, and the failure is
+        /// named rather than swallowed.
+        ///
+        /// <para>The throw is staged in a view rather than by breaking a presenter, because the claim
+        /// is about the coordinator's isolation and not about any particular presenter's defect. It is
+        /// the same position the invited playtest hit one layer in, where a view model's constructor
+        /// threw inside <c>DirectorHandsPresenter.Refresh</c> and silently took the five panels behind
+        /// it with it on every projection change.</para>
+        ///
+        /// <para>The round panel is chosen deliberately: it is third of seven, so the case proves both
+        /// that the two panels ahead of it still rendered and that the four behind it - which is
+        /// exactly what used to be skipped - rendered too.</para>
+        /// </summary>
+        [Test]
+        public void OneThrowingPresenter_LeavesEveryOtherPanelRenderingAndNamesTheFailure()
+        {
+            var session = CreateSession();
+            var board = new CapturingBoardView();
+            var hands = new CapturingHandsView();
+            var round = new ThrowingRoundView();
+            var undo = new CapturingUndoView();
+            var diagnostics = new CapturingDiagnosticView();
+            var minionChoice = new CapturingMinionChoiceView();
+            var reported = new List<string>();
+            var coordinator = new MatchFeatureCoordinator(
+                new BoardInteractionPresenter(session, board),
+                new DirectorHandsPresenter(session, hands),
+                new RoundActionPresenter(session, round),
+                new UndoRestartPresenter(session, undo),
+                new DiagnosticLogPresenter(session, diagnostics),
+                new MinionChoicePresenter(session, minionChoice),
+                panelRefreshFailed: (panel, error) => reported.Add(panel + ":" + error.GetType().Name));
+
+            Assert.DoesNotThrow(() => coordinator.RefreshAll(),
+                "A composed HUD reports its broken panel rather than raising through the whole refresh.");
+
+            Assert.That(round.Attempts, Is.EqualTo(1), "The failing panel was still attempted.");
+            Assert.That(board.Model.Version, Is.EqualTo(session.Projection.Version));
+            Assert.That(hands.Model.Version, Is.EqualTo(session.Projection.Version),
+                "The panels ahead of the failing one keep the projection they already had.");
+            Assert.That(undo.Model.Version, Is.EqualTo(session.Projection.Version));
+            Assert.That(diagnostics.Model.Version, Is.EqualTo(session.Projection.Version));
+            Assert.That(minionChoice.RenderCount, Is.EqualTo(1),
+                "The four panels behind the failing one are exactly what a straight-line fan-out " +
+                "used to skip, so their rendering is the whole claim.");
+            Assert.That(coordinator.FailedPanelNames, Is.EqualTo(new[] { "round" }),
+                "The coordinator publishes which panel failed, so a surface can say so.");
+            Assert.That(reported, Is.EqualTo(new[] { "round:InvalidOperationException" }),
+                "and the sink is told the panel and the exception behind it.");
+        }
+
+        /// <summary>
+        /// Milestone 8.35h. With no failure sink the throw still arrives - after every other panel has
+        /// refreshed - so isolation cannot be turned into silent swallowing by a composition that
+        /// simply forgot to wire one.
+        /// </summary>
+        [Test]
+        public void AThrowingPanelWithNoSink_RaisesOnlyAfterEveryOtherPanelHasRefreshed()
+        {
+            var session = CreateSession();
+            var board = new CapturingBoardView();
+            var minionChoice = new CapturingMinionChoiceView();
+            var coordinator = new MatchFeatureCoordinator(
+                new BoardInteractionPresenter(session, board),
+                new DirectorHandsPresenter(session, new CapturingHandsView()),
+                new RoundActionPresenter(session, new ThrowingRoundView()),
+                new UndoRestartPresenter(session, new CapturingUndoView()),
+                new DiagnosticLogPresenter(session, new CapturingDiagnosticView()),
+                new MinionChoicePresenter(session, minionChoice));
+
+            var raised = Assert.Throws<AggregateException>(() => coordinator.RefreshAll());
+
+            Assert.That(raised.Message, Does.Contain("round"), "The raise names the panel that failed.");
+            Assert.That(raised.InnerExceptions, Has.Count.EqualTo(1));
+            Assert.That(board.Model.Version, Is.EqualTo(session.Projection.Version));
+            Assert.That(minionChoice.RenderCount, Is.EqualTo(1),
+                "The panel behind the failing one refreshed before the throw was re-raised.");
+            Assert.That(coordinator.FailedPanelNames, Is.EqualTo(new[] { "round" }));
+        }
+
+        /// <summary>
+        /// Milestone 8.35h. The Initiative agreement reads a candidate it cannot name with the same
+        /// tolerance its hero-name lookup already had, instead of a bare indexer and a `Single`.
+        ///
+        /// <para>Those three readings sat in one method beside a `TryGetValue` fallback, which is the
+        /// shape milestone 8.35e's scoped-seat crash arrived in: a presenter shared between the
+        /// Director and a seat assuming the Director's complete collections. This poses the awkward
+        /// projection directly rather than waiting for a filtering path to produce one, because the
+        /// claim is about the reader's tolerance and not about which projection reaches it.</para>
+        /// </summary>
+        [Test]
+        public void AnInitiativeAgreementNamingAnUnknownCandidate_DegradesRatherThanThrowing()
+        {
+            var session = CreateSession();
+            var known = GetHandCards(session, TeamSide.Blue)[0].Id;
+            var unknown = new CardInstanceId("card-this-seat-cannot-see");
+            var proposal = new TeamAgreementProposalId("initiative-tolerance");
+            var blueHero = session.Projection.Setup.Heroes
+                .First(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+
+            var agreement = new TeamAgreementProjection(
+                TeamAgreementKind.Initiative,
+                proposal,
+                TeamSide.Blue,
+                new[] { new TeamAgreementCandidateProjection(known, blueHero) },
+                new[]
+                {
+                    new TeamAgreementParticipantProjection(blueHero, true, unknown, false)
+                },
+                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
+                0,
+                false,
+                new[] { TeamAgreementCommand.Prefer(proposal, unknown) });
+
+            TeamAgreementHudViewModel model = null;
+            Assert.DoesNotThrow(
+                () => model = TeamAgreementHudPresentation.Create(
+                    new AgreementReadModel(session.Projection, agreement)),
+                "A candidate the projection does not carry must not take the panel down.");
+
+            Assert.That(model, Is.Not.Null);
+            Assert.That(model.Choices.Single().Label, Is.EqualTo(unknown.Value.ToUpperInvariant()),
+                "The unnamed candidate degrades to its own identity rather than to an exception.");
+            Assert.That(model.Choices.Single().HeroId.IsDefined, Is.False,
+                "and names no hero, which is the same absence the non-Initiative arm already passes.");
+            Assert.That(model.Participants.Single().Status,
+                Is.EqualTo("chose " + unknown.Value.ToUpperInvariant()));
+        }
+
+        private sealed class AgreementReadModel : DelegatingReadModel
+        {
+            private readonly TeamAgreementProjection agreement;
+
+            public AgreementReadModel(IMatchReadModel inner, TeamAgreementProjection agreement)
+                : base(inner) => this.agreement = agreement;
+
+            public override TeamAgreementProjection TeamAgreement => agreement;
+        }
+
         [Test]
         public void DirectorHandsPresenter_SelectsAndCommitsWithoutOwningCardAuthority()
         {
@@ -2302,6 +2442,121 @@ namespace GuardsDigital.Tests.EditMode
         {
             public RoundActionViewModel Model { get; private set; }
             public void Render(RoundActionViewModel model) => Model = model;
+        }
+
+        /// <summary>
+        /// Milestone 8.35h. A read model that is a real projection in every respect except the one
+        /// fact a case wants to doctor.
+        ///
+        /// <para>It exists because <see cref="IMatchReadModel"/> is the only seam a presenter reads
+        /// through, so a case about what a surface does with an awkward projection has no other way
+        /// to pose its question. Every member delegates; a derived case overrides exactly what it is
+        /// about. When the interface grows, this fails to compile - which is the loud answer, since
+        /// the wire's own conformance rule already forces a decision about every new member.</para>
+        /// </summary>
+        private class DelegatingReadModel : IMatchReadModel
+        {
+            private readonly IMatchReadModel inner;
+
+            public DelegatingReadModel(IMatchReadModel inner) =>
+                this.inner = inner ?? throw new ArgumentNullException(nameof(inner));
+
+            public virtual long Version => inner.Version;
+            public virtual bool IsInputEnabled => inner.IsInputEnabled;
+            public virtual bool IsSeatUndoAvailable => inner.IsSeatUndoAvailable;
+            public virtual QuickGameSetupState Setup => inner.Setup;
+            public virtual BoardMapDefinition SelectedMap => inner.SelectedMap;
+            public virtual MatchParticipants Participants => inner.Participants;
+            public virtual IReadOnlyList<CardDefinition> Definitions => inner.Definitions;
+            public virtual IReadOnlyList<HeroOccupancy> Heroes => inner.Heroes;
+            public virtual IReadOnlyList<GuardsDigital.Core.Units.Minions.MinionOccupancy> Minions =>
+                inner.Minions;
+            public virtual IReadOnlyList<ObstacleOccupancy> Obstacles => inner.Obstacles;
+            public virtual IReadOnlyList<PlacedToken> PlacedTokens => inner.PlacedTokens;
+            public virtual IReadOnlyList<MarkerAttachment> HeldMarkers => inner.HeldMarkers;
+            public virtual IEnumerable<MarkerAttachment> MarkersHeldBy(HeroId holderHeroId) =>
+                inner.MarkersHeldBy(holderHeroId);
+            public virtual int RoundIndex => inner.RoundIndex;
+            public virtual int TurnIndex => inner.TurnIndex;
+            public virtual RoundResolutionPhase Phase => inner.Phase;
+            public virtual TieBreakerState TieBreakerState => inner.TieBreakerState;
+            public virtual IReadOnlyList<RoundTurnSlot> TurnSlots => inner.TurnSlots;
+            public virtual IReadOnlyList<CompletedRoundRecord> CompletedRounds => inner.CompletedRounds;
+            public virtual EndOfRoundStage? CurrentEndOfRoundStage => inner.CurrentEndOfRoundStage;
+            public virtual IReadOnlyList<MatchCommitmentProjection> Commitments => inner.Commitments;
+            public virtual MatchCommitmentProjection GetCommitment(HeroId heroId) =>
+                inner.GetCommitment(heroId);
+            public virtual SelectedInitiativeActor SelectedActor => inner.SelectedActor;
+            public virtual bool IsTurnActive => inner.IsTurnActive;
+            public virtual IReadOnlyList<KeyValuePair<TeamId, int>> TeamLifeCounters =>
+                inner.TeamLifeCounters;
+            public virtual IReadOnlyList<HeroProgressionProjection> HeroProgression =>
+                inner.HeroProgression;
+            public virtual GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome => inner.Outcome;
+            public virtual IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds =>
+                inner.ActiveEffectSourceCardInstanceIds;
+            public virtual bool IsActiveEffectSource(CardInstanceId cardInstanceId) =>
+                inner.IsActiveEffectSource(cardInstanceId);
+            public virtual TeamAgreementProjection TeamAgreement => inner.TeamAgreement;
+            public virtual IReadOnlyList<CardInstance> Cards => inner.Cards;
+            public virtual PendingDecisionContract DecisionContract => inner.DecisionContract;
+            public virtual PendingInitiativeChoice PendingInitiativeChoice =>
+                inner.PendingInitiativeChoice;
+            public virtual PendingCardActionResolution PendingMovementResolution =>
+                inner.PendingMovementResolution;
+            public virtual bool HasPendingMovementResolution => inner.HasPendingMovementResolution;
+            public virtual PendingMovementChoice PendingMovementChoice => inner.PendingMovementChoice;
+            public virtual PendingAttackResolution PendingAttackResolution =>
+                inner.PendingAttackResolution;
+            public virtual bool HasPendingAttackResolution => inner.HasPendingAttackResolution;
+            public virtual PendingAttackTargetChoice PendingAttackTargetChoice =>
+                inner.PendingAttackTargetChoice;
+            public virtual IReadOnlyList<AttackTargetDefensePreviewProjection>
+                PendingAttackTargetDefensePreviews => inner.PendingAttackTargetDefensePreviews;
+            public virtual PendingDefenseResponseChoice PendingDefenseChoice =>
+                inner.PendingDefenseChoice;
+            public virtual PendingDefensePreviewProjection PendingDefensePreview =>
+                inner.PendingDefensePreview;
+            public virtual PendingResolution PendingSkillResolution => inner.PendingSkillResolution;
+            public virtual bool HasPendingSkillResolution => inner.HasPendingSkillResolution;
+            public virtual PendingEffectChoice PendingEffectChoice => inner.PendingEffectChoice;
+            public virtual IReadOnlyList<EffectChoiceCandidatePreview> PendingEffectChoicePreview =>
+                inner.PendingEffectChoicePreview;
+            public virtual GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection
+                PendingDisplacedMinionCorrection => inner.PendingDisplacedMinionCorrection;
+            public virtual PendingMinionBattleChoice PendingMinionBattleChoice =>
+                inner.PendingMinionBattleChoice;
+            public virtual PendingHeroRespawnChoice PendingHeroRespawnChoice =>
+                inner.PendingHeroRespawnChoice;
+            public virtual GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
+                PendingSystemTransitionStep => inner.PendingSystemTransitionStep;
+            public virtual RemovalPreventionPrompt PendingRemovalPrevention =>
+                inner.PendingRemovalPrevention;
+            public virtual GuardsDigital.Core.Cards.PendingTurnRelease PendingTurnRelease =>
+                inner.PendingTurnRelease;
+            public virtual GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
+                PendingSystemTransitionDescription => inner.PendingSystemTransitionDescription;
+            public virtual IReadOnlyList<ActionOffer> AvailableTurnActions => inner.AvailableTurnActions;
+            public virtual IReadOnlyList<FastTravelOptionProjection> AvailableFastTravelOptions =>
+                inner.AvailableFastTravelOptions;
+            public virtual IReadOnlyList<ClearOptionProjection> AvailableClearOptions =>
+                inner.AvailableClearOptions;
+            public virtual ActionOffer? AvailableHoldOffer => inner.AvailableHoldOffer;
+        }
+
+        /// <summary>
+        /// Milestone 8.35h. A round panel whose rendering throws, and counts the attempts so a case
+        /// can say the failing panel was tried rather than skipped.
+        /// </summary>
+        private sealed class ThrowingRoundView : IRoundActionView
+        {
+            public int Attempts { get; private set; }
+
+            public void Render(RoundActionViewModel model)
+            {
+                Attempts++;
+                throw new InvalidOperationException("This panel's rendering is deliberately broken.");
+            }
         }
 
         private sealed class CapturingUndoView : IUndoRestartView

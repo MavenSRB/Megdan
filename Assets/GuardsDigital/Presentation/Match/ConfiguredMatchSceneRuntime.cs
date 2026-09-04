@@ -280,7 +280,16 @@ namespace GuardsDigital.Presentation.Match
                     projection.TeamLifeCounters,
                     projection.RoundIndex,
                     projection.TurnIndex)),
-                HeroOverviewsPresenter);
+                HeroOverviewsPresenter,
+                // Milestone 8.35h. One panel's throw stops that panel and nothing else, and it is
+                // said out loud where the playtest logs already look: a marker naming the panel, and
+                // the exception itself so the stack survives. Without a sink the coordinator raises
+                // instead, which is what keeps a composition from swallowing a throw by omission.
+                (panel, error) =>
+                {
+                    UnityEngine.Debug.LogError("GUARDS_HUD: PANEL_REFRESH_FAILED panel=" + panel);
+                    UnityEngine.Debug.LogException(error);
+                });
             RefreshAll();
         }
 
