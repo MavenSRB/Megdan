@@ -124,6 +124,16 @@ a timer. A few things are worth knowing:
     whenever the game is waiting on you specifically - your turn, a decision only
     you can make, or simply choosing which card to commit at the start of a round.
     If it is not gold, it is not waiting on you.
+  - Blocked actions grey out instead of being offered and then doing nothing. If a
+    card or option looks dim, it is not available right now and clicking it will
+    not spend it - that used to not be true for a few cards, and now is.
+  - Your own cards and hand shine gold too: a card glows when it is the answer the
+    game is waiting on you to give, and while one of your cards is resolving it
+    keeps glowing while the rest of your hand dims, so your eye stays on the card
+    that is actually doing something.
+  - A narration bar names who is acting and what they are deciding, and a gold ring
+    marks that hero's own piece on the board - so it is easy to see whose turn it
+    is and what they are doing even from across the table.
   - The interface is deliberately plain. It is being tested for whether it is
     understandable, not for whether it is pretty. If something is confusing, say
     so - that is data.
@@ -154,9 +164,10 @@ given the first time - and rejoin. You do not need to do anything special: your
 seat is reserved and you are dropped straight back into it, with everything as you
 left it.
 
-If your machine is out of action for the rest of the evening, tell us. The host can
-release your seat by hand so someone else can take it, or so we can carry on a
-player short - that is a deliberate act on our end, never automatic.
+If your machine is out of action for the rest of the evening, tell us. Right now
+there is no way to hand your seat to someone else or carry on a player short - the
+only way to free a stuck seat is for the host to restart, which ends the match for
+everyone. A proper release is coming; for tonight, a long absence means we stop.
 
 If the host machine itself goes away, every client says HOST LOST and that match is
 over - it cannot be continued or restored. We would start a new one.
@@ -170,15 +181,19 @@ These are already known. Please do not spend time writing them up in detail - a
 short note that you saw one is enough - but do say so, because it might be a
 different problem wearing the same coat.
 
-  - A few cards that swap or reposition something - Sabina's Back to Back, Arien's
-    Arcane Whirlpool, Tigerclaw's Blend Into Shadows - can be offered and then do
-    nothing, while the card is still spent. A fix is coming; near Wasp especially,
-    do not rely on these cards doing what they say.
+  - A greyed-out action does not yet say why on hover - a tooltip explaining the
+    block is coming, so for now if something looks disabled and you are not sure
+    why, just ask.
+  - END TURN sometimes needs a second press to actually hand the turn on. A
+    one-press redesign is coming; if the turn does not visibly move on, press it
+    again before assuming something is broken.
   - Brogan's charge cards ask you to pick an attack target before the move itself is
     shown happening.
   - Leveling up still asks each player one at a time rather than everyone at once.
   - There is no in-game history log yet - if you need to know what just happened,
     ask the table.
+  - There is no way to release a stuck reserved seat yet except the host
+    restarting - see IF YOU GET DISCONNECTED above.
   - If one part of the screen ever freezes or goes blank while everything else on
     screen keeps working, that is a single panel failing on its own rather than the
     whole game going down - it should not take your turn with it. Play on if you
