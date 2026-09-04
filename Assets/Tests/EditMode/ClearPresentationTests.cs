@@ -301,7 +301,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(greyedControl.style.opacity.value, Is.EqualTo(0.45f).Within(0.001f),
                 "Milestone 6.5ac's rule: unavailability is never carried by inertness alone, so the " +
                 "shared dimming is applied explicitly.");
-            Assert.That(greyedControl.tooltip, Does.Contain("unavailable"));
+            // Milestone 8.35s: ClearOptionProjection stamps this offer unavailable for exactly one
+            // reason - no token stands adjacent to the actor - so the hover names it rather than the
+            // bare word "unavailable" the SIXTH amendment's own rule retires.
+            Assert.That(greyedControl.tooltip, Does.Contain(ActionUnavailabilityLabels.NoTarget));
+            Assert.That(greyedControl.tooltip, Does.Not.Contain(ActionUnavailabilityLabels.Generic),
+                "The specific reason replaces the generic word rather than sitting beside it.");
             Assert.That(
                 Descendants(greyedHands.Root).OfType<UnityEngine.UIElements.Button>()
                     .Any(button => button.text == "CLEAR"),

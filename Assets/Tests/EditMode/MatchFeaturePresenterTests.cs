@@ -1697,8 +1697,20 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(skill.IsAvailable, Is.False,
                 "Fixture precondition: nothing stands adjacent and the supply is empty, so neither " +
                 "mode of this Skill can be taken.");
+            Assert.That(skill.Unavailability.IsStated, Is.False,
+                "Fixture precondition for the milestone 8.35s case below: this is the ambiguous " +
+                "unstated cause, not a standing rule modification.");
 
             var model = RoundActionPresenter.CreateViewModel(session.Projection);
+
+            // Milestone 8.35s: StampAvailability's own doc comment says only the Skill-restriction
+            // clause can explain itself; this Skill is greyed for want of a target instead, which is
+            // one of at least three other causes the same unstated Kind could mean. The hover therefore
+            // reads the recorded generic word rather than a guessed "NO TARGET" - proving the
+            // no-invented-reasons rule on a real fixture rather than a synthetic one.
+            var greyedRegion = model.PrintedActionRegions.Single(region =>
+                region.ActionDefinitionId.Equals(skill.ActionDefinitionId));
+            Assert.That(greyedRegion.AssistiveLabel, Does.EndWith(" - " + ActionUnavailabilityLabels.Generic));
 
             var greyed = model.UnavailableActions.Single();
             Assert.That(greyed.ActionDefinitionId, Is.EqualTo(skill.ActionDefinitionId));

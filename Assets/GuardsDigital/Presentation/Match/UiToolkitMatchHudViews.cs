@@ -2823,9 +2823,20 @@ namespace GuardsDigital.Presentation.Match
             {
                 name = "gd-action-replacement-chip",
                 text = label,
+                // Milestone 8.35s: CLEAR is the one replacement chip whose unavailable state has a
+                // single, provable cause - ClearOptionProjection stamps its own replacement offer
+                // unavailable only when no token stands adjacent to the actor to Clear, never for any
+                // other reason - so NO TARGET is safe here without re-deriving anything. FAST TRAVEL's
+                // view model requires at least one legal destination to exist at all
+                // (FastTravelOfferViewModel's own constructor), so it is never drawn unavailable in
+                // practice; the generic word is what a change to that shape would fall back to rather
+                // than a guessed one.
                 tooltip = available
                     ? $"{label} replaces {region.ActionKind}"
-                    : $"{label} replaces {region.ActionKind} - unavailable",
+                    : $"{label} replaces {region.ActionKind} - " +
+                        (string.Equals(label, "CLEAR", StringComparison.Ordinal)
+                            ? ActionUnavailabilityLabels.NoTarget
+                            : ActionUnavailabilityLabels.Generic),
                 userData = region
             };
             if (attachedToPreparedPrimaryTitle)
@@ -5799,10 +5810,13 @@ namespace GuardsDigital.Presentation.Match
             }
 
             // Milestone 6.5ac: a mode the actor cannot perform keeps its label and its ordinal and
-            // carries no command at all.
+            // carries no command at all. Milestone 8.35s: the pause names no cause for this - it is a
+            // bare label plus its candidate, unlike a printed-action offer's stated Unavailability - so
+            // the generic word is what the hover says rather than a guessed one.
             foreach (var unavailable in Model.UnavailableEffectChoices)
             {
                 var control = HudElements.Control(unavailable.Label, null);
+                control.tooltip = ActionUnavailabilityLabels.Generic;
                 HudElements.MarkUnavailable(control);
                 section.Add(control);
             }

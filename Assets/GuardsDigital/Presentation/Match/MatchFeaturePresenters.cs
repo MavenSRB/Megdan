@@ -3932,7 +3932,9 @@ namespace GuardsDigital.Presentation.Match
                     label,
                     secondaryIndex,
                     secondaries.Length,
-                    $"{label} - {(offer.IsAvailable ? "available" : "unavailable")}",
+                    offer.IsAvailable
+                        ? $"{label} - available"
+                        : $"{label} - {FormatUnavailabilityReason(projection, offer)}",
                     invocation,
                     fastTravelOffers.SingleOrDefault(value =>
                         value.ReplacedMovementActionDefinitionId.Equals(offer.ActionDefinitionId)),
@@ -4823,6 +4825,39 @@ namespace GuardsDigital.Presentation.Match
             var card = projection.Cards.Single(value => value.Id.Equals(cardId));
             return projection.Definitions.Single(value =>
                 value.Reference.Equals(card.DefinitionReference)).DisplayName.ToUpperInvariant();
+        }
+
+        /// <summary>
+        /// Milestone 8.35s (the SIXTH amendment's cursor-tooltip design): the vocabulary word an
+        /// unavailable printed-action offer's hover reads, sourced from the authority's own answer and
+        /// never re-derived here.
+        ///
+        /// <para>Only <see cref="ActionUnavailabilityKind.BlockedByRuleModification"/> is a stated
+        /// reason today - milestone 8.35l's Swap/Place restriction, threaded end to end as
+        /// <see cref="ActionOffer.Unavailability"/>. Every other unavailable printed-action offer
+        /// carries <see cref="ActionUnavailabilityKind.None"/>, and that single unstated bit is honestly
+        /// ambiguous: <c>TurnResolutionAuthority.StampAvailability</c> greys the same way whether the
+        /// cause is an Attack or Skill with nothing left to target, an action definition whose card text
+        /// has no typed composition yet, an actor a rule modification restricts that
+        /// <c>ActorMayPerform</c> does not yet thread through <c>ActionUnavailability</c>, or - milestone
+        /// 8.29f, and the most common of the four in ordinary play - the turn's other printed action
+        /// already under way while this one's sibling resolves. No fact published to presentation tells
+        /// these apart, so naming one specifically would be a guess; the generic word is what the
+        /// milestone's own no-invented-reasons rule asks for instead. This is a recorded gap, not an
+        /// oversight - see the milestone's own notes for the Core-side extension it would take
+        /// (a typed reason per clause, the way milestone 8.35l added one for the Skill clause alone).
+        /// </para>
+        /// </summary>
+        private static string FormatUnavailabilityReason(IMatchReadModel projection, ActionOffer offer)
+        {
+            if (offer.Unavailability.Kind == ActionUnavailabilityKind.BlockedByRuleModification)
+            {
+                return ActionUnavailabilityLabels.BlockedBy(
+                    HeroDisplayName(projection.Setup.Heroes, offer.Unavailability.BlockingHeroId),
+                    GetCardDisplayName(projection, offer.Unavailability.BlockingCardInstanceId));
+            }
+
+            return ActionUnavailabilityLabels.Generic;
         }
 
         /// <summary>

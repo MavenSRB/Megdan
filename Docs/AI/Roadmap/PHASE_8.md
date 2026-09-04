@@ -500,6 +500,28 @@ Non-goals: No log drop-down, no tray or narration completion, no blocker named o
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835r-publish-the-seat-public-match-log-and-who-the-table-is-waiting-on-completion-evidence).
 
+### [x] 8.35s Name why a greyed control cannot be taken, in a cursor tooltip
+
+SIXTH amendment, cursor-tooltip delivery: a fixed short vocabulary composed from the authority's own answer, never re-derived in presentation. `ActionOffer.Unavailability` (milestone 8.35l) already crosses Core through the wire into `PrintedActionRegionViewModel.Offer`, unread until now.
+
+Observable outcome: an offer a standing rule modification has barred hovers `BLOCKED BY <HERO> — <CARD>`; Clear's offer, unavailable for exactly one reason, hovers `NO TARGET`; every other unstated cause - `StampAvailability`'s remaining clauses, which conflate an empty target, an uncomposed text, an unthreaded restriction and the card's other action already under way behind one bit - and every unperformable effect-choice mode hover the recorded generic word rather than a guessed one.
+
+Acceptance checks:
+
+- `ActionUnavailabilityLabels` composes each word from an already-resolved name; blank names refuse to compose.
+- A real Sabina-versus-Wasp fixture (8.35l's own board) hovers `BLOCKED BY WASP — MAGNETIC DAGGER`.
+- The same fixture's narrowed candidate list names only the free minion; the barred partner draws no invented ring or reason.
+- A real Skill greyed for want of a target, no modification involved, hovers the generic word, never a guessed `NO TARGET`.
+- Pre-fix red: vocabulary inert, the three composition sites reverted, three cases fail in isolation; the narrowed-candidate case stays green throughout.
+
+Closing check: `ActionUnavailabilityTooltipTests`, plus extended `ClearPresentationTests` and `MatchFeaturePresenterTests` cases.
+
+Named gaps: "NOT ENOUGH COINS" has no wired site - Level Up auto-purchases whenever affordable; a board refused ring for one barred candidate has no per-candidate reason anywhere, and an available offer's `Unavailability` is `None` by construction - outside this milestone's scope; the generic case conflates four authority-side causes behind one bit.
+
+Non-goals: no fizzle notice, no omnipresent END TURN, no rule or wire change.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835s-name-why-a-greyed-control-cannot-be-taken-in-a-cursor-tooltip-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.
