@@ -179,6 +179,15 @@ namespace GuardsDigital.Presentation.Match
         public static readonly Color ShineHalo = new Color(1f, 0.882f, 0.588f, 1f);
 
         /// <summary>
+        /// Milestone 8.35m: what the rest of the hand fades to while the viewer's own card resolves,
+        /// so the eye lands on the one card whose text is running. The same figure
+        /// <see cref="HudElements.MarkUnavailable"/> already uses for a control the authority offers no
+        /// command for - a dimmed hand card carries no command either for as long as this holds - kept
+        /// as one shared "this is not what to look at right now" opacity rather than a second number.
+        /// </summary>
+        public const float DimmedByResolutionOpacity = 0.45f;
+
+        /// <summary>
         /// The Primary action's restrained cool-metal hierarchy. Warm gold could disappear into Gold,
         /// Red and parchment-heavy primary panels; a neutral graphite keyline beneath this cool ivory
         /// remains legible over every face without borrowing selection's cyan or Active's violet.

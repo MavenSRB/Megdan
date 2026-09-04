@@ -112,5 +112,101 @@ namespace GuardsDigital.Presentation.Match
             var actions = projection.AvailableTurnActions;
             return actions != null && actions.Any(action => action.IsAvailable);
         }
+
+        /// <summary>
+        /// Milestone 8.35m (the SEVENTH amendment, hero scope). Whether the match is currently waiting
+        /// on <paramref name="heroId"/>'s own input - the same question <see cref="IsWaitingOnViewer"/>
+        /// asks of the viewer, asked instead of one named hero, so every hero's tray can read one shine
+        /// answer rather than each surface guessing at "whose turn is it" a second way.
+        ///
+        /// <para><b>This is deliberately a NARROWER predicate than the viewer one above, and the gap is
+        /// recorded rather than papered over.</b> <see cref="OwnsAStandingDecision"/> and
+        /// <see cref="MayTakeATurnAction"/> are both read off facts <see cref="IMatchReadModel"/> scopes
+        /// to the seat that owns them - a seat privately knows whether IT owns the standing decision or
+        /// has an open turn offer, but nothing on this interface names WHICH hero a decision or offer
+        /// belongs to when it is not the viewer's own. <c>SeatProjection.DecisionOwner</c> carries
+        /// exactly that fact - "we are waiting for Blue" is public, by its own doc comment - but it is
+        /// not a member of <see cref="IMatchReadModel"/>, so a Presentation query cannot reach it today.
+        /// Extending this method to read it would be a read-model addition in Application, which trips
+        /// <c>PrivateOnlineSynchronizationTests.EveryReadModelMember_IsCarriedOrNamedExcluded</c> and is
+        /// a protocol-bump decision outside Presentation's territory - not this method's to make.</para>
+        ///
+        /// <para>So only the three arms provably reachable from what <see cref="IMatchReadModel"/>
+        /// already publishes for EVERY hero, not only the viewer, are read here: the commitment a hero
+        /// owes (public, per-hero, the same fact <see cref="OwesACommitment"/> reads for the viewer),
+        /// the turn release's named owner (unscoped by 8.35g's own deliberate decision), and a standing
+        /// team agreement's participants who have not yet answered (<see cref="IMatchReadModel.
+        /// TeamAgreement"/> is published complete to every seat, by its own doc comment: "public
+        /// statements and the proposal are identical for all six seats"). The acting hero's own turn,
+        /// the hero whose leveling upgrade is paused, and an awaited defense or respawn answer are
+        /// deliberately NOT read here - each needs the same missing owner fact, and a naive
+        /// <see cref="IMatchReadModel.SelectedActor"/> read for the first would reproduce, one level up,
+        /// the exact bug <see cref="MayTakeATurnAction"/> exists to avoid: the acting hero's tray would
+        /// keep shining through a standing decision - a defender's answer, say - that the actor is no
+        /// longer the one being asked for. Better a tray that stays dark than one that shines on the
+        /// wrong hero. Those four arms are pinned to the Core track's event-channel milestone, which
+        /// adds the missing owner fact to <see cref="IMatchReadModel"/> in the same wire bump as the
+        /// player-facing log; a small follow-up milestone completes this predicate once that lands.</para>
+        /// </summary>
+        public static bool IsHeroAwaited(IMatchReadModel projection, HeroId heroId)
+        {
+            if (projection == null || !heroId.IsDefined ||
+                projection.Phase == RoundResolutionPhase.GameEnded)
+            {
+                return false;
+            }
+
+            return OwesACommitment(projection, heroId) ||
+                IsTurnReleaseOwner(projection, heroId) ||
+                OwesAnAgreementAnswer(projection, heroId);
+        }
+
+        /// <summary>
+        /// Milestone 8.35g's release, named directly by its own <c>ActorId</c> rather than through
+        /// <c>SeatProjection.DecisionOwner</c> - the one standing-decision family whose owner already
+        /// reaches <see cref="IMatchReadModel"/> unscoped, because the release stands after every other
+        /// pending fact has cleared and the top bar needed to name it without a twelfth family.
+        /// </summary>
+        private static bool IsTurnReleaseOwner(IMatchReadModel projection, HeroId heroId) =>
+            projection.PendingTurnRelease != null &&
+            projection.PendingTurnRelease.ActorId.Equals(heroId);
+
+        /// <summary>
+        /// Whether <paramref name="heroId"/> is a participant in the standing public team agreement
+        /// (tied Initiative or Minion Battle) who has not yet given their answer. Read from
+        /// <see cref="IMatchReadModel.TeamAgreement"/>'s own participant list rather than from
+        /// <see cref="OwnsAStandingDecision"/>, because both agreement kinds are also declared pending-
+        /// decision families and <see cref="PendingDecisionContract"/> stays non-null for every
+        /// teammate on the choosing side for as long as the proposal stands - including one who has
+        /// already answered and could still revise, per <c>MatchFeaturePresenters.
+        /// TeamAgreementHudPresentation</c>'s own AGREE/WITHDRAW toggle. That would shine every
+        /// teammate's tray until the last holdout answers, which is not "still owed a response" - the
+        /// same distinction the commitment arm already draws between a hero who has committed and one
+        /// who has not. Which field answers "has this participant already given their part" depends on
+        /// the kind, exactly as <c>TeamAgreementHudPresentation.Create</c> already reads it: a stated
+        /// Initiative preference, or an explicit Minion Battle agreement.
+        /// </summary>
+        private static bool OwesAnAgreementAnswer(IMatchReadModel projection, HeroId heroId)
+        {
+            var agreement = projection.TeamAgreement;
+            if (agreement == null)
+            {
+                return false;
+            }
+
+            foreach (var participant in agreement.Participants)
+            {
+                if (!participant.HeroId.Equals(heroId))
+                {
+                    continue;
+                }
+
+                return agreement.Kind == TeamAgreementKind.Initiative
+                    ? !participant.HasStatement
+                    : !participant.Agreed;
+            }
+
+            return false;
+        }
     }
 }

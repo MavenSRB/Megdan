@@ -1444,11 +1444,22 @@ namespace GuardsDigital.Tests.EditMode
                 "The outer face itself remains no duplicate command or focus stop.");
             Assert.That(resolvingButton.style.opacity.value, Is.EqualTo(1f),
                 "but it is the card being played, so it is not dimmed as though it were spent.");
+            Assert.That(
+                Descendants(resolvingButton).Any(element => element.name == "gd-card-awaited-shine"),
+                Is.True,
+                "Milestone 8.35m: the card in focus carries the same gold shine a legal answer does.");
             foreach (var other in buttons.Where(button => !ReferenceEquals(button, resolvingButton)))
             {
-                Assert.That(other.style.opacity.keyword, Is.EqualTo(StyleKeyword.Null),
-                    "A held future-turn card keeps its normal resolved opacity even while resolution " +
-                    "temporarily removes its command.");
+                // Milestone 8.35m, the SEVENTH amendment's resolution focus, supersedes the reading
+                // this case pinned before it: a held future-turn card no longer keeps its normal
+                // opacity while a sibling resolves - it dims, so the eye lands on the one card whose
+                // text is running. It is still not presented as genuinely unavailable: the dim is a
+                // plain opacity reading, never the unavailable veil a spent card wears.
+                Assert.That(other.style.opacity.value,
+                    Is.EqualTo(MatchHudTheme.DimmedByResolutionOpacity));
+                Assert.That(
+                    Descendants(other).Any(element => element.name == "gd-card-awaited-shine"),
+                    Is.False, "A dimmed card never also shines.");
                 Assert.That(Descendants(other)
                         .Any(element => element.name == "gd-card-unavailable-veil"), Is.False,
                     "A held future-turn card is not presented as genuinely unavailable.");
@@ -5311,6 +5322,173 @@ namespace GuardsDigital.Tests.EditMode
                 Descendants(view.Root).Any(element => element.name == "gd-hero-marker"),
                 Is.False,
                 "and nothing is left on the screen. Shown: " + Describe(view));
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Hero scope, card scope, and resolution focus (milestone 8.35m, the SEVENTH amendment)
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The amendment's own worked example: at the very start of a match both mirrored heroes owe
+        /// rulebook p.7's commitment at once, and both trays shine together; once one hero commits,
+        /// only the other's tray stays lit.
+        /// </summary>
+        [Test]
+        public void EveryHeroStillOwingACommitment_ShinesGold_AndOnlyThatHero()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var view = new HeroOverviewsUnityView();
+            var presenter = new HeroOverviewsPresenter(session, view);
+            presenter.Refresh();
+
+            Assert.That(view.Model.Heroes, Has.All.Matches<HeroOverviewViewModel>(hero => hero.IsAwaited),
+                "Both heroes owe the commitment at once - several trays shine together.");
+            foreach (var hero in view.Model.Heroes)
+            {
+                Assert.That(RailOf(view, hero.HeroId).style.borderBottomColor.value,
+                    Is.EqualTo(MatchHudTheme.ShineGlow),
+                    "The same warm family the top bar wears, read at hero scope.");
+            }
+
+            var committed = session.Projection.Setup.Heroes.First().HeroId;
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(
+                committed,
+                session.Projection.Cards.First(card =>
+                    card.OwnerId.Equals(committed) && card.State.Location == CardLocation.Hand).Id));
+            presenter.Refresh();
+
+            var settled = view.Model.Heroes.Single(hero => hero.HeroId.Equals(committed));
+            var stillOwing = view.Model.Heroes.Single(hero => !hero.HeroId.Equals(committed));
+            Assert.That(settled.IsAwaited, Is.False, "This hero's own commitment is answered.");
+            Assert.That(stillOwing.IsAwaited, Is.True, "The other hero's tray shines alone now.");
+            Assert.That(RailOf(view, committed).style.borderBottomColor.value,
+                Is.Not.EqualTo(MatchHudTheme.ShineGlow));
+            Assert.That(RailOf(view, stillOwing.HeroId).style.borderBottomColor.value,
+                Is.EqualTo(MatchHudTheme.ShineGlow));
+        }
+
+        /// <summary>Card scope: every hand card offered for commitment is a legal answer, and shines.</summary>
+        [Test]
+        public void EveryHandCardOfferedForCommitment_CarriesTheCardScopeGoldShine()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            var heroId = session.Projection.Setup.Heroes.First().HeroId;
+            presenter.SelectViewedHero(heroId);
+
+            var offered = view.Model.ViewedHand.PlayableTrayCards
+                .Where(card => card.IsSelectable).ToArray();
+            Assert.That(offered, Is.Not.Empty,
+                "Rulebook p.7's commitment offers every held card at once.");
+            Assert.That(offered, Has.All.Matches<TrayCardViewModel>(card => card.IsAwaitedAnswer));
+            Assert.That(offered, Has.All.Matches<TrayCardViewModel>(
+                card => card.AssistiveLabel.Contains("AWAITING YOUR ANSWER")));
+
+            var firstName = offered[0].DisplayName;
+            var control = Descendants(view.Root).First(element =>
+                element.name == "gd-card-choice" &&
+                element.tooltip.StartsWith(firstName, StringComparison.Ordinal));
+            Assert.That(Descendants(control).Any(element => element.name == "gd-card-awaited-shine"),
+                Is.True,
+                "The rendered card carries the same gold ring the top bar and the tray both wear.");
+        }
+
+        /// <summary>Card scope: every offered Defense card is a legal answer, and shines - undimmed.</summary>
+        [Test]
+        public void EveryOfferedDefenseCard_CarriesTheCardScopeGoldShine()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            var offered = view.Model.DefenseChoices.Where(choice => choice.Card != null).ToArray();
+            Assert.That(offered, Is.Not.Empty);
+            Assert.That(offered, Has.All.Matches<TypedInvocationViewModel>(
+                choice => choice.Card.IsAwaitedAnswer));
+            Assert.That(offered, Has.All.Matches<TypedInvocationViewModel>(
+                choice => !choice.Card.IsDimmedByResolution),
+                "A candidate that becomes a legal answer mid-resolution shines and is never dimmed.");
+        }
+
+        /// <summary>Card scope: every p.15 upgrade candidate is a legal answer, and shines.</summary>
+        [Test]
+        public void EveryLevelUpUpgradeCandidate_CarriesTheCardScopeGoldShine()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionPausedOnLevelUpUpgrade(out _);
+            var view = new RoundActionUnityView();
+            new RoundActionPresenter(session, view).Refresh();
+
+            var options = view.Model.SystemTransitionPrompt.Options;
+            Assert.That(options, Is.Not.Empty);
+            Assert.That(options.Select(option => option.Card), Has.All.Not.Null);
+            Assert.That(options.Select(option => option.Card),
+                Has.All.Matches<TrayCardViewModel>(card => card.IsAwaitedAnswer));
+        }
+
+        /// <summary>
+        /// Resolution focus: the viewer's own resolving card shines while the rest of the hand dims,
+        /// and the dim lifts once that resolution - and, post-8.35g, the release it now waits behind -
+        /// ends.
+        /// </summary>
+        [Test]
+        public void TheResolvingCard_ShinesWhileTheRestOfTheHandDims_UntilItResolvesAndReleases()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            PlayTurns(session, 2);
+            ConfiguredMatchFixtures.CommitBothHands(session);
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            var ownerId = session.Projection.Setup.Heroes.First().HeroId;
+            presenter.SelectViewedHero(ownerId);
+
+            var hand = view.Model.ViewedHand;
+            var resolving = hand.TrayCards.Single(card => card.IsResolving);
+            Assert.That(resolving.IsAwaitedAnswer, Is.True,
+                "The resolving card is the focal point of what the match awaits from this player.");
+            Assert.That(resolving.IsDimmedByResolution, Is.False,
+                "The card in focus is never also the thing that dims.");
+
+            var others = hand.TrayCards.Where(card => card.Group == TrayCardGroup.Available).ToArray();
+            Assert.That(others, Is.Not.Empty, "The fixture leaves other held cards to dim.");
+            Assert.That(others, Has.All.Matches<TrayCardViewModel>(card => card.IsDimmedByResolution),
+                "Every other hand card dims while one resolves.");
+            Assert.That(others, Has.All.Matches<TrayCardViewModel>(card => !card.IsAwaitedAnswer),
+                "A dimmed card never also shines.");
+
+            var resolvingControl = Descendants(view.Root).First(element =>
+                element.name == "gd-card-choice" &&
+                element.tooltip.StartsWith(resolving.DisplayName, StringComparison.Ordinal));
+            Assert.That(
+                Descendants(resolvingControl).Any(element => element.name == "gd-card-awaited-shine"),
+                Is.True);
+            var otherControl = Descendants(view.Root).First(element =>
+                element.name == "gd-card-choice" &&
+                element.tooltip.StartsWith(others[0].DisplayName, StringComparison.Ordinal));
+            Assert.That(otherControl.style.opacity.value,
+                Is.EqualTo(MatchHudTheme.DimmedByResolutionOpacity));
+
+            // Drive this exact turn to its own end - the Hold every mirrored Wasp turn this fixture
+            // stages resolves through, then the 8.35g release the finished turn now waits behind -
+            // on the same bounded loop ConfiguredMatchFixtures.CommitAndHoldOneTurn itself uses.
+            var turnIndex = session.Projection.TurnIndex;
+            while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn &&
+                session.Projection.TurnIndex == turnIndex)
+            {
+                if (session.Projection.PendingTurnRelease != null)
+                {
+                    ConfiguredMatchFixtures.Accept(session, DirectorCommand.ReleaseTurn());
+                    continue;
+                }
+
+                ConfiguredMatchFixtures.Accept(session, DirectorCommand.PerformHold(
+                    session.Projection.SelectedActor.CardInstanceId));
+            }
+
+            presenter.Refresh();
+            Assert.That(view.Model.ViewedHand.TrayCards,
+                Has.None.Matches<TrayCardViewModel>(card => card.IsDimmedByResolution),
+                "The dim lifts once the resolution - and the release - end.");
         }
 
         /// <summary>The rail element drawn for one hero, found by the model it was rendered from.</summary>

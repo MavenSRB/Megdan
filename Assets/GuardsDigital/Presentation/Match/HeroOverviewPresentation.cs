@@ -225,7 +225,9 @@ namespace GuardsDigital.Presentation.Match
             bool isSelectable,
             bool isSelected,
             bool isActiveEffectSource = false,
-            bool isResolving = false)
+            bool isResolving = false,
+            bool isAwaitedAnswer = false,
+            bool isDimmedByResolution = false)
         {
             if (!cardInstanceId.IsDefined)
             {
@@ -244,6 +246,15 @@ namespace GuardsDigital.Presentation.Match
                     nameof(playedTurnIndex));
             }
 
+            if (isAwaitedAnswer && isDimmedByResolution)
+            {
+                throw new ArgumentException(
+                    "A card that shines as the awaited answer is never also the dimmed rest of the " +
+                    "hand - the SEVENTH amendment's resolution focus draws the eye to one and away " +
+                    "from the other, so the two treatments are exclusive by construction.",
+                    nameof(isDimmedByResolution));
+            }
+
             CardInstanceId = cardInstanceId;
             DefinitionReference = definitionReference;
             DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
@@ -255,6 +266,8 @@ namespace GuardsDigital.Presentation.Match
             IsSelected = isSelected;
             IsActiveEffectSource = isActiveEffectSource;
             IsResolving = isResolving;
+            IsAwaitedAnswer = isAwaitedAnswer;
+            IsDimmedByResolution = isDimmedByResolution;
             ColorName = MatchHudTheme.ColorName(color);
             // Milestone 8.7a. A card the round is still resolving is not history yet, and the round's
             // assignment history names its turn from the moment that turn starts - so a card in play
@@ -274,7 +287,8 @@ namespace GuardsDigital.Presentation.Match
                                 : "AVAILABLE";
             ActiveLabel = isActiveEffectSource ? "ACTIVE" : string.Empty;
             AssistiveLabel = $"{DisplayName} - {ColorName} - {Face.ValueLine} - {HistoryLabel}" +
-                (isActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty);
+                (isActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty) +
+                (isAwaitedAnswer ? " - AWAITING YOUR ANSWER" : string.Empty);
         }
 
         public CardInstanceId CardInstanceId { get; }
@@ -338,6 +352,36 @@ namespace GuardsDigital.Presentation.Match
         /// now, and what is being performed now.
         /// </summary>
         public bool IsResolving { get; }
+
+        /// <summary>
+        /// Milestone 8.35m (the SEVENTH amendment's card scope and resolution focus). Whether this
+        /// card is currently a legal answer to input the match is waiting on FROM THE VIEWER - their
+        /// own hand during their commitment, an offered Defense/effect-choice/removal-prevention
+        /// candidate, a p.15 leveling upgrade option, or the viewer's own card while it resolves (the
+        /// resolution-focus case: the resolving card is the focal point of what the match is waiting on
+        /// them to finish, exactly as much as a clickable candidate is).
+        ///
+        /// <para>Every offered-card surface - <c>CreateCardFace</c>'s callers and
+        /// <c>CurrentRoundCards.DeckCard</c> - sets this unconditionally true, because being drawn
+        /// there at all already means the authority is offering the card; the ordinary hand tray sets
+        /// it from the same commitment-offer fact <see cref="IsSelectable"/> already reads, plus
+        /// whichever card is <see cref="IsResolving"/>. A history surface - a discarded card, a
+        /// resolved turn slot, the rail's Ultimate marker - never sets it, so hovering one of those to
+        /// read its face through the same shared builder never shines it.</para>
+        /// </summary>
+        public bool IsAwaitedAnswer { get; }
+
+        /// <summary>
+        /// Milestone 8.35m's resolution focus: whether this card is dimmed because a DIFFERENT card in
+        /// the same hand is <see cref="IsResolving"/> right now, so the eye lands on the one card whose
+        /// text is running rather than wandering the rest of the hand. Only the ordinary hand's other
+        /// Available cards ever carry this - never the resolving card itself, which shines instead of
+        /// dimming, and never an offered candidate on a separate surface (a mid-resolution Defense
+        /// choice, say), which is exactly the amendment's "shine and are not dimmed" exception,
+        /// satisfied here by construction rather than by an extra check: that candidate is a different
+        /// view model on a different surface, not a member of this hand at all.
+        /// </summary>
+        public bool IsDimmedByResolution { get; }
 
         /// <summary>
         /// `RESOLVING`, `PLAYED · TURN n`, `AVAILABLE`, or `DISCARDED` - and never a round number.
@@ -644,7 +688,8 @@ namespace GuardsDigital.Presentation.Match
             bool isViewed,
             HeroCurrentCardViewModel currentCard = null,
             TrayCardViewModel ultimateCard = null,
-            IEnumerable<HeroMarkerViewModel> heldMarkers = null)
+            IEnumerable<HeroMarkerViewModel> heldMarkers = null,
+            bool isAwaited = false)
         {
             if (!heroId.IsDefined)
             {
@@ -670,6 +715,7 @@ namespace GuardsDigital.Presentation.Match
             DiscardCards = Array.AsReadOnly((discardCards ??
                 Enumerable.Empty<TrayCardViewModel>()).ToArray());
             IsViewed = isViewed;
+            IsAwaited = isAwaited;
             CurrentCard = currentCard;
             UltimateCard = ultimateCard;
             HeldMarkers = Array.AsReadOnly((heldMarkers ??
@@ -793,6 +839,16 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Whether the tray is currently showing this hero, which the rail marks.</summary>
         public bool IsViewed { get; }
+
+        /// <summary>
+        /// Milestone 8.35m (the SEVENTH amendment's tray shine). Whether the match is currently waiting
+        /// on this hero's own input - <see cref="AwaitedInputQuery.IsHeroAwaited"/>, the same predicate
+        /// the top bar reads at viewer scope, read here at hero scope so several trays can shine at
+        /// once during a commitment phase and the rail never has to guess whose turn it is a second
+        /// way. See that method for exactly which awaited cases this covers today and which four remain
+        /// a deliberate non-goal.
+        /// </summary>
+        public bool IsAwaited { get; }
 
         /// <summary>
         /// Milestone 8.7a: the card this hero has in play and has not resolved, or null when they have
@@ -947,7 +1003,8 @@ namespace GuardsDigital.Presentation.Match
                 CurrentRoundCards.UnlockedUltimate(projection, heroId),
                 // Milestone 8.23a. The register's own order, kept rather than sorted: markers are
                 // given one at a time and the order they were given in is the only order there is.
-                projection.MarkersHeldBy(heroId).Select(marker => new HeroMarkerViewModel(marker)));
+                projection.MarkersHeldBy(heroId).Select(marker => new HeroMarkerViewModel(marker)),
+                AwaitedInputQuery.IsHeroAwaited(projection, heroId));
         }
     }
 
@@ -1157,7 +1214,9 @@ namespace GuardsDigital.Presentation.Match
             int playedTurnIndex,
             bool isSelectable,
             bool isSelected,
-            bool isResolving = false)
+            bool isResolving = false,
+            bool isAwaitedAnswer = false,
+            bool isDimmedByResolution = false)
         {
             if (projection == null) throw new ArgumentNullException(nameof(projection));
             if (card == null) throw new ArgumentNullException(nameof(card));
@@ -1176,7 +1235,9 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 8.5b: asked of the projection, never derived here. Presentation does not
                 // know what an Active effect is, only which cards the authority says are sourcing one.
                 projection.IsActiveEffectSource(card.Id),
-                isResolving);
+                isResolving,
+                isAwaitedAnswer,
+                isDimmedByResolution);
         }
 
         /// <summary>
@@ -1200,7 +1261,11 @@ namespace GuardsDigital.Presentation.Match
                 TrayCardGroup.Deck,
                 0,
                 true,
-                false);
+                false,
+                // Milestone 8.35m: this class's whole point is "a surface that offers it" - the doc
+                // comment above already says so - so every candidate it builds is card-scope's leveling
+                // upgrade case, unconditionally.
+                isAwaitedAnswer: true);
 
         /// <summary>
         /// Milestone 8.5a: one card definition read into the four value homes and the printed words its

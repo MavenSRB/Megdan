@@ -1072,8 +1072,18 @@ namespace GuardsDigital.Presentation.Match
             rail.style.paddingTop = 8f;
             rail.style.paddingBottom = 8f;
             var accent = MatchHudTheme.TeamFace(hero.TeamSide);
-            var frame = Color.Lerp(MatchHudTheme.PanelBorder, accent, 0.34f);
-            var body = Color.Lerp(MatchHudTheme.PanelBackground, accent, 0.055f);
+            // Milestone 8.35m: the same warm-gold family the top bar wears while the match waits on
+            // the viewer (`MatchHudTheme.ShineGlow`/`NarrationWarmBackground`), read here per hero from
+            // `AwaitedInputQuery.IsHeroAwaited` rather than a second "whose turn" guess. The team accent
+            // keeps a faint hand in the tint even while shining, so the rail never stops reading as this
+            // hero's own - the reserved top edge and the left/right accent border below still carry
+            // that identity untouched.
+            var frame = hero.IsAwaited
+                ? MatchHudTheme.ShineGlow
+                : Color.Lerp(MatchHudTheme.PanelBorder, accent, 0.34f);
+            var body = hero.IsAwaited
+                ? Color.Lerp(MatchHudTheme.NarrationWarmBackground, accent, 0.14f)
+                : Color.Lerp(MatchHudTheme.PanelBackground, accent, 0.055f);
             body.a = 0.97f;
             rail.style.backgroundColor = body;
             rail.style.overflow = Overflow.Hidden;

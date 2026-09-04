@@ -189,7 +189,59 @@ namespace GuardsDigital.Presentation.Match
                 HudElements.MarkSelectedWithoutResizing(surface, card.IsSelected);
             }
 
+            // Milestone 8.35m (the SEVENTH amendment's card scope and resolution focus). Added here,
+            // the one shared builder every card face goes through - the hand tray's own cards, a
+            // Defense/effect-choice/removal-prevention/leveling offer, and a hover reveal alike - so a
+            // card cannot shine on one surface and not another the way two independent readings could
+            // drift apart. The glow sits outside the black exterior perimeter and the cyan selection
+            // outline as its own concentric ring, so a card a player has already selected and a card
+            // that is the awaited answer both stay visible at once rather than one treatment replacing
+            // the other.
+            if (card.IsAwaitedAnswer)
+            {
+                AddAwaitedShineOutline(surface);
+            }
+
+            // The rest of the hand while the viewer's own card resolves - never the resolving card
+            // itself (excluded by construction, see `TrayCardViewModel.IsDimmedByResolution`) and never
+            // an offered candidate on a different surface, which is what keeps a mid-resolution Defense
+            // choice shining rather than dimmed without this method needing to ask which surface it is
+            // drawing for.
+            if (card.IsDimmedByResolution)
+            {
+                surface.style.opacity = MatchHudTheme.DimmedByResolutionOpacity;
+            }
+
             return surface;
+        }
+
+        /// <summary>
+        /// The SEVENTH amendment's gold "shine", the same warm family the top bar and every hero tray
+        /// wear while the match waits on the viewer - <see cref="MatchHudTheme.ShineGlow"/> - drawn as
+        /// its own ring outside <see cref="AddExteriorOutline"/>'s black perimeter, wide enough that it
+        /// never competes with <see cref="AddSelectionOutline"/> sitting at the content edge.
+        /// </summary>
+        private static void AddAwaitedShineOutline(VisualElement surface)
+        {
+            var shine = new VisualElement
+            {
+                name = "gd-card-awaited-shine",
+                pickingMode = PickingMode.Ignore,
+                focusable = false
+            };
+            var inset = -(CardFootprint.ExteriorOutlineWidth + 3f);
+            shine.style.position = Position.Absolute;
+            shine.style.left = inset;
+            shine.style.top = inset;
+            shine.style.right = inset;
+            shine.style.bottom = inset;
+            shine.style.backgroundColor = Color.clear;
+            HudElements.Border(
+                shine,
+                MatchHudTheme.ShineGlow,
+                3f,
+                CornerRadius(CardFootprint.Width) + CardFootprint.ExteriorOutlineWidth + 3f);
+            surface.Add(shine);
         }
 
         private static void AddSelectionOutline(VisualElement surface)

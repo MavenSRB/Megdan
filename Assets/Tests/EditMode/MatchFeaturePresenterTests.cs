@@ -652,6 +652,183 @@ namespace GuardsDigital.Tests.EditMode
             public override TeamAgreementProjection TeamAgreement => agreement;
         }
 
+        // -------------------------------------------------------------------------------------
+        // Hero scope (milestone 8.35m, the SEVENTH amendment) - the SAME predicate M2 built at
+        // viewer scope, asked instead of a named hero, but scoped down to the coordinator's
+        // ruling to only its three provably public arms. See AwaitedInputQuery.IsHeroAwaited's
+        // own doc comment for exactly which cases are - and, deliberately, are not - covered.
+        // -------------------------------------------------------------------------------------
+
+        /// <summary>The amendment's own example: several trays shine at once during commitment.</summary>
+        [Test]
+        public void SeveralHeroesOweACommitment_AndSeveralTraysShineAtOnceAtHeroScope()
+        {
+            var session = CreateSession();
+            var heroes = session.Projection.Setup.Heroes.Select(hero => hero.HeroId).ToArray();
+            Assert.That(heroes, Has.Length.EqualTo(2),
+                "The mirrored fixture's own two heroes are what stand in for 'several' here.");
+            var projection = new CommitmentReadModel(
+                session.Projection,
+                heroes.Select(hero => new MatchCommitmentProjection(
+                    hero, TurnCardCommitmentStatus.AwaitingResponse, true, null)).ToArray());
+
+            Assert.That(heroes.Select(hero => AwaitedInputQuery.IsHeroAwaited(projection, hero)),
+                Is.All.True, "Every hero still owed a commitment shines, several at once.");
+        }
+
+        [Test]
+        public void ACommittedHero_IsNotAwaitedAtHeroScopeAnyMore()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First().HeroId;
+            var projection = new CommitmentReadModel(
+                session.Projection, Committed(session.Projection, hero));
+
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, hero), Is.False);
+        }
+
+        /// <summary>
+        /// The turn-release owner is the one standing-decision family whose owner already reaches
+        /// <see cref="IMatchReadModel"/> unscoped (milestone 8.35g's own decision), so it is the one
+        /// of the eleven declared families hero scope CAN read directly.
+        /// </summary>
+        [Test]
+        public void TheTurnReleaseOwner_ShinesAtHeroScope_AndNoOtherHeroDoes()
+        {
+            var session = CreateSession();
+            var heroes = session.Projection.Setup.Heroes.ToArray();
+            var owner = heroes[0];
+            var other = heroes[1];
+            var release = new GuardsDigital.Core.Cards.PendingTurnRelease(
+                owner.HeroId,
+                GetHandCards(session, owner.TeamSide)[0].Id,
+                owner.TeamSide);
+            var projection = new TurnReleaseReadModel(
+                new CommitmentReadModel(session.Projection, Committed(session.Projection, owner.HeroId)),
+                release);
+
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, owner.HeroId), Is.True);
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, other.HeroId), Is.False,
+                "A release names one actor; it is not a team fact.");
+        }
+
+        /// <summary>
+        /// A stated Initiative preference is not "still owed a response" even though the hero could
+        /// still revise it - the same distinction the commitment arm already draws.
+        /// </summary>
+        [Test]
+        public void AnInitiativeParticipantWhoHasNotStatedAPreference_ShinesAtHeroScope_AndOneWhoHasDoesNot()
+        {
+            var session = CreateSession();
+            var heroes = session.Projection.Setup.Heroes.ToArray();
+            var stated = heroes[0];
+            var undecided = heroes[1];
+            var proposal = new TeamAgreementProposalId("hero-scope-initiative");
+            var card = GetHandCards(session, stated.TeamSide)[0].Id;
+            var agreement = new TeamAgreementProjection(
+                TeamAgreementKind.Initiative,
+                proposal,
+                TeamSide.Blue,
+                new[] { new TeamAgreementCandidateProjection(card, stated.HeroId) },
+                new[]
+                {
+                    new TeamAgreementParticipantProjection(stated.HeroId, true, card, false),
+                    new TeamAgreementParticipantProjection(undecided.HeroId, false, default, false)
+                },
+                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
+                0,
+                false,
+                new[] { TeamAgreementCommand.Prefer(proposal, card) });
+            var projection = new AgreementReadModel(
+                new CommitmentReadModel(session.Projection, Committed(session.Projection, stated.HeroId)),
+                agreement);
+
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, undecided.HeroId), Is.True,
+                "Has not yet stated a preference, so their tray shines.");
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, stated.HeroId), Is.False,
+                "Already stated - could still revise, but that is not 'still owed a response'.");
+        }
+
+        [Test]
+        public void AMinionBattleParticipantWhoHasNotAgreed_ShinesAtHeroScope_AndOneWhoHasDoesNot()
+        {
+            var session = CreateSession();
+            var heroes = session.Projection.Setup.Heroes.ToArray();
+            var agreed = heroes[0];
+            var undecided = heroes[1];
+            var proposal = new TeamAgreementProposalId("hero-scope-minion-battle");
+            var agreement = new TeamAgreementProjection(
+                TeamAgreementKind.MinionBattle,
+                proposal,
+                TeamSide.Blue,
+                Array.Empty<TeamAgreementCandidateProjection>(),
+                new[]
+                {
+                    new TeamAgreementParticipantProjection(agreed.HeroId, false, default, true),
+                    new TeamAgreementParticipantProjection(undecided.HeroId, false, default, false)
+                },
+                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
+                0,
+                true,
+                new[] { TeamAgreementCommand.Agree(proposal) });
+            var projection = new AgreementReadModel(
+                new CommitmentReadModel(session.Projection, Committed(session.Projection, agreed.HeroId)),
+                agreement);
+
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, undecided.HeroId), Is.True);
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, agreed.HeroId), Is.False,
+                "Agreed already - the AGREE/WITHDRAW toggle lets them revise, but that is not owed.");
+        }
+
+        /// <summary>
+        /// THE DELIBERATE NON-GOAL, proved rather than merely documented. A standing decision
+        /// genuinely exists and genuinely belongs to some seat, but hero scope cannot name whom -
+        /// <see cref="AwaitedInputQuery.IsHeroAwaited"/>'s own doc comment records exactly why (the
+        /// missing owner fact lives only on the concrete <c>SeatProjection.DecisionOwner</c>, not on
+        /// <see cref="IMatchReadModel"/>). This case is what the Core track's event-channel milestone
+        /// must flip red before it can honestly extend the predicate to the four deferred arms - the
+        /// leveling hero, the defense answerer, the respawn chooser, and the acting hero.
+        /// </summary>
+        [Test]
+        public void AHeroWithAGenuinelyStandingDecision_DoesNotYetShineAtHeroScope_TheFourDeferredArms()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First().HeroId;
+            var projection = new ContractReadModel(
+                new CommitmentReadModel(session.Projection, Committed(session.Projection, hero)),
+                StandingContract());
+
+            Assert.That(projection.DecisionContract, Is.Not.Null,
+                "A decision genuinely stands, owned by some seat - the read model just cannot name " +
+                "whom, beyond the viewer's own scope.");
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, hero), Is.False,
+                "So this hero's tray does not shine merely because a standing decision exists " +
+                "somewhere - better dark than wrong, per the same reasoning that kept SelectedActor " +
+                "out of the turn arm.");
+        }
+
+        [Test]
+        public void AnEndedMatch_IsNeverAWaitAtHeroScopeEither()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First().HeroId;
+            var projection = new EndedReadModel(
+                session.Projection, Awaiting(session.Projection, hero));
+
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, hero), Is.False);
+        }
+
+        private sealed class TurnReleaseReadModel : DelegatingReadModel
+        {
+            private readonly GuardsDigital.Core.Cards.PendingTurnRelease release;
+
+            public TurnReleaseReadModel(
+                IMatchReadModel inner, GuardsDigital.Core.Cards.PendingTurnRelease release)
+                : base(inner) => this.release = release;
+
+            public override GuardsDigital.Core.Cards.PendingTurnRelease PendingTurnRelease => release;
+        }
+
         [Test]
         public void DirectorHandsPresenter_SelectsAndCommitsWithoutOwningCardAuthority()
         {

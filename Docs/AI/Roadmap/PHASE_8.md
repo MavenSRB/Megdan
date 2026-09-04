@@ -493,6 +493,26 @@ Non-goals: No expiry, timer or automatic release of a reservation; no change to 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835k-give-a-relaunched-player-a-road-back-to-their-own-reserved-seat-completion-evidence).
 
+### [x] 8.35m Shine every awaited hero's tray and card, and dim the rest of the hand while one resolves
+
+User-approved amendment of 2026-09-03, the SEVENTH amendment's other two scopes: "Make the hero tray of the hero whos turn is it shine gold on his/her time to act... card can have the same shine... just a gold highlight," plus the same day's resolution-focus extension. `AwaitedInputQuery.IsWaitingOnViewer` (milestone 8.35j) answers one question at viewer scope; this reads the SAME question a second and third time, at hero scope and card scope, rather than a fresh derivation - "one predicate, three scopes" in the user's own words.
+
+Observable outcome: Every hero's rail carries the top bar's warm gold treatment exactly while `AwaitedInputQuery.IsHeroAwaited` says the match waits on that hero - several trays at once during a commitment phase, the 8.35g release owner alone, or an undecided team-agreement participant. Every card currently a legal answer to input the match awaits FROM THE VIEWER - their own hand during commitment, an offered Defense, effect-choice, removal-prevention or p.15 upgrade candidate - carries the same gold shine. While the viewer's own card resolves it alone keeps that shine and every other held card dims, lifting once the resolution - and, since 8.35g, the release it now waits behind - ends; a card that becomes a legal answer mid-resolution shines and is never dimmed.
+
+Acceptance checks:
+
+- Hero scope reads three provably public arms only: a hero's own commitment (`Commitments`, the viewer-scope arm generalized), the release owner (`PendingTurnRelease.ActorId`, unscoped since 8.35g), and a standing team agreement's own undecided participant (`TeamAgreement.Participants`, public by its own doc comment). Several heroes shine at once during commitment.
+- Hero scope does NOT read the leveling hero, the defense answerer, the respawn chooser, or the acting hero - a genuine gap, not an oversight: `IMatchReadModel` carries no per-hero decision-owner fact today, only the concrete `SeatProjection.DecisionOwner`, which is not on the interface. A case proves a genuinely standing decision does not shine a hero's tray, so the day that fact reaches the interface the case must flip red before the predicate can honestly extend to it.
+- Card scope: every card offered for commitment, Defense, an effect choice, removal prevention or a leveling upgrade carries the gold shine; a privacy case proves another seat's own awaited hand never shines on this viewer's screen, because the projection never carries it at all.
+- Resolution focus: the viewer's own resolving card shines; every other held card dims to the same opacity `HudElements.MarkUnavailable` already uses for a control the authority offers no command for; the dim lifts once nothing is resolving.
+- Presentation-only: no rule, authority, projection, wire or schema change.
+
+Closing check: the hero-scope cases in `MatchFeaturePresenterTests` (`SeveralHeroesOweACommitment_AndSeveralTraysShineAtOnceAtHeroScope`, `TheTurnReleaseOwner_ShinesAtHeroScope_AndNoOtherHeroDoes`, the Initiative/Minion Battle agreement pair, and `AHeroWithAGenuinelyStandingDecision_DoesNotYetShineAtHeroScope_TheFourDeferredArms`), the rendering cases in `MatchHudPresentationTests` (`EveryHeroStillOwingACommitment_ShinesGold_AndOnlyThatHero`, the three card-scope-per-family cases, and `TheResolvingCard_ShinesWhileTheRestOfTheHandDims_UntilItResolvesAndReleases`), and the privacy case in `SeatScopedMatchHudTests` (`AnotherSeatsAwaitedHand_NeverShinesOnThisViewersScreen`) are each recorded failing at the pre-fix revision and passing after.
+
+Non-goals: The four deferred hero-scope arms above stay pinned to the Core track's event-channel milestone, which adds the missing per-hero decision-owner fact to `IMatchReadModel` in the same wire bump as the TENTH amendment's event log; a small follow-up milestone completes the tray once that lands. No narration, typography, END TURN or tooltip change - the FIFTH, THIRD and SIXTH amendments' remaining bullets. No new waiting state invented beyond what the projection already publishes.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835m-shine-every-awaited-heros-tray-and-card-and-dim-the-rest-of-the-hand-while-one-resolves-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

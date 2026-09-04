@@ -2088,15 +2088,28 @@ namespace GuardsDigital.Presentation.Match
                     group = TrayCardGroup.Discarded;
                 }
 
+                var isAvailableForCommitment = group == TrayCardGroup.Available && canSelect;
+                var isResolvingThisCard = resolvingCardInstanceId.HasValue &&
+                    resolvingCardInstanceId.Value.Equals(card.Id);
                 entries.Add(CurrentRoundCards.TrayCard(
                     projection,
                     card,
                     group,
                     group == TrayCardGroup.Played ? playedTurnIndex : 0,
-                    group == TrayCardGroup.Available && canSelect,
+                    isAvailableForCommitment,
                     selectedCardInstanceId.HasValue && selectedCardInstanceId.Value.Equals(card.Id),
-                    resolvingCardInstanceId.HasValue &&
-                        resolvingCardInstanceId.Value.Equals(card.Id)));
+                    isResolvingThisCard,
+                    // Milestone 8.35m, the SEVENTH amendment's card scope and resolution focus, both
+                    // read off facts this method already computed rather than derived a second time:
+                    // a card offered for commitment right now is a legal answer, and so - for the
+                    // resolution-focus case - is the one card currently resolving, which is why it
+                    // shines exactly like a clickable candidate although it carries no click any more.
+                    isAwaitedAnswer: isAvailableForCommitment || isResolvingThisCard,
+                    // Every OTHER hand card dims while one is resolving, so the eye lands on the card
+                    // whose text is running; the resolving card itself is excluded by construction
+                    // (its own group is never Available - it moved to the turn area on commitment).
+                    isDimmedByResolution: resolvingCardInstanceId.HasValue &&
+                        group == TrayCardGroup.Available && !isResolvingThisCard));
             }
 
             return Array.AsReadOnly(entries
@@ -4678,7 +4691,11 @@ namespace GuardsDigital.Presentation.Match
                         : TrayCardGroup.Discarded,
                     0,
                     true,
-                    false);
+                    false,
+                    // Milestone 8.35m: every caller of this method is offering the card as a legal
+                    // answer - the doc comment above already says so - so the card-scope shine is
+                    // unconditional here too, on the same reasoning `isSelectable: true` already used.
+                    isAwaitedAnswer: true);
         }
 
         public static DefenseBreakdownViewModel CreateDefenseBreakdown(

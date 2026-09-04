@@ -587,6 +587,33 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35m (SEVENTH amendment, card scope) - the privacy case. Rulebook p.7 asks
+        /// every seat for a commitment at once, so another hero's OWN screen shows their hand
+        /// shining gold right now; this seat's projection never carries that hand at all, so there
+        /// is nothing here for a card-scope shine to leak onto.
+        /// </summary>
+        [Test]
+        public void AnotherSeatsAwaitedHand_NeverShinesOnThisViewersScreen()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var seat = host.Seats.Seats[0];
+            var other = host.Seats.Seats.First(value => !value.Id.Equals(seat.Id));
+            var client = new SeatMatchClient(host.ClientForSeat(seat.Id));
+
+            Assert.That(client.Projection.Cards.Any(card =>
+                card.OwnerId.Equals(other.HeroId) && card.State.Location == CardLocation.Hand),
+                Is.False, "This seat's own projection withholds another hero's hand entirely.");
+
+            var view = new CapturingHandsView();
+            var presenter = new DirectorHandsPresenter(client, view);
+            presenter.SelectViewedHero(other.HeroId);
+
+            Assert.That(view.Model.ViewedHand.TrayCards, Is.Empty,
+                "So there is nothing at all here that could carry a false card-scope shine, even " +
+                "though rulebook p.7 has every hero - this one included - owing a commitment now.");
+        }
+
+        /// <summary>
         /// The Director's own direct surface is untouched by that removal: it still draws the
         /// manual control, because it is still the surface that steps the round by hand.
         /// </summary>
