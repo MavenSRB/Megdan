@@ -52,12 +52,17 @@ those instead:
     HOST - Start Server.bat    only for whoever is hosting the match. You can
                                ignore it.
 
-(Wondering about practicing alone first? The host's lobby has a FILL WITH TEST
-DRIVERS button that fills any empty seats with QA test drivers - not real
-opponents, just random legal moves at a watchable pace, clearly labeled on the
-host's own screen. It is there so whoever hosts our real session can get
-comfortable with the controls beforehand without needing five other people online
-at once; it plays no part in the six-person session itself.)
+(Wondering about practicing alone first? You can play a full six-seat match by
+yourself: run HOST - Start Server.bat, then also run PLAY - Join Match.bat on the
+same PC, point it at 127.0.0.1 and the same key, pick whichever seat you want to
+play, and press JOIN then READY as normal. Now switch back to the HOST window and
+press its FILL WITH TEST DRIVERS button - it fills every other still-open seat
+with a QA test driver, not a real opponent, just random legal moves at a watchable
+pace, clearly labeled as a test driver only on the host's own screen. The match
+begins itself once all six seats are ready, exactly as in a real session, so you
+get to play your one seat and watch the other five play themselves. It plays no
+part in the six-person session itself - nobody presses FILL once real people are
+joining.)
 
 The first time, Windows may say "Windows protected your PC". Choose "More info",
 then "Run anyway" - the build is unsigned, which is expected for a private
@@ -141,6 +146,10 @@ a timer. A few things are worth knowing:
   - A narration bar names who is acting and what they are deciding, and a gold ring
     marks that hero's own piece on the board - so it is easy to see whose turn it
     is and what they are doing even from across the table.
+  - Playing Brogan? A charge card now moves him to the picked destination the
+    instant you pick it, and only then asks who the attack targets - from his new
+    square, not his old one. Once that attack resolves it is committed like any
+    other attack: it cannot be undone back through, same as every attack above.
   - The interface is deliberately plain. It is being tested for whether it is
     understandable, not for whether it is pretty. If something is confusing, say
     so - that is data.
@@ -171,10 +180,12 @@ given the first time - and rejoin. You do not need to do anything special: your
 seat is reserved and you are dropped straight back into it, with everything as you
 left it.
 
-If your machine is out of action for the rest of the evening, tell us. Right now
-there is no way to hand your seat to someone else or carry on a player short - the
-only way to free a stuck seat is for the host to restart, which ends the match for
-everyone. A proper release is coming; for tonight, a long absence means we stop.
+If your machine is out of action for the rest of the evening, tell us. The host can
+now free your seat from their own console once it shows as disconnected, without
+restarting the match for everyone else - but that only works on a seat that has
+actually dropped; it is not a way to remove someone who is still playing. Once
+released, the seat goes back to Open and anyone holding the session key could
+claim it, so this is genuinely for "I am out for the night," not a pause.
 
 If the host machine itself goes away, every client says HOST LOST and that match is
 over - it cannot be continued or restored. We would start a new one.
@@ -194,13 +205,9 @@ different problem wearing the same coat.
   - END TURN sometimes needs a second press to actually hand the turn on. A
     one-press redesign is coming; if the turn does not visibly move on, press it
     again before assuming something is broken.
-  - Brogan's charge cards ask you to pick an attack target before the move itself is
-    shown happening.
   - Leveling up still asks each player one at a time rather than everyone at once.
-  - There is no in-game history log yet - if you need to know what just happened,
-    ask the table.
-  - There is no way to release a stuck reserved seat yet except the host
-    restarting - see IF YOU GET DISCONNECTED above.
+  - The game now keeps a full record of what happened, but there is no on-screen
+    panel to read it yet - if you need to know what just happened, ask the table.
   - If one part of the screen ever freezes or goes blank while everything else on
     screen keeps working, that is a single panel failing on its own rather than the
     whole game going down - it should not take your turn with it. Play on if you
