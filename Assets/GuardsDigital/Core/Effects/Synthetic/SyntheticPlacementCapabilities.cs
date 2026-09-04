@@ -127,7 +127,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// asking the actor to pick itself out of a one-candidate prompt would invent a choice the
         /// card text does not offer. This is that same bridge without the prompt.
         /// </summary>
-        private sealed class ActorSpaceHandler : IEffectCapabilityHandler
+        private sealed class ActorSpaceHandler
+            : IEffectCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
         {
             public EffectCapabilityReference Reference => ActorSpaceV1;
 
@@ -173,6 +174,32 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     ? EffectExecutionResultKind.Applied
                     : EffectExecutionResultKind.ImpossibleMandatory;
             }
+
+            /// <summary>Reading a hero's own coordinate changes nothing. Milestone 8.35l.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>
+            /// Milestone 8.35l. The space this node publishes, answered before it runs.
+            ///
+            /// <para>This is the node the feasibility walk needed and could not have. A Place whose
+            /// subject arrives from here has a required parameter bound to a later output, so the walk
+            /// declared it undecidable and offered the branch unread - and Tigerclaw's Blend Into
+            /// Shadows was therefore offered with Wasp's Magnetic Dagger standing, drew no prompt at
+            /// all, and evaporated with the card spent. Reading a hero's own coordinate decides
+            /// nothing, mutates nothing and mints nothing, which is what makes it safe to answer here
+            /// rather than by executing: the walk carries the answer forward and the Place is judged on
+            /// the subject it would actually receive.</para>
+            /// </summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var components = context.Components;
+                return components != null && components.CanDisplace &&
+                    components.Board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var at)
+                    ? new[] { new EffectOutcomeFact("space", EffectValue.Space(at)) }
+                    : Array.Empty<EffectOutcomeFact>();
+            }
         }
 
         /// <summary>
@@ -191,7 +218,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// question rather than a route, the acting hero choosing, and what having nowhere to put it
         /// means - and the shared <see cref="PlaceOperation"/> beneath enforces all of it.
         /// </summary>
-        private sealed class PlaceHandler : IEffectCapabilityHandler
+        private sealed class PlaceHandler
+            : IEffectCapabilityHandler, IEffectRefusalExplainingCapabilityHandler
         {
             /// <summary>
             /// Where this declaration's reach comes from: <see cref="PrintedValueChannel.None"/> for a
@@ -341,6 +369,49 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// named absence for a token, which p.19 says is not a unit - so a token is placed without
             /// an immunity question rather than by one that silently answers no.
             /// </summary>
+            /// <summary>
+            /// Milestone 8.7's question, keeping milestone 8.35l's answer.
+            ///
+            /// <para>Wasp's Magnetic Dagger forbids a unit being "swapped or placed by themselves, or
+            /// by enemy heroes", so the piece is asked whether this actor may place it at all - here,
+            /// where the piece is named, rather than at the commit, because a piece the rules will not
+            /// let this hero move is not one to offer and then refuse. 8.35l keeps the applied
+            /// modification rather than reducing it to a boolean, so the greyed control can name the
+            /// hero and card that made it grey.</para>
+            /// </summary>
+            private static bool TryGetPlaceRestriction(
+                EffectCapabilityContext context,
+                RuleObject unit,
+                out AppliedRuleModification blocking)
+            {
+                blocking = null;
+                return unit.IsDefined && RestrictionQuery.TryGetRestriction(
+                    unit,
+                    RuleActivity.Place,
+                    RuleObject.ForHero(context.ActorId),
+                    context.Participants,
+                    context.Modifications,
+                    out blocking);
+            }
+
+            /// <summary>
+            /// Milestone 8.35l. Which standing restriction bars this Place, asked about the same named
+            /// piece <see cref="TryDeclare"/> asks about. A Place refused for any other reason - no
+            /// reach, an immune piece, nowhere to put it - says nothing here, so a greyed control is
+            /// never given a borrowed explanation.
+            /// </summary>
+            public bool TryExplainRefusal(
+                EffectCapabilityContext context, out AppliedRuleModification blocking)
+            {
+                blocking = null;
+                var components = context.Components;
+                var named = context.Input("subject");
+                return components != null && components.CanDisplace && components.IsLive &&
+                    named.Kind == EffectValueKind.Coordinate &&
+                    components.Board.TryGetObjectAt(named.Coordinate, out var named_) &&
+                    TryGetPlaceRestriction(context, named_.AsRuleObject(), out blocking);
+            }
+
             private bool TryDeclare(
                 EffectCapabilityContext context,
                 out PlacePolicy policy,
@@ -396,12 +467,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // themselves, or by enemy heroes", so the piece is asked whether this actor may place
                 // it at all - here, where the piece is named, rather than at the commit, because a
                 // piece the rules will not let this hero move is not one to offer and then refuse.
-                if (unit.IsDefined && RestrictionQuery.IsRestricted(
-                        unit,
-                        RuleActivity.Place,
-                        RuleObject.ForHero(context.ActorId),
-                        context.Participants,
-                        context.Modifications))
+                if (TryGetPlaceRestriction(context, unit, out _))
                 {
                     return false;
                 }

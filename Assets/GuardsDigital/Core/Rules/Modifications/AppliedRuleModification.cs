@@ -38,7 +38,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             HeroId controllerHeroId,
             TeamSide controllerTeamSide,
             long orderingSequence,
-            HeroId boundActorHeroId)
+            HeroId boundActorHeroId,
+            CardInstanceId sourceCardInstanceId)
         {
             if (!affectedObject.IsDefined)
             {
@@ -73,6 +74,7 @@ namespace GuardsDigital.Core.Rules.Modifications
             ControllerTeamSide = controllerTeamSide;
             OrderingSequence = orderingSequence;
             BoundActorHeroId = boundActorHeroId;
+            SourceCardInstanceId = sourceCardInstanceId;
         }
 
         /// <param name="boundActorHeroId">
@@ -89,7 +91,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             HeroId controllerHeroId,
             TeamSide controllerTeamSide,
             long orderingSequence,
-            HeroId boundActorHeroId = default)
+            HeroId boundActorHeroId = default,
+            CardInstanceId sourceCardInstanceId = default)
         {
             if (!sourceActiveEffectId.IsDefined)
             {
@@ -106,7 +109,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                 controllerHeroId,
                 controllerTeamSide,
                 orderingSequence,
-                boundActorHeroId);
+                boundActorHeroId,
+                sourceCardInstanceId);
         }
 
         public static AppliedRuleModification FromContinuousSource(
@@ -132,7 +136,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                 orderingSequence,
                 // A continuous source is p.16's permanent Ultimate ability, which is not created inside
                 // anything and therefore points at nobody with "this".
-                default);
+                default,
+                source.SourceCardInstanceId);
         }
 
         public RuleModification Modification { get; }
@@ -146,6 +151,19 @@ namespace GuardsDigital.Core.Rules.Modifications
 
         /// <summary>The Active-effect instance, when one supplies this modification.</summary>
         public ActiveEffectId SourceActiveEffectId { get; }
+
+        /// <summary>
+        /// Milestone 8.35l. The card whose text this modification came off, where the source knows it.
+        ///
+        /// <para>It is provenance in the sense this type already exists for - "every query answer can
+        /// name the exact source that produced it" - and it is here because a refusal a player is
+        /// shown has to name a card rather than an internal identity. "BLOCKED BY WASP - MAGNETIC
+        /// DAGGER" is one hero and one card, and both now travel with the modification that did the
+        /// blocking rather than being looked up afterwards from an effect id, which is the same
+        /// argument every other field here was added under: a second lookup is a second chance for the
+        /// two to disagree.</para>
+        /// </summary>
+        public CardInstanceId SourceCardInstanceId { get; }
 
         public HeroId ControllerHeroId { get; }
 

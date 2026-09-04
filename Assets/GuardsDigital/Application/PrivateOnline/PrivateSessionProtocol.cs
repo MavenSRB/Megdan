@@ -20,7 +20,21 @@ namespace GuardsDigital.Application
         public const string FamilyName = "guards-private-online";
 
         /// <summary>
-        /// Protocol version 4: milestone 8.35g added the turn release - one new command kind, and
+        /// Protocol version 5: milestone 8.35l gave a greyed action offer a reason. Each offer row
+        /// now carries an optional block naming the standing rule modification that refused it - its
+        /// kind, the activity barred, and the controlling hero, source card and Active effect. A
+        /// version 4 peer would read that block as the next offer's card id and mis-decode the whole
+        /// remainder of the detail record, so version 4 is rejected before either side interprets a
+        /// payload.
+        ///
+        /// <para>It is carried rather than derived, and the wire-growth rule's exclusion floor is why:
+        /// the only material a seat holds is a flat list of the cards standing effects came off, which
+        /// cannot say which of them refused this action, and a seat that worked the answer out for
+        /// itself would be re-deriving the rules the host already applied - the exact split the
+        /// blocked-reason design forbids. The cost is five fields on offers that are unavailable, and
+        /// one bool on every other offer.</para>
+        ///
+        /// <para>Protocol version 4: milestone 8.35g added the turn release - one new command kind, and
         /// the eleventh pending family carried in the projection detail as
         /// <c>PendingTurnRelease</c>. It is carried rather than derived from the standing decision
         /// owner because the shared status derivation reads the pause itself, and the wire-growth
@@ -34,7 +48,7 @@ namespace GuardsDigital.Application
         /// version 1 when milestone 8.35b gave SelectedActor its Tie Breaker meaning. Every
         /// superseded version is refused from the bounded header rather than reinterpreted.</para>
         /// </summary>
-        public const int Version = 4;
+        public const int Version = 5;
 
         /// <summary>The four ASCII bytes that open every frame: G, D, P, O.</summary>
         public const byte FrameMagic0 = 0x47;

@@ -203,6 +203,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     .ToArray();
             }
 
+            /// <summary>One card, which is what the discard offer requests. Milestone 8.35l.</summary>
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+
             /// <summary>
             /// The hero whose hand this reads. Their own input, not the actor: the whole point of the
             /// capability is that the hero who must discard is someone the card names.

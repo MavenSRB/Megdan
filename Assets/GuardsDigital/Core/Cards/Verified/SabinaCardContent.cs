@@ -47,7 +47,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="BroganCardContent.ContentRevision"/> has: it moves when Sabina's content changes.
         /// </summary>
-        public const string ContentRevision = "sabina-8-25e5b-rev-1";
+        public const string ContentRevision = "sabina-8-35l-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

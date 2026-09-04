@@ -429,6 +429,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private sealed class PrintedIconTargetHandler
             : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler,
+                IEffectAnticipatedOutcomeCapabilityHandler,
                 IEffectImmunityOverrideCapabilityHandler
         {
             private readonly PrintedValueChannel channel;
@@ -615,6 +616,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
+                var published = Publish(context, selected);
+                return published == null
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.Applied(published);
+            }
+
+            /// <summary>
+            /// What answering this selection with <paramref name="selected"/> publishes, or nothing
+            /// where that answer is not one this selection would take.
+            ///
+            /// <para>Milestone 8.35l lifted this out of <see cref="Resume"/> unchanged, so the facts
+            /// the resolver receives after an answer and the facts milestone 8.35l's narrowing puts to
+            /// the consuming node before the offer are the same derivation rather than two readings
+            /// that could drift - which is the discipline milestone 8.29d named for the greyed control
+            /// and the refusal behind it.</para>
+            /// </summary>
+            private IReadOnlyList<EffectOutcomeFact> Publish(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
                 // Milestone 8.21. A unit selection is answered with whichever kind was named, and
                 // publishes that kind alone - a node consuming it binds both outputs and one of them
                 // resolves, which is exactly how `set-attack-target@1` takes either.
@@ -622,30 +642,30 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     if (selected == null || selected.Count != 1)
                     {
-                        return EffectExecutionResult.ImpossibleMandatory();
+                        return null;
                     }
 
                     if (selected[0].Kind == EffectValueKind.Hero &&
                         HeroCandidates(context).Contains(selected[0].HeroId))
                     {
-                        return EffectExecutionResult.Applied(WithChosenSpace(
+                        return WithChosenSpace(
                             context,
                             BoardObjectReference.ForHero(selected[0].HeroId),
                             new EffectOutcomeFact(
-                                ChosenHeroOutputName, EffectValue.Hero(selected[0].HeroId))));
+                                ChosenHeroOutputName, EffectValue.Hero(selected[0].HeroId)));
                     }
 
                     if (selected[0].Kind == EffectValueKind.Minion &&
                         MinionCandidates(context).Contains(selected[0].MinionId))
                     {
-                        return EffectExecutionResult.Applied(WithChosenSpace(
+                        return WithChosenSpace(
                             context,
                             BoardObjectReference.ForMinion(selected[0].MinionId),
                             new EffectOutcomeFact(
-                                ChosenMinionOutputName, EffectValue.Minion(selected[0].MinionId))));
+                                ChosenMinionOutputName, EffectValue.Minion(selected[0].MinionId)));
                     }
 
-                    return EffectExecutionResult.ImpossibleMandatory();
+                    return null;
                 }
 
                 if (subject == PrintedIconSelectionSubject.Hero)
@@ -654,14 +674,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         selected[0].Kind != EffectValueKind.Hero ||
                         !HeroCandidates(context).Contains(selected[0].HeroId))
                     {
-                        return EffectExecutionResult.ImpossibleMandatory();
+                        return null;
                     }
 
-                    return EffectExecutionResult.Applied(new[]
+                    return new[]
                     {
                         new EffectOutcomeFact(
                             ChosenHeroOutputName, EffectValue.Hero(selected[0].HeroId))
-                    });
+                    };
                 }
 
                 if (subject == PrintedIconSelectionSubject.Minion)
@@ -670,7 +690,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         selected[0].Kind != EffectValueKind.Minion ||
                         !MinionCandidates(context).Contains(selected[0].MinionId))
                     {
-                        return EffectExecutionResult.ImpossibleMandatory();
+                        return null;
                     }
 
                     var chosenMinion = BoardObjectReference.ForMinion(selected[0].MinionId);
@@ -690,31 +710,43 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             ChosenMinionSpaceOutputName, EffectValue.Space(minionAt)));
                     }
 
-                    return EffectExecutionResult.Applied(minionOutcomes);
+                    return minionOutcomes;
                 }
 
                 if (selected == null || selected.Count != 1 ||
                     selected[0].Kind != EffectValueKind.Coordinate)
                 {
-                    return EffectExecutionResult.ImpossibleMandatory();
+                    return null;
                 }
 
                 var chosen = selected[0].Coordinate;
                 if (!Candidates(context).Contains(chosen))
                 {
-                    return EffectExecutionResult.ImpossibleMandatory();
+                    return null;
                 }
 
-                return EffectExecutionResult.Applied(new[]
+                return new[]
                 {
                     new EffectOutcomeFact("chosen", EffectValue.Space(chosen))
-                });
+                };
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 AnticipateCandidates(context).Count == 0
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>Selecting mutates nothing; the consuming node does whatever the effect does.
+            /// Milestone 8.35l.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>One piece: every icon selection names exactly one, which is what its own
+            /// choice request has always declared.</summary>
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                Publish(context, chosen) ?? Array.Empty<EffectOutcomeFact>();
 
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
                 subject == PrintedIconSelectionSubject.Hero
@@ -920,7 +952,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         }
 
         private sealed class HeroAdjacentToMinionHandler
-            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
+            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler,
+                IEffectAnticipatedOutcomeCapabilityHandler
         {
             public EffectCapabilityReference Reference => HeroAdjacentToMinionV1;
 
@@ -977,6 +1010,28 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
                 Candidates(context).Select(EffectValue.Hero).ToArray();
 
+            /// <summary>Selecting mutates nothing. Milestone 8.35l.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>One hero: the selection names the one unit its sentence names.</summary>
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+
+            /// <summary>
+            /// Milestone 8.35l. The single output this selection publishes, for the answer it is asked
+            /// about - the same fact <see cref="Resume"/> publishes, from the same candidate check.
+            /// </summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                chosen != null && chosen.Count == 1 &&
+                chosen[0].Kind == EffectValueKind.Hero &&
+                Candidates(context).Contains(chosen[0].HeroId)
+                    ? new[]
+                    {
+                        new EffectOutcomeFact(
+                            ChosenHeroOutputName, EffectValue.Hero(chosen[0].HeroId))
+                    }
+                    : Array.Empty<EffectOutcomeFact>();
+
             private static IReadOnlyList<HeroId> Candidates(EffectCapabilityContext context)
             {
                 var board = context.Components?.Board;
@@ -1016,7 +1071,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// nothing; the consuming node does whatever the effect does.
         /// </summary>
         private sealed class ChooseTargetHandler
-            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
+            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler,
+                IEffectAnticipatedOutcomeCapabilityHandler
         {
             private readonly bool declaresActivity;
 
@@ -1119,6 +1175,27 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
                 Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
+
+            /// <summary>Selecting mutates nothing. Milestone 8.35l.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>One space: this selection has always requested exactly one.</summary>
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+
+            /// <summary>
+            /// Milestone 8.35l. The one space this selection publishes for the answer it is asked
+            /// about, re-derived against current state exactly as <see cref="Resume"/> re-derives it.
+            /// </summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                chosen != null && chosen.Count == 1 &&
+                chosen[0].Kind == EffectValueKind.Coordinate &&
+                Candidates(context).Contains(chosen[0].Coordinate)
+                    ? new[]
+                    {
+                        new EffectOutcomeFact("chosen", EffectValue.Space(chosen[0].Coordinate))
+                    }
+                    : Array.Empty<EffectOutcomeFact>();
 
             /// <summary>
             /// The spaces of every object the acting hero may target, in canonical axial order. Nothing

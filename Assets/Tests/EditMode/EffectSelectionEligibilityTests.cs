@@ -271,7 +271,9 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>Offers two heroes and accepts a consumer, which is the whole shape under test.</summary>
-        private sealed class SelectionSample : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
+        private sealed class SelectionSample
+            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler,
+                IEffectAnticipatedOutcomeCapabilityHandler
         {
             public static EffectCapabilityReference Reference_ =>
                 new EffectCapabilityReference(new EffectCapabilityId("sample-selection"), 1);
@@ -308,6 +310,24 @@ namespace GuardsDigital.Tests.EditMode
 
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
                 Candidates();
+
+            /// <summary>Milestone 8.35l: one hero, the shape this sample has always requested.</summary>
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+
+            /// <summary>Milestone 8.35l: selecting mutates nothing here either.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>
+            /// Milestone 8.35l: the same fact <see cref="Resume"/> publishes. This sample's candidate
+            /// kind and output kind coincide, which is exactly the narrow shape that was declarable
+            /// before 8.35l - so stating it here keeps the sample honest without changing what it
+            /// proves.
+            /// </summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                chosen != null && chosen.Count == 1
+                    ? new[] { new EffectOutcomeFact("chosen", chosen[0]) }
+                    : Array.Empty<EffectOutcomeFact>();
 
             private static IReadOnlyList<EffectValue> Candidates() =>
                 new[] { EffectValue.Hero(Actor), EffectValue.Hero(Other) };

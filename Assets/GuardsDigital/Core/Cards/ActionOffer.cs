@@ -32,7 +32,8 @@ namespace GuardsDigital.Core.Cards
             ActionInvocationContext invocationContext,
             bool isAvailable,
             AttackRangeKind attackRange,
-            ActionCardStateTransition sourceCardStateTransition)
+            ActionCardStateTransition sourceCardStateTransition,
+            ActionUnavailability unavailability = default)
         {
             if (!sourceCardInstanceId.IsDefined)
             {
@@ -72,6 +73,7 @@ namespace GuardsDigital.Core.Cards
             IsAvailable = isAvailable;
             AttackRange = attackRange;
             SourceCardStateTransition = sourceCardStateTransition;
+            Unavailability = isAvailable ? ActionUnavailability.None : unavailability;
         }
 
         public CardInstanceId SourceCardInstanceId { get; }
@@ -93,6 +95,17 @@ namespace GuardsDigital.Core.Cards
         /// answer here rather than rebuilding the offer and risking a differing copy.
         /// </summary>
         public ActionOffer WithAvailability(bool isAvailable) =>
+            WithAvailability(isAvailable, ActionUnavailability.None);
+
+        /// <summary>
+        /// Milestone 8.35l: the same stamp, saying why where the authority knows why.
+        ///
+        /// <para>The reason is dropped whenever the offer is available, in the constructor rather than
+        /// here, so an offer can never carry both "you may take this" and an explanation of why you may
+        /// not. A stamp with <see cref="ActionUnavailability.None"/> is the ordinary greyed control
+        /// that has always existed and is not a regression from one that speaks.</para>
+        /// </summary>
+        public ActionOffer WithAvailability(bool isAvailable, ActionUnavailability unavailability) =>
             new ActionOffer(
                 SourceCardInstanceId,
                 SourceDefinitionReference,
@@ -101,11 +114,18 @@ namespace GuardsDigital.Core.Cards
                 InvocationContext,
                 isAvailable,
                 AttackRange,
-                SourceCardStateTransition);
+                SourceCardStateTransition,
+                unavailability);
 
         public AttackRangeKind AttackRange { get; }
 
         public ActionCardStateTransition SourceCardStateTransition { get; }
+
+        /// <summary>
+        /// Milestone 8.35l: why this offer cannot be taken, where the authority can say. Always
+        /// <see cref="ActionUnavailability.None"/> on an available offer.
+        /// </summary>
+        public ActionUnavailability Unavailability { get; }
 
         public bool Equals(ActionOffer other)
         {
@@ -116,7 +136,8 @@ namespace GuardsDigital.Core.Cards
                 InvocationContext == other.InvocationContext &&
                 IsAvailable == other.IsAvailable &&
                 AttackRange == other.AttackRange &&
-                SourceCardStateTransition.Equals(other.SourceCardStateTransition);
+                SourceCardStateTransition.Equals(other.SourceCardStateTransition) &&
+                Unavailability.Equals(other.Unavailability);
         }
 
         public override bool Equals(object obj)
@@ -136,6 +157,7 @@ namespace GuardsDigital.Core.Cards
                 hashCode = (hashCode * 397) ^ IsAvailable.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)AttackRange;
                 hashCode = (hashCode * 397) ^ SourceCardStateTransition.GetHashCode();
+                hashCode = (hashCode * 397) ^ Unavailability.GetHashCode();
                 return hashCode;
             }
         }

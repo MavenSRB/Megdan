@@ -252,20 +252,24 @@ namespace GuardsDigital.Tests.EditMode
         /// FlipTieBreakerAfterResolution. Milestone 8.35f takes it to protocol 3, because the seat
         /// record gained <c>IsSeatUndoAvailable</c> - a flag in the middle of it, so a protocol 2
         /// peer would mis-decode everything after it - and because two message kinds were added
-        /// that a protocol 2 host answers with <c>UnexpectedMessage</c>. Both prior versions are
-        /// exercised, so the refusal is about the version and not about the number 2.
+        /// that a protocol 2 host answers with <c>UnexpectedMessage</c>. Milestone 8.35g takes it to
+        /// protocol 4 for the carried turn-release family, and milestone 8.35l to protocol 5 for the
+        /// blocked-reason block on each action offer row. Every prior version is exercised, so the
+        /// refusal is about the version and not about any one number.
         /// </remarks>
         [Test]
-        public void SeatWireMeaning_UsesProtocolFour_AndRejectsEveryOlderFrame()
+        public void SeatWireMeaning_UsesProtocolFive_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(4),
-                "Milestone 8.35g carries the eleventh pending family, PendingTurnRelease, in the " +
-                "projection detail, and adds the ReleaseTurn command kind. A protocol three peer " +
-                "would read the release row out of the middle of a detail record and mis-decode " +
-                "everything after it. Protocol three itself carried IsSeatUndoAvailable plus " +
-                "SubmitUndo and UndoResult, which protocol two peers could not decode safely.");
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(5),
+                "Milestone 8.35l gives a greyed action offer a reason: each offer row carries an " +
+                "optional block naming the rule modification that refused it, so a protocol four " +
+                "peer would read that block as the next offer's card id and mis-decode the whole " +
+                "remainder of the detail record. Protocol four carried the eleventh pending family, " +
+                "PendingTurnRelease, plus the ReleaseTurn command kind; protocol three carried " +
+                "IsSeatUndoAvailable plus SubmitUndo and UndoResult, which protocol two peers could " +
+                "not decode safely.");
 
-            foreach (var older in new[] { 1, 2, 3 })
+            foreach (var older in new[] { 1, 2, 3, 4 })
             {
                 var bytes = PrivateSessionFrameCodec.ChallengeFrame(
                     new SessionChallengeMessage(new byte[] { 1, 2, 3 }));

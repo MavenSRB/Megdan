@@ -669,6 +669,96 @@ namespace GuardsDigital.Core.Effects
         /// state its probe reports as <see cref="EffectExecutionResultKind.ImpossibleMandatory"/>.
         /// </summary>
         IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context);
+
+        /// <summary>
+        /// Milestone 8.35l: how many of those candidates a complete answer names - the same floor
+        /// <see cref="EffectChoiceRequest.MinimumSelections"/> would carry.
+        ///
+        /// It is asked because narrowing a candidate list is only half of judging a selection. A
+        /// selection that keeps one eligible candidate out of two has narrowed successfully and is
+        /// still impossible when its floor is two, and reporting it as answerable there is what let
+        /// Sabina's Blue swap trio be offered on a board holding exactly one legal minion - the offer
+        /// stood, the player took it, and the live pause refused at the floor with the card already
+        /// spent. The floor is the handler's own, for the same reason the candidates are: only the
+        /// handler knows what shape of answer it would ask for.
+        /// </summary>
+        int AnticipateMinimumSelections(EffectCapabilityContext context);
+    }
+
+    /// <summary>
+    /// Milestone 8.35l: what a node would publish, answered without performing it.
+    ///
+    /// Two questions in this build need it, and they are the same question. A selection declaring a
+    /// consumer has to put a candidate to that consumer under the parameter the consumer actually
+    /// binds - Sabina's Back to Back selects a minion and swaps with its <em>space</em>, so handing the
+    /// consumer the bare minion asked it about a value of the wrong kind and every candidate came back
+    /// refused, which is why the declaration had to be left off and the narrowing was lost. And the
+    /// feasibility walk cannot judge a node whose subject arrives from an earlier one, so a Place
+    /// standing behind <c>actor-space@1</c> was never judged at all and Tigerclaw's Blend Into Shadows
+    /// was offered, clicked, and silently consumed with no prompt ever drawn.
+    ///
+    /// Implementing this is a claim about the handler, not a convenience: deriving these facts must
+    /// mutate no board, card, effect, component, supply, timing, or identity state and must mint
+    /// nothing - the same rule <see cref="IEffectCapabilityHandler.Anticipate"/> obeys - because both
+    /// callers ask it while merely reading what an offer would lead to. A handler that cannot answer
+    /// under that rule simply does not implement this, and the two callers keep milestone 6.5ac's
+    /// conservative position: unreadable is offered.
+    /// </summary>
+    public interface IEffectAnticipatedOutcomeCapabilityHandler
+    {
+        /// <summary>
+        /// Whether executing this node changes nothing a player could see - it publishes its outputs
+        /// and does no more.
+        ///
+        /// <para>The feasibility walk needs this said out loud, because it short-circuits at the first
+        /// node that can apply and a node that only publishes a fact was answering "yes" to a question
+        /// about whether the action <em>does</em> anything. <c>actor-space@1</c> is the case that
+        /// mattered: Tigerclaw's Blend Into Shadows reads the actor's own coordinate and then places
+        /// him, and reading the coordinate was enough to keep the card offered when the Place standing
+        /// behind it was barred - so the card was clicked, no prompt was ever drawn, and it resolved
+        /// having done nothing. A selection answers <see cref="EffectExecutionResultKind.NeedsChoice"/>
+        /// rather than <see cref="EffectExecutionResultKind.Applied"/>, so declaring this true there
+        /// says the honest thing about selecting and changes nothing about whether a prompt is worth
+        /// offering.</para>
+        /// </summary>
+        bool PublishesWithoutApplying { get; }
+
+        /// <summary>
+        /// The outputs <see cref="IEffectCapabilityHandler.Execute"/> (or, for a selection,
+        /// <see cref="IEffectCapabilityHandler.Resume"/>) would publish for this answer, or nothing
+        /// where this answer would publish nothing.
+        ///
+        /// <paramref name="chosen"/> is empty for a node that decides nothing, and carries a complete
+        /// prospective answer - <see cref="IEffectSelectionCapabilityHandler.AnticipateMinimumSelections"/>
+        /// values of it - for a selection.
+        /// </summary>
+        IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+            EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen);
+    }
+
+    /// <summary>
+    /// Milestone 8.35l: a capability that can say which standing rule refused it.
+    ///
+    /// <para>The refusal itself is already the handler's - <c>Anticipate</c> reports it - but a kind is
+    /// not an explanation, and a player told only that an action is unavailable learns nothing about
+    /// another hero's card text standing three spaces away. This is the seam that carries the answer
+    /// out: the handler re-asks the same restriction query it refused on and hands back the applied
+    /// modification, which already names its controlling hero and its source card.</para>
+    ///
+    /// <para>It is deliberately the handler's job and not the offer's. A surface that worked out why an
+    /// action is unavailable would be a second reading of the rules, free to disagree with the first;
+    /// this way the greyed control, the reason on it, and the refusal a start would have produced are
+    /// all one answer. Nothing here may mutate or mint - it is asked while merely reading an offer.</para>
+    /// </summary>
+    public interface IEffectRefusalExplainingCapabilityHandler
+    {
+        /// <summary>
+        /// The standing modification that bars this node in this context, or nothing where the node is
+        /// refused for some other reason - which is not a fault, and leaves the offer greyed with
+        /// nothing said rather than with something invented.
+        /// </summary>
+        bool TryExplainRefusal(
+            EffectCapabilityContext context, out AppliedRuleModification blocking);
     }
 
     /// <summary>

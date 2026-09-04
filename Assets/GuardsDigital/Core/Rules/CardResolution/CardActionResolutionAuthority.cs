@@ -861,9 +861,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             int roundIndex,
             int turnIndex) =>
+            CanSkillApplyAnything(
+                offer, definitions, instances, participants, timing, modifications,
+                roundIndex, turnIndex, out _);
+
+        /// <summary>
+        /// Milestone 8.35l: the same question, keeping the standing modification that answered it.
+        /// </summary>
+        public bool CanSkillApplyAnything(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex,
+            out AppliedRuleModification blocking) =>
             skillBackend.CanApplyAnything(
                 offer, definitions, instances, participants, timing, modifications, components,
-                roundIndex, turnIndex);
+                roundIndex, turnIndex, out blocking);
 
         /// <summary>
         /// Milestone 7.8a1: whether an Attack offer has a legal target, asked of the same backend that

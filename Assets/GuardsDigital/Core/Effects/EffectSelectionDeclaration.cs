@@ -75,20 +75,46 @@ namespace GuardsDigital.Core.Effects
 
         /// <summary>
         /// The consumer's parameters fed by this selection's published outputs, in the consumer's own
-        /// binding order. Empty means the named node reads nothing this selection publishes, which the
-        /// definition validator refuses at content load - so at runtime it can only mean a definition
-        /// that never passed through the validator, and the caller treats it as unreadable rather than
-        /// as a refusal.
+        /// binding order, each beside the output it reads. Empty means the named node reads nothing this
+        /// selection publishes, which the definition validator refuses at content load - so at runtime it
+        /// can only mean a definition that never passed through the validator, and the caller treats it
+        /// as unreadable rather than as a refusal.
+        ///
+        /// <para>Milestone 8.35l added the second half of each pair, and the absence of it is the whole
+        /// reason milestone 6.8l's narrowing could not be declared on half the roster. Knowing only
+        /// <em>which parameters</em> a selection feeds, the eligibility query had no choice but to
+        /// substitute the raw candidate into all of them - so a selection publishing a minion and the
+        /// space it stands on, consumed by a Swap that binds the space, put a minion where a coordinate
+        /// belonged and refused every candidate. The binding always knew which output it read; this
+        /// stopped discarding it.</para>
         /// </summary>
-        public static IReadOnlyList<string> ConsumedParameters(
+        public static IReadOnlyList<ConsumedBinding> ConsumedParameters(
             EffectNodeDefinition consumer,
             EffectNodeId selectionNodeId) =>
             consumer == null
-                ? Array.Empty<string>()
+                ? Array.Empty<ConsumedBinding>()
                 : consumer.Inputs
                     .Where(input => input.SourceKind == EffectBindingSourceKind.NodeOutput)
                     .Where(input => input.SourceNodeId.Equals(selectionNodeId))
-                    .Select(input => input.ParameterName)
+                    .Select(input => new ConsumedBinding(input.ParameterName, input.SourceOutputName))
                     .ToArray();
+
+        /// <summary>
+        /// One consumer parameter and the selection output that feeds it. A pair rather than a name,
+        /// because putting a candidate to a consumer means putting it under the output that consumer
+        /// binds, and the two are not the same thing wherever a selection publishes more than one.
+        /// </summary>
+        public readonly struct ConsumedBinding
+        {
+            public ConsumedBinding(string parameterName, string sourceOutputName)
+            {
+                ParameterName = parameterName;
+                SourceOutputName = sourceOutputName;
+            }
+
+            public string ParameterName { get; }
+
+            public string SourceOutputName { get; }
+        }
     }
 }

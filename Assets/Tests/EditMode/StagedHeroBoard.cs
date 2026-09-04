@@ -280,6 +280,21 @@ namespace GuardsDigital.Tests.EditMode
             string id, HexCoordinate coordinate) =>
             new Dictionary<string, HexCoordinate> { [id] = coordinate };
 
+        /// <summary>
+        /// Milestone 8.35l: two pieces at once, because a case about a rule that bars SOME of a
+        /// selection's candidates needs at least two of them placed deliberately.
+        /// </summary>
+        internal static IReadOnlyDictionary<string, HexCoordinate> At(
+            string firstId,
+            HexCoordinate firstCoordinate,
+            string secondId,
+            HexCoordinate secondCoordinate) =>
+            new Dictionary<string, HexCoordinate>
+            {
+                [firstId] = firstCoordinate,
+                [secondId] = secondCoordinate
+            };
+
         // -------------------------------------------------------------------------------------
         // Playing a card
         // -------------------------------------------------------------------------------------
@@ -327,21 +342,69 @@ namespace GuardsDigital.Tests.EditMode
         /// Hero committed. Milestone 7.8a1's rule greys an action with nothing to act on, so a face
         /// whose text names nobody on this board is unavailable rather than startable-and-empty.
         /// </summary>
-        internal bool IsPrimaryAvailable(CardDefinitionId cardId)
+        internal bool IsPrimaryAvailable(CardDefinitionId cardId) =>
+            PrimaryOffer(cardId).IsAvailable;
+
+        /// <summary>
+        /// Milestone 8.35l. Starts an offer already read from
+        /// <see cref="PrimaryOffer(CardDefinitionId, CardDefinitionId, bool)"/>, which has committed
+        /// every seat and drained the earlier turns already - so a case that reads an offer and then
+        /// takes it does not commit a second time.
+        /// </summary>
+        internal void StartOffer(ActionOffer offer)
+        {
+            Assert.That(offer.ActionDefinitionId.IsDefined, Is.True,
+                "There is no offer here to start.");
+            standingBeforeTheAction.Clear();
+            standingBeforeTheAction.AddRange(MinionIds());
+            Accept(DirectorCommand.StartAction(offer.ActionDefinitionId));
+        }
+
+        /// <summary>
+        /// Milestone 8.35l. The printed primary offer itself once the hero has committed the named
+        /// card, available or not, with the enemy seat committing whatever the case needs.
+        ///
+        /// <para>Two things made this worth having beside <see cref="IsPrimaryAvailable"/>. A case
+        /// about one hero's card being barred by ANOTHER hero's standing text has to say which card
+        /// that other seat played, and the boolean helper always yielded the enemy's lowest-Initiative
+        /// card. And an offer now carries a reason as well as a verdict, so a case that reads only the
+        /// bool can assert an action is greyed while saying nothing about whether the player is told
+        /// why - which is half of what milestone 8.35l is for.</para>
+        /// </summary>
+        internal ActionOffer PrimaryOffer(
+            CardDefinitionId cardId,
+            CardDefinitionId enemyCard = default,
+            bool letTheEnemyAct = false)
         {
             foreach (var hero in Session.Projection.Participants.Heroes.Select(value => value.Id))
             {
                 var card = hero.Equals(Hero)
                     ? HandCard(hero, cardId)
-                    : LowestInitiativeHandCard(hero);
+                    : enemyCard.IsDefined
+                        ? HandCard(hero, enemyCard)
+                        : LowestInitiativeHandCard(hero);
                 Accept(DirectorCommand.CommitCard(hero, card.Id));
             }
 
-            DrainUntilTheHeroActs();
-            return Session.Projection.AvailableTurnActions.Any(candidate =>
-                candidate.IsAvailable &&
-                OriginOf(candidate) == ActionDefinitionOrigin.PrintedPrimary);
+            DrainUntilTheHeroActs(letTheEnemyAct);
+            var offers = Session.Projection.AvailableTurnActions
+                .Where(candidate => OriginOf(candidate) == ActionDefinitionOrigin.PrintedPrimary)
+                .ToArray();
+            Assert.That(offers, Has.Length.EqualTo(1),
+                $"'{cardId.Value}' should print exactly one primary action to read here.");
+            return offers[0];
         }
+
+        /// <remarks>
+        /// <para>Naming the enemy's card is also how a case reaches a standing `This turn` effect
+        /// that enemy's Attack CREATED, which is the shape <see cref="TakeTheEnemysAttack"/> cannot
+        /// give: that one stops p.14 at the Defense response with the staged hero as the target,
+        /// while a restriction case needs the enemy's Attack to have completed against somebody else,
+        /// because the modification is created at the After-the-attack checkpoint. Wasp's Magnetic
+        /// Dagger prints Initiative 12 against Sabina's Back to Back at 8, so the ordinary turn order
+        /// puts the pin in place before she acts, and <see cref="DrainUntilTheHeroActs"/> resolves
+        /// that Attack the way any earlier seat's turn is resolved. Nothing is staged by hand.</para>
+        /// </remarks>
 
         /// <summary>Starts the named Attack and answers p.14's target question with a minion.</summary>
         internal void PlayAttackAt(CardDefinitionId cardId, MinionId target)
@@ -1027,7 +1090,7 @@ namespace GuardsDigital.Tests.EditMode
         /// Plays out any earlier seat's turn until the staged hero's own starts. The lowest-Initiative faces print the
         /// lowest Initiative in the match, so they can act second.
         /// </summary>
-        private void DrainUntilTheHeroActs()
+        private void DrainUntilTheHeroActs(bool letTheEnemyAct = false)
         {
             for (var budget = 0; budget < 16; budget++)
             {
@@ -1079,6 +1142,23 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     Accept(DirectorCommand.ReleaseTurn());
                     continue;
+                }
+
+                // Milestone 8.35l. An earlier seat yields by default, because almost every fixture
+                // here is about the staged hero's own card and an enemy turn is something to get
+                // past. A case about what the ENEMY's card DID - a `This turn` restriction its
+                // After-the-attack text creates - needs that turn played instead, so it is asked for
+                // rather than assumed, and the yield stays the default nothing else has to revisit.
+                if (letTheEnemyAct)
+                {
+                    var enemyOffer = projection.AvailableTurnActions.FirstOrDefault(candidate =>
+                        candidate.IsAvailable &&
+                        OriginOf(candidate) == ActionDefinitionOrigin.PrintedPrimary);
+                    if (enemyOffer.ActionDefinitionId.IsDefined)
+                    {
+                        Accept(DirectorCommand.StartAction(enemyOffer.ActionDefinitionId));
+                        continue;
+                    }
                 }
 
                 Accept(DirectorCommand.PerformHold(projection.SelectedActor.CardInstanceId));

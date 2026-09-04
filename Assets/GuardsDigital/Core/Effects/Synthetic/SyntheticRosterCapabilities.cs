@@ -851,7 +851,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
         }
 
-        private sealed class ChooseTargetPairHandler : TargetingHandler, IEffectCapabilityHandler
+        /// <summary>
+        /// Milestone 8.35l gave this selection the two members that let it be narrowed, and the reason
+        /// it had none is worth stating rather than inferring. Milestone 6.8l's contract is opt-in: a
+        /// selection accepts a consumer by declaring the parameter, and this one declared none, so
+        /// nothing about Sabina's "Swap two minions in radius" could be narrowed even in principle -
+        /// the narrowing was <em>unavailable</em> rather than merely undeclared, and no content edit
+        /// could have reached it. With Wasp's Magnetic Dagger standing, the offer was made on a board
+        /// where the only pair formable was barred, the player took it, and the card was spent for
+        /// nothing.
+        ///
+        /// <para>Its floor of two is the part that does not follow from the rest. A selection narrowed
+        /// to one legal minion is narrowed correctly and is still unanswerable, so the offer question
+        /// has to read the floor as well as the count - see
+        /// <c>EffectSelectionEligibilityQuery.JudgeSelection</c>, where the live pause's own floor check
+        /// finally has its counterpart at offer time.</para>
+        /// </summary>
+        private sealed class ChooseTargetPairHandler
+            : TargetingHandler, IEffectCapabilityHandler, IEffectSelectionCapabilityHandler,
+                IEffectAnticipatedOutcomeCapabilityHandler
         {
             public override IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
                 SwapActivity;
@@ -870,7 +888,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             RelationParameter,
                             EffectValueKind.Integer,
                             integerDomain: EffectIntegerDomain.AllExcept(
-                                SourceTeamRelation.None))
+                                SourceTeamRelation.None)),
+                        // Milestone 8.35l. Optional, exactly as every other selection declares it: a
+                        // pair whose result no single later node consumes still has a legal shape.
+                        new EffectCapabilityParameter(
+                            EffectSelectionDeclaration.ConsumerParameterName,
+                            EffectValueKind.Node,
+                            isRequired: false)
                     },
                     new[]
                     {
@@ -905,11 +929,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
+                var facts = Publish(context, selected);
+                return facts == null
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.Applied(facts);
+            }
+
+            /// <summary>
+            /// What answering this pair publishes, or nothing where the answer is not one this
+            /// selection would take. Lifted out of <see cref="Resume"/> unchanged at milestone 8.35l so
+            /// the facts the consuming Swap is asked about before the offer and the facts it receives
+            /// after the answer are one derivation.
+            /// </summary>
+            private IReadOnlyList<EffectOutcomeFact> Publish(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
                 var candidates = Candidates(context);
                 var chosen = (selected ?? Array.Empty<EffectValue>()).Select(FromValue).ToArray();
                 if (chosen.Length != 2 || chosen.Distinct().Count() != 2 ||
                     chosen.Any(value => !value.IsDefined || !candidates.Contains(value)))
-                    return EffectExecutionResult.ImpossibleMandatory();
+                    return null;
                 var canonical = Canonical(chosen);
                 var facts = new List<EffectOutcomeFact>
                 {
@@ -918,13 +957,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 };
                 AddSpaceIfPublished(context, facts, canonical[0], "firstSpace");
                 AddSpaceIfPublished(context, facts, canonical[1], "secondSpace");
-                return EffectExecutionResult.Applied(facts);
+                return facts;
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 Candidates(context).Count < 2
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.NeedsChoice;
+
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
+                Candidates(context).Select(AsValue).ToArray();
+
+            /// <summary>Naming the pair mutates nothing; the Swap after it does. Milestone 8.35l.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>
+            /// Two, always: the card says "swap two minions" and p.19's Swap moves both, so an answer
+            /// naming one is not a smaller version of this question but no answer at all.
+            /// </summary>
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 2;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                Publish(context, chosen) ?? Array.Empty<EffectOutcomeFact>();
         }
 
         private sealed class BehindTargetLineHandler : TargetingHandler, IEffectCapabilityHandler
@@ -1644,7 +1699,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     : EffectExecutionResultKind.ImpossibleMandatory;
         }
 
-        private sealed class AdjacentTerrainPresenceHandler : IEffectCapabilityHandler
+        private sealed class AdjacentTerrainPresenceHandler
+            : IEffectCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
         {
             public EffectCapabilityReference Reference => AdjacentTerrainPresenceV1;
             public EffectCapabilityParameterSchema Schema { get; } =
@@ -1680,6 +1736,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 Read(context).HasValue
                     ? EffectExecutionResultKind.Applied
                     : EffectExecutionResultKind.ImpossibleMandatory;
+
+            /// <summary>
+            /// Asking whether the actor stands beside terrain changes nothing, and answering "yes" is
+            /// not the card doing anything. Milestone 8.35l: Blend Into Shadows opens on this
+            /// question, and while it counted as the card applying something, the Place it gates was
+            /// never judged - so a barred Place was offered, drew no prompt, and spent the card.
+            /// </summary>
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var value = Read(context);
+                return value.HasValue
+                    ? new[] { new EffectOutcomeFact("present", EffectValue.Boolean(value.Value)) }
+                    : Array.Empty<EffectOutcomeFact>();
+            }
         }
 
         private sealed class RetrieveCardHandler : IEffectCapabilityHandler
@@ -1866,6 +1939,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         .ToArray()
                     : Array.Empty<EffectValue>();
             }
+
+            /// <summary>One card, which is what the discard offer requests. Milestone 8.35l.</summary>
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
 
             private static HeroId Chooser(EffectCapabilityContext context)
             {

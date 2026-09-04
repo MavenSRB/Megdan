@@ -38,7 +38,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// the same coupling <see cref="WaspCardContent.ContentRevision"/> has and the reason a later
         /// slice's compatibility decision is a real decision rather than a formality.
         /// </summary>
-        public const string ContentRevision = "arien-8-20-rev-1";
+        public const string ContentRevision = "arien-8-35l-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity. It is not a

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Rules.EffectResolution
 {
@@ -100,18 +101,59 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public static bool CanApplyAnything(
             PendingResolution prospectiveFrame,
-            EffectResolutionContext context)
+            EffectResolutionContext context) =>
+            CanApplyAnything(prospectiveFrame, context, out _);
+
+        /// <summary>
+        /// Milestone 8.35l: the same answer, plus the standing modification that produced it where the
+        /// walk met one.
+        ///
+        /// <para>The reason travels out with the verdict rather than being asked for afterwards,
+        /// because asking afterwards means asking a second time and a second reading can differ from
+        /// the first. What comes back is the applied modification the refusing capability itself named,
+        /// and it is null wherever the action is empty for any other reason - a card whose text can
+        /// bind no target is greyed exactly as before and says nothing new.</para>
+        /// </summary>
+        public static bool CanApplyAnything(
+            PendingResolution prospectiveFrame,
+            EffectResolutionContext context,
+            out AppliedRuleModification blocking)
         {
             if (prospectiveFrame == null) throw new ArgumentNullException(nameof(prospectiveFrame));
             if (context == null) throw new ArgumentNullException(nameof(context));
 
             var budget = MaximumNodesPerOption;
-            return Walk(
+            var explanation = new RefusalExplanation();
+            var verdict = Walk(
                 context.Definition.RootNodeId,
                 prospectiveFrame,
                 Array.Empty<EffectNodeOutcome>(),
                 context,
-                ref budget) == Verdict.Performable;
+                ref budget,
+                explanation);
+            blocking = verdict == Verdict.Performable ? null : explanation.Blocking;
+            return verdict == Verdict.Performable;
+        }
+
+        /// <summary>
+        /// The first standing modification a walk met, kept so the offer can name it.
+        ///
+        /// <para>First rather than every one, and first in the walk's own order, which is execution
+        /// order: what a player is shown is why the action stops where it stops, and a list of every
+        /// rule that would also have refused it further along is not that. It is written once and never
+        /// overwritten, so a later branch cannot rename the blocker the walk actually stopped at.</para>
+        /// </summary>
+        private sealed class RefusalExplanation
+        {
+            public AppliedRuleModification Blocking { get; private set; }
+
+            public void RecordFirst(AppliedRuleModification blocking)
+            {
+                if (Blocking == null && blocking != null)
+                {
+                    Blocking = blocking;
+                }
+            }
         }
 
         /// <summary>
@@ -256,7 +298,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             PendingResolution frame,
             IReadOnlyList<EffectNodeOutcome> outcomes,
             EffectResolutionContext context,
-            ref int budget)
+            ref int budget,
+RefusalExplanation explanation = null)
         {
             if (--budget < 0)
             {
@@ -275,18 +318,29 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             switch (node.Kind)
             {
                 case EffectNodeKind.Capability:
-                    return Judge(node, frame, outcomes, context);
+                    return Judge(node, frame, outcomes, context, explanation);
 
                 case EffectNodeKind.Sequence:
+                    // Milestone 8.35l. The sequence carries forward what an earlier step would publish,
+                    // so a later step bound to it can be judged at all. Nothing is executed to get it:
+                    // only a node whose handler declares
+                    // `IEffectAnticipatedOutcomeCapabilityHandler` - a claim that deriving its outputs
+                    // mutates nothing - contributes, and only when the walk already found it decidable
+                    // and performable. `actor-space@1` is the whole reason: a Place reading the actor's
+                    // own space was undecidable to this walk, so Blend Into Shadows was offered against
+                    // a standing restriction that would refuse it, drew no prompt, and spent the card.
+                    var carried = outcomes;
                     foreach (var child in node.ChildNodeIds)
                     {
-                        var verdict = Walk(child, frame, outcomes, context, ref budget);
+                        var verdict = Walk(child, frame, carried, context, ref budget, explanation);
                         if (verdict != Verdict.Empty)
                         {
                             // Performable ends the walk; blocked ends the sequence, because the
                             // resolution stops at a mandatory step it cannot take.
                             return verdict;
                         }
+
+                        carried = WithAnticipatedOutputs(child, frame, carried, context);
                     }
 
                     return Verdict.Empty;
@@ -294,7 +348,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 case EffectNodeKind.Optional:
                     // Declining is always available and always does nothing, so an optional step is
                     // worth offering exactly when the step it governs is.
-                    return Walk(node.ChildNodeIds[0], frame, outcomes, context, ref budget) ==
+                    return Walk(node.ChildNodeIds[0], frame, outcomes, context, ref budget, explanation) ==
                         Verdict.Performable
                         ? Verdict.Performable
                         : Verdict.Empty;
@@ -302,7 +356,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 case EffectNodeKind.Choose:
                     foreach (var child in node.ChildNodeIds)
                     {
-                        if (Walk(child, frame, outcomes, context, ref budget) == Verdict.Performable)
+                        if (Walk(child, frame, outcomes, context, ref budget, explanation) == Verdict.Performable)
                         {
                             return Verdict.Performable;
                         }
@@ -322,7 +376,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     // an unevaluated predicate could have taken the harmless path.
                     foreach (var child in node.ChildNodeIds)
                     {
-                        if (Walk(child, frame, outcomes, context, ref budget) == Verdict.Performable)
+                        if (Walk(child, frame, outcomes, context, ref budget, explanation) == Verdict.Performable)
                         {
                             return Verdict.Performable;
                         }
@@ -351,7 +405,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectNodeDefinition node,
             PendingResolution frame,
             IReadOnlyList<EffectNodeOutcome> outcomes,
-            EffectResolutionContext context)
+            EffectResolutionContext context,
+            RefusalExplanation explanation = null)
         {
             if (!context.Catalog.TryLoad(node.Capability, out var handler))
             {
@@ -382,10 +437,28 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             switch (anticipated)
             {
                 case EffectExecutionResultKind.Applied:
+                    // Milestone 8.35l. A node that only publishes a fact has not made the action worth
+                    // taking. Reading the acting hero's own coordinate is the case that mattered:
+                    // `actor-space@1` applied, the walk short-circuited there, and the Place standing
+                    // behind it - which a restriction had already barred - was never judged, so
+                    // Tigerclaw's Blend Into Shadows was offered, drew no prompt, and spent the card
+                    // for nothing. The sequence carries what it published to the next step instead, so
+                    // the step that does the visible thing is the one this answer is about.
+                    return handler is IEffectAnticipatedOutcomeCapabilityHandler publisher &&
+                        publisher.PublishesWithoutApplying
+                        ? Verdict.Empty
+                        : Verdict.Performable;
+
                 case EffectExecutionResultKind.NeedsChoice:
                     return Verdict.Performable;
 
                 case EffectExecutionResultKind.ImpossibleMandatory:
+                    // Milestone 8.35l. Ask what refused, before reading the failure policy: the node
+                    // itself where it can explain its own refusal, and otherwise the consumer this
+                    // selection was narrowed by, which is where a selection's refusal actually lives.
+                    RecordExplanation(
+                        explanation, handler, node, capabilityContext, frame, outcomes, context);
+
                     // `if able`, `may`, and `up to` all treat an impossible step as simply not taken,
                     // so only a mandatory one stops what follows it.
                     return node.FailurePolicy == EffectFailurePolicy.Mandatory
@@ -395,6 +468,90 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 default:
                     return Verdict.Empty;
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.35l: which standing modification refused this node, recorded once.
+        ///
+        /// <para>Two shapes reach it and both are the refusing party answering for itself. A node that
+        /// refused on a restriction of its own - the Place behind Tigerclaw's actor-space bridge - says
+        /// so directly. A selection narrowed to nothing was not refused by itself at all: its consumer
+        /// refused every candidate, so the consumer is asked. Neither case re-derives anything, and a
+        /// refusal with no restriction behind it records nothing rather than inventing a cause.</para>
+        /// </summary>
+        private static void RecordExplanation(
+            RefusalExplanation explanation,
+            IEffectCapabilityHandler handler,
+            EffectNodeDefinition node,
+            EffectCapabilityContext capabilityContext,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context)
+        {
+            if (explanation == null)
+            {
+                return;
+            }
+
+            if (handler is IEffectRefusalExplainingCapabilityHandler explaining &&
+                explaining.TryExplainRefusal(capabilityContext, out var own))
+            {
+                explanation.RecordFirst(own);
+                return;
+            }
+
+            if (EffectSelectionEligibilityQuery.TryExplainSelectionRefusal(
+                    handler, node, capabilityContext, frame, outcomes, context, out var consumed))
+            {
+                explanation.RecordFirst(consumed);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35l: the outcomes so far, plus what this node would publish if it publishes
+        /// without applying anything and can be read now.
+        ///
+        /// <para>Nothing is executed. A handler contributes only by declaring
+        /// <see cref="IEffectAnticipatedOutcomeCapabilityHandler.PublishesWithoutApplying"/>, which is
+        /// a claim that running it changes no rules state, and only when its required inputs already
+        /// resolve - so this widens what the walk can read without widening what it may do. A node it
+        /// cannot read contributes nothing and the step after it stays undecidable, which is milestone
+        /// 6.5ac's conservative position exactly where it still applies.</para>
+        /// </summary>
+        private static IReadOnlyList<EffectNodeOutcome> WithAnticipatedOutputs(
+            EffectNodeId nodeId,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context)
+        {
+            if (!context.Definition.TryGetNode(nodeId, out var node) ||
+                node.Kind != EffectNodeKind.Capability ||
+                !context.Catalog.TryLoad(node.Capability, out var handler) ||
+                !(handler is IEffectAnticipatedOutcomeCapabilityHandler publisher) ||
+                !publisher.PublishesWithoutApplying)
+            {
+                return outcomes;
+            }
+
+            var capabilityContext =
+                EffectResolutionSession.BuildCapabilityContext(frame, node, outcomes, context);
+            if (!IsDecidable(handler, capabilityContext) ||
+                handler.Anticipate(capabilityContext) != EffectExecutionResultKind.Applied)
+            {
+                return outcomes;
+            }
+
+            var published = publisher.AnticipateOutcomes(
+                capabilityContext, Array.Empty<EffectValue>());
+            if (published == null || published.Count == 0)
+            {
+                return outcomes;
+            }
+
+            var carried = new List<EffectNodeOutcome>(outcomes);
+            carried.Add(new EffectNodeOutcome(
+                node.Id, EffectExecutionResultKind.Applied, published));
+            return carried;
         }
 
         /// <summary>

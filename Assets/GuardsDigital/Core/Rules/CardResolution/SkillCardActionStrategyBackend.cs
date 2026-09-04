@@ -316,8 +316,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             MatchComponents components,
             int roundIndex,
-            int turnIndex)
+            int turnIndex,
+            out AppliedRuleModification blocking)
         {
+            blocking = null;
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             if (!ActionOfferQuery.TryFindActionDefinition(offer, materializedDefinitions, out var action) ||
                 action.Kind != ActionKind.Skill || action.EffectRoot == null)
@@ -339,7 +341,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     offer.ActorId,
                     offer.InvocationContext,
                     context),
-                context);
+                context,
+                out blocking);
         }
 
         public CardActionResolutionResult AnswerEffectChoice(

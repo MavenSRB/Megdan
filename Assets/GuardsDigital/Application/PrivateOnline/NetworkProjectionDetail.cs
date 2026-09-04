@@ -209,8 +209,18 @@ namespace GuardsDigital.Application
             int attackRange,
             bool hasCardStateTransition,
             int requiredLocation,
-            int destinationLocation)
+            int destinationLocation,
+            int unavailabilityKind = 0,
+            int blockedActivity = 0,
+            string blockingHeroId = null,
+            string blockingCardInstanceId = null,
+            string blockingActiveEffectId = null)
         {
+            UnavailabilityKind = unavailabilityKind;
+            BlockedActivity = blockedActivity;
+            BlockingHeroId = blockingHeroId ?? string.Empty;
+            BlockingCardInstanceId = blockingCardInstanceId ?? string.Empty;
+            BlockingActiveEffectId = blockingActiveEffectId ?? string.Empty;
             SourceCardInstanceId = sourceCardInstanceId;
             SourceDefinitionId = sourceDefinitionId;
             SourceContentRevision = sourceContentRevision;
@@ -235,6 +245,28 @@ namespace GuardsDigital.Application
         public bool HasCardStateTransition { get; }
         public int RequiredLocation { get; }
         public int DestinationLocation { get; }
+
+        /// <summary>
+        /// Milestone 8.35l. Why a greyed offer is greyed, where the authority could say.
+        ///
+        /// <para>It crosses the wire rather than being derived on the client because deriving it would
+        /// mean a seat re-reading the rule modifications for itself - a second reading of the rules,
+        /// free to disagree with the host's - and because the only client-side material available is a
+        /// flat list of the cards standing effects came off, which cannot say which of them refused
+        /// this action. The five fields are the applied modification's own provenance and nothing
+        /// more; the words a player reads are composed by presentation from the hero and card named
+        /// here. This is the field group that advanced the protocol to
+        /// <c>guards-private-online/5</c>.</para>
+        /// </summary>
+        public int UnavailabilityKind { get; }
+
+        public int BlockedActivity { get; }
+
+        public string BlockingHeroId { get; }
+
+        public string BlockingCardInstanceId { get; }
+
+        public string BlockingActiveEffectId { get; }
     }
 
     /// <summary>One typed effect value, one arm defined per its kind.</summary>

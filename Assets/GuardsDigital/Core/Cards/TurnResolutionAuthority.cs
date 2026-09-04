@@ -1731,9 +1731,7 @@ namespace GuardsDigital.Core.Cards
                 initiative.SelectedActor.ActorId,
                 initiative.SelectedActor.CardInstanceId);
             return Array.AsReadOnly(offers
-                .Select(offer => offer.IsAvailable && !CanStart(offer)
-                    ? offer.WithAvailability(false)
-                    : offer)
+                .Select(StampAvailability)
                 .ToArray());
         }
 
@@ -1751,6 +1749,37 @@ namespace GuardsDigital.Core.Cards
         private bool CanStart(ActionOffer offer) =>
             CanStartSkill(offer) && CanStartAttack(offer) && CardTextIsComposed(offer) &&
             ActorMayPerform(offer) && !TheTurnsActionIsUnderWay();
+
+        /// <summary>
+        /// Milestone 8.35l: the availability stamp, saying why where the rules said why.
+        ///
+        /// <para>The reason is asked for in the same call that produces the verdict, never afterwards,
+        /// so the greyed control and the explanation on it are one reading - the discipline milestone
+        /// 8.29d named for the greyed control and the refusal a start would have produced. Only the
+        /// Skill clause can currently explain itself; the other four grey the offer with nothing said,
+        /// which is exactly what they did before and is what a surface must be able to draw.</para>
+        /// </summary>
+        private ActionOffer StampAvailability(ActionOffer offer)
+        {
+            if (!offer.IsAvailable)
+            {
+                return offer;
+            }
+
+            if (!CanStartSkill(offer, out var blocking))
+            {
+                return offer.WithAvailability(
+                    false,
+                    blocking == null
+                        ? ActionUnavailability.None
+                        : ActionUnavailability.FromRestriction(blocking));
+            }
+
+            return CanStartAttack(offer) && CardTextIsComposed(offer) &&
+                ActorMayPerform(offer) && !TheTurnsActionIsUnderWay()
+                ? offer
+                : offer.WithAvailability(false);
+        }
 
         /// <summary>
         /// Milestone 8.29f. Whether the one action rulebook p.7 gives the selected card is already
@@ -1831,11 +1860,20 @@ namespace GuardsDigital.Core.Cards
         /// Answered <c>true</c> wherever it cannot be asked at all - no Skill authority yet - because
         /// this refuses an action proven empty and never one that merely could not be judged.
         /// </summary>
-        private bool CanStartSkill(ActionOffer offer) =>
-            cardActions == null ||
-            cardActions.CanSkillApplyAnything(
-                offer, definitions, instances, participants, timing, CurrentModifications(),
-                roundIndex, turnIndex);
+        private bool CanStartSkill(ActionOffer offer) => CanStartSkill(offer, out _);
+
+        /// <summary>
+        /// Milestone 8.35l: the same statement, keeping the standing modification behind a refusal so
+        /// the offer can name it.
+        /// </summary>
+        private bool CanStartSkill(ActionOffer offer, out AppliedRuleModification blocking)
+        {
+            blocking = null;
+            return cardActions == null ||
+                cardActions.CanSkillApplyAnything(
+                    offer, definitions, instances, participants, timing, CurrentModifications(),
+                    roundIndex, turnIndex, out blocking);
+        }
 
         /// <summary>
         /// Milestone 7.8a1: the same statement for an Attack. Rulebook p.12 lets a player Hold rather

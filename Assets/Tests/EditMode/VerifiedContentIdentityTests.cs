@@ -23,9 +23,9 @@ namespace GuardsDigital.Tests.EditMode
     {
         private static readonly IdentityPin[] Pins =
         {
-            new IdentityPin("arien", "arien-8-20-rev-1", "29f6fb4a26cf5cd42e7055e80052d98e98e20358e8f22a62e13339479d9ccf5c"),
+            new IdentityPin("arien", "arien-8-35l-rev-1", "988ef437c7135eca77d70639b1d90cf433c4029dfe729410762c2bd29481d1b0"),
             new IdentityPin("brogan", "brogan-8-21-rev-1", "4fb3af3984290f88b1ced0b60c03186f2c64f23a374e0876a2fcbb765fd81201"),
-            new IdentityPin("sabina", "sabina-8-25e5b-rev-1", "5d7430c9f110f47ab4b3fbee5e3fde687fb09fa666f2922970534072325294cc"),
+            new IdentityPin("sabina", "sabina-8-35l-rev-1", "2518211c8e851b8ad65ba538560c50772033f341a995a597a714727eb2517449"),
             new IdentityPin("tigerclaw", "tigerclaw-8-25e5b-rev-1", "2cb7cb62007a6ccf58c6881421d3a2822a8b818437a147dbd60e7bf94ff64849"),
             new IdentityPin("wasp", "wasp-8-25e7-rev-1", "eb7cf4f63a247c31b2f94faa93125fbd4ee977ebe260b91b803b0c92296db927"),
             new IdentityPin("xargatha", "xargatha-8-25e5f1-rev-1", "15ed75b47588e0ef758fd9cf0b3e06fb1458bb1113da26b6e019eba7dee08b77")

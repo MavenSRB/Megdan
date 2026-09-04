@@ -198,7 +198,10 @@ namespace GuardsDigital.Core.Rules.Modifications
                             effect.ControllerHeroId,
                             effect.ControllerTeamSide,
                             effect.CreationSequence,
-                            effect.BoundActorHeroId);
+                            effect.BoundActorHeroId,
+                            // Milestone 8.35l: the card the standing effect came off, carried so a
+                            // refusal can name it.
+                            effect.SourceCardInstanceId);
                     }
                 }
             }

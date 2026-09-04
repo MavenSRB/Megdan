@@ -116,7 +116,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// kind is read about both for the same reason.
         /// </summary>
         private sealed class SwapHandler :
-            IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler
+            IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler,
+            IEffectRefusalExplainingCapabilityHandler
         {
             private readonly bool supportsImmunityOverrides;
 
@@ -172,6 +173,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context, First(context), context.Input("second"),
                     supportsImmunityOverrides);
 
+            public bool TryExplainRefusal(
+                EffectCapabilityContext context, out AppliedRuleModification blocking) =>
+                TryExplainSwapRefusal(
+                    context, First(context), context.Input("second"), out blocking);
+
             private static EffectValue First(EffectCapabilityContext context) =>
                 context.Input("first");
         }
@@ -189,7 +195,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// question is answerable when the option is judged and again when the choice is offered.
         /// </summary>
         private sealed class SwapWithActorHandler :
-            IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler
+            IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler,
+            IEffectRefusalExplainingCapabilityHandler
         {
             private readonly bool supportsImmunityOverrides;
 
@@ -257,6 +264,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 AnticipateSwap(
                     context, ActorSpace(context), context.Input("subject"),
                     supportsImmunityOverrides);
+
+            public bool TryExplainRefusal(
+                EffectCapabilityContext context, out AppliedRuleModification blocking) =>
+                TryExplainSwapRefusal(
+                    context, ActorSpace(context), context.Input("subject"), out blocking);
 
             /// <summary>
             /// The space the acting hero stands in, or the undefined value when it stands nowhere -
@@ -370,15 +382,63 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// named thing being done and carries declared actors. A card can print either.
         /// </summary>
         private static bool IsRestrictedFromBeingSwapped(
-            EffectCapabilityContext context, BoardObjectReference subject)
+            EffectCapabilityContext context, BoardObjectReference subject) =>
+            TryGetSwapRestriction(context, subject, out _);
+
+        /// <summary>
+        /// Milestone 8.35l: the same question, keeping the answer instead of reducing it to a boolean.
+        ///
+        /// <para><see cref="RestrictionQuery.TryGetRestriction"/> has always returned "the first
+        /// restriction in canonical order that bars this actor, which is the one whose source explains
+        /// the refusal", and every caller in the build discarded it. A player who is told only that an
+        /// action is unavailable learns nothing about the card three spaces away that made it so, which
+        /// is exactly what the live playtest reported. This keeps it so the offer can name it.</para>
+        /// </summary>
+        private static bool TryGetSwapRestriction(
+            EffectCapabilityContext context,
+            BoardObjectReference subject,
+            out AppliedRuleModification restriction)
         {
+            restriction = null;
             var piece = subject.AsRuleObject();
-            return piece.IsDefined && RestrictionQuery.IsRestricted(
+            return piece.IsDefined && RestrictionQuery.TryGetRestriction(
                 piece,
                 RuleActivity.Swap,
                 RuleObject.ForHero(context.ActorId),
                 context.Participants,
-                context.Modifications);
+                context.Modifications,
+                out restriction);
+        }
+
+        /// <summary>
+        /// Milestone 8.35l: which standing restriction bars this Swap, asked about the same two pieces
+        /// <see cref="TryResolvePair"/> asks about and in the same order, so the reason shown and the
+        /// refusal given are one answer rather than two readings.
+        ///
+        /// <para>Nothing is invented where the Swap is refused for a different cause. A pair that
+        /// cannot be resolved at all, an immune piece, or a kind this node may not take all leave this
+        /// saying nothing, and the control is greyed in silence rather than with a borrowed
+        /// explanation.</para>
+        /// </summary>
+        private static bool TryExplainSwapRefusal(
+            EffectCapabilityContext context,
+            EffectValue firstSpace,
+            EffectValue secondSpace,
+            out AppliedRuleModification blocking)
+        {
+            blocking = null;
+            var components = context.Components;
+            if (components == null || !components.CanExchangeObjects ||
+                firstSpace.Kind != EffectValueKind.Coordinate ||
+                secondSpace.Kind != EffectValueKind.Coordinate ||
+                !components.Board.TryGetObjectAt(firstSpace.Coordinate, out var first) ||
+                !components.Board.TryGetObjectAt(secondSpace.Coordinate, out var second))
+            {
+                return false;
+            }
+
+            return TryGetSwapRestriction(context, first, out blocking) ||
+                TryGetSwapRestriction(context, second, out blocking);
         }
 
         /// <summary>

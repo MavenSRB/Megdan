@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Rules.EffectResolution
 {
@@ -55,8 +56,49 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 return candidates;
             }
 
-            return candidates.Where(candidate => consumer.Accepts(candidate)).ToArray();
+            var minimum = consumer.MinimumSelections;
+            if (minimum <= 1)
+            {
+                return candidates
+                    .Where(candidate => consumer.Accepts(new[] { candidate }))
+                    .ToArray();
+            }
+
+            if (minimum > LargestNarrowableAnswer)
+            {
+                // Milestone 8.35l's declared boundary, and it is milestone 6.5ac's position restated:
+                // a selection whose complete answer names more pieces than this walk will enumerate is
+                // one the query cannot read, so it is left exactly as offered rather than narrowed on a
+                // guess. Nothing in the shipped roster asks for more than two.
+                return candidates;
+            }
+
+            // A pair - the only floor above one this build declares. A candidate belongs in the offer
+            // exactly when some complete answer containing it would be accepted, which is the same
+            // rule the single-selection arm states and not a second one: with a floor of one, "some
+            // complete answer containing it" is the candidate by itself.
+            //
+            // Sabina's Blue swap trio is why this is asked as a pair rather than piece by piece. Its
+            // consumer takes both halves at once and refuses when either is barred, so a question that
+            // put one piece to it and left the other half unanswered would be asking about a Swap
+            // nobody proposed. Enumerating partners asks only questions the consumer can answer, and
+            // it stops at the first partner that works, so the ordinary all-legal board costs one
+            // question per candidate.
+            return candidates
+                .Where((candidate, index) => candidates
+                    .Where((_, partnerIndex) => partnerIndex != index)
+                    .Any(partner => consumer.Accepts(new[] { candidate, partner })))
+                .ToArray();
         }
+
+        /// <summary>
+        /// The largest complete answer this query will enumerate while narrowing. Two, because
+        /// <c>choose-target-pair@1</c> is the widest floor any shipped selection declares and because
+        /// the enumeration is over answers rather than candidates: a floor of three would ask a cubic
+        /// number of questions of a consumer, and buying a narrowing at that price is not obviously
+        /// right. Raising it is a deliberate decision with a measurement behind it, not a constant edit.
+        /// </summary>
+        private const int LargestNarrowableAnswer = 2;
 
         /// <summary>
         /// What a selection node reports once its consumer has been consulted, given the kind its own
@@ -89,9 +131,56 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 frame,
                 outcomes,
                 context);
-            return eligible.Count == 0
+
+            // Milestone 8.35l. Not `eligible.Count == 0` - the selection's own floor, which is what the
+            // live pause has always applied and what this offer question never did. A pair selection
+            // narrowed to one legal minion has narrowed correctly and still cannot be answered, and
+            // reporting it answerable is exactly how Sabina's Listen Up stayed offered on a board with
+            // one free minion, spent the card and moved nothing. A floor of zero belongs to a step the
+            // card marks `may`, and the resolver reads that word where it belongs, so this only ever
+            // raises the bar it already had.
+            var minimum = Math.Max(1, selection.AnticipateMinimumSelections(selectionContext));
+            return eligible.Count < minimum
                 ? EffectExecutionResultKind.ImpossibleMandatory
                 : EffectExecutionResultKind.NeedsChoice;
+        }
+
+        /// <summary>
+        /// Milestone 8.35l: which standing restriction refused this selection's consumer, where the
+        /// consumer can say.
+        ///
+        /// <para>Asked only once the narrowing has already produced the refusal, and asked of the
+        /// consumer rather than re-derived here, so the reason a control carries and the reason it is
+        /// greyed are one answer read once. It puts the first candidate's question, because what is
+        /// being explained is the whole action rather than one target: the player is being told why the
+        /// card cannot be played at all, and every candidate came back refused for it.</para>
+        /// </summary>
+        public static bool TryExplainSelectionRefusal(
+            IEffectCapabilityHandler handler,
+            EffectNodeDefinition selectionNode,
+            EffectCapabilityContext selectionContext,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            out AppliedRuleModification blocking)
+        {
+            blocking = null;
+            if (!(handler is IEffectSelectionCapabilityHandler selection) ||
+                !TryReadConsumer(selectionNode, frame, outcomes, context, out var consumer))
+            {
+                return false;
+            }
+
+            var candidates = selection.AnticipateCandidates(selectionContext);
+            if (candidates.Count == 0)
+            {
+                return false;
+            }
+
+            var answer = consumer.MinimumSelections >= 2 && candidates.Count >= 2
+                ? new[] { candidates[0], candidates[1] }
+                : new[] { candidates[0] };
+            return consumer.TryExplainRefusal(answer, out blocking);
         }
 
         /// <summary>
@@ -111,8 +200,17 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectResolutionContext context)
         {
             var chosen = selected ?? Array.Empty<EffectValue>();
-            return chosen.Count == 0 ||
-                EligibleCandidates(selectionNode, chosen, frame, outcomes, context).Count == chosen.Count;
+            if (chosen.Count == 0 ||
+                !TryReadConsumer(selectionNode, frame, outcomes, context, out var consumer))
+            {
+                return true;
+            }
+
+            // Milestone 8.35l asks about the answer rather than about each piece of it. An answer is
+            // what the consumer is going to be given, and for a pair the two halves are only legal
+            // together - so checking them one at a time would either refuse a legal pair or admit an
+            // illegal one depending on which half was asked about.
+            return consumer.Accepts(chosen);
         }
 
         /// <summary>
@@ -130,7 +228,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             if (!EffectSelectionDeclaration.TryReadConsumer(selectionNode, out var consumerNodeId) ||
                 !context.Definition.TryGetNode(consumerNodeId, out var consumer) ||
                 !consumer.Capability.IsDefined ||
-                !context.Catalog.TryLoad(consumer.Capability, out var handler))
+                !context.Catalog.TryLoad(consumer.Capability, out var handler) ||
+                !selectionNode.Capability.IsDefined ||
+                !context.Catalog.TryLoad(selectionNode.Capability, out var selectionHandler) ||
+                !(selectionHandler is IEffectSelectionCapabilityHandler selection) ||
+                !(selectionHandler is IEffectAnticipatedOutcomeCapabilityHandler publisher))
             {
                 // An unresolvable consumer is a definition fault the validator refuses at content load
                 // and the resolver reports where it walks; treating it as a refusal here would hide
@@ -146,7 +248,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
             var inputs = EffectResolutionSession.ResolveInputBindings(
                 consumer, frame, outcomes, context.OpposingHeroId);
-            var substituted = new HashSet<string>(consumed, StringComparer.Ordinal);
+            var substituted = new HashSet<string>(
+                consumed.Select(binding => binding.ParameterName), StringComparer.Ordinal);
             var undecidable = handler.Schema.Parameters
                 .Where(parameter => parameter.IsRequired)
                 .Where(parameter => !substituted.Contains(parameter.Name))
@@ -160,7 +263,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 return false;
             }
 
-            question = new ConsumerQuestion(handler, consumer, consumed, inputs, frame, outcomes, context);
+            var selectionContext =
+                EffectResolutionSession.BuildCapabilityContext(frame, selectionNode, outcomes, context);
+            question = new ConsumerQuestion(
+                handler, consumer, consumed, inputs, frame, outcomes, context,
+                publisher, selectionContext,
+                Math.Max(1, selection.AnticipateMinimumSelections(selectionContext)));
             return true;
         }
 
@@ -172,43 +280,128 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         {
             private readonly IEffectCapabilityHandler handler;
             private readonly EffectNodeDefinition consumer;
-            private readonly IReadOnlyList<string> consumedParameters;
+            private readonly IReadOnlyList<EffectSelectionDeclaration.ConsumedBinding> consumedBindings;
             private readonly IReadOnlyDictionary<string, EffectValue> resolvedInputs;
             private readonly PendingResolution frame;
             private readonly IReadOnlyList<EffectNodeOutcome> outcomes;
             private readonly EffectResolutionContext context;
+            private readonly IEffectAnticipatedOutcomeCapabilityHandler publisher;
+            private readonly EffectCapabilityContext selectionContext;
 
             public ConsumerQuestion(
                 IEffectCapabilityHandler handler,
                 EffectNodeDefinition consumer,
-                IReadOnlyList<string> consumedParameters,
+                IReadOnlyList<EffectSelectionDeclaration.ConsumedBinding> consumedBindings,
                 IReadOnlyDictionary<string, EffectValue> resolvedInputs,
                 PendingResolution frame,
                 IReadOnlyList<EffectNodeOutcome> outcomes,
-                EffectResolutionContext context)
+                EffectResolutionContext context,
+                IEffectAnticipatedOutcomeCapabilityHandler publisher,
+                EffectCapabilityContext selectionContext,
+                int minimumSelections)
             {
                 this.handler = handler;
                 this.consumer = consumer;
-                this.consumedParameters = consumedParameters;
+                this.consumedBindings = consumedBindings;
                 this.resolvedInputs = resolvedInputs;
                 this.frame = frame;
                 this.outcomes = outcomes;
                 this.context = context;
+                this.publisher = publisher;
+                this.selectionContext = selectionContext;
+                MinimumSelections = minimumSelections;
             }
 
+            /// <summary>How many candidates a complete answer to this selection names.</summary>
+            public int MinimumSelections { get; }
+
             /// <summary>
-            /// Whether the consumer could do something with this candidate, read exactly as the
-            /// feasibility walk reads any capability node: applying and pausing are both worth
-            /// offering, and every other answer means this candidate leads nowhere.
+            /// Whether the consumer could do something with this prospective answer, read exactly as
+            /// the feasibility walk reads any capability node: applying and pausing are both worth
+            /// offering, and every other answer means this answer leads nowhere.
+            ///
+            /// <para>Milestone 8.35l put the selection's own publication between the answer and the
+            /// consumer. Before it, the raw candidate was substituted into every parameter the consumer
+            /// binds - which is right only where the candidate's kind happens to be the bound output's
+            /// kind, and is why the only declared consumers in the roster were three of Wasp's. Now the
+            /// selection says what this answer would publish, and each consumed parameter is given the
+            /// output it actually reads.</para>
             /// </summary>
-            public bool Accepts(EffectValue candidate)
+            public bool Accepts(IReadOnlyList<EffectValue> answer)
             {
-                var substituted = consumedParameters.ToDictionary(
-                    parameter => parameter, _ => candidate, StringComparer.Ordinal);
+                if (!TrySubstitute(answer, out var substituted))
+                {
+                    // A required parameter this selection feeds would receive nothing for this answer.
+                    // That is a question about the answer that this query cannot pose rather than a
+                    // refusal of it, so the conservative reading stands and the candidate is offered.
+                    return true;
+                }
+
                 var kind = handler.Anticipate(EffectResolutionSession.BuildCapabilityContext(
                     frame, consumer, outcomes, context, resolvedInputs, substituted));
                 return kind == EffectExecutionResultKind.Applied ||
                     kind == EffectExecutionResultKind.NeedsChoice;
+            }
+
+            /// <summary>
+            /// Milestone 8.35l: the standing modification the consumer refused this answer on, where
+            /// the consumer can say. Nothing is derived here - the consumer that refused is the one
+            /// asked, on the context it was refused in.
+            /// </summary>
+            public bool TryExplainRefusal(
+                IReadOnlyList<EffectValue> answer, out AppliedRuleModification blocking)
+            {
+                blocking = null;
+                return handler is IEffectRefusalExplainingCapabilityHandler explaining &&
+                    TrySubstitute(answer, out var substituted) &&
+                    explaining.TryExplainRefusal(
+                        EffectResolutionSession.BuildCapabilityContext(
+                            frame, consumer, outcomes, context, resolvedInputs, substituted),
+                        out blocking);
+            }
+
+            /// <summary>
+            /// The consumer's inputs as this answer would leave them, or nothing where a required one
+            /// would be left undefined.
+            /// </summary>
+            private bool TrySubstitute(
+                IReadOnlyList<EffectValue> answer,
+                out IReadOnlyDictionary<string, EffectValue> substituted)
+            {
+                substituted = null;
+                var published = publisher.AnticipateOutcomes(selectionContext, answer);
+                var byOutput = new Dictionary<string, EffectValue>(StringComparer.Ordinal);
+                for (var index = 0; index < published.Count; index++)
+                {
+                    byOutput[published[index].OutputName] = published[index].Value;
+                }
+
+                var bound = new Dictionary<string, EffectValue>(StringComparer.Ordinal);
+                foreach (var binding in consumedBindings)
+                {
+                    if (byOutput.TryGetValue(binding.SourceOutputName, out var value))
+                    {
+                        bound[binding.ParameterName] = value;
+                        continue;
+                    }
+
+                    // A selection may publish one of several outputs per answer - the unit selection
+                    // names either a hero or a minion - and a consumer binding both reads whichever
+                    // resolved. An unpublished OPTIONAL parameter is therefore ordinary and simply
+                    // stays undefined; an unpublished REQUIRED one means the question cannot be posed.
+                    if (handler.Schema.Parameters.Any(parameter =>
+                            string.Equals(
+                                parameter.Name, binding.ParameterName, StringComparison.Ordinal) &&
+                            parameter.IsRequired))
+                    {
+                        return false;
+                    }
+
+                    bound[binding.ParameterName] = default;
+                }
+
+                substituted = bound;
+                return true;
             }
         }
     }

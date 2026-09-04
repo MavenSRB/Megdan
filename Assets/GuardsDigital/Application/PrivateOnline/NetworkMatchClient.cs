@@ -11,6 +11,7 @@ using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Rules.Victory;
@@ -954,7 +955,17 @@ namespace GuardsDigital.Application
                 (ActionInvocationContext)row.InvocationContext,
                 row.IsAvailable,
                 (AttackRangeKind)row.AttackRange,
-                transition);
+                transition,
+                // Milestone 8.35l. Rebuilt from the host's own answer rather than re-derived from the
+                // standing effects this seat can see: a seat that worked out for itself why an action
+                // is unavailable would be a second reading of the rules.
+                row.UnavailabilityKind == (int)ActionUnavailabilityKind.BlockedByRuleModification
+                    ? ActionUnavailability.BlockedBy(
+                        (RuleActivity)row.BlockedActivity,
+                        new HeroId(row.BlockingHeroId),
+                        new CardInstanceId(row.BlockingCardInstanceId),
+                        new ActiveEffectId(row.BlockingActiveEffectId))
+                    : ActionUnavailability.None);
         }
 
         private static TeamAgreementProjection ToAgreement(

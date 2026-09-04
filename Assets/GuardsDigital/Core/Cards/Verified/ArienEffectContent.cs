@@ -711,7 +711,18 @@ namespace GuardsDigital.Core.Cards.Verified
                             "activity", RuleActivity.Skill),
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticTargetingCapabilities.TargetRelationParameterName,
-                            SourceTeamRelation.OpposingSource)
+                            SourceTeamRelation.OpposingSource),
+                        // Milestone 8.35l. The Swap below is what decides whether a minion in range is
+                        // one this card can actually take, and until 8.35l the question could not be
+                        // asked: the narrowing put the CANDIDATE to the consumer, the candidates here
+                        // are minions, and the Swap binds a coordinate - so every candidate was refused
+                        // and the declaration had to be left off. With Wasp's Magnetic Dagger standing
+                        // over the target, the unnarrowed offer was made, taken, stopped at the Swap,
+                        // and the card was spent having moved nobody. The narrowing now puts the space
+                        // the selection publishes, which is the value the Swap reads.
+                        EffectInputBinding.FromLiteral(
+                            EffectSelectionDeclaration.ConsumerParameterName,
+                            EffectValue.Node(swap))
                     },
                     outputs: new[]
                     {

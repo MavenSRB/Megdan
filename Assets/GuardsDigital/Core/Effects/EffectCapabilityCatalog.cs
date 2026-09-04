@@ -82,6 +82,25 @@ namespace GuardsDigital.Core.Effects
                     "which of its candidates that consumer accepts.", nameof(handlers));
             }
 
+            // Milestone 8.35l. Asking the consumer is not enough on its own: it has to be asked about
+            // the value it actually binds. A selection that publishes a minion and a space, consumed by
+            // a Swap that takes the space, answers "no" to every candidate when it is handed the bare
+            // minion - so the narrowing looked broken, the declaration was dropped, and the offer went
+            // unnarrowed. A capability that accepts a consumer therefore also has to say what each
+            // prospective answer would publish.
+            var unpublishableSelection = registered.FirstOrDefault(handler =>
+                EffectSelectionDeclaration.DeclaresConsumerParameter(handler.Schema) &&
+                !(handler is IEffectAnticipatedOutcomeCapabilityHandler));
+            if (unpublishableSelection != null)
+            {
+                throw new ArgumentException(
+                    $"Capability '{unpublishableSelection.Reference}' declares a " +
+                    $"'{EffectSelectionDeclaration.ConsumerParameterName}' parameter but does not " +
+                    $"implement {nameof(IEffectAnticipatedOutcomeCapabilityHandler)}, so a candidate " +
+                    "could only be put to that consumer as itself rather than as the output the " +
+                    "consumer binds.", nameof(handlers));
+            }
+
             if (registered.Select(handler => handler.Reference).Distinct().Count() != registered.Length)
             {
                 throw new ArgumentException(

@@ -567,7 +567,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
                         childNodeIds: new[] { select, swap }),
-                    FriendlyMinionInRadius(select),
+                    FriendlyMinionInRadius(select, swap),
                     new EffectNodeDefinition(
                         swap, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticExchangeCapabilities.SwapWithActorV1,
@@ -644,7 +644,19 @@ namespace GuardsDigital.Core.Cards.Verified
                                 EffectValue.Integer(radius)),
                             EffectInputBinding.FromClosedVocabulary(
                                 SyntheticRosterCapabilities.RelationParameter,
-                                SourceTeamRelation.AnyTeam)
+                                SourceTeamRelation.AnyTeam),
+                            // Milestone 8.35l. The pair could not name its consumer until the
+                            // capability declared the parameter, so nothing narrowed this offer: with
+                            // Wasp's Magnetic Dagger standing over the only two minions beside her,
+                            // "Swap two minions in radius" was offered on a board where no legal pair
+                            // existed, the player took it, and the card was spent having moved
+                            // nothing. p.19's Swap moves both objects, so one barred piece bars the
+                            // pair - which is why the narrowing has to be over pairs and why a board
+                            // left with a single legal minion greys the Skill rather than offering an
+                            // answer that cannot be completed.
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(swap))
                         },
                         outputs: new[]
                         {
@@ -1023,29 +1035,55 @@ namespace GuardsDigital.Core.Cards.Verified
         /// icon's and an item's <c>+1</c> reaches it; where the text states a number, the definition
         /// states it. Both of Sabina's users of this print a Radius.</para>
         ///
-        /// <para><b>It declares no consumer, and that is a correction rather than an omission.</b>
-        /// <c>EffectSelectionDeclaration</c> exists so a selection offers only pieces the step after
-        /// it can act on, and it works by handing the consumer each CANDIDATE and asking. This
-        /// selection's candidates are minions; both consumers here take a coordinate. So every
-        /// candidate was refused, no candidate was offered, and the printed Skill simply stopped
-        /// appearing in the action list - silently, because an offer that is not made reports nothing.
-        /// Arien's Ebb and Flow declares none for the same reason and this follows it. The narrowing
-        /// is not lost: p.18 makes immunity a targeting rule, so the selection already filters what
-        /// neither consumer could take.</para>
+        /// <para><b>It declares its consumer where one narrows it, and until milestone 8.35l it could
+        /// not.</b> Milestone 6.8l's narrowing put each CANDIDATE to the consuming node, and this
+        /// selection's candidates are minions while both consumers here take a coordinate - so every
+        /// candidate came back refused, no candidate was offered, and the printed Skill silently
+        /// stopped appearing at all. The recorded conclusion was that declaring the consumer was a
+        /// mistake; the real fault was that the question was asked with the wrong value. Milestone
+        /// 8.35l puts the selection's own published output to the consumer instead, so Back to Back's
+        /// Swap is now asked about the space it actually binds and answers about the piece the player
+        /// would name.</para>
+        ///
+        /// <para><b>What that recovered.</b> Wasp's Magnetic Dagger bars enemy units in its Radius
+        /// from being swapped; p.19's Swap moves both objects, so Sabina inside that disk cannot swap
+        /// with anyone and a partner inside it cannot be swapped with. Undeclared, the Skill was
+        /// offered anyway, the player took it, the Swap stopped, and the card was spent for nothing -
+        /// which is the defect milestone 8.35l exists to close. Immunity was already filtered here;
+        /// a restriction is a separate question and was not.</para>
+        ///
+        /// <para><b>Troop Movement's copy deliberately declares none.</b> Its consumer is a direct
+        /// Move, whose refusals are about destinations rather than about this piece, and narrowing on
+        /// them would change which minions that card offers - a different card's behaviour, decided by
+        /// evidence that card owns. The parameter is optional precisely so this can be said one call
+        /// site at a time.</para>
         /// </summary>
         private static EffectNodeDefinition FriendlyMinionInRadius(
-            EffectNodeId nodeId) =>
+            EffectNodeId nodeId,
+            EffectNodeId consumerNodeId = default) =>
             new EffectNodeDefinition(
                 nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                 SyntheticTargetingCapabilities.RadiusMinionTargetV1,
-                inputs: new[]
-                {
-                    EffectInputBinding.FromClosedVocabulary(
-                        "activity", RuleActivity.Skill),
-                    EffectInputBinding.FromClosedVocabulary(
-                        SyntheticTargetingCapabilities.TargetRelationParameterName,
-                        SourceTeamRelation.AlliedWithSource)
-                },
+                inputs: consumerNodeId.IsDefined
+                    ? new[]
+                    {
+                        EffectInputBinding.FromClosedVocabulary(
+                            "activity", RuleActivity.Skill),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticTargetingCapabilities.TargetRelationParameterName,
+                            SourceTeamRelation.AlliedWithSource),
+                        EffectInputBinding.FromLiteral(
+                            EffectSelectionDeclaration.ConsumerParameterName,
+                            EffectValue.Node(consumerNodeId))
+                    }
+                    : new[]
+                    {
+                        EffectInputBinding.FromClosedVocabulary(
+                            "activity", RuleActivity.Skill),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticTargetingCapabilities.TargetRelationParameterName,
+                            SourceTeamRelation.AlliedWithSource)
+                    },
                 outputs: new[]
                 {
                     new EffectOutputBinding(

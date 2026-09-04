@@ -401,11 +401,23 @@ namespace GuardsDigital.Tests.EditMode
                 "p.14's Defense response must consult it, or a hero barred from defending is still " +
                 "offered its Defense cards.");
 
+            // Milestone 8.35l moved both consumers from the boolean form to the one that keeps the
+            // answer. The rule follows the member the engine actually uses, exactly as it followed
+            // the Defense response's offer rule out of the backend at 8.11: what it guards is that
+            // p.19's Swap and p.18's Place ask the directed question at all, not which of the query's
+            // two spellings they ask it in. Asserting the boolean form alone would now pass only while
+            // the reason a player is shown is thrown away.
             var directedRestriction = ILConformanceScanner.Method(
-                typeof(RestrictionQuery), nameof(RestrictionQuery.IsRestricted));
+                typeof(RestrictionQuery), nameof(RestrictionQuery.TryGetRestriction));
             Assert.That(directedRestriction, Is.Not.Null,
                 "The directed restriction query no longer resolves; correct the rule rather than " +
                 "deleting it.");
+            Assert.That(
+                ILConformanceScanner.Method(
+                    typeof(RestrictionQuery), nameof(RestrictionQuery.IsRestricted)),
+                Is.Not.Null,
+                "The boolean form is the one the undirected offer seams still read; it resolving is " +
+                "what makes the choice of form above a real choice.");
             AssertReaches(
                 typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticExchangeCapabilities),
                 directedRestriction,

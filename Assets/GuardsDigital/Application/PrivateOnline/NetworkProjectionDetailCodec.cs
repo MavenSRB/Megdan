@@ -1941,6 +1941,19 @@ namespace GuardsDigital.Application
                 writer.Write((int)offer.SourceCardStateTransition.RequiredLocation);
                 writer.Write((int)offer.SourceCardStateTransition.DestinationLocation);
             }
+
+            // Milestone 8.35l. Written only where there is a reason, so an ordinary greyed control
+            // costs one bool as it always did - and an available offer can never carry one, because
+            // the offer itself drops the reason when availability is stamped true.
+            writer.Write(offer.Unavailability.IsStated);
+            if (offer.Unavailability.IsStated)
+            {
+                writer.Write((int)offer.Unavailability.Kind);
+                writer.Write((int)offer.Unavailability.BlockedActivity);
+                writer.Write(offer.Unavailability.BlockingHeroId.Value ?? string.Empty);
+                writer.Write(offer.Unavailability.BlockingCardInstanceId.Value ?? string.Empty);
+                writer.Write(offer.Unavailability.BlockingActiveEffectId.Value ?? string.Empty);
+            }
         }
 
         private static bool TryReadOffer(BinaryReader reader, out NetworkActionOfferRow row)
@@ -1980,9 +1993,36 @@ namespace GuardsDigital.Application
                 }
             }
 
+            var unavailabilityKind = 0;
+            var blockedActivity = 0;
+            var blockingHero = string.Empty;
+            var blockingCard = string.Empty;
+            var blockingEffect = string.Empty;
+            if (reader.ReadBoolean())
+            {
+                unavailabilityKind = reader.ReadInt32();
+                blockedActivity = reader.ReadInt32();
+                blockingHero = reader.ReadString();
+                blockingCard = reader.ReadString();
+                blockingEffect = reader.ReadString();
+
+                // A stated reason has to be one this build's vocabulary names and has to belong to an
+                // offer that is actually unavailable. A payload claiming otherwise is refused whole
+                // rather than decoded into an offer that says "you may take this, and here is why you
+                // may not" - the envelope discipline milestone 8.32 set for every other field.
+                if (isAvailable ||
+                    !Enum.IsDefined(typeof(ActionUnavailabilityKind), unavailabilityKind) ||
+                    unavailabilityKind == (int)ActionUnavailabilityKind.None ||
+                    !Enum.IsDefined(typeof(RuleActivity), blockedActivity))
+                {
+                    return false;
+                }
+            }
+
             row = new NetworkActionOfferRow(
                 sourceCard, definitionId, revision, actionId, actorId, context, isAvailable,
-                attackRange, hasTransition, required, destination);
+                attackRange, hasTransition, required, destination,
+                unavailabilityKind, blockedActivity, blockingHero, blockingCard, blockingEffect);
             return true;
         }
 
