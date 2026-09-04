@@ -426,6 +426,28 @@ Non-goals: No presenter's own defect is fixed here and no view-model reader is r
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835h-isolate-the-hud-presenter-fan-out-so-one-broken-panel-degrades-alone-completion-evidence).
 
+### [x] 8.35i Restore a snapshot captured while a choice is paused inside an Attack
+
+User-approved corrective, queued after 8.35g from milestone 8.35f's own finding. 8.35f's rewind sweep reached a refused Undo at a history of 1,262 commands - `Undo replay failed without changing the match: Snapshot payload is malformed or internally inconsistent` - and the diagnosis relocated it out of the undo machinery entirely: `MatchSession.Reconstruct` replays from a retained checkpoint, and deserializing that pre-image threw. Replaying the same stream into a fresh host and round-tripping after every command named the real cause at command 1,067: **`Snapshot pending effect choice names node 'noble-other', whose capability no longer requests a choice.`** That is milestone 8.29c's documented recurrence, and it is shared authority rather than the HUD path 8.29c assumed, which is why it is corrected here rather than there.
+
+The cause is a question asked with half of what it reads. Candidates are never written to a payload - a capability's come from asking the trusted handler again, which is what stops a payload inventing an authoritative option - so a restore rebuilds the question. Arien's Noble Blade binds its selection to `EnclosingTargetBeforeConsequences`: "another unit adjacent to the target of this Attack". The restore path rebuilt that question with no enclosing Attack at all, so the origin resolved to nobody, the handler offered no choice, and the payload was refused for describing a pause its own content "no longer" requested. The content had never changed.
+
+Observable outcome: A match paused on a capability choice inside an Attack's card text captures and restores like any other, offering the same candidates it offered before, and the Director's Undo and a seat's rewind both step through such a state instead of refusing at it.
+
+Acceptance checks:
+
+- A snapshot captured while a capability choice is paused inside an Attack restores, and the restored pause names the same node, the same candidates and the same selection bounds - then takes its own published answer. Asserting only that it restores would pass a build that restored the pause and forgot what it offered, which is the same defect one layer down.
+- Every state of the reproducing command stream round-trips through a snapshot, checked after each accepted command rather than at the end, because the defect was invisible until one specific intermediate state was captured. The case fails if the stream never passes through a choice paused inside an Attack, so it cannot pass by walking a match that never reaches the position.
+- The enclosing Attack is rebuilt by the authority's own `EnclosingAttackOf` rather than by a second builder in the serializer - the method the live path already uses, whose own record refuses "a second place the same fact could be wrong".
+- No byte moves and no version changes. The Attack is written after the frame that pauses inside it, so the frame is read as a function of it, which is the answer milestone 8.23 gave for the opposing hero the payload also names late. Snapshot schema stays v35 and the wire stays `guards-private-online/4`.
+- The serializer's generic wrapper names its cause in the message rather than only chaining it, because callers surface a refusal by `Message` alone and an `InnerException` nobody reads is a cause nobody reads. Diagnostic only: the rejection reason and the refusal behaviour are unchanged.
+
+Closing check: `AttackCardTextSnapshotRestoreTests` - both cases - recorded failing with the fix off at its one behavioural site and passing with it on.
+
+Non-goals: No tolerance is widened and nothing is caught more broadly; a payload that really is malformed is refused exactly as before. No schema, wire, command, rules or presentation change. Milestone 8.29c is not reopened: its own HUD-path symptom remains unreproduced, and what is fixed here is the shared-authority mechanism 8.35f recorded under its name. The offer/refusal defect this milestone's scans surfaced separately - an `AnswerEffectChoice` the projection offers and the rules refuse with `AttackActionRejected: TargetUnavailable`, reproducible at `6bfe61f9` on seeds 12 and 20 of the official six-player fixture at budget 4,000 - is reported and stays unclaimed pending the user's call.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835i-restore-a-snapshot-captured-while-a-choice-is-paused-inside-an-attack-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

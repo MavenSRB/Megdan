@@ -2102,6 +2102,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// freely by p.10, and only <c>DifferentTarget</c> - which is what Thunder Boomerang prints -
         /// takes the finished instance's target out of the set.</para>
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.35i made it `internal`. The snapshot restore path has to rebuild the SAME facts
+        /// when it re-asks a capability that paused inside an Attack, and a second builder there would
+        /// be exactly the "second place the same fact could be wrong" this method already refuses for
+        /// the printed subtype.
+        /// </remarks>
         /// <summary>
         /// What card text applied inside rulebook p.14 may ask about the Attack it is running inside.
         /// Milestone 8.10 for the hero the Attack took; milestone 8.11 for the attacker and p.13's
@@ -2112,7 +2118,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// the content the match was configured with, and a copy on a continuation would be a second
         /// place the same fact could be wrong.</para>
         /// </summary>
-        private static GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts EnclosingAttackOf(
+        internal static GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts EnclosingAttackOf(
             PendingAttackResolution attack,
             IReadOnlyList<CardDefinition> definitions)
         {

@@ -721,7 +721,14 @@ namespace GuardsDigital.Core.Snapshots
                     // attacker taking the turn. Tigerclaw's Parry and Riposte are the first Defense
                     // texts to name them: without this the restored frame asked its discard about
                     // nobody and the payload could not be read back at all.
-                    var frame = ReadSkillResolution(
+                    // Milestone 8.35i. The frame is read as a function of the Attack it is inside,
+                    // because that Attack is written after it. Card text paused on a capability
+                    // choice re-asks the handler on restore, and a handler bound to the Attack's own
+                    // target - Noble Blade's "another unit adjacent to the target" - answers with no
+                    // choice at all when it is asked with no Attack. The payload was then refused for
+                    // naming a pause the content "no longer" requested; the content was never asked
+                    // the question the pause was written under.
+                    var frameAwaitingItsAttack = ReadSkillResolutionAwaitingItsAttack(
                         reader, definitions, cards, catalogs.Capabilities, participants,
                         CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
                         modifications, heroItems, null,
@@ -730,6 +737,8 @@ namespace GuardsDigital.Core.Snapshots
                             ? selectedActorId
                             : default);
                     var pausedAttack = ReadAttackResolution(reader);
+                    var frame = frameAwaitingItsAttack(
+                        CardActionResolutionAuthority.EnclosingAttackOf(pausedAttack, definitions));
                     var moment = SnapshotEnumReader.Read<CardTextTiming>(
                         reader, "paused card-text moment");
                     var pausedOutcome = SnapshotEnumReader.Read<AttackResolutionOutcome>(
@@ -955,6 +964,40 @@ namespace GuardsDigital.Core.Snapshots
             int turnIndex,
             EffectRosterState rosterState,
             HeroId opposingHeroId = default,
+            Func<HeroId, HeroId> opposingHeroFor = null) =>
+            ReadSkillResolutionAwaitingItsAttack(
+                reader, definitions, cards, capabilities, participants, components, modifications,
+                heroItems, triggeredEffects, roundIndex, turnIndex, rosterState,
+                opposingHeroId, opposingHeroFor)(EnclosingAttackFacts.None);
+
+        /// <summary>
+        /// Milestone 8.35i. Reads every byte of a skill frame, and returns the frame as a function of
+        /// the Attack it is running inside - because for one continuation shape that Attack is
+        /// written AFTER the frame and cannot be known while the frame is being read.
+        /// </summary>
+        /// <remarks>
+        /// <para>The bytes are all consumed here, eagerly and in payload order; only the pending
+        /// choice's <em>materialization</em> is deferred, and only because re-asking a capability is
+        /// a reading of state rather than a decode. A caller that has no enclosing Attack passes
+        /// <see cref="EnclosingAttackFacts.None"/> and gets exactly what it got before.</para>
+        /// <para>It is the same answer milestone 8.23 gave for the opposing hero, which the payload
+        /// also names only after the frame: supply what the caller knows when it knows it, rather
+        /// than reordering the wire or persisting a fact the engine can derive.</para>
+        /// </remarks>
+        private static Func<EnclosingAttackFacts, PendingResolution> ReadSkillResolutionAwaitingItsAttack(
+            BinaryReader reader,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> cards,
+            EffectCapabilityCatalog capabilities,
+            MatchParticipants participants,
+            MatchComponents components,
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            TriggeredEffectCatalog triggeredEffects,
+            int roundIndex,
+            int turnIndex,
+            EffectRosterState rosterState,
+            HeroId opposingHeroId = default,
             Func<HeroId, HeroId> opposingHeroFor = null)
         {
             var common = ReadCommonResolution(reader);
@@ -1047,7 +1090,7 @@ namespace GuardsDigital.Core.Snapshots
                 repeat: repeat);
             if (!reader.ReadBoolean())
             {
-                return restored;
+                return _ => restored;
             }
 
             var choiceId = new EffectChoiceId(reader.ReadString());
@@ -1070,6 +1113,49 @@ namespace GuardsDigital.Core.Snapshots
             // names rather than persisted beside it: the payload already records which card and which
             // action the resolution began from, so re-deriving the kind from the content is exact and
             // adds no wire field, while a written one could disagree with the definition it names.
+            return enclosingAttack => MaterializePendingChoice(
+                enclosingAttack, restored, trusted, node, definitions, cards, capabilities,
+                participants, components, modifications, heroItems, rosterState,
+                roundIndex, turnIndex, opposing, common,
+                choiceId, nodeId, chooserId, choiceKind, minimum, maximum, selected);
+        }
+
+        /// <summary>
+        /// Milestone 8.35i. Re-asks the trusted content what the paused choice offers, against the
+        /// state this payload has just restored AND the Attack it is running inside.
+        /// </summary>
+        /// <remarks>
+        /// The enclosing Attack is the part that was missing, and it is not decoration: Arien's Noble
+        /// Blade binds its selection to <c>EnclosingTargetBeforeConsequences</c>, so with no Attack
+        /// the origin resolves to nobody, the handler offers no choice at all, and the payload was
+        /// refused as malformed for describing a pause the content "no longer" requested. The content
+        /// had not changed; the question had been asked without half of what it reads.
+        /// </remarks>
+        private static PendingResolution MaterializePendingChoice(
+            EnclosingAttackFacts enclosingAttack,
+            PendingResolution restored,
+            EffectDefinition trusted,
+            EffectNodeDefinition node,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> cards,
+            EffectCapabilityCatalog capabilities,
+            MatchParticipants participants,
+            MatchComponents components,
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            EffectRosterState rosterState,
+            int roundIndex,
+            int turnIndex,
+            HeroId opposing,
+            CommonResolution common,
+            EffectChoiceId choiceId,
+            EffectNodeId nodeId,
+            HeroId chooserId,
+            EffectChoiceKind choiceKind,
+            int minimum,
+            int maximum,
+            IReadOnlyList<EffectChoiceCandidate> selected)
+        {
             var resolution = new EffectResolutionContext(
                 trusted, capabilities, participants, null, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(definitions, cards),
@@ -1079,7 +1165,9 @@ namespace GuardsDigital.Core.Snapshots
                 // nobody. It is the pushed hero for an after-push trigger, and the interrupt beside
                 // this frame is what names them - which is why it is passed in rather than persisted.
                 opposingHeroId: opposing,
-                components: components, heroItems: heroItems, rosterState: rosterState);
+                components: components, heroItems: heroItems,
+                enclosingAttack: enclosingAttack,
+                rosterState: rosterState);
 
             // Candidates are never written. A control node's options come from the trusted
             // definition; a capability's come from asking the trusted handler again. Either way a

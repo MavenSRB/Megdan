@@ -509,9 +509,16 @@ namespace GuardsDigital.Core.Snapshots
             }
             catch (Exception exception)
             {
+                // Milestone 8.35i names the cause in the MESSAGE rather than only chaining it.
+                // Callers surface a refusal by its `Message` alone - `MatchSession`'s replay refusal
+                // reads exactly that and nothing else - so an inner exception reachable only through
+                // `InnerException` is a cause nobody ever reads. The corrective this belongs to spent
+                // a day on a refusal whose whole text was that something, somewhere, was wrong; the
+                // rejection reason and the refusal behaviour are unchanged.
                 throw new SnapshotLoadException(
                     SnapshotLoadRejectionReason.MalformedPayload,
-                    "Snapshot payload is malformed or internally inconsistent.",
+                    "Snapshot payload is malformed or internally inconsistent: " +
+                    exception.GetType().Name + ": " + exception.Message,
                     exception);
             }
         }
