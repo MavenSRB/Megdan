@@ -501,6 +501,16 @@ Non-goals: The four deferred hero-scope arms above stay pinned to the Core track
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835m-shine-every-awaited-heros-tray-and-card-and-dim-the-rest-of-the-hand-while-one-resolves-completion-evidence).
 
+### [x] 8.35m1 Keep an unselected artwork face's awaited-answer shine out of its synthetic-chrome guard
+
+Corrective for a gap 8.35m left standing, found closing the Edit Mode red; approved by the user 2026-09-04, completed in the same task.
+
+`ConfiguredCardArtworkCatalogTests.UnselectedArtworkFace_HasNoSyntheticFrameOrLifecycleStrip` predates the SEVENTH amendment and asserted a fixed four-element set. 8.35m made its fixture, `CurrentRoundCards.DeckCard`, an unconditional `IsAwaitedAnswer` surface, so `ConfiguredCardFaceView.Build` conditionally adds a fifth: `gd-card-awaited-shine`. Fix is the assertion, not `Build`, already honest.
+
+Acceptance checks: closing check failed at pre-fix HEAD `e6a2cd25`, passed after; 8.35m's shine/dim checks in `MatchFeaturePresenterTests`, `MatchHudPresentationTests`, `SeatScopedMatchHudTests` stay green; test-only, no production/rule/projection/wire/schema change. Non-goals: no shine-condition change, no behaviour beyond 8.35m/8.35n.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835m1-keep-an-unselected-artwork-faces-awaited-answer-shine-out-of-its-synthetic-chrome-guard-completion-evidence).
+
 ### [x] 8.35n Narrate the acting hero and the standing activity, and mark their piece on the board
 
 User-approved amendment of 2026-09-03, the FIFTH amendment's remaining two items plus the FOURTH: "ACTING ON INITIATIVE X is not enough... hero name, who is acting, not only initiative... text a bit better, its important, make it look it," and, from interim-2 screenshots, "every viewer's BOARD marks the acting hero's piece." Derivability split exactly as milestone 8.35m's hero-scope shine: a decision the viewer's own projection carries in full reads a rich `NarrationLabels.Own` line naming the family; every other viewer reads only what `IMatchReadModel` already publishes regardless of ownership - the acting hero's name (`SelectedActor`), the release owner (`PendingTurnRelease.ActorId`, unscoped since 8.35g), and who still owes a commitment or a team-agreement answer.
