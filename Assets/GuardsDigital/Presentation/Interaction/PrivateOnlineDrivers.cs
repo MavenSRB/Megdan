@@ -66,8 +66,17 @@ namespace GuardsDigital.Presentation.Interaction
                 // being held for its player and the other has been given up, and a host log that
                 // called both "reserved" is why the failed playtest could not be read afterwards.
                 // The capability has no parameter to arrive through here, exactly as before.
+                //
+                // Milestone 8.35o. This event has exactly two call sites: a LEAVE's forfeit, which
+                // carries the departing connection's own ordinal, and the host console's manual
+                // "release <seat>" command (HostConsoleCommands), which calls ReleaseSeat directly
+                // and records it with ordinal 0 because no live connection drove it - the one signal
+                // that already tells the two apart, so the reason label reads it rather than adding
+                // a field to the session-layer event.
                 case PrivateSessionEventKind.SeatReleased:
-                    Log("SEAT_RELEASED ordinal=" + ordinal + " seat=" + record.Seat.Value);
+                    Log(record.ConnectionOrdinal == 0
+                        ? "SEAT_RELEASED seat=" + record.Seat.Value + " reason=manual"
+                        : "SEAT_RELEASED ordinal=" + ordinal + " seat=" + record.Seat.Value);
                     return;
                 case PrivateSessionEventKind.SeatReclaimed:
                     Log(
@@ -168,6 +177,7 @@ namespace GuardsDigital.Presentation.Interaction
         private PrivateSessionLaunchOptions options;
         private TcpSessionListener listener;
         private PrivateSessionHost session;
+        private HostConsoleReader console;
         private DateTime startedUtc;
         private DateTime lastActivityUtc;
         private bool stopped;
@@ -208,6 +218,12 @@ namespace GuardsDigital.Presentation.Interaction
             session = new PrivateSessionHost(
                 compositionRoot.Runtime.Host, identity, options.SessionKey, listener,
                 new CryptoNonceSource());
+            // Milestone 8.35o. The dedicated host's one typed command, "release <seat>" - the
+            // escape hatch milestone 8.35k built but left with no way for a human to reach it. The
+            // reader owns its own background thread, so polling it every frame below never blocks
+            // this serve loop.
+            console = new HostConsoleReader();
+            console.Start();
             startedUtc = DateTime.UtcNow;
             lastActivityUtc = startedUtc;
             PrivateOnlineMarkers.Log(
@@ -224,6 +240,11 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var now = DateTime.UtcNow;
+            while (console != null && console.TryDequeue(out var consoleLine))
+            {
+                HostConsoleCommands.Dispatch(consoleLine, session);
+            }
+
             while (listener.TryDequeue(out var transportEvent))
             {
                 switch (transportEvent.Kind)

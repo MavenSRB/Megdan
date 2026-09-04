@@ -75,6 +75,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 8 - Late HUD and card-interaction corrections](Roadmap/PHASE_8_LATE_HUD_CORRECTIONS.md)
 - [Phase 8 - Completed milestone definitions](Roadmap/PHASE_8_COMPLETED.md)
 - [Phase 8 - Additional completed milestone definitions](Roadmap/PHASE_8_COMPLETED_2.md)
+- [Phase 8 - Further completed milestone definitions](Roadmap/PHASE_8_COMPLETED_3.md)
 - [Phase 9 - Presentation and pitch polish](Roadmap/PHASE_9.md)
 - [Phase 10 - Private publisher pitch package](Roadmap/PHASE_10.md)
 - [Post-pitch production direction - not scheduled](Roadmap/POST_PITCH.md)

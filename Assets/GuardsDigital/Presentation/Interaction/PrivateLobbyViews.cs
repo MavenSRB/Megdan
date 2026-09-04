@@ -305,6 +305,7 @@ namespace GuardsDigital.Presentation.Interaction
         private TcpSessionListener listener;
         private TcpSessionClientTransport transport;
         private PrivateSessionHost session;
+        private HostConsoleReader console;
         private PrivateSessionClient machine;
         private SeatId joinedSeat;
         private string sessionKey = string.Empty;
@@ -389,6 +390,15 @@ namespace GuardsDigital.Presentation.Interaction
             var now = DateTime.UtcNow;
             if (session != null && listener != null)
             {
+                // Milestone 8.35o. The dedicated host's one typed command, "release <seat>" - the
+                // escape hatch milestone 8.35k built but left with no way for a human to reach it.
+                // The reader owns its own background thread, so draining it every frame here never
+                // blocks this serve loop.
+                while (console != null && console.TryDequeue(out var consoleLine))
+                {
+                    HostConsoleCommands.Dispatch(consoleLine, session);
+                }
+
                 while (listener.TryDequeue(out var hostEvent))
                 {
                     switch (hostEvent.Kind)
@@ -635,6 +645,8 @@ namespace GuardsDigital.Presentation.Interaction
             session = new PrivateSessionHost(
                 compositionRoot.Runtime.Host, compositionRoot.Runtime.SessionIdentity,
                 sessionKey, listener, new CryptoNonceSource());
+            console = new HostConsoleReader();
+            console.Start();
             signature = string.Empty;
             presenter.AttachHost(session, string.Empty);
             PrivateOnlineMarkers.Log(
@@ -755,6 +767,7 @@ namespace GuardsDigital.Presentation.Interaction
                 session = null;
             }
 
+            console = null;
             listener?.Dispose();
             listener = null;
             onlineHudAttached = false;
