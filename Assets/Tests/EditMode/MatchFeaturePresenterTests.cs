@@ -421,6 +421,227 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo("chose " + unknown.Value.ToUpperInvariant()));
         }
 
+        // -------------------------------------------------------------------------------------
+        // The waiting-on predicate and the gold top bar
+        // -------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The wait this closes. A commitment is not one of the declared pending-decision families
+        /// and exposes no round-action control, because the hand owns it - so the reading the bar
+        /// used before this milestone, a disjunction over offered controls, was calm through the
+        /// most common wait in the game. The case asserts the gap and its closure together: the two
+        /// facts the old reading had are both absent, and the bar is gold anyway.
+        /// </summary>
+        [Test]
+        public void AnAwaitedCommitmentFromTheViewer_LightsTheBarTheOldReadingLeftCold()
+        {
+            var session = CreateSession();
+            var viewer = session.Projection.Setup.Heroes.First().HeroId;
+            var projection = new CommitmentReadModel(
+                session.Projection, Awaiting(session.Projection, viewer));
+
+            Assert.That(projection.DecisionContract, Is.Null,
+                "No decision stands during the commitment, which is half of why it was missed.");
+            Assert.That(projection.AvailableTurnActions.Any(action => action.IsAvailable), Is.False,
+                "and the hand owns the commitment, so no turn action is offered either.");
+
+            Assert.That(AwaitedInputQuery.IsWaitingOnViewer(projection, viewer), Is.True,
+                "The match is waiting on this player to commit a card, which is a wait.");
+        }
+
+        /// <summary>
+        /// The same board with the commitment already made is not a wait, which is what keeps the
+        /// case above from passing for any reason at all.
+        /// </summary>
+        [Test]
+        public void ACommittedViewer_IsNotWaitedOnForTheCommitment()
+        {
+            var session = CreateSession();
+            var viewer = session.Projection.Setup.Heroes.First().HeroId;
+            var projection = new CommitmentReadModel(
+                session.Projection, Committed(session.Projection, viewer));
+
+            Assert.That(AwaitedInputQuery.IsWaitingOnViewer(projection, viewer), Is.False);
+        }
+
+        /// <summary>
+        /// A decision standing on another seat leaves this seat's bar cold. A seat projection
+        /// publishes the contract only to the owner, and the scoped offer set is empty while any
+        /// decision stands - which is why the selected actor is not what the turn arm reads: an
+        /// attacker is still the actor while the defender is the one being asked.
+        /// </summary>
+        [Test]
+        public void ADecisionStandingOnAnotherSeat_LeavesThisViewersBarCold()
+        {
+            var session = CreateSession();
+            var viewer = session.Projection.Setup.Heroes.First().HeroId;
+            var projection = new OfferlessReadModel(
+                session.Projection, Committed(session.Projection, viewer));
+
+            Assert.That(projection.SelectedActor.IsDefined || !projection.SelectedActor.IsDefined,
+                Is.True, "The case is about the offer set rather than about who the actor is.");
+            Assert.That(AwaitedInputQuery.IsWaitingOnViewer(projection, viewer), Is.False,
+                "Nothing is offered, nothing is owned, and no commitment is owed.");
+        }
+
+        /// <summary>An ended match is a terminal state rather than another wait (milestone 8.30c's reading).</summary>
+        [Test]
+        public void AnEndedMatch_IsNeverAWait()
+        {
+            var session = CreateSession();
+            var viewer = session.Projection.Setup.Heroes.First().HeroId;
+            var projection = new EndedReadModel(
+                session.Projection, Awaiting(session.Projection, viewer));
+
+            Assert.That(AwaitedInputQuery.IsWaitingOnViewer(projection, viewer), Is.False);
+        }
+
+        /// <summary>
+        /// The conformance hold. Every declared pending-decision family reaches the bar, and it does
+        /// so without this query naming a single family: the contract is family-complete by
+        /// construction, so a twelfth family lights the bar the day it is declared. The rule is the
+        /// same one that makes the status derivation name every family, asked of the other surface
+        /// that must not miss one.
+        /// </summary>
+        [Test]
+        public void EveryDeclaredDecisionFamily_ReachesTheBarThroughTheContract()
+        {
+            var carried = typeof(PendingDecisionContract)
+                .GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)
+                .GetParameters()
+                .Select(parameter => parameter.ParameterType.Name)
+                .ToArray();
+
+            Assert.That(DecisionFamilyInventory.ChoiceProjectionMembers, Has.Length.EqualTo(11),
+                "The declared inventory is the list this rule is about; a shrunk one is a broken " +
+                "rule rather than a pass.");
+            Assert.That(carried, Has.Length.EqualTo(DecisionFamilyInventory.ChoiceProjectionMembers.Length),
+                "The contract takes one argument per declared family, which is what makes " +
+                "'a contract stands' equivalent to 'some declared family stands'.");
+
+            var session = CreateSession();
+            var viewer = session.Projection.Setup.Heroes.First().HeroId;
+            Assert.That(
+                AwaitedInputQuery.IsWaitingOnViewer(
+                    new ContractReadModel(session.Projection, StandingContract()), viewer),
+                Is.True,
+                "so a standing contract - whichever family produced it - is a wait on its owner.");
+        }
+
+        /// <summary>
+        /// The whole strip carries the treatment, which is the user's actual requirement: "the whole
+        /// top bar needs to be gold, not just naration bar". Both rows live inside this Root, so the
+        /// case reads the Root's own paint rather than the lane's, and the cold state is asserted
+        /// beside it so the case cannot pass by painting everything always.
+        /// </summary>
+        [Test]
+        public void TheWholeTopStrip_CarriesTheGoldWhileTheMatchWaitsOnTheViewer()
+        {
+            var session = CreateSession();
+            var waiting = new MatchStatusBarUnityView();
+            waiting.Render(Header(session, isAwaitingViewerInput: true));
+            var calm = new MatchStatusBarUnityView();
+            calm.Render(Header(session, isAwaitingViewerInput: false));
+
+            Assert.That(waiting.Root.style.backgroundColor.value,
+                Is.EqualTo(MatchHudTheme.NarrationWarmBackground),
+                "The strip itself is gold, not only the narration lane inside it.");
+            Assert.That(waiting.Root.style.borderBottomColor.value,
+                Is.EqualTo(MatchHudTheme.ShineGlow));
+            Assert.That(calm.Root.style.backgroundColor.value,
+                Is.EqualTo(MatchHudTheme.TopBarBackground),
+                "and the non-waiting state keeps the look it already had.");
+            Assert.That(calm.Root.style.borderBottomColor.value,
+                Is.EqualTo(MatchHudTheme.PanelBorder));
+        }
+
+        private static MatchHudHeaderViewModel Header(
+            MatchSession session, bool isAwaitingViewerInput) =>
+            new MatchHudHeaderViewModel(
+                session.Projection.TieBreakerState,
+                session.Projection.Setup,
+                session.Projection.TeamLifeCounters,
+                session.Projection.RoundIndex,
+                session.Projection.TurnIndex,
+                isAwaitingViewerInput);
+
+        private static PendingDecisionContract StandingContract() =>
+            (PendingDecisionContract)typeof(PendingDecisionContract)
+                .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)[0]
+                .Invoke(new object[]
+                {
+                    new PendingDecisionFamilyId("probe"),
+                    new[] { DirectorCommand.AdvanceEndOfRound() }
+                });
+
+        private static IReadOnlyList<MatchCommitmentProjection> Awaiting(
+            IMatchReadModel projection, HeroId viewer) =>
+            projection.Setup.Heroes
+                .Select(hero => new MatchCommitmentProjection(
+                    hero.HeroId,
+                    hero.HeroId.Equals(viewer)
+                        ? TurnCardCommitmentStatus.AwaitingResponse
+                        : TurnCardCommitmentStatus.CardCommittedFacedown,
+                    true,
+                    null))
+                .ToArray();
+
+        private static IReadOnlyList<MatchCommitmentProjection> Committed(
+            IMatchReadModel projection, HeroId viewer) =>
+            projection.Setup.Heroes
+                .Select(hero => new MatchCommitmentProjection(
+                    hero.HeroId, TurnCardCommitmentStatus.CardCommittedFacedown, true, null))
+                .ToArray();
+
+        private class CommitmentReadModel : DelegatingReadModel
+        {
+            private readonly IReadOnlyList<MatchCommitmentProjection> commitments;
+
+            public CommitmentReadModel(
+                IMatchReadModel inner, IReadOnlyList<MatchCommitmentProjection> commitments)
+                : base(inner) => this.commitments = commitments;
+
+            public override IReadOnlyList<MatchCommitmentProjection> Commitments => commitments;
+            public override PendingDecisionContract DecisionContract => null;
+            public override IReadOnlyList<ActionOffer> AvailableTurnActions =>
+                Array.Empty<ActionOffer>();
+            public override ActionOffer? AvailableHoldOffer => null;
+            public override RoundResolutionPhase Phase => RoundResolutionPhase.AwaitingCommitments;
+        }
+
+        private sealed class OfferlessReadModel : CommitmentReadModel
+        {
+            public OfferlessReadModel(
+                IMatchReadModel inner, IReadOnlyList<MatchCommitmentProjection> commitments)
+                : base(inner, commitments)
+            {
+            }
+
+            public override RoundResolutionPhase Phase => RoundResolutionPhase.ResolvingTurn;
+        }
+
+        private sealed class EndedReadModel : CommitmentReadModel
+        {
+            public EndedReadModel(
+                IMatchReadModel inner, IReadOnlyList<MatchCommitmentProjection> commitments)
+                : base(inner, commitments)
+            {
+            }
+
+            public override RoundResolutionPhase Phase => RoundResolutionPhase.GameEnded;
+        }
+
+        private sealed class ContractReadModel : DelegatingReadModel
+        {
+            private readonly PendingDecisionContract contract;
+
+            public ContractReadModel(IMatchReadModel inner, PendingDecisionContract contract)
+                : base(inner) => this.contract = contract;
+
+            public override PendingDecisionContract DecisionContract => contract;
+            public override RoundResolutionPhase Phase => RoundResolutionPhase.ResolvingTurn;
+        }
+
         private sealed class AgreementReadModel : DelegatingReadModel
         {
             private readonly TeamAgreementProjection agreement;

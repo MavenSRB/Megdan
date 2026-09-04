@@ -33,8 +33,10 @@ namespace GuardsDigital.Presentation.Match
             QuickGameSetupState setup,
             IReadOnlyList<KeyValuePair<TeamId, int>> teamLifeCounters = null,
             int roundIndex = 0,
-            int turnIndex = 0)
+            int turnIndex = 0,
+            bool isAwaitingViewerInput = false)
         {
+            IsAwaitingViewerInput = isAwaitingViewerInput;
             TieBreaker = tieBreaker;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
             Text = Format(tieBreaker, setup, teamLifeCounters);
@@ -59,6 +61,14 @@ namespace GuardsDigital.Presentation.Match
 
         public TieBreakerState TieBreaker { get; }
         public QuickGameSetupState Setup { get; }
+
+        /// <summary>
+        /// Whether the match is waiting on the viewing player, from <c>AwaitedInputQuery</c>. The
+        /// whole strip carries the gold treatment while it is true - the user's requirement is the
+        /// bar, not only the narration lane inside it - and the round view model's warm voice reads
+        /// the same derivation, so the two halves of the strip cannot disagree.
+        /// </summary>
+        public bool IsAwaitingViewerInput { get; }
 
         /// <summary>Every fact in this bar as one line, and the Tie Breaker chip's assistive reading.</summary>
         public string Text { get; }

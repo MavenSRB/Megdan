@@ -448,6 +448,27 @@ Non-goals: No tolerance is widened and nothing is caught more broadly; a payload
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835i-restore-a-snapshot-captured-while-a-choice-is-paused-inside-an-attack-completion-evidence).
 
+### [x] 8.35j Light the whole top bar whenever the match is waiting on the viewing player
+
+User-approved amendment of 2026-09-03, from live playtesting: "on players turn, the whole top bar needs to be gold, not just naration bar", refined the same day so the trigger is every moment the match waits on the viewer rather than their action turn alone. The reading it replaces was a fifteen-way disjunction over the controls the round view model happened to expose. That is a fair approximation with one real hole: rulebook p.7's commitment is not one of the eleven declared pending-decision families and exposes no round-action control, because the hand owns it - so the most common wait in the game, every player choosing a card at the top of a round, reached the player as the calm voice. The user's own list names an awaited commitment first.
+
+Observable outcome: The whole top strip - identity row and narration lane together - carries the gold treatment exactly while the match is waiting on the viewing player: their commitment, a decision they own, their turn, their level-up upgrade, a defense answer, a respawn or agreement, and the turn release. Every other state keeps the look it has.
+
+Acceptance checks:
+
+- One derivation answers it, and both surfaces read that one flag: the strip's paint and the narration lane's warm voice cannot disagree about whose move it is, because neither computes the question for itself.
+- An awaited commitment from the viewer lights the bar, asserted together with the two facts the previous reading had - no standing decision and no offered turn action - so the case names the hole it closes rather than merely passing.
+- A decision standing on another seat leaves this viewer's bar cold. The turn arm reads the projection's own scoped offer set rather than the selected actor, because an attacker is still the selected actor while the defender is the one being asked, and the offer set is withheld for exactly that reason.
+- An ended match is not a wait, on the reading milestone 8.30c gave the status line.
+- Every declared pending-decision family reaches the bar without the derivation naming one: the standing contract is family-complete by construction, proven against the declared inventory, so a twelfth family lights the bar the day it is declared.
+- Presentation-only, viewer scope only. No rule, authority, projection, wire, schema or command change, and no hero-scope or card-scope treatment, which the next milestone reads from this same derivation.
+
+Closing check: `MatchFeaturePresenterTests.AnAwaitedCommitmentFromTheViewer_LightsTheBarTheOldReadingLeftCold` and `TheWholeTopStrip_CarriesTheGoldWhileTheMatchWaitsOnTheViewer` are recorded failing at the pre-fix revision - the commitment arm answering false and the strip painting its ordinary background - and passing after, while the family-conformance case passes on both sides, which is what says the red is this milestone's claim and not a broken suite.
+
+Non-goals: No hero-scope tray treatment and no card-scope highlight or resolution dimming; no narration wording or typography change; no new waiting state invented beyond what the projection already publishes; no rules, authority, projection, wire or schema change.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835j-light-the-whole-top-bar-whenever-the-match-is-waiting-on-the-viewing-player-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

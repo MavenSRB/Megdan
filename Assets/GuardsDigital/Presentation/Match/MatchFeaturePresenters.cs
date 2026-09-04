@@ -2916,8 +2916,10 @@ namespace GuardsDigital.Presentation.Match
             RemovalPreventionPromptViewModel removalPreventionPrompt = null,
             IEnumerable<PrintedActionRegionViewModel> printedActionRegions = null,
             TeamAgreementHudViewModel teamAgreement = null,
-            bool seatUndoAvailable = false)
+            bool seatUndoAvailable = false,
+            bool isAwaitingViewerInput = false)
         {
+            IsAwaitingViewerInput = isAwaitingViewerInput;
             SeatUndoAvailable = seatUndoAvailable;
             SystemTransitionPrompt = systemTransitionPrompt;
             EffectChoicePrompt = effectChoicePrompt;
@@ -2995,27 +2997,15 @@ namespace GuardsDigital.Presentation.Match
         /// region renders, so the voice and the controls cannot drift apart; a seat-scoped model
         /// carries only that seat's own offers, which is what makes presence mean "yours".
         /// </summary>
+        /// <summary>
+        /// Whether the match is waiting on this viewer, from
+        /// <see cref="AwaitedInputQuery"/>. The top bar's gold and this lane's warm voice read the
+        /// one flag, so the two surfaces cannot come to disagree about whose move it is.
+        /// </summary>
+        public bool IsAwaitingViewerInput { get; }
+
         public NarrationVoice Voice =>
-            DefenseChoices.Count > 0 ||
-            TeamAgreement?.Choices.Count > 0 ||
-            InitiativeChoices.Count > 0 ||
-            EffectChoices.Count > 0 ||
-            EffectChoiceTargets.Count > 0 ||
-            EffectChoiceDestinations.Count > 0 ||
-            HeroRespawnOptions.Count > 0 ||
-            ResolveWithoutRespawn != null ||
-            RemovalPreventionPrompt != null ||
-            SystemTransitionPrompt != null ||
-            ClearSelection != null ||
-            EndTurnInvocation != null ||
-            ContinueEndOfRoundInvocation != null ||
-            Actions.Count > 0 ||
-            PrintedActionRegions.Any(region =>
-                region.Invocation != null ||
-                region.FastTravelOffer != null ||
-                (region.ClearOffer != null && region.ClearOffer.IsAvailable))
-                ? NarrationVoice.YourMove
-                : NarrationVoice.Calm;
+            IsAwaitingViewerInput ? NarrationVoice.YourMove : NarrationVoice.Calm;
         public IReadOnlyList<TypedInvocationViewModel> Actions { get; }
         public TypedInvocationViewModel EndTurnInvocation { get; }
         public TypedInvocationViewModel ContinueEndOfRoundInvocation { get; }
@@ -3295,6 +3285,7 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchClient session;
         private readonly IRoundActionView view;
+        private readonly HeroId homeHeroId;
         private readonly List<TokenInstanceId> clearSelection = new List<TokenInstanceId>();
         private IMatchReadModel lastProjection;
         private RoundActionViewModel lastViewModel;
@@ -3312,9 +3303,22 @@ namespace GuardsDigital.Presentation.Match
         }
 
         public RoundActionPresenter(IMatchClient session, IRoundActionView view)
+            : this(session, view, default)
+        {
+        }
+
+        /// <summary>
+        /// A seat-scoped composition names the hero it is drawn for, on the terms
+        /// <see cref="DirectorHandsPresenter"/> already takes one: every other fact this presenter
+        /// reads is scoped to the viewer by the projection itself, and the viewer's own commitment is
+        /// the one wait that is public and therefore has to be named. The Director passes the
+        /// undefined hero and answers for everybody.
+        /// </summary>
+        public RoundActionPresenter(IMatchClient session, IRoundActionView view, HeroId homeHeroId)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.view = view ?? throw new ArgumentNullException(nameof(view));
+            this.homeHeroId = homeHeroId;
         }
 
         public event Action<IMatchReadModel> SessionProjectionChanged;
@@ -3647,12 +3651,12 @@ namespace GuardsDigital.Presentation.Match
         /// caller still describes the surface it always described.
         /// </summary>
         public static RoundActionViewModel CreateViewModel(IMatchReadModel projection) =>
-            CreateViewModel(projection, default, Array.Empty<TokenInstanceId>(), true);
+            CreateViewModel(projection, default, Array.Empty<TokenInstanceId>(), true, default);
 
         public static RoundActionViewModel CreateViewModel(
             IMatchReadModel projection, bool offersRoundContinuation) =>
             CreateViewModel(
-                projection, default, Array.Empty<TokenInstanceId>(), offersRoundContinuation);
+                projection, default, Array.Empty<TokenInstanceId>(), offersRoundContinuation, default);
 
         /// <summary>
         /// Whether the match is waiting on a decision inside this turn, asked in one place.
@@ -3710,7 +3714,8 @@ namespace GuardsDigital.Presentation.Match
             IMatchReadModel projection,
             ActionDefinitionId openClearActionDefinitionId,
             IReadOnlyList<TokenInstanceId> selectedClearTokenIds,
-            bool offersRoundContinuation)
+            bool offersRoundContinuation,
+            HeroId homeHeroId)
         {
             if (projection == null)
             {
@@ -3866,7 +3871,8 @@ namespace GuardsDigital.Presentation.Match
                 TeamAgreementHudPresentation.Create(projection),
                 // Milestone 8.35f. Read straight off the projection: the host publishes whether
                 // this seat may step back, and the control is enabled exactly when it says so.
-                projection.IsSeatUndoAvailable);
+                projection.IsSeatUndoAvailable,
+                AwaitedInputQuery.IsWaitingOnViewer(projection, homeHeroId));
         }
 
         private static IReadOnlyList<PrintedActionRegionViewModel> CreatePrintedActionRegions(
@@ -4504,7 +4510,8 @@ namespace GuardsDigital.Presentation.Match
             {
                 lastProjection = projection;
                 lastViewModel = CreateViewModel(
-                    projection, clearModeActionDefinitionId, clearSelection, session.IsDirector);
+                    projection, clearModeActionDefinitionId, clearSelection, session.IsDirector,
+                    homeHeroId);
             }
 
             return lastViewModel;

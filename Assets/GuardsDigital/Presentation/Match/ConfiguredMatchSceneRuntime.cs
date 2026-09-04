@@ -129,7 +129,7 @@ namespace GuardsDigital.Presentation.Match
                 client, HandsView, Seat?.HeroId ?? default);
             HeroOverviewsPresenter = new HeroOverviewsPresenter(
                 client, HeroOverviewsView, () => HandsPresenter.ViewedHeroId);
-            RoundPresenter = new RoundActionPresenter(client, RoundView);
+            RoundPresenter = new RoundActionPresenter(client, RoundView, Seat?.HeroId ?? default);
 
             // The Director's own controls exist only in the Director's runtime. A seat's HUD is not
             // given an Undo it must remember to hide; it is given a composition that has none.
@@ -279,7 +279,8 @@ namespace GuardsDigital.Presentation.Match
                     projection.Setup,
                     projection.TeamLifeCounters,
                     projection.RoundIndex,
-                    projection.TurnIndex)),
+                    projection.TurnIndex,
+                    AwaitedInputQuery.IsWaitingOnViewer(projection, Seat?.HeroId ?? default))),
                 HeroOverviewsPresenter,
                 // Milestone 8.35h. One panel's throw stops that panel and nothing else, and it is
                 // said out loud where the playtest logs already look: a marker naming the panel, and
@@ -571,7 +572,8 @@ namespace GuardsDigital.Presentation.Match
                 client.Projection.Setup,
                 client.Projection.TeamLifeCounters,
                 client.Projection.RoundIndex,
-                client.Projection.TurnIndex));
+                client.Projection.TurnIndex,
+                AwaitedInputQuery.IsWaitingOnViewer(client.Projection, Seat?.HeroId ?? default)));
             coordinator.RefreshAll();
             hud.ApplyExclusiveContext();
         }

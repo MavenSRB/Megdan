@@ -663,6 +663,20 @@ namespace GuardsDigital.Presentation.Match
             }
 
             Model = model ?? throw new ArgumentNullException(nameof(model));
+
+            // The user's requirement is the whole strip and not the lane inside it: "on players turn,
+            // the whole top bar needs to be gold, not just naration bar". Both rows sit inside this
+            // Root, so painting it once carries the identity row and the narration lane together,
+            // and the lane's own warm background still marks the sentence within it. The condition is
+            // the shared `AwaitedInputQuery` answer rather than "your turn" - a commitment, a defense,
+            // a level-up choice and the turn release are all moments the match is waiting on you.
+            Root.style.backgroundColor = model.IsAwaitingViewerInput
+                ? MatchHudTheme.NarrationWarmBackground
+                : MatchHudTheme.TopBarBackground;
+            Root.style.borderBottomColor = model.IsAwaitingViewerInput
+                ? MatchHudTheme.ShineGlow
+                : MatchHudTheme.PanelBorder;
+
             content.Clear();
             tieBreakerDisc.Clear();
 
