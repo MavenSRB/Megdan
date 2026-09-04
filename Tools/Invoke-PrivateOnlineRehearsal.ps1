@@ -3,7 +3,7 @@
     Private-online rehearsal: one dedicated seatless host and six client processes on loopback.
 
 .DESCRIPTION
-    The local multi-process runner named by Docs/AI/Testing/PRIVATE_ONLINE.md. It owns two
+    The local multi-process runner named by Docs/AI/Testing/PRIVATE_ONLINE.md. It owns three
     topologies against one disposable Win64 player.
 
     -Topology LoopbackSmoke -FaultPlan None (milestone 8.31)
@@ -45,8 +45,26 @@
                             survives holding its capability - which is the one path a real player
                             never walks, and why every tier's reconnect evidence missed this.
 
-    -Topology SixClient requires -FaultPlan Full, and -Topology LoopbackSmoke requires
-    -FaultPlan None. The 8.35c matrix row names exactly one six-client combination - "full match,
+    -Topology Solo -FaultPlan None (THIRTEENTH amendment; bot-filled seats for solo playtesting)
+        Proves the shipped practice-driver feature end to end, through its own real controls, not a
+        shortcut around them. One dedicated seatless host process, entering the real primitive lobby
+        exactly as SixClient's cohorts do, presses its own FILL WITH TEST DRIVERS control the moment
+        it starts hosting; one scripted client process joins the one designated seat as "the human"
+        would. The five OTHER canonical seats are never launched by this script at all - they exist
+        only because the host's own PrivateLobbyDriver spawned them, which is the whole point: this
+        is the one cohort that proves a solo player's actual host process can fill a table by itself.
+        Six distinct SEAT_CLAIMED lines on the host's own log (one the scripted client's, five the
+        spawned drivers') stand in for a run that launched only two processes. Every driver's
+        default human-followable think-delay is overridden to a fast one via
+        GUARDS_TESTDRIVER_THINK_SECONDS, set on the host's own environment before it presses the
+        control and read from there by the host to hand each spawned child - real solo play never
+        sets this and keeps the slow, watchable default. Once the host and the scripted client have
+        both exited on their own, this cohort's own closing check requires that no spawned
+        GuardsDigitalSmoke.exe process is still running - the host's proof that it killed its own
+        children rather than leaving them behind.
+
+    -Topology SixClient requires -FaultPlan Full, -Topology LoopbackSmoke and -Topology Solo both
+    require -FaultPlan None. The 8.35c matrix row names exactly one six-client combination - "full match,
     selected fault plan, reconnect/resync, terminal host loss probe" - so a six-client run without
     the fault plan is not the milestone's gate, and permitting it would let a weaker run be
     mistaken for one. The deterministic 80-case Full catalog itself is the typed
@@ -62,7 +80,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('LoopbackSmoke', 'SixClient')] [string] $Topology = 'LoopbackSmoke',
+    [ValidateSet('LoopbackSmoke', 'SixClient', 'Solo')] [string] $Topology = 'LoopbackSmoke',
     [ValidateSet('None', 'Full')] [string] $FaultPlan = 'None',
     [int] $TimeoutSeconds = 0,
     [int] $Seed = 21,
@@ -81,8 +99,21 @@ if ($Topology -eq 'SixClient' -and $FaultPlan -ne 'Full') {
         "names one combination; use -FaultPlan Full.")
     exit 1
 }
+# THIRTEENTH amendment. Solo proves the shipped bot-seat feature, not a fault-injection matrix row -
+# it never carries a fault plan, so a weaker run cannot be mistaken for a stronger one either way.
+if ($Topology -eq 'Solo' -and $FaultPlan -ne 'None') {
+    Write-Error "REHEARSAL REFUSED: -Topology Solo carries no fault plan; use -FaultPlan None."
+    exit 1
+}
 if ($TimeoutSeconds -le 0) {
-    if ($Topology -eq 'SixClient') { $TimeoutSeconds = 2400 } else { $TimeoutSeconds = 420 }
+    if ($Topology -eq 'SixClient') { $TimeoutSeconds = 2400 }
+    # A truly random-legal match - no strategy, by the amendment's own rule - has no reason to
+    # converge quickly: measured at ~1.7 accepted commands/second even at the fast regression
+    # pace, and a full six-player 3-Wave Quick Game under aimless play can run into the low
+    # thousands of commands before a side runs out of Lives or the Waves end. Budgeted generously
+    # rather than optimized for speed; this cohort runs once per verification, not per commit.
+    elseif ($Topology -eq 'Solo') { $TimeoutSeconds = 3600 }
+    else { $TimeoutSeconds = 420 }
 }
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -303,7 +334,7 @@ function Start-RehearsalPlayer {
     param(
         [Parameter(Mandatory = $true)] [string] $Name,
         [Parameter(Mandatory = $true)] [ValidateSet('host', 'client')] [string] $Role,
-        [Parameter(Mandatory = $true)] [ValidateSet('match', 'host-loss', 'rejoin', 'rejoin-return')] [string] $Mode,
+        [Parameter(Mandatory = $true)] [ValidateSet('match', 'host-loss', 'rejoin', 'rejoin-return', 'solo')] [string] $Mode,
         [Parameter(Mandatory = $false)] [string] $Seat = '',
         [Parameter(Mandatory = $true)] [string] $Address,
         [Parameter(Mandatory = $true)] [int] $Port,
@@ -491,7 +522,7 @@ if ($Topology -eq 'LoopbackSmoke') {
         }
     }
 }
-else {
+elseif ($Topology -eq 'SixClient') {
     $matchHostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-sixclient-match-host.log')
     $lossHostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-sixclient-hostloss-host.log')
     # Milestone 8.35k. The rejoin cohort's host, and the relaunched seat's own log - a SEPARATE
@@ -948,6 +979,140 @@ else {
         }
     }
 }
+else {
+    # ------------------------------------------------------------------ Solo cohort (THIRTEENTH amendment)
+    # One scripted "human" seat plus the host's own FILL WITH TEST DRIVERS control taking the other
+    # five - the regression a solo practice session actually needs: proof that a real host process,
+    # pressing its own real lobby control, spawns five real keyed clients that play a complete match
+    # to one converged outcome, and that every one of them - the five bots included - is gone again
+    # once the host's own session ends.
+    Write-Output '== Step 2: Solo cohort - one scripted seat, five test-driver seats, one host =='
+    $soloSeat = 'red-player-01'
+    $soloHostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-solo-host.log')
+    $soloClientLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-solo-client.log')
+
+    try {
+        Build-DisposablePlayer -UnityPath $unityPath
+
+        $soloPort = Get-FreeLoopbackPort
+        $soloKey = [System.Guid]::NewGuid().ToString('N')
+        $rehearsalKeys += $soloKey
+        Write-Output "Loopback endpoint: 127.0.0.1:$soloPort"
+
+        # The one inner-loop knob this cohort exists to prove works: the host reads this from its
+        # OWN environment and hands each spawned child the equivalent -guardsTestDriverThinkSeconds,
+        # so a regression finishes in a bounded window rather than at a human's watching pace. A real
+        # solo session never sets this and its bots keep the slow, watchable default.
+        $env:GUARDS_TESTDRIVER_THINK_SECONDS = '0.05'
+        try {
+            $soloBudget = [Math]::Max(300, $TimeoutSeconds - 120)
+            $soloHost = Start-RehearsalPlayer -Name 'solo-host' -Role 'host' -Mode 'solo' `
+                -Address '127.0.0.1' -Port $soloPort -Key $soloKey -BudgetSeconds $soloBudget -LogPath $soloHostLog
+        }
+        finally {
+            Remove-Item Env:\GUARDS_TESTDRIVER_THINK_SECONDS -ErrorAction SilentlyContinue
+        }
+        $processes += $soloHost.Process
+        Wait-ForLogMarker -LogPath $soloHostLog -Pattern 'GUARDS_ONLINE: LOBBY_HOSTING port=' `
+            -DeadlineSeconds 180 -Description 'the solo host to bind its lobby'
+
+        # The scripted seat joins BEFORE the fill, not after - real solo play's own order, and the
+        # host's Solo-mode logic now depends on it: a seatless host cannot name which seat is "the
+        # human's" to protect, so it waits for some seat's own claim before pressing FILL, and that
+        # first claim must be this one or FILL would take the scripted seat too and its own join
+        # would be refused SessionFull (measured, not assumed - the first version of this cohort
+        # pressed FILL immediately and reproduced exactly that).
+        $soloClient = Start-RehearsalPlayer -Name $soloSeat -Role 'client' -Mode 'solo' -Seat $soloSeat `
+            -Address '127.0.0.1' -Port $soloPort -Key $soloKey -BudgetSeconds $soloBudget -LogPath $soloClientLog
+        $processes += $soloClient.Process
+        Wait-ForCohortMarkers -Requirements @(
+                [pscustomobject]@{ Log = $soloHostLog; Pattern = ('SEAT_CLAIMED ordinal=\d+ seat=' + [regex]::Escape($soloSeat)) }
+            ) -WatchLogs @($soloHostLog, $soloClientLog) -DeadlineSeconds 120 `
+            -Description 'the scripted seat to claim its own seat before the host fills the rest'
+
+        Wait-ForLogMarker -LogPath $soloHostLog -Pattern 'GUARDS_ONLINE: REHEARSAL_SOLO_FILLED' `
+            -DeadlineSeconds 60 -Description 'the host to press its own FILL WITH TEST DRIVERS control'
+        Write-Output 'Host pressed FILL WITH TEST DRIVERS through its real lobby control.'
+
+        Wait-ForCohortMarkers -Requirements @(
+                [pscustomobject]@{ Log = $soloHostLog; Pattern = 'GUARDS_ONLINE: MATCH_STARTED' }
+            ) -WatchLogs @($soloHostLog, $soloClientLog) -DeadlineSeconds 300 `
+            -Description 'the solo cohort match to begin - the scripted seat plus five spawned test drivers'
+        Write-Output 'Match started: the one scripted seat plus five spawned test drivers claimed the rest.'
+
+        Wait-ForCohortMarkers -Requirements @(
+                [pscustomobject]@{ Log = $soloHostLog; Pattern = 'GUARDS_ONLINE: REHEARSAL_OUTCOME version=' },
+                [pscustomobject]@{ Log = $soloClientLog; Pattern = 'GUARDS_ONLINE: REHEARSAL_OUTCOME seat=' }
+            ) -WatchLogs @($soloHostLog, $soloClientLog) -DeadlineSeconds ([Math]::Max(300, $TimeoutSeconds - 300)) `
+            -Description 'the solo cohort to reach one authoritative outcome'
+
+        Write-Output '== Step 3: the host and the one scripted client exit on their own =='
+        Assert-PlayerExit -Players @($soloHost, $soloClient) -DeadlineSeconds 240 -Description 'solo cohort'
+
+        Write-Output '== Step 4: read the logs; exit codes alone are never evidence =='
+        $soloHostText = Get-LogText -LogPath $soloHostLog
+        foreach ($marker in @('GUARDS_ONLINE: LOBBY_HOSTING port=', 'GUARDS_ONLINE: REHEARSAL_SOLO_FILLED',
+                'GUARDS_ONLINE: MATCH_STARTED', 'GUARDS_ONLINE: REHEARSAL_OUTCOME version=',
+                'GUARDS_ONLINE: MATCH_OUTCOME version=', 'GUARDS_ONLINE: EXIT 0')) {
+            if ($soloHostText -notmatch $marker) {
+                Write-Output "FAIL: the solo host log is missing '$marker'."
+                $rehearsalFailed = $true
+            }
+        }
+
+        # Six distinct seats claimed - one the scripted client's own first claim, five the host's
+        # spawned children's - is the cohort's real claim: FILL WITH TEST DRIVERS actually filled.
+        $soloClaimed = [regex]::Matches($soloHostText, 'SEAT_CLAIMED ordinal=\d+ seat=([a-z0-9-]+)') |
+            ForEach-Object { $_.Groups[1].Value }
+        $soloDistinct = @($soloClaimed | Sort-Object -Unique)
+        if (@($soloClaimed).Count -ne 6 -or $soloDistinct.Count -ne 6) {
+            Write-Output "FAIL: expected exactly six distinct SEAT_CLAIMED lines; saw $(@($soloClaimed).Count) claims over $($soloDistinct.Count) seats."
+            $rehearsalFailed = $true
+        }
+        $soloSpawnedSeats = @($soloDistinct | Where-Object { $_ -ne $soloSeat })
+        if ($soloSpawnedSeats.Count -ne 5) {
+            Write-Output "FAIL: expected the five non-scripted seats to be the spawned test drivers; saw $($soloSpawnedSeats.Count)."
+            $rehearsalFailed = $true
+        }
+
+        $soloClientText = Get-LogText -LogPath $soloClientLog
+        if ($soloClientText -notmatch 'GUARDS_ONLINE: EXIT 0') {
+            Write-Output "FAIL: the scripted solo seat did not record an orderly exit."
+            $rehearsalFailed = $true
+        }
+
+        # The host's own children, and the one thing this cohort cannot read from a log: whether it
+        # actually killed them. Every GuardsDigitalSmoke.exe this whole topology could have spawned
+        # must be gone once the host and the scripted client have both exited on their own above -
+        # a leftover means a spawned driver survived the session that owned it.
+        Start-Sleep -Milliseconds 500
+        $leftover = Get-Process -Name 'GuardsDigitalSmoke' -ErrorAction SilentlyContinue
+        if ($leftover) {
+            Write-Output ("FAIL: " + @($leftover).Count + " GuardsDigitalSmoke.exe process(es) survived the " +
+                "solo cohort's own host and scripted client - the host's own spawned test drivers must be " +
+                "killed when its session ends, and were not.")
+            $rehearsalFailed = $true
+            foreach ($stray in $leftover) {
+                try { $stray.Kill() } catch { }
+            }
+        }
+        else {
+            Write-Output 'Confirmed: no test-driver process outlived the host session that spawned it.'
+        }
+
+        $allLogs = @($soloHostLog, $soloClientLog)
+    }
+    catch {
+        Write-Output "FAIL: $($_.Exception.Message)"
+        $rehearsalFailed = $true
+        $allLogs = @($soloHostLog, $soloClientLog)
+    }
+    finally {
+        foreach ($process in $processes) {
+            try { if (-not $process.HasExited) { $process.Kill() } } catch { }
+        }
+    }
+}
 
 # ---------------------------------------------------------------------------- privacy review
 # Connections are opaque ordinals everywhere. The only ip:port any log may carry is the
@@ -1005,10 +1170,15 @@ if ($rehearsalFailed) {
 if ($Topology -eq 'LoopbackSmoke') {
     Write-Output 'REHEARSAL PASSED: one seatless host, six distinct seats, and three named refusals on loopback.'
 }
-else {
+elseif ($Topology -eq 'SixClient') {
     Write-Output ('REHEARSAL PASSED: one seatless host and six seated clients completed a full match with the ' +
         'forced Initiative and Minion Battle agreement flows, a mid-match reconnect, converged outcome, ' +
         'privacy-reviewed logs, and a terminal host-loss cohort.')
     Write-Output 'A same-machine rehearsal proves no relay, NAT traversal, external latency, multi-network, or real-internet behaviour.'
+}
+else {
+    Write-Output ('REHEARSAL PASSED: one host pressed its own real FILL WITH TEST DRIVERS control, spawning ' +
+        'five real keyed test-driver clients that seated alongside one scripted seat and completed a full ' +
+        'match to one converged outcome, and every spawned driver was gone again once the host session ended.')
 }
 exit 0

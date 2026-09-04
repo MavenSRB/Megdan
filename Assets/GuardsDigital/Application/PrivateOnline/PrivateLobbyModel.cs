@@ -43,7 +43,15 @@ namespace GuardsDigital.Application
         Leave = 5,
 
         /// <summary>Begin an authorized return to the seat this client already held.</summary>
-        Reconnect = 6
+        Reconnect = 6,
+
+        /// <summary>
+        /// THIRTEENTH amendment. Host only, before the match starts: spawn a real keyed test-driver
+        /// client process onto every seat still Open, so a solo player can practice without six
+        /// windows. QA tooling - explicitly not an AI opponent - offered only while a seat remains
+        /// to fill.
+        /// </summary>
+        FillWithTestDrivers = 7
     }
 
     /// <summary>
@@ -53,6 +61,12 @@ namespace GuardsDigital.Application
     /// Every field is a reading of one <see cref="SeatRosterEntry"/>, which is public at a real
     /// table: who the seat is, which side it plays for, whether somebody is in it, and whether they
     /// are ready. Nothing owner-private has a field here to travel in.
+    /// <para><see cref="IsTestDriverSeat"/> is the one exception, and deliberately not sourced from
+    /// the roster: which seats a spawned test driver claimed is known only to the host process that
+    /// spawned them (<c>PrivateLobbyDriver</c>'s own local list), so it never crosses the wire - the
+    /// THIRTEENTH amendment's "no protocol change expected" holds because of exactly this. A
+    /// connecting player's own lobby therefore reads an ordinary SEATED row for a bot-filled seat;
+    /// only the host's own screen, where the fact originates, labels it.</para>
     /// </remarks>
     public sealed class PrivateLobbySeatRow
     {
@@ -63,7 +77,8 @@ namespace GuardsDigital.Application
             string teamLabel,
             string occupancyLabel,
             string readinessLabel,
-            bool isOwnSeat)
+            bool isOwnSeat,
+            bool isTestDriverSeat = false)
         {
             Seat = seat;
             SeatLabel = seatLabel ?? string.Empty;
@@ -72,6 +87,7 @@ namespace GuardsDigital.Application
             OccupancyLabel = occupancyLabel ?? string.Empty;
             ReadinessLabel = readinessLabel ?? string.Empty;
             IsOwnSeat = isOwnSeat;
+            IsTestDriverSeat = isTestDriverSeat;
         }
 
         public SeatId Seat { get; }
@@ -84,6 +100,12 @@ namespace GuardsDigital.Application
 
         /// <summary>Ready or not ready - in words, never as a colour.</summary>
         public string ReadinessLabel { get; }
+
+        /// <summary>
+        /// Whether the host's own local record says this seat's connection is a spawned test
+        /// driver rather than a real player. Host-only knowledge - see the class remarks.
+        /// </summary>
+        public bool IsTestDriverSeat { get; }
 
         /// <summary>Whether this is the row of the seat the surface's own client holds.</summary>
         public bool IsOwnSeat { get; }
@@ -245,6 +267,7 @@ namespace GuardsDigital.Application
                 case PrivateLobbyControl.Unready: return "CANCEL READY";
                 case PrivateLobbyControl.Leave: return "LEAVE";
                 case PrivateLobbyControl.Reconnect: return "RECONNECT";
+                case PrivateLobbyControl.FillWithTestDrivers: return "FILL WITH TEST DRIVERS";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(control), control, "Every offered control must have words on it.");
@@ -285,6 +308,8 @@ namespace GuardsDigital.Application
     /// </remarks>
     public sealed class PrivateLobbyModel
     {
+        private static readonly ISet<SeatId> EmptyTestDriverSeats = new HashSet<SeatId>();
+
         private PrivateLobbyModel(
             PrivateLobbyRole role,
             bool isShown,
@@ -421,21 +446,36 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>
-        /// The dedicated seatless host's lobby: the seats it serves, and no control that would let
-        /// it play.
+        /// The dedicated seatless host's lobby: the seats it serves, and the one control that lets
+        /// it fill empty ones with test drivers before the match starts.
         /// </summary>
         /// <remarks>
         /// The host holds no seat by the topology's own rule, so it is never offered readiness -
         /// there is nothing of its own for it to be ready with - and its panel stands after the
         /// transition, because a seatless process has no match surface of its own to hand off to.
         /// </remarks>
-        public static PrivateLobbyModel ForHost(PrivateSessionHost host, string feedback)
+        /// <param name="testDriverSeats">
+        /// THIRTEENTH amendment. Which seats this host's own spawned test drivers claimed, read
+        /// from the host process's local record rather than the roster - see
+        /// <see cref="PrivateLobbySeatRow.IsTestDriverSeat"/>. Optional and defaults to none, so
+        /// every existing caller (and fixture) is unaffected.
+        /// </param>
+        public static PrivateLobbyModel ForHost(
+            PrivateSessionHost host, string feedback,
+            ISet<SeatId> testDriverSeats = null)
         {
             if (host == null) throw new ArgumentNullException(nameof(host));
+            testDriverSeats = testDriverSeats ?? EmptyTestDriverSeats;
 
             var rows = new List<PrivateLobbySeatRow>();
+            var anySeatOpen = false;
             foreach (var entry in host.Roster)
             {
+                if (entry.Occupancy == SeatOccupancyState.Open)
+                {
+                    anySeatOpen = true;
+                }
+
                 rows.Add(new PrivateLobbySeatRow(
                     entry.Seat,
                     PrivateLobbyLabels.Identifier(entry.Seat.Value),
@@ -443,7 +483,8 @@ namespace GuardsDigital.Application
                     PrivateLobbyLabels.Team(entry.TeamSide),
                     PrivateLobbyLabels.Occupancy(entry.Occupancy),
                     PrivateLobbyLabels.Readiness(entry.IsReady),
-                    false));
+                    false,
+                    testDriverSeats.Contains(entry.Seat)));
             }
 
             var status = host.HasMatchStarted
@@ -454,6 +495,14 @@ namespace GuardsDigital.Application
                     host.ReadySeatCount.ToString(CultureInfo.InvariantCulture) + "/" +
                     host.TotalSeats.ToString(CultureInfo.InvariantCulture) + " READY";
 
+            var controls = new List<PrivateLobbyControl>();
+            if (!host.HasMatchStarted && anySeatOpen)
+            {
+                controls.Add(PrivateLobbyControl.FillWithTestDrivers);
+            }
+
+            controls.Add(PrivateLobbyControl.Leave);
+
             return new PrivateLobbyModel(
                 PrivateLobbyRole.Host,
                 true,
@@ -461,7 +510,7 @@ namespace GuardsDigital.Application
                 feedback,
                 host.Identity.Correlation,
                 rows,
-                new[] { PrivateLobbyControl.Leave },
+                controls,
                 host.HasMatchStarted);
         }
 

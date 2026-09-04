@@ -52,6 +52,13 @@ those instead:
     HOST - Start Server.bat    only for whoever is hosting the match. You can
                                ignore it.
 
+(Wondering about practicing alone first? The host's lobby has a FILL WITH TEST
+DRIVERS button that fills any empty seats with QA test drivers - not real
+opponents, just random legal moves at a watchable pace, clearly labeled on the
+host's own screen. It is there so whoever hosts our real session can get
+comfortable with the controls beforehand without needing five other people online
+at once; it plays no part in the six-person session itself.)
+
 The first time, Windows may say "Windows protected your PC". Choose "More info",
 then "Run anyway" - the build is unsigned, which is expected for a private
 prototype.

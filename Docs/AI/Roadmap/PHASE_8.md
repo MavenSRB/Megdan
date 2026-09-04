@@ -450,6 +450,30 @@ Non-goals: No rules change - adjacency and targeting were already measured from 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835p-move-a-charge-before-its-attack-resolves-and-wall-a-card-text-attack-against-its-own-seats-rewind-completion-evidence).
 
+### [x] 8.35q Fill empty seats with spawned test drivers for solo playtesting
+
+THIRTEENTH amendment: "I find it really hard to test running 6 clients at once. Can you make AI play the game or something so i just play with one client only?" Answer: expose the existing rehearsal/SixClient machinery's real-lobby, real-HUD, offers-intersected-with-AuthorizedCommands pattern as a shipped, user-facing practice affordance - explicitly NOT an AI opponent (durable non-goal unchanged).
+
+Observable outcome: the host's lobby (`Tools/PlaytestLaunchers/HOST - Start Server.bat`, the interactive lobby a real solo player actually runs, per 8.35o's own finding) offers FILL WITH TEST DRIVERS whenever a seat is still Open and the match has not started. Pressing it spawns one real keyed client process per Open seat - the same running executable, re-launched with a distinct log path - each of which joins the real lobby, claims its seat, and answers whatever it is offered (commitments, defenses, agreements, leveling, releases) with a random legal choice at a human-followable pace (2 s default, overridable). Every spawned process is the host's own OS child, killed when its session ends.
+
+Design:
+
+- Host affordance is a lobby control only (`PrivateLobbyControl.FillWithTestDrivers`), not a launcher flag - the raw `-guardsPrivateHost` CLI role is CI/rehearsal-only and no real tester ever touches it.
+- Reuses `PrivateOnlineRehearsalDriver.AuthorizedProjectedCommands` (bumped `internal`) directly rather than duplicating it; the new, much simpler `PrivateSeatDriver` (new file) carries the shipped behavior, deliberately kept separate from the 1184-line CI-only rehearsal driver rather than growing it. New CLI vocabulary (`-guardsTestDriver`, `-guardsTestDriverSeat`, optional think-seconds/seed), endpoint/key via env vars only - the same command-line-secrecy rule the rehearsal driver already follows.
+- Spawning goes through `ITestDriverProcessLauncher`, a small seam so the spawning DECISION is Edit-Mode-testable without ever starting a real process; `RealTestDriverProcessLauncher` is production. Labeling (`PrivateLobbySeatRow.IsTestDriverSeat`) is deliberately host-screen-only, sourced from the host's own local spawn record rather than the roster - putting it on the wire would be the protocol change the amendment says isn't expected.
+- No new session-layer member, no protocol change - verified by grep, and by the regression completing under the unmoved wire version.
+
+Acceptance checks:
+
+- `PrivateLobbyModel.ForHost` offers `FillWithTestDrivers` exactly while a seat is Open and the match has not started, and labels a host-spawned seat's own row `IsTestDriverSeat` from the caller-supplied set alone, never the roster.
+- `PrivateLobbyPresenter.Press(FillWithTestDrivers, ...)` raises `FillWithTestDriversRequested` without touching any session itself - spawning stays the one thing only the driver may know how to do.
+- `PrivateSeatDriverOptions.TryParse` accepts a well-formed line and refuses a missing seat, a missing lobby flag, a non-loopback address, and an empty session key, each with its own named reason.
+- Regression: a solo cohort in `Invoke-PrivateOnlineRehearsal.ps1 -Topology Solo -FaultPlan None` - one scripted "human" seat plus the host's own real FILL control filling the other five - completes a full six-player match to one converged outcome from only two launched processes, and no spawned test-driver process outlives the host session that spawned it.
+
+Non-goals: No AI opponent, strategy, or difficulty - every legal answer is equally likely by design, a durable property. No wire/protocol change. No in-process second driving path - every seat is an ordinary keyed process. No change to the CI-only rehearsal driver's own scripted cohorts beyond the new `Solo` mode that drives this regression.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835q-fill-empty-seats-with-spawned-test-drivers-for-solo-playtesting-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

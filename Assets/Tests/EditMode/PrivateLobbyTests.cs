@@ -831,6 +831,76 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(model.SessionLabel, Is.EqualTo(harness.Identity.Correlation));
         }
 
+        // --- THIRTEENTH amendment: fill empty seats with test drivers -----------------------------
+
+        [Test]
+        public void TheSeatlessHostsLobby_OffersFillWithTestDrivers_WhileASeatIsStillOpen()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+
+            var model = PrivateLobbyModel.ForHost(harness.Session, string.Empty);
+
+            // NUnit 3.5's Does.Contain over a sequence binds the string overload against an enum
+            // and fails to compile under Unity; Any(...) + Is.True is this codebase's own fix shape.
+            Assert.That(model.Controls.Any(control => control == PrivateLobbyControl.FillWithTestDrivers),
+                Is.True,
+                "A freshly composed session has every seat Open, which is exactly the state this " +
+                "control exists for.");
+        }
+
+        [Test]
+        public void TheSeatlessHostsLobby_StopsOfferingFillWithTestDrivers_OnceEverySeatIsClaimed()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            harness.SeatAll();
+
+            var model = PrivateLobbyModel.ForHost(harness.Session, string.Empty);
+
+            Assert.That(model.Controls.Any(control => control == PrivateLobbyControl.FillWithTestDrivers),
+                Is.False,
+                "Nothing left to fill; offering it anyway would invite pressing it for no effect.");
+        }
+
+        [Test]
+        public void APartiallySeatedHost_StillOffersFillWithTestDrivers_ForTheSeatsStillOpen()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            harness.Connect(1, "red-player-01");
+            harness.Pump();
+
+            var model = PrivateLobbyModel.ForHost(harness.Session, string.Empty);
+
+            Assert.That(model.Controls.Any(control => control == PrivateLobbyControl.FillWithTestDrivers),
+                Is.True);
+        }
+
+        [Test]
+        public void ATestDriverSeat_IsLabeledOnlyOnTheHostsOwnRow_FromTheHostsOwnLocalRecord()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            var filled = new HashSet<SeatId>(new[] { new SeatId("red-player-01") });
+
+            var model = PrivateLobbyModel.ForHost(harness.Session, string.Empty, filled);
+
+            var filledRow = model.Seats.Single(row => row.Seat.Value == "red-player-01");
+            Assert.That(filledRow.IsTestDriverSeat, Is.True);
+            var otherRow = model.Seats.Single(row => row.Seat.Value == "blue-player-01");
+            Assert.That(otherRow.IsTestDriverSeat, Is.False,
+                "The set names one seat; every other row must read false, not inherit true.");
+        }
+
+        [Test]
+        public void ForHost_WithNoTestDriverSeatsArgument_LabelsNoRowATestDriver()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+
+            var model = PrivateLobbyModel.ForHost(harness.Session, string.Empty);
+
+            Assert.That(model.Seats.All(row => !row.IsTestDriverSeat), Is.True,
+                "Every existing caller (and fixture) that never heard of this feature must see " +
+                "exactly the same rows it always did.");
+        }
+
         // --- Privacy and the presentation-only boundary -------------------------------------------
 
         /// <summary>
@@ -927,7 +997,13 @@ namespace GuardsDigital.Tests.EditMode
                 typeof(PrivateSessionClient),
                 typeof(PrivateSessionHost),
                 typeof(IReadOnlyList<SeatRosterEntry>),
-                typeof(string)
+                typeof(string),
+                // THIRTEENTH amendment. Deliberately admitted, not a session-contract type: which
+                // seats a spawned test driver claimed is knowledge the HOST PROCESS holds locally
+                // (its own list of what it spawned), never a fact the session/roster carries - see
+                // PrivateLobbySeatRow.IsTestDriverSeat's own remarks. ForHost reads it exactly like
+                // the feedback string beside it: reported, not decided.
+                typeof(ISet<SeatId>)
             };
 
             var factories = typeof(PrivateLobbyModel)

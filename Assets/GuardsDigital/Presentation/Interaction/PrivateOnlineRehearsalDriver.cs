@@ -38,7 +38,17 @@ namespace GuardsDigital.Presentation.Interaction
         /// Milestone 8.35k. The relaunched process, which is a first join as far as it knows: a new
         /// process, a new client object, and nothing carried across but what it finds on disk.
         /// </summary>
-        RejoinReturn = 3
+        RejoinReturn = 3,
+
+        /// <summary>
+        /// The THIRTEENTH-amendment bot-seat regression: one scripted "human" seat (this driver, in
+        /// this mode, playing ordinarily - no forced disagreement, no forced proposal change, since
+        /// there is no second scripted teammate to force it against) plus the host's own
+        /// <see cref="PrivateLobbyControl.FillWithTestDrivers"/> filling every other seat with real
+        /// spawned <see cref="PrivateSeatDriver"/> processes. Proves the shipped feature end to end
+        /// through its real control, not a shortcut.
+        /// </summary>
+        Solo = 4
     }
 
     /// <summary>
@@ -122,9 +132,11 @@ namespace GuardsDigital.Presentation.Interaction
                 parsedMode = PrivateOnlineRehearsalMode.Rejoin;
             else if (string.Equals(mode, "rejoin-return", StringComparison.OrdinalIgnoreCase))
                 parsedMode = PrivateOnlineRehearsalMode.RejoinReturn;
+            else if (string.Equals(mode, "solo", StringComparison.OrdinalIgnoreCase))
+                parsedMode = PrivateOnlineRehearsalMode.Solo;
             else
             {
-                error = "the rehearsal mode must be match, host-loss, rejoin or rejoin-return";
+                error = "the rehearsal mode must be match, host-loss, rejoin, rejoin-return or solo";
                 return false;
             }
 
@@ -232,6 +244,7 @@ namespace GuardsDigital.Presentation.Interaction
         private DateTime? outcomeSeenUtc;
         private bool entryPressed;
         private bool readinessPressed;
+        private bool testDriversFillAttempted;
         private bool hudReported;
         private bool stopped;
         private bool privacyFailed;
@@ -310,7 +323,12 @@ namespace GuardsDigital.Presentation.Interaction
             // ordinarily, and the agreement could never complete - six processes waiting on each
             // other at version 347. So the flags are not an assertion to dodge; they are this
             // driver's phase, and a process that joins mid-match is in the later phase.
-            if (options != null && options.Mode == PrivateOnlineRehearsalMode.RejoinReturn)
+            // The Solo cohort's one scripted seat plays ordinarily for the same reason a relaunched
+            // process does: there is no second scripted teammate here to force a disagreement or a
+            // changed proposal against, so pre-observing these skips straight to the "ordinary"
+            // branch every agreement-driving method already has.
+            if (options != null && (options.Mode == PrivateOnlineRehearsalMode.RejoinReturn ||
+                    options.Mode == PrivateOnlineRehearsalMode.Solo))
             {
                 initiativeFinalObserved = true;
                 tieBehaviorObserved = true;
@@ -399,6 +417,36 @@ namespace GuardsDigital.Presentation.Interaction
             var host = lobby.RehearsalHost;
             if (host == null)
                 return;
+
+            // The Solo cohort's own host: presses the shipped feature's real lobby control exactly
+            // once, unattended, so the regression proves that control rather than a shortcut around
+            // it. One attempt only - a refusal (nothing left open, or the control briefly not
+            // offered) is not retried into a spin.
+            //
+            // Waits for the scripted seat's OWN claim first - real solo play's actual order, and
+            // load-bearing here: this host is seatless and cannot name which seat is "the human's"
+            // to protect, so pressing the moment hosting begins (nobody claimed yet) fills every
+            // seat including the one the scripted client is about to ask for, and its own join is
+            // then refused SessionFull. ClaimedSeatCount >= 1 is an exact signal for "the scripted
+            // client got there first" precisely because nothing else can claim a seat before this
+            // control is pressed - the bots this control itself spawns are the only other claimants
+            // that will ever exist in this cohort.
+            if (options.Mode == PrivateOnlineRehearsalMode.Solo && !testDriversFillAttempted &&
+                !host.HasMatchStarted && host.ClaimedSeatCount >= 1)
+            {
+                if (lobby.Presenter.Model?.Offers(PrivateLobbyControl.FillWithTestDrivers) == true)
+                {
+                    testDriversFillAttempted = true;
+                    if (!lobby.Presenter.Press(PrivateLobbyControl.FillWithTestDrivers, null))
+                    {
+                        Fail("solo-fill-control-refused");
+                        return;
+                    }
+
+                    PrivateOnlineMarkers.Log("REHEARSAL_SOLO_FILLED");
+                }
+            }
+
             if (!host.HasMatchStarted)
                 return;
 
@@ -737,7 +785,12 @@ namespace GuardsDigital.Presentation.Interaction
         /// diagnosable log - the first live run spent roughly seven refusals and a served resync
         /// per accepted command and could not have finished a match inside any sane budget.
         /// </remarks>
-        private static IReadOnlyList<DirectorCommand> AuthorizedProjectedCommands(
+        /// <summary>
+        /// Shared with <see cref="PrivateSeatDriver"/>: the whole point of the intersection - see
+        /// the remarks above - is one answer to "what may this seat legally press right now", so a
+        /// second driver reads the same one rather than re-deriving it.
+        /// </summary>
+        internal static IReadOnlyList<DirectorCommand> AuthorizedProjectedCommands(
             PrivateSessionClient machine, ConfiguredMatchSceneRuntime runtime)
         {
             var authorized = machine.LatestProjection?.AuthorizedCommands;
@@ -1171,6 +1224,7 @@ namespace GuardsDigital.Presentation.Interaction
                 case PrivateOnlineRehearsalMode.HostLoss: return "host-loss";
                 case PrivateOnlineRehearsalMode.Rejoin: return "rejoin";
                 case PrivateOnlineRehearsalMode.RejoinReturn: return "rejoin-return";
+                case PrivateOnlineRehearsalMode.Solo: return "solo";
                 default: return "match";
             }
         }

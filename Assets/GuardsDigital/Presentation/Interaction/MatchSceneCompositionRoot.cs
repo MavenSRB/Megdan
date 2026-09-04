@@ -964,6 +964,24 @@ namespace GuardsDigital.Presentation.Interaction
                         gameObject.AddComponent<PrivateOnlineRehearsalDriver>()
                             .Configure(this, lobby, rehearsal);
                     }
+
+                    // THIRTEENTH amendment. A test-driver child spawned by another process's host -
+                    // mutually exclusive with the CI rehearsal flag above by construction (a normal
+                    // launch carries neither, and nothing spawns a process asking for both).
+                    if (PrivateSeatDriver.TryParseRequested(
+                        System.Environment.GetCommandLineArgs(), out var seatDriver, out var seatDriverError))
+                    {
+                        if (seatDriver == null)
+                        {
+                            UnityEngine.Debug.LogError("GUARDS_ONLINE: FAIL " + seatDriverError);
+                            UnityEngine.Application.Quit(2);
+                            return;
+                        }
+
+                        gameObject.AddComponent<PrivateSeatDriver>()
+                            .Configure(this, lobby, seatDriver);
+                    }
+
                     return;
             }
         }

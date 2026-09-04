@@ -258,6 +258,105 @@ namespace GuardsDigital.Presentation.Interaction
     }
 
     /// <summary>
+    /// THIRTEENTH amendment. What the host asks for when it spawns one test-driver child.
+    /// </summary>
+    internal sealed class TestDriverSpawnRequest
+    {
+        public TestDriverSpawnRequest(
+            SeatId seat, string address, int port, string sessionKey, double? thinkSecondsOverride = null)
+        {
+            Seat = seat;
+            Address = address;
+            Port = port;
+            SessionKey = sessionKey;
+            ThinkSecondsOverride = thinkSecondsOverride;
+        }
+
+        public SeatId Seat { get; }
+        public string Address { get; }
+        public int Port { get; }
+        public string SessionKey { get; }
+
+        /// <summary>
+        /// Unset by default, so a real solo session's spawned drivers keep
+        /// <see cref="PrivateSeatDriverOptions.DefaultThinkSeconds"/>'s human-followable pace. Set
+        /// only by <see cref="ReadThinkSecondsOverride"/> reading the one environment variable the
+        /// automated Solo cohort uses to make the same real path finish in a bounded regression
+        /// window instead of the many minutes six-players'-worth of human-paced bots would take.
+        /// </summary>
+        public double? ThinkSecondsOverride { get; }
+    }
+
+    /// <summary>
+    /// THIRTEENTH amendment. The one seam allowed to know an OS process exists, so the spawning
+    /// decision - which seats, what each gets told - is testable without ever starting a real
+    /// process; an Edit Mode fixture injects a fake here instead (Play Mode fixtures cannot: this
+    /// assembly's own <c>InternalsVisibleTo</c> stops at the Edit Mode test assembly by design).
+    /// </summary>
+    internal interface ITestDriverProcessLauncher
+    {
+        System.Diagnostics.Process Launch(TestDriverSpawnRequest request);
+    }
+
+    /// <summary>
+    /// Spawns another copy of THIS running executable as a real OS child process, exactly the shape
+    /// <c>Invoke-PrivateOnlineRehearsal.ps1</c> already proves for the CI cohorts - reused as a
+    /// pattern rather than by literally calling out to that script, which does not exist inside a
+    /// shipped player. The endpoint and key travel only through the child's environment block, the
+    /// same privacy rule the rehearsal runner and the rehearsal driver both already follow, and a
+    /// distinct <c>-logFile</c> per child is load-bearing: several copies of the same build running
+    /// at once would otherwise all fight over one default log path.
+    /// </summary>
+    internal sealed class RealTestDriverProcessLauncher : ITestDriverProcessLauncher
+    {
+        public System.Diagnostics.Process Launch(TestDriverSpawnRequest request)
+        {
+            var executablePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+            if (string.IsNullOrEmpty(executablePath))
+            {
+                throw new InvalidOperationException("could not resolve this process's own executable path");
+            }
+
+            var logDirectory = System.IO.Path.Combine(
+                UnityEngine.Application.persistentDataPath, "TestDrivers");
+            System.IO.Directory.CreateDirectory(logDirectory);
+            var logPath = System.IO.Path.Combine(
+                logDirectory, "test-driver-" + request.Seat.Value + ".log");
+
+            var arguments = new List<string>
+            {
+                GuardsDigital.Network.PrivateSessionLaunchOptions.LobbyFlag,
+                PrivateSeatDriverOptions.RoleFlag,
+                PrivateSeatDriverOptions.SeatFlag, Quote(request.Seat.Value),
+                "-batchmode", "-nographics",
+                "-logFile", Quote(logPath)
+            };
+            if (request.ThinkSecondsOverride.HasValue)
+            {
+                arguments.Add(PrivateSeatDriverOptions.ThinkSecondsFlag);
+                arguments.Add(request.ThinkSecondsOverride.Value.ToString(CultureInfo.InvariantCulture));
+            }
+
+            var info = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = executablePath,
+                WorkingDirectory = System.IO.Path.GetDirectoryName(executablePath),
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                Arguments = string.Join(" ", arguments)
+            };
+            info.EnvironmentVariables[PrivateSeatDriverOptions.AddressEnvironmentVariable] = request.Address;
+            info.EnvironmentVariables[PrivateSeatDriverOptions.PortEnvironmentVariable] =
+                request.Port.ToString(CultureInfo.InvariantCulture);
+            info.EnvironmentVariables[PrivateSeatDriverOptions.KeyEnvironmentVariable] = request.SessionKey;
+
+            return System.Diagnostics.Process.Start(info);
+        }
+
+        private static string Quote(string value) => "\"" + (value ?? string.Empty) + "\"";
+    }
+
+    /// <summary>
     /// Milestone 8.35a. The one process-level piece of the lobby that knows a transport exists:
     /// it owns the panel, opens and closes the socket a pressed control asks for, pumps it into
     /// the session state machines on this thread, and hands the presenter a redraw when something
@@ -311,6 +410,28 @@ namespace GuardsDigital.Presentation.Interaction
         private string sessionKey = string.Empty;
         private PrivateSessionEndpoint dialled;
         private string signature = string.Empty;
+
+        /// <summary>
+        /// THIRTEENTH amendment. This host's own spawned test-driver children - its own OS process
+        /// tree, killed when this session ends, per the amendment's own "who owns them, how they
+        /// shut down" design point.
+        /// </summary>
+        private readonly System.Collections.Generic.List<System.Diagnostics.Process>
+            testDriverProcesses = new System.Collections.Generic.List<System.Diagnostics.Process>();
+        private readonly System.Collections.Generic.HashSet<SeatId> testDriverSeats =
+            new System.Collections.Generic.HashSet<SeatId>();
+        private ITestDriverProcessLauncher testDriverLauncher = new RealTestDriverProcessLauncher();
+
+        /// <summary>
+        /// Test-only seam: replaces the real process launcher with a fake before a fixture presses
+        /// FILL WITH TEST DRIVERS, so the spawning decision is provable without ever starting a real
+        /// OS process - spawning six copies of an Editor Play Mode host would otherwise be exactly
+        /// what a fixture must never do by accident.
+        /// </summary>
+        internal void SetTestDriverProcessLauncherForTests(ITestDriverProcessLauncher launcher) =>
+            testDriverLauncher = launcher ?? new RealTestDriverProcessLauncher();
+
+        internal IReadOnlyCollection<SeatId> TestDriverSeatsForTests => testDriverSeats;
 
         /// <summary>Milestone 8.35k. So one refusal is logged once rather than every redraw.</summary>
         private bool refusalReported;
@@ -376,6 +497,7 @@ namespace GuardsDigital.Presentation.Interaction
             presenter.JoinRequested += BeginJoining;
             presenter.LeaveRequested += Leave;
             presenter.ReconnectRequested += Redial;
+            presenter.FillWithTestDriversRequested += FillEmptySeatsWithTestDrivers;
             presenter.ShowEntry(LocalSeats(), string.Empty);
             PrivateOnlineMarkers.Log("LOBBY_BEGIN");
         }
@@ -648,10 +770,119 @@ namespace GuardsDigital.Presentation.Interaction
             console = new HostConsoleReader();
             console.Start();
             signature = string.Empty;
+            testDriverSeats.Clear();
             presenter.AttachHost(session, string.Empty);
             PrivateOnlineMarkers.Log(
                 "LOBBY_HOSTING port=" + listener.BoundPort.ToString(CultureInfo.InvariantCulture) +
                 " keyed=" + (sessionKey.Length > 0 ? "true" : "false"));
+        }
+
+        /// <summary>
+        /// THIRTEENTH amendment. An automated regression's only way to make a Solo cohort finish in
+        /// a bounded window: the CI runner sets this on the HOST process before it presses FILL, and
+        /// the host reads it once and hands each spawned child the equivalent
+        /// <see cref="PrivateSeatDriverOptions.ThinkSecondsFlag"/>. Unset for a real solo session, so
+        /// nothing about ordinary play depends on this variable existing.
+        /// </summary>
+        internal const string ThinkSecondsOverrideEnvironmentVariable = "GUARDS_TESTDRIVER_THINK_SECONDS";
+
+        /// <summary>
+        /// THIRTEENTH amendment. Spawns one real keyed test-driver client onto every seat still
+        /// Open, exactly as an operator running "PLAY - Join Match.bat" would claim one by hand -
+        /// each child dials this host's own loopback listener and presents the same session key
+        /// this host was hosted with, an ordinary keyed join with no shortcut around it.
+        /// </summary>
+        private void FillEmptySeatsWithTestDrivers()
+        {
+            if (session == null || listener == null)
+            {
+                return;
+            }
+
+            var openSeats = new List<SeatId>();
+            foreach (var entry in session.Roster)
+            {
+                if (entry.Occupancy == SeatOccupancyState.Open)
+                {
+                    openSeats.Add(entry.Seat);
+                }
+            }
+
+            if (openSeats.Count == 0)
+            {
+                presenter.SetTestDriverSeats(testDriverSeats, "Every seat is already taken.");
+                return;
+            }
+
+            double? thinkSecondsOverride = null;
+            var overrideText = Environment.GetEnvironmentVariable(ThinkSecondsOverrideEnvironmentVariable);
+            if (!string.IsNullOrWhiteSpace(overrideText) &&
+                double.TryParse(overrideText, System.Globalization.NumberStyles.Float,
+                    CultureInfo.InvariantCulture, out var parsedOverride) && parsedOverride >= 0)
+            {
+                thinkSecondsOverride = parsedOverride;
+            }
+
+            var spawned = 0;
+            foreach (var seat in openSeats)
+            {
+                var request = new TestDriverSpawnRequest(
+                    seat, PrivateLobbyUnityView.DefaultAddress, listener.BoundPort, sessionKey,
+                    thinkSecondsOverride);
+                try
+                {
+                    var process = testDriverLauncher.Launch(request);
+                    if (process != null)
+                    {
+                        testDriverProcesses.Add(process);
+                    }
+
+                    testDriverSeats.Add(seat);
+                    spawned++;
+                    PrivateOnlineMarkers.Log("LOBBY_TEST_DRIVER_SPAWNED seat=" + seat.Value);
+                }
+                catch (Exception exception)
+                {
+                    PrivateOnlineMarkers.Fail(
+                        "test-driver-spawn seat=" + seat.Value + " " + exception.GetType().Name);
+                }
+            }
+
+            var status = spawned < openSeats.Count
+                ? spawned + "/" + openSeats.Count + " test drivers spawned; see the log for the rest."
+                : null;
+            presenter.SetTestDriverSeats(testDriverSeats, status);
+        }
+
+        /// <summary>
+        /// THIRTEENTH amendment. This host's own spawned children, killed when its session ends -
+        /// they hold no reservation and no capability of their own to return with, so there is
+        /// nothing for a lingering process to protect and every reason not to leave one running.
+        /// </summary>
+        private void StopTestDrivers()
+        {
+            foreach (var process in testDriverProcesses)
+            {
+                try
+                {
+                    if (!process.HasExited)
+                    {
+                        process.Kill();
+                    }
+                }
+                catch (Exception)
+                {
+                    // Already gone, or gone the instant we asked - either way there is nothing left
+                    // to clean up and no reason to fail the host's own teardown over it.
+                }
+                finally
+                {
+                    process.Dispose();
+                }
+            }
+
+            testDriverProcesses.Clear();
+            testDriverSeats.Clear();
         }
 
         private void BeginJoining(PrivateLobbyEntry entry)
@@ -761,6 +992,7 @@ namespace GuardsDigital.Presentation.Interaction
             DisposeTransport();
             departing?.OnDisconnected();
             machine = null;
+            StopTestDrivers();
             if (session != null)
             {
                 session.Shutdown();
@@ -857,6 +1089,7 @@ namespace GuardsDigital.Presentation.Interaction
         private void OnDestroy()
         {
             DisposeTransport();
+            StopTestDrivers();
             listener?.Dispose();
             listener = null;
             onlineHudAttached = false;

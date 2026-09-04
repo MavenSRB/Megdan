@@ -63,6 +63,8 @@ namespace GuardsDigital.Presentation.Interaction
         private PrivateSessionClient client;
         private PrivateSessionHost host;
         private string feedback = string.Empty;
+        private System.Collections.Generic.ISet<SeatId> testDriverSeats =
+            new System.Collections.Generic.HashSet<SeatId>();
 
         public PrivateLobbyPresenter(IPrivateLobbyView view)
         {
@@ -83,6 +85,12 @@ namespace GuardsDigital.Presentation.Interaction
         /// dialed for it.
         /// </summary>
         public event Action ReconnectRequested;
+
+        /// <summary>
+        /// THIRTEENTH amendment. Raised when the host asked to fill every still-Open seat with a
+        /// spawned test driver. The driver is the one piece allowed to know a process exists.
+        /// </summary>
+        public event Action FillWithTestDriversRequested;
 
         /// <summary>The model the view was last handed, for a fixture that reads what was drawn.</summary>
         public PrivateLobbyModel Model { get; private set; }
@@ -116,6 +124,29 @@ namespace GuardsDigital.Presentation.Interaction
             host = session ?? throw new ArgumentNullException(nameof(session));
             client = null;
             feedback = status ?? string.Empty;
+            testDriverSeats.Clear();
+            Refresh();
+        }
+
+        /// <summary>
+        /// THIRTEENTH amendment. Records which seats this host's own spawned test drivers claimed,
+        /// for <see cref="PrivateLobbySeatRow.IsTestDriverSeat"/>, and redraws. The driver calls this
+        /// once it knows which seats it spawned into; the presenter itself spawns nothing.
+        /// </summary>
+        /// <param name="status">
+        /// An optional feedback line to show alongside the update - e.g. a partial-spawn count -
+        /// without going through <see cref="AttachHost"/>, which would drop this same tracking.
+        /// </param>
+        public void SetTestDriverSeats(
+            System.Collections.Generic.IEnumerable<SeatId> seats, string status = null)
+        {
+            testDriverSeats = new System.Collections.Generic.HashSet<SeatId>(
+                seats ?? Array.Empty<SeatId>());
+            if (status != null)
+            {
+                feedback = status;
+            }
+
             Refresh();
         }
 
@@ -125,7 +156,7 @@ namespace GuardsDigital.Presentation.Interaction
             Model = client != null
                 ? PrivateLobbyModel.ForClient(client)
                 : host != null
-                    ? PrivateLobbyModel.ForHost(host, feedback)
+                    ? PrivateLobbyModel.ForHost(host, feedback, testDriverSeats)
                     : PrivateLobbyModel.Entry(localSeats, feedback);
             view.Render(Model);
         }
@@ -188,6 +219,10 @@ namespace GuardsDigital.Presentation.Interaction
 
                     ReconnectRequested?.Invoke();
                     Refresh();
+                    return true;
+
+                case PrivateLobbyControl.FillWithTestDrivers:
+                    FillWithTestDriversRequested?.Invoke();
                     return true;
 
                 default:
