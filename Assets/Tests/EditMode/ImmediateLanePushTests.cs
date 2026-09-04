@@ -321,6 +321,11 @@ namespace GuardsDigital.Tests.EditMode
                 session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue &&
                 card.State.Location == CardLocation.TurnArea);
 
+            // Milestone 8.35g. The pushing hero's own resolution finished with the push, so the turn
+            // now waits for that player to hand it on before the next actor is selected. The release
+            // is part of "letting the later command through", not an exception to it.
+            Assert.That(session.Execute(DirectorCommand.ReleaseTurn()).Accepted, Is.True);
+
             var held = session.Execute(DirectorCommand.PerformHold(blueCard.Id));
 
             Assert.That(held.Accepted, Is.True, held.Detail);

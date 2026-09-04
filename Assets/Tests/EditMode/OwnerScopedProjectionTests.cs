@@ -93,9 +93,12 @@ namespace GuardsDigital.Tests.EditMode
                 host,
                 1800,
                 projection => projection.PendingAttackTargetChoice != null,
-                // Milestone 8.35d re-derived the seed: seed 2 now reaches an Attack target around
-                // step 2,540 and seed 3 reaches it at 264.
-                3);
+                // Milestone 8.35g re-derived the seed offline over seeds 1-16: the release draws
+                // from the same stream even when it is the only legal command, so seed 3 no longer
+                // reaches an Attack target inside 3,000 steps at all. Seed 6 reaches one at step
+                // 348 - the earliest of the eleven seeds that reach one, and this walk exists to
+                // arrive at the decision rather than to be long.
+                6);
 
             var choice = host.Projection.PendingAttackTargetChoice;
             Assert.That(choice, Is.Not.Null,

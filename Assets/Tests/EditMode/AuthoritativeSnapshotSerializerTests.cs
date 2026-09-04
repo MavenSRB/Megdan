@@ -506,7 +506,17 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(round.TryCommitCard(red.OwnerId, red.Id).Accepted, Is.True);
                 Assert.That(round.TryCommitCard(blue.OwnerId, blue.Id).Accepted, Is.True);
                 while (round.Phase == RoundResolutionPhase.ResolvingTurn)
+                {
+                    // Milestone 8.35g. The release sits ABOVE the read of the selection below it,
+                    // because acknowledging the resolved card is what empties that selection.
+                    if (round.CurrentTurnAuthority.PendingTurnRelease != null)
+                    {
+                        Assert.That(round.TryReleaseTurn().Accepted, Is.True);
+                        continue;
+                    }
+
                     Assert.That(round.TryPerformHold(round.CurrentTurnAuthority.SelectedActor.CardInstanceId).Accepted, Is.True);
+                }
             }
         }
 

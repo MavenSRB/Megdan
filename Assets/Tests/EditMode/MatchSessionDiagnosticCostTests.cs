@@ -307,6 +307,17 @@ namespace GuardsDigital.Tests.EditMode
 
                 while (scratch.Projection.Phase == RoundResolutionPhase.ResolvingTurn)
                 {
+                    // Milestone 8.35g. ABOVE the selection read below, which the acknowledgement
+                    // behind the pause has already emptied. The release is a recorded command like
+                    // any other, so it belongs in this measured stream rather than beside it - what
+                    // this fixture measures is per-command cost, and a command left out of the
+                    // stream would be a command left out of the measurement.
+                    if (scratch.Projection.PendingTurnRelease != null)
+                    {
+                        Record(scratch, commands, DirectorCommand.ReleaseTurn());
+                        continue;
+                    }
+
                     Record(scratch, commands, DirectorCommand.PerformHold(
                         scratch.Projection.SelectedActor.CardInstanceId));
                 }

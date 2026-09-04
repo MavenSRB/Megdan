@@ -92,6 +92,9 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, TeamSide.Blue, WaspCardContent.ChargedBoomerang);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its turn.");
+            // Milestone 8.35g. That press finished the resolution; the release is what
+            // hands the turn on, so it goes above the selection read below.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Attack);
@@ -152,6 +155,9 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, TeamSide.Blue, WaspCardContent.ChargedBoomerang);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its turn.");
+            // Milestone 8.35g. That press finished the resolution; the release is what
+            // hands the turn on, so it goes above the selection read below.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Attack);
@@ -319,6 +325,9 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, TeamSide.Blue, WaspCardContent.Telekinesis);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its tied turn.");
+            // Milestone 8.35g. That press finished the resolution; the release is what
+            // hands the turn on, so it goes above the selection read below.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Skill);
@@ -406,6 +415,9 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, TeamSide.Blue, WaspCardContent.ThunderBoomerang);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its turn.");
+            // Milestone 8.35g. That press finished the resolution; the release is what
+            // hands the turn on, so it goes above the selection read below.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Attack);
@@ -553,6 +565,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId),
                 "Electroblast's 9 acts before Mass Telekinesis' 2.");
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds as filler.");
+            // Milestone 8.35g. That press finished the resolution; the release is what
+            // hands the turn on, so it goes above the selection read below.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Skill);
@@ -754,6 +769,10 @@ namespace GuardsDigital.Tests.PlayMode
         private static void Commit(
             ConfiguredMatchSceneRuntime runtime, TeamSide side, CardDefinitionId definitionId)
         {
+            // Milestone 8.35g. Every actor now costs two presses of the same control, so the
+            // commitment phase this reads into is not open until the turn in progress is finished.
+            UiPlayer.EndAnyTurnInProgress(runtime);
+
             var heroId = runtime.Setup.Heroes.Single(hero => hero.TeamSide == side).HeroId;
             var card = runtime.Cards.Single(value =>
                 value.OwnerId.Equals(heroId) &&

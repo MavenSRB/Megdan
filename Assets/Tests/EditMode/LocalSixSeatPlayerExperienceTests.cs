@@ -25,7 +25,11 @@ namespace GuardsDigital.Tests.EditMode
     /// </remarks>
     public sealed class LocalSixSeatPlayerExperienceTests
     {
-        private const int CompleteMatchBudget = 1200;
+        // Milestone 8.35g raised this from 1,200, matching the other two complete-match fixtures.
+        // The release is one more recorded command per turn AND consumes a draw of its own even
+        // when it is the only legal command, so every seeded trajectory is a different match rather
+        // than the old one lengthened - which is why the seeds below moved as far as they did.
+        private const int CompleteMatchBudget = 2400;
 
         private static readonly PendingDecisionFamilyId[] RequiredDecisionFamilies =
         {
@@ -38,7 +42,12 @@ namespace GuardsDigital.Tests.EditMode
             PendingDecisionFamilies.MinionBattle,
             PendingDecisionFamilies.HeroRespawn,
             PendingDecisionFamilies.SystemTransition,
-            PendingDecisionFamilies.RemovalPrevention
+            PendingDecisionFamilies.RemovalPrevention,
+            // Milestone 8.35g. The eleventh family, and the only one every ordinary turn reaches:
+            // this list is compared for equivalence rather than containment, so leaving the release
+            // out would fail here - which is exactly the guard working. Three complete matches now
+            // reach all eleven.
+            PendingDecisionFamilies.TurnRelease
         };
 
         private static readonly CardLocation[] PublicCardLocations =
@@ -463,14 +472,21 @@ namespace GuardsDigital.Tests.EditMode
 
         private static IEnumerable<RecordedScenario> Scenarios()
         {
+            // Milestone 8.35g re-derived both moved seeds by scanning seeds 1-60 offline on each
+            // scenario's OWN fixture, never by bisecting Unity runs. Seed 3 no longer ends this
+            // fixture inside 2,400 commands at all; seed 51 exhausts the Life counters in 942
+            // commands over eleven rounds and is the shortest such ending that also reaches the
+            // Minion Battle, the Defense and the respawn - chosen for the shape it walks through
+            // rather than for being the lowest number that ends.
             yield return new RecordedScenario(
-                "life", 3, MatchVictoryCause.LifeCountersExhausted,
+                "life", 51, MatchVictoryCause.LifeCountersExhausted,
                 () => ConfiguredMatchFixtures.CreateEngagedOfficialSixPlayerSession(2));
             yield return new RecordedScenario(
-                // Shortest measured complete record among seeds 1-60 that also reaches the displaced-
-                // minion correction family: 632 commands, versus seed 21's 768-command ending that
-                // reaches the same victory path without that player prompt.
-                "wave", 50, MatchVictoryCause.FinalWaveFlipped,
+                // Same re-derivation, same requirement as before: this is the scenario that owes the
+                // displaced-minion correction family. Seed 50 no longer ends inside the budget;
+                // seed 60 is the shortest of the twelve endings in seeds 1-60 that still reaches a
+                // correction - 1,348 commands over fifteen rounds.
+                "wave", 60, MatchVictoryCause.FinalWaveFlipped,
                 ConfiguredMatchFixtures.CreateOfficialSixPlayerSession);
             yield return new RecordedScenario(
                 "throne", 1, MatchVictoryCause.ThroneCaptured,

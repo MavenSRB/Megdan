@@ -59,6 +59,9 @@ namespace GuardsDigital.Tests.EditMode
             DirectorCommand.DeclineDefense(
                 new ActionResolutionId("resolution-1"), new ActionResolutionStepId("step-3")),
             DirectorCommand.AdvanceEndOfRound(),
+            // Milestone 8.35g. Payload-free like the advance above it: the only turn a release
+            // can release is the one standing in the pause, so there is nothing to carry.
+            DirectorCommand.ReleaseTurn(),
             DirectorCommand.PerformFastTravel(
                 new ActionDefinitionId("secondary-movement"), new HexCoordinate(4, -1)),
             DirectorCommand.SelectMinionBattleRemoval(new MinionBattleChoiceCommand(
@@ -166,7 +169,7 @@ namespace GuardsDigital.Tests.EditMode
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             var coveredKinds = new HashSet<DirectorCommandKind>();
             var roundTripped = 0;
-            var submitted = OwnerScopedProjectionTests.DriveThroughSeats(host, 1500, seed: 3,
+            var submitted = OwnerScopedProjectionTests.DriveThroughSeats(host, 1800, seed: 1,
                 stopBeforeCommand: projection =>
             {
                 foreach (var seat in host.Seats.Seats)
@@ -200,6 +203,10 @@ namespace GuardsDigital.Tests.EditMode
             // means the sweep itself broke, not that a family moved. Milestone 8.35d re-derived
             // the seed (2 -> 3) and dropped `AdvanceEndOfRound`: the round's advance is no longer
             // a command any seat's surface offers, so a sweep over offered commands cannot see it.
+            // Milestone 8.35g re-derived it once more (3 -> 1) and raised the budget: the release
+            // is drawn from a one-command set and `Next(1)` still advances the stream, so seed 3
+            // became a different match that reaches no Attack target and no Minion Battle at all.
+            // An offline scan put both on seed 1, the Minion Battle last at step 1,167.
             Assert.That(coveredKinds, Is.SupersetOf(new[]
             {
                 DirectorCommandKind.CommitCard,

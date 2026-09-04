@@ -55,34 +55,52 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that ends the engaged official-roster scenario by
-        /// p.13's last Life counter, after 4 rounds and 237 commands.
+        /// p.13's last Life counter. Milestone 8.35g re-derived it from 3 to 8, after 22 rounds and
+        /// 1,836 commands: the turn release is drawn from a one-command set and `Next(1)` still
+        /// advances the stream, so every seeded walk became a different match rather than the old
+        /// one with a command inserted per turn, and seed 3 now ends on the final Wave instead.
         /// </summary>
-        private const int LifeCounterMatchSeed = 3;
+        private const int LifeCounterMatchSeed = 8;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the unmodified official six-player setup
-        /// to p.8's last Wave counter, after 12 rounds and 768 commands.
+        /// to p.8's last Wave counter. Milestone 8.35g re-derived it from 21 to 14, after 10 rounds
+        /// and 896 commands - close to the shape seed 21 used to have. Seed 21 itself still ends the
+        /// same way but now takes 43 rounds and 3,613 commands, which is the clearest measure of how
+        /// far the release moved every trajectory.
         /// </summary>
-        private const int FinalWaveMatchSeed = 21;
+        private const int FinalWaveMatchSeed = 14;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the official-roster uncontested-push
-        /// scenario to p.8's Throne capture, after 2 rounds and 116 commands.
+        /// scenario to p.8's Throne capture, after 2 rounds and - since milestone 8.35g's release -
+        /// 181 commands rather than 116. This is the one recorded seed the release did not move:
+        /// the uncontested push ends before the trajectory has room to diverge.
         /// </summary>
         private const int ThroneCaptureMatchSeed = 1;
 
         /// <summary>
-        /// The lowest seed on which the engaged walk takes a Clear that milestone 8.8b still offers -
-        /// one with a token standing beside the actor. It reaches no ending inside the budget, which is
-        /// why it is used for reachability alone; see <see cref="PlayTheClearReachabilityRun"/>.
+        /// A seed on which the engaged walk takes a Clear that milestone 8.8b still offers - one with
+        /// a token standing beside the actor. It is used for reachability; see
+        /// <see cref="PlayTheClearReachabilityRun"/>.
         /// </summary>
-        private const int ClearReachabilitySeed = 58;
+        /// <remarks>
+        /// Milestone 8.35g re-derived it, 58 -> 20, and the search is the interesting part rather
+        /// than the number. The release moves every trajectory, and a Clear is rare on this fixture
+        /// for a reason 8.8b makes correct: the offer only stands where a token is actually beside
+        /// the actor, so a walk that places none is right to take none. Scanning seeds 1-120 offline
+        /// found exactly TWO that take one - 20 and 51 - and seed 51 exhausts the budget without an
+        /// ending, so 20 is the only one that reaches a Clear by playing a match through to its end:
+        /// 2,337 commands over 73 rounds. Nothing about the p.13 page-coverage assertion was
+        /// weakened to fit; a narrow search is what the property costs.
+        /// </remarks>
+        private const int ClearReachabilitySeed = 20;
 
         /// <summary>
         /// Generous enough that the three complete matches finish well inside it, and small enough that
         /// a run which stops having reached no ending is reported as a failure rather than hanging.
         /// </summary>
-        private const int CompleteMatchBudget = 1200;
+        private const int CompleteMatchBudget = 2400;
 
         /// <summary>
         /// The official six-player soak seeds. At this revision each remains live through the bounded
@@ -91,7 +109,12 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static readonly int[] SoakSeeds = { 101, 102, 103, 104, 105, 106, 107, 108 };
 
-        private const int SoakBudget = 300;
+        // Milestone 8.35g raised this from 300. The release is one more command per turn, so 300
+        // commands now buy four rounds a seed where they bought five; 450 buys six, which keeps the
+        // soak what its own floor says it is - many rounds of ordinary play - rather than lowering
+        // the floor to fit a shorter walk. Measured across all eight seeds: 32 rounds at 300,
+        // 40 at 400, 48 at 450.
+        private const int SoakBudget = 450;
 
         // -----------------------------------------------------------------------------------------
         // Complete matches

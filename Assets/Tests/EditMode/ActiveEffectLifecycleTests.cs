@@ -889,6 +889,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
             while (session.Projection.IsTurnActive)
             {
+                // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                // turn on, and acknowledging it clears the selection this loop reads.
+                if (session.Projection.PendingTurnRelease != null)
+                {
+                    Assert.That(session.Execute(DirectorCommand.ReleaseTurn()).Accepted, Is.True);
+                    continue;
+                }
+
                 Assert.That(session.Execute(
                     DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }

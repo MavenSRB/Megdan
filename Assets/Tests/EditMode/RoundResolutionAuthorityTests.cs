@@ -43,6 +43,17 @@ namespace GuardsDigital.Tests.EditMode
 
                 while (authority.Phase == RoundResolutionPhase.ResolvingTurn)
                 {
+                    // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                    // turn on; acknowledging the resolved card is what clears the selection this
+                    // loop reads, so the release has to be pressed before that read.
+                    if (authority.CurrentTurnAuthority.PendingTurnRelease != null)
+                    {
+                        var released = authority.TryReleaseTurn();
+                        Assert.That(released.Accepted, Is.True);
+                        allEvents.AddRange(released.Events);
+                        continue;
+                    }
+
                     var selectedCardId = authority.CurrentTurnAuthority.SelectedActor.CardInstanceId;
                     var hold = authority.TryPerformHold(selectedCardId);
                     Assert.That(hold.Accepted, Is.True);
@@ -264,7 +275,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.TryAnswerMovementChoice(MovementChoiceCommand.Stop(
                 movementChoice.ResolutionId,
                 movementChoice.ChoiceId)).Accepted, Is.True);
+            // Milestone 8.35g. Stopping the Movement completed Red's card, so Red's own player hands
+            // the turn on before Blue is selected; Blue's Hold then completes Blue's, and the second
+            // release is what closes the turn. Both are stated because the turn index below moves on
+            // the release now rather than on the Hold.
+            Assert.That(authority.TryReleaseTurn().Accepted, Is.True);
             Assert.That(authority.TryPerformHold(blueFirstCard.Id).Accepted, Is.True);
+            Assert.That(authority.TryReleaseTurn().Accepted, Is.True);
             Assert.That(authority.TurnIndex, Is.EqualTo(2));
 
             // Turn 2 is the hands' one cross-hero Initiative tie, Red Bulwark against Blue Sentinel at
@@ -282,9 +299,19 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.TryPerformHold(redTiedCard.Id).Accepted, Is.True);
             Assert.That(authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue),
                 "Resolving the tied card flips the Tie Breaker before the next actor is selected.");
+
+            // Milestone 8.35g. The flip above still happens on the acknowledgement - it is the
+            // SELECTION that now waits, so the claim splits: the Tie Breaker has already moved while
+            // the turn is still held by the player whose card resolved, and the release is what
+            // names the next actor.
+            Assert.That(authority.CurrentTurnAuthority.PendingTurnRelease.CardInstanceId,
+                Is.EqualTo(redTiedCard.Id));
+            Assert.That(authority.TryReleaseTurn().Accepted, Is.True);
+
             Assert.That(authority.CurrentTurnAuthority.SelectedActor.CardInstanceId,
                 Is.EqualTo(blueTiedCard.Id));
             Assert.That(authority.TryPerformHold(blueTiedCard.Id).Accepted, Is.True);
+            Assert.That(authority.TryReleaseTurn().Accepted, Is.True);
             Assert.That(authority.TurnIndex, Is.EqualTo(3));
 
             // Turn 3 carries the Attack that used to sit inside turn 2, from the untied pair that
@@ -321,6 +348,24 @@ namespace GuardsDigital.Tests.EditMode
             // turn closes on the Attack itself. Before this milestone the Blue hero closed turn 3 by
             // Holding, which is the line this replaces; the round still advances to turn 4 with both
             // cards resolved, which is what the case is about.
+            //
+            // Milestone 8.35g splits that refusal in two rather than removing it, because the turn no
+            // longer closes on the Attack itself - it closes on the attacking player's release. The
+            // Hold is refused on BOTH sides of that release, and the two reasons are different facts:
+            // before it, the turn is still resolving and simply has nobody selected; after it, the
+            // turn is over. Asserting only one of them would let the other go unwatched.
+            var refusedInsideTheRelease = authority.TryPerformHold(blueSecondCard.Id);
+            Assert.That(refusedInsideTheRelease.Accepted, Is.False);
+            Assert.That(refusedInsideTheRelease.TurnRejectionReason,
+                Is.EqualTo(TurnResolutionRejectionReason.NoActorSelected),
+                "p.13 left the defeated hero no action to take, so the release pause is the only " +
+                "thing standing and no actor is selected to Hold.");
+
+            Assert.That(authority.CurrentTurnAuthority.PendingTurnRelease.CardInstanceId,
+                Is.EqualTo(redAttackCard.Id),
+                "The turn is held by the attacking player, whose card is the one that resolved.");
+            Assert.That(authority.TryReleaseTurn().Accepted, Is.True);
+
             var refusedHold = authority.TryPerformHold(blueSecondCard.Id);
             Assert.That(refusedHold.Accepted, Is.False);
             Assert.That(refusedHold.RejectionReason,
@@ -640,7 +685,18 @@ namespace GuardsDigital.Tests.EditMode
         {
             while (authority.Phase == RoundResolutionPhase.ResolvingTurn)
             {
+                // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                // turn on, so this loop presses the release exactly as that player does - and it
+                // has to come before the selected-actor reading below, because acknowledging the
+                // resolved card is what clears that selection.
+                if (authority.CurrentTurnAuthority.PendingTurnRelease != null)
+                {
+                    Assert.That(authority.TryReleaseTurn().Accepted, Is.True);
+                    continue;
+                }
+
                 Assert.That(authority.CurrentTurnAuthority.SelectedActor.IsDefined, Is.True);
+
                 Assert.That(authority.TryPerformHold(
                     authority.CurrentTurnAuthority.SelectedActor.CardInstanceId).Accepted, Is.True);
             }
@@ -717,6 +773,16 @@ namespace GuardsDigital.Tests.EditMode
                         .Select(ruleEvent => $"{ruleEvent.RoundIndex}:{ruleEvent.TurnIndex}:{ruleEvent.Kind}"));
                     while (authority.Phase == RoundResolutionPhase.ResolvingTurn)
                     {
+                        // Milestone 8.35g. The release, pressed before the selection this loop
+                        // reads is asked for - and before an unasserted Hold can spin on it.
+                        if (authority.CurrentTurnAuthority.PendingTurnRelease != null)
+                        {
+                            facts.AddRange(authority.TryReleaseTurn().Events
+                                .Select(ruleEvent =>
+                                    $"{ruleEvent.RoundIndex}:{ruleEvent.TurnIndex}:{ruleEvent.Kind}"));
+                            continue;
+                        }
+
                         facts.AddRange(authority.TryPerformHold(
                                 authority.CurrentTurnAuthority.SelectedActor.CardInstanceId).Events
                             .Select(ruleEvent => $"{ruleEvent.RoundIndex}:{ruleEvent.TurnIndex}:{ruleEvent.Kind}"));
@@ -754,6 +820,15 @@ namespace GuardsDigital.Tests.EditMode
             events.AddRange(authority.TryCommitCard(fixture.Red.OwnerId, fixture.Red.Id).Events);
             while (authority.Phase == RoundResolutionPhase.ResolvingTurn)
             {
+                // Milestone 8.35g. Without this the loop spins forever rather than failing: a
+                // finished resolution clears the selection, the Hold below is refused, the phase
+                // never leaves ResolvingTurn, and nothing here asserts acceptance.
+                if (authority.CurrentTurnAuthority.PendingTurnRelease != null)
+                {
+                    events.AddRange(authority.TryReleaseTurn().Events);
+                    continue;
+                }
+
                 events.AddRange(authority.TryPerformHold(
                     authority.CurrentTurnAuthority.SelectedActor.CardInstanceId).Events);
             }

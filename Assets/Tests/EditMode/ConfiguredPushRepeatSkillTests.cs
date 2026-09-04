@@ -819,6 +819,9 @@ namespace GuardsDigital.Tests.EditMode
             CommitCards(session, "bombard", "cache");
             Accept(session, DirectorCommand.PerformHold(
                 session.Projection.SelectedActor.CardInstanceId));
+            // Milestone 8.35g. The Hold finished this hero's resolution; the release is
+            // what hands the turn on, and a player presses it before the next hero acts.
+            Accept(session, DirectorCommand.ReleaseTurn());
 
             var offer = session.Projection.AvailableTurnActions
                 .Single(candidate => candidate.ActionDefinitionId.Equals(ComponentSkill));
@@ -830,6 +833,9 @@ namespace GuardsDigital.Tests.EditMode
             CommitCards(session, "pursuit", "longbow");
             Accept(session, DirectorCommand.PerformHold(
                 session.Projection.SelectedActor.CardInstanceId));
+            // Milestone 8.35g. The Hold finished this hero's resolution; the release is
+            // what hands the turn on, and a player presses it before the next hero acts.
+            Accept(session, DirectorCommand.ReleaseTurn());
             Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(LongbowCardId));
             var skill = session.Projection.AvailableTurnActions
                 .Single(candidate => candidate.ActionDefinitionId.Equals(LongbowSkill));
@@ -868,6 +874,9 @@ namespace GuardsDigital.Tests.EditMode
             CommitCards(session, "bombard", "longbow");
             Accept(session, DirectorCommand.PerformHold(
                 session.Projection.SelectedActor.CardInstanceId));
+            // Milestone 8.35g. The Hold finished this hero's resolution; the release is
+            // what hands the turn on, and a player presses it before the next hero acts.
+            Accept(session, DirectorCommand.ReleaseTurn());
             Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(LongbowCardId),
                 "The hero the board was built around must be the one whose turn this is.");
             return session;
@@ -876,6 +885,13 @@ namespace GuardsDigital.Tests.EditMode
         private static void CommitCards(
             MatchSession session, string redCardFragment, string blueCardFragment)
         {
+            // Milestone 8.35g. A finished turn is not handed on until its own player says so, and
+            // the next round's commitments are not asked until it has been.
+            if (session.Projection.PendingTurnRelease != null)
+            {
+                Accept(session, DirectorCommand.ReleaseTurn());
+            }
+
             Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
             foreach (var pair in new[]
             {

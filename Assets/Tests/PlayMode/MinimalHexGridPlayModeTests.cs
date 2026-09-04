@@ -3485,6 +3485,11 @@ namespace GuardsDigital.Tests.PlayMode
                 // Movement to approach with. The five-card scene deals no such card any more, and the
                 // filter stays because naming the action a fixture needs is the right way round: it
                 // survives whatever a later conversion does to the top of the band.
+                // Milestone 8.35g. Only the RELEASE is pressed here, never a Hold: the loop owns how
+                // many actions each actor spends, and ending a turn on its behalf would spend an
+                // approach this scenario still needs, leaving Red with no Movement card to name.
+                UiPlayer.ReleaseFinishedTurn(runtime);
+
                 var red = Hand(runtime, TeamSide.Red).Cards
                     .Where(card => (!card.Id.Equals(attackCard.Id) ||
                             (continueThroughHeroDefenseRegression && approachTurn % 4 == 3)) &&
@@ -3547,6 +3552,12 @@ namespace GuardsDigital.Tests.PlayMode
                     Assert.That(runtime.BoardPresenter.SubmitDestination(destination), Is.True);
                 }
 
+                // Milestone 8.35g. Red's resolution is finished and the turn is now held for Red's
+                // own player. A held turn reads as INACTIVE, so without this release the block
+                // below is skipped silently and the later opposing actor never takes their own
+                // approach - which is what left the next iteration's commitment phase closed.
+                UiPlayer.ReleaseFinishedTurn(runtime);
+
                 if (runtime.IsTurnActive)
                 {
                     Assert.That(runtime.SelectedActor.ActorId, Is.Not.EqualTo(redHeroId));
@@ -3585,6 +3596,7 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 Assert.That(runtime.SubmitEndTurn(), Is.True,
                     "The earlier opposing actor should complete by Hold before the Red Attack.");
+                UiPlayer.ReleaseFinishedTurn(runtime);
             }
 
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
@@ -4581,11 +4593,18 @@ namespace GuardsDigital.Tests.PlayMode
                             failureMessage);
                     }
 
+                    // Milestone 8.35g. Walking the movement out completes this actor's resolution
+                    // but no longer hands the turn on, so the release goes here too - the early
+                    // return used to be the end of the turn and is now only the end of the card.
+                    UiPlayer.ReleaseFinishedTurn(runtime);
                     return;
                 }
             }
 
+            // Milestone 8.35g. This completes the actor's TURN, not just their resolution, and a
+            // turn now costs two presses of the same control - so the release follows the stop.
             Assert.That(runtime.SubmitEndTurn(), Is.True, failureMessage);
+            UiPlayer.ReleaseFinishedTurn(runtime);
         }
 
         [UnityTest]
@@ -4632,8 +4651,10 @@ namespace GuardsDigital.Tests.PlayMode
                 for (var turn = 1; turn <= 4; turn++)
                 {
                     CommitNextTurn(runtime);
-                    Assert.That(runtime.SubmitEndTurn(), Is.True);
-                    Assert.That(runtime.SubmitEndTurn(), Is.True);
+                    // Milestone 8.35g. Two presses used to be two Holds, one per actor. Each actor
+                    // now costs a Hold AND a release, so the turn is played out rather than
+                    // counted - the count was the thing that went stale.
+                    UiPlayer.EndAnyTurnInProgress(runtime);
                 }
 
                 Assert.That(runtime.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound));
@@ -4957,6 +4978,10 @@ namespace GuardsDigital.Tests.PlayMode
 
         private static void CommitNextTurn(ConfiguredMatchSceneRuntime runtime)
         {
+            // Milestone 8.35g. The commitment phase this reads into does not open while a finished
+            // turn is still held for its own player, so the release goes above the read.
+            UiPlayer.EndAnyTurnInProgress(runtime);
+
             var red = Hand(runtime, TeamSide.Red).Cards[0];
             var blue = Hand(runtime, TeamSide.Blue).Cards[0];
             Assert.That(runtime.SelectCommitmentCard(red.Id), Is.True);

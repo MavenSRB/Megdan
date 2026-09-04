@@ -125,6 +125,10 @@ namespace GuardsDigital.Application
                     return;
                 case DirectorCommandKind.AdvanceEndOfRound:
                     return;
+                // Milestone 8.35g. The release carries no payload: the only turn it can release
+                // is the one standing in the pause, and the host knows which that is.
+                case DirectorCommandKind.ReleaseTurn:
+                    return;
                 case DirectorCommandKind.PerformFastTravel:
                     writer.Write(command.ActionDefinitionId.Value);
                     WriteCoordinate(writer, command.Coordinate);
@@ -361,6 +365,10 @@ namespace GuardsDigital.Application
 
                     case DirectorCommandKind.AdvanceEndOfRound:
                         command = DirectorCommand.AdvanceEndOfRound();
+                        return true;
+
+                    case DirectorCommandKind.ReleaseTurn:
+                        command = DirectorCommand.ReleaseTurn();
                         return true;
 
                     case DirectorCommandKind.PerformFastTravel:

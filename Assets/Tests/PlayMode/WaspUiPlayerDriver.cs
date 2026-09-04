@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Replay;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -26,6 +28,61 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     internal static class UiPlayer
     {
+        /// <summary>
+        /// Milestone 8.35g. Hands a finished turn on when one is waiting for its own player, and
+        /// says whether it had to.
+        /// </summary>
+        /// <remarks>
+        /// <para>Every headless filler step in these journeys used to be able to read a selection or
+        /// a commitment phase straight after a resolution completed, because completing the
+        /// resolution WAS the hand-off. It no longer is: the turn is held for the player whose card
+        /// resolved, and the acknowledgement that raised the pause is what emptied the selection. So
+        /// the filler presses the release exactly where a player does - above the read, never
+        /// beside it.</para>
+        /// <para>It goes through the projected command rather than the END TURN button on purpose.
+        /// The button is the subject of its own journey; here the release is filler, and the same
+        /// split milestone 8.15 established for the commitment applies.</para>
+        /// </remarks>
+        public static bool ReleaseFinishedTurn(ConfiguredMatchSceneRuntime runtime)
+        {
+            if (runtime.PendingTurnRelease == null)
+            {
+                return false;
+            }
+
+            Assert.That(runtime.SubmitProjectedCommand(DirectorCommand.ReleaseTurn()), Is.True,
+                "A turn waiting for its own player is always answerable by its own release.");
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 8.35g. Finishes whatever turn is still in progress, so a filler step that wants
+        /// the commitment phase actually finds it open.
+        /// </summary>
+        /// <remarks>
+        /// <para>One release is not enough on its own. A turn holds several actors in Initiative
+        /// order and each of them now costs two presses of the same control - the Hold or stop that
+        /// finishes their resolution, then the release that hands on - so a fixture that pressed
+        /// once per actor arrives at its next commitment with the round still resolving.</para>
+        /// <para>It presses only while END TURN is actually offered, so a decision the filler cannot
+        /// answer stops it rather than being swallowed: the caller then fails on the decision it can
+        /// see instead of on a phase it cannot explain.</para>
+        /// </remarks>
+        public static void EndAnyTurnInProgress(ConfiguredMatchSceneRuntime runtime)
+        {
+            for (var budget = 0; budget < 16; budget++)
+            {
+                if (runtime.Phase != RoundResolutionPhase.ResolvingTurn ||
+                    runtime.RoundView.Model.EndTurnInvocation == null)
+                {
+                    return;
+                }
+
+                Assert.That(runtime.SubmitEndTurn(), Is.True,
+                    "A turn ending this filler was offered must be takeable.");
+            }
+        }
+
         /// <summary>
         /// Sizes the Play Mode view to a realistic desktop viewport before a journey begins.
         ///

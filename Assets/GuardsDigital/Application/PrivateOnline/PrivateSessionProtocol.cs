@@ -20,14 +20,21 @@ namespace GuardsDigital.Application
         public const string FamilyName = "guards-private-online";
 
         /// <summary>
-        /// Protocol version 3: milestone 8.35f added the seat's own bounded undo - two message
-        /// kinds and one carried projection fact, <c>IsSeatUndoAvailable</c>, which a client cannot
-        /// derive because the bounds are facts about the host's recorded history. A version 2 peer
-        /// would read that flag out of the middle of a seat record and mis-decode everything after
-        /// it, so it is rejected before either side interprets the payload - the same rule version
-        /// 2 applied to version 1 when milestone 8.35b gave SelectedActor its Tie Breaker meaning.
+        /// Protocol version 4: milestone 8.35g added the turn release - one new command kind, and
+        /// the eleventh pending family carried in the projection detail as
+        /// <c>PendingTurnRelease</c>. It is carried rather than derived from the standing decision
+        /// owner because the shared status derivation reads the pause itself, and the wire-growth
+        /// rule's exclusion floor exists to stop exactly that kind of excuse. A version 3 peer would
+        /// read the release row out of the middle of a detail record and mis-decode everything after
+        /// it, so it is rejected before either side interprets the payload.
+        ///
+        /// <para>Version 3 was milestone 8.35f's seat undo - two message kinds and one carried
+        /// projection fact, <c>IsSeatUndoAvailable</c>, which a client cannot derive because the
+        /// bounds are facts about the host's recorded history. Version 2 applied the same rule to
+        /// version 1 when milestone 8.35b gave SelectedActor its Tie Breaker meaning. Every
+        /// superseded version is refused from the bounded header rather than reinterpreted.</para>
         /// </summary>
-        public const int Version = 3;
+        public const int Version = 4;
 
         /// <summary>The four ASCII bytes that open every frame: G, D, P, O.</summary>
         public const byte FrameMagic0 = 0x47;

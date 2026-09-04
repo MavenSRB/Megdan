@@ -270,7 +270,7 @@ namespace GuardsDigital.Core.Snapshots
         // honest answer for every Attack whose card never asks - but a v32 payload holding a paused
         // Combat Reflexes would restore reporting that he had not moved whether or not he had, and the
         // page would then hand him a second move the card does not give.
-        public const int CurrentSchemaVersion = 34;
+        public const int CurrentSchemaVersion = 35;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

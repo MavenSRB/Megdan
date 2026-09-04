@@ -543,8 +543,12 @@ namespace GuardsDigital.Tests.EditMode
             ConfiguredMatchFixtures.CreateOfficialSixPlayerSession();
 
         /// <summary>Milestone 8.27's reported unmodified official-roster Wave-ending seed.</summary>
-        private const int CaptureSeed = 21;
-        private const int CaptureBudget = 1200;
+        // Milestone 8.35g re-derived this for the reason the loop tests record: the release
+        // advances the RNG stream even though it is the only legal command, so seed 21 now runs
+        // 43 rounds and 3,613 commands. Seed 14 ends on the final Wave after 10 rounds and 896,
+        // which is the shape seed 21 used to have.
+        private const int CaptureSeed = 14;
+        private const int CaptureBudget = 2400;
 
         /// <summary>Twelve samples of one command kind: six at the start of the match and six at the end.</summary>
         private const int GrowthSampleCount = 12;

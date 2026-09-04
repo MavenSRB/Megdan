@@ -355,8 +355,14 @@ namespace GuardsDigital.Tests.EditMode
             {
                 Assert.That(budget--, Is.GreaterThan(0), "The turn did not resolve inside its budget.");
                 var tie = session.Projection.PendingInitiativeChoice;
-                var command = tie != null
-                    ? DirectorCommand.ChooseTiedActor(tie.OwningSide, tie.CandidateCardInstanceIds[0])
+                // Milestone 8.35g. Six seats mean six releases a turn, and the release has to be
+                // chosen ABOVE the Hold's selection read: the pause is exactly the state in which
+                // that selection is empty.
+                var command =
+                    session.Projection.PendingTurnRelease != null
+                        ? DirectorCommand.ReleaseTurn()
+                    : tie != null
+                        ? DirectorCommand.ChooseTiedActor(tie.OwningSide, tie.CandidateCardInstanceIds[0])
                     : DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId);
                 Assert.That(session.Execute(command).Accepted, Is.True);
             }

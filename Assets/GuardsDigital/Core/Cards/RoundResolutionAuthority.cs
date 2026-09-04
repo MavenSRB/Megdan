@@ -972,6 +972,16 @@ namespace GuardsDigital.Core.Cards
             return ExecuteTurnCommand(() => CurrentTurnAuthority.TryPerformHold(cardInstanceId));
         }
 
+        /// <summary>
+        /// Milestone 8.35g. Hands a finished turn on at its own player's word. It runs through the
+        /// ordinary turn-command path, so a released turn that has no unresolved cards left ends
+        /// the round exactly as a completed resolution used to.
+        /// </summary>
+        public RoundResolutionResult TryReleaseTurn()
+        {
+            return ExecuteTurnCommand(() => CurrentTurnAuthority.TryReleaseTurn());
+        }
+
         public RoundResolutionResult TryStartMovement(
             ActionResolutionId resolutionId,
             ActionOffer offer)

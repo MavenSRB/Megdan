@@ -688,6 +688,9 @@ namespace GuardsDigital.Tests.EditMode
             CommitCards(session, "bombard", "cache");
             Accept(session, DirectorCommand.PerformHold(
                 session.Projection.SelectedActor.CardInstanceId));
+            // Milestone 8.35g. The Hold finished this hero's resolution; the release is
+            // what hands the turn on, and a player presses it before the next hero acts.
+            Accept(session, DirectorCommand.ReleaseTurn());
 
             var offer = session.Projection.AvailableTurnActions
                 .Single(value => value.ActionDefinitionId.Equals(ComponentSkill));
@@ -716,6 +719,9 @@ namespace GuardsDigital.Tests.EditMode
             CommitCards(session, "bombard", "cache");
             Accept(session, DirectorCommand.PerformHold(
                 session.Projection.SelectedActor.CardInstanceId));
+            // Milestone 8.35g. The Hold finished this hero's resolution; the release is
+            // what hands the turn on, and a player presses it before the next hero acts.
+            Accept(session, DirectorCommand.ReleaseTurn());
             var offer = session.Projection.AvailableTurnActions
                 .Single(value => value.ActionDefinitionId.Equals(ComponentSkill));
             Accept(session, DirectorCommand.StartAction(offer.ActionDefinitionId));
@@ -824,6 +830,13 @@ namespace GuardsDigital.Tests.EditMode
         private static void CommitCards(
             MatchSession session, string redCardFragment, string blueCardFragment)
         {
+            // Milestone 8.35g. A finished turn is not handed on until its own player says so, and
+            // the next round's commitments are not asked until it has been.
+            if (session.Projection.PendingTurnRelease != null)
+            {
+                Accept(session, DirectorCommand.ReleaseTurn());
+            }
+
             Assert.That(session.Projection.Phase, Is.EqualTo(RoundResolutionPhase.AwaitingCommitments));
             foreach (var pair in new[]
             {

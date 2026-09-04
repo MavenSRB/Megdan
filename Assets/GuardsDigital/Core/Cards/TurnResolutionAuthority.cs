@@ -85,7 +85,14 @@ namespace GuardsDigital.Core.Cards
         /// to take. `DEV-007` records it, because the page does permit performing one that removes
         /// nothing.
         /// </summary>
-        ClearCannotRemoveAnything = 29
+        ClearCannotRemoveAnything = 29,
+
+        /// <summary>
+        /// Milestone 8.35g: no finished turn is waiting to be handed on, so there is nothing for a
+        /// release to release. It covers a turn still being resolved, a turn already released, and
+        /// a seat pressing the control twice.
+        /// </summary>
+        NoTurnAwaitsRelease = 30
     }
 
     public enum TurnResolutionEventKind
@@ -126,7 +133,18 @@ namespace GuardsDigital.Core.Cards
         /// the kind as well as the card, because the trigger that reads it says "a basic skill".
         /// </summary>
         BasicActionPerformed = 16,
-        TriggeredEffectProgressed = 17
+        TriggeredEffectProgressed = 17,
+
+        /// <summary>
+        /// Milestone 8.35g: the acting hero's card resolution finished and the turn is holding
+        /// still until that hero's own player releases it. A turn checkpoint rather than a
+        /// card-action fact, for the reason the Lane Push request is one: it outlives the action
+        /// that caused it and it is what the turn stops on.
+        /// </summary>
+        TurnReleaseAwaited = 18,
+
+        /// <summary>Milestone 8.35g: that player released it, and the turn is handed on.</summary>
+        TurnReleased = 19
     }
 
     public readonly struct TurnResolutionEvent
@@ -347,7 +365,9 @@ namespace GuardsDigital.Core.Cards
             if (kind != TurnResolutionEventKind.TurnOnlyEffectsCancellationCheckpoint &&
                 kind != TurnResolutionEventKind.TurnEnded &&
                 kind != TurnResolutionEventKind.ImmediateLanePushRequested &&
-                kind != TurnResolutionEventKind.ImmediateLanePushResolved)
+                kind != TurnResolutionEventKind.ImmediateLanePushResolved &&
+                kind != TurnResolutionEventKind.TurnReleaseAwaited &&
+                kind != TurnResolutionEventKind.TurnReleased)
             {
                 throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -476,6 +496,19 @@ namespace GuardsDigital.Core.Cards
         private readonly HashSet<string> consumedBeforeActionTriggers =
             new HashSet<string>(StringComparer.Ordinal);
 
+        /// <summary>
+        /// Milestone 8.35g. The finished resolution this turn is holding until its own player
+        /// releases it, or <c>null</c> when no turn is waiting to be handed on.
+        /// </summary>
+        /// <remarks>
+        /// It is persisted state rather than a derivation, because the fact it records - that a
+        /// selected card's resolution completed - is true only at the moment Initiative acknowledged
+        /// it, and the acknowledgement clears the selection that would otherwise say who finished. It
+        /// also has to survive the command boundary: rulebook p.8's mid-turn Lane Push stops the same
+        /// advance, is answered by a later command, and the release is owed again on the way out.
+        /// </remarks>
+        private PendingTurnRelease pendingTurnRelease;
+
         private int roundIndex;
         private int turnIndex;
 
@@ -602,6 +635,24 @@ namespace GuardsDigital.Core.Cards
 
         public SelectedInitiativeActor SelectedActor => initiative.SelectedActor;
 
+        /// <summary>
+        /// Milestone 8.35g. The finished turn waiting for its own player's release, withheld while
+        /// anything else still stands.
+        /// </summary>
+        /// <remarks>
+        /// Derived exactly like every other pending reader here: the record is held, and what this
+        /// answers is whether it is the thing being asked about right now. A mid-turn Lane Push at
+        /// its own checkpoint and a triggered effect stopped on a choice are both answered first, so
+        /// two decisions never stand at once, and a match that ended in the middle of the turn asks
+        /// nobody for anything - including this.
+        /// </remarks>
+        public PendingTurnRelease PendingTurnRelease =>
+            IsResolutionStoppedByGameEnd ||
+            cardActions?.PendingImmediateLanePush != null ||
+            cardActions?.IsPendingTriggeredEffect == true
+                ? null
+                : pendingTurnRelease;
+
         public PendingHeroRespawnChoice PendingHeroRespawnChoice =>
             !IsStarted || IsEnded || IsResolutionStoppedByGameEnd ||
             !initiative.SelectedActor.IsDefined || cardActions?.Board == null
@@ -686,7 +737,8 @@ namespace GuardsDigital.Core.Cards
                 initiative.CaptureRestoreState(),
                 roundIndex,
                 turnIndex,
-                consumedBeforeActionTriggers);
+                consumedBeforeActionTriggers,
+                pendingTurnRelease);
 
         internal static TurnResolutionAuthority Restore(
             IEnumerable<CardDefinition> definitions,
@@ -717,6 +769,7 @@ namespace GuardsDigital.Core.Cards
                     state.Initiative)
             };
             authority.consumedBeforeActionTriggers.UnionWith(state.ConsumedBeforeActionTriggers);
+            authority.pendingTurnRelease = state.PendingTurnRelease;
             // A started turn that has not ended normally has either an actor or a choice deciding who
             // acts next. Milestone 6.9 adds the third state it can legitimately be in: rulebook p.8's
             // mid-turn Lane Push has been requested, the acting hero's card has resolved, and Initiative
@@ -736,7 +789,8 @@ namespace GuardsDigital.Core.Cards
                     state.Initiative.PendingChoice == null &&
                     !state.Initiative.SelectedActor.IsDefined &&
                     cardActions?.PendingImmediateLanePush == null &&
-                    cardActions?.IsPendingTriggeredEffect != true))
+                    cardActions?.IsPendingTriggeredEffect != true &&
+                    state.PendingTurnRelease == null))
             {
                 throw new ArgumentException("Restored active turn state is incomplete.", nameof(state));
             }
@@ -847,7 +901,7 @@ namespace GuardsDigital.Core.Cards
                 events.Add(TurnResolutionEvent.FromTiming(timingEvent));
             }
 
-            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
                 throw new InvalidOperationException(
@@ -1373,7 +1427,7 @@ namespace GuardsDigital.Core.Cards
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
             foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
                 events.Add(TurnResolutionEvent.FromTiming(timingEvent));
-            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
                 throw new InvalidOperationException(
@@ -1410,7 +1464,7 @@ namespace GuardsDigital.Core.Cards
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
             foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
                 events.Add(TurnResolutionEvent.FromTiming(timingEvent));
-            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
                 throw new InvalidOperationException(
@@ -1583,7 +1637,7 @@ namespace GuardsDigital.Core.Cards
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
             foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
                 events.Add(TurnResolutionEvent.FromTiming(timingEvent));
-            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
                 throw new InvalidOperationException(
@@ -2147,7 +2201,7 @@ namespace GuardsDigital.Core.Cards
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
             foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
                 events.Add(TurnResolutionEvent.FromTiming(timingEvent));
-            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
                 throw new InvalidOperationException(
@@ -2277,7 +2331,7 @@ namespace GuardsDigital.Core.Cards
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
             foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
                 events.Add(TurnResolutionEvent.FromTiming(timingEvent));
-            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
                 throw new InvalidOperationException(
@@ -2585,7 +2639,7 @@ namespace GuardsDigital.Core.Cards
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
             foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
                 events.Add(TurnResolutionEvent.FromTiming(timingEvent));
-            var acknowledgement = initiative.TryAcknowledgeSelectedCardResolved(card.Id, instances);
+            var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
                 throw new InvalidOperationException(
@@ -2621,6 +2675,58 @@ namespace GuardsDigital.Core.Cards
             };
             cardActions?.ConsumeImmediateLanePush();
             return AdvanceInitiative(events);
+        }
+
+        /// <summary>
+        /// Milestone 8.35g. Acknowledges the selected card's finished resolution and records the
+        /// release its player is now owed.
+        /// </summary>
+        /// <remarks>
+        /// The seven completion paths all called Initiative directly and all needed the same extra
+        /// fact, so they call this instead. It has to read the actor <em>before</em> the
+        /// acknowledgement, because acknowledging is what clears the selection - after it, nothing
+        /// in the authority says whose turn just finished.
+        /// </remarks>
+        private InitiativeResolutionResult AcknowledgeSelectedCardResolved(CardInstanceId cardInstanceId)
+        {
+            var finished = initiative.SelectedActor;
+            var result = initiative.TryAcknowledgeSelectedCardResolved(cardInstanceId, instances);
+            if (result.Accepted)
+            {
+                pendingTurnRelease = new PendingTurnRelease(
+                    finished.ActorId, finished.CardInstanceId, finished.TeamSide);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Milestone 8.35g. Hands a finished turn on, at its own player's word.
+        /// </summary>
+        /// <remarks>
+        /// This runs exactly what a completed resolution used to run by itself, and nothing more: the
+        /// next actor is selected, and if none remains the turn's own end-of-turn timing fires. The
+        /// rules are unchanged; what moved is when they run.
+        /// </remarks>
+        public TurnResolutionResult TryReleaseTurn()
+        {
+            var commonRejection = GetCommonRejection();
+            if (commonRejection != TurnResolutionRejectionReason.None)
+            {
+                return TurnResolutionResult.Reject(commonRejection);
+            }
+
+            if (PendingTurnRelease == null)
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.NoTurnAwaitsRelease);
+            }
+
+            pendingTurnRelease = null;
+            return HandOnToNextActor(new List<TurnResolutionEvent>
+            {
+                TurnResolutionEvent.TurnCheckpoint(TurnResolutionEventKind.TurnReleased)
+            });
         }
 
         private TurnResolutionResult AdvanceInitiative(IEnumerable<TurnResolutionEvent> priorEvents)
@@ -2677,8 +2783,30 @@ namespace GuardsDigital.Core.Cards
                 }
             }
 
+            // Milestone 8.35g. The turn is finished but not handed on. It waits here for its own
+            // player's release, so a misplayed last action is still inside the window milestone
+            // 8.35f's rewind can reach, and the end-of-turn timing below fires at the release rather
+            // than here - an undo taken inside the wait would otherwise cross checkpoint state.
+            if (pendingTurnRelease != null)
+            {
+                events.Add(TurnResolutionEvent.TurnCheckpoint(
+                    TurnResolutionEventKind.TurnReleaseAwaited));
+                return TurnResolutionResult.Accept(events);
+            }
+
+            return HandOnToNextActor(events);
+        }
+
+        /// <summary>
+        /// Milestone 8.35g. Selects the next actor and, when none is left, closes the turn. This is
+        /// the second half of <see cref="AdvanceInitiative"/>, split out so the release command runs
+        /// exactly what a completed resolution used to run by itself.
+        /// </summary>
+        private TurnResolutionResult HandOnToNextActor(List<TurnResolutionEvent> events)
+        {
             var result = initiative.TrySelectNextActor(
                 definitions, instances, participants, heroItems, CurrentModifications());
+
             if (!result.Accepted)
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.InitiativeCommandRejected);

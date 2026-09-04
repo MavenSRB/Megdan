@@ -233,9 +233,10 @@ namespace GuardsDigital.Tests.EditMode
                     projection.DecisionContract != null &&
                     SeatProjectionFactory.OwnerOfStandingDecision(
                         (MatchSessionProjection)projection).IsTeamOwned,
-                // Milestone 8.35d re-derived the seed: seed 2's Minion Battle - the team-owned
-                // end-of-round pause this case is about - now falls outside this budget.
-                3);
+                // Milestone 8.35g re-derived the seed offline over seeds 1-16: seed 3 reaches no
+                // team-owned end-of-round pause inside 3,500 steps once the release moves every
+                // trajectory. Seed 6 reaches one at step 400.
+                6);
             var source = host.Projection;
 
             Assert.That(source.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound),

@@ -588,7 +588,7 @@ Non-goals: No redo. No undo of commitments, Initiative, agreements, the Minion B
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835f-give-each-seat-a-bounded-undo-inside-its-own-turns-card-resolution-completion-evidence).
 
-### [ ] 8.35g Hold a finished turn until its own player releases it
+### [x] 8.35g Hold a finished turn until its own player releases it
 
 User-approved amendment of 2026-09-03, added to milestone 8.35f's approval the same day once the user saw what the undo could not reach: "If user makes the wrong movement, the turn auto ends, so no undo will fix that. We need to stop auto ending turns." Today a card resolution completing is the hand-off - `TurnResolutionAuthority.AdvanceInitiative` acknowledges the resolved card and selects the next actor inside the same accepted command - so the last action of a turn is unreachable by 8.35f's rewind, whose floor and walls only exist while that turn is still being resolved. A seeded walk shows the shape exactly: at seed 3 an Attack's target selection at command 287 both resolves the attack and ends Arien's turn. This is a digital-UX affordance rather than a rules change: tabletop turn handoff is implicitly consensual, and the release makes that consent explicit online.
 
@@ -607,6 +607,8 @@ Acceptance checks:
 - Both complete suites pass at the final revision.
 
 Non-goals: No rules change - rulebook p.12's turn structure is untouched and the release adds no step to it. No redo, no change to milestone 8.35f's floor or walls, no Director undo/restart change, no presentation pacing, no wire protocol change beyond the new command kind and the new pending family, and no 8.36 execution.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835g-hold-a-finished-turn-until-its-own-player-releases-it-completion-evidence).
 
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 

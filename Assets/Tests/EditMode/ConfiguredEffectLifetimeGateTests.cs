@@ -574,6 +574,14 @@ namespace GuardsDigital.Tests.EditMode
                 while (Session.Projection.Phase == RoundResolutionPhase.ResolvingTurn &&
                     Session.Projection.TurnIndex == turnIndex)
                 {
+                    // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                    // turn on, so this loop presses the release exactly as that player does.
+                    if (Session.Projection.PendingTurnRelease != null)
+                    {
+                        Accept(DirectorCommand.ReleaseTurn());
+                        continue;
+                    }
+
                     Accept(DirectorCommand.PerformHold(Session.Projection.SelectedActor.CardInstanceId));
                 }
             }
@@ -688,6 +696,13 @@ namespace GuardsDigital.Tests.EditMode
 
             private void ResolveSkill(ActionDefinitionId skill, EffectNodeId mode)
             {
+                // Milestone 8.35g. The hero before this one may have finished its own resolution,
+                // and the turn does not reach this actor until that player hands it on.
+                if (Session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(DirectorCommand.ReleaseTurn());
+                }
+
                 var offer = Session.Projection.AvailableTurnActions
                     .Single(candidate => candidate.ActionDefinitionId.Equals(skill));
                 Accept(DirectorCommand.StartAction(offer.ActionDefinitionId));

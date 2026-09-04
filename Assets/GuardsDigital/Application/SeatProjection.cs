@@ -129,6 +129,13 @@ namespace GuardsDigital.Application
             SystemTransitionDescription = ownsDecision ? source.PendingSystemTransitionDescription : null;
             RemovalPrevention = ownsDecision ? source.PendingRemovalPrevention : null;
 
+            // Milestone 8.35g. Unscoped, unlike every owner-private line above it, and deliberately:
+            // the release pause is a fact every seat must be able to SEE - it is what the whole table
+            // is waiting on - and it discloses nothing private. The hero and side it names are
+            // already public through DecisionOwner, and the card it names has finished resolving, so
+            // it sits in the public turn area. Only the seat that OWNS it is published an answer.
+            TurnRelease = source.PendingTurnRelease;
+
             MovementResolution = resolving ? source.PendingMovementResolution : null;
             AttackResolution = resolving ? source.PendingAttackResolution : null;
             SkillResolution = resolving ? source.PendingSkillResolution : null;
@@ -169,6 +176,9 @@ namespace GuardsDigital.Application
             SystemTransitionDescription { get; }
 
         public RemovalPreventionPrompt RemovalPrevention { get; }
+
+        /// <summary>Milestone 8.35g. The finished turn awaiting its own player, public to every seat.</summary>
+        public GuardsDigital.Core.Cards.PendingTurnRelease TurnRelease { get; }
         public PendingCardActionResolution MovementResolution { get; }
         public PendingAttackResolution AttackResolution { get; }
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution SkillResolution { get; }
@@ -395,6 +405,7 @@ namespace GuardsDigital.Application
             PendingSystemTransitionDescription => pending.SystemTransitionDescription;
 
         public RemovalPreventionPrompt PendingRemovalPrevention => pending.RemovalPrevention;
+        public GuardsDigital.Core.Cards.PendingTurnRelease PendingTurnRelease => pending.TurnRelease;
         public IReadOnlyList<ActionOffer> AvailableTurnActions => pending.TurnActions;
 
         public IReadOnlyList<FastTravelOptionProjection> AvailableFastTravelOptions =>
@@ -552,6 +563,15 @@ namespace GuardsDigital.Application
             {
                 return PendingDecisionOwner.ForHero(
                     family, source.PendingRemovalPrevention.DecidingHeroId);
+            }
+
+            if (family.Equals(PendingDecisionFamilies.TurnRelease))
+            {
+                // Milestone 8.35g. The turn belongs to the hero who just finished resolving it, and
+                // so does the decision to hand it on. It is a hero rule rather than a team one for
+                // the reason p.15's upgrade became one at milestone 8.35d: a teammate pressing it
+                // takes a choice that was not theirs, and here it would end another player's turn.
+                return PendingDecisionOwner.ForHero(family, source.PendingTurnRelease.ActorId);
             }
 
             throw new InvalidOperationException(

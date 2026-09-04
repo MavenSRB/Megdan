@@ -364,6 +364,9 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 Assert.That(runtime.SubmitEndTurn(), Is.True,
                     "The Red actor completes by Hold first; Blue Hammer at 6 sits below Red's lowest.");
+                // Milestone 8.35g. The Hold finished Red's resolution; the release is what puts
+                // Blue Hammer in the selection asserted below.
+                Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             }
 
             Assert.That(runtime.SelectedActor.CardInstanceId.Value, Is.EqualTo("blue-hammer-card"));
@@ -425,6 +428,10 @@ namespace GuardsDigital.Tests.PlayMode
         /// </summary>
         private static void CommitTurn(ConfiguredMatchSceneRuntime runtime, string blueCardId)
         {
+            // Milestone 8.35g. The commitment phase this reads into does not open while a finished
+            // turn is still held for its own player, so the release goes above the read.
+            UiPlayer.EndAnyTurnInProgress(runtime);
+
             var blue = runtime.Cards.Single(card => card.Id.Value == blueCardId);
             var red = runtime.Cards
                 .Where(card => runtime.Setup.Heroes

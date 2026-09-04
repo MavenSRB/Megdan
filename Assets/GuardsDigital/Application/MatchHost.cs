@@ -1070,9 +1070,10 @@ namespace GuardsDigital.Application
                 undoTurnMarker = marker;
                 undoFloor = projection.AcceptedCommands.Count;
                 undoAttackUnderWay = false;
-                var actor = marker.Length == 0
-                    ? null
-                    : CurrentSeats().FindByHero(projection.SelectedActor.ActorId);
+                var actorId = projection.PendingTurnRelease != null
+                    ? projection.PendingTurnRelease.ActorId
+                    : projection.SelectedActor.ActorId;
+                var actor = marker.Length == 0 ? null : CurrentSeats().FindByHero(actorId);
                 undoActorSeat = actor == null ? default : actor.Id;
                 return;
             }
@@ -1090,21 +1091,47 @@ namespace GuardsDigital.Application
             // The p.14 action is over when nothing of it is still resolving and nothing is being
             // asked. Milestone 8.29f's rule restated at this layer: what decides whether the action
             // is still running is what stands once the steps have been applied.
+            // Milestone 8.35g. A standing turn-release is not part of rulebook p.14's action - it
+            // is this same actor being asked whether it is finished - so it does not keep the
+            // attack open. Without this exception an Attack that ends a turn would leave the wall
+            // up through the entire release pause and the seat would have no rewind at all there.
             if (undoAttackUnderWay &&
                 !projection.HasPendingAttackResolution &&
-                projection.DecisionContract == null)
+                (projection.DecisionContract == null ||
+                    projection.DecisionContract.FamilyId.Equals(
+                        PendingDecisionFamilies.TurnRelease)))
             {
                 undoFloor = projection.AcceptedCommands.Count;
                 undoAttackUnderWay = false;
             }
         }
 
-        private static string TurnMarkerOf(MatchSessionProjection projection) =>
-            !projection.IsTurnActive || !projection.SelectedActor.IsDefined
+        /// <summary>
+        /// One turn's identity, as the seat undo counts turns.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 8.35g. A turn holding still for its own player's release is the SAME turn it
+        /// was while it resolved, and this has to say so: acknowledging the resolved card is what
+        /// clears the selection, so keying on the selected actor alone would change the marker at
+        /// the exact moment the resolution finished, reset the floor, and take the seat's rewind
+        /// away in the window the whole release exists to keep it in. The pause carries the same
+        /// hero and card the selection did, so the string is identical across the boundary.
+        /// </remarks>
+        private static string TurnMarkerOf(MatchSessionProjection projection)
+        {
+            var release = projection.PendingTurnRelease;
+            if (release != null)
+            {
+                return projection.RoundIndex + ":" + projection.TurnIndex + ":" +
+                    release.ActorId.Value + ":" + release.CardInstanceId.Value;
+            }
+
+            return !projection.IsTurnActive || !projection.SelectedActor.IsDefined
                 ? string.Empty
                 : projection.RoundIndex + ":" + projection.TurnIndex + ":" +
                     projection.SelectedActor.ActorId.Value + ":" +
                     projection.SelectedActor.CardInstanceId.Value;
+        }
 
         /// <summary>
         /// Milestone 8.35f. Whether this seat may step back one command right now, and why not when

@@ -181,6 +181,9 @@ namespace GuardsDigital.Tests.PlayMode
                     runtime.PendingAttackTargetChoice.LegalTargetMinionIds.First())),
                 Is.True);
             yield return DrainEffectPausesHeadlessly(runtime, 8);
+            // Milestone 8.35g. The enemy's resolution is finished and their player holds the turn;
+            // the release is what hands it to Brogan inside the same turn number.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(broganId),
                 "and Brogan's own turn follows inside the same turn number.");
 
@@ -347,6 +350,11 @@ namespace GuardsDigital.Tests.PlayMode
                 "The paid-for miniature is still standing.");
             Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(broganId)), Is.True,
                 "and the match carried on afterwards rather than stopping on an unanswerable pause.");
+
+            // Milestone 8.35g. The release is withheld while any other decision stands, so it became
+            // the standing question only once the prevention above was answered - and it is the
+            // release, not the answer, that hands the turn to Brogan.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(broganId),
                 "Initiative had already moved on to Brogan's own turn while the decision stood - a " +
                 "trigger of this shape runs after its action has ended - and the answer left it " +
@@ -377,6 +385,15 @@ namespace GuardsDigital.Tests.PlayMode
                     yield break;
                 }
 
+                // Milestone 8.35g. A finished resolution holds the turn for its own player, and no
+                // effect choice stands while it does - so the release is pressed and the walk goes
+                // on, rather than the empty choice being read as the chain having failed.
+                if (UiPlayer.ReleaseFinishedTurn(runtime))
+                {
+                    yield return null;
+                    continue;
+                }
+
                 var choice = runtime.PendingEffectChoice;
                 Assert.That(choice, Is.Not.Null,
                     "The enemy Ultimate must reach its Defeat before the budget runs out. " +
@@ -384,12 +401,18 @@ namespace GuardsDigital.Tests.PlayMode
                 if (choice.SelectInvocations.Count > 0)
                 {
                     Assert.That(runtime.SubmitProjectedCommand(
-                        DirectorCommand.AnswerEffectChoice(choice.SelectInvocations[0])), Is.True);
+                            DirectorCommand.AnswerEffectChoice(choice.SelectInvocations[0])),
+                        Is.True,
+                        "The standing choice offered a selection its own authority refused: " +
+                        runtime.LastOperationDetail + ". " + Remaining(runtime));
                 }
                 else if (choice.ConfirmInvocation != null)
                 {
                     Assert.That(runtime.SubmitProjectedCommand(
-                        DirectorCommand.AnswerEffectChoice(choice.ConfirmInvocation)), Is.True);
+                            DirectorCommand.AnswerEffectChoice(choice.ConfirmInvocation)),
+                        Is.True,
+                        "The standing choice offered a confirm its own authority refused: " +
+                        runtime.LastOperationDetail + ". " + Remaining(runtime));
                 }
                 else
                 {

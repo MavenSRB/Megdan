@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Replay;
 using NUnit.Framework;
 
@@ -85,8 +86,13 @@ namespace GuardsDigital.Tests.EditMode
             var before = host.Projection;
             var round = before.RoundIndex;
             var turn = before.TurnIndex;
-            var actor = before.SelectedActor.ActorId;
-            var card = before.SelectedActor.CardInstanceId;
+            // Milestone 8.35g. The turn a rewind stays inside is named by the release pause when
+            // one stands and by the selection when the resolution is still running - the two are
+            // the same turn, and acknowledging the resolved card is what moves the name from one
+            // to the other. Reading only the selection would compare an emptied one against the
+            // hero the rewind correctly restores.
+            var actor = TurnActorOf(before);
+            var card = TurnCardOf(before);
             var commitments = before.AcceptedCommands
                 .Count(command => command.Kind == DirectorCommandKind.CommitCard ||
                     command.Kind == DirectorCommandKind.Pass);
@@ -105,9 +111,9 @@ namespace GuardsDigital.Tests.EditMode
             var after = host.Projection;
             Assert.That(after.RoundIndex, Is.EqualTo(round));
             Assert.That(after.TurnIndex, Is.EqualTo(turn));
-            Assert.That(after.SelectedActor.ActorId, Is.EqualTo(actor),
+            Assert.That(TurnActorOf(after), Is.EqualTo(actor),
                 "The rewind stays inside the turn Initiative already selected.");
-            Assert.That(after.SelectedActor.CardInstanceId, Is.EqualTo(card));
+            Assert.That(TurnCardOf(after), Is.EqualTo(card));
             Assert.That(
                 after.AcceptedCommands.Count(command =>
                     command.Kind == DirectorCommandKind.CommitCard ||
@@ -140,7 +146,7 @@ namespace GuardsDigital.Tests.EditMode
             var refusals = 0;
             var attacksSeen = 0;
 
-            var walked = OwnerScopedProjectionTests.DriveThroughSeats(host, 1200, _ =>
+            var walked = OwnerScopedProjectionTests.DriveThroughSeats(host, 1600, _ =>
             {
                 foreach (var seat in host.Seats.Seats)
                 {
@@ -190,7 +196,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 attacksSeen = Math.Max(attacksSeen, AttackTargetCount(host));
                 return false;
-            }, 3);
+            }, 1);
 
             Assert.That(rewinds, Is.GreaterThan(0),
                 "The walk pressed no rewind in " + walked + " commands, so the property is vacuous.");
@@ -215,7 +221,7 @@ namespace GuardsDigital.Tests.EditMode
             var midActionRefusals = 0;
             var rewindsBeforeTheTarget = 0;
             var attacks = 0;
-            var budget = 1400;
+            var budget = 1800;
 
             // Each Attack the seeded walk reaches is driven by hand from its own target choice,
             // because the states this claim is about are the ones between accepting a target and
@@ -223,7 +229,7 @@ namespace GuardsDigital.Tests.EditMode
             while (budget > 0 && midActionRefusals == 0 && attacks < 8)
             {
                 budget -= OwnerScopedProjectionTests.DriveThroughSeats(
-                    host, budget, projection => projection.PendingAttackTargetChoice != null, 3);
+                    host, budget, projection => projection.PendingAttackTargetChoice != null, 1);
                 var projection = host.Projection;
                 if (projection.PendingAttackTargetChoice == null)
                 {
@@ -280,7 +286,7 @@ namespace GuardsDigital.Tests.EditMode
                         "A refused rewind moves nothing at all.");
                     midActionRefusals++;
 
-                    var stepped = OwnerScopedProjectionTests.DriveThroughSeats(host, 1, null, 3);
+                    var stepped = OwnerScopedProjectionTests.DriveThroughSeats(host, 1, null, 1);
                     budget -= stepped;
                     if (stepped == 0)
                     {
@@ -302,6 +308,20 @@ namespace GuardsDigital.Tests.EditMode
                 "No Attack in " + attacks + " took a further command after its target was chosen, " +
                 "so the resolving half of the wall was never observed.");
         }
+
+        /// <summary>
+        /// Milestone 8.35g. Which hero's turn this is, whether it is still resolving or waiting
+        /// for its own player's release.
+        /// </summary>
+        private static HeroId TurnActorOf(MatchSessionProjection projection) =>
+            projection.PendingTurnRelease != null
+                ? projection.PendingTurnRelease.ActorId
+                : projection.SelectedActor.ActorId;
+
+        private static CardInstanceId TurnCardOf(MatchSessionProjection projection) =>
+            projection.PendingTurnRelease != null
+                ? projection.PendingTurnRelease.CardInstanceId
+                : projection.SelectedActor.CardInstanceId;
 
         private static int AttackTargetCount(IMatchHost host) =>
             host.Projection.AcceptedCommands
@@ -559,6 +579,143 @@ namespace GuardsDigital.Tests.EditMode
         /// Drives the seeded seat walk to a state where some seat is resolving its own turn and has
         /// at least one step of its own to take back.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35g, and the whole reason the release exists - stated as a case rather than
+        /// left as intent. From INSIDE the release pause the acting seat still steps back into the
+        /// resolution it has just finished, and once the release is accepted it is itself below the
+        /// next turn's floor, so no later seat can take it back.
+        /// </summary>
+        /// <remarks>
+        /// <para>The user's report is exactly this position: "If user makes the wrong movement, the
+        /// turn auto ends, so no undo will fix that." Under 8.35f alone the last action of a turn
+        /// was unreachable, because completing the resolution was also the hand-off and the floor
+        /// moved with it. The release keeps the turn open for its own player, and this case is what
+        /// says the rewind reaches into it rather than merely surviving beside it.</para>
+        /// <para>The two halves are deliberately one case: a rewind that reached backwards but let
+        /// a later seat revert the release would trade one crossing for another.</para>
+        /// </remarks>
+        [Test]
+        public void FromInsideTheReleasePause_TheSeatRewindsIntoItsFinishedResolutionAndNoOneRewindsThroughTheRelease()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var acting = DriveToAReleasePauseItsOwnSeatCanRewind(host, out var walked);
+            Assert.That(acting, Is.Not.Null,
+                "The seeded seat walk reached no release pause whose own seat still had a step to " +
+                "take back, in " + walked + " commands.");
+
+            var paused = host.Projection;
+            var release = paused.PendingTurnRelease;
+            Assert.That(release, Is.Not.Null);
+            Assert.That(acting.HeroId, Is.EqualTo(release.ActorId),
+                "The pause is owned by the hero whose resolution finished, and it is that seat - " +
+                "not the next one - that is offered the rewind.");
+
+            var round = paused.RoundIndex;
+            var turn = paused.TurnIndex;
+            var before = paused.AcceptedCommands.Count;
+            var client = host.ClientForSeat(acting.Id);
+
+            Assert.That(client.Projection.IsSeatUndoAvailable, Is.True,
+                "8.35g amends 8.35f's rule from 'while the seat's card resolution is active' to " +
+                "'while it is active OR while its completed resolution awaits release'.");
+
+            var stepped = client.SubmitUndo(new SeatUndoSubmission(
+                new SubmissionId("undo-from-inside-the-release"), client.Projection.Version));
+
+            Assert.That(stepped.Accepted, Is.True, stepped.Detail);
+            Assert.That(host.Projection.AcceptedCommands.Count, Is.EqualTo(before - 1),
+                "One press from inside the pause takes exactly one accepted command back.");
+
+            var rewound = host.Projection;
+            Assert.That(rewound.RoundIndex, Is.EqualTo(round));
+            Assert.That(rewound.TurnIndex, Is.EqualTo(turn));
+            Assert.That(TurnActorOf(rewound), Is.EqualTo(release.ActorId),
+                "The press lands back inside the same hero's own turn - the resolution it just " +
+                "finished - rather than in the turn before it or in nothing at all.");
+            Assert.That(TurnCardOf(rewound), Is.EqualTo(release.CardInstanceId));
+
+            // The second half: play the same turn forward again and accept the release. The floor
+            // then sits ON the release, so the command that ended the turn is not something the
+            // next player can quietly take back.
+            var replayed = ReplayForwardToTheReleasePause(host, acting);
+            Assert.That(replayed, Is.True,
+                "The rewound turn has to be playable forward to its release again, or the second " +
+                "half of this case would be asserting about a position nothing reached.");
+
+            var releasesBefore = ReleaseCount(host);
+            var owner = host.ClientForSeat(acting.Id);
+            Assert.That(owner.Submit(new SeatSubmission(
+                    new SubmissionId("accept-the-release"),
+                    owner.Projection.Version,
+                    DirectorCommand.ReleaseTurn())).Accepted,
+                Is.True);
+            Assert.That(ReleaseCount(host), Is.EqualTo(releasesBefore + 1));
+
+            Assert.That(
+                host.Seats.Seats.Any(seat => host.ProjectionForSeat(seat.Id).IsSeatUndoAvailable),
+                Is.False,
+                "The accepted release is the new turn's floor: no seat is offered a rewind that " +
+                "would step back through another player's decision to hand the turn on.");
+        }
+
+        private static int ReleaseCount(IMatchHost host) =>
+            host.Projection.AcceptedCommands
+                .Count(command => command.Kind == DirectorCommandKind.ReleaseTurn);
+
+        /// <summary>
+        /// Plays the acting seat's own turn forward until its release pause stands again, using the
+        /// seat's own authorized commands. Milestone 8.35g.
+        /// </summary>
+        private static bool ReplayForwardToTheReleasePause(IMatchHost host, MatchSeat acting)
+        {
+            for (var step = 0; step < 40; step++)
+            {
+                if (host.Projection.PendingTurnRelease != null)
+                {
+                    return true;
+                }
+
+                var legal = DeterministicMatchLoop.EnumerateLegalCommands(host.Projection);
+                var seatProjection = host.ProjectionForSeat(acting.Id);
+                var command = legal.FirstOrDefault(candidate =>
+                    seatProjection.AuthorizedCommands.Contains(candidate));
+                if (command == null)
+                {
+                    return false;
+                }
+
+                var client = host.ClientForSeat(acting.Id);
+                if (!client.Submit(new SeatSubmission(
+                        new SubmissionId("replay-" + step),
+                        client.Projection.Version,
+                        command)).Accepted)
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        private static MatchSeat DriveToAReleasePauseItsOwnSeatCanRewind(
+            IMatchHost host, out int walked)
+        {
+            MatchSeat found = null;
+            walked = OwnerScopedProjectionTests.DriveThroughSeats(host, 900, _ =>
+            {
+                if (host.Projection.PendingTurnRelease == null)
+                {
+                    return false;
+                }
+
+                found = host.Seats.Seats.FirstOrDefault(seat =>
+                    host.ProjectionForSeat(seat.Id).IsSeatUndoAvailable);
+                return found != null;
+            });
+
+            return found;
+        }
+
         private static MatchSeat DriveToAnActingSeatWithSomethingToUndo(
             IMatchHost host, out int walked)
         {

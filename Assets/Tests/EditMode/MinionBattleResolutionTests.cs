@@ -266,6 +266,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.Authority.TryCommitCard(
                 fixture.Blue.OwnerId, fixture.Blue.Id).Accepted, Is.True);
             Assert.That(fixture.Authority.TryPerformHold(fixture.Red.Id).Accepted, Is.True);
+            // Milestone 8.35g. Red's Hold finished Red's resolution; the release is what puts the
+            // defeated Blue hero in the selection whose p.7 respawn question is read below.
+            Assert.That(fixture.Authority.TryReleaseTurn().Accepted, Is.True);
             var respawn = fixture.Authority.CurrentTurnAuthority.PendingHeroRespawnChoice;
             Assert.That(respawn, Is.Not.Null);
             Assert.That(respawn.Destinations.Select(value => value.Coordinate),
@@ -688,6 +691,14 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 Assert.That(session.Projection.IsTurnActive, Is.True);
+                // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                // turn on, so this loop presses the release exactly as that player does.
+                if (session.Projection.PendingTurnRelease != null)
+                {
+                    Assert.That(session.Execute(DirectorCommand.ReleaseTurn()).Accepted, Is.True);
+                    continue;
+                }
+
                 Assert.That(session.Execute(DirectorCommand.PerformHold(
                     session.Projection.SelectedActor.CardInstanceId)).Accepted, Is.True);
             }
@@ -973,6 +984,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.TryCommitCard(fixture.Blue.OwnerId, fixture.Blue.Id).Accepted, Is.True);
             while (authority.Phase == RoundResolutionPhase.ResolvingTurn)
             {
+                // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                // turn on, so this loop presses the release exactly as that player does.
+                if (authority.CurrentTurnAuthority.PendingTurnRelease != null)
+                {
+                    Assert.That(authority.TryReleaseTurn().Accepted, Is.True);
+                    continue;
+                }
+
                 Assert.That(authority.TryPerformHold(
                     authority.CurrentTurnAuthority.SelectedActor.CardInstanceId).Accepted, Is.True);
             }

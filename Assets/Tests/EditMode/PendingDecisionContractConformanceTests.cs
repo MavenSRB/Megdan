@@ -74,7 +74,11 @@ namespace GuardsDigital.Tests.EditMode
                 PendingDecisionFamilies.MinionBattle,
                 PendingDecisionFamilies.HeroRespawn,
                 PendingDecisionFamilies.SystemTransition,
-                PendingDecisionFamilies.RemovalPrevention
+                PendingDecisionFamilies.RemovalPrevention,
+                // Milestone 8.35g. The eleventh, and the one every ordinary turn reaches - so of all
+                // eleven it is the family whose lifecycle across replay, Undo, restore, restart and
+                // rebuild the rest of the suite leans on most heavily.
+                PendingDecisionFamilies.TurnRelease
             }), "Replay, Undo, restore, restart, and rebuild are witnessed for every family.");
 
             AssertDeliberateViolationsAreObserved(firstObservation);
@@ -319,6 +323,17 @@ namespace GuardsDigital.Tests.EditMode
                     new SystemTransitionOptionId("forged-system-option")));
             }
 
+            if (projection.PendingTurnRelease != null)
+            {
+                // Milestone 8.35g. The release carries no identity at all - its whole content is a
+                // consent, so there is no WRONG release to forge and this family cannot be asked
+                // the question the others are asked in their own terms. What can be forged is a
+                // command from the turn the pause is holding, which the pause must refuse without
+                // moving anything: the same atomicity claim, asked the only way this family admits.
+                return DirectorCommand.PerformHold(
+                    new CardInstanceId("forged-turn-release-card"));
+            }
+
             var removal = projection.PendingRemovalPrevention;
             Assert.That(removal, Is.Not.Null, "The projection has no pending family to forge.");
             return DirectorCommand.AnswerRemovalPrevention(RemovalPreventionCommand.Decline(
@@ -408,6 +423,23 @@ namespace GuardsDigital.Tests.EditMode
             {
                 Assert.That(SystemTransitionFingerprint(after),
                     Is.Not.EqualTo(SystemTransitionFingerprint(before)));
+                return;
+            }
+
+            if (pauseCase.FamilyId.Equals(PendingDecisionFamilies.TurnRelease))
+            {
+                // Milestone 8.35g. The release's whole visible effect is that the turn is handed on:
+                // the pause is gone, and the match is no longer sitting on the card it named.
+                // Naming WHICH of the three places it went - the next actor, end of round, or the
+                // next turn's commitments - would tie this case to one fixture's board rather than
+                // to what the release does.
+                Assert.That(before.PendingTurnRelease, Is.Not.Null);
+                Assert.That(after.PendingTurnRelease, Is.Null);
+                Assert.That(
+                    after.SelectedActor.CardInstanceId.Equals(
+                        before.PendingTurnRelease.CardInstanceId),
+                    Is.False,
+                    "The turn it released is not the turn it is still sitting on.");
                 return;
             }
 
@@ -510,6 +542,11 @@ namespace GuardsDigital.Tests.EditMode
             if (contract.FamilyId.Equals(PendingDecisionFamilies.HeroRespawn))
                 return round.HeroRespawnOptions.Select(value => value.Command)
                     .Concat(new[] { round.ResolveWithoutRespawn.Command }).ToArray();
+            // Milestone 8.35g. The eleventh family's whole visible surface is the one control
+            // that finished the resolution, coming back to carry the release - so it maps to END
+            // TURN rather than falling through to the removal-prevention arm below.
+            if (contract.FamilyId.Equals(PendingDecisionFamilies.TurnRelease))
+                return new[] { round.EndTurnInvocation.Command };
             if (contract.FamilyId.Equals(PendingDecisionFamilies.SystemTransition))
                 return round.SystemTransitionPrompt.Options.Select(value => value.Command).ToArray();
             return round.RemovalPreventionPrompt.Payments.Select(value => value.Command)
@@ -555,12 +592,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(familyIds, Is.EqualTo(new[]
             {
                 "attack-target", "correction", "defense", "effect", "hero-respawn", "initiative",
-                "minion-battle", "movement", "removal-prevention", "system-transition"
+                "minion-battle", "movement", "removal-prevention", "system-transition", "turn-release"
             }));
             Assert.That(DecisionFamilyInventory.AuditProductionInventory(), Is.Empty);
             Assert.That(DecisionFamilyInventory.CompanionProjectionMembers, Has.Length.EqualTo(9));
-            Assert.That(DecisionFamilyInventory.Families, Has.Length.EqualTo(10));
-            Assert.That(DecisionFamilyInventory.Families.Sum(value => value.Answers.Count), Is.EqualTo(30));
+            Assert.That(DecisionFamilyInventory.Families, Has.Length.EqualTo(11));
+            // Milestone 8.35g: thirty until the turn release, which adds exactly one answer row
+            // because pressing the release is the whole of what that family admits.
+            Assert.That(DecisionFamilyInventory.Families.Sum(value => value.Answers.Count), Is.EqualTo(31));
         }
 
         private static void AssertNonPendingOffersStayOutsideTheContract()
@@ -691,7 +730,14 @@ namespace GuardsDigital.Tests.EditMode
             Case("configured removal prevention", PendingDecisionFamilies.RemovalPrevention,
                 "Removal prevention", ConfiguredPendingChoiceProjectionTests.CreateConfiguredRemovalPreventionPause,
                 true, Row("Removal prevention", "Removal prevention", "Projected payment"),
-                Row("Removal prevention", "Removal prevention", "Decline"))
+                Row("Removal prevention", "Removal prevention", "Decline")),
+            // Milestone 8.35g. The eleventh family, and the only one whose whole content is a
+            // consent: one command, no candidates, and the same control that finished the
+            // resolution. It carries the lifecycle flag like the other owned families, because a
+            // release that did not survive replay, Undo, restore and rebuild would strand the turn.
+            Case("turn release", PendingDecisionFamilies.TurnRelease, "Turn release",
+                CreateTurnReleasePause, true,
+                Row("Turn release", "Turn release", "Release the finished turn"))
         };
 
         private static PauseCase Case(string name, PendingDecisionFamilyId familyId,
@@ -700,6 +746,22 @@ namespace GuardsDigital.Tests.EditMode
 
         private static string Row(string family, string context, string answer) =>
             family + "/" + context + "/" + answer;
+
+        /// <summary>
+        /// Milestone 8.35g. A turn whose card resolution has finished and which is waiting for its
+        /// own player. The Hold is the shortest completion there is, so the pause is reached by the
+        /// rulebook's own simplest turn rather than by staging one.
+        /// </summary>
+        private static MatchSession CreateTurnReleasePause()
+        {
+            var session = ConfiguredMatchFixtures.CreateConfiguredSession();
+            ConfiguredMatchFixtures.CommitBothHands(session);
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.PerformHold(
+                session.Projection.SelectedActor.CardInstanceId));
+            Assert.That(session.Projection.PendingTurnRelease, Is.Not.Null,
+                "p.12's Hold completes the card, and the completed turn waits for its own player.");
+            return session;
+        }
 
         private static MatchSession CreateInitiativePause()
         {

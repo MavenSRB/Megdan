@@ -589,6 +589,10 @@ namespace GuardsDigital.Tests.EditMode
             // attacked one; `DeterministicMatchLoop` did it on its first seeded run.
             var session = PlaceAHazardWithBlueFeint(out _, out _);
 
+            // Milestone 8.35g. Feint's resolution finished, so its own player holds the turn until
+            // they release it; Red's offers below belong to the hero that release hands on to.
+            Accept(session, DirectorCommand.ReleaseTurn());
+
             // Red's Lancer is committed in the same turn and acts after Feint's Initiative 12, so the
             // Attack lands on the hero that now controls the token.
             var attack = session.Projection.AvailableTurnActions.Single(offer =>
@@ -826,6 +830,14 @@ namespace GuardsDigital.Tests.EditMode
             while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn &&
                 session.Projection.TurnIndex == turnIndex)
             {
+                // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                // turn on, so this loop presses the release exactly as that player does.
+                if (session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(session, DirectorCommand.ReleaseTurn());
+                    continue;
+                }
+
                 Accept(session, DirectorCommand.PerformHold(
                     session.Projection.SelectedActor.CardInstanceId));
             }

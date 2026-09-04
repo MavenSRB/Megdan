@@ -37,6 +37,15 @@ namespace GuardsDigital.Core.Snapshots
             // hero is still standing - and Living Tsunami prints "Once per turn", so a hero who saved
             // between the trigger and the Attack it precedes would otherwise be given it twice.
             WriteStrings(writer, state.ConsumedBeforeActionTriggers);
+
+            // Milestone 8.35g, schema v35. The finished turn this capture was taken waiting to
+            // hand on. It cannot be re-derived: acknowledging the resolved card is what clears the
+            // selection that would otherwise say whose turn it was, and a restored match with no
+            // record of it would hand the turn on by itself - which is the auto-advance the
+            // milestone removed. Every superseded version is rejected rather than migrated,
+            // because a v34 payload taken at this exact state names no waiting turn and a v35
+            // build would read its absence as "nobody is waiting".
+            WritePendingTurnRelease(writer, state.PendingTurnRelease);
             WriteCardAction(writer, turn.CardActions?.CaptureRestoreState());
         }
 
@@ -64,6 +73,7 @@ namespace GuardsDigital.Core.Snapshots
             var pendingChoice = ReadPendingInitiativeChoice(reader);
             var selectedActor = ReadSelectedActor(reader);
             var consumedTriggers = ReadStrings(reader, "consumed before-action triggers");
+            var pendingTurnRelease = ReadPendingTurnRelease(reader);
             if (consumedTriggers.Distinct(StringComparer.Ordinal).Count() != consumedTriggers.Length)
             {
                 throw Malformed(
@@ -113,7 +123,8 @@ namespace GuardsDigital.Core.Snapshots
                     new InitiativeResolutionRestoreState(pendingChoice, selectedActor),
                     roundIndex,
                     turnIndex,
-                    consumedTriggers),
+                    consumedTriggers,
+                    pendingTurnRelease),
                 lanePush,
                 matchHasEnded);
         }
@@ -247,6 +258,25 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write((int)actor.TeamSide);
             writer.Write(actor.InitiativeTotal);
             writer.Write(actor.FlipTieBreakerAfterResolution);
+        }
+
+        /// <summary>Milestone 8.35g, schema v35. The turn waiting for its own player's release.</summary>
+        private static void WritePendingTurnRelease(BinaryWriter writer, PendingTurnRelease release)
+        {
+            writer.Write(release != null);
+            if (release == null) return;
+            writer.Write(release.ActorId.Value);
+            writer.Write(release.CardInstanceId.Value);
+            writer.Write((int)release.TeamSide);
+        }
+
+        private static PendingTurnRelease ReadPendingTurnRelease(BinaryReader reader)
+        {
+            if (!reader.ReadBoolean()) return null;
+            return new PendingTurnRelease(
+                new HeroId(reader.ReadString()),
+                new CardInstanceId(reader.ReadString()),
+                SnapshotEnumReader.Read<TeamSide>(reader, "awaiting turn release side"));
         }
 
         private static SelectedInitiativeActor ReadSelectedActor(BinaryReader reader)

@@ -796,6 +796,35 @@ namespace GuardsDigital.Application
                 }));
         }
 
+        /// <summary>
+        /// Milestone 8.35g. The finished turn awaiting its own player, rebuilt from what the seat
+        /// record already carries rather than from a new wire row.
+        /// </summary>
+        /// <remarks>
+        /// It is CARRIED rather than derived from the standing decision owner. Deriving it would
+        /// have worked for the two facts a surface reads today - who the table is waiting on, and
+        /// that it is waiting at all - but the wire-growth rule's exclusion floor is a deliberate
+        /// ratchet, and an excused member is a fact a client cannot see. The pause is read by the
+        /// shared status derivation every seat's top bar is drawn from, so it is a fact every client
+        /// gets in full rather than one reconstructed from a neighbouring field.
+        /// </remarks>
+        public GuardsDigital.Core.Cards.PendingTurnRelease PendingTurnRelease
+        {
+            get
+            {
+                var row = Detail?.PendingTurnRelease;
+                if (!actionable || row == null)
+                {
+                    return null;
+                }
+
+                return new GuardsDigital.Core.Cards.PendingTurnRelease(
+                    new HeroId(row.ActorId),
+                    new CardInstanceId(row.CardInstanceId),
+                    (TeamSide)row.TeamSide);
+            }
+        }
+
         private PendingDecisionContract BuildDecisionContract()
         {
             if (!actionable || wire?.DecisionContractFamilyId == null)

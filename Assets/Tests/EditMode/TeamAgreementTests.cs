@@ -160,10 +160,14 @@ namespace GuardsDigital.Tests.EditMode
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
 
-            // Milestone 8.35d re-derived the seed. This walk no longer draws the round's own
-            // advance - the seat-serving host runs p.8's stages itself - and that moved seed 2's
-            // Minion Battle beyond this budget; seed 3 reaches it at step 268.
-            var random = new MatchLoopRandom(3);
+            // Milestone 8.35g re-derived the seed again, offline over seeds 1-20 rather than by
+            // bisecting Unity runs. The release consumes a draw of its own even when it is the only
+            // legal command, so every trajectory is a different match rather than the old one plus a
+            // command per turn: seed 3 reaches no Minion Battle at all inside 3,000 steps now.
+            // Seed 6 reaches the tied Initiative at step 80 and the Minion Battle at 400 - chosen
+            // because it reaches BOTH kinds this helper is asked for, comfortably inside the budget,
+            // rather than because it is the lowest number that reaches one.
+            var random = new MatchLoopRandom(6);
             for (var step = 0; step < 2400; step++)
             {
                 var agreement = host.Seats.Seats.Select(seat => host.ProjectionForSeat(seat.Id).TeamAgreement)

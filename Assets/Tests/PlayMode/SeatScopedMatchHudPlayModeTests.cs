@@ -804,8 +804,28 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.Host.Version, Is.GreaterThan(version),
                 "The press reached the authority.");
+
+            // Milestone 8.35g, and this is the milestone's headline seen from the seat's own HUD.
+            // That press ended the card's RESOLUTION; it no longer ends the turn, which is now held
+            // for this seat's own player. So the same control comes BACK carrying the release rather
+            // than vanishing - the vanishing is precisely the auto-ending the user asked to stop.
+            Assert.That(runtime.PendingTurnRelease, Is.Not.Null,
+                "The finished resolution waits for its own player rather than handing on.");
+            var release = runtime.RoundView.Model.EndTurnInvocation;
+            Assert.That(release, Is.Not.Null,
+                "and the control returns for the release instead of leaving an empty corner.");
+            Assert.That(release.Command.Kind, Is.EqualTo(DirectorCommandKind.ReleaseTurn));
+
+            var releasedFrom = runtime.Host.Version;
+            UiPlayer.Click((Button)Named(root.Hud.RootElement, "gd-end-turn-control"));
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.Host.Version, Is.GreaterThan(releasedFrom),
+                "The second press reached the authority too, and it is the turn's point of no return.");
+            Assert.That(runtime.PendingTurnRelease, Is.Null);
             Assert.That(runtime.RoundView.Model.EndTurnInvocation, Is.Null,
-                "and the turn it ended offers no second End Turn.");
+                "and the turn it released offers no third End Turn.");
             Assert.That(UiPlayer.IsShown(Named(root.Hud.RootElement, "gd-end-turn")), Is.False,
                 "so the corner is empty rather than holding a control that can only be refused.");
 

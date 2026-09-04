@@ -70,6 +70,7 @@ namespace GuardsDigital.Application
             WriteSystemTransitionStep(writer, projection.PendingSystemTransitionStep);
             WriteSystemTransitionDescription(writer, projection.PendingSystemTransitionDescription);
             WriteRemovalPrevention(writer, projection.PendingRemovalPrevention);
+            WriteTurnRelease(writer, projection.PendingTurnRelease);
 
             writer.Write(projection.AvailableTurnActions.Count);
             foreach (var offer in projection.AvailableTurnActions)
@@ -196,7 +197,8 @@ namespace GuardsDigital.Application
                 !TryReadHeroRespawnChoice(reader, out var respawn) ||
                 !TryReadSystemTransitionStep(reader, out var transitionStep) ||
                 !TryReadSystemTransitionDescription(reader, out var transitionDescription) ||
-                !TryReadRemovalPrevention(reader, out var removalPrevention))
+                !TryReadRemovalPrevention(reader, out var removalPrevention) ||
+                !TryReadTurnRelease(reader, out var turnRelease))
             {
                 return false;
             }
@@ -319,6 +321,7 @@ namespace GuardsDigital.Application
                 transitionStep,
                 transitionDescription,
                 removalPrevention,
+                turnRelease,
                 Array.AsReadOnly(turnActions.ToArray()),
                 Array.AsReadOnly(fastTravel.ToArray()),
                 Array.AsReadOnly(clears.ToArray()),
@@ -1815,6 +1818,45 @@ namespace GuardsDigital.Application
                 writer.Write((int)payment.Cost.AdmittedClassification);
                 writer.Write(payment.PaymentCardInstanceId.Value);
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.35g. The finished turn awaiting its own player. Written for every seat,
+        /// because every seat is waiting on it.
+        /// </summary>
+        private static void WriteTurnRelease(
+            BinaryWriter writer, GuardsDigital.Core.Cards.PendingTurnRelease release)
+        {
+            writer.Write(release != null);
+            if (release == null)
+            {
+                return;
+            }
+
+            writer.Write(release.ActorId.Value);
+            writer.Write(release.CardInstanceId.Value);
+            writer.Write((int)release.TeamSide);
+        }
+
+        private static bool TryReadTurnRelease(
+            BinaryReader reader, out NetworkTurnReleaseRow row)
+        {
+            row = null;
+            if (!reader.ReadBoolean())
+            {
+                return true;
+            }
+
+            var actorId = reader.ReadString();
+            var cardInstanceId = reader.ReadString();
+            var teamSide = reader.ReadInt32();
+            if (string.IsNullOrWhiteSpace(actorId) || string.IsNullOrWhiteSpace(cardInstanceId))
+            {
+                return false;
+            }
+
+            row = new NetworkTurnReleaseRow(actorId, cardInstanceId, teamSide);
+            return true;
         }
 
         private static bool TryReadRemovalPrevention(

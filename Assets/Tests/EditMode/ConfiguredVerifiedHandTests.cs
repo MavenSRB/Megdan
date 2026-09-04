@@ -306,6 +306,17 @@ namespace GuardsDigital.Tests.EditMode
             // p.12: the hero may Hold rather than act, which is what keeps a card whose primary has no
             // composition spendable.
             ConfiguredMatchFixtures.Accept(session, DirectorCommand.PerformHold(red.Id));
+
+            // Milestone 8.35g. The Hold finishes Red's resolution but no longer hands the turn on by
+            // itself: the claim about who acts next is now stated across BOTH results. First the
+            // pause names the hero whose resolution finished - the selection is empty here, which is
+            // precisely why the pause carries the identity rather than pointing at one.
+            Assert.That(session.Projection.PendingTurnRelease, Is.Not.Null,
+                "p.12's Hold completes the card, and 8.35g holds the completed turn for its own " +
+                "player rather than advancing past them.");
+            Assert.That(session.Projection.PendingTurnRelease.CardInstanceId, Is.EqualTo(red.Id));
+
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.ReleaseTurn());
             Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(blue.Id));
 
             // Stop Projectiles prints a Movement 2 secondary; the Fast Travel p.13 lets a hero take

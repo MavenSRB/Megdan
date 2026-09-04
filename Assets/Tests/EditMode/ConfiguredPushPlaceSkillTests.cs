@@ -541,9 +541,17 @@ namespace GuardsDigital.Tests.EditMode
                 .First(space => !space.Equals(BlueAt));
             SelectValue(session, tokenAt);
 
+            // Milestone 8.35g. The placement finished Red's own resolution, so Red's player holds the
+            // turn until they release it - and this release is what puts the Blue hero in the
+            // selection the Hold below reads. It goes ABOVE that read, not beside it.
+            Accept(session, DirectorCommand.ReleaseTurn());
+
             // Red acted first on that turn, so the Blue hero still owes one before the round can end.
             Accept(session, DirectorCommand.PerformHold(
                 session.Projection.SelectedActor.CardInstanceId));
+            // Milestone 8.35g. The Hold finished this hero's resolution; the release is
+            // what hands the turn on, and a player presses it before the next hero acts.
+            Accept(session, DirectorCommand.ReleaseTurn());
 
             CommitCards(session, "needle", "hammer");
             Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(NeedleCardId));

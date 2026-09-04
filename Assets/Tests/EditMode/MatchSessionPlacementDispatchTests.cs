@@ -384,6 +384,14 @@ namespace GuardsDigital.Tests.EditMode
                     continue;
                 }
 
+                // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                // turn on, so this loop presses the release exactly as that player does.
+                if (session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(session, DirectorCommand.ReleaseTurn());
+                    continue;
+                }
+
                 Accept(session, DirectorCommand.PerformHold(
                     session.Projection.SelectedActor.CardInstanceId));
             }

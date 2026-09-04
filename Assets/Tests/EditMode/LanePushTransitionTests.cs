@@ -97,6 +97,10 @@ namespace GuardsDigital.Tests.EditMode
                 session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue &&
                 card.State.Location == CardLocation.TurnArea);
 
+            // Milestone 8.35g. "The turn continues in the Initiative order as normal" now includes
+            // its own player releasing the finished resolution first; the push is what completed it.
+            Assert.That(session.Execute(DirectorCommand.ReleaseTurn()).Accepted, Is.True);
+
             var held = session.Execute(DirectorCommand.PerformHold(blueCard.Id));
 
             Assert.That(held.Accepted, Is.True,

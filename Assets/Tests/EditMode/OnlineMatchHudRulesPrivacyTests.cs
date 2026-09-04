@@ -256,13 +256,16 @@ namespace GuardsDigital.Tests.EditMode
         /// exercised, so the refusal is about the version and not about the number 2.
         /// </remarks>
         [Test]
-        public void SeatWireMeaning_UsesProtocolThree_AndRejectsEveryOlderFrame()
+        public void SeatWireMeaning_UsesProtocolFour_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(3),
-                "The seat record carries IsSeatUndoAvailable and the wire carries SubmitUndo and " +
-                "UndoResult; protocol two peers cannot decode either safely.");
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(4),
+                "Milestone 8.35g carries the eleventh pending family, PendingTurnRelease, in the " +
+                "projection detail, and adds the ReleaseTurn command kind. A protocol three peer " +
+                "would read the release row out of the middle of a detail record and mis-decode " +
+                "everything after it. Protocol three itself carried IsSeatUndoAvailable plus " +
+                "SubmitUndo and UndoResult, which protocol two peers could not decode safely.");
 
-            foreach (var older in new[] { 1, 2 })
+            foreach (var older in new[] { 1, 2, 3 })
             {
                 var bytes = PrivateSessionFrameCodec.ChallengeFrame(
                     new SessionChallengeMessage(new byte[] { 1, 2, 3 }));

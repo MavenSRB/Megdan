@@ -4518,11 +4518,28 @@ namespace GuardsDigital.Presentation.Match
                             ReferenceEquals(command.EffectChoice, effectChoice.StopInvocation)));
             }
 
+            // Milestone 8.35g. The turn's resolution is finished and it is waiting for this player
+            // to hand it on, so the same control that ended the resolution is the one that releases
+            // it. The second press is deliberate: an explicit stop is a click that can be misplayed
+            // like any other, and the release is the point of no return the rewind stops at. It is
+            // read off the standing contract, so only the seat that owns the pause is drawn one.
+            if (projection.DecisionContract != null &&
+                projection.DecisionContract.FamilyId.Equals(PendingDecisionFamilies.TurnRelease))
+            {
+                return new TypedInvocationViewModel(
+                    "END TURN",
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.TurnRelease,
+                        command => command.Kind == DirectorCommandKind.ReleaseTurn));
+            }
+
             if (!projection.IsTurnActive || !projection.SelectedActor.IsDefined ||
                 HasPendingDecision(projection))
             {
                 return null;
             }
+
 
             // Milestone 8.7: the authority decides whether p.12's Hold is offered, and this draws its
             // answer. Deriving it here a second time is what made the control and the command able to
@@ -4884,6 +4901,20 @@ namespace GuardsDigital.Presentation.Match
             {
                 return $"{MinionChoiceLabels.TeamLabel(projection.PendingDisplacedMinionCorrection.ChoosingSide)} " +
                     "places the displaced minion.";
+            }
+
+            // Milestone 8.35g: the eleventh pending family, and the last decision branch because the
+            // pause is withheld while anything else stands - so anything above it that is standing
+            // is the truer sentence. It has to be here at all because the acknowledgement that
+            // raised the pause is what empties the selection: without this branch a turn waiting on
+            // its own player fell through to "Waiting for the match to continue", the live-sounding
+            // fallback milestone 8.30c removed for the ended match and 8.20d for the effect choice.
+            // It names the side rather than the pressing seat, because one derivation serves every
+            // viewer and the other five are waiting on exactly this.
+            var turnRelease = projection.PendingTurnRelease;
+            if (turnRelease != null)
+            {
+                return $"{MinionChoiceLabels.TeamLabel(turnRelease.TeamSide)} is ending their turn.";
             }
 
             return projection.SelectedActor.IsDefined

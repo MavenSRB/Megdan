@@ -584,6 +584,57 @@ namespace GuardsDigital.Tests.EditMode
                 "A mandatory target choice cannot be bypassed by the contextual control.");
         }
 
+        /// <summary>
+        /// Milestone 8.35g. The seat's release control, which is the same END TURN control pressed a
+        /// second time.
+        /// </summary>
+        /// <remarks>
+        /// <para>The user's rule is that turns must not auto-end: "If user makes the wrong movement,
+        /// the turn auto ends, so no undo will fix that." The first press finishes the card's
+        /// resolution; the turn is then held for that player, and the control comes BACK carrying
+        /// the release rather than vanishing with the resolution. The uniformity is deliberate - an
+        /// explicit stop is a click that can be misplayed like any other, so it gets the same second
+        /// press, and that press is the point of no return the rewind stops at.</para>
+        /// <para>The accepted-command half is not decoration: a control that could only ever produce
+        /// a rejection is the exact class milestones 6.5ac and 6.5af exist to prevent, and 7.9c's
+        /// F-PRES-01 above is what it looks like when one escapes.</para>
+        /// </remarks>
+        [Test]
+        public void RoundPresenter_DrawsTheTurnReleaseAsASecondEndTurnPressThatTheAuthorityAccepts()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+
+            var resolving = RoundActionPresenter.CreateViewModel(session.Projection);
+            Assert.That(resolving.EndTurnInvocation.Command.Kind,
+                Is.EqualTo(DirectorCommandKind.PerformHold),
+                "The first press is still p.12's Hold, unchanged.");
+            Assert.That(session.Execute(resolving.EndTurnInvocation.Command).Accepted, Is.True);
+
+            Assert.That(session.Projection.PendingTurnRelease, Is.Not.Null,
+                "The finished resolution is held for its own player instead of handing on.");
+            Assert.That(session.Projection.SelectedActor.IsDefined, Is.False,
+                "and the control below cannot be derived from the selection: acknowledging the " +
+                "resolved card is what empties it, which is why the pause carries the hero itself.");
+
+            var released = RoundActionPresenter.CreateViewModel(session.Projection);
+
+            Assert.That(released.EndTurnInvocation, Is.Not.Null,
+                "The control returns for the release rather than disappearing with the resolution.");
+            Assert.That(released.EndTurnInvocation.Label, Is.EqualTo("END TURN"));
+            Assert.That(released.EndTurnInvocation.Command.Kind,
+                Is.EqualTo(DirectorCommandKind.ReleaseTurn));
+            Assert.That(released.Actions, Is.Empty,
+                "Nothing else is offered beside it; the release is the whole of what is asked.");
+
+            Assert.That(session.Execute(released.EndTurnInvocation.Command).Accepted, Is.True);
+            Assert.That(session.Projection.PendingTurnRelease, Is.Null);
+            Assert.That(session.Projection.AcceptedCommands[session.Projection.AcceptedCommands.Count - 1].Kind,
+                Is.EqualTo(DirectorCommandKind.ReleaseTurn),
+                "and the release is a recorded command like any other, so a replay of this turn " +
+                "contains the hand-off rather than inferring it.");
+        }
+
         [Test]
         public void RoundPresenter_DisabledNetworkView_FabricatesNoEndOfRoundContinuation()
         {
@@ -1716,6 +1767,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Execute(DirectorCommand.CommitCard(red.OwnerId, red.Id)).Accepted, Is.True);
             Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
             Accept(session, DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId));
+
+            // Milestone 8.35g. The Hold finished Red's resolution, and this helper is straight-line
+            // rather than a loop: the release is what puts Blue in the selection asserted below.
+            Accept(session, DirectorCommand.ReleaseTurn());
             Assert.That(session.Projection.SelectedActor.CardInstanceId, Is.EqualTo(blue.Id));
             Accept(session, DirectorCommand.StartAction(LongbowSkill));
         }
@@ -1757,7 +1812,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var session = CreateNeedleSession(NeedleRedAt, NeedleBlueAt, redOutnumbered: true);
             removed = default;
-            for (var step = 0; step < 64 && !removed.IsDefined; step++)
+            for (var step = 0; step < 96 && !removed.IsDefined; step++)
             {
                 var projection = session.Projection;
                 var battle = projection.PendingMinionBattleChoice;
@@ -1797,6 +1852,14 @@ namespace GuardsDigital.Tests.EditMode
                 if (projection.Phase == RoundResolutionPhase.EndOfRound)
                 {
                     Accept(session, DirectorCommand.AdvanceEndOfRound());
+                    continue;
+                }
+
+                // Milestone 8.35g. ABOVE the selection read below: the acknowledgement that raised
+                // the pause is what empties it, so the Hold would be refused NoActorSelected here.
+                if (projection.PendingTurnRelease != null)
+                {
+                    Accept(session, DirectorCommand.ReleaseTurn());
                     continue;
                 }
 

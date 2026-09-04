@@ -158,6 +158,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The enemy's own activation, inside the same turn: what a player must be able to see is
             // that they are stopped. p.20 keeps the lock live for the whole turn.
+            // Milestone 8.35g. Arien's resolution is finished; the release is what lets the enemy
+            // begin, and it is a second press of the same control.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId));
             Assert.That(runtime.IsActiveEffectSource(slipperyCardId), Is.True,
                 "The `This turn` lock is still standing on the enemy's activation.");

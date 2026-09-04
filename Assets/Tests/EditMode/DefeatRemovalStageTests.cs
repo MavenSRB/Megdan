@@ -467,9 +467,9 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(34),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(35),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
-                "own. The version has since moved twenty-two times, none of them for it: milestone 6.7 for " +
+                "own. The version has since moved twenty-three times, none of them for it: milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +
                 "mid-turn Lane-Push request a completed action can leave behind, milestone 6.10 for " +
                 "p.8's Battle Zone itself, milestone 6.10a for a paused system transition, " +
@@ -499,7 +499,10 @@ namespace GuardsDigital.Tests.EditMode
                 "milestone 8.24 for the five capability contracts Xargatha's printed faces are the " +
                 "first to reach - her three petrification disks and her two end-of-round sources - " +
                 "which every v33 payload names a shorter list than, so one is refused rather than " +
-                "resolved against contracts its own capture never had. " +
+                "resolved against contracts its own capture never had, and milestone 8.35g for the " +
+                "finished turn a match is holding until its own player releases it, which no v34 " +
+                "payload records because a v34 build handed the turn on inside the command that " +
+                "finished it, so a restored v34 capture would advance by itself. " +
                 "The decision is still re-derived from the state as it then stands.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),

@@ -70,8 +70,23 @@ namespace GuardsDigital.Core.Replay
         /// family's. It is not an effect choice: no effect frame is paused, the answer names a source
         /// and the card that pays for it, and what it resumes is rulebook p.13's removal stage.
         /// </summary>
-        AnswerRemovalPrevention = 23
+        AnswerRemovalPrevention = 23,
+
+        /// <summary>
+        /// Milestone 8.35g. Releasing a finished turn is a new authority-level operation with its own
+        /// pending family and its own resume path, which is the Minion-Battle, correction,
+        /// system-transition and removal-prevention precedent for giving one a command kind rather
+        /// than riding another family's.
+        /// </summary>
+        /// <remarks>
+        /// It has to be a recorded command rather than a host policy for the reason
+        /// <see cref="BeginSystemTransition"/> gives: a release taken outside the recorded stream
+        /// would simply not exist in a replayed or Undone match, and the turn would then advance by
+        /// itself during replay - which is exactly the auto-advance this milestone removed.
+        /// </remarks>
+        ReleaseTurn = 24
     }
+
 
     public sealed class DirectorCommand : IEquatable<DirectorCommand>
     {
@@ -386,6 +401,14 @@ namespace GuardsDigital.Core.Replay
 
         public static DirectorCommand AdvanceEndOfRound() =>
             new DirectorCommand(DirectorCommandKind.AdvanceEndOfRound);
+
+        /// <summary>
+        /// Milestone 8.35g. Hands a finished turn on to the next actor. It carries no payload: the
+        /// only turn it can release is the one standing in the release pause, and the authority
+        /// knows which that is.
+        /// </summary>
+        public static DirectorCommand ReleaseTurn() =>
+            new DirectorCommand(DirectorCommandKind.ReleaseTurn);
 
         public static DirectorCommand ChooseCorrectionSubject(
             GuardsDigital.Core.Rules.Displacement.DisplacedMinionCorrectionCommand invocation)

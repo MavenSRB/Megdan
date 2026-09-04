@@ -515,7 +515,7 @@ namespace GuardsDigital.Application
         public override string ToString() => Value ?? string.Empty;
     }
 
-    /// <summary>The bounded production identities for the ten configured pending-decision families.</summary>
+    /// <summary>The bounded production identities for the eleven configured pending-decision families.</summary>
     public static class PendingDecisionFamilies
     {
         public static readonly PendingDecisionFamilyId Initiative =
@@ -538,6 +538,13 @@ namespace GuardsDigital.Application
             new PendingDecisionFamilyId("system-transition");
         public static readonly PendingDecisionFamilyId RemovalPrevention =
             new PendingDecisionFamilyId("removal-prevention");
+
+        /// <summary>
+        /// Milestone 8.35g. A finished turn waiting for its own player to hand it on. It has one
+        /// command and no candidates, which is what a consent is.
+        /// </summary>
+        public static readonly PendingDecisionFamilyId TurnRelease =
+            new PendingDecisionFamilyId("turn-release");
     }
 
     /// <summary>
@@ -592,7 +599,8 @@ namespace GuardsDigital.Application
             PendingMinionBattleChoice minionBattle,
             PendingHeroRespawnChoice heroRespawn,
             GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep systemTransition,
-            RemovalPreventionPrompt removalPrevention)
+            RemovalPreventionPrompt removalPrevention,
+            GuardsDigital.Core.Cards.PendingTurnRelease turnRelease)
         {
             var standing = new List<PendingDecisionContract>();
             if (initiative != null)
@@ -738,6 +746,13 @@ namespace GuardsDigital.Application
                         })));
             }
 
+            if (turnRelease != null)
+            {
+                standing.Add(new PendingDecisionContract(
+                    PendingDecisionFamilies.TurnRelease,
+                    new[] { DirectorCommand.ReleaseTurn() }));
+            }
+
             if (standing.Count > 1)
             {
                 throw new InvalidOperationException(
@@ -814,7 +829,8 @@ namespace GuardsDigital.Application
                 pendingRemovalPrevention = null,
             IEnumerable<MarkerAttachment> heldMarkers = null,
             IEnumerable<AttackTargetDefensePreviewProjection>
-                pendingAttackTargetDefensePreviews = null)
+                pendingAttackTargetDefensePreviews = null,
+            GuardsDigital.Core.Cards.PendingTurnRelease pendingTurnRelease = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -957,6 +973,29 @@ namespace GuardsDigital.Application
                     nameof(pendingSystemTransitionDescription));
             }
 
+            // Milestone 8.35g. The release yields to EVERY other standing decision, and this is the
+            // only place that can arbitrate it: the turn authority withholds it for the three cases
+            // it can see - a game ended mid-turn, p.8's mid-turn Lane Push, a stopped triggered
+            // effect - but it cannot see the round-level questions, nor a decision the finished
+            // resolution raised on ANOTHER hero's behalf. Brogan's Shield discard standing after an
+            // enemy Ultimate's Defeat is exactly that: neither the discard nor the completed
+            // resolution is wrong, and publishing both is what the single-decision invariant below
+            // refuses. So the release waits until it is the only thing left to ask, which is also
+            // what its own contract says it is - the last question of a turn, never a rival to one.
+            PendingTurnRelease =
+                PendingInitiativeChoice != null ||
+                PendingMovementChoice != null ||
+                PendingAttackTargetChoice != null ||
+                PendingDefenseChoice != null ||
+                PendingEffectChoice != null ||
+                PendingDisplacedMinionCorrection != null ||
+                PendingMinionBattleChoice != null ||
+                PendingHeroRespawnChoice != null ||
+                PendingSystemTransitionStep != null ||
+                PendingRemovalPrevention != null
+                    ? null
+                    : pendingTurnRelease;
+
             DecisionContract = PendingDecisionContract.Create(
                 PendingInitiativeChoice,
                 PendingMovementChoice,
@@ -967,7 +1006,8 @@ namespace GuardsDigital.Application
                 PendingMinionBattleChoice,
                 PendingHeroRespawnChoice,
                 PendingSystemTransitionStep,
-                PendingRemovalPrevention);
+                PendingRemovalPrevention,
+                PendingTurnRelease);
 
             if (outcome.HasEnded != (phase == RoundResolutionPhase.GameEnded))
             {
@@ -1193,6 +1233,12 @@ namespace GuardsDigital.Application
             PendingAttackTargetDefensePreviews { get; }
         public PendingMinionBattleChoice PendingMinionBattleChoice { get; }
         public PendingHeroRespawnChoice PendingHeroRespawnChoice { get; }
+
+        /// <summary>
+        /// Milestone 8.35g. The finished turn waiting for its own player's release, or <c>null</c>
+        /// when the match is not holding one.
+        /// </summary>
+        public GuardsDigital.Core.Cards.PendingTurnRelease PendingTurnRelease { get; }
 
         /// <summary>
         /// Milestone 7.4: every team's remaining p.13 Life counters, ordered by team id. Empty in a

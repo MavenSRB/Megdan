@@ -122,6 +122,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingInitiativeChoice, Is.Null);
             Assert.That(runtime.SubmitEndTurn(), Is.True,
                 "The Red hero holds, which is what any Action card may do with a turn nobody wants.");
+            // Milestone 8.35g. That press finished the resolution; the release is what
+            // hands the turn on, so it goes above the selection read below.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.CardInstanceId, Is.EqualTo(blue.Id));
         }
 

@@ -28,9 +28,9 @@ namespace GuardsDigital.Tests.EditMode
     /// </remarks>
     public sealed class PendingDecisionReconnectTests
     {
-        private const int WalkBudget = 1500;
+        private const int WalkBudget = 1800;
 
-        /// <summary>The seven families the deterministic seeded wire walk reaches on its own.</summary>
+        /// <summary>The eight families the deterministic seeded wire walk reaches on its own.</summary>
         [TestCase("initiative")]
         [TestCase("movement")]
         [TestCase("attack-target")]
@@ -38,6 +38,7 @@ namespace GuardsDigital.Tests.EditMode
         [TestCase("correction")]
         [TestCase("minion-battle")]
         [TestCase("system-transition")]
+        [TestCase("turn-release")]
         public void AWalkedFamily_SurvivesEveryCutPoint(string family) =>
             WalkTheCutPoints(ComposeAt(family), family);
 
@@ -65,12 +66,16 @@ namespace GuardsDigital.Tests.EditMode
             var reached = 0;
             if (staged == null)
             {
-                // Milestone 8.35d re-derived the seed. The walk no longer draws the round's own
-                // advance, which moved seed 2's Attack-target and Minion-Battle pauses outside
-                // this budget; seed 3 reaches every walked family inside 268 steps.
+                // Milestone 8.35g re-derived the seed again, and for a sharper reason than
+                // 8.35d's: the release is drawn from a one-command set, and `Next(1)` still
+                // advances the stream, so every seeded trajectory is a different match rather
+                // than the old one with a command inserted per turn. Seed 3 stopped reaching
+                // Attack-target, correction and Minion-Battle at all. An offline scan of ten
+                // seeds put every walked family on seed 1, the last of them - Minion Battle -
+                // at step 1,167, which is what the raised budget above leaves room for.
                 reached = harness.DriveThroughWire(WalkBudget, projection =>
                     projection.DecisionContract != null &&
-                    projection.DecisionContract.FamilyId.Value == family, seed: 3);
+                    projection.DecisionContract.FamilyId.Value == family, seed: 1);
             }
 
             Assert.That(harness.MatchHost.Projection.DecisionContract, Is.Not.Null,

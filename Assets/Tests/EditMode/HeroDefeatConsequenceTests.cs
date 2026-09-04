@@ -121,6 +121,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.DefenderCard.State.Location, Is.EqualTo(CardLocation.TurnArea),
                 "It is resolved rather than played away: p.13 resolves it \"without performing an " +
                 "action\", so nothing about where the card sits changes.");
+            // Milestone 8.35g. The attacker's own resolution finished with the Defeat, so the turn is
+            // held for the attacking player before it closes. The claim below is unchanged - what
+            // moved is that closing is now something a player does rather than something that
+            // happens to them, so the pause is asserted first and then answered.
+            Assert.That(fixture.Round.CurrentTurnAuthority.PendingTurnRelease, Is.Not.Null,
+                "The Defeat completed the attacker's card, and a completed resolution waits.");
+            Assert.That(fixture.Round.TryReleaseTurn().Accepted, Is.True);
+
             Assert.That(fixture.Round.TurnIndex, Is.EqualTo(2),
                 "With both cards resolved the turn has nothing left to select and closes, so the " +
                 "defeated hero is never offered the action p.13 just took away.");
@@ -430,6 +438,10 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(
                     session.Projection.Heroes.Any(hero => hero.HeroId.Equals(BlueHeroId)), Is.False);
 
+                // Milestone 8.35g. The attacking player releases their finished turn before turn one
+                // can close; without it the commitments below are submitted into a turn still running.
+                Assert.That(session.Execute(DirectorCommand.ReleaseTurn()).Accepted, Is.True);
+
                 // Turn two. The Red hero acts first on Initiative and Holds; the defeated hero is then
                 // selected, and p.7's choice is what it is offered before its action rather than
                 // instead of one.
@@ -439,6 +451,15 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(session.Execute(DirectorCommand.CommitCard(blue.OwnerId, blue.Id)).Accepted, Is.True);
                 while (!session.Projection.SelectedActor.ActorId.Equals(BlueHeroId))
                 {
+                    // Milestone 8.35g. ABOVE the read below, not beside the Hold: acknowledging the
+                    // resolved card is what empties the selection this loop steers by.
+                    if (session.Projection.PendingTurnRelease != null)
+                    {
+                        Assert.That(session.Execute(
+                            DirectorCommand.ReleaseTurn()).Accepted, Is.True);
+                        continue;
+                    }
+
                     var acting = session.Projection.SelectedActor;
                     Assert.That(session.Execute(
                         DirectorCommand.PerformHold(acting.CardInstanceId)).Accepted, Is.True);

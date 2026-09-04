@@ -31,9 +31,13 @@ namespace GuardsDigital.Tests.EditMode
         /// 8.8b when refusing a Clear that can remove nothing changed every walk's trajectory. The two
         /// must stay the same number: these cases are about the match that gate proves correct.
         /// </summary>
-        private const int Seed = 32;
+        // Milestone 8.35g re-derived this: the turn release is drawn from a one-command set and
+        // `Next(1)` still advances the stream, so every seeded walk is a different match. Seed 32
+        // no longer reaches an ending inside any reasonable budget; seed 11 is the lowest that
+        // does, ending on p.13's last Life counter after 44 rounds and 1,407 commands.
+        private const int Seed = 11;
 
-        private const int Budget = 1200;
+        private const int Budget = 2400;
 
         [Test]
         public void UndoAboveTheLatestRetainedPoint_MatchesAFullPrefixReplayExactly()

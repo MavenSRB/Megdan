@@ -417,6 +417,15 @@ namespace GuardsDigital.Tests.EditMode
                     continue;
                 }
 
+                // Milestone 8.35g. The release goes above every read of the selection below it: the
+                // acknowledgement that raised the pause is what empties that selection, so a guard
+                // placed lower would be reached only after this driver had already read an empty one.
+                if (projection.PendingTurnRelease != null)
+                {
+                    fixture.Accept(DirectorCommand.ReleaseTurn());
+                    continue;
+                }
+
                 // The push moved the enemy hero out of Range 1's adjacency, and the rider asks about
                 // adjacency in the present tense - so a second firing needs her to close again, which
                 // costs a turn. That is the position a player would be in too. One turn is spent on

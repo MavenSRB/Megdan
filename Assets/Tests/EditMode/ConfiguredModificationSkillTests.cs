@@ -225,6 +225,11 @@ namespace GuardsDigital.Tests.EditMode
             StartBulwarkSkillOnCurrentTurn(session);
             ChooseMode(session, DefenseMode);
 
+            // Milestone 8.35g. Red's Skill resolution is finished and waits for Red's own player to
+            // hand on; the hand-off stays INSIDE this turn, which is why a `This Turn` modifier is
+            // still standing when the Blue hero acts below.
+            Accept(session, DirectorCommand.ReleaseTurn());
+
             var attack = session.Projection.AvailableTurnActions.Single(offer =>
                 ActionKindOf(session.Projection, offer) == ActionKind.Attack);
             Accept(session, DirectorCommand.StartAction(attack.ActionDefinitionId));
@@ -610,6 +615,14 @@ namespace GuardsDigital.Tests.EditMode
             while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn &&
                 session.Projection.TurnIndex == turnIndex)
             {
+                // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                // turn on, so this loop presses the release exactly as that player does.
+                if (session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(session, DirectorCommand.ReleaseTurn());
+                    continue;
+                }
+
                 Accept(session, DirectorCommand.PerformHold(
                     session.Projection.SelectedActor.CardInstanceId));
             }
@@ -627,6 +640,14 @@ namespace GuardsDigital.Tests.EditMode
                         CommitAnyEligibleCards(session);
                         break;
                     case RoundResolutionPhase.ResolvingTurn:
+                        // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                        // turn on, so this loop presses the release exactly as that player does.
+                        if (session.Projection.PendingTurnRelease != null)
+                        {
+                            Accept(session, DirectorCommand.ReleaseTurn());
+                            continue;
+                        }
+
                         Accept(session, DirectorCommand.PerformHold(
                             session.Projection.SelectedActor.CardInstanceId));
                         break;

@@ -80,6 +80,10 @@ namespace GuardsDigital.Tests.PlayMode
                     UiPlayer.Button(hud, runtime.RoundView.Model.EndTurnInvocation.Label));
                 yield return null;
             }
+
+            // Milestone 8.35g. That press finished Arien's resolution; the second press of the
+            // same control is the release, and it is the release that lets the enemy begin.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId));
             Assert.That(runtime.IsActiveEffectSource(spellBreakCardId), Is.True,
                 "p.20: the lock lasts the entire turn, and the enemy's activation is inside it.");
@@ -324,6 +328,10 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
             }
 
+            // Milestone 8.35g. The enemy's resolution is finished; their release is what hands
+            // the turn to Arien.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(arienId));
             var arienCardId = runtime.SelectedActor.CardInstanceId;
             yield return PointTrayAt(root, arienId);
@@ -526,6 +534,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId),
                 "Lift Up's 10 acts before Dangerous Current's 8, so the enemy holds first.");
             Assert.That(runtime.SubmitEndTurn(), Is.True, "and holds without leaving the line.");
+            // Milestone 8.35g. That press finished the resolution; the release is what
+            // hands the turn on, so it goes above the selection read below.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(arienId));
 
             yield return PointTrayAt(root, arienId);
@@ -650,6 +661,13 @@ namespace GuardsDigital.Tests.PlayMode
                 runtime.Cards.Single(card => card.Id.Equals(sourceCardId)).State.ResolutionStatus,
                 Is.EqualTo(CardResolutionStatus.Resolved),
                 "The completed Attack resolves its own source card.");
+            // Milestone 8.35g. The completed Attack still resolves its own card, asserted above -
+            // what moved is that resolving it no longer hands the turn on. The turn is held for the
+            // player whose card it was, and the release is what advances Initiative, so the claim is
+            // stated across both sides of that press rather than dropped.
+            Assert.That(runtime.PendingTurnRelease, Is.Not.Null,
+                "The finished resolution waits for its own player.");
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId),
                 "and Initiative advances to the other seat.");
 
@@ -873,6 +891,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(arienId),
                 "Spell Break's 13 acts before Magnetic Dagger's 12, so Arien acts and holds first.");
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Arien holds, keeping his hand intact.");
+            // Milestone 8.35g. That press finished the resolution; the release is what
+            // hands the turn on, so it goes above the selection read below.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId));
 
             var attack = runtime.RoundView.Model.Actions.Single(value =>
@@ -954,6 +975,11 @@ namespace GuardsDigital.Tests.PlayMode
         internal static void Commit(
             ConfiguredMatchSceneRuntime runtime, HeroId heroId, CardDefinitionId definitionId)
         {
+            // Milestone 8.35g. A finished turn is held for its own player, so the commitment phase
+            // this reads into does not open until that player hands it on. The release goes above
+            // the read, exactly where the player presses it.
+            UiPlayer.EndAnyTurnInProgress(runtime);
+
             var card = runtime.Cards.Single(value =>
                 value.OwnerId.Equals(heroId) &&
                 value.State.Location == CardLocation.Hand &&
@@ -966,6 +992,26 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>Drains whatever end-of-round pauses stand until the next turn can be committed.</summary>
         internal static IEnumerator AdvanceToNextTurn(ConfiguredMatchSceneRuntime runtime)
         {
+            // Milestone 8.35g. Every turn now costs TWO presses of the same control - the Hold or
+            // stop that finishes the resolution, then the release that hands the turn on - so a
+            // journey step that pressed once per turn arrives here with the round still resolving
+            // and the commitment phase it wants never opening. This drives the rest of the round
+            // the way a player does, pressing whatever END TURN currently means, and stops the
+            // moment that control is no longer offered, so a decision this filler cannot answer is
+            // left standing for the journey rather than swallowed by it.
+            for (var budget = 0; budget < 12; budget++)
+            {
+                if (runtime.Phase != RoundResolutionPhase.ResolvingTurn ||
+                    runtime.RoundView.Model.EndTurnInvocation == null)
+                {
+                    break;
+                }
+
+                Assert.That(runtime.SubmitEndTurn(), Is.True,
+                    "A turn ending this filler was offered must be takeable.");
+                yield return null;
+            }
+
             for (var budget = 0; runtime.Phase == RoundResolutionPhase.EndOfRound; budget++)
             {
                 Assert.That(budget, Is.LessThan(40),

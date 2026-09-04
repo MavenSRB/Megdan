@@ -47,6 +47,7 @@ namespace GuardsDigital.Application
             NetworkSystemTransitionStepRow pendingSystemTransitionStep,
             NetworkSystemTransitionDescriptionRow pendingSystemTransitionDescription,
             NetworkRemovalPreventionRow pendingRemovalPrevention,
+            NetworkTurnReleaseRow pendingTurnRelease,
             IReadOnlyList<NetworkActionOfferRow> availableTurnActions,
             IReadOnlyList<NetworkFastTravelOptionRow> availableFastTravelOptions,
             IReadOnlyList<NetworkClearOptionRow> availableClearOptions,
@@ -71,6 +72,7 @@ namespace GuardsDigital.Application
             PendingSystemTransitionStep = pendingSystemTransitionStep;
             PendingSystemTransitionDescription = pendingSystemTransitionDescription;
             PendingRemovalPrevention = pendingRemovalPrevention;
+            PendingTurnRelease = pendingTurnRelease;
             AvailableTurnActions = availableTurnActions;
             AvailableFastTravelOptions = availableFastTravelOptions;
             AvailableClearOptions = availableClearOptions;
@@ -98,6 +100,14 @@ namespace GuardsDigital.Application
         public NetworkSystemTransitionStepRow PendingSystemTransitionStep { get; }
         public NetworkSystemTransitionDescriptionRow PendingSystemTransitionDescription { get; }
         public NetworkRemovalPreventionRow PendingRemovalPrevention { get; }
+
+        /// <summary>
+        /// Milestone 8.35g. The finished turn awaiting its own player, or null while none stands.
+        /// Public to every seat: the whole table is waiting on it, and it names nothing private -
+        /// the hero and side are already public, and the card it names has finished resolving into
+        /// the public turn area.
+        /// </summary>
+        public NetworkTurnReleaseRow PendingTurnRelease { get; }
         public IReadOnlyList<NetworkActionOfferRow> AvailableTurnActions { get; }
         public IReadOnlyList<NetworkFastTravelOptionRow> AvailableFastTravelOptions { get; }
         public IReadOnlyList<NetworkClearOptionRow> AvailableClearOptions { get; }
@@ -1147,6 +1157,30 @@ namespace GuardsDigital.Application
         public string SubjectMinionId { get; }
         public int Origin { get; }
         public IReadOnlyList<NetworkRemovalPaymentRow> Payments { get; }
+    }
+
+    /// <summary>
+    /// Milestone 8.35g. A turn whose card resolution has finished and which is waiting for its own
+    /// player to hand it on.
+    /// </summary>
+    /// <remarks>
+    /// It is carried rather than derived from the standing decision owner, because the read model
+    /// exposes the pause itself and the wire-growth rule's floor is deliberate: an excused member is
+    /// a fact a client cannot see, and this one is read by the shared status derivation that every
+    /// seat's top bar is drawn from.
+    /// </remarks>
+    public sealed class NetworkTurnReleaseRow
+    {
+        public NetworkTurnReleaseRow(string actorId, string cardInstanceId, int teamSide)
+        {
+            ActorId = actorId;
+            CardInstanceId = cardInstanceId;
+            TeamSide = teamSide;
+        }
+
+        public string ActorId { get; }
+        public string CardInstanceId { get; }
+        public int TeamSide { get; }
     }
 
     public sealed class NetworkFastTravelOptionRow

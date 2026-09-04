@@ -118,6 +118,11 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(completed.Accepted, Is.True);
             Assert.That(authority.PendingEffectChoice, Is.Null);
+            // Milestone 8.35g. The resolution above finished this hero's turn, and it is
+            // handed on only when that player releases it; before then nobody is selected.
+            Assert.That(authority.PendingTurnRelease, Is.Not.Null);
+            Assert.That(authority.TryReleaseTurn().Accepted, Is.True);
+
             Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(blue.Id),
                 "The existing effect continuation must release the withheld Initiative advance.");
         }
@@ -137,6 +142,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(firstHold.Accepted, Is.True);
             Assert.That(fixture.Red.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(fixture.Blue.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            // Milestone 8.35g. The resolution above finished this hero's turn, and it is
+            // handed on only when that player releases it; before then nobody is selected.
+            Assert.That(fixture.Authority.PendingTurnRelease, Is.Not.Null);
+            Assert.That(fixture.Authority.TryReleaseTurn().Accepted, Is.True);
+
             Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.Blue.Id));
             Assert.That(firstHold.Events.Any(ruleEvent =>
                 ruleEvent.Kind == TurnResolutionEventKind.TurnEnded), Is.False);
@@ -146,8 +156,15 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(secondHold.Accepted, Is.True);
             Assert.That(fixture.Blue.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(fixture.Authority.SelectedActor.IsDefined, Is.False);
+
+            // Milestone 8.35g. The last card being resolved is not the end of the turn any more:
+            // the turn ends when its own player hands it on, and its two closing facts are that
+            // release's rather than the resolution's.
+            Assert.That(fixture.Authority.IsEnded, Is.False);
+            var endedTurn = fixture.Authority.TryReleaseTurn();
+            Assert.That(endedTurn.Accepted, Is.True);
             Assert.That(fixture.Authority.IsEnded, Is.True);
-            Assert.That(secondHold.Events.Select(ruleEvent => ruleEvent.Kind).TakeLast(2), Is.EqualTo(new[]
+            Assert.That(endedTurn.Events.Select(ruleEvent => ruleEvent.Kind).TakeLast(2), Is.EqualTo(new[]
             {
                 TurnResolutionEventKind.TurnOnlyEffectsCancellationCheckpoint,
                 TurnResolutionEventKind.TurnEnded
@@ -177,12 +194,22 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(result.Accepted, Is.True);
             Assert.That(fixture.Authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue));
-            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.Blue.Id));
+
+            // Milestone 8.35g. p.7's flip is still the resolved card's own consequence and still
+            // lands after the finish, but the next actor is no longer selected inside the same
+            // command: the turn waits for its player, and the selection is the release's event.
+            Assert.That(fixture.Authority.SelectedActor.IsDefined, Is.False);
             var kinds = EventKinds(result).ToArray();
             Assert.That(System.Array.IndexOf(kinds, InitiativeResolutionEventKind.TieBreakerFlipped),
                 Is.GreaterThan(System.Array.IndexOf(kinds, InitiativeResolutionEventKind.SelectedActorFinished)));
-            Assert.That(System.Array.IndexOf(kinds, InitiativeResolutionEventKind.NextActorSelected),
-                Is.GreaterThan(System.Array.IndexOf(kinds, InitiativeResolutionEventKind.TieBreakerFlipped)));
+            Assert.That(kinds, Has.None.EqualTo(InitiativeResolutionEventKind.NextActorSelected));
+
+            var released = fixture.Authority.TryReleaseTurn();
+
+            Assert.That(released.Accepted, Is.True);
+            Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.Blue.Id));
+            Assert.That(EventKinds(released),
+                Has.Some.EqualTo(InitiativeResolutionEventKind.NextActorSelected));
         }
 
         [Test]
@@ -204,6 +231,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(first.Id));
 
             Assert.That(authority.TryPerformHold(first.Id).Accepted, Is.True);
+
+            // Milestone 8.35g. The Hold finished this hero's resolution, so the turn now waits
+            // for that player to hand it on and the next actor is not selected until they do.
+            Assert.That(authority.PendingTurnRelease, Is.Not.Null);
+            Assert.That(authority.SelectedActor.IsDefined, Is.False);
+            Assert.That(authority.TryReleaseTurn().Accepted, Is.True);
 
             Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(next.Id));
             Assert.That(authority.SelectedActor.InitiativeTotal, Is.EqualTo(8));
@@ -235,6 +268,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(second.Id));
             Assert.That(authority.TryPerformHold(second.Id).Accepted, Is.True);
 
+            // Milestone 8.35g. The Hold finished this hero's resolution, so the turn now waits
+            // for that player to hand it on and the next actor is not selected until they do.
+            Assert.That(authority.PendingTurnRelease, Is.Not.Null);
+            Assert.That(authority.SelectedActor.IsDefined, Is.False);
+            Assert.That(authority.TryReleaseTurn().Accepted, Is.True);
+
             Assert.That(authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue));
             Assert.That(authority.SelectedActor.CardInstanceId, Is.EqualTo(first.Id));
         }
@@ -254,6 +293,15 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(fixture.Authority.TryPerformHold(fixture.Red.Id).Accepted, Is.True);
             var redResolvedState = fixture.Red.State;
+
+            // Milestone 8.35g. The turn is now holding still for its own player's release, so
+            // nobody is selected and a second press is refused for that reason rather than for
+            // naming the wrong card. Both refusals mutate nothing, which is what this case is
+            // about, and the original one is asserted again below once the turn is handed on.
+            AssertRejected(
+                fixture.Authority.TryPerformHold(fixture.Red.Id),
+                TurnResolutionRejectionReason.NoActorSelected);
+            Assert.That(fixture.Authority.TryReleaseTurn().Accepted, Is.True);
             AssertRejected(
                 fixture.Authority.TryPerformHold(fixture.Red.Id),
                 TurnResolutionRejectionReason.CardNotSelectedForAction);
@@ -268,13 +316,23 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.Authority.TryStart().Accepted, Is.True);
 
             var firstHold = fixture.Authority.TryPerformHold(fixture.Red.Id);
+            // Milestone 8.35g. Blue cannot be reached until Red's own player hands the turn on.
+            Assert.That(fixture.Authority.TryReleaseTurn().Accepted, Is.True);
             var secondHold = fixture.Authority.TryPerformHold(fixture.Blue.Id);
 
             Assert.That(firstHold.Events.Any(ruleEvent =>
                 ruleEvent.Kind == TurnResolutionEventKind.TurnOnlyEffectsCancellationCheckpoint), Is.False);
-            Assert.That(secondHold.Events.Count(ruleEvent =>
+            // Milestone 8.35g. End-of-turn timing fires at the release rather than at the
+            // resolution that finished the last card - an undo taken inside the wait would
+            // otherwise cross checkpoint state - so both belong to the release's own result.
+            Assert.That(secondHold.Events.Any(ruleEvent =>
+                ruleEvent.Kind == TurnResolutionEventKind.TurnOnlyEffectsCancellationCheckpoint),
+                Is.False);
+            var releasedTurn = fixture.Authority.TryReleaseTurn();
+            Assert.That(releasedTurn.Accepted, Is.True);
+            Assert.That(releasedTurn.Events.Count(ruleEvent =>
                 ruleEvent.Kind == TurnResolutionEventKind.TurnOnlyEffectsCancellationCheckpoint), Is.EqualTo(1));
-            Assert.That(secondHold.Events.Last().Kind, Is.EqualTo(TurnResolutionEventKind.TurnEnded));
+            Assert.That(releasedTurn.Events.Last().Kind, Is.EqualTo(TurnResolutionEventKind.TurnEnded));
         }
 
         [Test]
@@ -379,14 +437,21 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(completed.Accepted, Is.True);
             Assert.That(fixture.Red.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(fixture.Blue.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            // Milestone 8.35g. The resolution above finished this hero's turn, and it is
+            // handed on only when that player releases it; before then nobody is selected.
+            Assert.That(fixture.Authority.PendingTurnRelease, Is.Not.Null);
+            Assert.That(fixture.Authority.TryReleaseTurn().Accepted, Is.True);
+
             Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.Blue.Id));
             Assert.That(fixture.Authority.PendingMovementResolution, Is.Null);
             var kinds = completed.Events.Select(ruleEvent => ruleEvent.Kind).ToArray();
             Assert.That(System.Array.IndexOf(kinds, TurnResolutionEventKind.CardResolved),
                 Is.GreaterThan(System.Array.IndexOf(kinds, TurnResolutionEventKind.MovementActionProgressed)));
+            // Milestone 8.35g. The last Initiative fact a finished resolution carries is its own
+            // finish; selecting who acts next is the release's event, asserted above.
             Assert.That(completed.Events.Last(ruleEvent =>
                     ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed)
-                .InitiativeEvent.Kind, Is.EqualTo(InitiativeResolutionEventKind.NextActorSelected));
+                .InitiativeEvent.Kind, Is.EqualTo(InitiativeResolutionEventKind.SelectedActorFinished));
         }
 
         [Test]
@@ -424,6 +489,12 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(3));
             Assert.That(fixture.Red.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(fixture.Authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue));
+            // Milestone 8.35g. The resolution above finished this hero's turn, and it is
+            // handed on only when that player releases it; before then nobody is selected.
+            Assert.That(fixture.Authority.PendingTurnRelease, Is.Not.Null);
+            var released = fixture.Authority.TryReleaseTurn();
+            Assert.That(released.Accepted, Is.True);
+
             Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.Blue.Id));
 
             var cardResolvedIndex = completed.Events.ToList().FindIndex(ruleEvent =>
@@ -431,11 +502,18 @@ namespace GuardsDigital.Tests.EditMode
             var flipIndex = completed.Events.ToList().FindIndex(ruleEvent =>
                 ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
                 ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.TieBreakerFlipped);
-            var nextActorIndex = completed.Events.ToList().FindIndex(ruleEvent =>
+            // Milestone 8.35g. The next actor is selected by the release rather than by the
+            // command that finished the card, so its own event moved with it.
+            Assert.That(completed.Events.Any(ruleEvent =>
+                ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
+                ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.NextActorSelected),
+                Is.False);
+            var nextActorIndex = released.Events.ToList().FindIndex(ruleEvent =>
                 ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
                 ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.NextActorSelected);
             Assert.That(flipIndex, Is.GreaterThan(cardResolvedIndex));
-            Assert.That(nextActorIndex, Is.GreaterThan(flipIndex));
+            Assert.That(nextActorIndex, Is.GreaterThanOrEqualTo(0),
+                "The release is what selects the next actor, and says so in its own events.");
         }
 
         [Test]
@@ -542,15 +620,28 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.BluePlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved),
                 "p.13 resolves the defeated hero's unresolved card without performing an action.");
             Assert.That(fixture.Authority.SelectedActor.IsDefined, Is.False);
+
+            // Milestone 8.35g. Both cards being resolved leaves nothing to select, but the turn
+            // still ends at its own player's word rather than at the resolution that emptied it.
+            Assert.That(fixture.Authority.PendingTurnRelease, Is.Not.Null);
+            var endedTurn = fixture.Authority.TryReleaseTurn();
+            Assert.That(endedTurn.Accepted, Is.True);
             Assert.That(fixture.Authority.IsEnded, Is.True,
                 "Both cards are resolved, so the turn has nothing left to select.");
 
             var kinds = completed.Events.Select(ruleEvent => ruleEvent.Kind).ToArray();
             Assert.That(System.Array.IndexOf(kinds, TurnResolutionEventKind.CardResolved),
                 Is.GreaterThan(System.Array.LastIndexOf(kinds, TurnResolutionEventKind.AttackActionProgressed)));
+            // Milestone 8.35g. The resolution's own last Initiative fact is that this actor
+            // finished; that no card remains at all is what the release then discovers.
             Assert.That(completed.Events.Last(ruleEvent =>
                     ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed)
-                .InitiativeEvent.Kind, Is.EqualTo(InitiativeResolutionEventKind.NoUnresolvedCardsRemaining));
+                .InitiativeEvent.Kind, Is.EqualTo(InitiativeResolutionEventKind.SelectedActorFinished));
+            Assert.That(endedTurn.Events.Any(ruleEvent =>
+                    ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
+                    ruleEvent.InitiativeEvent.Kind ==
+                        InitiativeResolutionEventKind.NoUnresolvedCardsRemaining),
+                Is.True);
         }
 
         [Test]
@@ -633,18 +724,31 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(completed.Accepted, Is.True);
             Assert.That(fixture.Authority.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Red));
+            // Milestone 8.35g. The Hold above finished this hero's turn; the flip is its own
+            // consequence, and the next actor arrives only when that player releases it.
+            Assert.That(fixture.Authority.PendingTurnRelease, Is.Not.Null);
+            var released = fixture.Authority.TryReleaseTurn();
+            Assert.That(released.Accepted, Is.True);
+
             Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.RedPlayed.Id));
             var cardResolvedIndex = completed.Events.ToList().FindIndex(ruleEvent =>
                 ruleEvent.Kind == TurnResolutionEventKind.CardResolved);
             var flipIndex = completed.Events.ToList().FindIndex(ruleEvent =>
                 ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
                 ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.TieBreakerFlipped);
-            var nextActorIndex = completed.Events.ToList().FindIndex(ruleEvent =>
+            // Milestone 8.35g. The next actor is selected by the release rather than by the
+            // command that finished the card, so its own event moved with it.
+            Assert.That(completed.Events.Any(ruleEvent =>
+                ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
+                ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.NextActorSelected),
+                Is.False);
+            var nextActorIndex = released.Events.ToList().FindIndex(ruleEvent =>
                 ruleEvent.Kind == TurnResolutionEventKind.InitiativeProgressed &&
                 ruleEvent.InitiativeEvent.Kind == InitiativeResolutionEventKind.NextActorSelected);
             Assert.That(cardResolvedIndex, Is.GreaterThanOrEqualTo(0));
             Assert.That(flipIndex, Is.GreaterThan(cardResolvedIndex));
-            Assert.That(nextActorIndex, Is.GreaterThan(flipIndex));
+            Assert.That(nextActorIndex, Is.GreaterThanOrEqualTo(0),
+                "The release is what selects the next actor, and says so in its own events.");
         }
 
         [Test]
@@ -807,6 +911,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.Authority.PendingDefenseChoice, Is.Null);
             Assert.That(fixture.RedPlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
             Assert.That(fixture.BluePlayed.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Unresolved));
+            // Milestone 8.35g. The resolution above finished this hero's turn, and it is
+            // handed on only when that player releases it; before then nobody is selected.
+            Assert.That(fixture.Authority.PendingTurnRelease, Is.Not.Null);
+            Assert.That(fixture.Authority.TryReleaseTurn().Accepted, Is.True);
+
             Assert.That(fixture.Authority.SelectedActor.CardInstanceId, Is.EqualTo(fixture.BluePlayed.Id));
             Assert.That(completed.Events.Where(value => value.Kind == TurnResolutionEventKind.AttackActionProgressed)
                 .Select(value => value.CardActionEvent.Kind), Does.Contain(CardActionResolutionEventKind.MinionDefeatRecorded));

@@ -23,7 +23,8 @@ namespace GuardsDigital.Core.Cards
             InitiativeResolutionRestoreState initiative,
             int roundIndex,
             int turnIndex,
-            IEnumerable<string> consumedBeforeActionTriggers = null)
+            IEnumerable<string> consumedBeforeActionTriggers = null,
+            PendingTurnRelease pendingTurnRelease = null)
         {
             IsStarted = isStarted;
             IsEnded = isEnded;
@@ -33,6 +34,7 @@ namespace GuardsDigital.Core.Cards
             TurnIndex = turnIndex;
             ConsumedBeforeActionTriggers = Array.AsReadOnly(
                 (consumedBeforeActionTriggers ?? Enumerable.Empty<string>()).ToArray());
+            PendingTurnRelease = pendingTurnRelease;
         }
 
         public bool IsStarted { get; }
@@ -48,6 +50,14 @@ namespace GuardsDigital.Core.Cards
         /// which is every turn in this build before a hero unlocks one.
         /// </summary>
         public IReadOnlyList<string> ConsumedBeforeActionTriggers { get; }
+
+        /// <summary>
+        /// Milestone 8.35g. The finished turn this state was captured waiting to hand on, or
+        /// <c>null</c> when nothing was waiting. It is the fifth legitimate shape a started,
+        /// unended turn can be captured in, and the first in which nobody is selected and nothing
+        /// is pending because the turn is complete rather than interrupted.
+        /// </summary>
+        public PendingTurnRelease PendingTurnRelease { get; }
 
         public void Deconstruct(
             out bool isStarted,

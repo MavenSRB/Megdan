@@ -359,6 +359,27 @@ namespace GuardsDigital.Tests.PlayMode
                 "Shown controls: " + UiPlayer.Describe(hud));
             UiPlayer.Click(UiPlayer.Button(hud, endTurn.Label));
             yield return null;
+
+            // Milestone 8.35g, and this journey is where the milestone's timing decision is visible
+            // on screen. That press finished the card's resolution; the turn's own cancellation
+            // checkpoint no longer runs there, it runs at the RELEASE - which is exactly why an undo
+            // inside the pause cannot cross checkpoint state. So the pin is still lit here, and the
+            // second press is what puts it out.
+            Assert.That(runtime.IsActiveEffectSource(daggerCardId), Is.True,
+                "p.17's This turn outlives the resolution: the turn is not over until released.");
+            var release = runtime.RoundView.Model.EndTurnInvocation;
+            Assert.That(release, Is.Not.Null,
+                "and the control returns for the release. Shown controls: " + UiPlayer.Describe(hud));
+            UiPlayer.Click(UiPlayer.Button(hud, release.Label));
+            yield return null;
+
+            // The checkpoint belongs to the TURN rather than to one actor's resolution, so whatever
+            // the turn still holds is played out before the pin can be read as ended. The click
+            // above is the evidence that the control itself carries the release; the rest is filler
+            // and goes through the headless press.
+            UiPlayer.EndAnyTurnInProgress(runtime);
+            yield return null;
+
             Assert.That(runtime.IsActiveEffectSource(daggerCardId), Is.False,
                 "p.17's This turn ends with the turn, and the outline's source with it.");
         }
@@ -597,6 +618,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId),
                 "Red's Lift Up at 10 acts before Blue's Shock at 8.");
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its turn.");
+            // Milestone 8.35g. That press finished the resolution; the release is what
+            // hands the turn on, so it goes above the selection read below.
+            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
             var attack = runtime.RoundView.Model.Actions.Single(value =>
                 ActionKindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Attack);
@@ -667,7 +691,7 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Milestone 8.16c's live regression. Seed 10 reaches the real blocked-Spawn-point Lane-Push
+        /// Milestone 8.16c's live regression. A seeded walk reaches the real blocked-Spawn-point Lane-Push
         /// pause through projected commands. Setup is driven headlessly because none of those
         /// decisions is this case's subject; the pending answer itself uses the configured
         /// camera ray, HUD pointer exclusion, tile collider, board view, presenter, and exact command.
@@ -678,18 +702,24 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadEngagedScene();
             var root = Root();
             var runtime = root.Runtime;
-            var random = new SeededChoice(10);
+            var random = new SeededChoice(7);
             var commandCount = 0;
 
             while (runtime.SystemTransitionPrompt?.Kind !=
                 SystemTransitionPromptKind.LanePushRespawnPlace)
             {
-                // Milestone 8.29e raised the bound from 950. The walk is a random one over the
-                // commands the projection offers, so withdrawing an offer whose branch can do
-                // nothing reroutes the whole trajectory rather than shortening it: seed 10 still
-                // reaches this exact pause and now takes 995 commands to get there.
+                // Milestone 8.35g re-derived the seed offline over seeds 1-60 rather than by
+                // bisecting Unity runs, using a copy of EnumerateProjectedCommands and this
+                // fixture's own SeededChoice. The release draws from the same stream even when it
+                // is the only legal command, so seed 10 now walks a different match entirely and
+                // ends it in round 30 without ever reaching this pause - the offline probe reproduces
+                // that number exactly, which is what says it walks the same walk. Seed 7 reaches the
+                // real pause at command 324 in round 9, a mid-match arrival like the one this case
+                // has always been about. The probe must deal the VERIFIED mirror deck this scene
+                // deals: a first scan against the internal test deck disagreed with Unity by twenty
+                // rounds, because a different deck is a different walk.
                 Assert.That(commandCount, Is.LessThan(1100),
-                    $"Seed 10 did not reach the blocked Lane-Push respawn pause; stopped in " +
+                    $"Seed 7 did not reach the blocked Lane-Push respawn pause; stopped in " +
                     $"round {runtime.RoundIndex}, turn {runtime.TurnIndex}, phase {runtime.Phase}.");
                 var offered = runtime.EnumerateProjectedCommands();
                 Assert.That(offered, Is.Not.Empty,
@@ -872,6 +902,10 @@ namespace GuardsDigital.Tests.PlayMode
         private static void Commit(
             ConfiguredMatchSceneRuntime runtime, TeamSide side, CardDefinitionId definitionId)
         {
+            // Milestone 8.35g. Every actor now costs two presses of the same control, so the
+            // commitment phase this reads into is not open until the turn in progress is finished.
+            UiPlayer.EndAnyTurnInProgress(runtime);
+
             var heroId = runtime.Setup.Heroes.Single(hero => hero.TeamSide == side).HeroId;
             var card = runtime.Cards.Single(value =>
                 value.OwnerId.Equals(heroId) &&

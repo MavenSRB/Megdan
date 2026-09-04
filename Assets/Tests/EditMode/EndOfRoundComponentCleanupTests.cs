@@ -235,6 +235,13 @@ namespace GuardsDigital.Tests.EditMode
 
         private static void StartComponentSkillOnCurrentTurn(MatchSession session)
         {
+            // Milestone 8.35g. The hero before this one finished its own resolution, and the turn
+            // does not reach this actor - or offer its actions - until that player hands it on.
+            if (session.Projection.PendingTurnRelease != null)
+            {
+                Accept(session, DirectorCommand.ReleaseTurn());
+            }
+
             var offer = session.Projection.AvailableTurnActions.Single(value =>
                 value.ActionDefinitionId.Equals(new ActionDefinitionId("primary-component-skill")));
             Accept(session, DirectorCommand.StartAction(offer.ActionDefinitionId));
@@ -257,6 +264,14 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 Assert.That(session.Projection.IsTurnActive, Is.True);
+                // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                // turn on, so this loop presses the release exactly as that player does.
+                if (session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(session, DirectorCommand.ReleaseTurn());
+                    continue;
+                }
+
                 Accept(session, DirectorCommand.PerformHold(
                     session.Projection.SelectedActor.CardInstanceId));
             }

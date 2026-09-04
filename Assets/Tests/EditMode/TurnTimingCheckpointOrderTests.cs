@@ -241,6 +241,7 @@ namespace GuardsDigital.Tests.EditMode
             StartCurrentAction(session, ActionKind.Movement);
             var stopped = session.Projection.PendingMovementChoice;
             Execute(session, DirectorCommand.StopMovement(stopped.ResolutionId, stopped.ChoiceId));
+            ReleaseIfWaiting(session);
             HoldCurrentActor(session);
 
             Commit(session, red[2], blue[2]);
@@ -338,8 +339,22 @@ namespace GuardsDigital.Tests.EditMode
         private static void StartCurrentAction(MatchSession session, ActionKind actionKind) =>
             Execute(session, DirectorCommand.StartAction(GetCurrentAction(session, actionKind).ActionDefinitionId));
 
-        private static void HoldCurrentActor(MatchSession session) =>
+        private static void HoldCurrentActor(MatchSession session)
+        {
+            // Milestone 8.35g. A turn is handed on at its own player's word, so a helper that
+            // holds the current actor first makes sure there is one, and then hands its own on.
+            ReleaseIfWaiting(session);
             Execute(session, DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId));
+            ReleaseIfWaiting(session);
+        }
+
+        private static void ReleaseIfWaiting(MatchSession session)
+        {
+            if (session.Projection.PendingTurnRelease != null)
+            {
+                Execute(session, DirectorCommand.ReleaseTurn());
+            }
+        }
 
         /// <summary>
         /// One side's playable cards. Milestone 7.5 deals p.6's remaining thirteen per hero into the

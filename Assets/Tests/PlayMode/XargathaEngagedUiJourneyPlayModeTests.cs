@@ -664,6 +664,10 @@ namespace GuardsDigital.Tests.PlayMode
         internal static void CommitSoTheNamedSeatActs(
             ConfiguredMatchSceneRuntime runtime, HeroId actingHeroId, CardDefinitionId definitionId)
         {
+            // Milestone 8.35g. The commitment phase this drives does not open while a finished turn
+            // is still held for its own player, so the release goes above every read below.
+            UiPlayer.EndAnyTurnInProgress(runtime);
+
             foreach (var seat in runtime.Setup.Heroes.Select(hero => hero.HeroId).ToArray())
             {
                 if (seat.Equals(actingHeroId))
@@ -688,6 +692,11 @@ namespace GuardsDigital.Tests.PlayMode
         internal static void Commit(
             ConfiguredMatchSceneRuntime runtime, HeroId heroId, CardDefinitionId definitionId)
         {
+            // Milestone 8.35g. A finished turn is held for its own player, so the commitment phase
+            // this reads into does not open until that player hands it on. The release goes above
+            // the read, exactly where the player presses it.
+            UiPlayer.EndAnyTurnInProgress(runtime);
+
             var card = runtime.Cards.Single(value =>
                 value.OwnerId.Equals(heroId) &&
                 value.State.Location == CardLocation.Hand &&
@@ -710,10 +719,15 @@ namespace GuardsDigital.Tests.PlayMode
         internal static IEnumerator YieldUntilTheNamedSeatActs(
             ConfiguredMatchSceneRuntime runtime, HeroId heroId)
         {
-            for (var budget = 0; budget < 4; budget++)
+            // Milestone 8.35g. A standing release is not "nobody is acting" - it is the previous
+            // player still holding their finished turn with the selection already emptied - so it
+            // is pressed like any other turn ending rather than mistaken for the exit. The budget
+            // doubles because every turn now costs two presses of the same control.
+            for (var budget = 0; budget < 8; budget++)
             {
-                if (!runtime.SelectedActor.IsDefined ||
-                    runtime.SelectedActor.ActorId.Equals(heroId))
+                if (runtime.PendingTurnRelease == null &&
+                    (!runtime.SelectedActor.IsDefined ||
+                        runtime.SelectedActor.ActorId.Equals(heroId)))
                 {
                     yield break;
                 }
@@ -765,7 +779,14 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>Ends whoever is acting until nobody is, so the round can reach its own boundary.</summary>
         internal static IEnumerator YieldUntilNobodyIsActing(ConfiguredMatchSceneRuntime runtime)
         {
-            for (var budget = 0; runtime.SelectedActor.IsDefined && budget < 6; budget++)
+            // Milestone 8.35g. "Nobody is acting" is no longer "no actor is selected". A turn whose
+            // resolution has finished holds the round with an EMPTY selection until its own player
+            // releases it, so stopping at the empty selection would leave the round standing in a
+            // pause and report it as finished - which is exactly what the round-boundary assertion
+            // below would then read as a phase that never turned over.
+            for (var budget = 0;
+                (runtime.SelectedActor.IsDefined || runtime.PendingTurnRelease != null) && budget < 12;
+                budget++)
             {
                 Assert.That(runtime.SubmitEndTurn(), Is.True,
                     "Every remaining turn of this round is setup and must be endable. " +
@@ -777,6 +798,26 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>Drains whatever end-of-round pauses stand until the next turn can be committed.</summary>
         internal static IEnumerator AdvanceToNextTurn(ConfiguredMatchSceneRuntime runtime)
         {
+            // Milestone 8.35g. Every turn now costs TWO presses of the same control - the Hold or
+            // stop that finishes the resolution, then the release that hands the turn on - so a
+            // journey step that pressed once per turn arrives here with the round still resolving
+            // and the commitment phase it wants never opening. This drives the rest of the round
+            // the way a player does, pressing whatever END TURN currently means, and stops the
+            // moment that control is no longer offered, so a decision this filler cannot answer is
+            // left standing for the journey rather than swallowed by it.
+            for (var budget = 0; budget < 12; budget++)
+            {
+                if (runtime.Phase != RoundResolutionPhase.ResolvingTurn ||
+                    runtime.RoundView.Model.EndTurnInvocation == null)
+                {
+                    break;
+                }
+
+                Assert.That(runtime.SubmitEndTurn(), Is.True,
+                    "A turn ending this filler was offered must be takeable.");
+                yield return null;
+            }
+
             for (var budget = 0; runtime.Phase == RoundResolutionPhase.EndOfRound; budget++)
             {
                 Assert.That(budget, Is.LessThan(40),

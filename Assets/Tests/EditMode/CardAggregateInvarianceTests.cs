@@ -594,15 +594,15 @@ namespace GuardsDigital.Tests.EditMode
         // them, and the same three equality groups remain exact.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "647d27bf07496de41e7d2992b7806883b632814e9bfb95441ddabe7a115f4164", "0ed0d52546c22fd90d05db201c4e87beca321310c5279866a208755070d8a1cd"),
-            new ScenarioDigest("rejected", "647d27bf07496de41e7d2992b7806883b632814e9bfb95441ddabe7a115f4164", "0ed0d52546c22fd90d05db201c4e87beca321310c5279866a208755070d8a1cd"),
-            new ScenarioDigest("stale", "647d27bf07496de41e7d2992b7806883b632814e9bfb95441ddabe7a115f4164", "0ed0d52546c22fd90d05db201c4e87beca321310c5279866a208755070d8a1cd"),
-            new ScenarioDigest("restored", "647d27bf07496de41e7d2992b7806883b632814e9bfb95441ddabe7a115f4164", "0ed0d52546c22fd90d05db201c4e87beca321310c5279866a208755070d8a1cd"),
-            new ScenarioDigest("replayed", "647d27bf07496de41e7d2992b7806883b632814e9bfb95441ddabe7a115f4164", "0ed0d52546c22fd90d05db201c4e87beca321310c5279866a208755070d8a1cd"),
-            new ScenarioDigest("undo-truncated", "3b46388c996331160d604244dbe45aeb56b6df5368e13aa61eca8a827e7b846b", "47e17d5690da7c3cd133b4150764ecc317ad09b28a205a35dddaf690c8590249"),
-            new ScenarioDigest("defense-discarded", "3197afdfcd1883e1752fe30268eddf14e156c62d30254f3d2b14123f16a50bfb", "0b7dbe2882b576a8e74bfb71555238968ac17750da97019fe4d64d472677f9c7"),
-            new ScenarioDigest("defense-discarded-restored", "3197afdfcd1883e1752fe30268eddf14e156c62d30254f3d2b14123f16a50bfb", "0b7dbe2882b576a8e74bfb71555238968ac17750da97019fe4d64d472677f9c7"),
-            new ScenarioDigest("defense-discarded-replayed", "3197afdfcd1883e1752fe30268eddf14e156c62d30254f3d2b14123f16a50bfb", "0b7dbe2882b576a8e74bfb71555238968ac17750da97019fe4d64d472677f9c7")
+            new ScenarioDigest("accepted", "9d2c12b2ceeef6aa0cb17df3317acd42b7947b7642ed6eb563c16d973b26a8d1", "ab76df913b538eef7c2af031b211d0abaeff206b63664b636a29dca4b9fc116a"),
+            new ScenarioDigest("rejected", "9d2c12b2ceeef6aa0cb17df3317acd42b7947b7642ed6eb563c16d973b26a8d1", "ab76df913b538eef7c2af031b211d0abaeff206b63664b636a29dca4b9fc116a"),
+            new ScenarioDigest("stale", "9d2c12b2ceeef6aa0cb17df3317acd42b7947b7642ed6eb563c16d973b26a8d1", "ab76df913b538eef7c2af031b211d0abaeff206b63664b636a29dca4b9fc116a"),
+            new ScenarioDigest("restored", "9d2c12b2ceeef6aa0cb17df3317acd42b7947b7642ed6eb563c16d973b26a8d1", "ab76df913b538eef7c2af031b211d0abaeff206b63664b636a29dca4b9fc116a"),
+            new ScenarioDigest("replayed", "9d2c12b2ceeef6aa0cb17df3317acd42b7947b7642ed6eb563c16d973b26a8d1", "ab76df913b538eef7c2af031b211d0abaeff206b63664b636a29dca4b9fc116a"),
+            new ScenarioDigest("undo-truncated", "4274af664b68975c35c3c14e3e2c53f00f923c38b4bb96140331343646984e13", "6837145e615340aca733d0e22e95cd2f0cb05ef3e0270aa41ced69cc85f7c242"),
+            new ScenarioDigest("defense-discarded", "7363835f63304fc0dc5f7d1b216488e940171ef12da2ce58716c1d803a280cca", "8571edd5d0ddc14ed856ca6c79e1406bca02a45f14eb9713e23a5fed443147fb"),
+            new ScenarioDigest("defense-discarded-restored", "7363835f63304fc0dc5f7d1b216488e940171ef12da2ce58716c1d803a280cca", "8571edd5d0ddc14ed856ca6c79e1406bca02a45f14eb9713e23a5fed443147fb"),
+            new ScenarioDigest("defense-discarded-replayed", "7363835f63304fc0dc5f7d1b216488e940171ef12da2ce58716c1d803a280cca", "8571edd5d0ddc14ed856ca6c79e1406bca02a45f14eb9713e23a5fed443147fb")
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

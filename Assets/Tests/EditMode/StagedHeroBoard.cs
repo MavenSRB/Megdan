@@ -772,6 +772,14 @@ namespace GuardsDigital.Tests.EditMode
 
             for (var budget = 0; budget < 4; budget++)
             {
+                // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                // turn on, and acknowledging it is what clears the selection read just below.
+                if (Session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(DirectorCommand.ReleaseTurn());
+                    continue;
+                }
+
                 var selected = Session.Projection.SelectedActor;
                 Assert.That(selected.IsDefined, Is.True,
                     "Nobody is acting, so the enemy's Attack cannot be reached.");
@@ -847,10 +855,22 @@ namespace GuardsDigital.Tests.EditMode
                         "p.19's Next Turn window was never reached.");
                 }
 
+                // Milestone 8.35g. The release, before the selection this reads is asked for.
+                if (Session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(DirectorCommand.ReleaseTurn());
+                    continue;
+                }
+
                 var actor = Session.Projection.SelectedActor;
                 Assert.That(actor.CardInstanceId.IsDefined, Is.True,
                     "A turn with no selected actor cannot be held on.");
                 Accept(DirectorCommand.PerformHold(actor.CardInstanceId));
+
+                if (Session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(DirectorCommand.ReleaseTurn());
+                }
 
                 var next = Session.Projection.SelectedActor;
                 if (Session.Projection.Phase == RoundResolutionPhase.ResolvingTurn &&
@@ -881,8 +901,13 @@ namespace GuardsDigital.Tests.EditMode
         /// the board changes is the stronger claim, and it is also the only one available when the
         /// Defeat leaves p.8 in a state this driver has no command for.
         /// </param>
+        /// <param name="budget">
+        /// How many drive steps the crossing may spend. Raised from 24 at milestone 8.35g: a finished
+        /// resolution now waits for its own player, so every turn this drives costs one command more
+        /// than it did, and the old bound stopped mid-round rather than at a stall.
+        /// </param>
         internal void CrossTheRoundBoundaryAnsweringPauses(
-            int budget = 24, Func<bool> stopWhen = null)
+            int budget = 40, Func<bool> stopWhen = null)
         {
             var startedIn = Session.Projection.RoundIndex;
             for (var step = 0; step < budget && Session.Projection.RoundIndex == startedIn; step++)
@@ -900,6 +925,13 @@ namespace GuardsDigital.Tests.EditMode
 
                 if (Session.Projection.Phase == RoundResolutionPhase.ResolvingTurn)
                 {
+                    // Milestone 8.35g. The release, before the selection this reads is asked for.
+                    if (Session.Projection.PendingTurnRelease != null)
+                    {
+                        Accept(DirectorCommand.ReleaseTurn());
+                        continue;
+                    }
+
                     var actor = Session.Projection.SelectedActor;
                     Assert.That(actor.CardInstanceId.IsDefined, Is.True,
                         "A turn with no selected actor cannot be held on.");
@@ -1039,6 +1071,13 @@ namespace GuardsDigital.Tests.EditMode
                 if (movement != null && movement.CanStop)
                 {
                     Accept(DirectorCommand.StopMovement(movement.ResolutionId, movement.ChoiceId));
+                    continue;
+                }
+
+                // Milestone 8.35g. The release, before the selection this reads is asked for.
+                if (projection.PendingTurnRelease != null)
+                {
+                    Accept(DirectorCommand.ReleaseTurn());
                     continue;
                 }
 

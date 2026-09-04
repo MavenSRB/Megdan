@@ -387,6 +387,14 @@ namespace GuardsDigital.Tests.EditMode
             var round = session.Projection.RoundIndex;
             while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn)
             {
+                // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                // turn on, so this loop presses the release exactly as that player does.
+                if (session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(session, DirectorCommand.ReleaseTurn());
+                    continue;
+                }
+
                 Accept(session, DirectorCommand.PerformHold(
                     session.Projection.SelectedActor.CardInstanceId));
             }
@@ -409,6 +417,14 @@ namespace GuardsDigital.Tests.EditMode
                         CommitAnyEligibleCards(session);
                         break;
                     case RoundResolutionPhase.ResolvingTurn:
+                        // Milestone 8.35g. A finished resolution waits for its own player to hand the
+                        // turn on, so this loop presses the release exactly as that player does.
+                        if (session.Projection.PendingTurnRelease != null)
+                        {
+                            Accept(session, DirectorCommand.ReleaseTurn());
+                            continue;
+                        }
+
                         Accept(session, DirectorCommand.PerformHold(
                             session.Projection.SelectedActor.CardInstanceId));
                         break;
@@ -466,6 +482,15 @@ namespace GuardsDigital.Tests.EditMode
 
         private static void StartComponentSkillOnCurrentTurn(MatchSession session)
         {
+            // Milestone 8.35g. A placement finishes the acting hero's resolution, and the turn then
+            // waits for that hero's own player before the next actor - who holds the other component
+            // card - is selected. The release goes above the offer read below, which is the read that
+            // would otherwise see an actor that has not been chosen yet.
+            if (session.Projection.PendingTurnRelease != null)
+            {
+                Accept(session, DirectorCommand.ReleaseTurn());
+            }
+
             var offer = FindComponentSkillOffer(session);
             Assert.That(offer, Is.Not.Null, "The component Skill must be the current actor's offer.");
             Accept(session, DirectorCommand.StartAction(offer.Value.ActionDefinitionId));

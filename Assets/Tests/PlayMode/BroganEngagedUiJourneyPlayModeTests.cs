@@ -857,6 +857,10 @@ namespace GuardsDigital.Tests.PlayMode
         internal static void CommitSoTheNamedSeatActs(
             ConfiguredMatchSceneRuntime runtime, HeroId actingHeroId, CardDefinitionId definitionId)
         {
+            // Milestone 8.35g. The commitment phase this drives does not open while a finished turn
+            // is still held for its own player, so the release goes above every read below.
+            UiPlayer.EndAnyTurnInProgress(runtime);
+
             foreach (var seat in runtime.Setup.Heroes.Select(hero => hero.HeroId).ToArray())
             {
                 if (seat.Equals(actingHeroId))
@@ -881,6 +885,11 @@ namespace GuardsDigital.Tests.PlayMode
         internal static void Commit(
             ConfiguredMatchSceneRuntime runtime, HeroId heroId, CardDefinitionId definitionId)
         {
+            // Milestone 8.35g. A finished turn is held for its own player, so the commitment phase
+            // this reads into does not open until that player hands it on. The release goes above
+            // the read, exactly where the player presses it.
+            UiPlayer.EndAnyTurnInProgress(runtime);
+
             var card = runtime.Cards.Single(value =>
                 value.OwnerId.Equals(heroId) &&
                 value.State.Location == CardLocation.Hand &&
@@ -956,6 +965,26 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>Drains whatever end-of-round pauses stand until the next turn can be committed.</summary>
         internal static IEnumerator AdvanceToNextTurn(ConfiguredMatchSceneRuntime runtime)
         {
+            // Milestone 8.35g. Every turn now costs TWO presses of the same control - the Hold or
+            // stop that finishes the resolution, then the release that hands the turn on - so a
+            // journey step that pressed once per turn arrives here with the round still resolving
+            // and the commitment phase it wants never opening. This drives the rest of the round
+            // the way a player does, pressing whatever END TURN currently means, and stops the
+            // moment that control is no longer offered, so a decision this filler cannot answer is
+            // left standing for the journey rather than swallowed by it.
+            for (var budget = 0; budget < 12; budget++)
+            {
+                if (runtime.Phase != RoundResolutionPhase.ResolvingTurn ||
+                    runtime.RoundView.Model.EndTurnInvocation == null)
+                {
+                    break;
+                }
+
+                Assert.That(runtime.SubmitEndTurn(), Is.True,
+                    "A turn ending this filler was offered must be takeable.");
+                yield return null;
+            }
+
             for (var budget = 0; runtime.Phase == RoundResolutionPhase.EndOfRound; budget++)
             {
                 Assert.That(budget, Is.LessThan(40),

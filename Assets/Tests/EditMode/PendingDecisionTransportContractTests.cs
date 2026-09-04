@@ -64,8 +64,9 @@ namespace GuardsDigital.Tests.EditMode
         public void TheOwnershipRuleReadsEveryDeclaredFamilysOwnProjectionMember()
         {
             var declared = DeclaredFamilies();
-            Assert.That(declared.Count, Is.EqualTo(10),
-                "The ten families are the declared set this milestone authorizes against.");
+            Assert.That(declared.Count, Is.EqualTo(11),
+                "The eleven families are the declared set this milestone authorizes against; " +
+                "milestone 8.35g's turn release is the eleventh.");
             Assert.That(declared.Distinct(StringComparer.Ordinal).Count(), Is.EqualTo(declared.Count));
 
             var rule = new[] { typeof(SeatProjectionFactory) };
@@ -86,10 +87,13 @@ namespace GuardsDigital.Tests.EditMode
         private static IEnumerable<string> WalkTheOfficialMatch()
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
-            // Milestone 8.35d re-derived the seed: with the round's own advance no longer drawn
-            // by this walk, seed 2 reaches the Attack target and the Minion Battle far outside
-            // this budget and seed 3 reaches every walked family inside 268 steps.
-            var random = new MatchLoopRandom(3);
+            // Milestone 8.35g re-derived it again. The release is drawn from a one-command set
+            // and `Next(1)` still advances the stream, so every seeded trajectory is a different
+            // match rather than the old one with a command per turn inserted: seed 3 stopped
+            // reaching the Attack target, the correction and the Minion Battle at all. An
+            // offline scan of ten seeds put every walked family on seed 1, the last of them at
+            // step 1,167.
+            var random = new MatchLoopRandom(1);
             var observed = new List<string>();
             var target = new[]
             {
@@ -97,7 +101,7 @@ namespace GuardsDigital.Tests.EditMode
                 "correction", "minion-battle", "system-transition"
             };
 
-            for (var step = 0; step < 1600; step++)
+            for (var step = 0; step < 1900; step++)
             {
                 var projection = host.Projection;
                 if (projection.DecisionContract != null)
@@ -127,7 +131,7 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(observed, Is.SupersetOf(target),
-                "Seed 3 of the official six-player board reaches these seven families; a change " +
+                "Seed 1 of the official six-player board reaches these seven families; a change " +
                 "that reroutes it must be understood before this list is edited.");
             return observed;
         }
@@ -315,6 +319,15 @@ namespace GuardsDigital.Tests.EditMode
             if (family.Equals(PendingDecisionFamilies.RemovalPrevention))
             {
                 return (projection.PendingRemovalPrevention.DecidingHeroId, TeamSide.None);
+            }
+
+            if (family.Equals(PendingDecisionFamilies.TurnRelease))
+            {
+                // Milestone 8.35g. The turn belongs to the hero who just finished resolving it,
+                // and so does handing it on. Read from the paused record itself, which is where
+                // the production rule reads it, so the two agree by derivation rather than by
+                // being written down twice.
+                return (projection.PendingTurnRelease.ActorId, TeamSide.None);
             }
 
             Assert.Fail("This fixture has no independent chooser for family " + family.Value + ".");

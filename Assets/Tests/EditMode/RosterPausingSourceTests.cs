@@ -523,7 +523,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaVersionMovesForThreeDecisionsV26CannotHold()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(34),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(35),
                 "Milestone 8.19c1 adds a trigger frame standing inside the effect it interrupted, a " +
                 "Defeat waiting at its removal stage with the coin operations that paid it, and a " +
                 "round-scoped record that p.8's pre-battle moment has already run. None of the three " +
@@ -546,7 +546,11 @@ namespace GuardsDigital.Tests.EditMode
                 "Xargatha's faces reach five contracts no v33 payload pins, and two of those five are " +
                 "this family's own, because Constrict and Final Embrace are the first verified content " +
                 "to stop the game at the pre-Minion-Battle moment 8.19c1 built with nothing visiting " +
-                "it. This " +
+                "it - and once more at milestone 8.35g, which is not a decision at all but the " +
+                "first pause that exists because a turn is COMPLETE rather than interrupted: the " +
+                "finished turn waiting for its own player's release, unre-derivable because " +
+                "acknowledging the resolved card is what clears the selection that would say " +
+                "whose it was. This " +
                 "case pins the current version rather than its own, so a later move has to be " +
                 "accounted for here rather than passing unread.");
         }
@@ -685,6 +689,14 @@ namespace GuardsDigital.Tests.EditMode
                     session.Execute(DirectorCommand.AnswerEffectChoice(close)).Accepted;
             }
 
+            // Milestone 8.35g. ABOVE the selection read below: a finished resolution empties the
+            // selection and waits for its own player, so without this the step would read that
+            // emptiness as a stall and give up on a turn that is merely waiting to be handed on.
+            if (session.Projection.PendingTurnRelease != null)
+            {
+                return session.Execute(DirectorCommand.ReleaseTurn()).Accepted;
+            }
+
             var actor = session.Projection.SelectedActor;
             if (!actor.IsDefined)
             {
@@ -739,6 +751,16 @@ namespace GuardsDigital.Tests.EditMode
                         "closable, or the fixture is stuck rather than the rule wrong.");
                     Assert.That(
                         session.Execute(DirectorCommand.AnswerEffectChoice(close)).Accepted, Is.True);
+                    continue;
+                }
+
+                // Milestone 8.35g. ABOVE the active-turn assertion below, not merely above the Hold:
+                // a turn held for its own player's release reads as inactive, so a guard placed one
+                // line lower would still fail on the assertion it was meant to protect.
+                if (session.Projection.PendingTurnRelease != null)
+                {
+                    Assert.That(
+                        session.Execute(DirectorCommand.ReleaseTurn()).Accepted, Is.True);
                     continue;
                 }
 

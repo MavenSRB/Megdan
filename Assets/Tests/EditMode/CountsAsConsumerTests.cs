@@ -231,6 +231,14 @@ namespace GuardsDigital.Tests.EditMode
 
         private static void StartRedAttack(MatchSession session)
         {
+            // Milestone 8.35g. The Blue hero's finished resolution waits for its own player to hand
+            // the turn on, and the offers read below belong to the hero it hands on TO - so the
+            // release comes first, exactly where the acting player presses it.
+            if (session.Projection.PendingTurnRelease != null)
+            {
+                Accept(session, DirectorCommand.ReleaseTurn());
+            }
+
             var attack = session.Projection.AvailableTurnActions.Single(offer =>
                 ActionKindOf(session.Projection, offer) == ActionKind.Attack);
             Accept(session, DirectorCommand.StartAction(attack.ActionDefinitionId));

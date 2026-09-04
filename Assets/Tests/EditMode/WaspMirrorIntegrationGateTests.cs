@@ -48,40 +48,53 @@ namespace GuardsDigital.Tests.EditMode
         // -----------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Ends by p.13's last Life counter after 19 rounds and 455 commands, on the engaged mirror
-        /// carrying one Life counter a side.
+        /// Ends by p.13's last Life counter on the engaged mirror carrying one Life counter a
+        /// side. Milestone 8.35g re-derived it from 40 to 18 - the release advances the RNG stream
+        /// even as the only legal command, so every seeded walk is a different match - and 18
+        /// rounds with 548 commands is the closest shape to the 19 and 455 it replaces. Seeds that
+        /// end in one round were rejected deliberately: a gate that ends before anything happens
+        /// proves nothing.
         /// </summary>
-        private const int LifeCounterMatchSeed = 40;
+        private const int LifeCounterMatchSeed = 18;
 
         /// <summary>
-        /// Ends by p.8's last Wave counter after 20 rounds and 511 commands, on the engaged mirror
-        /// carrying two Life counters a side - enough that the Wave runs out before the heroes do.
+        /// Ends by p.8's last Wave counter on the engaged mirror carrying two Life counters a side
+        /// - enough that the Wave runs out before the heroes do. Milestone 8.35g re-derived it from
+        /// 16 to 1, now 38 rounds and 1,244 commands.
         /// </summary>
-        private const int FinalWaveMatchSeed = 16;
+        private const int FinalWaveMatchSeed = 1;
 
         /// <summary>
-        /// Ends by p.8's Throne capture after 2 rounds and 50 commands, on the uncontested-push mirror.
+        /// Ends by p.8's Throne capture on the uncontested-push mirror, after 35 rounds and 1,102
+        /// commands since milestone 8.35g re-derived it from seed 1 to seed 16. The construction is
+        /// unchanged and is still what makes the ending certain rather than lucky; only the number
+        /// of turns it takes to get there moved.
         /// This one is short by construction rather than by luck: Blue holds one minion, so every
         /// round's Minion Battle awards Red the push and the official Lane puts the Blue Throne two
         /// Zones away. It is the end-of-round arm of that ending; the mid-turn arm is
         /// <see cref="MidTurnPushMatchSeed"/>, asserted structurally below.
         /// </summary>
-        private const int ThroneCaptureMatchSeed = 1;
+        private const int ThroneCaptureMatchSeed = 16;
 
         /// <summary>
-        /// Ends by p.8's Throne capture after 30 rounds and 693 commands, reached by a Lane Push in the
-        /// middle of a turn rather than at an end-of-round stage.
+        /// Ends by p.8's Throne capture after 33 rounds and 1,065 commands, reached by a Lane Push
+        /// in the middle of a turn rather than at an end-of-round stage.
         ///
-        /// Exactly two seeds in 1-60 end that way, 44 and 59, and both were seeds this gate could not
-        /// play to their end at all before the milestone's fix; the cheaper of the two is taken.
+        /// Milestone 8.35g re-derived it from 59 to 167, and the search was worth widening rather
+        /// than shortening: seeds 1-120 on this fixture reach exactly two Throne captures and BOTH
+        /// name `ResolveRequestedLanePush`, which is the end-of-round arm this case exists not to
+        /// be a second copy of. Seed 167 is the first that ends with the `GameEnded` event naming
+        /// no stage at all, which is what makes the push a mid-turn one. Reaching it by playing
+        /// rather than by staging a position is the whole evidence here, so the slower scan was
+        /// the honest answer.
         /// </summary>
-        private const int MidTurnPushMatchSeed = 59;
+        private const int MidTurnPushMatchSeed = 167;
 
         /// <summary>
         /// Generous enough that every complete match above finishes well inside it, and small enough
         /// that a run which reaches no ending is reported as a failure rather than hanging.
         /// </summary>
-        private const int CompleteMatchBudget = 1200;
+        private const int CompleteMatchBudget = 2400;
 
         /// <summary>Life counters for the two engaged scenarios, named so the cases read.</summary>
         private const int OneLifeCounter = 1;

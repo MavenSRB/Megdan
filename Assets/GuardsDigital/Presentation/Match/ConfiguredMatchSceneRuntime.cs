@@ -739,6 +739,15 @@ namespace GuardsDigital.Presentation.Match
         public PendingMinionBattleChoice PendingMinionBattleChoice =>
             client.Projection.PendingMinionBattleChoice;
 
+        /// <summary>
+        /// Milestone 8.35g. The finished turn waiting for its own player, when one stands. Read by
+        /// the journeys' headless filler steps, which have to hand a turn on before they can read a
+        /// selection or a commitment phase - the acknowledgement that raised the pause is what
+        /// empties the selection they used to steer by.
+        /// </summary>
+        public GuardsDigital.Core.Cards.PendingTurnRelease PendingTurnRelease =>
+            client.Projection.PendingTurnRelease;
+
         public bool SubmitMinionChoiceCandidate(MinionId minionId)
         {
             var candidate = MinionChoiceView.Model?.Candidates.SingleOrDefault(value =>

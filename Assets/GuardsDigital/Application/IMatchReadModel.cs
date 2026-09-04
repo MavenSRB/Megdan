@@ -120,6 +120,18 @@ namespace GuardsDigital.Application
             PendingSystemTransitionStep { get; }
         RemovalPreventionPrompt PendingRemovalPrevention { get; }
 
+        /// <summary>
+        /// Milestone 8.35g. The finished turn waiting for its own player to hand it on, when one
+        /// stands - the eleventh pending family, and the only one every ordinary turn reaches.
+        /// </summary>
+        /// <remarks>
+        /// It is on the read model because the top status bar must be able to report every declared
+        /// family: without it a turn waiting on its own player reached the table as the generic
+        /// "waiting for the match to continue" fallback, which is the same defect milestone 8.30c
+        /// removed for an ended match and 8.20d for the effect choice.
+        /// </remarks>
+        GuardsDigital.Core.Cards.PendingTurnRelease PendingTurnRelease { get; }
+
         GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
             PendingSystemTransitionDescription { get; }
 

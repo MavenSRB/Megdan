@@ -290,6 +290,8 @@ namespace GuardsDigital.Application
                     return AnswerDefense(command, true);
                 case DirectorCommandKind.AdvanceEndOfRound:
                     return DispatchResult.From(round.TryAdvanceEndOfRound());
+                case DirectorCommandKind.ReleaseTurn:
+                    return DispatchResult.From(round.TryReleaseTurn());
                 case DirectorCommandKind.PerformFastTravel:
                     return PerformFastTravel(command.ActionDefinitionId, command.Coordinate);
                 case DirectorCommandKind.PerformClear:
@@ -945,7 +947,10 @@ namespace GuardsDigital.Application
                 // p.8's cleanup and p.13's Defeat return markers to, so a reading of it can never
                 // outlive the attachment it describes.
                 round?.Markers.Attachments,
-                attackTargetDefensePreviews);
+                attackTargetDefensePreviews,
+                // Milestone 8.35g. The finished turn waiting for its own player's release, read
+                // from the turn authority that holds it beside every other pause it publishes.
+                turn?.PendingTurnRelease);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

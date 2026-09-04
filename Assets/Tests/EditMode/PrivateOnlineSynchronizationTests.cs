@@ -25,6 +25,16 @@ namespace GuardsDigital.Tests.EditMode
         /// official six-seat match, after every accepted submission every seated client's
         /// delivered projection equals the host's own current encoding for that seat.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35g re-derived this walk offline over seeds 1-16 at two budgets rather than
+        /// by bisecting Unity runs. The release draws from the same random stream even when it is
+        /// the only legal command, so every trajectory is a different match: at the old 700 steps
+        /// seed 3 now reaches four of the seven families. Seed 1 at 1,200 is the ONLY pair in that
+        /// scan reaching all seven - correction at 1,049, the Attack target at 1,122 and the Minion
+        /// Battle at 1,166 - so the floor below is still met by play rather than by lowering it.
+        /// </summary>
+        private const int WireSweepBudget = 1200;
+
         [Test]
         public void SixClients_ConvergeByteForByte_AcrossTheSeededWireWalk()
         {
@@ -34,7 +44,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var families = new HashSet<string>();
             var maxPayloadBytes = 0;
-            var submitted = harness.DriveThroughWire(700, afterAcceptedStep: () =>
+            var submitted = harness.DriveThroughWire(WireSweepBudget, afterAcceptedStep: () =>
             {
                 harness.AssertConverged();
                 var contract = harness.MatchHost.Projection.DecisionContract;
@@ -48,9 +58,9 @@ namespace GuardsDigital.Tests.EditMode
                     maxPayloadBytes = Math.Max(
                         maxPayloadBytes, harness.LastProjectionPayload(ordinal).Length);
                 }
-            }, seed: 3);
+            }, seed: 1);
 
-            Assert.That(submitted, Is.EqualTo(700),
+            Assert.That(submitted, Is.EqualTo(WireSweepBudget),
                 "The seeded walk ended early; the sweep saw less of the match than it must.");
 
             // The anti-vacuity floor: what this exact wire-driven walk deterministically reaches
@@ -455,6 +465,14 @@ namespace GuardsDigital.Tests.EditMode
                     nameof(NetworkProjectionDetailRecord.PendingSystemTransitionDescription) },
                 { "PendingRemovalPrevention",
                     nameof(NetworkProjectionDetailRecord.PendingRemovalPrevention) },
+                // Milestone 8.35g. CARRIED rather than excused, and the choice was this rule's to
+                // make. Deriving it from DecisionOwner would have served the two facts a surface
+                // reads today - that a release stands, and whose - but the exclusion floor below is
+                // a deliberate ratchet, and an excused member is a fact a client cannot see. This
+                // one is read by the status derivation every seat's top bar is drawn from, so it
+                // crosses in full and the protocol moves to 4 for it.
+                { "PendingTurnRelease",
+                    nameof(NetworkProjectionDetailRecord.PendingTurnRelease) },
                 { "AvailableTurnActions", nameof(NetworkProjectionDetailRecord.AvailableTurnActions) },
                 { "AvailableFastTravelOptions",
                     nameof(NetworkProjectionDetailRecord.AvailableFastTravelOptions) },
@@ -580,9 +598,15 @@ namespace GuardsDigital.Tests.EditMode
         {
             var harness = PrivateOnlineWireHarness.Compose();
             harness.SeatAll();
+            // Milestone 8.35g names the seed rather than leaving it to the default. This case needs
+            // a SAME-TEAM tie - the one that does not spend the Tie Breaker - and the default seed 2
+            // now walks into a cross-team tie instead, which is a different rule and would make the
+            // assertion below false for an honest reason. Scanned offline over seeds 1-24: seed 1
+            // reaches a same-team tie with two distinct public candidates at step 32. The seed is
+            // written down here because what it selects is load-bearing rather than incidental.
             harness.DriveThroughWire(400, projection =>
                 projection.PendingInitiativeChoice != null &&
-                projection.DecisionContract != null);
+                projection.DecisionContract != null, seed: 1);
             var choice = harness.MatchHost.Projection.PendingInitiativeChoice;
             Assert.That(choice, Is.Not.Null,
                 "The deterministic walk must reach a tied-Initiative decision.");
@@ -743,9 +767,12 @@ namespace GuardsDigital.Tests.EditMode
         {
             var harness = PrivateOnlineWireHarness.Compose();
             harness.SeatAll();
+            // Milestone 8.35g re-derived the seed offline over seeds 1-16: seed 3 reaches no
+            // confirmable Minion Battle inside 2,400 steps once the release moves the trajectory.
+            // Seed 6 reaches one at step 401 - the earliest of the nine that reach one at all.
             harness.DriveThroughWire(1200, projection =>
                 projection.PendingMinionBattleChoice != null &&
-                projection.PendingMinionBattleChoice.CanConfirm, seed: 3);
+                projection.PendingMinionBattleChoice.CanConfirm, seed: 6);
             var choice = harness.MatchHost.Projection.PendingMinionBattleChoice;
             Assert.That(choice, Is.Not.Null,
                 "The deterministic walk must reach a confirmable Minion Battle selection.");

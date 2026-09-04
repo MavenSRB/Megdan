@@ -819,7 +819,22 @@ namespace GuardsDigital.Tests.EditMode
 
         private static void HoldCurrentActor(MatchSession session, ISet<DirectorCommandKind> kinds)
         {
+            // Milestone 8.35g. The hero before this one may already have finished, and the turn
+            // does not reach this actor until that player hands it on.
+            if (session.Projection.PendingTurnRelease != null)
+            {
+                Accept(session, DirectorCommand.ReleaseTurn(), kinds);
+            }
+
             Accept(session, DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId), kinds);
+
+            // Milestone 8.35g. The Hold finished this hero's resolution; the turn reaches the
+            // next actor only once that player hands it on, which is what these callers expect
+            // of a helper named for holding the turn.
+            if (session.Projection.PendingTurnRelease != null)
+            {
+                Accept(session, DirectorCommand.ReleaseTurn(), kinds);
+            }
         }
 
         private static MatchCommandResult Accept(
@@ -884,6 +899,18 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(session.Execute(commands[commands.Count - 1]).Accepted, Is.True);
                 while (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn)
                 {
+                    // Milestone 8.35g. The release is a RECORDED command, so it belongs in the
+                    // sequence this builds and not only in the live drive - a replay of a round
+                    // missing it would stop at the first pause. It sits above the selection read
+                    // below, which the acknowledgement behind the pause has already emptied.
+                    if (session.Projection.PendingTurnRelease != null)
+                    {
+                        var release = DirectorCommand.ReleaseTurn();
+                        commands.Add(release);
+                        Assert.That(session.Execute(release).Accepted, Is.True);
+                        continue;
+                    }
+
                     var hold = DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId);
                     commands.Add(hold);
                     Assert.That(session.Execute(hold).Accepted, Is.True);

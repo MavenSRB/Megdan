@@ -95,12 +95,16 @@ namespace GuardsDigital.Tests.EditMode
             var errors = DecisionFamilyInventory.AuditProductionInventory();
             Assert.That(errors, Is.Empty, string.Join(Environment.NewLine, errors));
 
-            Assert.That(DecisionFamilyInventory.Families.Length, Is.EqualTo(10),
-                "The bounded current claim is ten pending decision families, not all possible states.");
+            Assert.That(DecisionFamilyInventory.Families.Length, Is.EqualTo(11),
+                "The bounded current claim is eleven pending decision families, not all possible " +
+                "states; milestone 8.35g's turn release is the eleventh.");
             Assert.That(DecisionFamilyInventory.Families.Select(value => value.Family).Distinct().Count(),
-                Is.EqualTo(10), "Every pending family has one distinct semantic identity.");
+                Is.EqualTo(11), "Every pending family has one distinct semantic identity.");
             Assert.That(DecisionFamilyInventory.Families.Sum(value => value.Answers.Count),
-                Is.EqualTo(30), "Every current legal answer shape has one inventory row.");
+                Is.EqualTo(31),
+                "Every current legal answer shape has one inventory row. Thirty until milestone " +
+                "8.35g, whose turn release adds exactly one: the release itself is the whole of " +
+                "that family's contract, so the pause can be answered one way and no other.");
 
             AssertEnumKindsCovered<EffectChoiceCommandKind>("Effect/Skill", "Effect/Attack or Block");
             AssertEnumKindsCovered<DisplacedMinionCorrectionCommandKind>("Displaced minion correction");
@@ -464,10 +468,24 @@ namespace GuardsDigital.Tests.EditMode
 
             private void HoldRemainingActor()
             {
+                // Milestone 8.35g. The hero before Wasp finished its own resolution, so the
+                // turn waits for that player's release before Wasp is selected at all.
+                if (Session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(DirectorCommand.ReleaseTurn());
+                }
+
                 Assert.That(Session.Projection.IsTurnActive, Is.True,
                     "Wasp's selected card remains after Fortify resolves.");
                 Assert.That(Session.Projection.SelectedActor.ActorId, Is.EqualTo(Wasp));
                 Accept(DirectorCommand.PerformHold(Session.Projection.SelectedActor.CardInstanceId));
+
+                // And again on the way out: Wasp's own resolution has now finished, and the
+                // round does not move on until that player hands the turn over either.
+                if (Session.Projection.PendingTurnRelease != null)
+                {
+                    Accept(DirectorCommand.ReleaseTurn());
+                }
             }
 
             private ActionDefinitionOrigin OriginOf(ActionOffer offer) =>
@@ -502,7 +520,8 @@ namespace GuardsDigital.Tests.EditMode
             nameof(MatchSessionProjection.PendingMinionBattleChoice),
             nameof(MatchSessionProjection.PendingHeroRespawnChoice),
             nameof(MatchSessionProjection.PendingSystemTransitionStep),
-            nameof(MatchSessionProjection.PendingRemovalPrevention)
+            nameof(MatchSessionProjection.PendingRemovalPrevention),
+            nameof(MatchSessionProjection.PendingTurnRelease)
         };
 
         internal static readonly string[] CompanionProjectionMembers =
@@ -625,7 +644,15 @@ namespace GuardsDigital.Tests.EditMode
                 Row("Removal prevention", "Decline",
                     "PendingRemovalPrevention.DeclineInvocation",
                     "Removal-prevention decline control", DirectorCommandKind.AnswerRemovalPrevention,
-                    "Nothing is spent and the defeated minion is removed"))
+                    "Nothing is spent and the defeated minion is removed")),
+            // Milestone 8.35g. The eleventh, and the only one whose whole content is a consent:
+            // one command, no candidates, and the same control that finished the resolution.
+            Family("Turn release", nameof(MatchSessionProjection.PendingTurnRelease),
+                projection => projection.PendingTurnRelease != null,
+                Row("Turn release", "Release the finished turn",
+                    "PendingTurnRelease",
+                    "End Turn control", DirectorCommandKind.ReleaseTurn,
+                    "End-of-turn timing runs and the turn is handed to the next actor"))
         };
 
         internal static readonly NonPendingOfferDefinition[] NonPendingOffers =
@@ -878,6 +905,14 @@ namespace GuardsDigital.Tests.EditMode
                 commands.AddRange(removal.Payments.Select(payment =>
                     DirectorCommand.AnswerRemovalPrevention(payment.Invocation)));
                 commands.Add(DirectorCommand.AnswerRemovalPrevention(removal.DeclineInvocation));
+                return commands;
+            }
+
+            // Milestone 8.35g. One command and no candidates: the finished turn is handed on, or
+            // it is not handed on yet. There is nothing else a consent can offer.
+            if (projection.PendingTurnRelease != null)
+            {
+                commands.Add(DirectorCommand.ReleaseTurn());
                 return commands;
             }
 

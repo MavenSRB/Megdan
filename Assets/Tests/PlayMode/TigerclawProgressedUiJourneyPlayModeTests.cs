@@ -862,7 +862,7 @@ namespace GuardsDigital.Tests.PlayMode
             var startedIn = runtime.RoundIndex;
             for (var budget = 0; runtime.RoundIndex == startedIn; budget++)
             {
-                Assert.That(budget, Is.LessThan(24),
+                Assert.That(budget, Is.LessThan(40),
                     "A round has to end within a bounded number of turns and stage answers. " +
                     Remaining(runtime));
 
@@ -872,7 +872,10 @@ namespace GuardsDigital.Tests.PlayMode
                     continue;
                 }
 
-                if (runtime.SelectedActor.IsDefined)
+                // Milestone 8.35g. A turn held for its own player is somebody acting, even though the
+                // selection is empty - reading only the selection would fall through to the
+                // commitment arm below and try to commit into a round that is still resolving.
+                if (runtime.SelectedActor.IsDefined || runtime.PendingTurnRelease != null)
                 {
                     yield return YieldUntilNobodyIsActing(runtime);
                     continue;
