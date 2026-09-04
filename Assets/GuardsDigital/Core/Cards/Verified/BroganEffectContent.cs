@@ -265,14 +265,23 @@ namespace GuardsDigital.Core.Cards.Verified
         /// then target that unit." - Mad Dash's sentence at exactly two spaces, Bullrush's at two or
         /// three, Furious Charge's at two, three or four.
         ///
-        /// <para><b>One selection answers both halves, because the two halves are one question.</b>
-        /// <c>choose-charge-line@1</c> walks the straight files at the printed distances, keeps only
-        /// the destinations that are actually reachable and that have an enemy unit beside them, and
-        /// then asks for the destination and the unit in that order. That is why nothing here checks
-        /// feasibility a second time: a destination with no legal target is never offered, so the
-        /// printed reminder Mad Dash carries - "( If you cannot make this move, you cannot attack. )" -
-        /// is the case where the selection has nothing to offer at all, which p.10 answers by stopping
-        /// the action at that step.</para>
+        /// <para><b>The printed order is the node order, and milestone 8.35p is what made it so.</b>
+        /// The sentence moves first and targets second, so the graph does: <c>choose-charge-line@1</c>
+        /// walks the straight files at the printed distances and asks only <em>where he lands</em>;
+        /// the Move commits on that answer; and only then does an ordinary <c>choose-target@2</c> ask
+        /// <em>whom he takes</em>, measured from the space he is now standing on. Until 8.35p both
+        /// questions were asked inside the charge node, before the Move node ran, so a player named a
+        /// victim while the board correctly still showed the hero on his starting space. The user's
+        /// rule: "they move as soon as they select, and then they attack".</para>
+        ///
+        /// <para><b>It is a reordering and not a rules change, and the reason is one sentence.</b>
+        /// The destinations offered are exactly the ones with an enemy unit beside them - that filter
+        /// never moved - and a direct Move of the actor removes no unit and moves no other, so the
+        /// candidates beside the destination before the Move are the candidates beside the actor
+        /// after it. Nothing here checks feasibility a second time: a destination with no legal target
+        /// is never offered, so the printed reminder Mad Dash carries - "( If you cannot make this
+        /// move, you cannot attack. )" - is the case where the selection has nothing to offer at all,
+        /// which p.10 answers by stopping the action at that step.</para>
         ///
         /// <para><b>The move is to the space the selection named</b>, which is why it declares
         /// <see cref="DirectMoveDestinationPolicy.NamedSpace"/> rather than a distance and a direction.
@@ -290,9 +299,10 @@ namespace GuardsDigital.Core.Cards.Verified
             CardDefinitionId cardId, string contentRevision, int leastDistance, int mostDistance)
         {
             var root = new EffectNodeId("charge-root");
-            var line = new EffectNodeId("charge-destination-target");
+            var line = new EffectNodeId("charge-destination");
             var actorSpace = new EffectNodeId("charge-actor-space");
             var move = new EffectNodeId("charge-move");
+            var victim = new EffectNodeId("charge-target");
             var retarget = new EffectNodeId("charge-retarget");
 
             return new EffectDefinition(
@@ -303,7 +313,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 {
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { line, actorSpace, move, retarget }),
+                        childNodeIds: new[] { actorSpace, line, move, victim, retarget }),
                     new EffectNodeDefinition(
                         line, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticRosterCapabilities.ChooseChargeLineV1,
@@ -322,12 +332,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         outputs: new[]
                         {
                             new EffectOutputBinding(
-                                ChargeDestinationOutput, EffectValueKind.Coordinate),
-                            new EffectOutputBinding(
-                                SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
-                            new EffectOutputBinding(
-                                SyntheticRosterCapabilities.ChosenMinionOutput,
-                                EffectValueKind.Minion)
+                                ChargeDestinationOutput, EffectValueKind.Coordinate)
                         }),
                     ActorSpaceNode(actorSpace),
                     new EffectNodeDefinition(
@@ -350,7 +355,39 @@ namespace GuardsDigital.Core.Cards.Verified
                         {
                             new EffectOutputBinding("moved", EffectValueKind.Coordinate)
                         }),
-                    BindAttackTarget(retarget, line)
+                    // "then target that unit" - asked after the Move, from where the hero now
+                    // stands, which is what makes the printed order the played order. Radius 1
+                    // measured from the actor is the same disk the charge node measured from the
+                    // destination, because the actor is standing on it; the activity is left to the
+                    // enclosing Attack rather than declared, so immunity is asked the identical
+                    // question it was asked before milestone 8.35p split the node.
+                    new EffectNodeDefinition(
+                        victim, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.ChooseTargetV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.OriginParameter,
+                                RosterQueryOrigin.Actor),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.DistanceParameter,
+                                EffectValue.Integer(1)),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.UnitKindParameter,
+                                RosterUnitKind.Unit),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                SourceTeamRelation.OpposingSource)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenMinionOutput,
+                                EffectValueKind.Minion)
+                        }),
+                    BindAttackTarget(retarget, victim)
                 });
         }
 

@@ -434,6 +434,15 @@ namespace GuardsDigital.Application
         private int undoFloor;
         private bool undoAttackUnderWay;
 
+        /// <summary>
+        /// Milestone 8.35p. Whether rulebook p.14's action was still resolving at the previous
+        /// watermark refresh, so the refresh after it can tell an Attack that finished from one that
+        /// was never running. A card text that names its own target answers and completes the whole
+        /// action in one command, and the difference between those two states is the only place that
+        /// moment is visible.
+        /// </summary>
+        private bool undoAttackStanding;
+
         public MatchHost(IMatchSession session)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
@@ -1075,10 +1084,39 @@ namespace GuardsDigital.Application
                     : projection.SelectedActor.ActorId;
                 var actor = marker.Length == 0 ? null : CurrentSeats().FindByHero(actorId);
                 undoActorSeat = actor == null ? default : actor.Id;
+                undoAttackStanding = projection.HasPendingAttackResolution;
                 return;
             }
 
             if (accepted != null && accepted.Kind == DirectorCommandKind.ChooseAttackTarget)
+            {
+                undoAttackUnderWay = true;
+            }
+
+            // Milestone 8.35p. The wall is "an Attack whose target has been chosen", and until this
+            // milestone only the command that chooses one on rulebook p.14's ordinary path could
+            // raise it. A card declaring AttackTargetBinding.ByCardText never emits that command:
+            // Brogan's three charges and Tigerclaw's Blink Strike name their target inside the card
+            // text through `set-attack-target@1`, and the player's command is an ordinary
+            // AnswerEffectChoice. So for that whole class the wall never rose, and a driven charge
+            // measured the consequence - the acting seat rewound its own RESOLVED Attack.
+            //
+            // Both halves are needed and each answers a different shape.
+            //
+            // (1) A standing resolution that has a target: the Attack has been answered and is still
+            //     running. Before the target is named the same resolution is standing WITHOUT one -
+            //     which is the charge's own destination question - and that stays rewindable, which
+            //     is the amendment's rule exactly: the committed move is the actor's own command,
+            //     rewindable until the attack target locks.
+            //
+            // (2) A resolution that was standing before this command and is gone after it: the
+            //     Attack finished. The charge is why this is not redundant - naming the victim
+            //     resolves the whole p.14 action inside that one command, so nothing is left standing
+            //     to read and (1) alone never fires. The wall goes up on the finish so the clearing
+            //     rule below settles the floor above the completed action, which is what the ordinary
+            //     path gets for free from its own command kind.
+            var resolution = projection.PendingAttackResolution;
+            if (resolution != null ? resolution.Target.IsDefined : undoAttackStanding)
             {
                 undoAttackUnderWay = true;
             }
@@ -1104,6 +1142,8 @@ namespace GuardsDigital.Application
                 undoFloor = projection.AcceptedCommands.Count;
                 undoAttackUnderWay = false;
             }
+
+            undoAttackStanding = projection.HasPendingAttackResolution;
         }
 
         /// <summary>

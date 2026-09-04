@@ -37,7 +37,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="ArienCardContent.ContentRevision"/> has: it moves when Brogan's content changes.
         /// </summary>
-        public const string ContentRevision = "brogan-8-21-rev-1";
+        public const string ContentRevision = "brogan-8-35p-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

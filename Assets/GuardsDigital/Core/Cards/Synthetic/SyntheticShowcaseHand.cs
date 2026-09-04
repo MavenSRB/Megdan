@@ -3529,6 +3529,11 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// <para>The distances are fixture numbers rather than any card's; what this proves is that
         /// <c>choose-charge-line@1</c> and a destination-named direct Move compose, on content that is
         /// nobody's card.</para>
+        ///
+        /// <para>Milestone 8.35p put the node order where this summary always said it was: the charge
+        /// node asks only where he lands, the Move commits on that answer, and the unit is named
+        /// afterwards by an ordinary <c>choose-target@2</c> measured from the space he now occupies.
+        /// The showcase follows the verified faces rather than keeping a shape no card composes.</para>
         /// </summary>
         private static EffectNodeDefinition[] ChargeLineNodes()
         {
@@ -3536,13 +3541,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
             var line = new EffectNodeId("charge-line-choice");
             var actorSpace = new EffectNodeId("charge-line-actor-space");
             var move = new EffectNodeId("charge-line-move");
+            var victim = new EffectNodeId("charge-line-target");
             var bind = new EffectNodeId("charge-line-bind");
 
             return new[]
             {
                 new EffectNodeDefinition(
                     root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                    childNodeIds: new[] { line, actorSpace, move, bind }),
+                    childNodeIds: new[] { line, actorSpace, move, victim, bind }),
                 new EffectNodeDefinition(
                     line, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                     SyntheticRosterCapabilities.ChooseChargeLineV1,
@@ -3556,11 +3562,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     },
                     outputs: new[]
                     {
-                        new EffectOutputBinding("destination", EffectValueKind.Coordinate),
-                        new EffectOutputBinding(
-                            SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
-                        new EffectOutputBinding(
-                            SyntheticRosterCapabilities.ChosenMinionOutput, EffectValueKind.Minion)
+                        new EffectOutputBinding("destination", EffectValueKind.Coordinate)
                     }),
                 ActorSpaceNode(actorSpace),
                 new EffectNodeDefinition(
@@ -3584,15 +3586,39 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         new EffectOutputBinding("moved", EffectValueKind.Coordinate)
                     }),
                 new EffectNodeDefinition(
+                    victim, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.ChooseTargetV2,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticRosterCapabilities.OriginParameter,
+                            GuardsDigital.Core.Rules.CardResolution.RosterQueryOrigin.Actor),
+                        EffectInputBinding.FromLiteral(
+                            SyntheticRosterCapabilities.DistanceParameter, EffectValue.Integer(1)),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticRosterCapabilities.UnitKindParameter,
+                            GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticRosterCapabilities.RelationParameter,
+                            GuardsDigital.Core.Rules.Modifications.SourceTeamRelation.OpposingSource)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                        new EffectOutputBinding(
+                            SyntheticRosterCapabilities.ChosenMinionOutput, EffectValueKind.Minion)
+                    }),
+                new EffectNodeDefinition(
                     bind, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                     SyntheticContinuationCapabilities.SetAttackTargetV1,
                     inputs: new[]
                     {
                         EffectInputBinding.FromNodeOutput(
-                            SyntheticContinuationCapabilities.HeroParameter, line,
+                            SyntheticContinuationCapabilities.HeroParameter, victim,
                             SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
                         EffectInputBinding.FromNodeOutput(
-                            SyntheticContinuationCapabilities.MinionParameter, line,
+                            SyntheticContinuationCapabilities.MinionParameter, victim,
                             SyntheticRosterCapabilities.ChosenMinionOutput, EffectValueKind.Minion)
                     },
                     outputs: new[]

@@ -190,9 +190,11 @@ namespace GuardsDigital.Tests.PlayMode
                             ".EveryPrintedPrimary_PairsItsComposedTextWithTheMomentItsFacePrints"
                     }),
 
-                // The three charges are one sentence at three declared distances. `choose-charge-line`
-                // is the one capability in this table asking two questions in one node - which space
-                // to end on and which unit beside it - and both are board clicks.
+                // The three charges are one sentence at three declared distances, and they ask two
+                // board clicks: which space to end on, and which unit beside it. Milestone 8.35p put
+                // the Move between those two questions, so the space now comes from
+                // `choose-charge-line` and the unit from `choose-target` - two capabilities where
+                // there was one, the same two shapes, and these rows did not move.
                 Face(BroganCardContent.MadDash, "Mad Dash", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),

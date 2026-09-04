@@ -330,8 +330,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(offered.Choice.Candidates, Is.EqualTo(new[] { EffectValue.Hero(Other) }));
         }
 
+        /// <summary>
+        /// Milestone 8.35p. The charge selection asks ONE question - where he lands - and publishes
+        /// that space alone. Naming the unit is no longer this node's business: it is an ordinary
+        /// adjacency selection standing after the Move, which is what makes the printed order the
+        /// played order.
+        /// </summary>
         [Test]
-        public void ChargeLine_AsksDestinationThenTarget_AndBindsBothWithoutMovingTheActor()
+        public void ChargeLine_AsksOnlyWhereHeLands_AndCommitsNoMovementOfItsOwn()
         {
             var target = Minion("charge-target", TeamSide.Blue, StandardMinionType.Melee,
                 new HexCoordinate(3, 0));
@@ -345,26 +351,88 @@ namespace GuardsDigital.Tests.EditMode
                     EffectValue.Integer((int)RosterUnitKind.Unit)
             };
             var handler = Handler(SyntheticRosterCapabilities.ChooseChargeLineV1);
-            var first = handler.Execute(Context(board, inputs));
-            var destination = first.Choice.Candidates.Single();
-            var second = handler.Resume(Context(board, inputs), new[] { destination });
-            var answered = new[] { (IReadOnlyList<EffectValue>)new[] { destination } };
-            var applied = handler.Resume(
-                Context(board, inputs, answersAlreadyGiven: answered),
-                new[] { EffectValue.Minion(target.MinionId) });
+            var asked = handler.Execute(Context(board, inputs));
+            var destination = asked.Choice.Candidates.Single();
+            var applied = handler.Resume(Context(board, inputs), new[] { destination });
 
-            Assert.That(destination.Coordinate, Is.EqualTo(new HexCoordinate(2, 0)));
-            Assert.That(second.Choice.Candidates,
-                Is.EqualTo(new[] { EffectValue.Minion(target.MinionId) }));
-            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
-            Assert.That(applied.Outcomes.Single(value => value.OutputName == "destination")
-                .Value.Coordinate, Is.EqualTo(new HexCoordinate(2, 0)));
-            Assert.That(applied.Outcomes.Single(value => value.OutputName ==
-                SyntheticRosterCapabilities.ChosenMinionOutput).Value.MinionId,
-                Is.EqualTo(target.MinionId));
+            Assert.That(destination.Coordinate, Is.EqualTo(new HexCoordinate(2, 0)),
+                "The one offered destination is the straight space beside the enemy minion.");
+            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied),
+                "The destination answer completes this node; nothing else is asked here.");
+            Assert.That(applied.Outcomes.Single().OutputName, Is.EqualTo("destination"),
+                "The space is the whole of what this selection publishes.");
+            Assert.That(applied.Outcomes.Single().Value.Coordinate,
+                Is.EqualTo(new HexCoordinate(2, 0)));
             Assert.That(HeroAt(board, Actor), Is.EqualTo(new HexCoordinate(0, 0)),
                 "The later direct-move node owns the authoritative movement commit.");
         }
+
+        /// <summary>
+        /// Milestone 8.35p's safety argument, asserted rather than reasoned: the units the charge
+        /// could take are the same set before and after its own Move.
+        ///
+        /// <para>Before the split the candidates were "enemy units within 1 of the chosen
+        /// destination", derived while the hero still stood on his starting space. After it they are
+        /// "enemy units within 1 of the hero", derived once he is standing on that destination. A
+        /// direct Move of the actor removes no unit and moves no other, so the two are the same
+        /// question asked from the same square - and this compares them directly, which is what makes
+        /// the change a reordering rather than a rules change.</para>
+        /// </summary>
+        [Test]
+        public void ChargeLine_OffersOnlyDestinationsWhoseTargetSetSurvivesTheMove()
+        {
+            var beside = Minion("beside-the-landing", TeamSide.Blue, StandardMinionType.Melee,
+                new HexCoordinate(3, 0));
+            var elsewhere = Minion("elsewhere", TeamSide.Blue, StandardMinionType.Ranged,
+                new HexCoordinate(0, 2));
+            var board = Board(
+                new HexCoordinate(0, 0), new HexCoordinate(4, 0), new[] { beside, elsewhere });
+            var inputs = new Dictionary<string, EffectValue>
+            {
+                ["minimumDistance"] = EffectValue.Integer(2),
+                ["maximumDistance"] = EffectValue.Integer(2),
+                [SyntheticRosterCapabilities.UnitKindParameter] =
+                    EffectValue.Integer((int)RosterUnitKind.Unit)
+            };
+
+            var offered = Handler(SyntheticRosterCapabilities.ChooseChargeLineV1)
+                .Execute(Context(board, inputs))
+                .Choice.Candidates
+                .Select(candidate => candidate.Coordinate)
+                .ToArray();
+
+            Assert.That(offered, Is.Not.Empty,
+                "A charge with nowhere to land proves nothing about what it could take there.");
+            foreach (var destination in offered)
+            {
+                var beforeTheMove = EnemyUnitsBeside(board, destination);
+                Assert.That(beforeTheMove, Is.Not.Empty,
+                    "No destination is offered that strands the Attack: " + destination);
+
+                var moved = Board(destination, new HexCoordinate(4, 0), new[] { beside, elsewhere });
+                var afterTheMove = EnemyUnitsBeside(moved, HeroAt(moved, Actor));
+
+                Assert.That(afterTheMove, Is.EqualTo(beforeTheMove),
+                    "The units beside " + destination + " before the Move are the units beside the " +
+                    "hero after it, so putting the question after the Move changes no answer.");
+            }
+        }
+
+        /// <summary>
+        /// The enemy units this Attack could take from one space, asked of the shared roster query
+        /// both shapes use, so the comparison above is between two readings of the board rather than
+        /// between the capability and itself.
+        /// </summary>
+        private static IReadOnlyList<string> EnemyUnitsBeside(
+            AdjacentMoveAuthority board, HexCoordinate at) =>
+            RosterPresenceQuery.FindUnitsWithin(
+                    at, 1, RosterUnitKind.Unit, SourceTeamRelation.OpposingSource, Actor,
+                    board, StagedBoardParticipants.Create(), RuleModificationSet.Empty)
+                .Select(target => target.Kind == BoardObjectKind.Hero
+                    ? "hero:" + target.HeroId.Value
+                    : "minion:" + target.MinionId.Value)
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
 
         [Test]
         public void ChargeLine_RejectsAStraightDestinationWhoseRouteIsBlocked()

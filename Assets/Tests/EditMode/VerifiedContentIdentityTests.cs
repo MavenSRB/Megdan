@@ -24,7 +24,10 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly IdentityPin[] Pins =
         {
             new IdentityPin("arien", "arien-8-35l-rev-1", "988ef437c7135eca77d70639b1d90cf433c4029dfe729410762c2bd29481d1b0"),
-            new IdentityPin("brogan", "brogan-8-21-rev-1", "4fb3af3984290f88b1ced0b60c03186f2c64f23a374e0876a2fcbb765fd81201"),
+            // Milestone 8.35p moved Brogan alone: the three charges ask where he lands, move, and
+            // only then ask whom he takes. The other five pins are byte-identical, which is the
+            // measurement that says the reorder reached his content and nobody else's.
+            new IdentityPin("brogan", "brogan-8-35p-rev-1", "d546a8e4744ea2b400e638ad29e626d1fc64f089fbe850e92524730830a152f9"),
             new IdentityPin("sabina", "sabina-8-35l-rev-1", "2518211c8e851b8ad65ba538560c50772033f341a995a597a714727eb2517449"),
             new IdentityPin("tigerclaw", "tigerclaw-8-25e5b-rev-1", "2cb7cb62007a6ccf58c6881421d3a2822a8b818437a147dbd60e7bf94ff64849"),
             new IdentityPin("wasp", "wasp-8-25e7-rev-1", "eb7cf4f63a247c31b2f94faa93125fbd4ee977ebe260b91b803b0c92296db927"),

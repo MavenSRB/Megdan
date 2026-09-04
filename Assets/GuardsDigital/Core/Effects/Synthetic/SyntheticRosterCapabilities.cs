@@ -1075,6 +1075,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     : EffectExecutionResultKind.NeedsChoice;
         }
 
+        /// <summary>
+        /// Where a charge may end: the straight files at the printed distances, keeping only the
+        /// destinations that are actually reachable and that have at least one enemy unit beside
+        /// them.
+        ///
+        /// <para><b>Milestone 8.35p asks one question here, not two.</b> Until then this node asked
+        /// for the destination and then, inside the same node, for the unit to attack - so both
+        /// answers were given before the Move node ran and the player named a victim while the hero
+        /// authoritatively still stood on his starting space. The user's rule is the printed order:
+        /// "they move as soon as they select, and then they attack". So the destination answer is
+        /// this node's whole result, the Move commits on it, and the unit is named afterwards by an
+        /// ordinary <c>choose-target@2</c> measured from where the hero now stands.</para>
+        ///
+        /// <para><b>The feasibility filter stays here, and it is what makes the reorder safe.</b> A
+        /// destination is offered only when <see cref="Options"/> finds a legal target beside it, so
+        /// no answer can strand the hero on a space with nobody to attack; and because a direct Move
+        /// of the actor removes no unit and moves no other, the set beside the destination before the
+        /// Move is the same set beside the actor after it. That equality is asserted directly rather
+        /// than argued - see <c>ChargeReorderEquivalenceTests</c>.</para>
+        /// </summary>
         private sealed class ChargeLineHandler : TargetingHandler, IEffectCapabilityHandler
         {
             public override IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
@@ -1093,9 +1113,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     },
                     new[]
                     {
-                        new EffectOutputBinding("destination", EffectValueKind.Coordinate),
-                        new EffectOutputBinding(ChosenHeroOutput, EffectValueKind.Hero),
-                        new EffectOutputBinding(ChosenMinionOutput, EffectValueKind.Minion)
+                        new EffectOutputBinding("destination", EffectValueKind.Coordinate)
                     });
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -1106,29 +1124,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
-                if (context.AnswersAlreadyGiven.Count == 0)
-                {
-                    if (selected == null || selected.Count != 1 ||
-                        selected[0].Kind != EffectValueKind.Coordinate ||
-                        !Options(context).Any(value => value.Destination.Equals(selected[0].Coordinate)))
-                        return EffectExecutionResult.ImpossibleMandatory();
-                    return AskTargets(context, selected[0].Coordinate);
-                }
-
-                var destinationAnswer = context.AnswersAlreadyGiven[0];
-                var target = selected?.Count == 1 ? FromValue(selected[0]) : default;
-                if (destinationAnswer.Count != 1 ||
-                    destinationAnswer[0].Kind != EffectValueKind.Coordinate || !target.IsDefined)
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Coordinate ||
+                    !Destinations(context).Any(value => value.Equals(selected[0].Coordinate)))
                     return EffectExecutionResult.ImpossibleMandatory();
 
-                var option = Options(context).FirstOrDefault(value =>
-                    value.Destination.Equals(destinationAnswer[0].Coordinate) &&
-                    value.Targets.Contains(target));
-                if (option == null) return EffectExecutionResult.ImpossibleMandatory();
                 return EffectExecutionResult.Applied(new[]
                 {
-                    new EffectOutcomeFact("destination", EffectValue.Space(option.Destination)),
-                    AsOutcome(target)
+                    new EffectOutcomeFact("destination", EffectValue.Space(selected[0].Coordinate))
                 });
             }
 
@@ -1139,31 +1142,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             private static EffectExecutionResult Ask(EffectCapabilityContext context)
             {
-                if (context.AnswersAlreadyGiven.Count > 0)
-                {
-                    var answer = context.AnswersAlreadyGiven[0];
-                    return answer.Count == 1 && answer[0].Kind == EffectValueKind.Coordinate
-                        ? AskTargets(context, answer[0].Coordinate)
-                        : EffectExecutionResult.ImpossibleMandatory();
-                }
-
-                var destinations = Options(context).Select(value => value.Destination).Distinct().ToArray();
-                return destinations.Length == 0
+                var destinations = Destinations(context);
+                return destinations.Count == 0
                     ? EffectExecutionResult.ImpossibleMandatory()
                     : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
                         EffectChooserRole.Actor, destinations.Select(EffectValue.Space), 1, 1));
             }
 
-            private static EffectExecutionResult AskTargets(
-                EffectCapabilityContext context, HexCoordinate destination)
-            {
-                var option = Options(context).FirstOrDefault(value =>
-                    value.Destination.Equals(destination));
-                return option == null || option.Targets.Count == 0
-                    ? EffectExecutionResult.ImpossibleMandatory()
-                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.Actor, option.Targets.Select(AsValue), 1, 1));
-            }
+            /// <summary>
+            /// The offered spaces. Derived on every ask - the offer, the answer and a restored pause -
+            /// for the reason every other selection here re-derives: the board is state, and a set
+            /// remembered from the moment the question opened could name a space something has since
+            /// moved into.
+            /// </summary>
+            private static IReadOnlyList<HexCoordinate> Destinations(
+                EffectCapabilityContext context) =>
+                Options(context).Select(value => value.Destination).Distinct().ToArray();
 
             private static IReadOnlyList<ChargeOption> Options(EffectCapabilityContext context)
             {

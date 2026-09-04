@@ -105,10 +105,13 @@ namespace GuardsDigital.Tests.PlayMode
         /// Mad Dash: "Before the attack: Move 2 spaces in a straight line to a space adjacent to an
         /// enemy unit, then target that unit."
         ///
-        /// <para>One node, two board clicks, and they are two different questions: where the charge
-        /// ends, and which of the units beside that space this Attack then takes. That is why
-        /// <c>choose-charge-line</c> is the one capability in milestone 8.21's table contributing both
-        /// a space selection and a unit selection.</para>
+        /// <para>Two board clicks and two different questions - where the charge ends, and which of
+        /// the units beside that space this Attack then takes - and milestone 8.35p put the Move
+        /// between them. The first answer commits the Move in the same command, so the hero is
+        /// standing on the space he clicked before he is asked whom he takes, which is the user's
+        /// own rule: "they move as soon as they select, and then they attack". The space is
+        /// contributed by <c>choose-charge-line</c> and the unit by <c>choose-target</c>, so the
+        /// face keeps both shapes in milestone 8.21's table and its row never moved.</para>
         /// </summary>
         [UnityTest]
         public IEnumerator MadDash_ChargesInAStraightLineAndTargetsTheUnitBesideWhereItStops()
@@ -144,16 +147,21 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return ConfirmIfStillStanding(root);
 
-            // Question two, on the same node: which unit beside it this Attack takes. A minion is
-            // chosen rather than the enemy hero, because a hero would open p.14's Defense response and
-            // that is another journey's subject.
-            //
-            // Brogan is not standing on the clicked space yet, and that is the node rather than the
-            // click: one node asks both questions and the charge applies when both are answered, so
-            // between them the board still shows him where he started. The candidates offered are the
-            // proof the space took - they are the neighbours of the space he is about to occupy.
+            // Milestone 8.35p, and this is the whole of what the amendment asked for: the Move has
+            // already happened. The destination answer and the Move land in one accepted command, so
+            // by the time the second question is asked the authoritative board - and the token a
+            // player is looking at - already have him on the space he clicked.
+            Assert.That(runtime.Heroes.Single(value => value.HeroId.Equals(broganId)).Coordinate,
+                Is.EqualTo(destination),
+                "Answering where the charge ends moves him, before anything asks whom he takes.");
+            Assert.That(HeroView(broganId).Coordinate, Is.EqualTo(destination),
+                "and his token is drawn there, which is the thing the player said was wrong.");
+
+            // Question two, now its own node: which unit beside where he is standing this Attack
+            // takes. A minion is chosen rather than the enemy hero, because a hero would open p.14's
+            // Defense response and that is another journey's subject.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "The charge's second question - which unit - must stand on the same node. " +
+                "The charge's second question - which unit - stands after the Move. " +
                 Remaining(runtime));
             var candidates = runtime.RoundView.Model.EffectChoiceTargets;
             Assert.That(candidates, Is.Not.Empty,
@@ -212,7 +220,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "Both of the charge's questions are answered. " + Remaining(runtime));
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(broganId)).Coordinate,
                 Is.EqualTo(destination),
-                "and the charge applied: Brogan is standing on the space he clicked.");
+                "and he is still standing where the Move put him.");
             Assert.That(HeroView(broganId).Coordinate, Is.EqualTo(destination),
                 "with his token there rather than where he started.");
             Assert.That(runtime.BoardView.Model.Minions.Select(value => value.MinionId),

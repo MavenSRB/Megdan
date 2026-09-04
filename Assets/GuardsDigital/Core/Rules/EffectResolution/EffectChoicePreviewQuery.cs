@@ -240,10 +240,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 }
             }
 
-            // A compound selection can publish more than one typed answer. Brogan's charge, for
-            // example, publishes a Coordinate to Direct Move and a Hero/Minion to Set Attack Target.
-            // Follow only bindings of this candidate's value kind so each stage gets the meaning of
-            // the operation that will consume that answer.
+            // A compound selection can publish more than one typed answer. Tigerclaw's Blink Strike,
+            // for example, publishes a Coordinate to Direct Move and a Hero/Minion to Set Attack
+            // Target out of the one crossing it names. Follow only bindings of this candidate's value
+            // kind so each stage gets the meaning of the operation that will consume that answer.
+            // (Brogan's charge was the other example until milestone 8.35p put its two questions in
+            // their printed order; each of its nodes now publishes one kind, and this rule reads them
+            // the same way it always did - from the consumer, not from the selection.)
             consumers.AddRange(definition.Nodes.Where(node =>
                 node.Inputs.Any(input =>
                     input.SourceKind == EffectBindingSourceKind.NodeOutput &&

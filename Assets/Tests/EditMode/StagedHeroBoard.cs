@@ -135,12 +135,21 @@ namespace GuardsDigital.Tests.EditMode
         private readonly List<MinionId> standingBeforeTheAction = new List<MinionId>();
         private readonly List<MinionId> removedInOrder = new List<MinionId>();
 
-        private StagedHeroBoard(MatchSession session, HeroId hero, HeroId enemy)
+        private StagedHeroBoard(
+            MatchSessionInitialState initialState, MatchSession session, HeroId hero, HeroId enemy)
         {
+            InitialState = initialState;
             Session = session;
             Hero = hero;
             Enemy = enemy;
         }
+
+        /// <summary>
+        /// Milestone 8.35p. The same staging as an initial state, so a case whose subject lives in
+        /// the host rather than in the session - the seat's own bounded rewind - can compose a
+        /// <c>MatchHost</c> over this exact board instead of hunting for the position in a walk.
+        /// </summary>
+        internal MatchSessionInitialState InitialState { get; }
 
         internal MatchSession Session { get; }
         internal HeroId Hero { get; }
@@ -270,9 +279,9 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.CardInstances, configuration.TieBreakerState, map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
                 Array.Empty<ObstacleOccupancy>());
+            var initialState = new MatchSessionInitialState(scenario, setup, new[] { map });
             return new StagedHeroBoard(
-                new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map })),
-                hero, enemy);
+                initialState, new MatchSession(initialState), hero, enemy);
         }
 
         /// <summary>A one-entry placement map, for the common case of moving a single piece.</summary>

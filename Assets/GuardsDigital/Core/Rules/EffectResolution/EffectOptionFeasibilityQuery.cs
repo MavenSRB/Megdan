@@ -211,15 +211,38 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 prospectiveFrame,
                 Array.Empty<EffectNodeOutcome>(),
                 context,
-                ref budget) == BindingVerdict.Bound;
+                ref budget,
+                afterAnUntakenMove: false) == BindingVerdict.Bound;
         }
 
+        /// <param name="afterAnUntakenMove">
+        /// Milestone 8.35p. Whether an earlier step of this same path is a Move that has not been
+        /// taken, which makes every board reading after it a reading of a board that will not exist.
+        ///
+        /// <para>Brogan's charges are why it is here. "Move N spaces in a straight line to a space
+        /// adjacent to an enemy unit, then target that unit" now asks its two halves in printed
+        /// order - where he lands, the Move, then whom he takes - and the second question is an
+        /// ordinary adjacency selection measured from where the hero is standing. This walk stands
+        /// before any of it: the destination has not been chosen, so the hero is still on his
+        /// starting space, and judging that selection there answers about the wrong square. It
+        /// answered "nothing is adjacent" and the whole Attack was greyed in exactly the position
+        /// the card exists for - measured, and the reason the reorder could not be content alone.
+        /// </para>
+        ///
+        /// <para>So the reading is suppressed rather than believed, which is this query's own
+        /// standing direction: it refuses an option it can prove does nothing and never disables one
+        /// it merely cannot read. Nothing is offered that could not bind - what a charge can reach is
+        /// decided by <c>choose-charge-line@1</c>, which stands <em>before</em> the Move and is
+        /// judged normally: a board with no straight destination beside an enemy still refuses there,
+        /// and the Attack is still greyed.</para>
+        /// </param>
         private static BindingVerdict WalkToAttackTargetBinding(
             EffectNodeId nodeId,
             PendingResolution frame,
             IReadOnlyList<EffectNodeOutcome> outcomes,
             EffectResolutionContext context,
-            ref int budget)
+            ref int budget,
+            bool afterAnUntakenMove)
         {
             if (--budget < 0)
             {
@@ -245,19 +268,23 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             : BindingVerdict.Continue;
                     }
 
-                    return Judge(node, frame, outcomes, context) == Verdict.Blocked
+                    return !afterAnUntakenMove &&
+                        Judge(node, frame, outcomes, context) == Verdict.Blocked
                         ? BindingVerdict.Blocked
                         : BindingVerdict.Continue;
 
                 case EffectNodeKind.Sequence:
+                    var hidden = afterAnUntakenMove;
                     foreach (var child in node.ChildNodeIds)
                     {
                         var verdict = WalkToAttackTargetBinding(
-                            child, frame, outcomes, context, ref budget);
+                            child, frame, outcomes, context, ref budget, hidden);
                         if (verdict != BindingVerdict.Continue)
                         {
                             return verdict;
                         }
+
+                        hidden = hidden || MovesSomebodyThisWalkCannotFollow(child, context);
                     }
 
                     return BindingVerdict.Continue;
@@ -272,7 +299,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     foreach (var child in node.ChildNodeIds)
                     {
                         if (WalkToAttackTargetBinding(
-                                child, frame, outcomes, context, ref budget) ==
+                                child, frame, outcomes, context, ref budget, afterAnUntakenMove) ==
                             BindingVerdict.Bound)
                         {
                             return BindingVerdict.Bound;
@@ -287,6 +314,24 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     return BindingVerdict.Continue;
             }
         }
+
+        /// <summary>
+        /// Milestone 8.35p: whether this step will put a piece somewhere this walk cannot know, so
+        /// that the board every later step reads is not the board in front of it.
+        ///
+        /// <para>It names the typed Move contract rather than any card, exactly as the binding walk
+        /// above names <c>set-attack-target@1</c>: a declared Move is the one operation a card text
+        /// takes whose result is a position, and where that position ends up is either a destination
+        /// the player has not chosen yet or an output no earlier step has published. Either way it is
+        /// unknown here, and there is nothing conservative about judging a later adjacency question
+        /// against the square the piece is about to leave.</para>
+        /// </summary>
+        private static bool MovesSomebodyThisWalkCannotFollow(
+            EffectNodeId nodeId, EffectResolutionContext context) =>
+            context.Definition.TryGetNode(nodeId, out var node) &&
+            node.Kind == EffectNodeKind.Capability &&
+            node.Capability.Equals(
+                GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV3);
 
         /// <summary>
         /// One node's verdict, and its subtree's, in the order execution would reach them. The walk

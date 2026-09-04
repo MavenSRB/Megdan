@@ -479,17 +479,16 @@ namespace GuardsDigital.Tests.PlayMode
 
                 // Milestone 8.21. Brogan's contracts, split by what each one asks a player for.
                 //
-                // The charge line asks two questions in one node and they are two different clicks:
-                // which space to end on, and which of the units beside it this Attack then takes. The
-                // unit-valued printed-Range selection is a third printed-icon sibling of the six above
-                // and asks what they ask. And a card the actor spends out of their own hand is the
-                // same hand-card question milestone 7.1a's discard asks, put to the actor instead of
-                // to somebody the card named.
-                ["choose-charge-line"] = new[]
-                {
-                    PlayerInteractionShape.BoardSpaceSelection,
-                    PlayerInteractionShape.BoardUnitSelection
-                },
+                // The charge line asks which space to end on. Milestone 8.35p took its second
+                // question away: naming the unit beside that space is now `choose-target` asked after
+                // the Move, so the click is the same click on the same board and it is counted where
+                // it is now made. The charge faces therefore keep both shapes - the space from here,
+                // the unit from `choose-target` - and their derived rows do not move. The
+                // unit-valued printed-Range selection is a third printed-icon sibling of the six
+                // above and asks what they ask. And a card the actor spends out of their own hand is
+                // the same hand-card question milestone 7.1a's discard asks, put to the actor instead
+                // of to somebody the card named.
+                ["choose-charge-line"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
                 ["synthetic-range-unit-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
                 ["discard-owned-card"] = new[] { PlayerInteractionShape.HandCardSelection },
                 ["retrieve-card"] = new[] { PlayerInteractionShape.HandCardSelection },
