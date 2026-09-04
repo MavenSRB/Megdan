@@ -62,6 +62,13 @@ namespace GuardsDigital.Presentation.Interaction
                 case PrivateSessionEventKind.SeatReserved:
                     Log("SEAT_RESERVED ordinal=" + ordinal + " seat=" + record.Seat.Value);
                     return;
+                // Milestone 8.35k. Beside SEAT_RESERVED because the pair is the point: one seat is
+                // being held for its player and the other has been given up, and a host log that
+                // called both "reserved" is why the failed playtest could not be read afterwards.
+                // The capability has no parameter to arrive through here, exactly as before.
+                case PrivateSessionEventKind.SeatReleased:
+                    Log("SEAT_RELEASED ordinal=" + ordinal + " seat=" + record.Seat.Value);
+                    return;
                 case PrivateSessionEventKind.SeatReclaimed:
                     Log(
                         "SEAT_RECLAIMED ordinal=" + ordinal + " seat=" + record.Seat.Value +

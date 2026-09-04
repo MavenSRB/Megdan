@@ -82,7 +82,23 @@ namespace GuardsDigital.Application
         /// Milestone 8.35a. Every seat is claimed and every seat is ready, so this session left the
         /// lobby. Recorded once, because it happens once.
         /// </summary>
-        MatchStarted = 15
+        MatchStarted = 15,
+
+        /// <summary>
+        /// Milestone 8.35k. A seat given up rather than held: the player left deliberately, or the
+        /// host released a reservation by hand. Distinct from <see cref="SeatReserved"/> because the
+        /// two mean opposite things to a returning player, and a host log that called both
+        /// "reserved" is what made the playtest's refusal unreadable.
+        /// </summary>
+        /// <remarks>
+        /// Numbered 16 rather than appended beside <see cref="SeatReadinessChanged"/>, where it
+        /// reads more naturally: this member was first written as a second <c>15</c>, which C#
+        /// accepts silently. Two names for one value made a released seat indistinguishable from a
+        /// match starting - <c>PrivateOnlineDrivers</c> would have logged <c>MATCH_STARTED</c> for
+        /// a release, and the rehearsal driver's convergence test reads that same value. A new
+        /// member takes the next free number; it never takes a neighbour's.
+        /// </remarks>
+        SeatReleased = 16
     }
 
     /// <summary>
@@ -496,7 +512,10 @@ namespace GuardsDigital.Application
 
             if (frame.Kind == SessionMessageKind.Goodbye)
             {
-                Depart(record);
+                // Milestone 8.35k. A Goodbye is the departure the player CHOSE, and it is the only
+                // one the wire already distinguishes - which is why leaving can forfeit the seat
+                // without a new message kind or a protocol move.
+                Depart(record, forfeited: true);
                 outbox.Close(connectionOrdinal);
                 return;
             }
@@ -599,7 +618,9 @@ namespace GuardsDigital.Application
                 return;
             }
 
-            Depart(record);
+            // Milestone 8.35k. A dropped connection is not a choice: the seat stays reserved and
+            // its capability stays minted, which is the road a crashed player comes back along.
+            Depart(record, forfeited: false);
         }
 
         /// <summary>Closes every unadmitted connection whose handshake deadline has passed.</summary>
@@ -1441,10 +1462,18 @@ namespace GuardsDigital.Application
             outbox.Close(record.Ordinal);
             Record(PrivateSessionEventKind.Rejected, record.Ordinal, record.Seat,
                 default, TeamSide.None, reason);
-            Depart(record);
+            // Milestone 8.35k. A refusal is not a player choosing to leave, so a seated connection
+            // the host refuses keeps its reservation and its road back.
+            Depart(record, forfeited: false);
         }
 
-        private void Depart(ConnectionRecord record)
+        /// <summary>
+        /// Milestone 8.35k. <paramref name="forfeited"/> is the user's own rule: LEAVE gives the seat
+        /// up and a crash does not. A forfeited seat returns to Open with its capability cleared, so
+        /// it is claimable again by an ordinary keyed claim; a dropped one stays Reserved holding the
+        /// capability, which is the only thing that will get its player back into it.
+        /// </summary>
+        private void Depart(ConnectionRecord record, bool forfeited)
         {
             connections.Remove(record.Ordinal);
             if (record.Phase != ConnectionPhase.Seated)
@@ -1455,8 +1484,15 @@ namespace GuardsDigital.Application
             }
 
             var hold = holds[record.Seat];
-            hold.State = SeatOccupancyState.Reserved;
+            hold.State = forfeited ? SeatOccupancyState.Open : SeatOccupancyState.Reserved;
             hold.HeldByOrdinal = 0;
+            if (forfeited)
+            {
+                // The leaver chose the exposure. Clearing the capability is what makes the seat
+                // plainly claimable again rather than leaving a token that could still reclaim it.
+                hold.Capability = string.Empty;
+                hold.Epoch = 0;
+            }
             // Milestone 8.35a. A reserved lobby seat is not ready: nobody is sitting in it, and
             // leaving it ready would let five people plus an empty chair start a match. After the
             // transition the flag has no consumer left, so it is not disturbed - a returning player
@@ -1468,12 +1504,60 @@ namespace GuardsDigital.Application
 
             var seat = matchHost.Seats.Find(record.Seat);
             BroadcastRoster();
-            Record(PrivateSessionEventKind.SeatReserved, record.Ordinal, record.Seat,
+            Record(
+                forfeited
+                    ? PrivateSessionEventKind.SeatReleased
+                    : PrivateSessionEventKind.SeatReserved,
+                record.Ordinal, record.Seat,
                 seat == null ? default : seat.HeroId,
                 seat == null ? TeamSide.None : seat.TeamSide,
                 SessionRejectionReason.None);
             Record(PrivateSessionEventKind.Disconnected, record.Ordinal,
                 record.Seat, default, TeamSide.None, SessionRejectionReason.None);
+        }
+
+        /// <summary>
+        /// Milestone 8.35k. The host's deliberate escape hatch: hand a reserved seat back so anybody
+        /// may claim it plainly. Returns whether a reservation was actually released.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is the one road back to a seat that proves nothing about who is taking it, so
+        /// it is guarded by the only thing that can stand in for proof: a deliberate act by the one
+        /// person who already holds the authority. It is <b>never</b> on a timer and never automatic.
+        /// The reservation's "no clock anywhere in it" property is a feature - an auto-release would
+        /// hand a dropped player's seat to whoever reconnected first, which is precisely the theft
+        /// the capability exists to prevent.</para>
+        /// <para>It refuses a seat that is Claimed. A live player is never displaced by this control
+        /// any more than by a returning one, and the host wanting the seat back is not a reason to
+        /// take it from somebody sitting in it.</para>
+        /// <para>Clearing the capability is the point rather than a tidy-up: a released seat that
+        /// still held its token could be reclaimed by the departed player's machine after somebody
+        /// else had taken it.</para>
+        /// </remarks>
+        public bool ReleaseSeat(SeatId seat)
+        {
+            if (!seat.IsDefined || !holds.TryGetValue(seat, out var hold) ||
+                hold.State != SeatOccupancyState.Reserved)
+            {
+                return false;
+            }
+
+            hold.State = SeatOccupancyState.Open;
+            hold.Capability = string.Empty;
+            hold.Epoch = 0;
+            hold.HeldByOrdinal = 0;
+            if (!matchStarted)
+            {
+                hold.IsReady = false;
+            }
+
+            var released = matchHost.Seats.Find(seat);
+            BroadcastRoster();
+            Record(PrivateSessionEventKind.SeatReleased, 0, seat,
+                released == null ? default : released.HeroId,
+                released == null ? TeamSide.None : released.TeamSide,
+                SessionRejectionReason.None);
+            return true;
         }
 
         private void BroadcastRoster()

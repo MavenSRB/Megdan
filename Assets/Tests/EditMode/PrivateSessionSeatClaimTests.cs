@@ -131,8 +131,18 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(SeatOccupancyState.Reserved));
         }
 
+        /// <summary>
+        /// Milestone 8.35k. A Goodbye is the departure the player CHOSE, and it gives the seat up.
+        /// </summary>
+        /// <remarks>
+        /// This case asserted the opposite until this milestone, because until this milestone every
+        /// departure reserved the seat. The user's rule replaced that: leaving forfeits, crashing
+        /// does not. The wire already told the two apart - a deliberate leave sends
+        /// <c>Goodbye</c> and a lost link sends nothing - so the distinction cost no new message
+        /// kind and no protocol move, only a decision the session had never been asked to make.
+        /// </remarks>
         [Test]
-        public void AGoodbyeFromASeatedConnection_ReservesItsSeat()
+        public void AGoodbyeFromASeatedConnection_ReleasesItsSeat()
         {
             var driver = PrivateSessionTestDriver.Compose();
             driver.Seat(1, "blue-player-03");
@@ -141,6 +151,51 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(driver.Outbox.WasClosed(1), Is.True);
             Assert.That(driver.Session.Roster.Single(row => row.Seat.Value == "blue-player-03").Occupancy,
+                Is.EqualTo(SeatOccupancyState.Open),
+                "The leaver chose the exposure, so the seat is given up rather than held.");
+            Assert.That(driver.Session.ClaimedSeatCount, Is.Zero);
+            Assert.That(driver.Session.DrainEvents().Count(record =>
+                    record.Kind == PrivateSessionEventKind.SeatReleased &&
+                    record.Seat.Value == "blue-player-03"),
+                Is.EqualTo(1),
+                "and the host says which of the two departures happened, because a log that " +
+                "called both 'reserved' is what made the playtest's refusal unreadable.");
+        }
+
+        /// <summary>
+        /// Milestone 8.35k. The two departures diverge where it matters: at the next claim.
+        /// </summary>
+        /// <remarks>
+        /// Stating both halves in one case is deliberate. A build that forfeited every departure
+        /// would pass a leave-only case while throwing away the reservation a crashed player comes
+        /// back along; a build that reserved every departure would pass a crash-only case while
+        /// leaving the leaver's seat stuck - which on the night of the playtest the host could only
+        /// escape by tearing the session down and re-hosting.
+        /// </remarks>
+        [Test]
+        public void AReleasedSeat_TakesAnOrdinaryClaim_WhereAReservedOneRefusesIt()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            driver.Seat(1, "blue-player-03");
+            driver.Seat(2, "red-player-01");
+
+            driver.Session.OnFrame(1, PrivateSessionTestDriver.Decode(
+                PrivateSessionFrameCodec.GoodbyeFrame()));
+            driver.Session.OnDisconnected(2);
+
+            driver.Admit(3);
+            driver.Claim(3, "blue-player-03");
+            Assert.That(driver.Session.TryGetSeatForConnection(3, out var taken), Is.True,
+                "A forfeited seat is claimable again by an ordinary keyed claim.");
+            Assert.That(taken.Id.Value, Is.EqualTo("blue-player-03"));
+
+            driver.Admit(4);
+            driver.Claim(4, "red-player-01");
+            Assert.That(driver.Outbox.RejectFor(4).Reason,
+                Is.EqualTo(SessionRejectionReason.SeatReserved),
+                "while a seat whose player only dropped is nobody else's - every invited player " +
+                "holds the session key, and holding it is an invitation, never authority.");
+            Assert.That(driver.Session.Roster.Single(row => row.Seat.Value == "red-player-01").Occupancy,
                 Is.EqualTo(SeatOccupancyState.Reserved));
         }
 

@@ -469,6 +469,30 @@ Non-goals: No hero-scope tray treatment and no card-scope highlight or resolutio
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835j-light-the-whole-top-bar-whenever-the-match-is-waiting-on-the-viewing-player-completion-evidence).
 
+### [x] 8.35k Give a relaunched player a road back to their own reserved seat
+
+User-approved corrective of 2026-09-03, reported from the live playtest verbatim: "rejoin does not work, if user disconnects, its seat stays away, and connection is refused." Milestone 8.34 built the whole return mechanism - a reserved seat, a host-minted capability, a reclaim message, a rotated epoch - and it works. What it never had was a road to it. The capability lived in one private field of one live `PrivateSessionClient`, and three ordinary player actions end that object: the process exiting, the process crashing, and pressing LEAVE. After any of them the lobby could offer only a FIRST join, which the host refuses by name because the seat is reserved. Every reconnect fixture at every tier - the six-client rehearsal included - replaced only a socket beneath a surviving client, which is the one path a real player never walks.
+
+Observable outcome: A player whose game died relaunches it, enters the same invitation, and is returned to their own seat with a rotated epoch and a complete projection. A player who deliberately leaves gives that seat up instead. And the host can hand a reserved seat back by a deliberate act, for the evening where a player's machine is gone and no stored capability can exist.
+
+Acceptance checks:
+
+- A brand-new client object for a seat the host holds reserved is returned to it by reclaim, with the epoch rotated and the authoritative version unmoved while the seat was away. The fixture constructs a second, distinct client and copies nothing out of the first, because reusing the object is what every existing reconnect fixture does and is exactly the path that was never broken.
+- Leaving forfeits and crashing does not, asserted as one case in both directions: a deliberate Goodbye returns the seat to Open where an ordinary keyed claim takes it, while a dropped link leaves it Reserved and refuses the same claim by name. A build that forfeited every departure and a build that reserved every departure each pass one half alone.
+- The retained capability answers for one session correlation and one seat only, so it can be replayed into neither another session nor another seat.
+- The host's release control hands back a reserved seat and refuses a claimed one: a live player is never displaced by it, it is never automatic, and it is never on a timer - the reservation's absence of any clock is a feature, and an auto-release would give a dropped player's seat to whoever reconnected first.
+- The session key stays an invitation and never an authorization: a client with no retained capability is refused a reserved seat although it holds the key every invited player holds. `HandleReclaim`'s checks, its identical answer to both wrong-capability cases, and the epoch rotation are unchanged.
+- The capability is owner-private and stays out of every roster, projection, log line and diagnostic marker; the rehearsal runner greps every returned log for the shape a leak would take, beside the session key it already refused.
+- The host log tells the two departures apart, and a refused client records `LOBBY_REFUSED reason=` - the diagnostic gap that left the failed playtest's refusal shown on one screen and written down nowhere.
+- No wire, protocol, schema or content change: the protocol stays `guards-private-online/4` and the schema v35. `ReclaimSeat` and the capability mint already existed and are untouched; a released seat reaches every client as the roster's existing `Open` occupancy.
+- The six-client rehearsal gains a third cohort whose cut ends a PROCESS rather than a socket, and whose relaunched process must return by `SEAT_RECLAIMED` with a rotated epoch and converge on the same outcome as the other five.
+
+Closing check: `FreshProcessRejoinTests.ABrandNewClientForAReservedSeat_ReclaimsIt_WithARotatedEpoch`, `LeavingForfeitsTheSeat_WhileACrashKeepsItReservedForItsPlayer`, `TheHostCanReleaseAReservedSeatByHand_ButNeverALiveOne`, `ARetainedCapability_AnswersForItsOwnSessionAndSeatOnly` and `TheSessionsEventKinds_AreDistinct_SoAReleaseIsNeverReadAsAMatchStarting`, with `PrivateSessionSeatClaimTests.AGoodbyeFromASeatedConnection_ReleasesItsSeat` and `AReleasedSeat_TakesAnOrdinaryClaim_WhereAReservedOneRefusesIt`, are each recorded failing with the fix disabled at its own site and passing with it restored.
+
+Non-goals: No expiry, timer or automatic release of a reservation; no change to how a capability is minted or checked; no wire, protocol, schema or rules change; no production presentation of the lobby; no reconnect behaviour beyond returning a player to a seat the host is already holding for them.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835k-give-a-relaunched-player-a-road-back-to-their-own-reserved-seat-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

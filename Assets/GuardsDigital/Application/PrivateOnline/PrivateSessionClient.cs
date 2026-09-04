@@ -105,6 +105,12 @@ namespace GuardsDigital.Application
         /// read it, and a surface that could read it could log it.
         /// </summary>
         private string reconnectCapability = string.Empty;
+
+        /// <summary>
+        /// Milestone 8.35k. Where this seat's capability is kept between connections, so a process
+        /// that died has a road back. Read by this machine and by nothing else.
+        /// </summary>
+        private readonly IRetainedSeatCapabilityStore retainedCapabilities;
         private bool hasHeldSeat;
 
         /// <summary>
@@ -120,8 +126,14 @@ namespace GuardsDigital.Application
             string sessionKey,
             IPrivateSessionClientOutbox outbox,
             IPrivateSessionNonceSource nonceSource = null,
-            Func<long> timeSource = null)
+            Func<long> timeSource = null,
+            IRetainedSeatCapabilityStore retainedCapabilities = null)
         {
+            // Milestone 8.35k. The road back, and the only new dependency the corrective adds. A
+            // client with no store behaves exactly as it did before: it retains nothing and finds
+            // nothing, so a fixture that does not care is unaffected.
+            this.retainedCapabilities =
+                retainedCapabilities ?? new InMemoryRetainedSeatCapabilityStore();
             this.identity = identity ?? throw new ArgumentNullException(nameof(identity));
             if (!targetSeat.IsDefined)
             {
@@ -485,6 +497,51 @@ namespace GuardsDigital.Application
                     // Milestone 8.34. A client that already held this seat asks for it back by
                     // presenting the capability, because an ordinary claim of a reserved seat is
                     // refused - and must stay refused, or a reservation would be anybody's.
+                    // Milestone 8.35k. The road back for a process that died. The store is consulted
+                    // here rather than at the lobby's entry form because the session is not
+                    // identified until this message arrives. Holding a capability is not authority:
+                    // the host still requires the seat Reserved, a non-empty stored capability and a
+                    // constant-time match, and answers both wrong-capability cases identically.
+                    //
+                    // ARMED ONLY AGAINST A SEAT THE HOST SAYS IS HELD, and that condition is
+                    // load-bearing rather than defensive. `SessionCorrelation` is deterministic over
+                    // the content tuple - its own record says two processes composed from the same
+                    // content derive the same value, drawing no entropy - so it identifies a BUILD
+                    // and not a session, and a stored entry outlives the session that made it. Arming
+                    // on the entry alone therefore made every SECOND session on a machine send a
+                    // reclaim the new host had never minted, refused `ReconnectNotAuthorized` and
+                    // closed: a player who finished one game could never join another. The roster in
+                    // this very message is the evidence that IS about this session, and a seat nobody
+                    // is being held for is answered by an ordinary claim.
+                    if (!IsReconnecting && reconnectCapability.Length == 0)
+                    {
+                        var heldForItsPlayer = false;
+                        foreach (var entry in roster)
+                        {
+                            if (entry.Seat.Equals(targetSeat))
+                            {
+                                heldForItsPlayer = entry.Occupancy == SeatOccupancyState.Reserved;
+                                break;
+                            }
+                        }
+
+                        var retained = heldForItsPlayer
+                            ? retainedCapabilities.Find(SessionCorrelation, targetSeat)
+                            : string.Empty;
+                        if (retained.Length > 0)
+                        {
+                            reconnectCapability = retained;
+                            IsReconnecting = true;
+                        }
+                        else if (!heldForItsPlayer)
+                        {
+                            // Nobody is being held for this seat, so anything stored under it belongs
+                            // to a session that has ended. Dropping it keeps one stale secret from
+                            // sitting on disk for the life of the build.
+                            retainedCapabilities.Forget(SessionCorrelation, targetSeat);
+                        }
+                    }
+
                     Send(IsReconnecting && reconnectCapability.Length > 0
                         ? PrivateSessionFrameCodec.ReclaimSeatFrame(
                             new SeatReclaimMessage(targetSeat, reconnectCapability))
@@ -514,6 +571,10 @@ namespace GuardsDigital.Application
                     if (granted.ReconnectCapability.Length > 0)
                     {
                         reconnectCapability = granted.ReconnectCapability;
+                        // Milestone 8.35k. Retained here, where the capability already is, so it
+                        // never has to become readable from outside this machine to be saved.
+                        retainedCapabilities.Retain(
+                            SessionCorrelation, targetSeat, granted.ReconnectCapability);
                     }
 
                     hasHeldSeat = true;
@@ -1068,7 +1129,19 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>An orderly close; plaintext by design, like the host's own Goodbye.</summary>
-        public void SendGoodbye() => outbox.Send(PrivateSessionFrameCodec.GoodbyeFrame());
+        /// <remarks>
+        /// Milestone 8.35k. LEAVING FORFEITS THE SEAT, and this is the client's half of that. A
+        /// Goodbye is the one departure the player chose, so the road back is dropped here at the
+        /// same moment the host drops the reservation on the other end of the same signal - a
+        /// player who leaves deliberately gives the seat up, and a player whose process died does
+        /// not. Nothing else clears the store mid-session, so a crash keeps its road.
+        /// </remarks>
+        public void SendGoodbye()
+        {
+            retainedCapabilities.Forget(SessionCorrelation, targetSeat);
+            reconnectCapability = string.Empty;
+            outbox.Send(PrivateSessionFrameCodec.GoodbyeFrame());
+        }
 
         private enum EnvelopeReading
         {

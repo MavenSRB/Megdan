@@ -23,7 +23,22 @@ namespace GuardsDigital.Presentation.Interaction
     internal enum PrivateOnlineRehearsalMode
     {
         Match = 0,
-        HostLoss = 1
+        HostLoss = 1,
+
+        /// <summary>
+        /// Milestone 8.35k. The cohort whose cut kills a PROCESS rather than a socket. Everything
+        /// the match cohort proves about reconnect was proved with the client object still alive -
+        /// <c>InterruptConnectionForRehearsal</c> replaces the transport under a machine that still
+        /// holds its capability - and that is exactly the one path a real player never walks. Here
+        /// the designated seat's process exits and the runner launches a new one.
+        /// </summary>
+        Rejoin = 2,
+
+        /// <summary>
+        /// Milestone 8.35k. The relaunched process, which is a first join as far as it knows: a new
+        /// process, a new client object, and nothing carried across but what it finds on disk.
+        /// </summary>
+        RejoinReturn = 3
     }
 
     /// <summary>
@@ -103,9 +118,13 @@ namespace GuardsDigital.Presentation.Interaction
                 parsedMode = PrivateOnlineRehearsalMode.Match;
             else if (string.Equals(mode, "host-loss", StringComparison.OrdinalIgnoreCase))
                 parsedMode = PrivateOnlineRehearsalMode.HostLoss;
+            else if (string.Equals(mode, "rejoin", StringComparison.OrdinalIgnoreCase))
+                parsedMode = PrivateOnlineRehearsalMode.Rejoin;
+            else if (string.Equals(mode, "rejoin-return", StringComparison.OrdinalIgnoreCase))
+                parsedMode = PrivateOnlineRehearsalMode.RejoinReturn;
             else
             {
-                error = "the rehearsal mode must be match or host-loss";
+                error = "the rehearsal mode must be match, host-loss, rejoin or rejoin-return";
                 return false;
             }
 
@@ -277,6 +296,27 @@ namespace GuardsDigital.Presentation.Interaction
             lobby = lobbyDriver;
             options = rehearsalOptions;
             UnityEngine.Application.runInBackground = true;
+
+            // Milestone 8.35k. A relaunched process starts with the scripted choreography already
+            // BEHIND it, because it is: the forced Initiative disagreement, its revision, and the
+            // changed Minion Battle proposal all happened in the rounds before the cut, and this
+            // process cannot witness what it was not there for.
+            //
+            // Marking them observed rather than merely skipping the assertions is the whole point,
+            // and the first attempt at skipping them DEADLOCKED THE TABLE. `DriveInitiativeAgreement`
+            // branches on `initiativeFinalObserved`: true means "answer ordinarily", false means
+            // "force the scripted disagreement". A returned process with the flag still false went
+            // on trying to force a disagreement in a later round while the other five answered
+            // ordinarily, and the agreement could never complete - six processes waiting on each
+            // other at version 347. So the flags are not an assertion to dodge; they are this
+            // driver's phase, and a process that joins mid-match is in the later phase.
+            if (options != null && options.Mode == PrivateOnlineRehearsalMode.RejoinReturn)
+            {
+                initiativeFinalObserved = true;
+                tieBehaviorObserved = true;
+                minionInvalidationObserved = true;
+                minionFinalObserved = true;
+            }
         }
 
         private void Start()
@@ -444,6 +484,12 @@ namespace GuardsDigital.Presentation.Interaction
                 ClientMarker("hud", machine.LatestProjection.Version);
                 if (options.Mode == PrivateOnlineRehearsalMode.HostLoss)
                     ClientMarker("host-loss-ready", machine.LatestProjection.Version);
+                // Milestone 8.35k. The relaunched process is back in the seat it left, holding an
+                // owner-scoped HUD, having carried nothing across a process boundary but what it
+                // found on disk. Reaching this line at all is what the cohort exists to observe.
+                if (options.Mode == PrivateOnlineRehearsalMode.RejoinReturn &&
+                    string.Equals(options.Seat.Value, ReconnectSeat, StringComparison.Ordinal))
+                    ClientMarker("rejoin-return-pass", machine.LatestProjection.Version);
             }
 
             AuditProjection(machine);
@@ -454,18 +500,38 @@ namespace GuardsDigital.Presentation.Interaction
             if (options.Mode == PrivateOnlineRehearsalMode.HostLoss)
                 return;
 
-            if (HandleReconnect(machine))
+            // Milestone 8.35k. Two cohorts cut the same seat and they must not both fire. The match
+            // cohort replaces a socket under a surviving client; this one ends the process. The
+            // relaunched process cuts nothing at all - it is the return.
+            if (options.Mode == PrivateOnlineRehearsalMode.Rejoin)
+            {
+                if (HandleRejoinCut(machine))
+                    return;
+            }
+            else if (options.Mode != PrivateOnlineRehearsalMode.RejoinReturn &&
+                HandleReconnect(machine))
+            {
                 return;
+            }
 
             var outcome = compositionRoot.Runtime.ReadModel.Outcome;
             if (outcome.HasEnded)
             {
                 if (!outcomeSeenUtc.HasValue)
                 {
+                    // Milestone 8.35k. The in-process reconnect is the MATCH cohort's required
+                    // observation and only its own. The rejoin cohorts cut the same seat a
+                    // different way - the process dies and a new one returns - so requiring
+                    // `reconnectCompleted` of them would fail a run that did exactly what it was
+                    // asked to. Their own required observation is the marker pair the runner waits
+                    // on across two processes, which no single process can assert about itself.
+                    var owesInProcessReconnect =
+                        options.Mode == PrivateOnlineRehearsalMode.Match &&
+                        string.Equals(options.Seat.Value, ReconnectSeat, StringComparison.Ordinal) &&
+                        !reconnectCompleted;
                     if (!initiativeFinalObserved || !tieBehaviorObserved ||
                         !minionInvalidationObserved || !minionFinalObserved ||
-                        (string.Equals(options.Seat.Value, ReconnectSeat,
-                             StringComparison.Ordinal) && !reconnectCompleted))
+                        owesInProcessReconnect)
                     {
                         Fail("match-ended-before-required-rehearsal-observations");
                         return;
@@ -494,6 +560,39 @@ namespace GuardsDigital.Presentation.Interaction
                 DateTime.UtcNow < nextActionUtc)
                 return;
             TryDriveMatch(machine);
+        }
+
+        /// <summary>
+        /// Milestone 8.35k. Ends this PROCESS at the same cut point the match cohort replaces a
+        /// socket at, so the two differ in exactly one thing: whether the client object survives.
+        /// </summary>
+        /// <remarks>
+        /// <para>That one difference is the whole defect. Every reconnect fixture at every tier -
+        /// this driver's own match cohort included - kept the client object alive and replaced only
+        /// its transport, which is the one path a real player never walks. A player relaunches.</para>
+        /// <para><b>No Goodbye is sent, deliberately.</b> Leaving forfeits the seat and a crash
+        /// reserves it, so a polite departure here would hand the seat back as Open and the cohort
+        /// would prove the opposite of what it is for. <c>Application.Quit</c> reaches the lobby's
+        /// <c>OnDestroy</c>, which disposes the transport and sends nothing - which is what a killed
+        /// process looks like from the host's end.</para>
+        /// <para>The cut point matches <see cref="HandleReconnect"/>'s exactly - the Initiative
+        /// outcome observed, a version past 20, and not mid-request - so the two cohorts cut
+        /// comparable states and a difference in result is about the cut and not about when.</para>
+        /// </remarks>
+        private bool HandleRejoinCut(PrivateSessionClient machine)
+        {
+            if (!string.Equals(options.Seat.Value, ReconnectSeat, StringComparison.Ordinal))
+                return false;
+            if (!initiativeFinalObserved || machine.LatestProjection.Version < 20 ||
+                machine.IsWaitingForHost)
+                return false;
+
+            PrivateOnlineMarkers.Log(
+                "REHEARSAL_CLIENT event=rejoin-process-exiting seat=" + options.Seat.Value +
+                " version=" +
+                machine.LatestProjection.Version.ToString(CultureInfo.InvariantCulture));
+            Quit(0);
+            return true;
         }
 
         private bool HandleReconnect(PrivateSessionClient machine)
@@ -1063,8 +1162,18 @@ namespace GuardsDigital.Presentation.Interaction
             UnityEngine.Application.Quit(code);
         }
 
-        private static string ModeLabel(PrivateOnlineRehearsalMode mode) =>
-            mode == PrivateOnlineRehearsalMode.HostLoss ? "host-loss" : "match";
+        // Milestone 8.35k. Named per cohort rather than "everything that is not host-loss is a
+        // match", so a log says which of the four a process was running.
+        private static string ModeLabel(PrivateOnlineRehearsalMode mode)
+        {
+            switch (mode)
+            {
+                case PrivateOnlineRehearsalMode.HostLoss: return "host-loss";
+                case PrivateOnlineRehearsalMode.Rejoin: return "rejoin";
+                case PrivateOnlineRehearsalMode.RejoinReturn: return "rejoin-return";
+                default: return "match";
+            }
+        }
 
         private void OnDestroy()
         {

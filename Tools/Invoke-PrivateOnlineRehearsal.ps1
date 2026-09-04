@@ -13,8 +13,8 @@
         compatible straggler into the full session, and one client offering the wrong session key.
         It proves seating and refusal vocabulary only; it plays no match.
 
-    -Topology SixClient -FaultPlan Full (milestone 8.35c)
-        The playtest-build rehearsal. Two cohorts run against one freshly built player, each one
+    -Topology SixClient -FaultPlan Full (milestone 8.35c; third cohort added at 8.35k)
+        The playtest-build rehearsal. Three cohorts run against one freshly built player, each one
         dedicated seatless host process plus six client processes on the six canonical seats,
         every process entering through the real primitive lobby:
 
@@ -33,6 +33,17 @@
                             "terminate the host"; every other process must always exit on its own.
                             Each client must observe terminal host loss, find its input disabled,
                             and exit zero.
+
+          rejoin cohort     milestone 8.35k, and the one the 2026-09-03 playtest needed. The same
+                            topology reaches the match, and then red-player-02's PROCESS EXITS -
+                            no Goodbye, so the host reserves the seat exactly as it does for a
+                            crash. The runner then launches a BRAND-NEW process on the same seat,
+                            which carries nothing across the process boundary but what it finds on
+                            disk, and it must return by SEAT_RECLAIMED with a rotated epoch and
+                            converge on the same outcome as the other five. The match cohort's
+                            reconnect above replaces only a socket, under a client object that
+                            survives holding its capability - which is the one path a real player
+                            never walks, and why every tier's reconnect evidence missed this.
 
     -Topology SixClient requires -FaultPlan Full, and -Topology LoopbackSmoke requires
     -FaultPlan None. The 8.35c matrix row names exactly one six-client combination - "full match,
@@ -132,8 +143,16 @@ function Get-FirstFailure {
     foreach ($path in $LogPaths) {
         $text = Get-LogText -LogPath $path
         if ($text -match 'GUARDS_ONLINE: FAIL') {
-            $line = ($text -split "`r?`n" | Where-Object { $_ -match 'GUARDS_ONLINE: FAIL' })[0]
-            return "$($line.Trim()) (see $path)"
+            # Milestone 8.35k. @() is load-bearing, not decoration. A pipeline matching exactly ONE
+            # line returns that line as a bare string, and [0] on a string is its first CHARACTER -
+            # so this reported "[System.Char] does not contain a method named 'Trim'" and threw,
+            # replacing the real rehearsal failure with a PowerShell error at the one moment the
+            # runner exists to explain what went wrong. Every failure reported here is a first
+            # failure, so the single-match case is the COMMON one, not the edge.
+            $lines = @($text -split "`r?`n" | Where-Object { $_ -match 'GUARDS_ONLINE: FAIL' })
+            if ($lines.Count -gt 0) {
+                return "$([string]$lines[0]) (see $path)".Trim()
+            }
         }
     }
     return $null
@@ -284,7 +303,7 @@ function Start-RehearsalPlayer {
     param(
         [Parameter(Mandatory = $true)] [string] $Name,
         [Parameter(Mandatory = $true)] [ValidateSet('host', 'client')] [string] $Role,
-        [Parameter(Mandatory = $true)] [ValidateSet('match', 'host-loss')] [string] $Mode,
+        [Parameter(Mandatory = $true)] [ValidateSet('match', 'host-loss', 'rejoin', 'rejoin-return')] [string] $Mode,
         [Parameter(Mandatory = $false)] [string] $Seat = '',
         [Parameter(Mandatory = $true)] [string] $Address,
         [Parameter(Mandatory = $true)] [int] $Port,
@@ -475,10 +494,16 @@ if ($Topology -eq 'LoopbackSmoke') {
 else {
     $matchHostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-sixclient-match-host.log')
     $lossHostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-sixclient-hostloss-host.log')
+    # Milestone 8.35k. The rejoin cohort's host, and the relaunched seat's own log - a SEPARATE
+    # path from the exited process's, because Start-RehearsalPlayer clears the log it is given and
+    # the dead process's `rejoin-process-exiting` line is half the evidence.
+    $rejoinHostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-sixclient-rejoin-host.log')
     $matchPlayers = @()
     $lossPlayers = @()
+    $rejoinPlayers = @()
     $matchClients = @()
     $lossClients = @()
+    $rejoinClients = @()
     $identityLine = ''
 
     try {
@@ -596,8 +621,93 @@ else {
         Write-Output '== Step 5: every host-loss client exits on its own =='
         Assert-PlayerExit -Players $lossClients -DeadlineSeconds 180 -Description 'host-loss cohort'
 
+        # ------------------------------------------------------------------ rejoin cohort
+        # Milestone 8.35k. The cohort the 2026-09-03 playtest needed and no tier had. The match
+        # cohort above already cuts a seat mid-match and brings it back - but through
+        # InterruptConnectionForRehearsal, which replaces the socket UNDER A SURVIVING CLIENT
+        # OBJECT that still holds its capability. A real player relaunches. This cohort differs in
+        # exactly one thing: the process dies, and a new one comes back to the same seat.
+        Write-Output '== Step 6: rejoin cohort - the cut kills a PROCESS, and a new one returns =='
+        $rejoinPort = Get-FreeLoopbackPort
+        $rejoinKey = [System.Guid]::NewGuid().ToString('N')
+        $rehearsalKeys += $rejoinKey
+        Write-Output "Loopback endpoint: 127.0.0.1:$rejoinPort"
+
+        $rejoinBudget = [Math]::Max(300, $TimeoutSeconds - 120)
+        $rejoinHost = Start-RehearsalPlayer -Name 'rejoin-host' -Role 'host' -Mode 'rejoin' `
+            -Address '127.0.0.1' -Port $rejoinPort -Key $rejoinKey -BudgetSeconds $rejoinBudget -LogPath $rejoinHostLog
+        $rejoinPlayers += $rejoinHost
+        Wait-ForLogMarker -LogPath $rejoinHostLog -Pattern 'GUARDS_ONLINE: LOBBY_HOSTING port=' `
+            -DeadlineSeconds 180 -Description 'the rejoin host to bind its lobby'
+
+        foreach ($seat in $seats) {
+            $log = [System.IO.Path]::Combine($tmpRoot, "private-online-sixclient-rejoin-$seat.log")
+            $player = Start-RehearsalPlayer -Name $seat -Role 'client' -Mode 'rejoin' -Seat $seat `
+                -Address '127.0.0.1' -Port $rejoinPort -Key $rejoinKey -BudgetSeconds $rejoinBudget -LogPath $log
+            $rejoinPlayers += $player
+            $rejoinClients += $player
+        }
+
+        $rejoinLogs = @($rejoinHostLog) + @($rejoinClients | ForEach-Object { $_.Log })
+        Wait-ForCohortMarkers -Requirements @(
+                [pscustomobject]@{ Log = $rejoinHostLog; Pattern = 'GUARDS_ONLINE: MATCH_STARTED' }
+            ) -WatchLogs $rejoinLogs -DeadlineSeconds 420 -Description 'the rejoin cohort match to begin'
+
+        $leaver = $rejoinClients | Where-Object { $_.Seat -eq $reconnectSeat }
+        $leaverLog = $leaver.Log
+        Wait-ForCohortMarkers -Requirements @(
+                [pscustomobject]@{ Log = $leaverLog
+                    Pattern = ('REHEARSAL_CLIENT event=rejoin-process-exiting seat=' + [regex]::Escape($reconnectSeat)) }
+            ) -WatchLogs $rejoinLogs -DeadlineSeconds 420 `
+            -Description ('the ' + $reconnectSeat + ' process to reach its cut point and exit')
+
+        # The process must actually be GONE. If it survived, this cohort is the match cohort again
+        # and proves nothing, so this is an assertion rather than a convenience wait.
+        if (-not $leaver.Process.WaitForExit(120000)) {
+            throw "The $reconnectSeat process did not exit at its cut point; a surviving process would make this cohort a duplicate of the match cohort."
+        }
+        Write-Output "The $reconnectSeat PROCESS has exited; its client object and its in-memory capability went with it."
+
+        # It crashed, it did not leave: no Goodbye was sent, so the host must HOLD the seat. A
+        # SEAT_RELEASED here would mean the teardown said goodbye, and the cohort would be testing
+        # forfeiture instead of return.
+        Wait-ForLogMarker -LogPath $rejoinHostLog `
+            -Pattern ('GUARDS_ONLINE: SEAT_RESERVED ordinal=\d+ seat=' + [regex]::Escape($reconnectSeat)) `
+            -DeadlineSeconds 120 -Description 'the host to reserve the crashed seat rather than release it'
+
+        Write-Output "Relaunching $reconnectSeat as a brand-new process, exactly as a player restarts the game."
+        $returnLog = [System.IO.Path]::Combine($tmpRoot, "private-online-sixclient-rejoin-return-$reconnectSeat.log")
+        $returned = Start-RehearsalPlayer -Name ($reconnectSeat + '-returned') -Role 'client' -Mode 'rejoin-return' `
+            -Seat $reconnectSeat -Address '127.0.0.1' -Port $rejoinPort -Key $rejoinKey `
+            -BudgetSeconds $rejoinBudget -LogPath $returnLog
+        $rejoinPlayers += $returned
+        $rejoinClients = @($rejoinClients | Where-Object { $_.Seat -ne $reconnectSeat }) + @($returned)
+        $rejoinLogs = @($rejoinHostLog) + @($rejoinClients | ForEach-Object { $_.Log }) + @($leaverLog)
+
+        Wait-ForCohortMarkers -Requirements @(
+                [pscustomobject]@{ Log = $returnLog
+                    Pattern = ('REHEARSAL_CLIENT event=rejoin-return-pass seat=' + [regex]::Escape($reconnectSeat)) }
+            ) -WatchLogs $rejoinLogs -DeadlineSeconds 420 `
+            -Description 'the relaunched process to be seated again holding its own owner-scoped HUD'
+        Wait-ForLogMarker -LogPath $rejoinHostLog `
+            -Pattern ('GUARDS_ONLINE: SEAT_RECLAIMED ordinal=\d+ seat=' + [regex]::Escape($reconnectSeat) + ' epoch=2') `
+            -DeadlineSeconds 120 -Description 'the host to record a RECLAIM with a rotated epoch'
+        Write-Output "$reconnectSeat returned by RECLAIM with a rotated epoch, from a process that never held the capability in memory."
+
+        $rejoinOutcomes = @()
+        foreach ($player in $rejoinClients) {
+            $rejoinOutcomes += [pscustomobject]@{ Log = $player.Log; Pattern = 'GUARDS_ONLINE: REHEARSAL_OUTCOME seat=' }
+        }
+        $rejoinOutcomes += [pscustomobject]@{ Log = $rejoinHostLog; Pattern = 'GUARDS_ONLINE: REHEARSAL_OUTCOME version=' }
+        Wait-ForCohortMarkers -Requirements $rejoinOutcomes -WatchLogs $rejoinLogs `
+            -DeadlineSeconds ([Math]::Max(600, $TimeoutSeconds - 300)) `
+            -Description 'the rejoin cohort to reach one authoritative outcome, the returned seat included'
+
+        Write-Output '== Step 7: every rejoin-cohort process exits on its own =='
+        Assert-PlayerExit -Players $rejoinPlayers -DeadlineSeconds 240 -Description 'rejoin cohort'
+
         # ------------------------------------------------------------------ evidence
-        Write-Output '== Step 6: read every log; exit codes alone are never evidence =='
+        Write-Output '== Step 8: read every log; exit codes alone are never evidence =='
         $matchHostText = Get-LogText -LogPath $matchHostLog
 
         $identityMatch = [regex]::Match($matchHostText, 'GUARDS_ONLINE: REHEARSAL_HOST seed=\d+ mode=match (?<identity>.+)')
@@ -767,13 +877,70 @@ else {
             }
         }
 
-        $allLogs = @($matchLogs) + @($lossLogs)
+        # -------------------------------------------------- rejoin cohort evidence
+        # Milestone 8.35k. The cohort's claim is a pair of facts no single process can state: one
+        # process announced it was exiting, and a DIFFERENT one came back to that seat by reclaim.
+        $rejoinHostText = Get-LogText -LogPath $rejoinHostLog
+        foreach ($marker in @('GUARDS_ONLINE: MATCH_STARTED',
+                ('GUARDS_ONLINE: SEAT_RESERVED ordinal=\d+ seat=' + [regex]::Escape($reconnectSeat)),
+                ('GUARDS_ONLINE: SEAT_RECLAIMED ordinal=\d+ seat=' + [regex]::Escape($reconnectSeat) + ' epoch=2'),
+                'GUARDS_ONLINE: REHEARSAL_OUTCOME version=', 'GUARDS_ONLINE: EXIT 0')) {
+            if ($rejoinHostText -notmatch $marker) {
+                Write-Output "FAIL: the rejoin host log is missing '$marker'."
+                $rehearsalFailed = $true
+            }
+        }
+        # The seat was HELD, not given up: a crash reserves and only a deliberate leave forfeits.
+        if ($rejoinHostText -match ('GUARDS_ONLINE: SEAT_RELEASED ordinal=\d+ seat=' + [regex]::Escape($reconnectSeat))) {
+            Write-Output "FAIL: the rejoin cohort's cut released seat $reconnectSeat instead of reserving it; a crash must never forfeit."
+            $rehearsalFailed = $true
+        }
+        # The two halves came from two different processes. Same log for both would mean the
+        # process never died and the cohort silently degraded into the match cohort.
+        $leaverText = Get-LogText -LogPath $leaverLog
+        $returnText = Get-LogText -LogPath $returnLog
+        if ($leaverText -notmatch ('REHEARSAL_CLIENT event=rejoin-process-exiting seat=' + [regex]::Escape($reconnectSeat))) {
+            Write-Output "FAIL: the cut process never announced its exit. See $leaverLog"
+            $rehearsalFailed = $true
+        }
+        if ($returnText -match 'REHEARSAL_CLIENT event=rejoin-process-exiting') {
+            Write-Output "FAIL: the relaunched process cut itself; the return must be a return. See $returnLog"
+            $rehearsalFailed = $true
+        }
+        foreach ($required in @(('REHEARSAL_CLIENT event=rejoin-return-pass seat=' + [regex]::Escape($reconnectSeat)),
+                'REHEARSAL_CLIENT event=hud', 'GUARDS_ONLINE: REHEARSAL_OUTCOME seat=', 'GUARDS_ONLINE: EXIT 0')) {
+            if ($returnText -notmatch $required) {
+                Write-Output "FAIL: the relaunched $reconnectSeat process is missing '$required'. See $returnLog"
+                $rehearsalFailed = $true
+            }
+        }
+        # It came back by RECLAIM and not by an ordinary claim - the distinction the whole
+        # corrective is about, and the one a refused rejoin would fail on.
+        $rejoinClaims = [regex]::Matches($rejoinHostText,
+            ('SEAT_CLAIMED ordinal=\d+ seat=' + [regex]::Escape($reconnectSeat)))
+        if ($rejoinClaims.Count -ne 1) {
+            Write-Output "FAIL: expected exactly one first claim of $reconnectSeat in the rejoin cohort; saw $($rejoinClaims.Count). A second claim would mean it returned as a stranger rather than as itself."
+            $rehearsalFailed = $true
+        }
+        if ($rejoinHostText -match 'REJECTED ordinal=\d+ reason=SeatReserved') {
+            Write-Output 'FAIL: the rejoin cohort was refused SeatReserved - this is the reported defect, unfixed.'
+            $rehearsalFailed = $true
+        }
+        foreach ($player in $rejoinClients) {
+            if ($player.Process.ExitCode -ne 0) {
+                Write-Output "FAIL: rejoin seat $($player.Seat) exited $($player.Process.ExitCode)."
+                $rehearsalFailed = $true
+            }
+        }
+
+        $allLogs = @($matchLogs) + @($lossLogs) + @($rejoinLogs)
     }
     catch {
         Write-Output "FAIL: $($_.Exception.Message)"
         $rehearsalFailed = $true
-        $allLogs = @($matchHostLog, $lossHostLog) +
-            @($matchClients | ForEach-Object { $_.Log }) + @($lossClients | ForEach-Object { $_.Log })
+        $allLogs = @($matchHostLog, $lossHostLog, $rejoinHostLog) +
+            @($matchClients | ForEach-Object { $_.Log }) + @($lossClients | ForEach-Object { $_.Log }) +
+            @($rejoinClients | ForEach-Object { $_.Log })
     }
     finally {
         foreach ($process in $processes) {
@@ -803,6 +970,17 @@ foreach ($log in ($allLogs | Where-Object { -not [string]::IsNullOrWhiteSpace($_
     foreach ($key in $rehearsalKeys) {
         if ($output.IndexOf($key, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
             Write-Output "FAIL: $log discloses the session key."
+            $rehearsalFailed = $true
+        }
+    }
+    # Milestone 8.35k. The reconnect capability is owner-private, classified alongside the hand,
+    # and persisting it on the returning player's machine must not have loosened that. The runner
+    # cannot grep for the value - it is host-minted at runtime and deliberately never told to
+    # anyone but the one seat - so it greps for the SHAPE a leak would take: every marker in this
+    # system is name=value, so a capability that reached a log would arrive as one.
+    foreach ($shape in @('capability=', 'reconnectCapability')) {
+        if ($output.IndexOf($shape, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+            Write-Output "FAIL: $log names the reconnect capability ('$shape'); it is owner-private."
             $rehearsalFailed = $true
         }
     }

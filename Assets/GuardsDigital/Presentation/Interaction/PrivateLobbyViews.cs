@@ -310,6 +310,9 @@ namespace GuardsDigital.Presentation.Interaction
         private string sessionKey = string.Empty;
         private PrivateSessionEndpoint dialled;
         private string signature = string.Empty;
+
+        /// <summary>Milestone 8.35k. So one refusal is logged once rather than every redraw.</summary>
+        private bool refusalReported;
         private Label matchStatus;
         private bool onlineHudAttached;
         private bool outcomeReported;
@@ -441,6 +444,17 @@ namespace GuardsDigital.Presentation.Interaction
             if (!string.Equals(current, signature, StringComparison.Ordinal))
             {
                 signature = current;
+                // Milestone 8.35k. The diagnostic gap that made this corrective take a day to
+                // diagnose from a returned playtest log: a refused client left the reason nowhere.
+                // The reason is the host's own named refusal and carries nothing private - the
+                // capability is not a parameter it can arrive through.
+                if (machine != null &&
+                    machine.State == PrivateSessionClientState.Rejected &&
+                    !refusalReported)
+                {
+                    refusalReported = true;
+                    PrivateOnlineMarkers.Log("LOBBY_REFUSED reason=" + machine.RejectionReason);
+                }
                 if (!onlineHudAttached && machine != null && machine.HasMatchStarted &&
                     machine.State == PrivateSessionClientState.Seated &&
                     machine.LatestProjection != null)
@@ -507,6 +521,18 @@ namespace GuardsDigital.Presentation.Interaction
             outcomeReported = true;
             PrivateOnlineMarkers.Log(line);
         }
+
+        /// <summary>
+        /// Milestone 8.35k. Where this machine keeps its road back between processes.
+        /// </summary>
+        /// <remarks>
+        /// `persistentDataPath` is per-user and outside the installation, so a packaged build stays
+        /// read-only and a returned playtest log bundle sweeps up nothing from here. The Application
+        /// assembly is Unity-free, so it takes the directory rather than discovering it - this is the
+        /// one place that knows Unity is underneath.
+        /// </remarks>
+        private static IRetainedSeatCapabilityStore RetainedCapabilities() =>
+            new FileRetainedSeatCapabilityStore(UnityEngine.Application.persistentDataPath);
 
         /// <summary>
         /// Everything a player could see, as one string. The lobby redraws when this moves and not
@@ -627,9 +653,14 @@ namespace GuardsDigital.Presentation.Interaction
             joinedSeat = entry.Seat;
             sessionKey = entry.SessionKey;
             dialled = endpoint;
+            refusalReported = false;
+            // Milestone 8.35k. The road back for a relaunched process. The store is consulted by
+            // the client itself once the host names the session in its Welcome - the correlation is
+            // the host's to assign, so it cannot be keyed here, before the handshake.
             machine = new PrivateSessionClient(
                 compositionRoot.Runtime.SessionIdentity, joinedSeat, sessionKey,
-                clientOutbox, new CryptoNonceSource());
+                clientOutbox, new CryptoNonceSource(),
+                retainedCapabilities: RetainedCapabilities());
             OpenTransport();
             if (!Dial())
             {

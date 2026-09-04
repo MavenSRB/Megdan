@@ -160,6 +160,15 @@ namespace GuardsDigital.Tests.EditMode
         private readonly Dictionary<int, ClientLink> links = new Dictionary<int, ClientLink>();
 
         /// <summary>
+        /// Milestone 8.35k. One retained-capability store per SEAT, because in this harness one seat
+        /// is one player on one machine. A client constructed later for the same seat therefore
+        /// finds what the earlier one retained - which is exactly what a relaunched process does,
+        /// and what makes the fresh-process case reachable without a second process.
+        /// </summary>
+        private readonly Dictionary<string, IRetainedSeatCapabilityStore> machineStores =
+            new Dictionary<string, IRetainedSeatCapabilityStore>(StringComparer.Ordinal);
+
+        /// <summary>
         /// Milestone 8.34. Ordinals the host has let go of, with a stream assembler each, so a
         /// fixture can deliver bytes to a connection that no longer exists and watch them be
         /// discarded rather than crash the harness.
@@ -248,45 +257,36 @@ namespace GuardsDigital.Tests.EditMode
             int ordinal,
             string seat,
             PrivateSessionIdentity identity = null,
-            Func<long> timeSource = null)
+            Func<long> timeSource = null,
+            IRetainedSeatCapabilityStore machineStore = null)
         {
             var link = new ClientLink { Seat = seat, Ordinal = ordinal };
-            var arguments = new object[]
+            // Milestone 8.35k. By default a client for a seat gets THAT seat's machine store, so a
+            // later client for the same seat finds what the earlier one retained - a relaunched
+            // process on the same machine. A caller that wants a client with no road back at all,
+            // which is what somebody ELSE's machine is, supplies its own empty store.
+            var store = machineStore;
+            if (store == null && !machineStores.TryGetValue(seat, out store))
             {
+                store = new InMemoryRetainedSeatCapabilityStore();
+                machineStores[seat] = store;
+            }
+
+            // Milestone 8.35k. Called directly. This was a reflected lookup of an exact six-type
+            // signature, left behind as a pre-fix scaffold so that a review's closing run would
+            // report one missing constructor rather than failing to compile the whole fixture -
+            // and the clock it was waiting for arrived at milestone 8.35b. A stale scaffold is not
+            // free: an exact GetConstructor match is falsified by an ADDED OPTIONAL parameter, so
+            // this milestone's retained-capability argument turned it into a red case in a fixture
+            // that has nothing to do with either clocks or capabilities.
+            link.Machine = new PrivateSessionClient(
                 identity ?? Identity,
                 new SeatId(seat),
                 sessionKey,
                 new ClientOutbox(this, link),
                 new CountingNonceSource((byte)ordinal),
-                timeSource
-            };
-            if (timeSource == null)
-            {
-                link.Machine = new PrivateSessionClient(
-                    (PrivateSessionIdentity)arguments[0],
-                    (SeatId)arguments[1],
-                    (string)arguments[2],
-                    (IPrivateSessionClientOutbox)arguments[3],
-                    (IPrivateSessionNonceSource)arguments[4]);
-            }
-            else
-            {
-                // Reflection keeps the pre-fix closing run executable: before the latency seam is
-                // added, the named test fails on this missing constructor instead of failing to
-                // compile the whole fixture and hiding the other independent review findings.
-                var constructor = typeof(PrivateSessionClient).GetConstructor(new[]
-                {
-                    typeof(PrivateSessionIdentity),
-                    typeof(SeatId),
-                    typeof(string),
-                    typeof(IPrivateSessionClientOutbox),
-                    typeof(IPrivateSessionNonceSource),
-                    typeof(Func<long>)
-                });
-                Assert.That(constructor, Is.Not.Null,
-                    "Latency feedback needs an injected clock so its boundary is deterministic.");
-                link.Machine = (PrivateSessionClient)constructor.Invoke(arguments);
-            }
+                timeSource,
+                store);
             links[ordinal] = link;
             nextOrdinal = Math.Max(nextOrdinal, ordinal + 1);
             link.Machine.OnConnected();
@@ -786,6 +786,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.Fail("No seated client holds an offered command to submit.");
             return 0;
         }
+
+        /// <summary>Milestone 8.35k. The next free connection ordinal, for a relaunched process.</summary>
+        public int NextOrdinal() => nextOrdinal++;
 
         public int OrdinalOf(string seat) =>
             links.Single(pair => pair.Value.Seat == seat).Key;
