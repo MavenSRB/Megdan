@@ -109,6 +109,15 @@ namespace GuardsDigital.Application
             {
                 WriteOffer(writer, projection.AvailableHoldOffer.Value);
             }
+
+            // Milestone 8.35r. The standing rewind, last in the record so a version 5 peer's
+            // mis-read of it stops at the end of the payload rather than sliding every field.
+            writer.Write(projection.UndoMarker.IsStated);
+            if (projection.UndoMarker.IsStated)
+            {
+                writer.Write(projection.UndoMarker.HeroId.Value);
+                writer.Write(projection.UndoMarker.Count);
+            }
         }
 
         public static bool TryRead(BinaryReader reader, out NetworkProjectionDetailRecord record)
@@ -301,6 +310,19 @@ namespace GuardsDigital.Application
                 return false;
             }
 
+            NetworkUndoMarkerRow undoMarker = null;
+            if (reader.ReadBoolean())
+            {
+                var undoHeroId = reader.ReadString();
+                var undoCount = reader.ReadInt32();
+                if (string.IsNullOrWhiteSpace(undoHeroId) || undoCount < 1)
+                {
+                    return false;
+                }
+
+                undoMarker = new NetworkUndoMarkerRow(undoHeroId, undoCount);
+            }
+
             record = new NetworkProjectionDetailRecord(
                 teamAgreement,
                 completedRounds,
@@ -325,7 +347,8 @@ namespace GuardsDigital.Application
                 Array.AsReadOnly(turnActions.ToArray()),
                 Array.AsReadOnly(fastTravel.ToArray()),
                 Array.AsReadOnly(clears.ToArray()),
-                holdOffer);
+                holdOffer,
+                undoMarker);
             return true;
         }
 

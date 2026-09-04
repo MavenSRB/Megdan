@@ -20,7 +20,26 @@ namespace GuardsDigital.Application
         public const string FamilyName = "guards-private-online";
 
         /// <summary>
-        /// Protocol version 5: milestone 8.35l gave a greyed action offer a reason. Each offer row
+        /// Protocol version 6: milestone 8.35r opened the seat-public event channel and published
+        /// who is being waited on. Three things move, and they move together deliberately - this is
+        /// the one bump the remaining wire growth was gathered into, rather than three.
+        ///
+        /// <para>(1) The seat projection message now carries the match log beside that seat's own
+        /// record, as a bounded window of typed lines. A version 5 peer reaches the end of the
+        /// record and then meets a line count it has no field for. (2) The projection detail
+        /// record gained the standing rewind marker at its end; a version 5 peer reading a version 6
+        /// record would run off the end of the payload. (3) <c>DecisionOwner</c> joined
+        /// <c>IMatchReadModel</c> - and it is the one part that moves NO bytes, because the seat
+        /// projection record has carried it since milestone 8.32 and only the read-model contract
+        /// was missing it. It is named here so the record does not read as if it grew for it.</para>
+        ///
+        /// <para>The event channel is a separate kind rather than a field on the seat projection
+        /// because the size was measured, not estimated: the largest complete projection across the
+        /// seeded six-seat walk is 30,574 bytes, and the synchronization sweep's own guard is half
+        /// the sealed frame bound - 32,747 - leaving 2,173 bytes. A window of recent history does
+        /// not fit there, and that guard is a ratchet rather than a budget to spend.</para>
+        ///
+        /// <para>Protocol version 5: milestone 8.35l gave a greyed action offer a reason. Each offer row
         /// now carries an optional block naming the standing rule modification that refused it - its
         /// kind, the activity barred, and the controlling hero, source card and Active effect. A
         /// version 4 peer would read that block as the next offer's card id and mis-decode the whole
@@ -48,7 +67,7 @@ namespace GuardsDigital.Application
         /// version 1 when milestone 8.35b gave SelectedActor its Tie Breaker meaning. Every
         /// superseded version is refused from the bounded header rather than reinterpreted.</para>
         /// </summary>
-        public const int Version = 5;
+        public const int Version = 6;
 
         /// <summary>The four ASCII bytes that open every frame: G, D, P, O.</summary>
         public const byte FrameMagic0 = 0x47;

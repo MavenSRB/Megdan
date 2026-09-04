@@ -123,6 +123,13 @@ namespace GuardsDigital.Application
 
         /// <summary>Milestone 8.35f. Host to that connection: what its rewind did, or why not.</summary>
         UndoResult = 20
+
+        // Milestone 8.35r deliberately added NO kind here. The seat-public match log rides inside
+        // SeatProjection's own message instead, and the reason is a measurement rather than a
+        // preference: a separate host frame consumes a gameplay envelope sequence, and the
+        // fault-injection suite showed it absorbing the very gaps a dropped projection has to leave
+        // behind for the client's recovery to see. Sharing the projection's frame gives the log that
+        // whole ordered-stream discipline for free. See NetworkSeatProjectionMessage.MatchLog.
     }
 
     /// <summary>

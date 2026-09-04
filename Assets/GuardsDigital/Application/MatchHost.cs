@@ -431,6 +431,15 @@ namespace GuardsDigital.Application
         // the user's printed rule.
         private string undoTurnMarker = string.Empty;
         private SeatId undoActorSeat;
+
+        /// <summary>
+        /// Milestone 8.35r. The rewind run currently standing: whose it is, and how far it has gone.
+        /// Held here rather than in the session because only this door knows WHICH hero rewound -
+        /// <c>MatchSession.Undo</c> takes no seat and records nothing.
+        /// </summary>
+        private GuardsDigital.Core.Units.Heroes.HeroId undoRunHeroId;
+        private int undoRunCount;
+
         private int undoFloor;
         private bool undoAttackUnderWay;
 
@@ -879,12 +888,22 @@ namespace GuardsDigital.Application
             return seatBinding;
         }
 
+        /// <summary>
+        /// Milestone 8.35r. The standing rewind as a published fact, or none. Every seat receives
+        /// the same one: that a player is taking their turn back is table-public, in the same sense
+        /// and for the same reason as the standing decision's owner.
+        /// </summary>
+        private MatchUndoMarker CurrentUndoMarker() =>
+            undoRunCount > 0 && undoRunHeroId.IsDefined
+                ? MatchUndoMarker.Of(undoRunHeroId, undoRunCount)
+                : MatchUndoMarker.None;
+
         private SeatProjection ProjectionForBound(MatchSeat seat)
         {
             var source = session.Projection;
             var agreement = teamAgreement.ProjectionFor(source, CurrentSeats(), seat);
             return SeatProjectionFactory.ForSeat(
-                source, seat, agreement, CanSeatUndo(seat, out _));
+                source, seat, agreement, CanSeatUndo(seat, out _), CurrentUndoMarker());
         }
 
         private void ConsumeSubmissionId(SubmissionId id)
@@ -980,6 +999,26 @@ namespace GuardsDigital.Application
         internal Action DuringSubmissionForTest { get; set; }
 
         private MatchHostResult Execute(MatchSubmission submission)
+        {
+            var result = ExecuteInner(submission);
+
+            // Milestone 8.35r. Every accepted submission retires the standing rewind marker,
+            // including an accepted Undo. A seat's own rewind run is re-established by
+            // SubmitUndoForSeat immediately after this returns, from the count it captured before
+            // calling in - so the run survives its own undo and nothing else. Clearing here rather
+            // than at the several accepted-command sites is deliberate: this is the one boundary
+            // every mutating submission passes through, and a marker that outlived a Restart or a
+            // snapshot restore would be describing a history that no longer exists.
+            if (result.Accepted)
+            {
+                undoRunHeroId = default;
+                undoRunCount = 0;
+            }
+
+            return result;
+        }
+
+        private MatchHostResult ExecuteInner(MatchSubmission submission)
         {
             switch (submission.Kind)
             {
@@ -1281,6 +1320,10 @@ namespace GuardsDigital.Application
                 ConsumeSubmissionId(submission.Id);
                 executing = true;
                 MatchHostResult inner;
+                // Milestone 8.35r. Captured BEFORE the execute, because an accepted submission
+                // retires the marker inside Execute; this is what lets a run of rewinds by one hero
+                // count up instead of resetting to one each time.
+                var continuingRun = undoRunHeroId.Equals(bound.HeroId) ? undoRunCount : 0;
                 try
                 {
                     DuringSubmissionForTest?.Invoke();
@@ -1289,6 +1332,12 @@ namespace GuardsDigital.Application
                 finally
                 {
                     executing = false;
+                }
+
+                if (inner.Accepted)
+                {
+                    undoRunHeroId = bound.HeroId;
+                    undoRunCount = continuingRun + 1;
                 }
 
                 // The rewind cannot have crossed a turn boundary - the floor is inside this turn -

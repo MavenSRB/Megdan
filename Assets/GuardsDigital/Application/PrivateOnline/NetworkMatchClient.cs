@@ -64,6 +64,7 @@ namespace GuardsDigital.Application
         private NetworkMatchReadModel projection;
         private NetworkSeatProjectionRecord projectedRecord;
         private long projectedRevision = -1;
+        private long projectedLogRevision = -1;
         private bool projectedActionable;
         private PendingEffectAutoConfirm pendingEffectAutoConfirm;
 
@@ -158,6 +159,16 @@ namespace GuardsDigital.Application
                 projectedRecord = record;
                 projectedRevision = revision;
                 projectedActionable = actionable;
+                projectedLogRevision = -1;
+            }
+
+            // Milestone 8.35r. The log has its own revision because it has its own frames: an
+            // update can land between two projection pushes, and a view rebuilt only when the
+            // projection moved would show a log several lines behind the board.
+            if (projectedLogRevision != session.MatchLogRevision)
+            {
+                projection.ReplaceMatchLog(session.MatchLog);
+                projectedLogRevision = session.MatchLogRevision;
             }
 
             return projection;
@@ -324,6 +335,19 @@ namespace GuardsDigital.Application
         private RemovalPreventionPrompt pendingRemovalPrevention;
         private bool decisionContractMaterialized;
         private PendingDecisionContract decisionContract;
+        private IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> matchLog;
+
+        /// <summary>
+        /// Milestone 8.35r. Takes the log the session client has accumulated from the host's own
+        /// channel. It is set separately from <see cref="Replace"/> because the two arrive in
+        /// different frames: a projection push and a match-log update are not one message, and
+        /// pretending otherwise would make the log stale whenever only one of them landed.
+        /// </summary>
+        public void ReplaceMatchLog(
+            IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> log)
+        {
+            matchLog = log;
+        }
 
         public NetworkMatchReadModel(IMatchReadModel trustedContent, MatchContentCatalogs catalogs)
         {
@@ -374,6 +398,53 @@ namespace GuardsDigital.Application
         /// may not mint a rewind any more than it may mint a command.
         /// </summary>
         public bool IsSeatUndoAvailable => actionable && (wire?.IsSeatUndoAvailable ?? false);
+
+        /// <summary>
+        /// Milestone 8.35r. Who the authority is waiting on, read off the record the host has been
+        /// pushing to every seat since milestone 8.32 - this member is what finally exposes it to a
+        /// surface. Unlike <see cref="IsSeatUndoAvailable"/> it is NOT withheld while the view is
+        /// unactionable: "we are waiting for Blue" stays true, and stays worth showing, on a client
+        /// that is resynchronizing or holding a stale view. Withholding it would blank the tray and
+        /// the narration exactly when a player most needs to know what the table is waiting for.
+        /// </summary>
+        public PendingDecisionOwner DecisionOwner
+        {
+            get
+            {
+                var owner = wire?.DecisionOwner;
+                if (owner == null || string.IsNullOrWhiteSpace(owner.FamilyId))
+                {
+                    return wire == null ? trusted.DecisionOwner : PendingDecisionOwner.None;
+                }
+
+                var family = new PendingDecisionFamilyId(owner.FamilyId);
+                return string.IsNullOrEmpty(owner.HeroId)
+                    ? PendingDecisionOwner.ForTeam(family, (TeamSide)owner.TeamSide)
+                    : PendingDecisionOwner.ForHero(family, new HeroId(owner.HeroId));
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35r. The match log the host pushes on its own channel. It is the CLIENT's
+        /// accumulated log rather than anything on the projection record, because the log arrives in
+        /// the projection's frames - see <c>NetworkSeatProjectionMessage.MatchLog</c> for why it
+        /// travels there rather than in the seat record or a frame of its own.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> MatchLog =>
+            matchLog ?? trusted.MatchLog;
+
+        /// <summary>Milestone 8.35r. The standing rewind, carried on the detail record.</summary>
+        public MatchUndoMarker UndoMarker
+        {
+            get
+            {
+                var marker = PublicDetail?.UndoMarker;
+                return marker == null
+                    ? (wire == null ? trusted.UndoMarker : MatchUndoMarker.None)
+                    : MatchUndoMarker.Of(new HeroId(marker.HeroId), marker.Count);
+            }
+        }
+
         public QuickGameSetupState Setup => trusted.Setup;
         public BoardMapDefinition SelectedMap => trusted.SelectedMap;
         public MatchParticipants Participants => trusted.Participants;

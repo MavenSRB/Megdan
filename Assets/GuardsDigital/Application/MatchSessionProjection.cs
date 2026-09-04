@@ -766,6 +766,7 @@ namespace GuardsDigital.Application
     public sealed class MatchSessionProjection : IMatchReadModel
     {
         private readonly Lazy<string> diagnosticSnapshot;
+        private readonly Lazy<IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry>> matchLog;
         private readonly AuthoritativeSnapshotCapture authoritativeCapture;
 
         public MatchSessionProjection(
@@ -889,6 +890,9 @@ namespace GuardsDigital.Application
             IsHistoryAvailable = isHistoryAvailable;
             diagnosticSnapshot = new Lazy<string>(
                 () => RuleEventLogSnapshotEnvelope.Serialize(AuthoritativeSnapshot, DiagnosticEvents),
+                LazyThreadSafetyMode.None);
+            matchLog = new Lazy<IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry>>(
+                () => GuardsDigital.Core.Diagnostics.MatchLogProjection.Derive(DiagnosticEvents),
                 LazyThreadSafetyMode.None);
             AvailableFastTravelOptions = Array.AsReadOnly((availableFastTravelOptions ??
                 Enumerable.Empty<FastTravelOptionProjection>()).ToArray());
@@ -1033,6 +1037,39 @@ namespace GuardsDigital.Application
         /// Director's own Undo is its drawer's rather than this flag's.
         /// </summary>
         public bool IsSeatUndoAvailable => false;
+
+        /// <summary>
+        /// Milestone 8.35r. Always <see cref="MatchUndoMarker.None"/>, for the reason
+        /// <see cref="IsSeatUndoAvailable"/> is always false: the marker is about the SEAT control,
+        /// and the Director's own Undo belongs to no hero.
+        /// </summary>
+        public MatchUndoMarker UndoMarker => MatchUndoMarker.None;
+
+        /// <summary>
+        /// Milestone 8.35r. The Director's full-trust view of the standing decision's owner, read
+        /// off whichever authoritative pending object the contract names.
+        /// </summary>
+        /// <remarks>
+        /// This restates <c>SeatProjectionFactory.OwnerOfStandingDecision</c> rather than answering
+        /// the question a second way: the seat composition already reads its own owner through that
+        /// method, so a Director and a seat that disagreed about who is awaited would be a
+        /// contradiction between two readings of one authority. There is one reading.
+        /// </remarks>
+        public PendingDecisionOwner DecisionOwner => SeatProjectionFactory.OwnerOfStandingDecision(this);
+
+        /// <summary>
+        /// Milestone 8.35r. The seat-public match log, derived from the rule-event log this
+        /// projection already holds.
+        /// </summary>
+        /// <remarks>
+        /// Deferred like <see cref="DiagnosticSnapshot"/> and for the same reason: nothing on the
+        /// accepted-command path reads it, and a reader pays the derivation at most once per
+        /// projection. It is computed from <see cref="DiagnosticEvents"/> - this projection's own
+        /// immutable copy - so a caller holding an older projection reads the log as it was then,
+        /// which is what makes a rewind observable as a truncation rather than as a mutation.
+        /// </remarks>
+        public IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> MatchLog => matchLog.Value;
+
         public QuickGameSetupState Setup { get; }
         public BoardMapDefinition SelectedMap { get; }
         public MatchParticipants Participants { get; }

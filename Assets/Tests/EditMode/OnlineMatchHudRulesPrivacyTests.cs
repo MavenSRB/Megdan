@@ -254,22 +254,29 @@ namespace GuardsDigital.Tests.EditMode
         /// peer would mis-decode everything after it - and because two message kinds were added
         /// that a protocol 2 host answers with <c>UnexpectedMessage</c>. Milestone 8.35g takes it to
         /// protocol 4 for the carried turn-release family, and milestone 8.35l to protocol 5 for the
-        /// blocked-reason block on each action offer row. Every prior version is exercised, so the
-        /// refusal is about the version and not about any one number.
+        /// blocked-reason block on each action offer row. Milestone 8.35r takes it to protocol 6 for
+        /// the seat-public match log and the standing rewind marker. Every prior version is
+        /// exercised, so the refusal is about the version and not about any one number.
         /// </remarks>
         [Test]
-        public void SeatWireMeaning_UsesProtocolFive_AndRejectsEveryOlderFrame()
+        public void SeatWireMeaning_UsesProtocolSix_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(5),
-                "Milestone 8.35l gives a greyed action offer a reason: each offer row carries an " +
-                "optional block naming the rule modification that refused it, so a protocol four " +
-                "peer would read that block as the next offer's card id and mis-decode the whole " +
-                "remainder of the detail record. Protocol four carried the eleventh pending family, " +
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(6),
+                "Milestone 8.35r opens the seat-public event channel: the match log rides inside " +
+                "the seat projection message as a bounded window of typed lines, and the projection " +
+                "detail record gained the standing rewind marker at its end, so a protocol five " +
+                "peer would read a line count it does not expect and run off the end of the " +
+                "payload. DecisionOwner joined the read model in the same milestone and moved no " +
+                "bytes, because the seat record has carried it since 8.32. Protocol five gave a " +
+                "greyed action offer a reason: each offer row carries an optional block naming the " +
+                "rule modification that refused it, so a protocol four peer would read that block " +
+                "as the next offer's card id and mis-decode the whole remainder of the detail " +
+                "record. Protocol four carried the eleventh pending family, " +
                 "PendingTurnRelease, plus the ReleaseTurn command kind; protocol three carried " +
                 "IsSeatUndoAvailable plus SubmitUndo and UndoResult, which protocol two peers could " +
                 "not decode safely.");
 
-            foreach (var older in new[] { 1, 2, 3, 4 })
+            foreach (var older in new[] { 1, 2, 3, 4, 5 })
             {
                 var bytes = PrivateSessionFrameCodec.ChallengeFrame(
                     new SessionChallengeMessage(new byte[] { 1, 2, 3 }));

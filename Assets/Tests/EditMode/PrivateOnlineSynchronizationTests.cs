@@ -437,6 +437,23 @@ namespace GuardsDigital.Tests.EditMode
                 { "TeamAgreement", nameof(NetworkProjectionDetailRecord.TeamAgreement) },
                 { "Cards", "carried as OwnCards plus PublicCards" },
                 { "DecisionContract", nameof(NetworkSeatProjectionRecord.DecisionContractCommands) },
+                // Milestone 8.35r. CARRIED, and it cost no new bytes: the seat record has carried
+                // the decision owner since milestone 8.32, and what was missing was the read-model
+                // declaration, not the wire. Naming it here is what stops the map reading as if the
+                // record grew for it.
+                { "DecisionOwner", nameof(NetworkSeatProjectionRecord.DecisionOwner) },
+                // Milestone 8.35r. CARRIED in the projection's own message, beside the seat record
+                // rather than inside it. The measured reason it is not IN the record: the largest
+                // complete projection leaves 2,173 bytes under this file's own half-bound guard,
+                // which a window of recent history does not fit inside - and that guard is a
+                // ratchet, not a budget. The reason it is not its own frame either is in
+                // NetworkSeatProjectionMessage.MatchLog. An exclusion was never available: the
+                // floor below is already at 7.
+                { "MatchLog", nameof(NetworkSeatProjectionMessage.MatchLog) },
+                // Milestone 8.35r. CARRIED on the detail record. A client cannot derive it: an undo
+                // records no command and no rule event, so the only material a seat holds says
+                // nothing about who rewound or how far.
+                { "UndoMarker", nameof(NetworkProjectionDetailRecord.UndoMarker) },
                 { "PendingInitiativeChoice", nameof(NetworkProjectionDetailRecord.PendingInitiativeChoice) },
                 { "PendingMovementResolution", nameof(NetworkProjectionDetailRecord.PendingMovementResolution) },
                 { "HasPendingMovementResolution", nameof(NetworkProjectionDetailRecord.PendingMovementResolution) },

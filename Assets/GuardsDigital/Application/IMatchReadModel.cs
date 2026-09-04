@@ -97,6 +97,56 @@ namespace GuardsDigital.Application
         /// </summary>
         PendingDecisionContract DecisionContract { get; }
 
+        /// <summary>
+        /// Milestone 8.35r. Who the authority is waiting on, or
+        /// <see cref="PendingDecisionOwner.None"/> - the public half of the standing decision, whose
+        /// private half is <see cref="DecisionContract"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Table-public by design.</b> "We are waiting for Blue" is something every player
+        /// at a physical table can see, and every seat has received it on the wire since milestone
+        /// 8.32. What it never carries is what the awaited player MAY CHOOSE: the options are the
+        /// privacy boundary and stay on <see cref="DecisionContract"/>, which only the owner reads.
+        /// Who is awaited is public; what they may do is not.</para>
+        /// <para><b>Why it had to join this contract.</b> It was already on
+        /// <c>SeatProjection</c> and already on the wire, but not here - so no surface written
+        /// against this interface could reach it. That gap is exactly what left four of the SEVENTH
+        /// amendment's tray arms underivable: the levelling hero, the defence answerer and the
+        /// respawn chooser each live on a pending member a non-owning seat reads as <c>null</c>, and
+        /// the acting-hero arm needs to know THAT a decision stands on top of the actor's turn -
+        /// <c>SelectedActor</c> alone keeps naming the attacker while the DEFENDER is being asked,
+        /// which is the bug one level up. All four become derivable from this member plus the ones
+        /// already here.</para>
+        /// </remarks>
+        PendingDecisionOwner DecisionOwner { get; }
+
+        /// <summary>
+        /// Milestone 8.35r. The seat-public history of what has happened, newest last, bounded to
+        /// the most recent <see cref="GuardsDigital.Core.Diagnostics.MatchLogProjection.RetainedEntries"/>
+        /// lines.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Derived, never stored.</b> Rebuilt from the retained rule-event log on every
+        /// reconstruction, so an undo, a replay, a resync and a snapshot restore each redraw it for
+        /// free and none of it appears in a persisted payload.</para>
+        /// <para><b>The same log for everyone.</b> Its selection admits only events the whole table
+        /// can already see, so a seat's log is byte-identical to every other seat's and to the
+        /// Director's. That is the privacy property stated positively: there is no per-seat
+        /// redaction here because there is nothing to redact.</para>
+        /// </remarks>
+        IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> MatchLog { get; }
+
+        /// <summary>
+        /// Milestone 8.35r. The rewind currently standing, or <see cref="MatchUndoMarker.None"/>.
+        /// </summary>
+        /// <remarks>
+        /// It is published rather than derived for the reason <see cref="MatchUndoMarker"/> gives at
+        /// length: an undo records no command and no rule event, so nothing in the log can say one
+        /// happened. It is <see cref="MatchUndoMarker.None"/> on the Director's own full-trust view,
+        /// exactly as <see cref="IsSeatUndoAvailable"/> is false there.
+        /// </remarks>
+        MatchUndoMarker UndoMarker { get; }
+
         // The pending surface. Every member is scoped to the reader that may answer it.
         PendingInitiativeChoice PendingInitiativeChoice { get; }
         PendingCardActionResolution PendingMovementResolution { get; }

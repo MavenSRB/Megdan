@@ -82,6 +82,10 @@ namespace GuardsDigital.Tests.EditMode
             typeof(NetworkSubmissionMessage),
             typeof(NetworkSubmissionResultMessage),
             typeof(NetworkSeatProjectionMessage),
+            // Milestone 8.35r: the seat-public match log's wire row and codec. They ride inside the
+            // seat projection message above, so they are as transport-neutral as it is.
+            typeof(NetworkMatchLogRow),
+            typeof(NetworkMatchLogCodec),
             typeof(NetworkMessageCodec),
             typeof(NetworkCommandCodec),
             typeof(NetworkSeatProjectionCodec),

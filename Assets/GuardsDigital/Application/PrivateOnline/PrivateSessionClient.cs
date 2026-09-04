@@ -92,6 +92,14 @@ namespace GuardsDigital.Application
         private PrivateSessionSecureChannel channel;
         private long gameplaySendSequence;
         private long gameplayReceiveSequence;
+
+        /// <summary>
+        /// Milestone 8.35r. The match log as this client holds it. Mutable because the host extends
+        /// it a few lines at a time; replaced wholesale only where a rewind or an arrival makes the
+        /// held one unextendable.
+        /// </summary>
+        private readonly List<GuardsDigital.Core.Diagnostics.MatchLogEntry> matchLog =
+            new List<GuardsDigital.Core.Diagnostics.MatchLogEntry>();
         private string awaitingCommandResultId;
         private string awaitingAgreementResultId;
         private string awaitingUndoResultId;
@@ -211,6 +219,15 @@ namespace GuardsDigital.Application
         /// statement, is republished at the same gameplay version.
         /// </summary>
         public long ProjectionRevision { get; private set; }
+
+        /// <summary>
+        /// Milestone 8.35r. The seat-public match log this client currently holds, oldest first,
+        /// bounded to the retained window.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> MatchLog => matchLog;
+
+        /// <summary>Monotonic count of match-log updates applied.</summary>
+        public long MatchLogRevision { get; private set; }
 
         /// <summary>Milestone 8.32. The host's answer to this client's newest submission.</summary>
         public NetworkSubmissionResultMessage LastSubmissionResult { get; private set; }
@@ -604,6 +621,28 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>
+        /// Milestone 8.35r. Adopts the match log carried by a projection this client just accepted.
+        /// </summary>
+        /// <remarks>
+        /// <para>An absolute replacement, and that is the whole of its correctness: the frame it
+        /// arrived in has already passed the ordered-stream discipline above, so a stale or
+        /// duplicate copy never reaches here, and a window that arrives is by definition the log as
+        /// the authority holds it right now. A rewind therefore needs no special case - the shorter
+        /// window simply replaces the longer one, which is what makes undone lines "cease to
+        /// exist" rather than have to be hunted down and removed.</para>
+        /// </remarks>
+        private void ApplyMatchLog(IReadOnlyList<NetworkMatchLogRow> rows)
+        {
+            matchLog.Clear();
+            foreach (var row in rows)
+            {
+                matchLog.Add(NetworkMatchLogCodec.ToEntry(row));
+            }
+
+            MatchLogRevision++;
+        }
+
+        /// <summary>
         /// Milestone 8.33. The one ordered-stream discipline for every gameplay frame: a stale
         /// sequence is a duplicate or replay and is discarded unapplied; the next sequence is
         /// applied; and a gap is an explicit recovery, never a silent continuation - a complete
@@ -648,6 +687,7 @@ namespace GuardsDigital.Application
                 gameplayReceiveSequence = projection.Envelope.Sequence;
                 LatestProjection = record;
                 ProjectionRevision++;
+                ApplyMatchLog(projection.MatchLog);
                 if (IsWaitingForHost && awaitingProjectionCorrelation != 0 &&
                     projection.Envelope.Correlation == awaitingProjectionCorrelation)
                 {

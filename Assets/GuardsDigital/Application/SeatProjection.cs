@@ -221,9 +221,16 @@ namespace GuardsDigital.Application
             IReadOnlyList<DirectorCommand> authorizedCommands,
             SeatPendingSurface pendingSurface,
             TeamAgreementProjection teamAgreement,
-            bool isSeatUndoAvailable)
+            bool isSeatUndoAvailable,
+            MatchUndoMarker undoMarker = default)
         {
             IsSeatUndoAvailable = isSeatUndoAvailable;
+            UndoMarker = undoMarker;
+            // Milestone 8.35r. The SAME log the Director reads, taken whole rather than filtered.
+            // Every kind the selection admits is table-public, so there is nothing here to scope
+            // away - and taking the source's own derived value is what makes that identity a fact of
+            // the composition rather than a claim a filter would have to keep proving.
+            MatchLog = source.MatchLog;
             pending = pendingSurface;
             visibleCards = Array.AsReadOnly(ownCards.Concat(publicCards).ToArray());
             ActiveEffectSourceCardInstanceIds = source.ActiveEffectSourceCardInstanceIds;
@@ -325,6 +332,15 @@ namespace GuardsDigital.Application
 
         /// <summary>Who the authority is waiting on, or <see cref="PendingDecisionOwner.None"/>.</summary>
         public PendingDecisionOwner DecisionOwner { get; }
+
+        /// <summary>
+        /// Milestone 8.35r. The seat-public match log - identical to every other seat's and to the
+        /// Director's, because its selection carries nothing a seat could not already see.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> MatchLog { get; }
+
+        /// <summary>Milestone 8.35r. The rewind currently standing, or none.</summary>
+        public MatchUndoMarker UndoMarker { get; }
 
         /// <summary>
         /// The standing decision's exact answers, and <c>null</c> unless this seat owns it. A seat
@@ -430,7 +446,8 @@ namespace GuardsDigital.Application
             MatchSessionProjection source,
             MatchSeat seat,
             TeamAgreementProjection teamAgreement = null,
-            bool isSeatUndoAvailable = false)
+            bool isSeatUndoAvailable = false,
+            MatchUndoMarker undoMarker = default)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (seat == null) throw new ArgumentNullException(nameof(seat));
@@ -468,7 +485,8 @@ namespace GuardsDigital.Application
                 AuthorizedCommands(source, seat, owner),
                 new SeatPendingSurface(source, ownsDecision, isActor),
                 teamAgreement,
-                isSeatUndoAvailable);
+                isSeatUndoAvailable,
+                undoMarker);
         }
 
         /// <summary>

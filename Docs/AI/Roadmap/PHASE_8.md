@@ -474,6 +474,32 @@ Non-goals: No AI opponent, strategy, or difficulty - every legal answer is equal
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835q-fill-empty-seats-with-spawned-test-drivers-for-solo-playtesting-completion-evidence).
 
+### [x] 8.35r Publish the seat-public match log and who the table is waiting on
+
+TENTH amendment: "Make a log ... Its to tell players what happened previously in the game. But player facing: Moves, Attacks, Defenses, Skills used." The coordinator's scope ruling gathers ALL remaining wire growth into this one protocol bump, so the log and the SEVENTH amendment's blocked tray arms cross together rather than in two versions.
+
+Observable outcome: every seat, and every spectator of a seat, can read what has happened - moves, fast travels, resolved attacks and defences, skills, clears, defeats, respawns, end-of-round results, level-ups, round and turn boundaries - and can see who the table is currently waiting on, including while another player levels up, answers a defence or chooses a respawn. No presentation surface ships here: the drop-down, the tray completion and the narration completion are separate UX milestones consuming these facts.
+
+Design:
+
+- The log is DERIVED from the retained rule-event log, never stored. That source is forced rather than preferred: `MatchAggregate.Restore` installs an empty round-event stream while restoring the rule-event entries in full, so a channel built on round events would come back blank after a snapshot restore. Undo, replay and resync redraw it for free because `MatchSession.Undo` reconstructs from the retained command prefix.
+- Selection is exactly `tmp/8-35d-8-35e-multiplayer-corrections/worker-b/EVENT_LOG_CONTRACT.md` §1, typed as `MatchLogEntryKind` so no surface parses diagnostic prose, with event names built from the rule-event enum members via `nameof` so a renamed kind is a compile error rather than a line that silently stops being selected.
+- The seat filter is an IDENTITY, and that is the privacy proof: §1 admits only events the whole table can already see, so every seat's log equals the Director's and there is nothing to redact.
+- The log rides inside the seat projection message beside that seat's record - not in the record, which has 2,173 B of headroom under the sweep's own guard, and not in its own message kind, which consumed a gameplay sequence and absorbed the gaps a dropped projection must leave for client recovery.
+- `DecisionOwner` joins `IMatchReadModel` and moves no bytes: the seat record has carried it since 8.35's wire slice and only the read-model contract lacked it. Who is awaited is table-public; what they may choose stays owner-private on `DecisionContract`.
+- `UndoMarker` is a published read-model fact rather than a synthetic log entry, because an undo records no command and no event and a minted entry would have to be stored.
+
+Acceptance checks:
+
+- `MatchLogChannelTests` proves the vocabulary names nothing the contract excludes, that every seat's log equals the Director's, that the selection carries exactly its source events over a driven match, that a multi-hex move folds to one line from first origin to last destination, that an attack and a defence each fold to one line with their outcome, that a blocked step names no blocker, that a clear is one line, and that a driven rewind drops its lines while the marker names who took them back and counts a run.
+- `PrivateOnlineEventChannelTests` proves every kind round-trips the wire with completeness asserted against the enum, that a truncated payload is refused at every prefix, that the projection-and-log frame stays inside the sealed bound, that a returning seat receives the same log as one that never left, that every client converges on the authority's log across the seeded wire walk, that a version 5 peer is refused before any payload interpretation, that who-is-awaited is public to every seat for the levelling, defence and respawn arms while the contract stays owner-private, that a decision standing on the actor's turn is visible as such, and that the encoded log names no card the table has never seen.
+- `PrivateOnlineSynchronizationTests.EveryReadModelMember_IsCarriedOrNamedExcluded` carries all three new members with the exclusion floor unmoved at 7.
+- `OnlineMatchHudRulesPrivacyTests.SeatWireMeaning_UsesProtocolSix_AndRejectsEveryOlderFrame` refuses versions 1 through 5 from the bounded header.
+
+Non-goals: No log drop-down, no tray or narration completion, no blocker named on a blocked-action line (milestone 8.35l's offer-side `ActionUnavailability` stays the single provenance path), and no permanent positioned marker for a rewind already played past - that needs storage the engine does not have.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835r-publish-the-seat-public-match-log-and-who-the-table-is-waiting-on-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

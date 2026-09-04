@@ -1,0 +1,265 @@
+using System;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
+
+namespace GuardsDigital.Core.Diagnostics
+{
+    /// <summary>
+    /// Milestone 8.35r. The closed set of lines the seat-public match log may carry - one member per
+    /// row of the event-selection contract, and nothing the contract did not name.
+    /// </summary>
+    /// <remarks>
+    /// <para>It is a typed vocabulary rather than the raw <see cref="RuleEventLogEntry.EventType"/>
+    /// string because a surface must never parse diagnostic prose to decide what a line means. The
+    /// translation from one to the other happens once, in <see cref="MatchLogProjection"/>, and every
+    /// reader downstream of it sees only these members.</para>
+    /// <para><b>What is absent is the point.</b> There is no member for a pending choice, a facedown
+    /// commitment, a per-hex movement step, a turn slot's assignment payload, or any engine-internal
+    /// progression - those are the selection contract's exclusions, and a kind for them here is the
+    /// one thing that could put them on the wire by accident.</para>
+    /// </remarks>
+    public enum MatchLogEntryKind
+    {
+        None = 0,
+
+        /// <summary>One move action, however many hexes it crossed.</summary>
+        Move = 1,
+
+        /// <summary>One Fast Travel between zones.</summary>
+        FastTravel = 2,
+
+        /// <summary>An attack that resolved, with its outcome.</summary>
+        Attack = 3,
+
+        /// <summary>A defense that was answered, with its outcome.</summary>
+        Defense = 4,
+
+        /// <summary>A Skill action, naming the card it came off.</summary>
+        SkillUsed = 5,
+
+        /// <summary>A Clear action, naming the token it removed.</summary>
+        Clear = 6,
+
+        /// <summary>A step a standing modification refused. The blocker is NOT named here.</summary>
+        BlockedAction = 7,
+
+        MinionDefeated = 8,
+        MinionRemoved = 9,
+        MinionRemovalPrevented = 10,
+        HeroDefeated = 11,
+        HeroRemoved = 12,
+        HeroRemovalPrevented = 13,
+        HeroRespawned = 14,
+        TeamLifeSpent = 15,
+        TeamEliminated = 16,
+
+        /// <summary>Rulebook p.18's correction of a minion displaced off a legal space.</summary>
+        DisplacedMinionCorrected = 17,
+
+        /// <summary>A Minion Battle removed a minion at the end of a round.</summary>
+        MinionBattleMinionRemoved = 18,
+
+        /// <summary>A lane push was requested or resolved.</summary>
+        LanePush = 19,
+
+        LevelPurchased = 20,
+        CardUpgraded = 21,
+        ItemGained = 22,
+        PityCoinCollected = 23,
+
+        /// <summary>A round boundary header.</summary>
+        RoundStarted = 24,
+        RoundCompleted = 25,
+
+        /// <summary>
+        /// A turn group header. Carried from the turn slot the round recorded - the header only,
+        /// never that slot's assignment payload, which names every hero's committed card.
+        /// </summary>
+        TurnStarted = 26,
+        TurnEnded = 27,
+
+        /// <summary>The match ended, naming the winning side.</summary>
+        GameEnded = 28,
+
+        /// <summary>A commitment was revealed. Only ever the revealed form.</summary>
+        CardRevealed = 29
+    }
+
+    /// <summary>
+    /// Milestone 8.35r. How a resolved attack or defense came out. Separate from the kind because the
+    /// contract's Attack and Defense rows each ask for one line carrying its outcome, not two kinds.
+    /// </summary>
+    public enum MatchLogOutcome
+    {
+        None = 0,
+
+        /// <summary>The attack went through.</summary>
+        AttackSuccessful = 1,
+
+        /// <summary>The attack was defended.</summary>
+        AttackSuccessfullyDefended = 2,
+
+        /// <summary>The defender discarded a card to defend.</summary>
+        DefenseCardDiscarded = 3,
+
+        /// <summary>The defender declined to defend.</summary>
+        DefenseDeclined = 4
+    }
+
+    /// <summary>
+    /// Milestone 8.35r. One line of the seat-public match log: what happened, to whom, in which
+    /// round and turn - and nothing a viewer's own projection does not already reveal.
+    /// </summary>
+    /// <remarks>
+    /// <para><b>Every field here is table-public by construction.</b> The selection contract admits
+    /// only events whose subject the whole table can already see: board positions, resolved attacks
+    /// and defenses, revealed commitments, defeats, end-of-round outcomes and round boundaries. No
+    /// hand, no unrevealed commitment and no pending choice's option set can reach this type, because
+    /// no <see cref="MatchLogEntryKind"/> names one. That is why every seat's log is the SAME log,
+    /// and why the seat filter is an identity rather than a redaction.</para>
+    /// <para><b>Derived, never stored.</b> These are rebuilt from the retained rule-event log on
+    /// every reconstruction, so an undo, a replay, a resync and a snapshot restore each redraw the
+    /// log without this type appearing in any persisted payload.</para>
+    /// </remarks>
+    public sealed class MatchLogEntry : IEquatable<MatchLogEntry>
+    {
+        public MatchLogEntry(
+            int sequence,
+            MatchLogEntryKind kind,
+            int roundIndex,
+            int turnIndex,
+            HeroId subjectHeroId = default,
+            HeroId targetHeroId = default,
+            MinionId subjectMinionId = default,
+            CardInstanceId subjectCardInstanceId = default,
+            TeamId subjectTeamId = default,
+            HexCoordinate origin = default,
+            HexCoordinate destination = default,
+            bool hasOrigin = false,
+            bool hasDestination = false,
+            MatchLogOutcome outcome = MatchLogOutcome.None,
+            int amount = 0)
+        {
+            if (sequence < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(sequence),
+                    "A match-log entry keeps the rule-event sequence it was derived from, which is one-based.");
+            }
+
+            if (kind == MatchLogEntryKind.None)
+            {
+                throw new ArgumentException(
+                    "A match-log entry requires a named kind. The absence of a kind is how the " +
+                    "selection contract excludes an event, so an entry may never carry None.",
+                    nameof(kind));
+            }
+
+            Sequence = sequence;
+            Kind = kind;
+            RoundIndex = roundIndex;
+            TurnIndex = turnIndex;
+            SubjectHeroId = subjectHeroId;
+            TargetHeroId = targetHeroId;
+            SubjectMinionId = subjectMinionId;
+            SubjectCardInstanceId = subjectCardInstanceId;
+            SubjectTeamId = subjectTeamId;
+            Origin = origin;
+            Destination = destination;
+            HasOrigin = hasOrigin;
+            HasDestination = hasDestination;
+            Outcome = outcome;
+            Amount = amount;
+        }
+
+        /// <summary>
+        /// The sequence of the rule-event this line was derived from. Ordering and every
+        /// idempotent merge key on it, and it is why a rewind is expressible as a truncation.
+        /// </summary>
+        public int Sequence { get; }
+
+        public MatchLogEntryKind Kind { get; }
+
+        public int RoundIndex { get; }
+
+        public int TurnIndex { get; }
+
+        /// <summary>The hero the line is about, where the line names one.</summary>
+        public HeroId SubjectHeroId { get; }
+
+        /// <summary>The hero on the receiving end of an attack or defense.</summary>
+        public HeroId TargetHeroId { get; }
+
+        /// <summary>The minion the line is about - a target, a defeat, a Minion Battle removal.</summary>
+        public MinionId SubjectMinionId { get; }
+
+        /// <summary>
+        /// The card the line names: the Skill's own card, the revealed commitment, the card upgraded
+        /// or the item gained. Every one of these is a card the table can already see.
+        /// </summary>
+        public CardInstanceId SubjectCardInstanceId { get; }
+
+        /// <summary>The team a life-counter or elimination line is about.</summary>
+        public TeamId SubjectTeamId { get; }
+
+        public HexCoordinate Origin { get; }
+
+        public HexCoordinate Destination { get; }
+
+        /// <summary>Whether <see cref="Origin"/> was stated; a default coordinate is a real space.</summary>
+        public bool HasOrigin { get; }
+
+        /// <summary>Whether <see cref="Destination"/> was stated.</summary>
+        public bool HasDestination { get; }
+
+        public MatchLogOutcome Outcome { get; }
+
+        /// <summary>
+        /// The one number the line carries, in that line's own units: the Level bought, the coins
+        /// collected, or the Life counters spent. Zero where the kind names no quantity.
+        /// </summary>
+        public int Amount { get; }
+
+        public bool Equals(MatchLogEntry other)
+        {
+            return other != null &&
+                Sequence == other.Sequence &&
+                Kind == other.Kind &&
+                RoundIndex == other.RoundIndex &&
+                TurnIndex == other.TurnIndex &&
+                SubjectHeroId.Equals(other.SubjectHeroId) &&
+                TargetHeroId.Equals(other.TargetHeroId) &&
+                SubjectMinionId.Equals(other.SubjectMinionId) &&
+                SubjectCardInstanceId.Equals(other.SubjectCardInstanceId) &&
+                SubjectTeamId.Equals(other.SubjectTeamId) &&
+                HasOrigin == other.HasOrigin &&
+                HasDestination == other.HasDestination &&
+                (!HasOrigin || Origin.Equals(other.Origin)) &&
+                (!HasDestination || Destination.Equals(other.Destination)) &&
+                Outcome == other.Outcome &&
+                Amount == other.Amount;
+        }
+
+        public override bool Equals(object obj) => Equals(obj as MatchLogEntry);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = Sequence;
+                hashCode = (hashCode * 397) ^ (int)Kind;
+                hashCode = (hashCode * 397) ^ RoundIndex;
+                hashCode = (hashCode * 397) ^ TurnIndex;
+                hashCode = (hashCode * 397) ^ (int)Outcome;
+                hashCode = (hashCode * 397) ^ Amount;
+                return hashCode;
+            }
+        }
+
+        public override string ToString() =>
+            $"{Sequence:0000} | {Kind} | round={RoundIndex};turn={TurnIndex}";
+    }
+}

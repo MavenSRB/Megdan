@@ -51,8 +51,10 @@ namespace GuardsDigital.Application
             IReadOnlyList<NetworkActionOfferRow> availableTurnActions,
             IReadOnlyList<NetworkFastTravelOptionRow> availableFastTravelOptions,
             IReadOnlyList<NetworkClearOptionRow> availableClearOptions,
-            NetworkActionOfferRow availableHoldOffer)
+            NetworkActionOfferRow availableHoldOffer,
+            NetworkUndoMarkerRow undoMarker = null)
         {
+            UndoMarker = undoMarker;
             TeamAgreement = teamAgreement;
             CompletedRounds = completedRounds;
             PendingInitiativeChoice = pendingInitiativeChoice;
@@ -108,6 +110,14 @@ namespace GuardsDigital.Application
         /// the public turn area.
         /// </summary>
         public NetworkTurnReleaseRow PendingTurnRelease { get; }
+
+        /// <summary>
+        /// Milestone 8.35r. The rewind currently standing, or null while none is. Public to every
+        /// seat for the same reason the standing decision's owner is: that a player is taking their
+        /// own turn back is something the whole table can see happening, and the marker is what lets
+        /// the other five read the log's disappearing lines as a rewind rather than as a fault.
+        /// </summary>
+        public NetworkUndoMarkerRow UndoMarker { get; }
         public IReadOnlyList<NetworkActionOfferRow> AvailableTurnActions { get; }
         public IReadOnlyList<NetworkFastTravelOptionRow> AvailableFastTravelOptions { get; }
         public IReadOnlyList<NetworkClearOptionRow> AvailableClearOptions { get; }
@@ -1213,6 +1223,22 @@ namespace GuardsDigital.Application
         public string ActorId { get; }
         public string CardInstanceId { get; }
         public int TeamSide { get; }
+    }
+
+    /// <summary>
+    /// Milestone 8.35r. The standing rewind on the wire: whose it is, and how many accepted commands
+    /// it has taken back so far.
+    /// </summary>
+    public sealed class NetworkUndoMarkerRow
+    {
+        public NetworkUndoMarkerRow(string heroId, int count)
+        {
+            HeroId = heroId;
+            Count = count;
+        }
+
+        public string HeroId { get; }
+        public int Count { get; }
     }
 
     public sealed class NetworkFastTravelOptionRow

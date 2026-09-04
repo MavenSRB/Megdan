@@ -1341,9 +1341,24 @@ namespace GuardsDigital.Application
                 return;
             }
 
-            var payload = NetworkSeatProjectionCodec.Encode(matchHost.ProjectionForSeat(seat.Id));
+            var projection = matchHost.ProjectionForSeat(seat.Id);
+            var payload = NetworkSeatProjectionCodec.Encode(projection);
+
+            // Milestone 8.35r. The seat-public match log travels in the projection's own frame, as
+            // the whole retained window. THIS IS WHERE THE RECONNECT-HISTORY SEMANTICS LIVE, and
+            // they are as short as they look: a seat that has just arrived, one that has just
+            // returned under its reconnect capability, and one that never left all receive the same
+            // bounded window of recent lines, because there is only one thing to send. The log is
+            // recent history a player scrolls, not an archive replayed from the opening move.
+            var log = new NetworkMatchLogRow[projection.MatchLog.Count];
+            for (var index = 0; index < log.Length; index++)
+            {
+                log[index] = NetworkMatchLogCodec.ToRow(projection.MatchLog[index]);
+            }
+
             Deliver(record, NetworkMessageCodec.SeatProjectionFrame(
-                new NetworkSeatProjectionMessage(NextEnvelope(record, correlation), payload)));
+                new NetworkSeatProjectionMessage(
+                    NextEnvelope(record, correlation), payload, Array.AsReadOnly(log))));
         }
 
         /// <summary>

@@ -2862,6 +2862,14 @@ namespace GuardsDigital.Tests.EditMode
             public virtual long Version => inner.Version;
             public virtual bool IsInputEnabled => inner.IsInputEnabled;
             public virtual bool IsSeatUndoAvailable => inner.IsSeatUndoAvailable;
+
+            // Milestone 8.35r. Virtual like the rest, so a spectator-scope case can override the
+            // awaited owner the way it already overrides AvailableTurnActions.
+            public virtual GuardsDigital.Application.PendingDecisionOwner DecisionOwner =>
+                inner.DecisionOwner;
+            public virtual IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> MatchLog =>
+                inner.MatchLog;
+            public virtual GuardsDigital.Application.MatchUndoMarker UndoMarker => inner.UndoMarker;
             public virtual QuickGameSetupState Setup => inner.Setup;
             public virtual BoardMapDefinition SelectedMap => inner.SelectedMap;
             public virtual MatchParticipants Participants => inner.Participants;

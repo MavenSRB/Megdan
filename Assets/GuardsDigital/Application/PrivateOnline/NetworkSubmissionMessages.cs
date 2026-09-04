@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -157,14 +158,43 @@ namespace GuardsDigital.Application
     /// </summary>
     public sealed class NetworkSeatProjectionMessage
     {
-        public NetworkSeatProjectionMessage(NetworkEnvelope envelope, byte[] projectionPayload)
+        public NetworkSeatProjectionMessage(
+            NetworkEnvelope envelope,
+            byte[] projectionPayload,
+            IReadOnlyList<NetworkMatchLogRow> matchLog = null)
         {
             Envelope = envelope;
             ProjectionPayload = projectionPayload ?? throw new ArgumentNullException(nameof(projectionPayload));
+            MatchLog = matchLog ?? Array.Empty<NetworkMatchLogRow>();
         }
 
         public NetworkEnvelope Envelope { get; }
         public byte[] ProjectionPayload { get; }
+
+        /// <summary>
+        /// Milestone 8.35r. The seat-public match log's whole retained window, beside the
+        /// projection rather than inside it.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why it travels with the projection and not in its own frame.</b> It was in its
+        /// own frame first, and the fault-injection suite falsified that: an extra host frame
+        /// consumes a gameplay sequence, so a dropped projection's gap was absorbed by the log frame
+        /// behind it and the client's own recovery never fired. Riding inside this message, the log
+        /// inherits the ordered-stream discipline already proven for the projection - a stale copy
+        /// is discarded, a duplicate is harmless, a gap heals on the next complete view - and adds
+        /// no rule of its own.</para>
+        /// <para><b>Why the whole window every time, rather than the new lines.</b> An incremental
+        /// append needs the host to remember how much of the log each connection holds, and a frame
+        /// the wire drops silently invalidates that memory - the host would believe it had delivered
+        /// lines the client never saw, and would never send them again. A whole window is absolutely
+        /// idempotent instead, which is the same reason the complete projection beside it is re-sent
+        /// whole rather than diffed. The log is a minority of a cost this design already pays.</para>
+        /// <para><b>Why it is outside <see cref="ProjectionPayload"/>.</b> That payload is one
+        /// seat's own owner-scoped encoding; the log is identical for every seat. Keeping them
+        /// separate is what lets the synchronization sweep keep measuring the seat record's size
+        /// against its own bound without the shared log inflating a per-seat number.</para>
+        /// </remarks>
+        public IReadOnlyList<NetworkMatchLogRow> MatchLog { get; }
     }
 
     /// <summary>
@@ -481,6 +511,12 @@ namespace GuardsDigital.Application
                 WriteEnvelope(writer, message.Envelope);
                 writer.Write(message.ProjectionPayload.Length);
                 writer.Write(message.ProjectionPayload);
+                writer.Write(message.MatchLog.Count);
+                foreach (var row in message.MatchLog)
+                {
+                    NetworkMatchLogCodec.Write(writer, row);
+                }
+
                 writer.Flush();
                 return PrivateSessionFrameCodec.EncodeFrame(
                     SessionMessageKind.SeatProjection, stream.ToArray());
@@ -508,13 +544,35 @@ namespace GuardsDigital.Application
                     }
 
                     var projectionPayload = reader.ReadBytes(projectionLength);
-                    if (projectionPayload.Length != projectionLength ||
-                        stream.Position != stream.Length)
+                    if (projectionPayload.Length != projectionLength)
                     {
                         return false;
                     }
 
-                    message = new NetworkSeatProjectionMessage(envelope, projectionPayload);
+                    var logCount = reader.ReadInt32();
+                    if (logCount < 0 || logCount > NetworkMatchLogCodec.MaxRows)
+                    {
+                        return false;
+                    }
+
+                    var log = new List<NetworkMatchLogRow>(logCount);
+                    for (var index = 0; index < logCount; index++)
+                    {
+                        if (!NetworkMatchLogCodec.TryRead(reader, out var row))
+                        {
+                            return false;
+                        }
+
+                        log.Add(row);
+                    }
+
+                    if (stream.Position != stream.Length)
+                    {
+                        return false;
+                    }
+
+                    message = new NetworkSeatProjectionMessage(
+                        envelope, projectionPayload, Array.AsReadOnly(log.ToArray()));
                     return true;
                 }
             }
