@@ -108,13 +108,22 @@ a timer. A few things are worth knowing:
     or which minion is removed - everyone on that team has to say the same thing
     before it happens. You can change your mind; changing it un-agrees everyone and
     the team states it again. There is no captain and no automatic tiebreak.
+  - Turns no longer end by themselves. Once your last card finishes resolving, the
+    game holds your turn open and waits - it does not hand play to the next person
+    until you press END TURN yourself. That second press is the point of no return,
+    so use the pause to check your undo before you take it.
   - There is an UNDO button: the square with the curved arrow, just to the left of
-    END TURN at the top. While your own cards are resolving it steps your turn back
-    one action at a time, as far as the moment your turn began. It will not undo an
-    attack - once you have chosen a target, the defender has already answered and
-    that cannot be unseen - so it stops just after an attack rather than going
-    through it. It only ever moves your own turn, only you can press it, and
-    everyone else simply sees the board step back with you.
+    END TURN at the top. While your own cards are resolving - and that now includes
+    the whole time your finished turn is sitting there waiting for your END TURN
+    press - it steps your turn back one action at a time, as far as the moment your
+    turn began. It will not undo an attack - once you have chosen a target, the
+    defender has already answered and that cannot be unseen - so it stops just after
+    an attack rather than going through it. It only ever moves your own turn, only
+    you can press it, and everyone else simply sees the board step back with you.
+  - Watch the top bar. The whole strip across the top of the screen turns gold
+    whenever the game is waiting on you specifically - your turn, a decision only
+    you can make, or simply choosing which card to commit at the start of a round.
+    If it is not gold, it is not waiting on you.
   - The interface is deliberately plain. It is being tested for whether it is
     understandable, not for whether it is pretty. If something is confusing, say
     so - that is data.
@@ -128,13 +137,26 @@ We are writing all of it down and none of it is a complaint.
 
 Nothing is lost and nobody is replaced. Your seat is held for you and the whole
 match stops where it stands until you are back, so the other five will be sitting
-and waiting. The lobby reappears over the board with two buttons:
+and waiting.
+
+If the game window is still open, the lobby reappears over the board with two
+buttons:
 
     RECONNECT   goes back into your own seat and picks up exactly where you were.
                 Use this one.
-    LEAVE       gives up the seat and the session.
+    LEAVE       deliberately gives up your seat. Once you press it, anyone holding
+                the session key can claim your seat - do not press it unless you
+                mean to stop playing.
 
-Press RECONNECT. If it fails, press it again; if it keeps failing, tell us.
+Press RECONNECT. If it fails, or the game itself has closed or crashed, just start
+it again the normal way - same launcher, same address, port, key and seat you were
+given the first time - and rejoin. You do not need to do anything special: your
+seat is reserved and you are dropped straight back into it, with everything as you
+left it.
+
+If your machine is out of action for the rest of the evening, tell us. The host can
+release your seat by hand so someone else can take it, or so we can carry on a
+player short - that is a deliberate act on our end, never automatic.
 
 If the host machine itself goes away, every client says HOST LOST and that match is
 over - it cannot be continued or restored. We would start a new one.
@@ -144,16 +166,23 @@ Please do not close the game window to fix a problem unless we ask you to.
 
 KNOWN PROBLEMS IN THIS BUILD
 
-Two faults are already known and are already being fixed. Please do not spend your
-time writing them up - but do say so if you see something that looks like one of
-them, because it might be a different fault wearing the same coat.
+These are already known. Please do not spend time writing them up in detail - a
+short note that you saw one is enough - but do say so, because it might be a
+different problem wearing the same coat.
 
-  - Reconnecting after a disconnect may fail: your seat stays held and the game is
-    refused when it tries to come back. If that happens, say so straight away. We
-    will restart the match rather than leave you sitting out.
-  - Late in a long match, and only after a lot of undoing, UNDO can refuse with a
-    message about a snapshot. Nothing is broken when it does and the match carries
-    on - but that one undo will not happen.
+  - A few cards that swap or reposition something - Sabina's Back to Back, Arien's
+    Arcane Whirlpool, Tigerclaw's Blend Into Shadows - can be offered and then do
+    nothing, while the card is still spent. A fix is coming; near Wasp especially,
+    do not rely on these cards doing what they say.
+  - Brogan's charge cards ask you to pick an attack target before the move itself is
+    shown happening.
+  - Leveling up still asks each player one at a time rather than everyone at once.
+  - There is no in-game history log yet - if you need to know what just happened,
+    ask the table.
+  - If one part of the screen ever freezes or goes blank while everything else on
+    screen keeps working, that is a single panel failing on its own rather than the
+    whole game going down - it should not take your turn with it. Play on if you
+    can, and tell us; the log file next to the exe will help us find it.
 
 
 5. AFTER THE MATCH
