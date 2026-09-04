@@ -3783,7 +3783,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(hero.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
             Assert.That(heroRing.IsVisible, Is.False);
             Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
-            Assert.That(runtime.RoundView.Model.Status, Does.Contain("Incoming Attack"));
+            // Milestone 8.35n moved the attack total to the narration's demoted secondary detail;
+            // the headline now names the own-decision family.
+            Assert.That(runtime.RoundView.Model.Status, Does.Contain("DEFENSE"));
+            Assert.That(runtime.RoundView.Model.StatusDetail, Does.Contain("ATTACK"));
 
             var blockCard = runtime.Cards.Single(card =>
                 card.OwnerId.Equals(heroTargetId) &&

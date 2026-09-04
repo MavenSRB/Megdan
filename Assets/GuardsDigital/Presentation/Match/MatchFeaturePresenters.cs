@@ -2930,9 +2930,11 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<PrintedActionRegionViewModel> printedActionRegions = null,
             TeamAgreementHudViewModel teamAgreement = null,
             bool seatUndoAvailable = false,
-            bool isAwaitingViewerInput = false)
+            bool isAwaitingViewerInput = false,
+            string statusDetail = null)
         {
             IsAwaitingViewerInput = isAwaitingViewerInput;
+            StatusDetail = statusDetail;
             SeatUndoAvailable = seatUndoAvailable;
             SystemTransitionPrompt = systemTransitionPrompt;
             EffectChoicePrompt = effectChoicePrompt;
@@ -3016,6 +3018,15 @@ namespace GuardsDigital.Presentation.Match
         /// one flag, so the two surfaces cannot come to disagree about whose move it is.
         /// </summary>
         public bool IsAwaitingViewerInput { get; }
+
+        /// <summary>
+        /// Milestone 8.35n (the FIFTH amendment, typography). A secondary fact the narration lane
+        /// draws smaller and quieter beside <see cref="Status"/>, demoting Initiative to secondary
+        /// detail exactly as the amendment specifies - "Initiative may stay as secondary detail" -
+        /// rather than folding it back into the headline sentence it used to be the whole of. Null
+        /// wherever a branch has nothing to demote.
+        /// </summary>
+        public string StatusDetail { get; }
 
         public NarrationVoice Voice =>
             IsAwaitingViewerInput ? NarrationVoice.YourMove : NarrationVoice.Calm;
@@ -3823,12 +3834,13 @@ namespace GuardsDigital.Presentation.Match
                                 command.Coordinate.Equals(destination.Coordinate))))
                     .ToArray();
 
+            var status = FormatStatus(projection, homeHeroId, out var statusDetail);
             return new RoundActionViewModel(
                 projection.Version,
                 projection.RoundIndex,
                 projection.TurnIndex,
                 projection.Phase,
-                FormatStatus(projection),
+                status,
                 actions,
                 CreateEndTurnInvocation(projection),
                 // A pending removal choice is mandatory: the authority rejects an advance while it
@@ -3885,7 +3897,8 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 8.35f. Read straight off the projection: the host publishes whether
                 // this seat may step back, and the control is enabled exactly when it says so.
                 projection.IsSeatUndoAvailable,
-                AwaitedInputQuery.IsWaitingOnViewer(projection, homeHeroId));
+                AwaitedInputQuery.IsWaitingOnViewer(projection, homeHeroId),
+                statusDetail);
         }
 
         private static IReadOnlyList<PrintedActionRegionViewModel> CreatePrintedActionRegions(
@@ -4812,18 +4825,48 @@ namespace GuardsDigital.Presentation.Match
                 value.Reference.Equals(card.DefinitionReference)).DisplayName.ToUpperInvariant();
         }
 
-        private static string FormatStatus(IMatchReadModel projection)
+        /// <summary>
+        /// Milestone 8.35n (the FIFTH amendment, playtest finding: "ACTING ON INITIATIVE X is not
+        /// enough ... hero name, who is acting, not only initiative"). Every branch below reads as
+        /// one of two shapes, and the shape is what the narration says rather than a choice made
+        /// here: a decision <paramref name="projection"/> carries in full - defense, leveling,
+        /// respawn, movement, an attack target, tied Initiative, a Minion Battle removal, a
+        /// correction, a removal prevention, an effect choice, and the viewer's own acting turn or
+        /// release - is the VIEWER'S OWN, because a seat projection publishes those fields only to
+        /// the seat that owns the standing decision (the Director owns every family at once, so
+        /// every branch below is honest for both compositions without a second read). Everything
+        /// else this method says is a fact <see cref="IMatchReadModel"/> already publishes to EVERY
+        /// viewer regardless of ownership - the acting hero's name (public, from
+        /// <see cref="IMatchReadModel.SelectedActor"/>), the turn-release owner (public, unscoped by
+        /// 8.35g's own decision), and who still owes a commitment or a team-agreement answer (both
+        /// stated public on their own declarations).
+        ///
+        /// <para><b>What this deliberately does NOT say, and why.</b> A non-owning viewer's
+        /// projection carries <c>null</c> for defense, leveling and respawn, so this method cannot
+        /// name that one of those is standing on the acting hero's turn, only that the hero is
+        /// acting - the same recorded gap <see cref="AwaitedInputQuery.IsHeroAwaited"/> already
+        /// carries for the hero-scope tray shine, closed only once the Core track's event-channel
+        /// milestone adds the missing public owner fact to <see cref="IMatchReadModel"/>. Composing a
+        /// spectator sentence that guessed at it from local state would be exactly the rule
+        /// re-derivation the project's own discipline forbids.</para>
+        /// </summary>
+        private static string FormatStatus(
+            IMatchReadModel projection, HeroId viewerHeroId, out string statusDetail)
         {
+            statusDetail = null;
             var agreement = projection.TeamAgreement;
             if (agreement?.Kind == TeamAgreementKind.Initiative)
             {
-                return "Tied Initiative: choose who acts first.";
+                return "TIED INITIATIVE — " + NarrationLabels.WaitingOn(
+                    AgreementStillOwed(projection, agreement));
             }
 
             if (agreement?.Kind == TeamAgreementKind.MinionBattle)
             {
-                return $"Minion Battle: {agreement.SelectedUnits.Count} of " +
-                    $"{agreement.RequiredSelectionCount} minions selected.";
+                statusDetail = $"{agreement.SelectedUnits.Count} OF " +
+                    $"{agreement.RequiredSelectionCount} MINIONS SELECTED";
+                return "MINION BATTLE PROPOSAL — " + NarrationLabels.WaitingOn(
+                    AgreementStillOwed(projection, agreement));
             }
 
             // Milestone 8.30b, and these two branches are what the user-approved amendment found.
@@ -4863,17 +4906,22 @@ namespace GuardsDigital.Presentation.Match
             var minionBattle = projection.PendingMinionBattleChoice;
             if (minionBattle != null)
             {
-                return $"Minion Battle: {MinionChoiceLabels.TeamLabel(minionBattle.ChoosingSide)} " +
-                    $"removes {minionBattle.RequiredRemovalCount} " +
-                    (minionBattle.RequiredRemovalCount == 1 ? "minion" : "minions") +
-                    $" ({minionBattle.SelectedUnits.Count} chosen).";
+                // The deciding side is kept in the demoted detail rather than the headline: a
+                // seat viewer's own screen already knows whose decision "YOUR" is, and the
+                // Director - who answers for both sides at once - is exactly who still needs it
+                // named.
+                statusDetail = $"{MinionChoiceLabels.TeamLabel(minionBattle.ChoosingSide)} — " +
+                    $"{minionBattle.SelectedUnits.Count} CHOSEN";
+                return NarrationLabels.Own(
+                    "MINION BATTLE",
+                    $"REMOVE {minionBattle.RequiredRemovalCount} " +
+                    (minionBattle.RequiredRemovalCount == 1 ? "MINION" : "MINIONS"));
             }
 
             var transitionStep = projection.PendingSystemTransitionStep;
             if (transitionStep != null)
             {
-                return $"{MinionChoiceLabels.TeamLabel(transitionStep.ChoosingSide)} " +
-                    "is choosing how to proceed.";
+                return NarrationLabels.Own("LEVEL UP", "CHOOSE HOW TO PROCEED");
             }
 
             if (projection.Phase == RoundResolutionPhase.EndOfRound)
@@ -4883,19 +4931,30 @@ namespace GuardsDigital.Presentation.Match
 
             if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
             {
-                return $"Round {projection.RoundIndex}, Turn {projection.TurnIndex}: " +
-                    "players are choosing their cards.";
+                var stillOwed = CommitmentsStillOwed(projection);
+                var viewerOwes = viewerHeroId.IsDefined
+                    ? stillOwed.Contains(viewerHeroId)
+                    : stillOwed.Count > 0;
+                var names = stillOwed
+                    .Select(heroId => HeroDisplayName(projection.Setup.Heroes, heroId))
+                    .ToArray();
+                return viewerOwes
+                    ? NarrationLabels.Own("COMMITMENT", "CHOOSE A CARD, OR PASS")
+                    : names.Length > 0
+                        ? "COMMITTING — " + NarrationLabels.WaitingOn(names)
+                        : $"Round {projection.RoundIndex}, Turn {projection.TurnIndex}: " +
+                            "players are choosing their cards.";
             }
 
             if (projection.PendingInitiativeChoice != null)
             {
-                return "Tied Initiative: choose who acts first.";
+                return NarrationLabels.Own("INITIATIVE", "CHOOSE WHO ACTS FIRST");
             }
 
             if (projection.PendingDefenseChoice != null)
             {
-                return $"Incoming Attack {projection.PendingDefenseChoice.AttackTotal}: " +
-                    "choose a card to defend with.";
+                statusDetail = $"ATTACK {projection.PendingDefenseChoice.AttackTotal}";
+                return NarrationLabels.Own("DEFENSE", "CHOOSE A CARD, OR DECLINE");
             }
 
             // Milestone 8.20d: the seventh pending family, and the one that had never been here.
@@ -4913,41 +4972,42 @@ namespace GuardsDigital.Presentation.Match
             var removalPrevention = projection.PendingRemovalPrevention;
             if (removalPrevention != null)
             {
-                return RemovalPreventionPromptLabels.StatusLine(removalPrevention);
+                return NarrationLabels.Own(
+                    RemovalPreventionPromptLabels.SectionLabel,
+                    RemovalPreventionPromptLabels.StatusLine(removalPrevention));
             }
 
             var effectChoice = projection.PendingEffectChoice;
             if (effectChoice != null)
             {
-                return EffectChoicePromptLabels.StatusLine(
-                    effectChoice,
-                    EffectChoicePromptLabels.SubjectOf(
-                        effectChoice, projection.PendingEffectChoicePreview),
-                    projection);
+                var subject = EffectChoicePromptLabels.SubjectOf(
+                    effectChoice, projection.PendingEffectChoicePreview);
+                return NarrationLabels.Own(
+                    EffectChoicePromptLabels.SectionLabel(subject),
+                    EffectChoicePromptLabels.StatusLine(effectChoice, subject, projection));
             }
 
             if (projection.PendingHeroRespawnChoice != null)
             {
-                return "Your hero is down: choose a respawn space on the board, " +
-                    "or resolve the card without acting.";
+                return NarrationLabels.Own(
+                    "RESPAWN", "CHOOSE A SPACE, OR RESOLVE WITHOUT ACTING");
             }
 
             if (projection.PendingAttackTargetChoice != null)
             {
-                return "Choose a target for the Attack.";
+                return NarrationLabels.Own("ATTACK", "CHOOSE A TARGET");
             }
 
             if (projection.PendingMovementChoice != null)
             {
                 var remaining = projection.PendingMovementChoice.RemainingAllowance;
-                return $"Movement: {remaining} " +
-                    (remaining == 1 ? "space" : "spaces") + " left.";
+                statusDetail = $"{remaining} " + (remaining == 1 ? "SPACE LEFT" : "SPACES LEFT");
+                return NarrationLabels.Own("MOVEMENT", "CHOOSE A DESTINATION");
             }
 
             if (projection.PendingDisplacedMinionCorrection != null)
             {
-                return $"{MinionChoiceLabels.TeamLabel(projection.PendingDisplacedMinionCorrection.ChoosingSide)} " +
-                    "places the displaced minion.";
+                return NarrationLabels.Own("CORRECTION", "PLACE THE DISPLACED MINION");
             }
 
             // Milestone 8.35g: the eleventh pending family, and the last decision branch because the
@@ -4958,17 +5018,62 @@ namespace GuardsDigital.Presentation.Match
             // fallback milestone 8.30c removed for the ended match and 8.20d for the effect choice.
             // It names the side rather than the pressing seat, because one derivation serves every
             // viewer and the other five are waiting on exactly this.
+            // Milestone 8.35n: `ActorId` is unscoped by 8.35g's own deliberate decision, so unlike
+            // every branch above this one reads the SAME object on every viewer's projection - the
+            // comparison below is what decides which of the two vocabularies applies, not the field.
             var turnRelease = projection.PendingTurnRelease;
             if (turnRelease != null)
             {
-                return $"{MinionChoiceLabels.TeamLabel(turnRelease.TeamSide)} is ending their turn.";
+                return !viewerHeroId.IsDefined || turnRelease.ActorId.Equals(viewerHeroId)
+                    ? NarrationLabels.Own("TURN", "RELEASE TO CONTINUE")
+                    : NarrationLabels.HeroAwaitingRelease(
+                        HeroDisplayName(projection.Setup.Heroes, turnRelease.ActorId));
             }
 
-            return projection.SelectedActor.IsDefined
-                ? $"Initiative {projection.SelectedActor.InitiativeTotal}: " +
-                    "choose an action, or end your turn."
-                : "Waiting for the match to continue.";
+            if (projection.SelectedActor.IsDefined)
+            {
+                var initiative = projection.SelectedActor.InitiativeTotal;
+                if (AwaitedInputQuery.MayTakeATurnAction(projection))
+                {
+                    statusDetail = $"INITIATIVE {initiative}";
+                    return NarrationLabels.Own("TURN", "CHOOSE AN ACTION, OR END YOUR TURN");
+                }
+
+                return NarrationLabels.HeroActing(
+                    HeroDisplayName(projection.Setup.Heroes, projection.SelectedActor.ActorId),
+                    initiative);
+            }
+
+            return "Waiting for the match to continue.";
         }
+
+        /// <summary>
+        /// The heroes still owed a commitment - public, per <see cref="IMatchReadModel.Commitments"/>'s
+        /// own declaration, the same fact <see cref="AwaitedInputQuery"/> reads at viewer and hero
+        /// scope. Read directly here rather than through that class because the narration also needs
+        /// the full set of names, not a single hero's yes/no answer.
+        /// </summary>
+        private static IReadOnlyList<HeroId> CommitmentsStillOwed(IMatchReadModel projection) =>
+            Array.AsReadOnly((projection.Commitments ?? Array.Empty<MatchCommitmentProjection>())
+                .Where(commitment => commitment.Status == TurnCardCommitmentStatus.AwaitingResponse)
+                .Select(commitment => commitment.HeroId)
+                .ToArray());
+
+        /// <summary>
+        /// The heroes on the standing team agreement's own participant list who have not yet given
+        /// their part - a stated Initiative preference, or an explicit Minion Battle agreement, the
+        /// same per-kind reading <c>AwaitedInputQuery.OwesAnAgreementAnswer</c> and
+        /// <c>TeamAgreementHudPresentation.Create</c> both already use.
+        /// </summary>
+        private static IReadOnlyList<string> AgreementStillOwed(
+            IMatchReadModel projection, TeamAgreementProjection agreement) =>
+            Array.AsReadOnly(agreement.Participants
+                .Where(participant => agreement.Kind == TeamAgreementKind.Initiative
+                    ? !participant.HasStatement
+                    : !participant.Agreed)
+                .Select(participant =>
+                    HeroDisplayName(projection.Setup.Heroes, participant.HeroId))
+                .ToArray());
 
         private static string FormatVictoryCause(MatchVictoryCause cause)
         {

@@ -193,7 +193,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(prompt, Is.Not.Null,
                 "A standing decision carries the prompt that names it.");
             Assert.That(prompt.SectionLabel, Is.EqualTo("CARD CHOICE"));
-            Assert.That(runtime.RoundView.Model.Status, Does.StartWith("Choose 1 of "));
+            // Milestone 8.35n: "YOUR CARD CHOICE — " now leads the sentence.
+            Assert.That(runtime.RoundView.Model.Status, Does.Contain("Choose 1 of "));
             Assert.That(runtime.RoundView.Model.Status,
                 Does.EndWith(" cards for Wasp to discard."),
                 "The narrative bar says why these cards are being chosen.");

@@ -73,8 +73,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(model.EffectChoicePrompt.SectionLabel, Is.EqualTo("CARD CHOICE"));
             var chooserName = session.Projection.Setup.Heroes
                 .Single(hero => hero.HeroId.Equals(choice.ChooserId)).DisplayName;
+            // Milestone 8.35n: "YOUR CARD CHOICE — " leads the own-decision line.
             Assert.That(model.Status,
-                Is.EqualTo($"Choose 1 of {choice.Candidates.Count} cards for {chooserName} to discard."),
+                Is.EqualTo(
+                    $"YOUR CARD CHOICE — Choose 1 of {choice.Candidates.Count} cards for " +
+                    $"{chooserName} to discard."),
                 "The narration states both the bounds and why this hero is choosing a card.");
             AssertNamesNoOtherPause(model.Status);
 
@@ -124,7 +127,9 @@ namespace GuardsDigital.Tests.EditMode
             var targets = RoundActionPresenter.CreateViewModel(session.Projection);
             Assert.That(targets.EffectChoicePrompt.Subject, Is.EqualTo(EffectChoiceSubject.Piece),
                 "`up to 2 enemy units adjacent to you` names pieces standing on the board.");
-            Assert.That(targets.Status, Does.StartWith("Choose up to "),
+            // Milestone 8.35n prefixes the family header ("YOUR TARGET CHOICE — ") the FIFTH
+            // amendment's own-decision narration requires; the `up to` claim itself is unmoved.
+            Assert.That(targets.Status, Does.Contain("Choose up to "),
                 "An `up to` states its maximum rather than pretending a floor. Read: " + targets.Status);
             Assert.That(targets.Status, Does.Contain(" target"));
             Assert.That(targets.Status, Does.Contain("or decline"),
@@ -135,7 +140,8 @@ namespace GuardsDigital.Tests.EditMode
             var model = RoundActionPresenter.CreateViewModel(session.Projection);
             Assert.That(model.EffectChoicePrompt.Subject, Is.EqualTo(EffectChoiceSubject.Number));
             Assert.That(model.EffectChoicePrompt.SectionLabel, Is.EqualTo("NUMBER CHOICE"));
-            Assert.That(model.Status, Is.EqualTo("Choose 1 of 2 printed numbers."));
+            // Milestone 8.35n: the own-decision family header now leads the sentence.
+            Assert.That(model.Status, Is.EqualTo("YOUR NUMBER CHOICE — Choose 1 of 2 printed numbers."));
             AssertNamesNoOtherPause(model.Status);
 
             var sections = Render(model);
@@ -168,8 +174,9 @@ namespace GuardsDigital.Tests.EditMode
             var model = RoundActionPresenter.CreateViewModel(session.Projection);
             Assert.That(model.EffectChoicePrompt.Subject, Is.EqualTo(EffectChoiceSubject.OptionalStep));
             Assert.That(model.EffectChoicePrompt.SectionLabel, Is.EqualTo("OPTIONAL STEP"));
+            // Milestone 8.35n: "YOUR OPTIONAL STEP — " leads the own-decision line.
             Assert.That(model.Status,
-                Is.EqualTo("An optional step is offered: confirm it or decline."));
+                Is.EqualTo("YOUR OPTIONAL STEP — An optional step is offered: confirm it or decline."));
             AssertNamesNoOtherPause(model.Status);
 
             var sections = Render(model);
@@ -197,7 +204,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(model.EffectChoices, Is.Empty, "so this pause has no control of its own.");
             Assert.That(model.EffectChoicePrompt, Is.Not.Null);
             Assert.That(model.EffectChoicePrompt.Subject, Is.EqualTo(EffectChoiceSubject.Piece));
-            Assert.That(model.Status, Does.StartWith("Choose 1 of 1 target"));
+            // Milestone 8.35n: "YOUR TARGET CHOICE — " leads; the claim itself is unmoved.
+            Assert.That(model.Status, Does.Contain("Choose 1 of 1 target"));
             AssertNamesNoOtherPause(model.Status);
             Assert.That(Render(model), Is.Empty,
                 "Nothing is drawn in the contextual region, and a section with no control in it is " +

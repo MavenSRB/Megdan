@@ -441,10 +441,13 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(battle, Is.Not.Null, "The fixture stands on the family this case is about.");
 
-            var status = RoundActionPresenter.CreateViewModel(session.Projection).Status;
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+            var status = model.Status;
 
-            Assert.That(status, Does.StartWith("Minion Battle:"));
-            Assert.That(status, Does.Contain(MinionChoiceLabels.TeamLabel(battle.ChoosingSide)),
+            // Milestone 8.35n: the own-decision family header leads ("YOUR MINION BATTLE — "),
+            // and the deciding side moved to the demoted detail beside it.
+            Assert.That(status, Does.StartWith("YOUR MINION BATTLE —"));
+            Assert.That(model.StatusDetail, Does.Contain(MinionChoiceLabels.TeamLabel(battle.ChoosingSide)),
                 "The side that decides is named, which is what a team-owned pause has to say.");
             Assert.That(status, Does.Not.Contain("complete"),
                 "and never the round's own phase line, which is what this pause used to arrive under.");

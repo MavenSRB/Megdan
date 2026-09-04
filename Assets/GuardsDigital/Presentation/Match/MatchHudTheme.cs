@@ -220,6 +220,29 @@ namespace GuardsDigital.Presentation.Match
         public static readonly Color NarrationWarmText = new Color(1f, 0.933f, 0.784f, 1f);
 
         /// <summary>
+        /// Milestone 8.35n (the FIFTH amendment, typography: "its important, make it look it"). The
+        /// narration's own type scale, so its weight and hierarchy are declared once rather than as
+        /// three literal numbers at the one call site that draws it. The warm ("your move") headline
+        /// is the largest text this HUD's status strip ever draws; the calm headline still names the
+        /// acting hero at a size a player can read without leaning in; the shared detail size is what
+        /// a demoted secondary fact - Initiative, an attack total, a count still owed - uses at either
+        /// voice, always smaller and quieter than its own headline.
+        /// </summary>
+        public const float NarrationHeadlineSize = 18f;
+
+        public const float NarrationCalmHeadlineSize = 14f;
+
+        public const float NarrationDetailSize = 11f;
+
+        /// <summary>
+        /// Milestone 8.35n (the FOURTH amendment, board highlight). The acting hero's own piece marker
+        /// - a warm gold distinct from every existing board-cue colour (green movement, cyan respawn,
+        /// blood red attack/removal, warm-ivory teammate identity, neutral greys) so "who is acting"
+        /// reads as its own fact rather than borrowing a colour that already means something else.
+        /// </summary>
+        public static readonly Color ActingHeroMarkerColor = new Color(1f, 0.804f, 0.298f, 1f);
+
+        /// <summary>
         /// Milestone 8.7a: the neutral back a card committed facedown is drawn as.
         ///
         /// It is a colour of its own rather than <see cref="EmptySlot"/> because the two say opposite

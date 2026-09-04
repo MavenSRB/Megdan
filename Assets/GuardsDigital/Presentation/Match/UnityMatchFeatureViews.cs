@@ -23,6 +23,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly Func<PlacedToken, PlacedTokenView> tokenViewFactory;
         private readonly IReadOnlyList<HexTileView> tiles;
         private readonly HexCornerHighlightTemplate cornerHighlightTemplate;
+        private ActingHeroMarker actingHeroMarker;
         private GuardsDigital.Core.Board.HexCoordinate? hoveredCoordinate;
         private HeroId hoveredHeroId;
         private HeroId pointerHoveredHeroId;
@@ -100,6 +101,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             Model = model ?? throw new ArgumentNullException(nameof(model));
+            PrimitiveHeroView actingHero = null;
             foreach (var hero in heroes)
             {
                 var occupancy = model.Heroes.SingleOrDefault(value =>
@@ -122,7 +124,18 @@ namespace GuardsDigital.Presentation.Match
                 // Every board choice is now carried by the occupied hex's six corners. The retained
                 // ring remains part of the reusable piece view, but configured play never activates it.
                 hero.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
+
+                // Milestone 8.35n (the FOURTH amendment). `FocusedHeroId` is `SelectedActor`'s own
+                // hero, unscoped and public, and unrelated to `hoveredHeroId` above - a viewer
+                // pointing at some other hero's plaque must not steal the acting-hero marker.
+                if (model.FocusedHeroId.IsDefined &&
+                    occupancy.HeroId.Equals(model.FocusedHeroId))
+                {
+                    actingHero = hero;
+                }
             }
+
+            RenderActingHeroMarker(actingHero);
 
             RenderMinions(model);
             RenderTokens(model);
@@ -333,6 +346,29 @@ namespace GuardsDigital.Presentation.Match
         {
             pointerHoveredHeroId = heroId;
             ApplyHoveredHero();
+        }
+
+        /// <summary>
+        /// Milestone 8.35n (the FOURTH amendment): every viewer's board marks the acting hero's own
+        /// piece with a distinct ring, and clears the moment no actor stands. One marker serves the
+        /// whole board - at most one hero is ever the selected actor - created lazily on first use
+        /// and repositioned here every <see cref="Render"/>, never retained per piece the way
+        /// <see cref="Board.BoardTargetRing"/> is.
+        /// </summary>
+        private void RenderActingHeroMarker(PrimitiveHeroView actingHero)
+        {
+            if (actingHero == null)
+            {
+                actingHeroMarker?.SetHidden();
+                return;
+            }
+
+            if (actingHeroMarker == null)
+            {
+                actingHeroMarker = ActingHeroMarker.Create();
+            }
+
+            actingHeroMarker.SetVisible(actingHero.transform.position, actingHero.SelectionRadius);
         }
 
         private void ApplyHoveredHero()

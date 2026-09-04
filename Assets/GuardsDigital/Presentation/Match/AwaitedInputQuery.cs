@@ -100,8 +100,15 @@ namespace GuardsDigital.Presentation.Match
         /// The viewer's own turn, with the match accepting an action from them. Both readings are the
         /// projection's own scoped offer set rather than a re-derivation of whose turn it is; an
         /// offer that exists but is unavailable is not a wait, which is why availability is asked.
+        ///
+        /// <para>Milestone 8.35n (the FIFTH amendment, narration): made <c>public</c> rather than
+        /// duplicated. <c>RoundActionPresenter.FormatStatus</c> reuses this exact reading to decide
+        /// whether the bare "acting" fallback belongs to the viewer's own rich "YOUR TURN" narration
+        /// or to the public hero-name line every other viewer reads - the same offer-scoped fact that
+        /// keeps the top bar's gold from lighting on the wrong seat now keeps the narration from
+        /// claiming the wrong seat's turn.</para>
         /// </summary>
-        private static bool MayTakeATurnAction(IMatchReadModel projection)
+        public static bool MayTakeATurnAction(IMatchReadModel projection)
         {
             var hold = projection.AvailableHoldOffer;
             if (hold.HasValue && hold.Value.IsAvailable)

@@ -4409,14 +4409,34 @@ namespace GuardsDigital.Presentation.Match
             accent.style.backgroundColor = MatchHudTheme.ShineGlow;
             accent.style.display = warm ? DisplayStyle.Flex : DisplayStyle.None;
             status.Add(accent);
+            // Milestone 8.35n (the FIFTH amendment, typography): "its important, make it look it".
+            // Both voices are now bold, at two clearly different weights of size rather than one
+            // fixed size that only changed colour, and the acting hero's name and activity carry
+            // letter-spacing the way the rest of this HUD's important short labels already do
+            // (`level.style.letterSpacing` above). A secondary fact - Initiative, an attack total, a
+            // count still owed - is demoted to `Model.StatusDetail`, drawn smaller and quieter in the
+            // same row rather than folded back into the headline sentence.
             var narration = HudElements.Text(
                 Model.Status,
-                warm ? 14f : 12f,
+                warm ? MatchHudTheme.NarrationHeadlineSize : MatchHudTheme.NarrationCalmHeadlineSize,
                 warm ? MatchHudTheme.NarrationWarmText : MatchHudTheme.MutedText,
-                warm ? FontStyle.Bold : FontStyle.Normal);
+                FontStyle.Bold);
             narration.name = "gd-narration-text";
             narration.style.marginLeft = warm ? 8f : 0f;
+            narration.style.letterSpacing = warm ? 0.4f : 0.2f;
             status.Add(narration);
+            if (!string.IsNullOrEmpty(Model.StatusDetail))
+            {
+                var detail = HudElements.Text(
+                    Model.StatusDetail,
+                    MatchHudTheme.NarrationDetailSize,
+                    warm ? MatchHudTheme.NarrationWarmText : MatchHudTheme.MutedText,
+                    FontStyle.Normal);
+                detail.name = "gd-narration-detail";
+                detail.style.marginLeft = 8f;
+                detail.style.opacity = 0.72f;
+                status.Add(detail);
+            }
 
             if (HasTeamAgreementDecision)
             {

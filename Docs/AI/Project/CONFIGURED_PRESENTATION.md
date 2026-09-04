@@ -54,6 +54,8 @@ Milestone 8.11b draws each hero as the official circular token when a prepared f
 
 A configuration may deal a seat the scene authors no view for: composition generates a `PrimitiveHeroView` and `PrimitiveHeroPointerSelector` at the map's outer radius and deactivates authored views no configured hero claims. Generated and authored seats draw through the same path; the default official six-player setup uses this mechanism.
 
+Milestone 8.35n's acting-hero marker is a third, additive board cue: one retained gold ring, independent of the piece target cue and the six-corner tile palette, competing with neither. It follows whichever hero the public `SelectedActor` names, repositioned every render, and hides outright once none is defined - never a transient selection, per the amendment's own non-goal.
+
 ## Maintenance rule
 
 Corrective milestone 6.5aa widens the Minion-Battle surface from `MinionId` to projected hero-or-minion `RuleObject` candidates, so a counts-as hero receives the same authoritative remove/keep control and blood-red removal corners without presentation deciding its effective type. It also adds the p.7 Hero Respawn surface: one button per authoritative destination plus `RESOLVE WITHOUT ACTION`. Pointing at or keyboard-focusing a destination button previews exactly that coordinate through cyan six-corner marks; exit/blur clears it, and stale projection identity cannot submit or retain the preview.

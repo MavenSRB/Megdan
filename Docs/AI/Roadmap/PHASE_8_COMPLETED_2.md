@@ -635,3 +635,22 @@ Closing check: `HeroRailPortraitTests.TheSixHeroPlaques_MakePortraitAndNameThePr
 Non-goals: No rule, match-state, projection, serialization, input-command, networking, board, card-face, tray, prompt-flow, animation, or imported-art change; no broader production-HUD or accessibility suite.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829a-recompose-and-contain-the-side-hero-trays-completion-evidence).
+
+### [x] 8.29 Select the minimum private-online architecture and re-baseline the track
+
+Observable outcome: A source-backed architecture decision defines the smallest supportable way for six invited Windows players on the internet to join one private 3v3 match, with one authoritative host/session and one independently owned hero per player.
+
+Decision inputs: [Private-online decision constraints](../Project/ARCHITECTURE.md#private-online-decision-constraints) and [`RISK-ONLINE-001`](../TECHNICAL_RISKS.md#active-risks) carry milestone 8.28a's reviewed host-authority, projection-privacy, submission-identity, compatibility, payload, and recovery boundaries.
+
+Acceptance checks:
+
+- Current Unity-supported transport, relay/NAT traversal, hosting, cost, licensing, privacy, and operational constraints are compared before a provider or SDK is selected.
+- The trust boundary, host authority, seat/hero ownership, client-visible projections, version compatibility, join flow, disconnect policy, and failure model are explicit, including duplicate, replayed, stale, malformed, oversized, unauthorized, and out-of-order inputs plus disconnects during each pending-choice family.
+- A lightweight threat model identifies trusted and untrusted processes, per-seat command authority, public/team/owner-private information, diagnostic-log sensitivity, host-tampering limitations, and the required safe rejection or terminal behavior. This is scoped to six invited players and does not claim production anti-cheat or public-service security.
+- The selected Unity editor, packages/SDKs, transport/service versions, licenses, private-distribution constraints, deterministic/authoritative-code reach, removal/upgrade path, and build compatibility are pinned in a version-controlled dependency decision record. Upgrades that can affect authority, serialization, networking, rendering, or builds require an explicit compatibility assessment and applicable gate rerun.
+- The track remains private and invite-only; accounts, public matchmaking, public server browsing, telemetry, monetization, and public distribution remain out of scope.
+- Milestones 8.30-8.36, including the lettered local-UI and rehearsal slices, receive evidence-based implementation boundaries and validation commands before the first implementation milestone is authorized.
+
+Decision and re-baseline: [the private-online architecture record](../Project/PRIVATE_ONLINE_ARCHITECTURE.md) initially selected a player-hosted UGS/Relay authority under `guards-private-online/1`. The 2026-09-01 amendment replaced that topology with a dedicated seatless host over direct TCP while retaining owner projections, host-bound seats, snapshot resync, terminal host loss, trust/removal boundaries, and excluded public-service scope. Milestone 8.35b's compatibility assessment advances the current wire to `guards-private-online/2` for a rules-bearing selected-actor field and rejects version 1 without migration. Exact gates remain in [the private-online validation shard](../Testing/PRIVATE_ONLINE.md).
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-829-select-the-minimum-private-online-architecture-and-re-baseline-the-track-completion-evidence).

@@ -2980,5 +2980,338 @@ namespace GuardsDigital.Tests.EditMode
                 RenderCount++;
             }
         }
+
+        // -------------------------------------------------------------------------------------
+        // Narration content and typography (milestone 8.35n, the FIFTH amendment: "hero name,
+        // who is acting, not only initiative ... its important, make it look it").
+        //
+        // The split is derivability, exactly as M2 built it at viewer scope and M3 recorded for
+        // hero scope: a decision the VIEWER'S OWN projection carries in full reads the rich
+        // "YOUR <FAMILY> - <activity>" line (NarrationLabels.Own); everything else this method
+        // can say is a fact IMatchReadModel already publishes to EVERY viewer regardless of
+        // ownership - the acting hero's name (SelectedActor), the release owner's name
+        // (PendingTurnRelease.ActorId, unscoped by 8.35g), and who still owes a commitment or a
+        // team-agreement answer (both public on their own declaration).
+        // -------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// A client whose only job is to answer <see cref="IMatchClient.Projection"/> for a
+        /// <see cref="RoundActionPresenter"/> built with a specific viewer hero - the one thing
+        /// the two public static <c>CreateViewModel</c> overloads cannot do, because both fix the
+        /// viewer at the Director's undefined hero.
+        /// </summary>
+        private sealed class StubMatchClient : IMatchClient
+        {
+            public StubMatchClient(IMatchReadModel projection) => Projection = projection;
+            public IMatchReadModel Projection { get; }
+            public bool IsDirector => false;
+
+            public MatchClientResult Submit(DirectorCommand command) =>
+                throw new NotSupportedException("This stub answers Refresh() reads only.");
+
+            public MatchClientResult SubmitAgreement(TeamAgreementCommand command) =>
+                throw new NotSupportedException("This stub answers Refresh() reads only.");
+
+            public MatchClientResult SubmitUndo() =>
+                throw new NotSupportedException("This stub answers Refresh() reads only.");
+        }
+
+        private static RoundActionViewModel Narrate(IMatchReadModel projection, HeroId viewerHeroId)
+        {
+            var view = new CapturingRoundView();
+            new RoundActionPresenter(new StubMatchClient(projection), view, viewerHeroId).Refresh();
+            return view.Model;
+        }
+
+        private sealed class DefenseChoiceReadModel : DelegatingReadModel
+        {
+            private readonly PendingDefenseResponseChoice choice;
+
+            public DefenseChoiceReadModel(IMatchReadModel inner, PendingDefenseResponseChoice choice)
+                : base(inner) => this.choice = choice;
+
+            public override PendingDefenseResponseChoice PendingDefenseChoice => choice;
+        }
+
+        private sealed class MovementChoiceReadModel : DelegatingReadModel
+        {
+            private readonly PendingMovementChoice choice;
+
+            public MovementChoiceReadModel(IMatchReadModel inner, PendingMovementChoice choice)
+                : base(inner) => this.choice = choice;
+
+            public override PendingMovementChoice PendingMovementChoice => choice;
+        }
+
+        /// <summary>
+        /// A viewer who is not the acting hero. <see cref="AwaitedInputQuery.MayTakeATurnAction"/>
+        /// reads <c>AvailableTurnActions</c>/<c>AvailableHoldOffer</c> straight off the projection
+        /// with no viewer parameter of its own - Application scopes those to <c>isActor &amp;&amp;
+        /// !standing</c> FOR ONE SEAT's own real <c>SeatProjection</c>, which is what keeps an
+        /// attacker's own bar from lighting during a defender's answer. The Director's
+        /// <c>MatchSessionProjection</c> carries no such per-seat scoping at all - it is one
+        /// omniscient view, not six - so a spectator case built on it has to fake the withholding
+        /// this wrapper stands for, or it silently answers the wrong question.
+        /// </summary>
+        private sealed class SpectatorReadModel : DelegatingReadModel
+        {
+            public SpectatorReadModel(IMatchReadModel inner) : base(inner)
+            {
+            }
+
+            public override IReadOnlyList<ActionOffer> AvailableTurnActions =>
+                Array.Empty<ActionOffer>();
+            public override ActionOffer? AvailableHoldOffer => null;
+        }
+
+        [Test]
+        public void TheActingHerosOwnScreen_ReadsYourTurnWithInitiativeDemotedToDetail()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var actor = session.Projection.SelectedActor;
+
+            var model = Narrate(session.Projection, actor.ActorId);
+
+            Assert.That(model.Status, Is.EqualTo("YOUR TURN — CHOOSE AN ACTION, OR END YOUR TURN"));
+            Assert.That(model.StatusDetail, Is.EqualTo($"INITIATIVE {actor.InitiativeTotal}"));
+        }
+
+        [Test]
+        public void EveryOtherViewer_ReadsTheActingHerosNameAndInitiativeOnly()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var actor = session.Projection.SelectedActor;
+            var spectator = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            var actorName = session.Projection.Setup.Heroes
+                .Single(hero => hero.HeroId.Equals(actor.ActorId)).DisplayName.ToUpperInvariant();
+
+            var model = Narrate(new SpectatorReadModel(session.Projection), spectator);
+
+            Assert.That(model.Status,
+                Is.EqualTo($"{actorName} — ACTING (INITIATIVE {actor.InitiativeTotal})"));
+            Assert.That(model.StatusDetail, Is.Null,
+                "Initiative is stated once, inside the headline itself, for a spectator's line.");
+        }
+
+        [Test]
+        public void ADefenseAnsweredByTheOwningViewer_ReadsTheFullRichOwnDecisionLine()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var attacker = session.Projection.SelectedActor.ActorId;
+            var defender = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            var choice = new PendingDefenseResponseChoice(
+                new ActionResolutionId("probe-resolution"),
+                new ActionResolutionStepId("probe-step"),
+                defender,
+                attacker,
+                7,
+                Array.Empty<ActionOffer>(),
+                true);
+            var projection = new DefenseChoiceReadModel(session.Projection, choice);
+
+            var model = Narrate(projection, defender);
+
+            Assert.That(model.Status, Is.EqualTo("YOUR DEFENSE — CHOOSE A CARD, OR DECLINE"));
+            Assert.That(model.StatusDetail, Is.EqualTo("ATTACK 7"));
+        }
+
+        /// <summary>
+        /// The deferred non-goal, proved rather than assumed. A non-owning seat's own projection
+        /// carries <c>null</c> for <c>PendingDefenseChoice</c> - <c>SeatProjection</c>'s
+        /// <c>ownsDecision</c> scoping, the same shape the M3 worker recorded for the SEVENTH
+        /// amendment's tray shine - so an unmodified projection with an acting hero and no owned
+        /// pending family IS exactly what a real non-owning seat's projection looks like, not a
+        /// stand-in for one. The narration must never widen that privacy boundary by inferring a
+        /// standing defense from any other public clue.
+        /// </summary>
+        [Test]
+        public void ANonOwningViewer_NeverNamesAnOwnerScopedActivityOnlyTheActingHerosName()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var actor = session.Projection.SelectedActor;
+            var otherViewer = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            Assert.That(session.Projection.PendingDefenseChoice, Is.Null,
+                "The fixture under test must genuinely carry no owned pending family, or this " +
+                "proves nothing about the deferred non-goal.");
+
+            var model = Narrate(new SpectatorReadModel(session.Projection), otherViewer);
+            var actorName = session.Projection.Setup.Heroes
+                .Single(hero => hero.HeroId.Equals(actor.ActorId)).DisplayName.ToUpperInvariant();
+
+            Assert.That(model.Status, Does.Not.Contain("DEFENSE"));
+            Assert.That(model.Status, Does.Not.Contain("ATTACK"));
+            Assert.That(model.Status, Does.Not.Contain("LEVEL UP"));
+            Assert.That(model.Status, Does.Not.Contain("RESPAWN"));
+            Assert.That(model.StatusDetail, Is.Null);
+            Assert.That(model.Status,
+                Is.EqualTo($"{actorName} — ACTING (INITIATIVE {actor.InitiativeTotal})"));
+        }
+
+        [Test]
+        public void AMovementChoiceForTheOwningViewer_ReadsTheOwnDecisionLineWithSpacesDemoted()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var actor = session.Projection.SelectedActor.ActorId;
+            var origin = session.Projection.Heroes.Single(hero => hero.HeroId.Equals(actor)).Coordinate;
+            var choice = new PendingMovementChoice(
+                new ActionResolutionId("probe-resolution"),
+                new ActionResolutionStepId("probe-step"),
+                actor,
+                actor,
+                origin,
+                3,
+                // `false`: a movement that could stop mid-way is a legal End Turn candidate too
+                // (see `CreateEndTurnInvocation`), which is a different case from this one - this
+                // choice's own family header and demoted detail.
+                false,
+                Array.Empty<GuardsDigital.Core.Rules.Movement.ReachableMovementDestination>());
+            var projection = new MovementChoiceReadModel(session.Projection, choice);
+
+            var model = Narrate(projection, actor);
+
+            Assert.That(model.Status, Is.EqualTo("YOUR MOVEMENT — CHOOSE A DESTINATION"));
+            Assert.That(model.StatusDetail, Is.EqualTo("3 SPACES LEFT"));
+        }
+
+        [Test]
+        public void TheReleasingHerosOwnScreen_ReadsYourTurnReleaseToContinue()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var actor = session.Projection.SelectedActor;
+            var release = new PendingTurnRelease(actor.ActorId, actor.CardInstanceId, actor.TeamSide);
+            var projection = new TurnReleaseReadModel(session.Projection, release);
+
+            var model = Narrate(projection, actor.ActorId);
+
+            Assert.That(model.Status, Is.EqualTo("YOUR TURN — RELEASE TO CONTINUE"));
+        }
+
+        [Test]
+        public void EveryOtherViewer_ReadsTheReleasingHerosNameAwaitingRelease()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var actor = session.Projection.SelectedActor;
+            var spectator = session.Projection.Setup.Heroes
+                .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            var actorName = session.Projection.Setup.Heroes
+                .Single(hero => hero.HeroId.Equals(actor.ActorId)).DisplayName.ToUpperInvariant();
+            var release = new PendingTurnRelease(actor.ActorId, actor.CardInstanceId, actor.TeamSide);
+            var projection = new TurnReleaseReadModel(session.Projection, release);
+
+            var model = Narrate(projection, spectator);
+
+            Assert.That(model.Status, Is.EqualTo($"{actorName} — TURN COMPLETE, AWAITING RELEASE"));
+        }
+
+        [Test]
+        public void TheViewersOwnUnansweredCommitment_ReadsTheOwnDecisionLine()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First().HeroId;
+            var projection = new CommitmentReadModel(
+                session.Projection, Awaiting(session.Projection, hero));
+
+            var model = Narrate(projection, hero);
+
+            Assert.That(model.Status, Is.EqualTo("YOUR COMMITMENT — CHOOSE A CARD, OR PASS"));
+        }
+
+        [Test]
+        public void AnotherHerosUnansweredCommitment_NamesThemInAWaitingOnLine()
+        {
+            var session = CreateSession();
+            var heroes = session.Projection.Setup.Heroes.ToArray();
+            var owing = heroes[0];
+            var viewer = heroes[1].HeroId;
+            var projection = new CommitmentReadModel(
+                session.Projection, Awaiting(session.Projection, owing.HeroId));
+
+            var model = Narrate(projection, viewer);
+
+            Assert.That(model.Status, Is.EqualTo(
+                $"COMMITTING — WAITING ON: {owing.DisplayName.ToUpperInvariant()}"));
+        }
+
+        [Test]
+        public void AnUnansweredAgreementParticipant_IsNamedInAWaitingOnLineForEveryViewer()
+        {
+            var session = CreateSession();
+            var red = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var blue = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue);
+            var proposal = new TeamAgreementProposalId("narration-probe");
+            var bluesCard = session.Projection.Cards.First(card => card.OwnerId.Equals(blue.HeroId)).Id;
+            var agreement = new TeamAgreementProjection(
+                TeamAgreementKind.Initiative,
+                proposal,
+                TeamSide.Blue,
+                new[] { new TeamAgreementCandidateProjection(bluesCard, blue.HeroId) },
+                new[]
+                {
+                    new TeamAgreementParticipantProjection(red.HeroId, false, default, false),
+                    new TeamAgreementParticipantProjection(blue.HeroId, true, bluesCard, false)
+                },
+                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
+                0,
+                false,
+                Array.Empty<TeamAgreementCommand>());
+            var projection = new AgreementReadModel(session.Projection, agreement);
+
+            var redsView = Narrate(projection, red.HeroId);
+            var bluesView = Narrate(projection, blue.HeroId);
+
+            Assert.That(redsView.Status, Is.EqualTo(
+                $"TIED INITIATIVE — WAITING ON: {red.DisplayName.ToUpperInvariant()}"));
+            Assert.That(bluesView.Status, Is.EqualTo(redsView.Status),
+                "The proposal and every participant's statement are public and identical for " +
+                "every seat - only AuthorizedCommands differs, which this line never reads.");
+        }
+
+        // -------------------------------------------------------------------------------------
+        // Acting-hero board highlight (milestone 8.35n, the FOURTH amendment): every viewer's
+        // board marks SelectedActor's own piece, and clears the moment no actor stands.
+        // `BoardInteractionViewModel.FocusedHeroId` is the public, unscoped fact the marker reads
+        // (see `UnityMatchFeatureViews.BoardInteractionUnityView.RenderActingHeroMarker`) - proven
+        // here at the pure view-model layer, which is what "present on all viewers" and "clears
+        // with no actor" are actually claims about.
+        // -------------------------------------------------------------------------------------
+
+        [Test]
+        public void TheBoardsActingHeroFact_IsPublicAndIdenticalForEveryViewer()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var actor = session.Projection.SelectedActor.ActorId;
+            var directorView = new CapturingBoardView();
+            new BoardInteractionPresenter(
+                new StubMatchClient(session.Projection), directorView).Refresh();
+
+            Assert.That(directorView.Model.FocusedHeroId, Is.EqualTo(actor),
+                "SelectedActor is public and unscoped, so the board's acting-hero fact is the " +
+                "same for the Director and for every seat's own projection alike.");
+        }
+
+        [Test]
+        public void TheBoardsActingHeroFact_ClearsTheMomentNoActorStands()
+        {
+            var session = CreateSession();
+            Assert.That(session.Projection.SelectedActor.IsDefined, Is.False,
+                "A freshly-configured match awaiting its first commitments has no actor yet, or " +
+                "this fixture proves nothing about clearing.");
+            var view = new CapturingBoardView();
+            new BoardInteractionPresenter(
+                new StubMatchClient(session.Projection), view).Refresh();
+
+            Assert.That(view.Model.FocusedHeroId.IsDefined, Is.False);
+        }
     }
 }
