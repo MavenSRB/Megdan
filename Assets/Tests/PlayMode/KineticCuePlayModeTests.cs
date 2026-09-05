@@ -42,9 +42,18 @@ namespace GuardsDigital.Tests.PlayMode
     /// (<c>targetMinionId: resolution.TargetMinionId</c>; <c>RuleEventLogProjection</c> already
     /// writes <c>minion=</c> for a defined value, and <c>MatchLogEntry.SubjectMinionId</c> is
     /// documented as exactly "a target, a defeat, a Minion Battle removal"), but it is a Core change
-    /// that moves the snapshot compatibility corpus, so it is recorded as a named gap with its
+    /// that moves the snapshot compatibility corpus, so it was recorded as a named gap with its
     /// measured cost rather than made here. The hero-against-hero attack is the arm the log fully
-    /// describes, so it is the arm this case pins.</para>
+    /// described, so it is the arm this case pins.</para>
+    ///
+    /// <para><b>Milestone 8.35z made that one-line repair</b>, with the migrate-or-reject decision and
+    /// the digest re-pin the corpus move owes - see <c>SnapshotCompatibilityCorpusTests</c>'s own
+    /// record of it. A minion attack now reaches the log naming its defender and lunges like any
+    /// other. This case is deliberately left on the HERO arm: it is the arm that was always fully
+    /// described, so it stays the stable pin for "a lunge plays on the real HUD", and the minion arm
+    /// is guarded where the defect actually was - on the event the authority builds
+    /// (<c>MinionAttackResolutionTests.EveryAttackResolutionEvent_NamesTheMinionItTargeted</c>) and on
+    /// the cue derived from it (<c>KineticCueTests</c>).</para>
     ///
     /// <para><b>The clock is advanced two ways on purpose.</b> One real frame proves the scene's
     /// driver is live - nothing in this fixture ticks anything for that assertion. The rest is

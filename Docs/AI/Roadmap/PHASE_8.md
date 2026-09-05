@@ -404,6 +404,34 @@ Non-goals: no production art, no camera control, no input gating, no rules, wire
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835y-make-the-boards-events-visible-with-kinetic-cues-completion-evidence).
 
+### [x] 8.35z Lunge at the minion too, and settle what that costs the snapshot corpus
+
+Milestone 8.35y named this as its first gap and priced it: an attack on a MINION played no lunge and no flash - the commonest attack in a match, and the one the SIXTEENTH amendment asked for ("tokens smacking each other"). The repair is one line. This milestone is for the decision that line owes, because a Core change reaching the rule-event log reaches the snapshot corpus, and a moved digest is never re-pinned here on an argument alone.
+
+Observable outcome: an attack on a minion leans the attacker into it and flashes the minion, carrying the card's own printed value in that card's own colour - exactly what an attack on a hero has done since 8.35y.
+
+Design:
+
+- The defect, precisely: an attack names ONE defender, and `PendingAttackResolution.Target` already holds whichever it is. `CardActionResolutionEvent.FromAttackResolution` passed `TargetHeroId` and left `targetMinionId` at its default, so every attack-resolution event of a minion attack reached the rule-event log with an attacker and no defender. `RuleEventLogProjection` wrote no `minion=` reference, `MatchLogProjection`'s `Optional("minion")` found none, and the kinetic presenter - whose minion arm was already shipped and correct - declined to invent a target it had never been told. The fix passes the field the resolution has held all along.
+- The guard belongs at the omission, not the symptom. `KineticCueTests` already had a minion-lunge case and it passed throughout 8.35y, because it hands the presenter a row that already names a minion - and the defect was that no such row was ever produced. So the closing check is on the event the authority builds.
+
+The migrate-or-reject decision - **accept unchanged, a compatible widening**; schema stays v36, two digests re-pin, nothing migrates and nothing is rejected. Measured, not asserted, and recorded beside the digests:
+
+- Fourteen of sixteen fixtures do not move. The two that do move ONLY in the rule-event log the envelope carries beside the payload - `paused-card-text` envelope 14041 -> 14083, `paused-level-up` 26364 -> 26427 - their authoritative 8475 and 9448 bytes UNCHANGED. All sixteen decoded authoritative payloads are byte-identical, `cmp` reporting zero differing bytes, so no state was added, removed or reshaped and the version need not move.
+- The log delta is five already-existing rows each gaining exactly the twenty-one characters `;minion=blue-melee-01`: two rows (2 x 21 = 42) and three rows (3 x 21 = 63), each the whole of its fixture's envelope delta. Nothing added, removed, reordered or re-worded - the arithmetic closing exactly is what proves the delta is the fragment and nothing riding along with it.
+- Does the added reference change the MEANING of an old payload? No, and this decides the question rather than the byte counts. `minion=` is a REFERENCE, not a fact: it names the board object the resolution had already targeted, and that targeting was always in the authoritative payload. Its absence was an omission, never a claim there was no minion defender - so this change re-reads no old row.
+- And the round trip was measured: all sixteen snapshot strings captured at the PRE-change revision were replayed through the POST-change restore path, and all sixteen, both moved fixtures included, were ACCEPTED and re-captured BYTE-IDENTICALLY. The envelope carries its log verbatim through a restore rather than re-deriving it, so a snapshot in the wild keeps its own honest rows.
+
+Acceptance checks:
+
+- `MinionAttackResolutionTests.EveryAttackResolutionEvent_NamesTheMinionItTargeted`: a real minion attack, asserting all three events built from the pending resolution name the minion, and that the hero arm stays empty because an attack has one defender.
+- `KineticCueTests.AnAttackOnAMinion_LungesAtIt_CarryingThePrintedFigureOfTheCardThatStruck`: the lunge names the minion, the flash lands on it, and the figure is the card's printed value and `CardProgressionProfile` colour from the real catalog.
+- `SnapshotCompatibilityCorpusTests.SupportedVersionedCorpus_RoundTripsByteIdentically` at the two re-pinned digests.
+
+Non-goals: no schema move, no wire change, no new cue kind, no rules change, and none of 8.35y's other named gaps, which stand as recorded there.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z-lunge-at-the-minion-too-and-settle-what-that-costs-the-snapshot-corpus-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

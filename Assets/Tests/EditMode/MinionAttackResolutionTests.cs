@@ -59,6 +59,44 @@ namespace GuardsDigital.Tests.EditMode
                 value.Kind == CardActionResolutionEventKind.DefenseResponseChoiceRequested));
         }
 
+        /// <summary>
+        /// Milestone 8.35z. An attack names ONE defender, and until this milestone the minion arm of
+        /// that name was dropped on the floor: every attack-resolution event carried the actor and the
+        /// target HERO, and left the target MINION at its default. The omission was invisible here
+        /// because nothing at this layer read the field, and it surfaced three layers away as a board
+        /// that played no lunge for the commonest attack in a match. So the guard belongs on the event
+        /// the authority actually builds, not on the cue that happened to notice.
+        /// </summary>
+        [Test]
+        public void EveryAttackResolutionEvent_NamesTheMinionItTargeted()
+        {
+            var fixture = CreateFixture(
+                CreateMinion("blue-target", TeamSide.Blue, StandardMinionType.Melee, new HexCoordinate(1, 0)));
+
+            var result = AttackMinion(fixture, "blue-target", "names-its-defender");
+            Assert.That(result.Accepted, Is.True);
+
+            var attackEvents = result.Events
+                .Where(value =>
+                    value.Kind == CardActionResolutionEventKind.AttackTargetValidated ||
+                    value.Kind == CardActionResolutionEventKind.AttackStarted ||
+                    value.Kind == CardActionResolutionEventKind.AttackResolutionCompleted)
+                .ToArray();
+            Assert.That(attackEvents, Has.Length.EqualTo(3),
+                "The three events built from the pending attack resolution itself.");
+
+            foreach (var attackEvent in attackEvents)
+            {
+                Assert.That(
+                    attackEvent.TargetMinionId.IsDefined, Is.True,
+                    $"{attackEvent.Kind} reached the log with an attacker and no defender.");
+                Assert.That(attackEvent.TargetMinionId, Is.EqualTo(new MinionId("blue-target")));
+                Assert.That(
+                    attackEvent.TargetHeroId.IsDefined, Is.False,
+                    "An attack has one defender, so the hero arm stays empty when the minion arm is set.");
+            }
+        }
+
         [Test]
         public void Heavy_RemainsUntargetableUntilFriendlyNonHeavyLeavesBattleZone()
         {

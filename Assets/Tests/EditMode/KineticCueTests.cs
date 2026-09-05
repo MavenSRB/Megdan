@@ -166,6 +166,47 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35z, and the case worth reading beside the one directly above it. That case
+        /// passed throughout 8.35y while a real minion attack still played nothing, because it hands
+        /// the presenter a row that already names a minion - and the defect was that the log never
+        /// produced such a row. 8.35z fixed the log's side; this pins what the fixed row is now worth
+        /// on this side, all the way to the figure: the lunge names the minion, and the damage rides
+        /// it with the striking card's own printed value and its own printed colour, read from the
+        /// real definition catalog rather than chosen here.
+        /// </summary>
+        [Test]
+        public void AnAttackOnAMinion_LungesAtIt_CarryingThePrintedFigureOfTheCardThatStruck()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var projection = host.Projection;
+
+            var attack = FindCardPrinting(projection, PrintedValueChannel.Attack);
+            Assert.That(attack.card, Is.Not.Null, "The official content prints an Attack value somewhere.");
+
+            var cues = PrimedStream().Observe(
+                new[]
+                {
+                    Row(41, MatchLogEntryKind.Attack, subjectHero: Attacker, subjectMinion: Minion,
+                        card: attack.card.Id, outcome: MatchLogOutcome.AttackSuccessful)
+                },
+                projection);
+
+            Assert.That(cues.Count, Is.EqualTo(2));
+            Assert.That(cues[0].Kind, Is.EqualTo(KineticCueKind.Lunge));
+            Assert.That(cues[0].Subject, Is.EqualTo(KineticSubject.ForHero(Attacker)));
+            Assert.That(cues[0].Target, Is.EqualTo(KineticSubject.ForMinion(Minion)),
+                "The defender the log now names is the piece the attacker leans into.");
+            Assert.That(cues[0].Number.HasValue, Is.True,
+                "A landed attack on a minion carries its figure exactly as one on a hero does.");
+            Assert.That(cues[0].Number.Role, Is.EqualTo(KineticNumberRole.Damage));
+            Assert.That(cues[0].Number.PrintedAmount, Is.EqualTo(attack.amount));
+            Assert.That(cues[0].Number.Color, Is.EqualTo(attack.definition.Progression.Color));
+            Assert.That(cues[1].Kind, Is.EqualTo(KineticCueKind.Flash));
+            Assert.That(cues[1].Subject, Is.EqualTo(KineticSubject.ForMinion(Minion)),
+                "The minion that was hit is the piece that registers it.");
+        }
+
+        /// <summary>
         /// A defended attack must never show a damage figure, because none was dealt. The block's own
         /// figure is the defender's, and it arrives on the defender's own row.
         /// </summary>

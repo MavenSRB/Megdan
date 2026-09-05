@@ -1048,6 +1048,41 @@ namespace GuardsDigital.Tests.EditMode
         // authoritative 7463 -> 7571 and envelope 10064 -> 10208; paused-card-text 8360 -> 8474 and
         // 13889 -> 14041; paused-block-rider 8639 -> 8755 and 14214 -> 14370. The added repeated-Attack
         // witness is 8329 authoritative bytes and 17374 decoded envelope bytes at the new identity.
+        //
+        // MILESTONE 8.35z KEEPS SCHEMA v36 AND RE-PINS TWO DIGESTS. THE DECISION IS ACCEPT-UNCHANGED -
+        // A COMPATIBLE WIDENING - AND IT IS MEASURED RATHER THAN ASSERTED.
+        //
+        // What changed: CardActionResolutionEvent.FromAttackResolution now passes the resolution's own
+        // TargetMinionId beside the TargetHeroId it always passed, so RuleEventLogProjection writes a
+        // `minion=` reference for an attack whose defender is a minion. What that costs the corpus, in
+        // full: fourteen of the sixteen fixtures do not move at all, and the two that do move ONLY in
+        // the rule-event log the envelope carries beside the payload - paused-card-text envelope
+        // 14041 -> 14083 and paused-level-up 26364 -> 26427, authoritative 8475 and 9448 bytes
+        // UNCHANGED on both. Every one of the sixteen decoded authoritative payloads is byte-identical
+        // across the change, `cmp` reporting zero differing bytes in each, so no state was added,
+        // removed or reshaped anywhere and the version has nothing to move for.
+        //
+        // The log delta is five rows, all of them rows that already existed, each gaining exactly the
+        // twenty-one characters `;minion=blue-melee-01` and nothing else: two rows in paused-card-text
+        // (2 x 21 = 42, which is the whole envelope delta) and three in paused-level-up (3 x 21 = 63,
+        // likewise the whole delta). No row is added, removed, reordered or re-worded. The arithmetic
+        // closing exactly is what proves the delta is the fragment and not something else riding along.
+        //
+        // Does the added reference change the MEANING of an old payload? No, and this is the half that
+        // decides migrate-or-reject rather than the byte counts. `minion=` is a REFERENCE, not a fact:
+        // it names the board object the resolution had already targeted, and that targeting has always
+        // been in the authoritative payload as PendingAttackResolution.Target. So a reader of an old
+        // row could never have concluded "this attack had no minion defender" from the absence - the
+        // absence was an omission of a reference the writer held, never a claim that there was none.
+        // The new rows say more; the old rows say exactly what they always said. That is a widening.
+        //
+        // And the round-trip was measured directly rather than reasoned about: every one of the sixteen
+        // snapshot strings captured at the PRE-change revision was replayed through the POST-change
+        // restore path, and all sixteen - both moved fixtures included - were ACCEPTED and re-captured
+        // BYTE-IDENTICALLY. The envelope carries its log verbatim through a restore instead of
+        // re-deriving it, so a snapshot in the wild neither needs migrating nor deserves rejecting: it
+        // keeps its own historically honest rows, recorded when the writer did not name the defender.
+        // Nothing is rejected, nothing is migrated, and the digests are re-pinned.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
             new CompatibilityFixture("setup-v36", "3a27251fa6347db143d4bd0f0d927273d8da7d224349d213e862de00d8c1f610"),
@@ -1058,11 +1093,11 @@ namespace GuardsDigital.Tests.EditMode
             new CompatibilityFixture("placed-token-v36", "bbca51e2bd4b9b396adaa77540d40e10822fbbf63db0fc5fa8b2946d8cbf5ae0"),
             new CompatibilityFixture("attached-marker-v36", "19687b22e1d847f0e377da378fcb19e7d4f9a35198dfb6fe52b03b9b4a3d2610"),
             new CompatibilityFixture("pending-correction-v36", "deb1f15a0472f71a43567c89abb1f33301e669c7855ebaf25a92cca0e9be6e90"),
-            new CompatibilityFixture("paused-level-up-v36", "d0cd26ae9e79e989187f1d0e348c745aeddaafc0acfd3352179a9417e7415acc"),
+            new CompatibilityFixture("paused-level-up-v36", "624c96acc5dc5ea77e8d56f534e380fc091f6ed0877c645845f240c321f58a86"),
             new CompatibilityFixture("ended-match-v36", "40f6c7ca382e378775285e4a4e8ba4517d15485214697a165e4444fbe291467f"),
             new CompatibilityFixture("verified-hand-setup-v36", "d4d1f725d565bb639393d099b1d9f7a65ff660143ee2d666e2ab9516368e82c0"),
             new CompatibilityFixture("paused-orbit-repeat-v36", "5b4c58375d0b770f66e3eac359eb1c139c4f9972c3b110ed319c4128591a7c6d"),
-            new CompatibilityFixture("paused-card-text-v36", "a9377caa80b749caf94c3275dd2d1bf20e55309b56d3aeed37b30b2b5e0534c6"),
+            new CompatibilityFixture("paused-card-text-v36", "c0056c6e62cd5f067cdb55ce5eeaf281f8038861c7554dc558050ec155e06ce6"),
             new CompatibilityFixture("paused-block-rider-v36", "a16d243fd2de7763b26baeff23d8bc89d0990cad188dea27b9b541a32ab93043"),
             new CompatibilityFixture("paused-repeated-attack-v36", "786887f1d2b1e5c7d4aeb6e428b14241bb47c2dd995c181f5800aa8ec9d41f56"),
             new CompatibilityFixture("parked-pre-action-v36", "0f7f6e87222332d8867e7200ef155a4b80ded2f4f939f736f21cd66c57ca9d26")

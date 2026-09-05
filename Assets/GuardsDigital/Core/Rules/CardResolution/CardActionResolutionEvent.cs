@@ -980,7 +980,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.DefenseTotal ?? 0,
                 outcome,
                 default,
-                default);
+                default,
+                // An attack names ONE defender, and PendingAttackResolution.Target already holds
+                // whichever it is: the hero arm rides TargetHeroId above, and this is the minion arm.
+                // Omitting it left every minion attack - the commonest attack in a match - reaching
+                // the rule-event log and the seat-public MatchLog with an attacker and no defender,
+                // so RuleEventLogProjection wrote no `minion=` reference and any reader downstream
+                // (MatchLogProjection's Optional("minion"), and through it the kinetic cues) could
+                // only decline to name a target it was never told. Both arms are defaulted when the
+                // resolution has no target yet, so a targetless step is unchanged.
+                targetMinionId: resolution.TargetMinionId);
         }
 
         private static CardActionResolutionEvent FromFastTravel(
