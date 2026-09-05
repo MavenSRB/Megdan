@@ -36,8 +36,10 @@ WHAT YOU NEED
         YOUR SEAT              (one of red-player-01, red-player-02, red-player-03,
                                 blue-player-01, blue-player-02, blue-player-03)
 
-Everyone must run the exact copy of the build that was sent. A different build is
-refused when you try to join - that is deliberate, not a bug.
+Everyone must run the exact copy of the build that was sent - this is the newest
+one, and it does not talk to any older copy. A different build is refused the
+instant you try to join; that is deliberate, not a bug, so there is no way to
+accidentally mix an old copy into this session.
 
 
 1. STARTING THE GAME
@@ -58,11 +60,13 @@ same PC, point it at 127.0.0.1 and the same key, pick whichever seat you want to
 play, and press JOIN then READY as normal. Now switch back to the HOST window and
 press its FILL WITH TEST DRIVERS button - it fills every other still-open seat
 with a QA test driver, not a real opponent, just random legal moves at a watchable
-pace, clearly labeled as a test driver only on the host's own screen. The match
-begins itself once all six seats are ready, exactly as in a real session, so you
-get to play your one seat and watch the other five play themselves. It plays no
-part in the six-person session itself - nobody presses FILL once real people are
-joining.)
+pace, clearly labeled as a test driver only on the host's own screen. Each one
+dials the same address the host is actually using and either joins for real or
+gives up loudly - if a seat cannot be filled, the host's own screen says so by
+name instead of the practice game quietly hanging. The match begins itself once
+all six seats are ready, exactly as in a real session, so you get to play your one
+seat and watch the other five play themselves. It plays no part in the six-person
+session itself - nobody presses FILL once real people are joining.)
 
 The first time, Windows may say "Windows protected your PC". Choose "More info",
 then "Run anyway" - the build is unsigned, which is expected for a private
@@ -113,39 +117,66 @@ the board takes over.
 3. PLAYING
 
 Play the game normally and take as long as you like over your turns; nothing is on
-a timer. A few things are worth knowing:
+a timer, and a long match is fine - a bug that used to silently freeze the whole
+table partway through a long game is now fixed, so play on for as many rounds as
+the match takes. A few things are worth knowing:
 
   - You can only see your own hand. That is the point of the test.
   - When your team has to agree on something - which of two tied heroes goes first,
     or which minion is removed - everyone on that team has to say the same thing
     before it happens. You can change your mind; changing it un-agrees everyone and
     the team states it again. There is no captain and no automatic tiebreak.
-  - Turns no longer end by themselves. Once your last card finishes resolving, the
-    game holds your turn open and waits - it does not hand play to the next person
-    until you press END TURN yourself. That second press is the point of no return,
-    so use the pause to check your undo before you take it.
+  - When someone levels up at the end of a round, END TURN is on screen the whole
+    time it is your turn, right from the start, even in the middle of choosing a
+    target or a destination. One press does two things at once: it drops whatever
+    you had not yet actually committed to, and it hands your turn on. Undo is for
+    taking back something you truly did; END TURN is only for ending your turn -
+    they are not the same button doing the same job twice, and pressing END TURN
+    is instant and final the moment you press it, so do not press it by reflex if
+    you are not sure you are done. If END TURN looks dim rather than gold, hover
+    over it and it will say why - usually because a printed rule says this step
+    cannot be skipped, or because someone else's decision is what the game is
+    actually waiting on right now, not yours.
   - There is an UNDO button: the square with the curved arrow, just to the left of
-    END TURN at the top. While your own cards are resolving - and that now includes
-    the whole time your finished turn is sitting there waiting for your END TURN
-    press - it steps your turn back one action at a time, as far as the moment your
-    turn began. It will not undo an attack - once you have chosen a target, the
-    defender has already answered and that cannot be unseen - so it stops just after
-    an attack rather than going through it. It only ever moves your own turn, only
-    you can press it, and everyone else simply sees the board step back with you.
+    END TURN at the top. While your own cards are resolving it steps your turn
+    back one action at a time, as far as the moment your turn began. It will not
+    undo an attack - once you have chosen a target, the defender has already
+    answered and that cannot be unseen - so it stops just after an attack rather
+    than going through it. It only ever moves your own turn, only you can press
+    it, and everyone else simply sees the board step back with you.
   - Watch the top bar. The whole strip across the top of the screen turns gold
     whenever the game is waiting on you specifically - your turn, a decision only
     you can make, or simply choosing which card to commit at the start of a round.
     If it is not gold, it is not waiting on you.
   - Blocked actions grey out instead of being offered and then doing nothing. If a
     card or option looks dim, it is not available right now and clicking it will
-    not spend it - that used to not be true for a few cards, and now is.
+    not spend it. Hover over any greyed control and it will name the reason -
+    another hero's card already standing in the way, nothing left worth targeting,
+    or whatever else is actually stopping it - rather than leaving you to guess.
   - Your own cards and hand shine gold too: a card glows when it is the answer the
     game is waiting on you to give, and while one of your cards is resolving it
     keeps glowing while the rest of your hand dims, so your eye stays on the card
-    that is actually doing something.
+    that is actually doing something. That glow, the top bar, and the ring around
+    a hero's own piece on the board all breathe with a slow circling light while
+    you are the one being waited on - it is meant to catch your eye without being
+    urgent about it.
   - A narration bar names who is acting and what they are deciding, and a gold ring
     marks that hero's own piece on the board - so it is easy to see whose turn it
     is and what they are doing even from across the table.
+  - The board itself now shows you what is happening instead of just jumping
+    between still pictures. A piece that moves slides along the path it actually
+    took rather than teleporting. An attacker leans into whatever it strikes -
+    another hero's piece or one of the small enemy figures, it plays the same way
+    for both now - while a number showing the card's own printed value floats up
+    in that card's own colour; a defending card that blocks shows its own block
+    number in its own colour the same way. The struck piece visibly registers the
+    hit, and a returning piece pops back in. A removed piece does not fade out yet
+    - it simply disappears, which is a known gap below.
+  - Levelling up at the end of a round now happens for everyone who earned a level
+    at the same time, each on their own screen, instead of the table waiting while
+    each of you is asked in turn. Answer your own upgrade choice whenever you are
+    ready; the round moves on once the last person who levelled has answered, so
+    if you levelled up, do not wait to be asked - your prompt is already there.
   - Playing Brogan? A charge card now moves him to the picked destination the
     instant you pick it, and only then asks who the attack targets - from his new
     square, not his old one. Once that attack resolves it is committed like any
@@ -181,11 +212,12 @@ seat is reserved and you are dropped straight back into it, with everything as y
 left it.
 
 If your machine is out of action for the rest of the evening, tell us. The host can
-now free your seat from their own console once it shows as disconnected, without
-restarting the match for everyone else - but that only works on a seat that has
-actually dropped; it is not a way to remove someone who is still playing. Once
-released, the seat goes back to Open and anyone holding the session key could
-claim it, so this is genuinely for "I am out for the night," not a pause.
+free your seat from their own console with a typed "release <your seat>" once it
+shows as disconnected, without restarting the match for everyone else - but that
+only works on a seat that has actually dropped; it is not a way to remove someone
+who is still playing. Once released, the seat goes back to Open and anyone holding
+the session key could claim it, so this is genuinely for "I am out for the night,"
+not a pause.
 
 If the host machine itself goes away, every client says HOST LOST and that match is
 over - it cannot be continued or restored. We would start a new one.
@@ -199,15 +231,27 @@ These are already known. Please do not spend time writing them up in detail - a
 short note that you saw one is enough - but do say so, because it might be a
 different problem wearing the same coat.
 
-  - A greyed-out action does not yet say why on hover - a tooltip explaining the
-    block is coming, so for now if something looks disabled and you are not sure
-    why, just ask.
-  - END TURN sometimes needs a second press to actually hand the turn on. A
-    one-press redesign is coming; if the turn does not visibly move on, press it
-    again before assuming something is broken.
-  - Leveling up still asks each player one at a time rather than everyone at once.
-  - The game now keeps a full record of what happened, but there is no on-screen
-    panel to read it yet - if you need to know what just happened, ask the table.
+  - There is no on-screen panel yet for the record of what happened in the match -
+    moves, attacks, defences and so on. The game is already keeping that record;
+    there is just nothing on screen to read it from yet. If you need to know what
+    just happened, ask the table.
+  - If a card's effect fails partway through resolving, nothing on screen says so
+    yet - it can look like the game simply moved on. Tell us if something you
+    expected a card to do never visibly happened.
+  - While a card is resolving, the card itself is not yet shown next to the acting
+    hero's own tray, so you may need to glance at your hand or ask what is being
+    played.
+  - A few of the "who is the game waiting on" glows - during levelling up, a
+    defence, or placing a respawned hero - only light up for whichever player is
+    actually being asked, not for the rest of the table watching. If it looks like
+    nothing is happening, someone else may already be answering a prompt you
+    cannot see glow.
+  - Playing Arien: her Living Tsunami card can offer a CONFIRM button that refuses
+    to do anything when there is nothing left for it to confirm. If CONFIRM does
+    not respond, press DECLINE instead - that is the one that actually moves you
+    on.
+  - A defeated piece disappears from the board immediately rather than fading out
+    first. It is still correctly removed; it just vanishes rather than fading.
   - If one part of the screen ever freezes or goes blank while everything else on
     screen keeps working, that is a single panel failing on its own rather than the
     whole game going down - it should not take your turn with it. Play on if you
