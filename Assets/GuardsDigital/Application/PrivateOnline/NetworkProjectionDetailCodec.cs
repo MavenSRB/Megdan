@@ -536,6 +536,15 @@ namespace GuardsDigital.Application
             }
         }
 
+        /// <summary>
+        /// Milestone 8.35w. This writes what the read model holds and does not bound it
+        /// itself, on purpose: the bound lives at
+        /// <see cref="MatchSessionProjection.RetainedCompletedRounds"/>, where the host's own view
+        /// and every client's are the same window. A cap applied HERE would make the encoded frame
+        /// disagree with the projection it was encoded from, which is the one thing convergence is
+        /// asserted on. The layout is unchanged - count, then that many records - so a shorter list
+        /// is the same wire format carrying fewer rows, and no protocol version moves for it.
+        /// </summary>
         private static void WriteCompletedRounds(
             BinaryWriter writer, IReadOnlyList<CompletedRoundRecord> rounds)
         {

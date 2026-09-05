@@ -67,6 +67,13 @@ namespace GuardsDigital.Application
         RoundResolutionPhase Phase { get; }
         TieBreakerState TieBreakerState { get; }
         IReadOnlyList<RoundTurnSlot> TurnSlots { get; }
+
+        /// <summary>
+        /// Milestone 8.35w. The most recent completed rounds, bounded to
+        /// <see cref="MatchSessionProjection.RetainedCompletedRounds"/> - recent history to review,
+        /// not the whole match. Every implementation reports the same window; the full history stays
+        /// with the round authority and its snapshot.
+        /// </summary>
         IReadOnlyList<CompletedRoundRecord> CompletedRounds { get; }
         EndOfRoundStage? CurrentEndOfRoundStage { get; }
         IReadOnlyList<MatchCommitmentProjection> Commitments { get; }

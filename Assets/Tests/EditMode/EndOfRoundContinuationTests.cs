@@ -99,8 +99,14 @@ namespace GuardsDigital.Tests.EditMode
             });
 
             Assert.That(host.Projection.CompletedRounds, Is.Not.Empty);
-            Assert.That(advances, Is.GreaterThanOrEqualTo(
-                host.Projection.CompletedRounds.Count * 6),
+
+            // Milestone 8.35w. Counted from the round index rather than from
+            // `CompletedRounds.Count`, which is now the retained window and would silently weaken
+            // this claim to the last few rounds the moment a walk outran the window. The round the
+            // match is on minus one IS every round it finished, which is what the claim is about.
+            var completedRounds = host.Projection.RoundIndex - 1;
+            Assert.That(completedRounds, Is.GreaterThan(0));
+            Assert.That(advances, Is.GreaterThanOrEqualTo(completedRounds * 6),
                 "Each completed round crosses all six of p.8's stages, and every crossing is an " +
                 "ordinary accepted command in the one recorded stream - which is why replay, " +
                 "Undo-prefix replay and snapshot restore see the sequence they always saw.");
@@ -494,12 +500,16 @@ namespace GuardsDigital.Tests.EditMode
                     }
                 }
 
-                if (harness.MatchHost.Projection.CompletedRounds.Count <= completedRounds)
+                // Milestone 8.35w. The round-boundary edge is detected from the round
+                // index, not from `CompletedRounds.Count`: the count is now the retained window and
+                // stops rising once the window saturates, so a longer walk would stop seeing
+                // crossings that are still happening.
+                if (harness.MatchHost.Projection.RoundIndex - 1 <= completedRounds)
                 {
                     return;
                 }
 
-                completedRounds = harness.MatchHost.Projection.CompletedRounds.Count;
+                completedRounds = harness.MatchHost.Projection.RoundIndex - 1;
                 crossings++;
                 harness.AssertConverged();
             });

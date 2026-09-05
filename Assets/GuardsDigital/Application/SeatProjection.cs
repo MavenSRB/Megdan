@@ -435,6 +435,9 @@ namespace GuardsDigital.Application
             Phase = source.Phase;
             TieBreakerState = source.TieBreakerState;
             TurnSlots = source.TurnSlots;
+            // Milestone 8.35w. Taken from the source rather than re-derived, so a seat's
+            // retained round window IS the host's own - which is what keeps one wire frame bounded
+            // and keeps the host's view and every client's byte-for-byte identical.
             CompletedRounds = source.CompletedRounds;
             CurrentEndOfRoundStage = source.CurrentEndOfRoundStage;
             Commitments = source.Commitments;

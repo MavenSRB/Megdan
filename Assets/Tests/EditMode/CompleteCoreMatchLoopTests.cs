@@ -343,9 +343,16 @@ namespace GuardsDigital.Tests.EditMode
                 replayed.Projection.DiagnosticEvents.Select(entry => entry.DisplayText),
                 Is.EqualTo(live.Projection.DiagnosticEvents.Select(entry => entry.DisplayText)),
                 "The whole-match rule-event log is a function of the command prefix.");
+            // Milestone 8.35w. This compares the RETAINED window on both sides, which is
+            // the whole of what the read model reports. The full round history is not left unchecked
+            // by that: the snapshot assertion three lines up is byte equality over the authority's
+            // own complete list, so the replay oracle still covers every round the match played.
             Assert.That(
                 replayed.Projection.CompletedRounds.Select(round => round.RoundIndex),
                 Is.EqualTo(live.Projection.CompletedRounds.Select(round => round.RoundIndex)));
+            Assert.That(replayed.Projection.CompletedRounds,
+                Has.Count.EqualTo(MatchSessionProjection.RetainedCompletedRounds),
+                "A complete match outran the window, so the window is what this compared.");
         }
 
         [Test]

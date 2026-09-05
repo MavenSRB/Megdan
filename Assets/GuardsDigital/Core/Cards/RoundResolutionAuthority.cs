@@ -241,6 +241,14 @@ namespace GuardsDigital.Core.Cards
 
         public IReadOnlyList<RoundTurnSlot> TurnSlots => turnSlots.AsReadOnly();
 
+        /// <summary>
+        /// EVERY completed round of this match, in order. Milestone 8.35w bounded what
+        /// the READ MODEL exposes to a retained window, because that is what one session frame has
+        /// to carry; the authority is deliberately not bounded, because the rules, the restore state
+        /// and the authoritative snapshot are entitled to the whole history. Read this, not the
+        /// read model's <c>CompletedRounds</c>, wherever the question is about the match rather than
+        /// about what a seat is shown.
+        /// </summary>
         public IReadOnlyList<CompletedRoundRecord> CompletedRounds => completedRounds.AsReadOnly();
 
         /// <summary>

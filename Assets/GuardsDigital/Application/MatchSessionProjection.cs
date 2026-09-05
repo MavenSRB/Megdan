@@ -779,6 +779,87 @@ namespace GuardsDigital.Application
         private readonly Lazy<IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry>> matchLog;
         private readonly AuthoritativeSnapshotCapture authoritativeCapture;
 
+        /// <summary>
+        /// Milestone 8.35w. How many of the most recent completed rounds the read model
+        /// carries, in the sense <see cref="GuardsDigital.Core.Diagnostics.MatchLogProjection.RetainedEntries"/>
+        /// already carries the log: recent history a player reviews, not an archive replayed from
+        /// the opening move.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why this exists at all.</b> The completed-round history was the one
+        /// match-length-linear term in a seat projection, and the seat projection is what one
+        /// session frame has to carry. At a measured 1,183 bytes per completed round it walked the
+        /// frame into <see cref="PrivateSessionProtocol.MaxPayloadBytes"/> and the host then threw
+        /// out of <see cref="PrivateSessionFrameCodec"/> on its own honest traffic - measured on the
+        /// seeded six-seat walk at <b>34 completed rounds</b>, inside the length ordinary matches
+        /// reach, and terminally: the send sequence has already advanced when the throw lands, so
+        /// every seat reads a gap, every resync is served down the same throwing path, and the
+        /// match stalls for the whole table with nothing on screen. The bound it violated is a
+        /// defensive read-side cap on what an untrusted peer can make a host allocate, so raising it
+        /// would weaken that guarantee for every message kind from every peer and would still leave
+        /// the term unbounded - the same freeze, at a higher round number. A growth term with no
+        /// limit is not fixed by a larger limit; it is fixed by a limit on the growth.</para>
+        /// <para><b>Why the READ MODEL and not the codec.</b> Capping inside the codec would leave a
+        /// host's own read model and its clients' disagreeing about the same match, and would break
+        /// the encode/decode round-trip equality convergence is asserted with. Windowing the read
+        /// model instead means every implementation of
+        /// <see cref="IMatchReadModel.CompletedRounds"/> - this one, the seat-scoped view derived
+        /// from it, and the networked client that decodes it - reports the same window, so
+        /// byte-for-byte convergence still holds and no surface can show a history another surface
+        /// does not have.</para>
+        /// <para><b>What is NOT windowed.</b> <c>RoundResolutionAuthority</c> keeps every completed
+        /// round, so the rules, the restore state and the authoritative snapshot are untouched by
+        /// this and the snapshot schema does not move. This is a read-model bound, not a loss of
+        /// history.</para>
+        /// <para><b>Why four.</b> Measured, not chosen. Over 4,200-command seeded walks on the
+        /// official six-player configuration the worst projection-and-log frame decomposes into
+        /// <b>35,997 bytes</b> of content that does NOT grow with match length plus <b>1,108 bytes
+        /// per retained round</b>, so this window saturates the frame at <b>40,431 bytes</b>:
+        /// 61.7% of the 65,536-byte ceiling, and 77.2% of the 52,395-byte deliberate-resize guard
+        /// the frame fixture holds. That leaves 11,964 bytes under the guard - room for the rest of
+        /// the frame to grow by a third, against the 2,835 bytes it actually grew across 8.33 to
+        /// 8.35r. Unwindowed, the same walk crossed the ceiling at 34 completed rounds and reached
+        /// 83,793 bytes by round 54.</para>
+        /// <para><b>And why four rather than any other affordable number.</b> Four is the measured
+        /// reach of the log window this projection already carries: at 256 entries the log fills
+        /// exactly at the fourth completed round (16,664 bytes there, flat afterwards). Matching it
+        /// means the two history surfaces a seat reviews cover the same span, rather than one of
+        /// them silently deciding what "recent" means for both.</para>
+        /// </remarks>
+        public const int RetainedCompletedRounds = 4;
+
+        /// <summary>
+        /// The retained window itself: the LAST <see cref="RetainedCompletedRounds"/> completed
+        /// rounds, in their own order.
+        /// </summary>
+        /// <remarks>
+        /// A projection is rebuilt on every accepted command, so this deliberately never
+        /// materialises the authority's whole list to throw most of it away - it indexes the tail
+        /// where the source is already a list, which is what every caller in the match loop passes.
+        /// That makes a refresh cost the window rather than the match, which is the second thing
+        /// wrong with an unbounded history and the reason this is not a filter at the codec.
+        /// </remarks>
+        private static IReadOnlyList<CompletedRoundRecord> RetainRecentCompletedRounds(
+            IEnumerable<CompletedRoundRecord> completedRounds)
+        {
+            if (completedRounds is IReadOnlyList<CompletedRoundRecord> list)
+            {
+                var retained = Math.Min(list.Count, RetainedCompletedRounds);
+                var window = new CompletedRoundRecord[retained];
+                for (var index = 0; index < retained; index++)
+                {
+                    window[index] = list[list.Count - retained + index];
+                }
+
+                return Array.AsReadOnly(window);
+            }
+
+            var all = completedRounds.ToArray();
+            return Array.AsReadOnly(all.Length <= RetainedCompletedRounds
+                ? all
+                : all.Skip(all.Length - RetainedCompletedRounds).ToArray());
+        }
+
         public MatchSessionProjection(
             long version,
             QuickGameSetupState setup,
@@ -868,7 +949,8 @@ namespace GuardsDigital.Application
             Phase = phase;
             TieBreakerState = tieBreakerState;
             TurnSlots = Array.AsReadOnly((turnSlots ?? throw new ArgumentNullException(nameof(turnSlots))).ToArray());
-            CompletedRounds = Array.AsReadOnly((completedRounds ?? throw new ArgumentNullException(nameof(completedRounds))).ToArray());
+            CompletedRounds = RetainRecentCompletedRounds(
+                completedRounds ?? throw new ArgumentNullException(nameof(completedRounds)));
             CurrentEndOfRoundStage = currentEndOfRoundStage;
             Commitments = Array.AsReadOnly((commitments ?? throw new ArgumentNullException(nameof(commitments))).ToArray());
             SelectedActor = selectedActor;

@@ -8,6 +8,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Snapshots;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -124,6 +125,149 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35w. The same bound, measured over a match that runs to its own
+        /// ENDING rather than over a bounded prefix of one.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why this case exists.</b> The guard above measures 700 wire steps, which is
+        /// about eight completed rounds, and it is the reason a session-killing defect shipped past
+        /// it. The completed-round history in a seat projection grew 1,183 bytes per completed
+        /// round with no limit, and on this same seeded configuration the host threw out of
+        /// <c>PrivateSessionFrameCodec</c> at <b>34 completed rounds</b> - inside the length
+        /// ordinary matches reach, and terminal for the whole table when it lands, because the send
+        /// sequence has already advanced and every resync is served down the same throwing path. A
+        /// guard that stops at eight rounds cannot see a 34-round failure. That is the durable
+        /// lesson, independent of the window that fixed it, and it is why this case is sized in
+        /// ROUNDS and driven until the match ends itself.</para>
+        /// <para><b>Why it drives the host rather than the wire.</b> The frame is a pure function of
+        /// the seat projection and the log, and the case above already proves those same bytes
+        /// reach a real client through real frame assemblers. Driving six client machines four
+        /// thousand steps would buy nothing this does not measure and would not fit a test case's
+        /// time budget; this one walks a whole match in about half a minute.</para>
+        /// </remarks>
+        [Test]
+        public void TheProjectionFrame_StaysInsideItsBound_ThroughAMatchThatRunsToItsOwnEnding()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var seat = host.Seats.Seats[0];
+            var envelope = new NetworkEnvelope("correlation", 1, 1, 0);
+            var largest = 0;
+            var largestAtRound = 0;
+
+            void Measure()
+            {
+                var projection = host.ProjectionForSeat(seat.Id);
+                var rows = projection.MatchLog.Select(NetworkMatchLogCodec.ToRow).ToArray();
+
+                // Built through the real frame codec, so an over-long frame fails here as the
+                // ArgumentException the host would have thrown, not as a number this case compares.
+                var frame = NetworkMessageCodec.SeatProjectionFrame(
+                    new NetworkSeatProjectionMessage(
+                        envelope,
+                        NetworkSeatProjectionCodec.Encode(projection),
+                        Array.AsReadOnly(rows)));
+                if (frame.Length > largest)
+                {
+                    largest = frame.Length;
+                    largestAtRound = projection.RoundIndex - 1;
+                }
+            }
+
+            // Seed 2 is a walk whose match reaches its own ending past forty completed rounds -
+            // the top of the length a human table plays, rather than a prefix.
+            //
+            // Re-pinned from seed 9 when this milestone was integrated onto 8.35u. A seeded walk is a
+            // pure function of what it is OFFERED, so 8.35u's simultaneous level-up rerouted this
+            // trajectory wholesale rather than shortening it: seed 9's match now ends at 31 completed
+            // rounds where it ended at 43 before. Re-measured across sixteen seeds under the current
+            // rules, ten still pass thirty-five completed rounds and four do not end at all inside a
+            // 4,200-command budget, at fifty-three. The match length that made this defect reachable is
+            // therefore unchanged; only this one walk moved, which is why the seed is re-pinned rather
+            // than the round floor lowered - lowering it would quietly retire the property the case
+            // exists to hold.
+            var submitted = OwnerScopedProjectionTests.DriveThroughSeats(
+                host, 4200, projection => { Measure(); return false; }, seed: 2);
+            Measure();
+
+            var playedRounds = host.Projection.RoundIndex - 1;
+            Assert.That(host.Projection.Outcome.HasEnded, Is.True,
+                "The walk did not reach an ending in " + submitted + " commands, so this case " +
+                "measured a prefix again - which is exactly what it exists to stop doing.");
+            Assert.That(playedRounds, Is.GreaterThanOrEqualTo(40),
+                "The match ended after only " + playedRounds + " rounds; a frame bound sized " +
+                "against a short match is the defect this case is about.");
+
+            var bound = PrivateSessionSecureChannel.MaxSealedPayloadBytes;
+            Assert.That(largest, Is.LessThan(bound * 4 / 5),
+                "The largest projection-and-log frame over a complete " + playedRounds +
+                "-round match was " + largest + " bytes (at round " + largestAtRound +
+                ") against a bound of " + bound + ". Re-size " +
+                nameof(MatchSessionProjection) + "." +
+                nameof(MatchSessionProjection.RetainedCompletedRounds) + " or " +
+                nameof(MatchLogProjection) + "." + nameof(MatchLogProjection.RetainedEntries) +
+                " deliberately rather than letting the frame grow into its limit.");
+            Assert.That(largest, Is.GreaterThan(4096),
+                "A frame this small means the walk measured the wrong thing.");
+        }
+
+        /// <summary>
+        /// Milestone 8.35w. The window itself, stated as the two halves that make it
+        /// safe: what a seat is shown is bounded, and what the match KEEPS is not.
+        /// </summary>
+        /// <remarks>
+        /// Without the second half this would be a fixture that passes while history is being
+        /// destroyed. The authority owns the completed-round history for the rules, the restore
+        /// state and the authoritative snapshot; the read model carries a recent window of it
+        /// because that is what one session frame has to fit. This case asserts both at once, on a
+        /// match that has outrun the window, and it asserts the window is the LAST rounds rather
+        /// than merely the right NUMBER of them - a first-N window would decode, converge and be
+        /// silently useless.
+        /// </remarks>
+        [Test]
+        public void TheReadModelsRoundHistory_IsTheRecentWindow_WhileTheMatchKeepsEveryRound()
+        {
+            var initialState = OwnerScopedProjectionTests.CreateOfficialInitialState();
+            var host = MatchHost.Compose(initialState);
+            OwnerScopedProjectionTests.DriveThroughSeats(host, 1400, seed: 9);
+
+            var playedRounds = host.Projection.RoundIndex - 1;
+            Assert.That(playedRounds,
+                Is.GreaterThan(MatchSessionProjection.RetainedCompletedRounds),
+                "The walk completed " + playedRounds + " rounds, which does not outrun the " +
+                "window, so nothing here would be proved.");
+
+            var expected = Enumerable.Range(
+                playedRounds - MatchSessionProjection.RetainedCompletedRounds + 1,
+                MatchSessionProjection.RetainedCompletedRounds).ToArray();
+            Assert.That(host.Projection.CompletedRounds.Select(round => round.RoundIndex),
+                Is.EqualTo(expected),
+                "The read model's retained rounds are the most recent ones, in order.");
+            foreach (var seat in host.Seats.Seats)
+            {
+                Assert.That(
+                    host.ProjectionForSeat(seat.Id).CompletedRounds.Select(round => round.RoundIndex),
+                    Is.EqualTo(expected),
+                    "Seat " + seat.Id + " holds a different window than the host it derives from.");
+            }
+
+            // Rebound against the same content the match was composed with, which is exactly what
+            // `MatchAggregate.Restore` passes - a restore that guessed would fail on the minions
+            // before it ever reached the round history.
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(),
+                host.Projection.AuthoritativeSnapshot,
+                initialState.Scenario.CardDefinitions,
+                initialState.AvailableMaps,
+                initialState.Setup.Minions);
+            Assert.That(restored.Round.CompletedRounds, Has.Count.EqualTo(playedRounds),
+                "The authoritative snapshot restored " + restored.Round.CompletedRounds.Count +
+                " completed rounds of a " + playedRounds + "-round match. The read model's window " +
+                "is a bound on what a seat is SHOWN; the match must still hold all of it.");
+            Assert.That(restored.Round.CompletedRounds.Select(round => round.RoundIndex),
+                Is.EqualTo(Enumerable.Range(1, playedRounds)));
+        }
+
+        /// <summary>
         /// The recorded reconnect-history semantics, driven: a seat that leaves and returns is
         /// handed exactly the log every other seat is holding - no more, and nothing older.
         /// </summary>
@@ -150,6 +294,54 @@ namespace GuardsDigital.Tests.EditMode
                 "The returned seat's log is not the authority's own.");
             Assert.That(back.MatchLog.Count,
                 Is.LessThanOrEqualTo(MatchLogProjection.RetainedEntries));
+        }
+
+        /// <summary>
+        /// Milestone 8.35w. The same reconnect fact for the round history, on a match
+        /// that has already outrun the window: a seat that leaves and comes back is served the
+        /// retained window over the wire and converges on it, byte for byte.
+        /// </summary>
+        /// <remarks>
+        /// This is the half the bound could have broken without any fixture noticing. A resync is
+        /// not a different, larger message - <c>HandleResyncRequest</c> serves it through the same
+        /// <c>SendProjectionTo</c> as an ordinary push - which is precisely why an over-long frame
+        /// could not self-heal before, and is why the windowed frame has to be proved on the
+        /// RETURNING seat and not only on the seats that stayed.
+        /// </remarks>
+        [Test]
+        public void AReturningSeat_IsServedTheRetainedRoundWindow_OverTheWire()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            harness.SeatAll();
+            harness.DriveThroughWire(600, seed: 1);
+
+            var playedRounds = harness.MatchHost.Projection.RoundIndex - 1;
+            Assert.That(playedRounds,
+                Is.GreaterThan(MatchSessionProjection.RetainedCompletedRounds),
+                "The wire walk completed " + playedRounds + " rounds, which does not outrun the " +
+                "window, so a returning seat would be served the whole history either way.");
+
+            var staying = harness.Client(2);
+            harness.DisconnectClient(1);
+            harness.Pump();
+            var returned = harness.ReconnectClient(1);
+            harness.Pump();
+
+            var back = harness.Client(returned);
+            var expected = Enumerable.Range(
+                playedRounds - MatchSessionProjection.RetainedCompletedRounds + 1,
+                MatchSessionProjection.RetainedCompletedRounds).ToArray();
+
+            Assert.That(back.LatestProjection.Detail.CompletedRounds.Select(row => row.RoundIndex),
+                Is.EqualTo(expected),
+                "A returning seat was served a different round history than the window.");
+            Assert.That(back.LatestProjection.Detail.CompletedRounds.Select(row => row.RoundIndex),
+                Is.EqualTo(staying.LatestProjection.Detail.CompletedRounds
+                    .Select(row => row.RoundIndex)),
+                "A returning seat and a seat that never left hold different round histories.");
+
+            // The byte-for-byte half: the resync payload IS the host's own encoding for that seat.
+            harness.AssertConverged();
         }
 
         /// <summary>
