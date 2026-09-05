@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard holding additional Phase 8 milestone definitions that are complete and self-contained. Return to [ROADMAP.md](../ROADMAP.md) or the active shard [PHASE_8.md](PHASE_8.md). Historical completion evidence: [PHASE_8 handoffs](../Archive/Phase-Handoffs/PHASE_8.md).
 
-Created 2026-09-05 during this required warning-threshold ownership review, prompted by the active shard sitting at 94% of its own hard limit with roughly six more milestone blocks due the same afternoon, while neither existing completed shard had room: `PHASE_8_COMPLETED.md` and `PHASE_8_COMPLETED_2.md` both sat within a few hundred words of their own 85% warning line and `PHASE_8_COMPLETED_3.md`, though it had headroom, was left alone so this checkpoint's provenance stays in one place. Milestones 8.35j through 8.35o moved here verbatim, the oldest definitions the active shard still held in full: the awaited-answer shine family across the top bar, hero trays and cards (8.35j, 8.35m, 8.35m1), the relaunched-player rejoin road to a reserved seat (8.35k), the barred-action refusal that names what barred it (8.35l), the acting-hero narration and board marker (8.35n), and the dedicated host console's typed release command (8.35o). Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
+Created 2026-09-05 during this required warning-threshold ownership review, prompted by the active shard sitting at 94% of its own hard limit with roughly six more milestone blocks due the same afternoon, while neither existing completed shard had room: `PHASE_8_COMPLETED.md` and `PHASE_8_COMPLETED_2.md` both sat within a few hundred words of their own 85% warning line and `PHASE_8_COMPLETED_3.md`, though it had headroom, was left alone so this checkpoint's provenance stays in one place. Milestones 8.35j through 8.35o moved here verbatim, the oldest definitions the active shard still held in full: the awaited-answer shine family across the top bar, hero trays and cards (8.35j, 8.35m, 8.35m1), the relaunched-player rejoin road to a reserved seat (8.35k), the barred-action refusal that names what barred it (8.35l), the acting-hero narration and board marker (8.35n), and the dedicated host console's typed release command (8.35o). Milestones **8.35p** through **8.35t** followed them here on 2026-09-05 during milestone 8.35z5's own required ownership review - the charge that moves before its attack resolves (8.35p), the spawned test drivers that fill empty seats for solo playtesting (8.35q), the seat-public match log with who the table is waiting on (8.35r), the greyed control that names why in a cursor tooltip (8.35s), and the test driver that dials the address the host actually bound (8.35t) - the same contiguous run carried further in one review, because the tail-batch integration landed five milestone blocks in a single pass and the active shard had roughly 470 words of headroom against its own warning line before it. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
 
 ### [x] 8.35j Light the whole top bar whenever the match is waiting on the viewing player
 
@@ -135,3 +135,120 @@ Closing check: `HostConsoleCommandsTests`' release/refuse/unknown-command/no-op 
 Non-goals: No kick / no displacing a live seat. No timer or automatic release. No new wire message, schema, or session-layer member. No change to `ReleaseSeat`'s own behavior or its existing tests.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835o-give-the-dedicated-hosts-console-a-typed-release-command-completion-evidence).
+
+### [x] 8.35p Move a charge before its attack resolves, and wall a card-text attack against its own seat's rewind
+
+User-approved amendment of 2026-09-04, the NINTH amendment: "Brogan should move for his charge before the attack resolves, so does tigerclaw with his gold for example. Dunno if other heroes have similar stuff. They move as soon as they select, and then they attack." Worker C's diagnosis measured the cause as effect-graph ordering rather than a rules or rendering defect - both questions were asked inside one capability node placed before the Move node - and measured the affected set as exactly four playable faces, of which only Brogan's three ask twice. Tigerclaw's Blink Strike asks once and is deliberately left alone: its own declaration records that asking twice "would let a player pick a line and then a unit that is not on it". The same diagnosis raised an incidental pre-existing gap in milestone 8.35f's undo bounds, folded in here because it lands on exactly this card class.
+
+Observable outcome: Mad Dash, Bullrush and Furious Charge resolve in the order their sentence prints. `choose-charge-line@1` asks only where the hero lands; the Move commits on that answer, in the same accepted command, so the projection published in reply already shows him standing on the destination; and the unit is named afterwards by an ordinary `choose-target@2` measured from the space he now occupies. Separately, a seat's own rewind is walled above an Attack whose target was bound by card text, which `DirectorCommandKind.ChooseAttackTarget` never announces for this class.
+
+Acceptance checks:
+
+- The candidate set is unchanged by the reorder, asserted rather than argued: for every offered destination, the enemy units within 1 of it before the Move equal the enemy units within 1 of the hero after it, read through the one shared `RosterPresenceQuery` both shapes use. A direct Move of the actor removes no unit and moves no other, and this is what makes the change a reordering.
+- No destination is offered that strands the Attack, and rulebook p.10's stop is unmoved: `choose-charge-line@1` still offers only destinations with a legal target beside them, stands before the Move, and is judged normally, so a board with no straight destination beside an enemy still refuses at that step and the Attack is still greyed.
+- The Attack stays offered where the card is for. Availability for a `ByCardText` binding walks the card text before any of it has run, so a post-Move adjacency question judged from the pre-Move square answered "nobody": `EffectOptionFeasibilityQuery.CanCompleteMandatoryAttackTargetBinding` no longer judges a board reading standing behind a declared Move it has not taken, which only ever suppresses a refusal and never manufactures one.
+- The derived player-path shape table does not move: the charges keep both the board-space and board-unit shapes, the space now contributed by `choose-charge-line` and the unit by `choose-target`, so `HeroPlayerPathMatrix.CapabilityShapes` changes and no row does.
+- The seat undo wall rises for a card-text-bound Attack on the same rule as the ordinary path - once the target is named, and not before, so the committed Move stays rewindable exactly as the amendment requires - and it settles the floor above an Attack that binds its target and completes inside one command.
+- Content scope: Brogan's content revision alone advances, with his eighteen artwork-catalog entries re-pinned beside it; no capability is registered, the persisted snapshot schema stays at v35, and no wire protocol moves.
+
+Closing check: `ChargeSequencingTests.AnsweringWhereHeLandsMovesHim_AndOnlyThenIsTheVictimAsked`, `.AChargeIsOfferedWhenTheEnemyItCanReachIsNotAlreadyBesideHim`, `.ACardTextBoundAttackWallsItsOwnSeatsRewindOnceTheVictimIsNamed` and `RosterTargetGeometryCapabilityTests.ChargeLine_AsksOnlyWhereHeLands_AndCommitsNoMovementOfItsOwn` are each recorded failing at the revision that isolates their own fix and passing after; `RosterTargetGeometryCapabilityTests.ChargeLine_OffersOnlyDestinationsWhoseTargetSetSurvivesTheMove` passes on both sides, which is the evidence the target set never moved.
+
+Non-goals: No rules change - adjacency and targeting were already measured from the destination and still are. No change to Tigerclaw's Blink Strike, whose one question determines both facts. No presentation work: the move is visible because it is committed, not because anything was animated. Nimble Strike and Leap Forward stay deferred and compose nothing.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835p-move-a-charge-before-its-attack-resolves-and-wall-a-card-text-attack-against-its-own-seats-rewind-completion-evidence).
+
+### [x] 8.35q Fill empty seats with spawned test drivers for solo playtesting
+
+THIRTEENTH amendment: "I find it really hard to test running 6 clients at once. Can you make AI play the game or something so i just play with one client only?" Answer: expose the existing rehearsal/SixClient machinery's real-lobby, real-HUD, offers-intersected-with-AuthorizedCommands pattern as a shipped, user-facing practice affordance - explicitly NOT an AI opponent (durable non-goal unchanged).
+
+Observable outcome: the host's lobby (`Tools/PlaytestLaunchers/HOST - Start Server.bat`, the interactive lobby a real solo player actually runs, per 8.35o's own finding) offers FILL WITH TEST DRIVERS whenever a seat is still Open and the match has not started. Pressing it spawns one real keyed client process per Open seat - the same running executable, re-launched with a distinct log path - each of which joins the real lobby, claims its seat, and answers whatever it is offered (commitments, defenses, agreements, leveling, releases) with a random legal choice at a human-followable pace (2 s default, overridable). Every spawned process is the host's own OS child, killed when its session ends.
+
+Design:
+
+- Host affordance is a lobby control only (`PrivateLobbyControl.FillWithTestDrivers`), not a launcher flag - the raw `-guardsPrivateHost` CLI role is CI/rehearsal-only and no real tester ever touches it.
+- Reuses `PrivateOnlineRehearsalDriver.AuthorizedProjectedCommands` (bumped `internal`) directly rather than duplicating it; the new, much simpler `PrivateSeatDriver` (new file) carries the shipped behavior, deliberately kept separate from the 1184-line CI-only rehearsal driver rather than growing it. New CLI vocabulary (`-guardsTestDriver`, `-guardsTestDriverSeat`, optional think-seconds/seed), endpoint/key via env vars only - the same command-line-secrecy rule the rehearsal driver already follows.
+- Spawning goes through `ITestDriverProcessLauncher`, a small seam so the spawning DECISION is Edit-Mode-testable without ever starting a real process; `RealTestDriverProcessLauncher` is production. Labeling (`PrivateLobbySeatRow.IsTestDriverSeat`) is deliberately host-screen-only, sourced from the host's own local spawn record rather than the roster - putting it on the wire would be the protocol change the amendment says isn't expected.
+- No new session-layer member, no protocol change - verified by grep, and by the regression completing under the unmoved wire version.
+
+Acceptance checks:
+
+- `PrivateLobbyModel.ForHost` offers `FillWithTestDrivers` exactly while a seat is Open and the match has not started, and labels a host-spawned seat's own row `IsTestDriverSeat` from the caller-supplied set alone, never the roster.
+- `PrivateLobbyPresenter.Press(FillWithTestDrivers, ...)` raises `FillWithTestDriversRequested` without touching any session itself - spawning stays the one thing only the driver may know how to do.
+- `PrivateSeatDriverOptions.TryParse` accepts a well-formed line and refuses a missing seat, a missing lobby flag, a non-loopback address, and an empty session key, each with its own named reason.
+- Regression: a solo cohort in `Invoke-PrivateOnlineRehearsal.ps1 -Topology Solo -FaultPlan None` - one scripted "human" seat plus the host's own real FILL control filling the other five - completes a full six-player match to one converged outcome from only two launched processes, and no spawned test-driver process outlives the host session that spawned it.
+
+Non-goals: No AI opponent, strategy, or difficulty - every legal answer is equally likely by design, a durable property. No wire/protocol change. No in-process second driving path - every seat is an ordinary keyed process. No change to the CI-only rehearsal driver's own scripted cohorts beyond the new `Solo` mode that drives this regression.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835q-fill-empty-seats-with-spawned-test-drivers-for-solo-playtesting-completion-evidence).
+
+### [x] 8.35r Publish the seat-public match log and who the table is waiting on
+
+TENTH amendment: "Make a log ... Its to tell players what happened previously in the game. But player facing: Moves, Attacks, Defenses, Skills used." The coordinator's scope ruling gathers ALL remaining wire growth into this one protocol bump, so the log and the SEVENTH amendment's blocked tray arms cross together rather than in two versions.
+
+Observable outcome: every seat, and every spectator of a seat, can read what has happened - moves, fast travels, resolved attacks and defences, skills, clears, defeats, respawns, end-of-round results, level-ups, round and turn boundaries - and can see who the table is currently waiting on, including while another player levels up, answers a defence or chooses a respawn. No presentation surface ships here: the drop-down, the tray completion and the narration completion are separate UX milestones consuming these facts.
+
+Design:
+
+- The log is DERIVED from the retained rule-event log, never stored. That source is forced rather than preferred: `MatchAggregate.Restore` installs an empty round-event stream while restoring the rule-event entries in full, so a channel built on round events would come back blank after a snapshot restore. Undo, replay and resync redraw it for free because `MatchSession.Undo` reconstructs from the retained command prefix.
+- Selection is exactly `tmp/8-35d-8-35e-multiplayer-corrections/worker-b/EVENT_LOG_CONTRACT.md` §1, typed as `MatchLogEntryKind` so no surface parses diagnostic prose, with event names built from the rule-event enum members via `nameof` so a renamed kind is a compile error rather than a line that silently stops being selected.
+- The seat filter is an IDENTITY, and that is the privacy proof: §1 admits only events the whole table can already see, so every seat's log equals the Director's and there is nothing to redact.
+- The log rides inside the seat projection message beside that seat's record - not in the record, which has 2,173 B of headroom under the sweep's own guard, and not in its own message kind, which consumed a gameplay sequence and absorbed the gaps a dropped projection must leave for client recovery.
+- `DecisionOwner` joins `IMatchReadModel` and moves no bytes: the seat record has carried it since 8.35's wire slice and only the read-model contract lacked it. Who is awaited is table-public; what they may choose stays owner-private on `DecisionContract`.
+- `UndoMarker` is a published read-model fact rather than a synthetic log entry, because an undo records no command and no event and a minted entry would have to be stored.
+
+Acceptance checks:
+
+- `MatchLogChannelTests` proves the vocabulary names nothing the contract excludes, that every seat's log equals the Director's, that the selection carries exactly its source events over a driven match, that a multi-hex move folds to one line from first origin to last destination, that an attack and a defence each fold to one line with their outcome, that a blocked step names no blocker, that a clear is one line, and that a driven rewind drops its lines while the marker names who took them back and counts a run.
+- `PrivateOnlineEventChannelTests` proves every kind round-trips the wire with completeness asserted against the enum, that a truncated payload is refused at every prefix, that the projection-and-log frame stays inside the sealed bound, that a returning seat receives the same log as one that never left, that every client converges on the authority's log across the seeded wire walk, that a version 5 peer is refused before any payload interpretation, that who-is-awaited is public to every seat for the levelling, defence and respawn arms while the contract stays owner-private, that a decision standing on the actor's turn is visible as such, and that the encoded log names no card the table has never seen.
+- `PrivateOnlineSynchronizationTests.EveryReadModelMember_IsCarriedOrNamedExcluded` carries all three new members with the exclusion floor unmoved at 7.
+- `OnlineMatchHudRulesPrivacyTests.SeatWireMeaning_UsesProtocolSix_AndRejectsEveryOlderFrame` refuses versions 1 through 5 from the bounded header.
+
+Non-goals: No log drop-down, no tray or narration completion, no blocker named on a blocked-action line (milestone 8.35l's offer-side `ActionUnavailability` stays the single provenance path), and no permanent positioned marker for a rewind already played past - that needs storage the engine does not have.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835r-publish-the-seat-public-match-log-and-who-the-table-is-waiting-on-completion-evidence).
+
+### [x] 8.35s Name why a greyed control cannot be taken, in a cursor tooltip
+
+SIXTH amendment, cursor-tooltip delivery: a fixed short vocabulary composed from the authority's own answer, never re-derived in presentation. `ActionOffer.Unavailability` (milestone 8.35l) already crosses Core through the wire into `PrintedActionRegionViewModel.Offer`, unread until now.
+
+Observable outcome: an offer a standing rule modification has barred hovers `BLOCKED BY <HERO> — <CARD>`; Clear's offer, unavailable for exactly one reason, hovers `NO TARGET`; every other unstated cause - `StampAvailability`'s remaining clauses, which conflate an empty target, an uncomposed text, an unthreaded restriction and the card's other action already under way behind one bit - and every unperformable effect-choice mode hover the recorded generic word rather than a guessed one.
+
+Acceptance checks:
+
+- `ActionUnavailabilityLabels` composes each word from an already-resolved name; blank names refuse to compose.
+- A real Sabina-versus-Wasp fixture (8.35l's own board) hovers `BLOCKED BY WASP — MAGNETIC DAGGER`.
+- The same fixture's narrowed candidate list names only the free minion; the barred partner draws no invented ring or reason.
+- A real Skill greyed for want of a target, no modification involved, hovers the generic word, never a guessed `NO TARGET`.
+- Pre-fix red: vocabulary inert, the three composition sites reverted, three cases fail in isolation; the narrowed-candidate case stays green throughout.
+
+Closing check: `ActionUnavailabilityTooltipTests`, plus extended `ClearPresentationTests` and `MatchFeaturePresenterTests` cases.
+
+Named gaps: "NOT ENOUGH COINS" has no wired site - Level Up auto-purchases whenever affordable; a board refused ring for one barred candidate has no per-candidate reason anywhere, and an available offer's `Unavailability` is `None` by construction - outside this milestone's scope; the generic case conflates four authority-side causes behind one bit.
+
+Non-goals: no fizzle notice, no omnipresent END TURN, no rule or wire change.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835s-name-why-a-greyed-control-cannot-be-taken-in-a-cursor-tooltip-completion-evidence).
+
+### [x] 8.35t Dial the address the host actually bound, not a hardcoded loopback constant
+
+Corrective, live-defect-driven. Milestone 8.35q's FILL WITH TEST DRIVERS spawned every test-driver child with its dial address hardcoded to `"127.0.0.1"`, regardless of what the host itself had bound - so a host bound to this machine's own real network address (the shape the tester instructions' own solo-practice paragraph invites, and the one a host rehearsing its real port-forwarded setup even alone requires) spawned children that dialed an address nothing was listening on. Each pressed Join, and each then sat forever: `PrivateLobbyPresenter.Press` returns true the instant the control is offered, saying nothing about whether the join it triggered ever reached anyone, so nothing ever told the driver its dial had failed - the live report named 34 orphaned `GuardsDigitalSmoke.exe` processes left running after repeated FILL presses tried to work around it.
+
+Observable outcome: a spawned test driver dials whatever address the host actually bound - loopback by default, this machine's own address when the host bound one, falling back to loopback only for a wildcard bind, since every spawned child runs on the host's own machine regardless. A join that cannot reach anyone now fails within its own dial attempt, is logged and reported on the host's own screen by name, and the driver process exits promptly instead of hanging. A second FILL press no longer spawns a redundant child onto a seat already carrying an outstanding attempt, and every spawned child now also watches its own spawning host's OS process id and exits if that host disappears without a clean Leave.
+
+Design:
+
+- `PrivateSessionEndpoint.ResolveLocalDialAddress()` (Network) is the one place a wildcard bind resolves to loopback and any concrete address is returned verbatim - confirmed directly against a real `TcpListener`/`TcpClient` pair, not assumed. It lives in the adapter, not beside its one caller in Presentation, because that caller may name no socket type of its own (`PrivateSessionArchitectureConformanceTests.SocketTypes_LiveOnlyInTheNetworkAdapter`).
+- `PrivateSeatDriverOptions.TryParse` no longer confines a spawned driver's dial address to loopback - the assumption the live defect disproved. `-guardsPrivateClient` has always been free to dial any address with any key, and the session key is what actually gates entry here too; only a numeric, well-formed endpoint is still required.
+- `PrivateLobbyDriver.BeginJoining`'s two silent failure paths - a malformed endpoint and a failed `Dial()` - now set `LastJoinFailure` and log through `PrivateOnlineMarkers.Fail`, which a spawned `PrivateSeatDriver` checks immediately after pressing Join and fails loudly on if set.
+- `FillEmptySeatsWithTestDrivers` tracks a 12-second per-seat join deadline: a seat still open when its deadline passes is reported by name, in the log and the lobby's own feedback line, and freed for a later FILL to retry; a seat already carrying a live deadline is skipped by a repeated press rather than sent a second child.
+- Every spawned driver also carries its parent host's OS process id and polls it independently of `Leave()`/`OnDestroy()`, so a host that dies without a clean shutdown still orphans nothing.
+
+Acceptance checks:
+
+- `PrivateSeatDriverTests`: `ResolveLocalDialAddress` returns a concrete bind verbatim, falls back to loopback for both the IPv4 and IPv6 wildcard; a non-loopback dial address is now accepted where it was refused, a malformed one is still refused; a parent process id parses when present and leaves the watchdog off when absent or unparsable. Pre-fix red, isolated (both call sites behavior-reverted in place, new vocabulary kept present and inert, per this repo's own ceremony rule): exactly the two cases pinning the defect fail, 18/20; restored, 20/20.
+- `PrivateLobbyPlayModeTests.AJoinToAHostThatIsNotThere_IsDrawnOnTheEntryForm` now also expects the new host-log FAIL line the fix introduces (`LogAssert.Expect`), a companion fixture update this milestone owes since it added that line.
+- `Invoke-PrivateOnlineRehearsal.ps1 -Topology Solo -FaultPlan None`: the packaged interactive-lobby command line (both shipped `.bat` launchers' own flag shape) still boots cleanly to its real lobby; a join dialed at a port nothing is listening on now fails fast and visibly (exit 1) instead of hanging; the host presses FILL WITH TEST DRIVERS twice back to back and spawns exactly five test-driver clients, not ten, all five dialing the host's own address, before all six seats claim and the match begins.
+
+Non-goals: No wire, protocol, or schema change. No change to the host's own bind rules (8.35a1's unkeyed-bind refusal is untouched). No AI, strategy, or difficulty change to the test-driver's own random-legal play.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835t-dial-the-address-the-host-actually-bound-not-a-hardcoded-loopback-constant-completion-evidence).

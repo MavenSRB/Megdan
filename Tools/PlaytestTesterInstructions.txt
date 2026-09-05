@@ -159,7 +159,27 @@ the match takes. A few things are worth knowing:
     that is actually doing something. That glow, the top bar, and the ring around
     a hero's own piece on the board all breathe with a slow circling light while
     you are the one being waited on - it is meant to catch your eye without being
-    urgent about it.
+    urgent about it. In earlier builds that circling light never actually appeared
+    on a tray or a card, however gold they went; it does now.
+  - That gold means one thing only: this is yours to answer. It is worth saying
+    because it used to leak - your own committed card kept glowing while somebody
+    else was taking their turn. If you see anything of yours glowing gold while
+    the game is plainly waiting on another player, that is worth reporting.
+  - Every hero's tray lights up while THAT player is the one being waited on, not
+    just yours - levelling up, answering a defence, choosing where a defeated hero
+    comes back, or simply taking their turn. So you can see who the table is
+    waiting for without asking.
+  - There is a record of the match now. The narration bar at the top has a small
+    chevron; click the bar or the chevron and a scrollable list drops down -
+    moves, attacks, defences, skills, defeats, end-of-round results, and who took
+    back what. Click the chevron again, or anywhere else on the screen, to close
+    it. It will not cover anything you are being asked to answer.
+  - The buttons have been rebuilt. Every named button on screen now shares one
+    look and one feel, and dips slightly when you press it. This includes the
+    HOST, JOIN, FILL and PICK buttons on the lobby screen, which until now had no
+    styling at all. Nothing about what they do has changed - only how they look
+    and respond - so please say if any of them now feels wrong to press, or if
+    one you expect to be clickable no longer looks like it is.
   - A narration bar names who is acting and what they are deciding, and a gold ring
     marks that hero's own piece on the board - so it is easy to see whose turn it
     is and what they are doing even from across the table.
@@ -167,11 +187,18 @@ the match takes. A few things are worth knowing:
     between still pictures. A piece that moves slides along the path it actually
     took rather than teleporting. An attacker leans into whatever it strikes -
     another hero's piece or one of the small enemy figures, it plays the same way
-    for both now - while a number showing the card's own printed value floats up
-    in that card's own colour; a defending card that blocks shows its own block
-    number in its own colour the same way. The struck piece visibly registers the
-    hit, and a returning piece pops back in. A removed piece does not fade out yet
-    - it simply disappears, which is a known gap below.
+    for both now. The struck piece visibly registers the hit, a returning piece
+    pops back in, and a defeated piece now shrinks and fades away where it stood
+    instead of vanishing between one frame and the next. If you played the last
+    build: the floating attack and defence numbers have been REMOVED on purpose,
+    because they did not work well enough to keep. Their absence is not a fault -
+    a different way of showing an attack is being designed.
+  - Playing Arien, Tigerclaw, Sabina or Brogan? A card that says "you may" - "you
+    may move 1 space", "you may retrieve", "you may discard" - used to offer you a
+    CONFIRM button that the rules then refused, so the only answer that worked was
+    DECLINE. Ten cards across those four heroes were affected. Now CONFIRM appears
+    only when there is genuinely something to confirm, and DECLINE is the one
+    answer for "no thanks". Please try one of those cards both ways.
   - Levelling up at the end of a round now happens for everyone who earned a level
     at the same time, each on their own screen, instead of the table waiting while
     each of you is asked in turn. Answer your own upgrade choice whenever you are
@@ -231,27 +258,18 @@ These are already known. Please do not spend time writing them up in detail - a
 short note that you saw one is enough - but do say so, because it might be a
 different problem wearing the same coat.
 
-  - There is no on-screen panel yet for the record of what happened in the match -
-    moves, attacks, defences and so on. The game is already keeping that record;
-    there is just nothing on screen to read it from yet. If you need to know what
-    just happened, ask the table.
-  - If a card's effect fails partway through resolving, nothing on screen says so
-    yet - it can look like the game simply moved on. Tell us if something you
-    expected a card to do never visibly happened.
-  - While a card is resolving, the card itself is not yet shown next to the acting
-    hero's own tray, so you may need to glance at your hand or ask what is being
-    played.
-  - A few of the "who is the game waiting on" glows - during levelling up, a
-    defence, or placing a respawned hero - only light up for whichever player is
-    actually being asked, not for the rest of the table watching. If it looks like
-    nothing is happening, someone else may already be answering a prompt you
-    cannot see glow.
-  - Playing Arien: her Living Tsunami card can offer a CONFIRM button that refuses
-    to do anything when there is nothing left for it to confirm. If CONFIRM does
-    not respond, press DECLINE instead - that is the one that actually moves you
-    on.
-  - A defeated piece disappears from the board immediately rather than fading out
-    first. It is still correctly removed; it just vanishes rather than fading.
+Five of the six problems listed here for the last build are fixed in this one -
+the missing match record, the silent failed card, the glows that lit only for the
+player being asked, Arien's Living Tsunami CONFIRM button, and the defeated piece
+that vanished instead of fading. If you saw any of those before, they should be
+gone; say so if they are not.
+
+  - When a card's effect stops partway through, the game now says so and waits for
+    you to acknowledge it - but it names only the card that stopped, not what
+    stopped it. So you will be told THAT something was blocked and which card it
+    was, and not yet WHY. Naming the blocker needs a change deeper in the rules
+    engine than this build carries. If you can work out what blocked it, that is
+    genuinely useful to us.
   - If one part of the screen ever freezes or goes blank while everything else on
     screen keeps working, that is a single panel failing on its own rather than the
     whole game going down - it should not take your turn with it. Play on if you
