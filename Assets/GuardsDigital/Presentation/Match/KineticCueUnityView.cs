@@ -306,10 +306,12 @@ namespace GuardsDigital.Presentation.Match
             // milestones that wrote them, and the hold made all five report the piece still present.
             // Weakening five rules guards to buy a flourish is the wrong trade.
             //
-            // The fade itself still applies for as long as the piece is drawn. Delivering the hold
-            // properly is a BOARD VIEW change - that view owns the piece's lifetime and its pool, so
-            // it is the only thing that can honestly defer a removal until a cue has finished - and it
-            // is recorded as a named gap rather than done here.
+            // Milestone 8.35x-cardfade delivers the fade properly, exactly where this paragraph said it
+            // had to live: BoardInteractionUnityView (Match/UnityMatchFeatureViews.cs) spawns a bare,
+            // non-pooled DefeatFadeGhostView the instant its own Render/RenderMinions finds a piece
+            // going from drawn to not-drawn, and BoardDefeatFadeDriver ticks it - independent of this
+            // file and this cue's own (still-inert) Scale/Opacity math on the real, pooled piece above.
+            // This file and the five removal guards it protected are untouched.
         }
 
         private void ApplyHeroTint(PrimitiveHeroView hero, KineticPieceMotion motion)

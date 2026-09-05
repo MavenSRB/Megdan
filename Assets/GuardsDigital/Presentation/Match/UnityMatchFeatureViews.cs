@@ -32,6 +32,19 @@ namespace GuardsDigital.Presentation.Match
         private Func<MinionId, bool> minionIntentHandler;
         private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
 
+        // Milestone 8.35x-cardfade (the SIXTEENTH amendment's Defeat shrink-and-fade, delivered
+        // pooling-safely). Keyed by the piece's OWN view instance rather than its identity value: a
+        // hero or minion view is bound to exactly one identity for the life of a match (unlike a
+        // PlacedTokenView, whose identity is reassigned on release), so the instance is already the
+        // stable key an identity value would only restate.
+        private readonly Dictionary<PrimitiveHeroView, DefeatFadeGhostView> heroDefeatGhosts =
+            new Dictionary<PrimitiveHeroView, DefeatFadeGhostView>();
+        private readonly Dictionary<StandardMinionView, DefeatFadeGhostView> minionDefeatGhosts =
+            new Dictionary<StandardMinionView, DefeatFadeGhostView>();
+        private readonly List<DefeatFadeGhostView> freeHeroDefeatGhosts = new List<DefeatFadeGhostView>();
+        private readonly List<DefeatFadeGhostView> freeMinionDefeatGhosts =
+            new List<DefeatFadeGhostView>();
+
         public BoardInteractionUnityView(
             IEnumerable<PrimitiveHeroView> heroes,
             IEnumerable<HexTileView> tiles,
@@ -122,6 +135,14 @@ namespace GuardsDigital.Presentation.Match
                     hero.SetTargetCue(
                         BoardTargetCueState.None,
                         BoardTargetConsequenceIntent.None);
+                    // Milestone 8.35x-cardfade. Only a piece that WAS drawn a moment ago is a genuine
+                    // removal edge worth a fade - a hero this render pass finds still absent (already
+                    // inactive) fires nothing a second time.
+                    if (hero.gameObject.activeSelf)
+                    {
+                        SpawnHeroDefeatGhost(hero);
+                    }
+
                     hero.gameObject.SetActive(false);
                     continue;
                 }
@@ -131,6 +152,11 @@ namespace GuardsDigital.Presentation.Match
                 // an absent hero must not remain as a stale selectable board object.
                 hero.Configure(occupancy, hero.OuterRadius);
                 hero.gameObject.SetActive(true);
+                // Milestone 8.35x-cardfade. A hero reappearing (Respawn, Undo, restore) before its own
+                // fade finished on its own must never leave a stale echo of a piece that is visible
+                // again; the fade ghost is purely decorative, so cancelling it changes nothing the
+                // projection owns.
+                ReleaseHeroDefeatGhost(hero);
 
                 // Every board choice is now carried by the occupied hex's six corners. The retained
                 // ring remains part of the reusable piece view, but configured play never activates it.
@@ -415,6 +441,8 @@ namespace GuardsDigital.Presentation.Match
                 if (boundId.IsDefined && projectedMinions.TryGetValue(boundId, out var state))
                 {
                     minion.gameObject.SetActive(true);
+                    // Milestone 8.35x-cardfade: see the hero loop's identical comment above.
+                    ReleaseMinionDefeatGhost(minion);
                     if (!ReferenceEquals(minion.Occupancy, state))
                     {
                         minion.Configure(state, minion.OuterRadius);
@@ -429,6 +457,12 @@ namespace GuardsDigital.Presentation.Match
                     minion.SetTargetCue(
                         BoardTargetCueState.None,
                         BoardTargetConsequenceIntent.None);
+                    // Milestone 8.35x-cardfade: see the hero loop's identical comment above.
+                    if (minion.gameObject.activeSelf)
+                    {
+                        SpawnMinionDefeatGhost(minion);
+                    }
+
                     minion.gameObject.SetActive(false);
                 }
             }
@@ -569,6 +603,213 @@ namespace GuardsDigital.Presentation.Match
 
             DestinationSubmitted.Invoke(destination);
             return true;
+        }
+
+        // ---- Milestone 8.35x-cardfade: Defeat's shrink-and-fade, delivered pooling-safely. See
+        // DefeatFadeGhostView's own doc comment for why this exists and why it never touches
+        // `heroes`/`minions` above.
+
+        private void SpawnHeroDefeatGhost(PrimitiveHeroView hero)
+        {
+            if (heroDefeatGhosts.ContainsKey(hero))
+            {
+                return;
+            }
+
+            var meshFilter = hero.GetComponent<MeshFilter>();
+            var meshRenderer = hero.GetComponent<MeshRenderer>();
+            if (meshFilter == null || meshRenderer == null || meshFilter.sharedMesh == null)
+            {
+                // Degrades rather than faults, matching KineticCueUnityView's own rule: a missing
+                // visual costs the flourish and nothing else.
+                return;
+            }
+
+            var ghost = Pop(freeHeroDefeatGhosts) ?? DefeatFadeGhostView.CreateHeroGhost();
+            ghost.ConfigureHero(
+                hero.transform,
+                meshFilter.sharedMesh,
+                meshRenderer.sharedMaterials,
+                meshRenderer.shadowCastingMode,
+                meshRenderer.receiveShadows);
+            ghost.Begin(DefeatFadeGhostView.DefaultFadeSeconds);
+            heroDefeatGhosts[hero] = ghost;
+        }
+
+        private void ReleaseHeroDefeatGhost(PrimitiveHeroView hero)
+        {
+            if (!heroDefeatGhosts.TryGetValue(hero, out var ghost))
+            {
+                return;
+            }
+
+            ghost.CancelImmediately();
+            freeHeroDefeatGhosts.Add(ghost);
+            heroDefeatGhosts.Remove(hero);
+        }
+
+        private void SpawnMinionDefeatGhost(StandardMinionView minion)
+        {
+            if (minionDefeatGhosts.ContainsKey(minion))
+            {
+                return;
+            }
+
+            var spriteRenderer = minion.GetComponent<SpriteRenderer>();
+            if (spriteRenderer == null || spriteRenderer.sprite == null)
+            {
+                return;
+            }
+
+            var ghost = Pop(freeMinionDefeatGhosts) ?? DefeatFadeGhostView.CreateMinionGhost();
+            ghost.ConfigureMinion(
+                minion.transform, spriteRenderer.sprite, spriteRenderer.color, spriteRenderer.sortingOrder);
+            ghost.Begin(DefeatFadeGhostView.DefaultFadeSeconds);
+            minionDefeatGhosts[minion] = ghost;
+        }
+
+        private void ReleaseMinionDefeatGhost(StandardMinionView minion)
+        {
+            if (!minionDefeatGhosts.TryGetValue(minion, out var ghost))
+            {
+                return;
+            }
+
+            ghost.CancelImmediately();
+            freeMinionDefeatGhosts.Add(ghost);
+            minionDefeatGhosts.Remove(minion);
+        }
+
+        private static DefeatFadeGhostView Pop(List<DefeatFadeGhostView> free)
+        {
+            if (free.Count == 0)
+            {
+                return null;
+            }
+
+            var last = free.Count - 1;
+            var ghost = free[last];
+            free.RemoveAt(last);
+            return ghost;
+        }
+
+        /// <summary>How many Defeat fade ghosts are currently fading, for a test with no frame loop of
+        /// its own to assert against.</summary>
+        public int ActiveDefeatFadeCount => heroDefeatGhosts.Count + minionDefeatGhosts.Count;
+
+        /// <summary>The in-flight ghost for a hero, or null when it is not currently fading. Exposed for
+        /// tests; the driver never needs it, since <see cref="AdvanceDefeatFades"/> ticks every ghost by
+        /// itself.</summary>
+        public DefeatFadeGhostView HeroDefeatGhostFor(PrimitiveHeroView hero) =>
+            heroDefeatGhosts.TryGetValue(hero, out var ghost) ? ghost : null;
+
+        /// <summary>The in-flight ghost for a minion, or null when it is not currently fading.</summary>
+        public DefeatFadeGhostView MinionDefeatGhostFor(StandardMinionView minion) =>
+            minionDefeatGhosts.TryGetValue(minion, out var ghost) ? ghost : null;
+
+        /// <summary>
+        /// Advances every in-flight Defeat fade ghost by one tick. Called once a frame by
+        /// <see cref="BoardDefeatFadeDriver"/>, entirely independent of the kinetic cue frame loop -
+        /// also callable directly by a test to drive the fade deterministically instead of waiting on
+        /// real frames.
+        /// </summary>
+        public void AdvanceDefeatFades(float deltaSeconds)
+        {
+            AdvanceGhosts(heroDefeatGhosts, freeHeroDefeatGhosts, deltaSeconds);
+            AdvanceGhosts(minionDefeatGhosts, freeMinionDefeatGhosts, deltaSeconds);
+        }
+
+        private static void AdvanceGhosts<TKey>(
+            Dictionary<TKey, DefeatFadeGhostView> active,
+            List<DefeatFadeGhostView> free,
+            float deltaSeconds)
+        {
+            if (active.Count == 0)
+            {
+                return;
+            }
+
+            List<TKey> finished = null;
+            foreach (var pair in active)
+            {
+                if (pair.Value.Advance(deltaSeconds))
+                {
+                    (finished ?? (finished = new List<TKey>())).Add(pair.Key);
+                }
+            }
+
+            if (finished == null)
+            {
+                return;
+            }
+
+            for (var index = 0; index < finished.Count; index++)
+            {
+                free.Add(active[finished[index]]);
+                active.Remove(finished[index]);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Milestone 8.35x-cardfade. The one per-frame tick the Defeat fade ghosts need, isolated exactly
+    /// like <see cref="KineticCueDriver"/> and entirely independent of it: the board's own fade never
+    /// reaches into the kinetic layer, and the kinetic layer never reaches into the board's pool to
+    /// deliver it. A throw inside <c>Update</c> repeats every frame, so it is caught, reported once, and
+    /// after a small budget of failures this component disables itself - the board falls back to exactly
+    /// the synchronous hide-on-removal it always had, with no fade, which is what this milestone found
+    /// integrated behind it anyway.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class BoardDefeatFadeDriver : MonoBehaviour
+    {
+        public const string DriverObjectName = "Board Defeat Fade Driver";
+
+        /// <summary>How many ticks may throw before the driver takes itself out of the frame loop.</summary>
+        public const int FailureBudget = 3;
+
+        private BoardInteractionUnityView board;
+        private int failures;
+
+        public static BoardDefeatFadeDriver Attach(GameObject host, BoardInteractionUnityView board)
+        {
+            if (host == null) throw new ArgumentNullException(nameof(host));
+            if (board == null) throw new ArgumentNullException(nameof(board));
+            var driver = host.GetComponent<BoardDefeatFadeDriver>() ??
+                host.AddComponent<BoardDefeatFadeDriver>();
+            driver.board = board;
+            driver.failures = 0;
+            driver.enabled = true;
+            return driver;
+        }
+
+        /// <summary>How many ticks have thrown. Zero on a healthy driver, and asserted by a fixture.</summary>
+        public int FailureCount => failures;
+
+        private void Update()
+        {
+            if (board == null)
+            {
+                return;
+            }
+
+            try
+            {
+                board.AdvanceDefeatFades(Time.deltaTime);
+            }
+            catch (Exception error)
+            {
+                failures++;
+                Debug.LogWarning(
+                    "Defeat fade ghost tick failed (" + failures + "/" + FailureBudget + "): " + error);
+                if (failures >= FailureBudget)
+                {
+                    Debug.LogWarning(
+                        "Defeat fade ghosts are disabled for this session; removal keeps the synchronous " +
+                        "hide it always had, with no fade.");
+                    enabled = false;
+                }
+            }
         }
     }
 }

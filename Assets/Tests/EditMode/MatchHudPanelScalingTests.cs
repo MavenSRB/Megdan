@@ -528,6 +528,56 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 8.35x-cardfade, flagged as a coordinator-approved scope addition (follow-up task
+        /// d3b5c3d2 from the 8.35z2 worker): <c>CalculateOptionalStepControlRect</c> (the ACCEPT/DECLINE
+        /// optional-step banner) carried the IDENTICAL Red-rail-overlap defect
+        /// <c>CalculateTeamAgreementControlRect</c> was fixed for above - 8.35z2's own commit body names
+        /// it explicitly as "recorded, not fixed here". Same template, same three sizes.
+        /// </summary>
+        [Test]
+        public void OptionalStepControlRect_ClearsBothRailsTheHandTrayAndTheUnavailableFanAtThreeSizes()
+        {
+            foreach (var device in new[]
+            {
+                new Vector2(2560f, 1440f), // the reference itself
+                new Vector2(1280f, 1024f), // narrow
+                new Vector2(3440f, 1440f)  // ultrawide
+            })
+            {
+                var panel = MatchHudPanelScaling.ReferenceViewport(device.x, device.y);
+                var optionalStep = ConfiguredMatchHudRenderer.CalculateOptionalStepControlRect(
+                    panel.x, panel.y);
+                Assert.That(optionalStep.width, Is.GreaterThan(0f),
+                    $"The panel collapsed to nothing at {device}.");
+                Assert.That(optionalStep.height, Is.GreaterThan(0f),
+                    $"The panel collapsed to nothing at {device}.");
+
+                var statusBar = ConfiguredMatchHudRenderer.CalculateStatusBarRect(panel.x, panel.y);
+                var redRail = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
+                    panel.x, panel.y, TeamSide.Red);
+                var blueRail = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
+                    panel.x, panel.y, TeamSide.Blue);
+                var handTray = ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(
+                    panel.x, panel.y);
+                var unavailableFan = ConfiguredMatchHudRenderer.CalculateUnavailableCardGroupRect(
+                    panel.x, panel.y);
+
+                Assert.That(optionalStep.yMin, Is.GreaterThanOrEqualTo(statusBar.yMax - 0.01f),
+                    $"The panel rises into the top strip at {device}.");
+                Assert.That(optionalStep.Overlaps(redRail), Is.False,
+                    $"The panel overlaps the Red hero rail at {device}: {optionalStep} vs {redRail}.");
+                Assert.That(optionalStep.Overlaps(blueRail), Is.False,
+                    $"The panel overlaps the Blue hero rail at {device}: {optionalStep} vs {blueRail}.");
+                Assert.That(optionalStep.Overlaps(handTray), Is.False,
+                    $"The panel overlaps the bottom-left hand tray at {device}: " +
+                    $"{optionalStep} vs {handTray}.");
+                Assert.That(optionalStep.Overlaps(unavailableFan), Is.False,
+                    $"The panel overlaps the unavailable-card fan at {device}: " +
+                    $"{optionalStep} vs {unavailableFan}.");
+            }
+        }
+
         private static Dictionary<string, Rect> Regions(float panelWidth, float panelHeight) =>
             new Dictionary<string, Rect>
             {

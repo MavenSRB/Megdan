@@ -1477,13 +1477,30 @@ namespace GuardsDigital.Presentation.Match
             host.style.height = rect.height;
         }
 
+        /// <summary>
+        /// Milestone 8.35x-cardfade correction, following 8.35z2's own template exactly
+        /// (<see cref="CalculateTeamAgreementControlRect"/>'s doc comment). This rect used to anchor its
+        /// left edge at <see cref="CalculateCardPanelRect"/>'s <c>xMin</c> - the screen's own left edge,
+        /// because that full-width tray band reserves the whole viewport - rather than the hand's
+        /// visible left edge, which put the ACCEPT/DECLINE optional-step banner directly on top of the
+        /// Red rail's own column at every viewport, reference included. 8.35z2 recorded this as the
+        /// structurally identical defect it fixed for <see cref="CalculateTeamAgreementControlRect"/> and
+        /// left unfixed here as out of its own stated territory (follow-up task d3b5c3d2). Fixed the same
+        /// way: left yields to the Red rail's measured right edge, and right is bounded against the Blue
+        /// rail and the unavailable-card fan too, so the banner cannot land on either rail, the hand
+        /// tray, or the fan at a reference, narrow, or wide viewport.
+        /// </summary>
         public static Rect CalculateOptionalStepControlRect(float panelWidth, float panelHeight)
         {
             var tray = CalculateCardPanelRect(panelWidth, panelHeight);
-            var left = tray.xMin + OptionalStepEdgeClearance;
+            var redRail = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Red);
+            var blueRail = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Blue);
+            var unavailable = CalculateUnavailableCardGroupRect(panelWidth, panelHeight);
+            var left = Mathf.Max(tray.xMin, redRail.xMax) + OptionalStepEdgeClearance;
             var right = Mathf.Min(
-                CompactHandRightEdge - OptionalStepEdgeClearance,
-                Mathf.Max(left, panelWidth - Margin));
+                Mathf.Min(CompactHandRightEdge, blueRail.xMin),
+                Mathf.Min(unavailable.xMin, panelWidth - Margin)) - OptionalStepEdgeClearance;
+            right = Mathf.Max(left, right);
             var desiredWidth = RoundActionUnityView.OptionalStepActionWidth * 2f +
                 RoundActionUnityView.OptionalStepActionGap;
             var height = Mathf.Min(
