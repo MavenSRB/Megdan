@@ -533,12 +533,22 @@ namespace GuardsDigital.Tests.EditMode
             if (contract.FamilyId.Equals(PendingDecisionFamilies.Defense))
                 return round.DefenseChoices.Select(value => value.Command).ToArray();
             if (contract.FamilyId.Equals(PendingDecisionFamilies.Effect))
-                return round.EffectChoices.Select(value => value.Command)
+            {
+                var ordinary = round.EffectChoices.Select(value => value.Command)
                     .Concat(round.EffectChoiceTargets.Select(value => value.Command))
                     .Concat(round.EffectChoiceDestinations.Select(value => value.Command))
-                    .Concat(round.EndTurnInvocation == null
-                        ? Enumerable.Empty<DirectorCommand>()
-                        : new[] { round.EndTurnInvocation.Command }).ToArray();
+                    .ToArray();
+                // Milestone 8.35v: an undeclined optional branch's own Decline is now ALSO
+                // reachable through END TURN, which reads the identical pre-built invocation
+                // (`PendingEffectChoice.DeclineInvocation`) rather than composing a second one -
+                // so it names no additional capability and folds in only when it is not already
+                // one of the ordinary controls above. The Stop shape (every candidate refused,
+                // `EffectChoices` empty) is unaffected and still adds its own command as before.
+                return round.EndTurnInvocation == null ||
+                        ordinary.Any(command => ReferenceEquals(command, round.EndTurnInvocation.Command))
+                    ? ordinary
+                    : ordinary.Concat(new[] { round.EndTurnInvocation.Command }).ToArray();
+            }
             if (contract.FamilyId.Equals(PendingDecisionFamilies.HeroRespawn))
                 return round.HeroRespawnOptions.Select(value => value.Command)
                     .Concat(new[] { round.ResolveWithoutRespawn.Command }).ToArray();

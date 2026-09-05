@@ -92,9 +92,8 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, TeamSide.Blue, WaspCardContent.ChargedBoomerang);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its turn.");
-            // Milestone 8.35g. That press finished the resolution; the release is what
-            // hands the turn on, so it goes above the selection read below.
-            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+            // Milestone 8.35v: one press both Holds and releases.
+            Assert.That(runtime.PendingTurnRelease, Is.Null);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Attack);
@@ -155,9 +154,8 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, TeamSide.Blue, WaspCardContent.ChargedBoomerang);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its turn.");
-            // Milestone 8.35g. That press finished the resolution; the release is what
-            // hands the turn on, so it goes above the selection read below.
-            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+            // Milestone 8.35v: one press both Holds and releases.
+            Assert.That(runtime.PendingTurnRelease, Is.Null);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Attack);
@@ -325,9 +323,8 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, TeamSide.Blue, WaspCardContent.Telekinesis);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its tied turn.");
-            // Milestone 8.35g. That press finished the resolution; the release is what
-            // hands the turn on, so it goes above the selection read below.
-            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+            // Milestone 8.35v: one press both Holds and releases.
+            Assert.That(runtime.PendingTurnRelease, Is.Null);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Skill);
@@ -415,9 +412,8 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, TeamSide.Blue, WaspCardContent.ThunderBoomerang);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its turn.");
-            // Milestone 8.35g. That press finished the resolution; the release is what
-            // hands the turn on, so it goes above the selection read below.
-            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+            // Milestone 8.35v: one press both Holds and releases.
+            Assert.That(runtime.PendingTurnRelease, Is.Null);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Attack);
@@ -565,9 +561,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId),
                 "Electroblast's 9 acts before Mass Telekinesis' 2.");
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds as filler.");
-            // Milestone 8.35g. That press finished the resolution; the release is what
-            // hands the turn on, so it goes above the selection read below.
-            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+            // Milestone 8.35v: one press both Holds and releases.
+            Assert.That(runtime.PendingTurnRelease, Is.Null);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Skill);

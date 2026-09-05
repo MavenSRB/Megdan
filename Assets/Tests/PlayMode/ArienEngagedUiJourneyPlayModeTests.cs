@@ -533,10 +533,10 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, waspId, WaspCardContent.LiftUp);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId),
                 "Lift Up's 10 acts before Dangerous Current's 8, so the enemy holds first.");
+            // Milestone 8.35v (the THIRD amendment's REVISED SEMANTICS): that one press both Held
+            // and released - it never leaves the turn standing in the release pause.
             Assert.That(runtime.SubmitEndTurn(), Is.True, "and holds without leaving the line.");
-            // Milestone 8.35g. That press finished the resolution; the release is what
-            // hands the turn on, so it goes above the selection read below.
-            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+            Assert.That(runtime.PendingTurnRelease, Is.Null);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(arienId));
 
             yield return PointTrayAt(root, arienId);
@@ -890,10 +890,9 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, arienId, ArienCardContent.SpellBreak);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(arienId),
                 "Spell Break's 13 acts before Magnetic Dagger's 12, so Arien acts and holds first.");
+            // Milestone 8.35v: one press both Holds and releases.
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Arien holds, keeping his hand intact.");
-            // Milestone 8.35g. That press finished the resolution; the release is what
-            // hands the turn on, so it goes above the selection read below.
-            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+            Assert.That(runtime.PendingTurnRelease, Is.Null);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId));
 
             var attack = runtime.RoundView.Model.Actions.Single(value =>

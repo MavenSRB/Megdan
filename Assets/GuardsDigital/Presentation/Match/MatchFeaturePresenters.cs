@@ -2931,11 +2931,15 @@ namespace GuardsDigital.Presentation.Match
             TeamAgreementHudViewModel teamAgreement = null,
             bool seatUndoAvailable = false,
             bool isAwaitingViewerInput = false,
-            string statusDetail = null)
+            string statusDetail = null,
+            bool endTurnCancelsOpenAttack = false,
+            string endTurnUnavailableReason = null)
         {
             IsAwaitingViewerInput = isAwaitingViewerInput;
             StatusDetail = statusDetail;
             SeatUndoAvailable = seatUndoAvailable;
+            EndTurnCancelsOpenAttack = endTurnCancelsOpenAttack;
+            EndTurnUnavailableReason = endTurnUnavailableReason;
             SystemTransitionPrompt = systemTransitionPrompt;
             EffectChoicePrompt = effectChoicePrompt;
             RemovalPreventionPrompt = removalPreventionPrompt;
@@ -2995,6 +2999,21 @@ namespace GuardsDigital.Presentation.Match
                     nameof(effectChoicePrompt));
             }
 
+            // Milestone 8.35v (the THIRD amendment): END TURN reads as exactly one of three
+            // mutually exclusive facts - a direct invocation, "press it and it cancels the open
+            // attack selection first", or a named reason it is drawn disabled - never two at once,
+            // which is what would let a view draw one and a driver read another.
+            var endTurnFactCount = (endTurnInvocation != null ? 1 : 0) +
+                (endTurnCancelsOpenAttack ? 1 : 0) +
+                (endTurnUnavailableReason != null ? 1 : 0);
+            if (endTurnFactCount > 1)
+            {
+                throw new ArgumentException(
+                    "End Turn's invocation, its cancels-open-attack flag and its unavailable " +
+                    "reason are mutually exclusive.",
+                    nameof(endTurnInvocation));
+            }
+
             HudHeader =$"MIRRORED WASP QUICK GAME - DIRECTOR MODE - ROUND {roundIndex} - " +
                 $"TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound} - {phase.ToString().ToUpperInvariant()}";
         }
@@ -3032,6 +3051,30 @@ namespace GuardsDigital.Presentation.Match
             IsAwaitingViewerInput ? NarrationVoice.YourMove : NarrationVoice.Calm;
         public IReadOnlyList<TypedInvocationViewModel> Actions { get; }
         public TypedInvocationViewModel EndTurnInvocation { get; }
+
+        /// <summary>
+        /// Milestone 8.35v (the THIRD amendment: "end turn button should be present the whole time
+        /// on players action turn, even if he has attack selection on"). True exactly when the
+        /// acting seat has opened an Attack whose target is not yet chosen - the one open,
+        /// not-yet-committed selection this build has no authority-offered decline for, so END TURN
+        /// composes the seat's own bounded rewind (milestone 8.35f, still short of its wall) to
+        /// discard it before completing and releasing the turn, all in the one press. Mutually
+        /// exclusive with <see cref="EndTurnInvocation"/> and <see cref="EndTurnUnavailableReason"/>.
+        /// </summary>
+        public bool EndTurnCancelsOpenAttack { get; }
+
+        /// <summary>
+        /// Milestone 8.35v. Non-null exactly when it is this seat's own active turn and END TURN is
+        /// drawn DISABLED rather than hidden - the user's rule that nothing is greyed without saying
+        /// why, extended to END TURN itself: a printed rule leaves the standing step no legal decline
+        /// (<see cref="ActionUnavailabilityLabels.MandatoryStep"/>), or the resolution has moved past
+        /// anything this seat can answer or cancel (<see cref="ActionUnavailabilityLabels.AnotherSeatDeciding"/>).
+        /// Mutually exclusive with <see cref="EndTurnInvocation"/> and
+        /// <see cref="EndTurnCancelsOpenAttack"/>; null (and the control hidden) wherever it is not
+        /// this seat's own active turn at all, exactly as before this milestone.
+        /// </summary>
+        public string EndTurnUnavailableReason { get; }
+
         public TypedInvocationViewModel ContinueEndOfRoundInvocation { get; }
 
         /// <summary>
@@ -3464,7 +3507,131 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
-            return Execute(invocation.Command);
+            // Milestone 8.35v (the THIRD amendment's REVISED SEMANTICS): one END TURN press ends
+            // the turn regardless of how many accepted commands that takes. `invocation` is END
+            // TURN's own exactly when it is the same object this presenter's own view model just
+            // drew - never a coincidental match on some other control that happens to submit the
+            // same command kind - so a movement Stop, an effect choice's own stop, or a Hold
+            // submitted through here is the completion half of the press; the release below is the
+            // second half, performed in the same press rather than left for a separate one. Release
+            // itself needs no further chaining - reaching this branch already IS the whole press.
+            var isEndTurnPress = ReferenceEquals(invocation, current.EndTurnInvocation);
+            if (!Execute(invocation.Command))
+            {
+                return false;
+            }
+
+            if (isEndTurnPress && invocation.Command.Kind != DirectorCommandKind.ReleaseTurn)
+            {
+                ReleaseTheTurnIfItNowStandsReleasable();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 8.35v. The end-turn press's own composition, reachable from every state the
+        /// omnipresent control draws enabled: a direct completion via <see cref="Execute"/> below;
+        /// the seat's one open, uncommitted Attack-target selection cancelled by its own bounded
+        /// rewind (milestone 8.35f) first; or an open Clear selection (milestone 6.3a) cancelled by
+        /// <see cref="CancelClear"/> first - purely a presentation reset, since nothing is submitted
+        /// to the authority until Clear is confirmed, so there is nothing to rewind. Clear is
+        /// checked first of the three: it is presentation-only and the authority has not paused
+        /// underneath it, so <see cref="CreateEndTurnInvocation"/> can already project an ordinary
+        /// completion (p.12's Hold, most commonly) alongside it, and submitting that FIRST would
+        /// leave a confirmed Hold sitting beside a still-open, now-orphaned board selection - the
+        /// discard has to land before the completion it would otherwise race. All three paths
+        /// converge on the same one-press rule: keep composing whatever the projection legally
+        /// offers next until the turn is released, disabled would refuse it, or nothing more is
+        /// offered - never a fabricated stop the rules do not.
+        ///
+        /// <para>Bounded to the ONE actor this press is for. A Director client "answers for
+        /// everybody" - unlike a seat, which sees only its own hero - so the instant this press's
+        /// own release lands, the very next actor's own untouched card can already project its OWN
+        /// Hold; composing past that boundary would silently spend a second player's turn inside a
+        /// press that was only ever about the first. `pressActorId` is read once, before any
+        /// submission, and every loop iteration verifies the state still concerns that same hero -
+        /// either still resolving it, or still awaiting ITS release - before composing anything
+        /// else. `Submit`'s own release-chain is not reused here for exactly this reason: it cannot
+        /// tell "this call's own actor" from "whoever is offered next", which is what let 8.35v's
+        /// first draft submit a second player's Hold inside a press the seeded suite proved was
+        /// only ever about the first.</para>
+        /// </summary>
+        public bool SubmitEndTurn()
+        {
+            var initial = session.Projection;
+            var pressActorId = initial?.SelectedActor.IsDefined == true
+                ? initial.SelectedActor.ActorId
+                : initial?.PendingTurnRelease?.ActorId ?? default;
+
+            var progressed = false;
+            for (var guard = 0; guard < MaxEndTurnComposedSteps; guard++)
+            {
+                var projection = session.Projection;
+                var stillThisActor = pressActorId.IsDefined &&
+                    (projection.SelectedActor.ActorId.Equals(pressActorId) ||
+                        (projection.PendingTurnRelease?.ActorId.Equals(pressActorId) ?? false));
+                if (!stillThisActor)
+                {
+                    return progressed;
+                }
+
+                var current = GetOrCreateViewModel(projection);
+                if (current.ClearSelection != null)
+                {
+                    if (!CancelClear())
+                    {
+                        return progressed;
+                    }
+
+                    progressed = true;
+                    continue;
+                }
+
+                if (current.EndTurnInvocation != null)
+                {
+                    if (!Execute(current.EndTurnInvocation.Command))
+                    {
+                        return progressed;
+                    }
+
+                    progressed = true;
+                    continue;
+                }
+
+                if (!current.EndTurnCancelsOpenAttack)
+                {
+                    return progressed;
+                }
+
+                if (!SubmitSeatUndo())
+                {
+                    return progressed;
+                }
+
+                progressed = true;
+            }
+
+            // Never spin: a state that keeps offering a cancel without ever reaching a direct
+            // completion is a defect this composition should surface loudly rather than loop on.
+            throw new InvalidOperationException(
+                "End Turn's cancel-and-release composition did not reach a legal completion " +
+                "within its bound.");
+        }
+
+        /// <summary>The bound in <see cref="SubmitEndTurn"/>: one rewind past the deepest observed
+        /// case (an open Attack target choice) plus the completion and release it composes into,
+        /// with headroom for a repeat-ability's own extra cycle.</summary>
+        private const int MaxEndTurnComposedSteps = 8;
+
+        private void ReleaseTheTurnIfItNowStandsReleasable()
+        {
+            var projection = session.Projection;
+            if (projection?.DecisionContract != null &&
+                projection.DecisionContract.FamilyId.Equals(PendingDecisionFamilies.TurnRelease))
+            {
+                Execute(DirectorCommand.ReleaseTurn());
+            }
         }
 
         public bool SubmitAgreement(TeamAgreementChoiceViewModel choice)
@@ -3683,6 +3850,23 @@ namespace GuardsDigital.Presentation.Match
                 projection, default, Array.Empty<TokenInstanceId>(), offersRoundContinuation, default);
 
         /// <summary>
+        /// Milestone 8.35v. The seat-shaped overload: every fact below this presenter's
+        /// per-turn-actor gate now needs the exact viewer <see cref="IMatchReadModel.SelectedActor"/>
+        /// is compared against - <see cref="IsViewerTheActingHero"/>'s own remarks name the trap a
+        /// caller passing the Director's default sentinel falls into against a seat-scoped
+        /// projection: every seat's own <c>SelectedActor</c> and <c>IsTurnActive</c> are unscoped
+        /// public facts, so only the homeHeroId comparison tells "the acting hero" apart from "a
+        /// seat that merely owns some standing decision the acting hero's turn produced" or a
+        /// plain spectator. Test and tooling code composing a seat's own view without a full
+        /// <see cref="RoundActionPresenter"/> instance should call this rather than the Director-
+        /// shaped overload above.
+        /// </summary>
+        public static RoundActionViewModel CreateViewModel(
+            IMatchReadModel projection, HeroId homeHeroId) =>
+            CreateViewModel(
+                projection, default, Array.Empty<TokenInstanceId>(), true, homeHeroId);
+
+        /// <summary>
         /// Whether the match is waiting on a decision inside this turn, asked in one place.
         ///
         /// A paused Skill frame counts here for the same reason paused Movement and Attack do: Core
@@ -3835,6 +4019,12 @@ namespace GuardsDigital.Presentation.Match
                     .ToArray();
 
             var status = FormatStatus(projection, homeHeroId, out var statusDetail);
+            var endTurnInvocation = CreateEndTurnInvocation(projection);
+            var endTurnCancelsOpenAttack = ResolveEndTurnCancelsOpenAttack(
+                projection, homeHeroId, endTurnInvocation);
+            var endTurnUnavailableReason = endTurnInvocation != null || endTurnCancelsOpenAttack
+                ? null
+                : ResolveEndTurnUnavailableReason(projection, homeHeroId);
             return new RoundActionViewModel(
                 projection.Version,
                 projection.RoundIndex,
@@ -3842,7 +4032,7 @@ namespace GuardsDigital.Presentation.Match
                 projection.Phase,
                 status,
                 actions,
-                CreateEndTurnInvocation(projection),
+                endTurnInvocation,
                 // A pending removal choice is mandatory: the authority rejects an advance while it
                 // stands, so the control that would produce that rejection is not offered. Milestone
                 // 7.8a adds the second such pause on the same terms - a paused system transition is
@@ -3898,7 +4088,9 @@ namespace GuardsDigital.Presentation.Match
                 // this seat may step back, and the control is enabled exactly when it says so.
                 projection.IsSeatUndoAvailable,
                 AwaitedInputQuery.IsWaitingOnViewer(projection, homeHeroId),
-                statusDetail);
+                statusDetail,
+                endTurnCancelsOpenAttack,
+                endTurnUnavailableReason);
         }
 
         private static IReadOnlyList<PrintedActionRegionViewModel> CreatePrintedActionRegions(
@@ -4562,11 +4754,28 @@ namespace GuardsDigital.Presentation.Match
                             command.ChoiceId.Equals(movementChoice.ChoiceId)));
             }
 
+            // Milestone 8.35v (the THIRD amendment: "an undeclined optional branch" is named among
+            // the states a player may walk away from). A confirm-or-decline step, or any bounded
+            // choice whose printed minimum is zero, already projects its own Decline the same way
+            // the contextual region's own ACCEPT/DECLINE banners read it - this branch reads that
+            // existing invocation rather than composing a new one, so END TURN's press and the
+            // banner's own DECLINE press are provably the same authoritative answer.
+            var effectChoice = projection.PendingEffectChoice;
+            if (effectChoice?.DeclineInvocation != null)
+            {
+                return new TypedInvocationViewModel(
+                    "END TURN",
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.Effect,
+                        command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            ReferenceEquals(command.EffectChoice, effectChoice.DeclineInvocation)));
+            }
+
             // Milestone 6.5ae: the same contextual control on the decision family that had lacked it.
             // A paused effect choice whose every option was refused projects a stop of its own, and it
             // is offered exactly where the authority offers it - this branch reads the invocation and
             // never decides that a choice is closable.
-            var effectChoice = projection.PendingEffectChoice;
             if (effectChoice?.StopInvocation != null)
             {
                 return new TypedInvocationViewModel(
@@ -4578,11 +4787,13 @@ namespace GuardsDigital.Presentation.Match
                             ReferenceEquals(command.EffectChoice, effectChoice.StopInvocation)));
             }
 
-            // Milestone 8.35g. The turn's resolution is finished and it is waiting for this player
-            // to hand it on, so the same control that ended the resolution is the one that releases
-            // it. The second press is deliberate: an explicit stop is a click that can be misplayed
-            // like any other, and the release is the point of no return the rewind stops at. It is
-            // read off the standing contract, so only the seat that owns the pause is drawn one.
+            // Milestone 8.35g's pause; milestone 8.35v (the THIRD amendment's REVISED SEMANTICS)
+            // collapses what used to be its own second press into the SAME press that stopped,
+            // declined or Held above - see <see cref="RoundActionPresenter.Submit"/>, which chains
+            // straight into this branch's command once the completion it just submitted lands the
+            // projection here. Read here, this branch is unchanged: the turn's resolution is
+            // finished and waiting for this player to hand it on, read off the standing contract so
+            // only the seat that owns the pause is drawn one.
             if (projection.DecisionContract != null &&
                 projection.DecisionContract.FamilyId.Equals(PendingDecisionFamilies.TurnRelease))
             {
@@ -4610,6 +4821,104 @@ namespace GuardsDigital.Presentation.Match
                     "END TURN",
                     DirectorCommand.PerformHold(projection.SelectedActor.CardInstanceId))
                 : null;
+        }
+
+        /// <summary>
+        /// Milestone 8.35v (the THIRD amendment). The one open, not-yet-committed selection this
+        /// build has no authority-offered decline for: an Attack whose target is not yet chosen.
+        /// Rulebook p.14's target choice is mandatory once an Attack starts and the authority offers
+        /// no stop for it the way Movement and an optional effect choice do - but the choice itself
+        /// has not committed anything yet (milestone 8.35f's own wall rises only once
+        /// <c>ChooseAttackTarget</c> is accepted, and 8.35p extended that same wall to a card-text-
+        /// bound Attack that never emits the command at all), so the seat's own bounded rewind can
+        /// discard it. True only when that rewind is actually standing - the same
+        /// <see cref="IMatchReadModel.IsSeatUndoAvailable"/> fact milestone 8.35f's own square
+        /// reads - so a state this method has not anticipated falls through to
+        /// <see cref="ResolveEndTurnUnavailableReason"/> rather than composing a rewind the host
+        /// would refuse. Gated by <see cref="IsViewerTheActingHero"/> for the same reason that
+        /// gates the other helper below - see its remarks.
+        /// </summary>
+        private static bool ResolveEndTurnCancelsOpenAttack(
+            IMatchReadModel projection, HeroId homeHeroId, TypedInvocationViewModel endTurnInvocation) =>
+            endTurnInvocation == null &&
+            IsViewerTheActingHero(projection, homeHeroId) &&
+            projection.PendingAttackTargetChoice != null &&
+            projection.IsSeatUndoAvailable;
+
+        /// <summary>
+        /// Milestone 8.35v. Whether this viewer is the hero the match is presently waiting on for a
+        /// turn action - never true for a seat that merely owns SOME standing decision the acting
+        /// hero's own turn produced (a defender answering Defense, a hero displaced by a push, one
+        /// paying a removal prevention). <see cref="IMatchReadModel.SelectedActor"/> is public
+        /// (every viewer's board marks the same acting piece, milestone 8.35n), so a seat-scoped
+        /// projection cannot be trusted to read as "mine" from its mere presence the way an
+        /// owner-narrowed pending choice can - <c>AwaitedInputQuery</c> names the identical trap for
+        /// the top-bar predicate: "an attacker is still the selected actor while the DEFENDER is
+        /// being asked, so a SelectedActor-based predicate lights the attacker's bar during someone
+        /// else's decision." The Director answers every family at once and passes a default
+        /// <paramref name="homeHeroId"/>, so it reads every branch below as its own.
+        /// </summary>
+        private static bool IsViewerTheActingHero(IMatchReadModel projection, HeroId homeHeroId) =>
+            projection.IsTurnActive &&
+            projection.SelectedActor.IsDefined &&
+            (!homeHeroId.IsDefined || projection.SelectedActor.ActorId.Equals(homeHeroId));
+
+        /// <summary>
+        /// Milestone 8.35v. Reached only once <see cref="CreateEndTurnInvocation"/> found no direct
+        /// completion and <see cref="ResolveEndTurnCancelsOpenAttack"/> found no open Attack
+        /// selection to discard - so if this viewer is genuinely the acting hero, every
+        /// printed-mandatory step and every wall the game can put in front of it is exactly one of
+        /// the two named reasons below. Named per the SIXTH amendment's cursor-tooltip rule: nothing
+        /// is ever greyed without saying why.
+        /// </summary>
+        private static string ResolveEndTurnUnavailableReason(
+            IMatchReadModel projection, HeroId homeHeroId)
+        {
+            if (!IsViewerTheActingHero(projection, homeHeroId))
+            {
+                return null;
+            }
+
+            // A printed rule leaves the standing step no legal decline: Movement below its required
+            // minimum, or an effect choice with real candidates, no printed "may", and no stop
+            // invocation of its own - neither an undeclined optional branch nor an emptied mandatory
+            // one.
+            if (projection.PendingMovementChoice != null && !projection.PendingMovementChoice.CanStop)
+            {
+                return ActionUnavailabilityLabels.MandatoryStep;
+            }
+
+            if (projection.PendingEffectChoice != null &&
+                projection.PendingEffectChoice.DeclineInvocation == null &&
+                projection.PendingEffectChoice.StopInvocation == null)
+            {
+                return ActionUnavailabilityLabels.MandatoryStep;
+            }
+
+            // The resolution has moved past anything this seat can answer or cancel: a target was
+            // already chosen and the defender (or the card's own text) now owns the wait, exactly
+            // milestone 8.35f/8.35p's own wall. The remaining declared families never coincide with
+            // this seat's own acting turn in practice - defense, respawn, correction and removal
+            // prevention are each asked of a different hero, and tied Initiative precedes a turn
+            // rather than standing inside one - but each is named here rather than assumed absent,
+            // so a state nobody anticipated still reads as "another seat's decision" instead of
+            // silently drawing an END TURN that would refuse.
+            if ((projection.HasPendingAttackResolution && projection.PendingAttackTargetChoice == null) ||
+                (projection.HasPendingMovementResolution && projection.PendingMovementChoice == null) ||
+                (projection.HasPendingSkillResolution && projection.PendingEffectChoice == null) ||
+                projection.PendingDefenseChoice != null ||
+                projection.PendingHeroRespawnChoice != null ||
+                projection.PendingDisplacedMinionCorrection != null ||
+                projection.PendingRemovalPrevention != null ||
+                projection.PendingInitiativeChoice != null)
+            {
+                return ActionUnavailabilityLabels.AnotherSeatDeciding;
+            }
+
+            // Every named cause is accounted for above; a state that reaches here has none of them
+            // and still could not compose a direct completion (Hold refused for some other reason a
+            // future milestone may name) - the honest generic word rather than a guess.
+            return ActionUnavailabilityLabels.Generic;
         }
 
         private static IReadOnlyList<TypedInvocationViewModel> CreateDefenseChoices(

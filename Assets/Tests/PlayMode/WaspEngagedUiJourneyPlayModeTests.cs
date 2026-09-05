@@ -618,10 +618,9 @@ namespace GuardsDigital.Tests.PlayMode
             Commit(runtime, TeamSide.Red, WaspCardContent.LiftUp);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId),
                 "Red's Lift Up at 10 acts before Blue's Shock at 8.");
+            // Milestone 8.35v: one press both Holds and releases.
             Assert.That(runtime.SubmitEndTurn(), Is.True, "Red holds its turn.");
-            // Milestone 8.35g. That press finished the resolution; the release is what
-            // hands the turn on, so it goes above the selection read below.
-            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+            Assert.That(runtime.PendingTurnRelease, Is.Null);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId));
             var attack = runtime.RoundView.Model.Actions.Single(value =>
                 ActionKindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Attack);

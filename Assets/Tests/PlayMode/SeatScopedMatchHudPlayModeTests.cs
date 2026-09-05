@@ -795,7 +795,11 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return Capture("tmp/milestone-8-30l3-topbar-2048x1152.png");
             }
 
-            // And pressing it ends the turn, through the seat own client.
+            // And pressing it ends the turn, through the seat own client. Milestone 8.35v (the
+            // THIRD amendment's REVISED SEMANTICS) collapses what milestone 8.35g shipped as two
+            // presses into one: the same click that completes the card's resolution (here, a Hold -
+            // nothing was started on this turn) is ALSO its release, because an explicit END TURN
+            // press is itself the release. "Undo is for that, end turn is for ending the turn."
             var version = runtime.Host.Version;
             Assert.That(runtime.Seat, Is.Not.Null, "This scene is composed for a seat.");
             UiPlayer.Click(control);
@@ -804,30 +808,13 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.Host.Version, Is.GreaterThan(version),
                 "The press reached the authority.");
-
-            // Milestone 8.35g, and this is the milestone's headline seen from the seat's own HUD.
-            // That press ended the card's RESOLUTION; it no longer ends the turn, which is now held
-            // for this seat's own player. So the same control comes BACK carrying the release rather
-            // than vanishing - the vanishing is precisely the auto-ending the user asked to stop.
-            Assert.That(runtime.PendingTurnRelease, Is.Not.Null,
-                "The finished resolution waits for its own player rather than handing on.");
-            var release = runtime.RoundView.Model.EndTurnInvocation;
-            Assert.That(release, Is.Not.Null,
-                "and the control returns for the release instead of leaving an empty corner.");
-            Assert.That(release.Command.Kind, Is.EqualTo(DirectorCommandKind.ReleaseTurn));
-
-            var releasedFrom = runtime.Host.Version;
-            UiPlayer.Click((Button)Named(root.Hud.RootElement, "gd-end-turn-control"));
-            yield return null;
-            yield return null;
-
-            Assert.That(runtime.Host.Version, Is.GreaterThan(releasedFrom),
-                "The second press reached the authority too, and it is the turn's point of no return.");
-            Assert.That(runtime.PendingTurnRelease, Is.Null);
+            Assert.That(runtime.PendingTurnRelease, Is.Null,
+                "One press both completes the resolution and releases the turn - it never leaves " +
+                "the turn standing in the release pause waiting for a second press.");
             Assert.That(runtime.RoundView.Model.EndTurnInvocation, Is.Null,
-                "and the turn it released offers no third End Turn.");
+                "so the turn it released offers no further End Turn.");
             Assert.That(UiPlayer.IsShown(Named(root.Hud.RootElement, "gd-end-turn")), Is.False,
-                "so the corner is empty rather than holding a control that can only be refused.");
+                "and the corner is empty rather than holding a control that can only be refused.");
 
             UiPlayer.SetPlayerViewport(
                 restoreWidth, restoreHeight, "8.30l restore prior viewport");

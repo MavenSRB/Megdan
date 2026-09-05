@@ -4217,6 +4217,16 @@ namespace GuardsDigital.Presentation.Match
         /// payload because there is none to carry.
         /// </summary>
         public event Action SeatUndoRequested;
+
+        /// <summary>
+        /// Milestone 8.35v (the THIRD amendment's REVISED SEMANTICS). END TURN's own press, raised
+        /// unconditionally by the drawn control whenever it is enabled - a direct completion, or a
+        /// press that must first discard the seat's one open Attack-target selection. It carries no
+        /// payload for the same reason <see cref="SeatUndoRequested"/> carries none: which of those
+        /// the press composes is the presenter's decision from the live projection, never a command
+        /// this view assembles.
+        /// </summary>
+        public event Action EndTurnRequested;
         public event Action<TeamAgreementChoiceViewModel> AgreementSubmitted;
         public event Action<HeroId> AgreementHeroHighlighted;
         public event Action<FastTravelOfferViewModel> FastTravelSelected;
@@ -4343,6 +4353,13 @@ namespace GuardsDigital.Presentation.Match
         /// and so can a driver or a fixture that has no live panel to press with.
         /// </summary>
         public void RequestSeatUndo() => SeatUndoRequested?.Invoke();
+
+        /// <summary>
+        /// Milestone 8.35v. Raises END TURN's own press the way <see cref="RequestSeatUndo"/> raises
+        /// its rewind: the drawn control calls it unconditionally, and so can a driver or a fixture
+        /// that has no live panel to press with.
+        /// </summary>
+        public void RequestEndTurn() => EndTurnRequested?.Invoke();
 
         public void ForwardInvocation(TypedInvocationViewModel invocation)
         {
@@ -5433,30 +5450,25 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>
         /// End Turn, as its own control in its own surface. Milestone 8.30b's user-approved amendment.
         ///
-        /// <para>Nothing about what it submits changed: it forwards the same projected invocation the
-        /// action row forwarded, through the same <c>ForwardInvocation</c>, so the authority sees the
-        /// identical command. What changed is that it is no longer the last item of a row it shared
-        /// with the offered actions - milestone 8.29b1b had already moved those onto the resolving
-        /// card, leaving End Turn a small button alone in a dock about the hand.</para>
+        /// <para>Milestone 8.35v (the THIRD amendment: "end turn button should be present the whole
+        /// time on players action turn"). What forwards is unchanged when a direct invocation
+        /// stands: the same projected command, through the same <c>ForwardInvocation</c>. The rest
+        /// of the control now draws in two further states this milestone adds - a press that must
+        /// first discard the seat's own open Attack-target selection, and a DISABLED state naming
+        /// why (the SIXTH amendment's rule: nothing is ever greyed without saying why) - and it is
+        /// no longer suppressed by <see cref="HasExclusiveDecision"/>, which used to hide it during
+        /// exactly the mandatory-step and another-seat's-decision states the disabled reason now
+        /// names; the region's other "one usable surface" behaviour for the hand and tray is
+        /// untouched, only END TURN itself stops disappearing.</para>
         /// </summary>
         private void RebuildEndTurn()
         {
             endTurnHost.Clear();
             var invocation = Model?.EndTurnInvocation;
+            var cancelsOpenAttack = Model?.EndTurnCancelsOpenAttack ?? false;
+            var unavailableReason = Model?.EndTurnUnavailableReason;
 
-            // `HasExclusiveDecision` and not a second list, for milestone 7.9c's finding F-PRES-01
-            // reason: two copies of "is the region asking something" drift by one entry and the entry
-            // they drift by is a control standing where it must not.
-            //
-            // **This is what the complete Edit Mode run caught.** Nine of the ten states that
-            // predicate covers are authority pauses, and the projection offers no End Turn in any of
-            // them - but the tenth, an open Clear selection, is a presentation context: the authority
-            // has not paused, so it still offers an End Turn, and the player is part-way through
-            // choosing tokens on the board. Until this milestone the region hid the control by the
-            // accident of returning early before the action row was built. Moving the control out of
-            // that row would have made ending the turn mid-selection reachable again, which is
-            // exactly the one-usable-context rule the tray hiding exists to keep.
-            if (invocation == null || HasExclusiveDecision)
+            if (invocation == null && !cancelsOpenAttack && unavailableReason == null)
             {
                 EndTurnShinesFully = false;
                 endTurnHost.style.display = DisplayStyle.None;
@@ -5465,11 +5477,36 @@ namespace GuardsDigital.Presentation.Match
 
             endTurnHost.style.display = DisplayStyle.Flex;
 
+            if (unavailableReason != null)
+            {
+                EndTurnShinesFully = false;
+                var disabled = new PewterBanner(
+                    RequestEndTurn, false,
+                    EndTurnControlFontSize, "gd-end-turn-label", rectangular: true)
+                {
+                    name = "gd-end-turn-control",
+                    text = "END TURN",
+                    tooltip = unavailableReason
+                };
+                disabled.SetVisibleLabel("END TURN");
+                disabled.style.minHeight = ConfiguredMatchHudRenderer.EndTurnControlHeight;
+                disabled.style.fontSize = EndTurnControlFontSize;
+                disabled.style.unityFontStyleAndWeight = FontStyle.Bold;
+                disabled.style.unityTextAlign = TextAnchor.MiddleCenter;
+                disabled.style.flexGrow = 1f;
+                disabled.style.flexShrink = 0f;
+                HudElements.MarkUnavailable(disabled);
+                endTurnHost.Add(disabled);
+                return;
+            }
+
             // Milestone 8.30d: whether ending the turn is the only thing left to do. Everything
             // else this region could offer alongside an End Turn is enumerable from the model the
             // view is already rendering: a startable printed region, a live replacement, a tied
             // Initiative, or the end-of-round continue. When none stands, the banner shines fully -
-            // the game itself points at the player's one move.
+            // the game itself points at the player's one move. Milestone 8.35v: a press that must
+            // cancel an open Attack selection first reads the identical way - the resolution being
+            // cancelled offers nothing else either, so `PrintedActionRegions` is already empty.
             var onlyOfferLeft =
                 Model.InitiativeChoices.Count == 0 &&
                 Model.ContinueEndOfRoundInvocation == null &&
@@ -5479,14 +5516,15 @@ namespace GuardsDigital.Presentation.Match
                     (region.ClearOffer == null || !region.ClearOffer.IsAvailable));
 
             EndTurnShinesFully = onlyOfferLeft;
+            var label = invocation?.Label ?? "END TURN";
             var control = new PewterBanner(
-                () => ForwardInvocation(invocation), onlyOfferLeft,
+                RequestEndTurn, onlyOfferLeft,
                 EndTurnControlFontSize, "gd-end-turn-label", rectangular: true)
             {
                 name = "gd-end-turn-control",
-                text = invocation.Label
+                text = label
             };
-            control.SetVisibleLabel(invocation.Label);
+            control.SetVisibleLabel(label);
             control.style.minHeight = ConfiguredMatchHudRenderer.EndTurnControlHeight;
             control.style.fontSize = EndTurnControlFontSize;
             control.style.unityFontStyleAndWeight = FontStyle.Bold;

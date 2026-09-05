@@ -519,8 +519,17 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(Tile(subjectMinionView.Occupancy.Coordinate).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack),
                 "The threatened minion is identified by blood-red removal corners on its hex.");
-            Assert.That(UiPlayer.HasButton(hud, "END TURN"), Is.False,
-                "No End Turn is drawn beside an exclusive decision.");
+            // Milestone 8.35v (the THIRD amendment): END TURN is now drawn throughout - a removal
+            // prevention decided by a hero who is not the acting player is exactly "another seat's
+            // decision stands", so the control is present and disabled, naming its reason, rather
+            // than absent as it read before this milestone.
+            Assert.That(UiPlayer.HasButton(hud, "END TURN"), Is.True,
+                "Present, never hidden, beside an exclusive decision - disabled with its own reason " +
+                "rather than absent.");
+            Assert.That(UiPlayer.Button(hud, "END TURN").enabledInHierarchy, Is.False,
+                "Another seat's decision (the removal prevention) stands, so the press is refused.");
+            Assert.That(UiPlayer.Button(hud, "END TURN").tooltip,
+                Is.EqualTo(ActionUnavailabilityLabels.AnotherSeatDeciding));
 
             yield return CaptureGameView("shield-offers-to-keep-the-minion");
 

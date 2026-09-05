@@ -241,3 +241,78 @@ Acceptance checks:
 Non-goals: No new admission rule, key-strength policy, transport, encryption, diagnostic, or lobby redesign; no change to the command-line rule this mirrors or to any other launch path.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835a1-refuse-an-unkeyed-bind-off-loopback-from-the-lobbys-host-control-completion-evidence).
+
+### [x] 8.35b Integrate the proven player HUD with online match flow
+
+Blocked by: Milestone 8.35a must establish the primitive private lobby.
+
+Observable outcome: The locally proven player HUD operates over the network client/session adapter with clear waiting, synchronization, latency, disconnect, reconnect, rejection, host-loss, and terminal feedback while preserving the same authoritative invocations and visibility boundaries.
+
+Acceptance checks:
+
+- Invited clients enter the existing owner-scoped HUD from the lobby, see only their own hand and authorized shared state, answer every legal prompt, and return to an explicit recoverable or terminal state when the session policy requires it.
+- The tied-Initiative and Minion Battle prompts preserve milestone 8.30n's public statements and unanimous-agreement boundary over the network adapter: eligible players can state, revise, or withdraw only their own preference/agreement, observers see the current public proposal and status without actionable controls, and no client can submit either final rules choice directly.
+- Network waiting, stale-view rejection, resynchronization, temporary disconnect, incompatible restore, reconnect success/failure, and host loss cannot leave stale actionable controls or presentation-owned continuation state.
+- Equivalent local and network projections produce equivalent player HUD and prompt meanings; transport metadata does not become gameplay authority or fork a second rules-facing UI path.
+- Reconnect and resynchronization rebuild the HUD without hidden-information leakage, seat-control transfer, duplicated input handlers, stale selections, or monotonic presentation-resource growth.
+
+Non-goals: No production HUD redesign, public-service UX, matchmaking, account recovery, telemetry dashboard, tutorial, chat, or Phase 9 polish.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835b-integrate-the-proven-player-hud-with-online-match-flow-completion-evidence).
+
+### [x] 8.35c Pass a local six-client playtest-build rehearsal
+
+Blocked by: Milestone 8.35b must complete primitive online match-flow UI integration.
+
+Observable outcome: The exact intended private-playtest topology and disposable Win64 build path complete a six-client match locally, including bounded fault and reconnect scenarios, before friends are asked to test over the internet.
+
+Acceptance checks:
+
+- Six local client processes occupy six distinct seats through the primitive lobby and complete a full match using the same build, content/schema revision, host/session boundary, owner-scoped projections, and UI intended for milestone 8.36.
+- The rehearsal forces at least one same-team tied-Initiative disagreement followed by a revised unanimous preference and one changed Minion Battle removal proposal after partial agreement followed by unanimous confirmation, proving public visibility, proposal invalidation, exactly-once final submission, unchanged Tie Breaker behavior, and unchanged removal ordering across six processes.
+- The rehearsal exercises the approved local fault-injection, disconnect/reconnect, stale/version rejection, host-loss, and resynchronization cases and records host/client convergence plus privacy-reviewed diagnostics.
+- No client receives another seat's hidden hand, controls another hero, retains stale actionable prompts after resynchronization, or diverges from the host's authoritative public outcome.
+- Every observed blocking rules/session, projection/privacy, HUD/prompt, transport/synchronization, build, or diagnostic defect is corrected and rerun green before the internet playtest is authorized.
+- The evidence explicitly states that a same-machine or local-network rehearsal does not prove relay/NAT traversal, external latency behavior, multi-network connectivity, or real-internet reliability.
+
+Non-goals: No invited external tester, public distribution, production service, account system, matchmaking, production presentation, or substitution for milestone 8.36.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835c-pass-a-local-six-client-playtest-build-rehearsal-completion-evidence).
+
+### [x] 8.35d Run the end-of-round sequence automatically and scope each hero's level up to its own player
+
+Corrective milestone for two findings the user reported from live multiplayer testing on 2026-09-03 and approved the same day, ahead of milestone 8.36's human gate. Milestone 8.30a authorized `AdvanceEndOfRound` to every seat because the command carries no choice. Six players sharing that one control stepped rulebook p.8's stages past each other's pauses, and the five seats that did not own the standing question were each drawn a `CONTINUE END OF ROUND` control whose every press the host refused - because a seat's scoped surface reports the decision it does not own as absent, which is the privacy rule working correctly. Separately, p.15's Upgrade a Card was owned by the whole side the transition named, so a teammate could answer another player's upgrade; that is what "leveling was skipped for some players" was.
+
+Observable outcome: In a seat-based hosted session, rulebook p.8's end-of-round sequence runs by itself in stage order the moment the phase is entered, pausing only for decisions somebody owns and resuming automatically once one is answered, and each hero's Upgrade a Card pause is answerable only by the seat that owns that hero.
+
+Acceptance checks:
+
+- Entering end of round with no decision standing advances every applicable stage without any seat submission, in `EndOfRoundStage` order, as ordinary accepted commands in the one recorded stream, so replay, retained-prefix Undo, snapshots and restore see the sequence they always saw.
+- A stage pause of any family - the pre-Minion-Battle triggered-effect question, the Minion Battle selection, the Lane Push Place, the Level Up upgrade - halts the continuation, only the seat that owns it is authorized, and the answer resumes it automatically through to the next pause or the next round's commitments.
+- A hero that can afford no level is passed over with no pause and no item of its own; this already held and is now asserted.
+- Each hero's upgrade pause is answerable only by the seat owning that hero: a teammate's and an opponent's submission are both refused `UnauthorizedCommand` without moving the version, the stream or the snapshot, and the Director still answers it directly.
+- No seat projection offers `AdvanceEndOfRound` in any phase and no seat surface draws `CONTINUE END OF ROUND`; the Director's own direct door runs no stage by itself and still advances one by hand.
+- While a reserved seat holds the session, the continuation holds with it and resumes on the returning player's next accepted answer.
+- A six-client wire regression drives a full end of round, converges every seat on the settled authoritative version rather than on the one the submission alone produced, and records no seat submitting an advance.
+
+Non-goals: No change to rulebook p.8's stages, presentation pacing or animation, Director mode, the wire protocol version, the persisted snapshot schema, or milestone 8.36's execution.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835d-run-the-end-of-round-sequence-automatically-and-scope-each-heros-level-up-to-its-own-player-completion-evidence).
+
+### [x] 8.35e Render the Minion Battle agreement stage on every scoped seat and survive a scoped tray's absent revealed card
+
+Corrective milestone for two client crashes recorded in the 2026-09-03 invited-playtest logs (`tmp/playtest-mitok-2026-09-03.log` seat red-player-01, `tmp/playtest-Andrej-2026-09-03.log` seat blue-player-01, and `tmp/playtest-sppet-2026-09-03.log` seat red-player-02 on the hosting PC, whose file interleaves the host control's own wire lines), reported the same day ahead of milestone 8.36's re-run. When the Minion Battle's confirm stands as milestone 8.30n's public unanimous agreement, a seat's scoped projection carries the public `TeamAgreement` and no owned `PendingMinionBattleChoice` detail - and `MinionChoicePresenter.CreateViewModel`'s public-agreement branch then constructs `MinionChoiceViewModel` with default end-of-round identities, which that constructor's own guard refuses. All three clients threw that `ArgumentException` on every render - entered from an accepted minion selection's own result refresh, from an accepted agreement choice's (`SubmitAgreement`'s) result refresh, and from every `PrivateLobbyDriver.Update` - and each throw aborts `MatchFeatureCoordinator.RefreshAll` mid-list, so every seat's surface froze at the exact stage the branch exists to draw. The authority itself kept serving throughout: the hosting PC's wire lines record accepted agreements and submissions advancing the authoritative version (92 through 97) under surfaces that could no longer draw them, so the end-of-round stall the players reported is this presentation crash's consequence, ruled the same day as not its own finding. Separately, `DirectorHandsPresenter.Refresh` resolves each hero's commitment `RevealedCardInstanceId` with `Single` over the seat's scoped card list, and all three logs record `InvalidOperationException` tray failures where the named card was absent from that scoped list - mostly at the session tail, and on the hosting PC also inside an accepted round-action submission's own result refresh, so the absence window opens while end-of-round stages are being stepped, not only at teardown.
+
+Observable outcome: In a seat-served session, every seat renders the Minion Battle from first selection through the public unanimous agreement to the applied removal without a presentation exception - the choosing side with its selection controls and then its own agreement choices, the other side read-only - and a seat's hand tray renders every projection its client can legitimately receive.
+
+Acceptance checks:
+
+- A choosing-side seat at the agreement stage renders the public counts, the selected units and its own agreement choices with no candidates and no fabricated identities, and its agreement submission is accepted; the removal-prompt form with its identity guard is constructed only from an owned pending choice, and the guard itself stands unchanged.
+- A non-choosing seat renders the same public stage read-only at every version of the battle, from first selection through confirmation, without an exception.
+- The six-seat wire regression drives a Minion Battle from first selection through the unanimous agreement to the applied removal with every seat's full presenter set refreshed at every version it observes, and no seat records an exception.
+- A commitment naming a revealed card the seat's scoped card list does not carry renders that hero's tray without the card's detail rather than failing the whole refresh - or, if investigation proves the scoped list must always carry that card, the projection is corrected and the invariant asserted; the completion records which reading held and why the playtest projections lacked the card.
+- Both complete suites pass at the corrective revision.
+
+Non-goals: No change to the Minion Battle rules or the agreement flow's authority, the wire protocol version, the persisted snapshot schema, Director-mode rendering, or milestone 8.35d's continuation work; no blanket exception isolation in the refresh loop; the end-of-round stall these crashes produced is recorded here, not as its own milestone.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835e-render-the-minion-battle-agreement-stage-on-every-scoped-seat-and-survive-a-scoped-trays-absent-revealed-card-completion-evidence).

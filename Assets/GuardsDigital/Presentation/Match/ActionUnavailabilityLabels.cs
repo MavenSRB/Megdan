@@ -38,6 +38,25 @@ namespace GuardsDigital.Presentation.Match
         public const string NoTarget = "NO TARGET";
 
         /// <summary>
+        /// Milestone 8.35v (the THIRD amendment's omnipresent END TURN): the greyed reason for a
+        /// printed rule that leaves the standing step no legal decline - a movement below its
+        /// required minimum, or an effect choice with real candidates and no stop invocation. The
+        /// rulebook is inviolable per the project's durable boundaries, so the control is greyed
+        /// rather than offered a cancel the rules do not.
+        /// </summary>
+        public const string MandatoryStep = "MANDATORY STEP";
+
+        /// <summary>
+        /// Milestone 8.35v, the wall beside <see cref="MandatoryStep"/>: another seat's decision
+        /// stands (a chosen-target attack awaiting its defense answer, a hero mid-Skill-resolution
+        /// with nothing left for this seat to answer, or one of the other declared families that
+        /// never coincides with this seat's own acting turn in practice, kept honest anyway). The
+        /// seat that opened the resolution has no undo through it - milestone 8.35f's own wall - so
+        /// END TURN cannot reach back to cancel it either.
+        /// </summary>
+        public const string AnotherSeatDeciding = "ANOTHER SEAT'S DECISION STANDS";
+
+        /// <summary>
         /// Milestone 8.35l's reason, threaded end to end from <c>RestrictionQuery.TryGetRestriction</c>
         /// through <c>ActionUnavailability.FromRestriction</c>, the wire, and the read model: a standing
         /// rule modification bars every subject this action would apply to, and the authority names its

@@ -142,14 +142,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(arienId)).Coordinate,
                 Is.EqualTo(step.Destination));
 
-            if (runtime.PendingMovementChoice != null)
-            {
-                UiPlayer.Click(
-                    UiPlayer.Button(hud, runtime.RoundView.Model.EndTurnInvocation.Label));
-                yield return null;
-            }
-
-            if (runtime.SelectedActor.ActorId.Equals(arienId))
+            // Milestone 8.35v (the THIRD amendment's REVISED SEMANTICS): one press both stops the
+            // movement and releases the turn - never a first press to stop and a second to release.
+            if (runtime.PendingMovementChoice != null || runtime.SelectedActor.ActorId.Equals(arienId))
             {
                 UiPlayer.Click(
                     UiPlayer.Button(hud, runtime.RoundView.Model.EndTurnInvocation.Label));
@@ -158,9 +153,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The enemy's own activation, inside the same turn: what a player must be able to see is
             // that they are stopped. p.20 keeps the lock live for the whole turn.
-            // Milestone 8.35g. Arien's resolution is finished; the release is what lets the enemy
-            // begin, and it is a second press of the same control.
-            Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+            Assert.That(runtime.PendingTurnRelease, Is.Null);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(waspId));
             Assert.That(runtime.IsActiveEffectSource(slipperyCardId), Is.True,
                 "The `This turn` lock is still standing on the enemy's activation.");

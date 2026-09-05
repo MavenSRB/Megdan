@@ -362,11 +362,11 @@ namespace GuardsDigital.Tests.PlayMode
             CommitTurn(runtime, "blue-hammer-card");
             if (!runtime.SelectedActor.CardInstanceId.Value.StartsWith("blue-hammer"))
             {
+                // Milestone 8.35v: one press both Holds Red's resolution and releases, which is
+                // what puts Blue Hammer in the selection asserted below.
                 Assert.That(runtime.SubmitEndTurn(), Is.True,
                     "The Red actor completes by Hold first; Blue Hammer at 6 sits below Red's lowest.");
-                // Milestone 8.35g. The Hold finished Red's resolution; the release is what puts
-                // Blue Hammer in the selection asserted below.
-                Assert.That(UiPlayer.ReleaseFinishedTurn(runtime), Is.True);
+                Assert.That(runtime.PendingTurnRelease, Is.Null);
             }
 
             Assert.That(runtime.SelectedActor.CardInstanceId.Value, Is.EqualTo("blue-hammer-card"));

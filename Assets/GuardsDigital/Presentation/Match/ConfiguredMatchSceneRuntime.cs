@@ -181,6 +181,10 @@ namespace GuardsDigital.Presentation.Match
             RoundView.InvocationSubmitted += invocation => RoundPresenter.Submit(invocation);
             RoundView.AgreementSubmitted += choice => RoundPresenter.SubmitAgreement(choice);
             RoundView.SeatUndoRequested += () => RoundPresenter.SubmitSeatUndo();
+            // Milestone 8.35v: the drawn control raises this event unconditionally - whether a
+            // direct invocation stands or the press must first discard an open Attack-target
+            // selection - and `SubmitEndTurn` composes whichever the live projection calls for.
+            RoundView.EndTurnRequested += () => RoundPresenter.SubmitEndTurn();
             RoundView.AgreementHeroHighlighted += heroId =>
             {
                 BoardView.SetHoveredHero(heroId);
@@ -595,7 +599,13 @@ namespace GuardsDigital.Presentation.Match
             return RoundPresenter.Submit(invocation);
         }
 
-        public bool SubmitEndTurn() => RoundPresenter.Submit(RoundView.Model?.EndTurnInvocation);
+        /// <summary>
+        /// Milestone 8.35v (the THIRD amendment's REVISED SEMANTICS): the one press that ends the
+        /// turn, whatever state it finds it in - a direct completion, or first discarding the seat's
+        /// one open, uncommitted Attack-target selection. Every existing caller of this method keeps
+        /// working unchanged; what changed is what one press now does on its behalf.
+        /// </summary>
+        public bool SubmitEndTurn() => RoundPresenter.SubmitEndTurn();
 
         /// <summary>
         /// Milestone 8.35f. Presses this seat's own UNDO square, through the same presenter path

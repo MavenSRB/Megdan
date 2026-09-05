@@ -329,13 +329,22 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EquivalentTo(selection.Candidates.Select(value => value.TokenId)),
                 "Every offered token was chosen by its own space click.");
 
+            // Milestone 8.35v: END TURN is now drawn throughout the seat's own turn, an open Clear
+            // selection included - it names no candidate at all, so its presence does not reopen
+            // the gap this case is about (a control naming an offered token, which the board
+            // already names). Pressing it composes `CancelClear` first (a pure presentation reset,
+            // since nothing was ever submitted to the authority for an unconfirmed Clear) before
+            // whatever the turn's own completion is - `RoundPresenter_EndTurnCancelsAnOpenClearSelectionFirst`
+            // in `MatchFeaturePresenterTests` proves that composition; this case stays about the
+            // board-first claim its own name makes.
             var drawnControls = ClearSectionButtons(roundView);
             Assert.That(drawnControls, Is.EquivalentTo(new[]
                 {
-                    selection.Confirm.Label, selection.CancelLabel
+                    selection.Confirm.Label, selection.CancelLabel, "END TURN"
                 }),
-                "The prompt keeps exactly the controls that have no board surface. A control naming " +
-                "an offered token would be a second way to say what the board already says.");
+                "The prompt keeps exactly the controls that have no board surface, plus the " +
+                "omnipresent END TURN. A control naming an offered token would be a second way to " +
+                "say what the board already says.");
         }
 
         /// <summary>

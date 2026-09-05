@@ -1119,20 +1119,35 @@ namespace GuardsDigital.Tests.EditMode
             var mandatoryModel = RoundActionPresenter.CreateViewModel(attackSession.Projection);
             Assert.That(mandatoryModel.Actions, Is.Empty);
             Assert.That(mandatoryModel.EndTurnInvocation, Is.Null,
-                "A mandatory target choice cannot be bypassed by the contextual control.");
+                "A mandatory target choice projects no DIRECT completion - the target itself cannot " +
+                "be skipped.");
+
+            // Milestone 8.35v (the THIRD amendment). Rulebook p.14's target choice IS one of the
+            // states a player may walk away from before its irreversible point (choosing the
+            // target) - but a Director session's own `IsSeatUndoAvailable` is permanently false
+            // (milestone 8.35f's square is a seat-only control), so a Director's own END TURN has
+            // no rewind to compose here either and draws disabled with the honest generic word
+            // rather than inventing one; the seat-scoped cancel this same state composes for a real
+            // player is `RoundPresenter_EndTurnCancelsAnOpenAttackTargetSelectionAndReleasesInOnePress`
+            // below, over a seat client whose rewind genuinely stands.
+            Assert.That(mandatoryModel.EndTurnCancelsOpenAttack, Is.False,
+                "Director has no seat-scoped rewind to compose the cancel from.");
+            Assert.That(mandatoryModel.EndTurnUnavailableReason, Is.EqualTo(ActionUnavailabilityLabels.Generic));
         }
 
         /// <summary>
-        /// Milestone 8.35g. The seat's release control, which is the same END TURN control pressed a
-        /// second time.
+        /// Milestone 8.35g's raw mechanics, still exactly as shipped: Hold finishes the resolution,
+        /// the turn is then held in its own release pause, and the SAME projected command
+        /// (<c>ReleaseTurn</c>) is what answers it.
         /// </summary>
         /// <remarks>
-        /// <para>The user's rule is that turns must not auto-end: "If user makes the wrong movement,
-        /// the turn auto ends, so no undo will fix that." The first press finishes the card's
-        /// resolution; the turn is then held for that player, and the control comes BACK carrying
-        /// the release rather than vanishing with the resolution. The uniformity is deliberate - an
-        /// explicit stop is a click that can be misplayed like any other, so it gets the same second
-        /// press, and that press is the point of no return the rewind stops at.</para>
+        /// <para><b>Superseded framing, kept honest for milestone 8.35v.</b> This case executes each
+        /// projected command directly against the session, bypassing <see cref="RoundActionPresenter"/>
+        /// entirely - so it still proves the two RAW commands exist and each is individually legal,
+        /// which is exactly the mechanics <see cref="RoundActionPresenter.Submit"/>'s own chaining now
+        /// builds on. It no longer describes what one player press does: the THIRD amendment's REVISED
+        /// SEMANTICS collapse both into the SAME press through the presenter, proved instead by
+        /// <see cref="RoundPresenter_SubmitEndTurnCollapsesHoldAndReleaseIntoOnePlayerPress"/> below.</para>
         /// <para>The accepted-command half is not decoration: a control that could only ever produce
         /// a rejection is the exact class milestones 6.5ac and 6.5af exist to prevent, and 7.9c's
         /// F-PRES-01 above is what it looks like when one escapes.</para>
@@ -1171,6 +1186,330 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(DirectorCommandKind.ReleaseTurn),
                 "and the release is a recorded command like any other, so a replay of this turn " +
                 "contains the hand-off rather than inferring it.");
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // Milestone 8.35v (the THIRD amendment's REVISED SEMANTICS): END TURN is omnipresent during
+        // the acting seat's own turn and one press both cancels any open, not-yet-committed
+        // selection and ends the turn. Every state below is exercised through
+        // `RoundActionPresenter.SubmitEndTurn()` itself - the real one-press entry point every
+        // caller (the drawn control, `ConfiguredMatchSceneRuntime.SubmitEndTurn`, every Play Mode
+        // journey filler) now shares - rather than through raw `session.Execute` calls, so what is
+        // proved here is the press a player actually makes.
+        // ---------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// State: untouched card - nothing started this turn. One press performs p.12's Hold AND
+        /// releases the turn, where milestone 8.35g shipped that as two.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_SubmitEndTurnCollapsesHoldAndReleaseIntoOnePlayerPress()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            Assert.That(session.Projection.PendingMovementChoice, Is.Null,
+                "The fixture is only this state while nothing has been started yet.");
+
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            Assert.That(presenter.SubmitEndTurn(), Is.True);
+
+            Assert.That(session.Projection.PendingTurnRelease, Is.Null,
+                "One press both Held and released - it never leaves the turn standing in the " +
+                "release pause waiting for a second press.");
+            var commands = session.Projection.AcceptedCommands;
+            Assert.That(commands[commands.Count - 2].Kind, Is.EqualTo(DirectorCommandKind.PerformHold));
+            Assert.That(commands[commands.Count - 1].Kind, Is.EqualTo(DirectorCommandKind.ReleaseTurn),
+                "Both commands are recorded, in order, exactly as a two-press turn would have " +
+                "recorded them - the press is faster, the replay is not different in shape.");
+        }
+
+        /// <summary>
+        /// State: mid-movement, free to stop early. One press stops the movement AND releases.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_SubmitEndTurnCollapsesAMovementStopAndReleaseIntoOnePlayerPress()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var movement = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Movement);
+            Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted,
+                Is.True);
+            Assert.That(session.Projection.PendingMovementChoice?.CanStop, Is.True,
+                "The fixture is only this state while an early stop is legal.");
+
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            Assert.That(presenter.SubmitEndTurn(), Is.True);
+
+            Assert.That(session.Projection.PendingMovementChoice, Is.Null);
+            Assert.That(session.Projection.PendingTurnRelease, Is.Null,
+                "One press both stopped the movement and released - never a stand-in release pause.");
+            var commands = session.Projection.AcceptedCommands;
+            Assert.That(commands[commands.Count - 2].Kind, Is.EqualTo(DirectorCommandKind.StopMovement));
+            Assert.That(commands[commands.Count - 1].Kind, Is.EqualTo(DirectorCommandKind.ReleaseTurn));
+        }
+
+        /// <summary>
+        /// State: natural completion, already standing in the release pause - not reached through
+        /// END TURN's own composition this time, so this proves the OTHER shape a real turn takes:
+        /// a resolution that finished on its own still needs exactly the one press to hand on.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_SubmitEndTurnReleasesANaturallyCompletedTurnInOnePress()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            // Completed directly against the session, standing in for whatever authoritative path
+            // finished the resolution without a player pressing END TURN for it (an Attack running
+            // to its conclusion is the ordinary shape; Hold is the cheapest fixture that reaches the
+            // identical release pause).
+            Assert.That(session.Execute(
+                    DirectorCommand.PerformHold(session.Projection.SelectedActor.CardInstanceId))
+                .Accepted, Is.True);
+            Assert.That(session.Projection.PendingTurnRelease, Is.Not.Null,
+                "The fixture is only this state while the release is still owed.");
+
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            Assert.That(presenter.SubmitEndTurn(), Is.True);
+
+            Assert.That(session.Projection.PendingTurnRelease, Is.Null);
+            Assert.That(
+                session.Projection.AcceptedCommands[session.Projection.AcceptedCommands.Count - 1].Kind,
+                Is.EqualTo(DirectorCommandKind.ReleaseTurn));
+        }
+
+        /// <summary>
+        /// State: an Attack is open and its target is not yet chosen - rulebook p.14's irreversible
+        /// point has not been reached. One press discards the whole open action (milestone 8.35f's
+        /// own bounded rewind, still short of its wall) AND releases the turn - proving both halves
+        /// of "cancels open selections and ends the turn" at once: the discard-does-not-commit case
+        /// (the target is never answered) and the one-press release.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 8.35f's own bounded rewind (`IsSeatUndoAvailable`) is HOST-tracked - it needs
+        /// the `MatchHost` present from the turn's own beginning, exactly as `SeatBoundedUndoTests`'
+        /// own fixtures build it, never a `MatchSession` driven ahead first and wrapped afterward
+        /// (the shape this case's first draft used, and the reason its own seeded assertion failed
+        /// at Unity validation: `IsSeatUndoAvailable` read false for a host that only ever saw the
+        /// turn already mid-resolution). `OwnerScopedProjectionTests.DriveThroughSeats`'ANDs seeded
+        /// walk is the proven way to reach a real open Attack target choice from the official
+        /// six-seat state, matching `SeatBoundedUndoTests.AnAttackWhoseTargetWasChosenOffersItsOwnActorNoRewindWhileItResolves`'s
+        /// own technique; an Attack the walk reaches with no rewind yet standing is answered and
+        /// skipped rather than asserted against, since that is not the state this case is about.
+        /// </remarks>
+        [Test]
+        public void RoundPresenter_EndTurnCancelsAnOpenAttackTargetSelectionAndReleasesInOnePress()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var budget = 1800;
+            MatchSeat actingSeat = null;
+            while (budget > 0)
+            {
+                budget -= OwnerScopedProjectionTests.DriveThroughSeats(
+                    host, budget, projection => projection.PendingAttackTargetChoice != null, 6);
+                var projection = host.Projection;
+                if (projection.PendingAttackTargetChoice == null)
+                {
+                    break;
+                }
+
+                var seat = host.Seats.FindByHero(projection.SelectedActor.ActorId);
+                var seatClient = host.ClientForSeat(seat.Id);
+                if (seatClient.Projection.IsSeatUndoAvailable)
+                {
+                    actingSeat = seat;
+                    break;
+                }
+
+                // This Attack's actor has nothing earlier in its own turn to rewind to; answer its
+                // target and keep walking toward one that does, rather than asserting against a
+                // state this case is not about.
+                var target = seatClient.Projection.AuthorizedCommands.First(command =>
+                    command.Kind == DirectorCommandKind.ChooseAttackTarget);
+                Assert.That(seatClient.Submit(new SeatSubmission(
+                        new SubmissionId("skip-target-" + projection.AcceptedCommands.Count),
+                        seatClient.Projection.Version, target))
+                    .Accepted, Is.True);
+            }
+
+            Assert.That(actingSeat, Is.Not.Null,
+                "The seeded walk must reach an Attack target choice whose actor still holds a " +
+                "rewind into its own turn, or this case proves nothing about the cancel.");
+
+            var client = new SeatMatchClient(host.ClientForSeat(actingSeat.Id));
+            Assert.That(client.Projection.IsSeatUndoAvailable, Is.True,
+                "The seat's own rewind must actually stand for the cancel this case proves.");
+            Assert.That(
+                RoundActionPresenter.CreateViewModel(client.Projection, actingSeat.HeroId)
+                    .EndTurnCancelsOpenAttack,
+                Is.True);
+
+            var attackCommandFloor = host.Projection.AcceptedCommands.Count;
+            var presenter = new RoundActionPresenter(client, new CapturingRoundView(), actingSeat.HeroId);
+            Assert.That(presenter.SubmitEndTurn(), Is.True);
+
+            Assert.That(host.Projection.PendingAttackTargetChoice, Is.Null);
+            Assert.That(host.Projection.PendingTurnRelease, Is.Null,
+                "The discarded action still completes the turn and releases it in the same press.");
+            Assert.That(
+                host.Projection.AcceptedCommands.Skip(attackCommandFloor)
+                    .Any(command => command.Kind == DirectorCommandKind.ChooseAttackTarget),
+                Is.False,
+                "The discard-does-not-commit case: the open target was never answered, not even to " +
+                "a legal candidate a lesser fix might have defaulted to.");
+        }
+
+        /// <summary>
+        /// State: Movement is open but its printed minimum has not been reached, so stopping early
+        /// is not yet legal. END TURN draws disabled with the MANDATORY STEP reason rather than
+        /// inventing a stop the rules do not offer.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_EndTurnIsDisabledWithMandatoryStepWhenMovementCannotStopYet()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var movement = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Movement);
+            Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted,
+                Is.True);
+            var real = session.Projection.PendingMovementChoice;
+            Assert.That(real, Is.Not.Null);
+
+            // No fixture in this catalog prints a Movement whose minimum exceeds zero, so the
+            // blocked minimum is composed here from the real choice's own fields rather than left
+            // unproved - the same technique `DelegatingReadModel`'s siblings use to pose a state the
+            // authority itself does not currently produce.
+            var blocked = new PendingMovementChoice(
+                real.ResolutionId, real.ChoiceId, real.ChooserId, real.MovingHeroId, real.Origin,
+                real.RemainingAllowance, false, real.LegalDestinations);
+            var wrapped = new MovementChoiceOverrideReadModel(session.Projection, blocked);
+
+            var model = RoundActionPresenter.CreateViewModel(wrapped);
+            Assert.That(model.EndTurnInvocation, Is.Null);
+            Assert.That(model.EndTurnCancelsOpenAttack, Is.False);
+            Assert.That(model.EndTurnUnavailableReason,
+                Is.EqualTo(ActionUnavailabilityLabels.MandatoryStep));
+        }
+
+        /// <summary>
+        /// State: a Skill's mode choice is genuinely mandatory - `StartSkillTurn`'s own fixture,
+        /// already proved above (<c>RoundPresenter_ForwardsAPausedEffectFramesModesAndWithholdsEveryOtherControl</c>)
+        /// to project no direct completion. This asserts the disabled reason that state now draws
+        /// rather than only its absence.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_EndTurnIsDisabledWithMandatoryStepForAMandatoryEffectChoice()
+        {
+            var session = CreateSession();
+            StartSkillTurn(session);
+            var skill = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Skill);
+            Assert.That(session.Execute(DirectorCommand.StartAction(skill.ActionDefinitionId)).Accepted,
+                Is.True);
+            var choice = session.Projection.PendingEffectChoice;
+            Assert.That(choice, Is.Not.Null);
+            Assert.That(choice.DeclineInvocation, Is.Null,
+                "The fixture is only mandatory while it offers neither a Decline...");
+            Assert.That(choice.StopInvocation, Is.Null, "...nor a Stop.");
+
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+            Assert.That(model.EndTurnInvocation, Is.Null);
+            Assert.That(model.EndTurnCancelsOpenAttack, Is.False);
+            Assert.That(model.EndTurnUnavailableReason,
+                Is.EqualTo(ActionUnavailabilityLabels.MandatoryStep));
+            Assert.That(presenter.SubmitEndTurn(), Is.False,
+                "A disabled control refuses the press rather than silently doing nothing wrong.");
+        }
+
+        /// <summary>
+        /// State: the wall. An Attack target is already chosen and accepted, so the defender now
+        /// owns the wait - milestone 8.35f/8.35p's own wall, read here as END TURN's own disabled
+        /// reason rather than a rewind boundary. Not cancelling: disabled, precisely the THIRD
+        /// amendment's distinction from the still-open pre-target state above.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_EndTurnIsDisabledAsAnotherSeatsDecisionMidAttackAfterTargetIsChosen()
+        {
+            var session = CreateAdjacentSession();
+            StartTiedTurn(session, ActionKind.Attack);
+            var attack = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Attack);
+            Assert.That(session.Execute(DirectorCommand.StartAction(attack.ActionDefinitionId)).Accepted,
+                Is.True);
+            var targetChoice = session.Projection.PendingAttackTargetChoice;
+            Assert.That(session.Execute(DirectorCommand.ChooseAttackTarget(
+                targetChoice.ResolutionId,
+                targetChoice.ChoiceId,
+                targetChoice.LegalTargetHeroIds.Single())).Accepted, Is.True);
+
+            Assert.That(session.Projection.PendingAttackTargetChoice, Is.Null,
+                "The fixture is only the wall once the target is answered and gone.");
+            Assert.That(session.Projection.HasPendingAttackResolution, Is.True,
+                "and the attack's own resolution is still standing - now on the defender's side.");
+
+            var presenter = new RoundActionPresenter(session, new CapturingRoundView());
+            var model = RoundActionPresenter.CreateViewModel(session.Projection);
+            Assert.That(model.EndTurnInvocation, Is.Null);
+            Assert.That(model.EndTurnCancelsOpenAttack, Is.False,
+                "The wall means no rewind is composed here either - milestone 8.35f's own wall has " +
+                "already risen on the accepted ChooseAttackTarget.");
+            Assert.That(model.EndTurnUnavailableReason,
+                Is.EqualTo(ActionUnavailabilityLabels.AnotherSeatDeciding));
+            Assert.That(presenter.SubmitEndTurn(), Is.False,
+                "A disabled control refuses the press; it never quietly resolves the defense for " +
+                "the other seat on its behalf.");
+        }
+
+        /// <summary>
+        /// State: an open Clear selection (milestone 6.3a) - presentation-only, since nothing is
+        /// submitted to the authority until it is confirmed. Caught by the 8.35u worker's own Edit
+        /// Mode run against this milestone's uncommitted work: `CreateEndTurnInvocation` does not
+        /// read `ClearSelection` at all, so with nothing else pending it already projects the
+        /// ordinary p.12 Hold alongside an open, unconfirmed board selection - submitting that Hold
+        /// FIRST would leave the Clear orphaned rather than cancelled. One press must discard the
+        /// open selection before completing the turn, exactly as it does for an open Attack target.
+        /// </summary>
+        [Test]
+        public void RoundPresenter_EndTurnCancelsAnOpenClearSelectionFirst()
+        {
+            var session = ClearPresentationTests.StartAttackTurnBesideAHazard(out _, out _);
+            var view = new CapturingRoundView();
+            var presenter = new RoundActionPresenter(session, view);
+            presenter.Refresh();
+            Assert.That(presenter.SelectClear(view.Model.ClearOffers.Single()), Is.True);
+            presenter.Refresh();
+
+            Assert.That(view.Model.ClearSelection, Is.Not.Null,
+                "The fixture is only this state while the Clear selection is genuinely open.");
+            Assert.That(view.Model.EndTurnInvocation, Is.Not.Null,
+                "Nothing authoritative has paused - the Clear is presentation-only - so END TURN " +
+                "already projects the ordinary completion alongside the open selection.");
+
+            Assert.That(presenter.SubmitEndTurn(), Is.True);
+            presenter.Refresh();
+
+            Assert.That(view.Model.ClearSelection, Is.Null,
+                "The open selection is discarded, not answered.");
+            Assert.That(
+                session.Projection.AcceptedCommands.Any(command =>
+                    command.Kind == DirectorCommandKind.PerformClear),
+                Is.False,
+                "Discard-does-not-commit: the Clear was never submitted to the authority at all.");
+            Assert.That(session.Projection.PendingTurnRelease, Is.Null,
+                "The same press that discarded the selection also completed the turn (p.12's Hold, " +
+                "since nothing else was ever started) and released it.");
+        }
+
+        private sealed class MovementChoiceOverrideReadModel : DelegatingReadModel
+        {
+            private readonly PendingMovementChoice choice;
+
+            public MovementChoiceOverrideReadModel(IMatchReadModel inner, PendingMovementChoice choice)
+                : base(inner) => this.choice = choice;
+
+            public override PendingMovementChoice PendingMovementChoice => choice;
         }
 
         [Test]
