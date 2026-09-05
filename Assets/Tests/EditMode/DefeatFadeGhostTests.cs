@@ -17,7 +17,7 @@ using Object = UnityEngine.Object;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 8.35x-cardfade (PLAN.md's SIXTEENTH amendment: "Defeat: shrink-and-fade rather than
+    /// Milestone 8.35z6 (PLAN.md's SIXTEENTH amendment: "Defeat: shrink-and-fade rather than
     /// vanish"), delivered pooling-safely per <see cref="DefeatFadeGhostView"/>'s own doc comment.
     ///
     /// <para>The five removal guards these fixtures must never disturb -

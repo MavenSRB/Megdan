@@ -1519,7 +1519,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35x-cardfade correction, following 8.35z2's own template exactly
+        /// Milestone 8.35z6 correction, following 8.35z2's own template exactly
         /// (<see cref="CalculateTeamAgreementControlRect"/>'s doc comment). This rect used to anchor its
         /// left edge at <see cref="CalculateCardPanelRect"/>'s <c>xMin</c> - the screen's own left edge,
         /// because that full-width tray band reserves the whole viewport - rather than the hand's

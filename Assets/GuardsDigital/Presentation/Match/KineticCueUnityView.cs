@@ -302,7 +302,7 @@ namespace GuardsDigital.Presentation.Match
             // milestones that wrote them, and the hold made all five report the piece still present.
             // Weakening five rules guards to buy a flourish is the wrong trade.
             //
-            // Milestone 8.35x-cardfade delivers the fade properly, exactly where this paragraph said it
+            // Milestone 8.35z6 delivers the fade properly, exactly where this paragraph said it
             // had to live: BoardInteractionUnityView (Match/UnityMatchFeatureViews.cs) spawns a bare,
             // non-pooled DefeatFadeGhostView the instant its own Render/RenderMinions finds a piece
             // going from drawn to not-drawn, and BoardDefeatFadeDriver ticks it - independent of this

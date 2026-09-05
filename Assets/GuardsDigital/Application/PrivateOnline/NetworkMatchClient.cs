@@ -818,7 +818,7 @@ namespace GuardsDigital.Application
                 return null;
             }
 
-            // Milestone 8.35x-tsunami. A `may` node's Decline no longer follows from
+            // Milestone 8.35z5. A `may` node's Decline no longer follows from
             // `MinimumSelections` alone - the host derives it from the node's own `EffectFailurePolicy`,
             // which this client never loaded any content to read. `row.HasDeclineInvocation` is that
             // same bit, written by the host's own authoritative choice

@@ -640,7 +640,7 @@ namespace GuardsDigital.Presentation.Interaction
             // falls back to exactly the projection-change redraw it did before this milestone.
             Match.KineticCueDriver.Attach(gameObject, runtime.KineticView);
 
-            // Milestone 8.35x-cardfade. Defeat's shrink-and-fade needs its own per-frame tick for the
+            // Milestone 8.35z6. Defeat's shrink-and-fade needs its own per-frame tick for the
             // same reason the kinetic pass above does, and it stays a SEPARATE driver rather than one
             // more thing threaded through KineticCueDriver: the board's own fade ghosts never reach into
             // the kinetic layer and the kinetic layer never reaches into the board's pool to deliver

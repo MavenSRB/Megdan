@@ -32,7 +32,7 @@ namespace GuardsDigital.Presentation.Match
         private Func<MinionId, bool> minionIntentHandler;
         private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
 
-        // Milestone 8.35x-cardfade (the SIXTEENTH amendment's Defeat shrink-and-fade, delivered
+        // Milestone 8.35z6 (the SIXTEENTH amendment's Defeat shrink-and-fade, delivered
         // pooling-safely). Keyed by the piece's OWN view instance rather than its identity value: a
         // hero or minion view is bound to exactly one identity for the life of a match (unlike a
         // PlacedTokenView, whose identity is reassigned on release), so the instance is already the
@@ -135,7 +135,7 @@ namespace GuardsDigital.Presentation.Match
                     hero.SetTargetCue(
                         BoardTargetCueState.None,
                         BoardTargetConsequenceIntent.None);
-                    // Milestone 8.35x-cardfade. Only a piece that WAS drawn a moment ago is a genuine
+                    // Milestone 8.35z6. Only a piece that WAS drawn a moment ago is a genuine
                     // removal edge worth a fade - a hero this render pass finds still absent (already
                     // inactive) fires nothing a second time.
                     if (hero.gameObject.activeSelf)
@@ -152,7 +152,7 @@ namespace GuardsDigital.Presentation.Match
                 // an absent hero must not remain as a stale selectable board object.
                 hero.Configure(occupancy, hero.OuterRadius);
                 hero.gameObject.SetActive(true);
-                // Milestone 8.35x-cardfade. A hero reappearing (Respawn, Undo, restore) before its own
+                // Milestone 8.35z6. A hero reappearing (Respawn, Undo, restore) before its own
                 // fade finished on its own must never leave a stale echo of a piece that is visible
                 // again; the fade ghost is purely decorative, so cancelling it changes nothing the
                 // projection owns.
@@ -441,7 +441,7 @@ namespace GuardsDigital.Presentation.Match
                 if (boundId.IsDefined && projectedMinions.TryGetValue(boundId, out var state))
                 {
                     minion.gameObject.SetActive(true);
-                    // Milestone 8.35x-cardfade: see the hero loop's identical comment above.
+                    // Milestone 8.35z6: see the hero loop's identical comment above.
                     ReleaseMinionDefeatGhost(minion);
                     if (!ReferenceEquals(minion.Occupancy, state))
                     {
@@ -457,7 +457,7 @@ namespace GuardsDigital.Presentation.Match
                     minion.SetTargetCue(
                         BoardTargetCueState.None,
                         BoardTargetConsequenceIntent.None);
-                    // Milestone 8.35x-cardfade: see the hero loop's identical comment above.
+                    // Milestone 8.35z6: see the hero loop's identical comment above.
                     if (minion.gameObject.activeSelf)
                     {
                         SpawnMinionDefeatGhost(minion);
@@ -605,7 +605,7 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
-        // ---- Milestone 8.35x-cardfade: Defeat's shrink-and-fade, delivered pooling-safely. See
+        // ---- Milestone 8.35z6: Defeat's shrink-and-fade, delivered pooling-safely. See
         // DefeatFadeGhostView's own doc comment for why this exists and why it never touches
         // `heroes`/`minions` above.
 
@@ -752,7 +752,7 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// Milestone 8.35x-cardfade. The one per-frame tick the Defeat fade ghosts need, isolated exactly
+    /// Milestone 8.35z6. The one per-frame tick the Defeat fade ghosts need, isolated exactly
     /// like <see cref="KineticCueDriver"/> and entirely independent of it: the board's own fade never
     /// reaches into the kinetic layer, and the kinetic layer never reaches into the board's pool to
     /// deliver it. A throw inside <c>Update</c> repeats every frame, so it is caught, reported once, and

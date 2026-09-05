@@ -3,7 +3,7 @@ using UnityEngine;
 namespace GuardsDigital.Presentation.Board
 {
     /// <summary>
-    /// Milestone 8.35x-cardfade (PLAN.md's SIXTEENTH amendment: "Defeat: shrink-and-fade rather than
+    /// Milestone 8.35z6 (PLAN.md's SIXTEENTH amendment: "Defeat: shrink-and-fade rather than
     /// vanish").
     ///
     /// <para>Milestone 8.35y's kinetic pass built the Defeat cue's timing and motion math but could not

@@ -241,7 +241,7 @@ namespace GuardsDigital.Tests.EditMode
         /// than the next that merely passes: seeds 1, 2, 8 and 12 take four, five, four and five
         /// Attack targets. The sweep is about real p.14 endings, so more of them is more evidence.
         ///
-        /// <para>Milestone 8.35x-tsunami re-derived it again, {1, 2, 8, 12} -> {1, 2, 12, 15}, after
+        /// <para>Milestone 8.35z5 re-derived it again, {1, 2, 8, 12} -> {1, 2, 12, 15}, after
         /// closing Living Tsunami's empty-Confirm defect: an offer seed 8's walk used to be able to take
         /// is gone, so its trajectory reroutes and it now completes no Attack at all inside the budget -
         /// the same shape 8.35u's own re-derivation describes, one milestone later. A thirty-seed offline

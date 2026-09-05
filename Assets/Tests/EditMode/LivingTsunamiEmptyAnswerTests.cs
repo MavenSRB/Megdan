@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 8.35x-tsunami. The queued corrective the 8.35l worker found while re-driving the
+    /// Milestone 8.35z5. The queued corrective the 8.35l worker found while re-driving the
     /// seeds-12/20 report on the official six-player fixture: Arien's Living Tsunami - "Once per turn,
     /// before performing an Attack action, you may move 1 space" - projected BOTH a Confirm carrying
     /// an empty selection and a Decline for the one "no" answer, and the rules accepted the Decline
@@ -72,7 +72,7 @@ namespace GuardsDigital.Tests.EditMode
                 "Declining the whole move must remain legal - this is the affordance milestone 8.20a " +
                 "added and this fix must not take back.");
             Assert.That(choice.ConfirmInvocation, Is.Null,
-                "Milestone 8.35x-tsunami: with nothing named, Confirm must NOT stand beside Decline - " +
+                "Milestone 8.35z5: with nothing named, Confirm must NOT stand beside Decline - " +
                 "before this fix it did, and a player taking it was refused as TargetUnavailable for " +
                 "choosing nothing when choosing nothing was legal (just spelled differently, by Decline).");
 

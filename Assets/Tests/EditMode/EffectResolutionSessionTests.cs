@@ -239,7 +239,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 8.35x, the queued corrective the 8.35l worker found: Arien's Living Tsunami "you
+        /// Milestone 8.35z5, the queued corrective the 8.35l worker found: Arien's Living Tsunami "you
         /// may move 1 space" projected BOTH a Confirm carrying an empty selection and a Decline for
         /// the same "no" answer, and the rules accepted the Decline while refusing the Confirm as
         /// incomplete. The shape is general rather than Living Tsunami's alone - ANY

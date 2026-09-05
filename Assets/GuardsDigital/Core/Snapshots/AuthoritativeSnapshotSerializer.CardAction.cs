@@ -1216,7 +1216,7 @@ namespace GuardsDigital.Core.Snapshots
                 unavailable.Count == candidates.Length &&
                 node.FailurePolicy == EffectFailurePolicy.Mandatory;
 
-            // Milestone 8.35x-tsunami: nor is this. It follows from the trusted node's own failure
+            // Milestone 8.35z5: nor is this. It follows from the trusted node's own failure
             // policy exactly as `canStop` does above, for the same reason - a `may` node's Decline
             // must be offered on restore precisely when the live pause offered it, and deriving it
             // fresh from content rather than from the persisted `minimum` is what keeps that true

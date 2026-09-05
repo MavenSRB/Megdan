@@ -308,7 +308,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             // Arien's Living Tsunami - "Once per turn, before performing an Attack action, you may
             // move 1 space" - reached the table as four spaces and no way to stay put.
             //
-            // Milestone 8.35x correction. That fix derived the offer from `minimumSelections` alone,
+            // Milestone 8.35z5 correction. That fix derived the offer from `minimumSelections` alone,
             // which conflated two different questions for a genuine `may` node whose HANDLER needs
             // more than zero: "is the whole step declinable" (yes, always, for `may`) and "how few
             // may a taken answer name" (whatever the handler's operation actually requires - one
@@ -368,7 +368,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public int MaximumSelections { get; }
 
         /// <summary>
-        /// Milestone 8.35x. Whether <see cref="DeclineInvocation"/> is offered on the node's own
+        /// Milestone 8.35z5. Whether <see cref="DeclineInvocation"/> is offered on the node's own
         /// `may` policy rather than on <see cref="MinimumSelections"/> being zero - the two used to
         /// be answered by the same number, which is what let an empty <see cref="ConfirmInvocation"/>
         /// stand beside Decline for a `may` node whose handler needs more than nothing. See the

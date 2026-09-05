@@ -529,7 +529,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 8.35x-cardfade, flagged as a coordinator-approved scope addition (follow-up task
+        /// Milestone 8.35z6, flagged as a coordinator-approved scope addition (follow-up task
         /// d3b5c3d2 from the 8.35z2 worker): <c>CalculateOptionalStepControlRect</c> (the ACCEPT/DECLINE
         /// optional-step banner) carried the IDENTICAL Red-rail-overlap defect
         /// <c>CalculateTeamAgreementControlRect</c> was fixed for above - 8.35z2's own commit body names

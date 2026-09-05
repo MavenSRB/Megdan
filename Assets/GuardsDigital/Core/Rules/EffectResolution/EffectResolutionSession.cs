@@ -1044,7 +1044,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     // player has said yes. Living Tsunami's "you may move 1 space" is the case: its
                     // direct move needs exactly one space, and the player may still decline outright.
                     //
-                    // Milestone 8.35x. Those are TWO different questions and this seam used to answer
+                    // Milestone 8.35z5. Those are TWO different questions and this seam used to answer
                     // both with one number. Forcing the floor to zero for every `may` node made an
                     // empty Confirm legal in the choice's own bounds, but Living Tsunami's move (and
                     // every sibling built the same way: Tigerclaw's five "you may move 1 space" faces

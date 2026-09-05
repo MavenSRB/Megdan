@@ -65,7 +65,7 @@ namespace GuardsDigital.Tests.EditMode
         /// levelling asks p.15's questions in a different order, so the stream diverges after the
         /// first level-up - but the outcome it reaches did not.</para>
         ///
-        /// <para>Milestone 8.35x-tsunami re-scanned it again after closing Living Tsunami's empty-Confirm
+        /// <para>Milestone 8.35z5 re-scanned it again after closing Living Tsunami's empty-Confirm
         /// defect: an offer a walk could take before is gone, so the whole trajectory reroutes exactly
         /// as every earlier release here has - seed 8 no longer ends inside the 2,400-command budget at
         /// all (28 rounds and still going). The lowest that still ends this way is seed 21, but it needs

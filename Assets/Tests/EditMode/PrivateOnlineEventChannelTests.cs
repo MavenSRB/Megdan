@@ -189,7 +189,7 @@ namespace GuardsDigital.Tests.EditMode
             // than the round floor lowered - lowering it would quietly retire the property the case
             // exists to hold.
             //
-            // Milestone 8.35x-tsunami re-pinned it again, 2 -> 5, after closing Living Tsunami's
+            // Milestone 8.35z5 re-pinned it again, 2 -> 5, after closing Living Tsunami's
             // empty-Confirm defect: an offer this walk used to be able to take is gone, so seed 2 no
             // longer completes at all (54 rounds and still going at the 4,200-command ceiling, and
             // seeds 1, 4, 10, 15 and 30 all hit the same wall in a thirty-seed offline scan). Seed 5
