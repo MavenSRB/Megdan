@@ -41,7 +41,100 @@ namespace GuardsDigital.Presentation.Match
         Defeat = 4,
 
         /// <summary>A returning piece pops in.</summary>
-        Respawn = 5
+        Respawn = 5,
+
+        // ---- Milestone 8.35z11 (the TWENTIETH AMENDMENT's principle 1: NOTHING TELEPORTS).
+        // The five above describe pieces on the board. The five below describe the CARDS AND COINS,
+        // which until now appeared and disappeared instantly - a hand that was five and is four, a slot
+        // that was empty and holds a card back, a coin count that changed while the player was reading
+        // something else. Each names a journey the player could not previously see.
+
+        /// <summary>A committed card arcs from the hand to its facedown slot.</summary>
+        CardCommit = 6,
+
+        /// <summary>A facedown commitment turns face up.</summary>
+        CardReveal = 7,
+
+        /// <summary>A played card flies back to its owner's hand at the end of a round.</summary>
+        CardRetrieve = 8,
+
+        /// <summary>Coins travel to the tray they join.</summary>
+        CoinFly = 9,
+
+        /// <summary>A hero's new Level pops on their rail.</summary>
+        LevelPop = 10
+    }
+
+    /// <summary>
+    /// Milestone 8.35z11. Which SURFACE a cue plays on - and it is a real partition, not a
+    /// label.
+    ///
+    /// <para><b>Why the distinction had to be made explicit.</b> Until this milestone every cue moved a
+    /// piece on the board, so <see cref="KineticPlayback"/> could take all of them and
+    /// <c>ActiveMotionCount</c> meant "pieces in motion". The five journeys the motion pass adds happen
+    /// on the HUD - a card leaving a hand, coins landing in a tray - and <see cref="KineticPlayback"/>
+    /// has no arm for any of them. Handing it one anyway would leave it reporting a motion it was not
+    /// animating, which is the sort of quietly false state a Play Mode case reads and believes. So the
+    /// view routes each family to the layer that can actually draw it.</para>
+    /// </summary>
+    public static class KineticCueFamilies
+    {
+        /// <summary>A cue that displaces, tints or resizes a piece on the board.</summary>
+        public static bool IsBoardPiece(KineticCueKind kind)
+        {
+            switch (kind)
+            {
+                case KineticCueKind.Slide:
+                case KineticCueKind.Lunge:
+                case KineticCueKind.Flash:
+                case KineticCueKind.Defeat:
+                case KineticCueKind.Respawn:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>A cue that moves a card, a coin or a number on the HUD.</summary>
+        public static bool IsHudJourney(KineticCueKind kind)
+        {
+            switch (kind)
+            {
+                case KineticCueKind.CardCommit:
+                case KineticCueKind.CardReveal:
+                case KineticCueKind.CardRetrieve:
+                case KineticCueKind.CoinFly:
+                case KineticCueKind.LevelPop:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>Just the board cues of a scene, for the clock that animates pieces.</summary>
+        public static IReadOnlyList<KineticCue> BoardCuesOf(KineticScene scene)
+        {
+            if (scene == null)
+            {
+                return Array.Empty<KineticCue>();
+            }
+
+            List<KineticCue> board = null;
+            for (var index = 0; index < scene.Cues.Count; index++)
+            {
+                if (!IsBoardPiece(scene.Cues[index].Kind))
+                {
+                    continue;
+                }
+
+                board = board ?? new List<KineticCue>(scene.Cues.Count);
+                board.Add(scene.Cues[index]);
+            }
+
+            return board == null
+                ? Array.Empty<KineticCue>()
+                : new ReadOnlyCollection<KineticCue>(board.ToArray());
+        }
     }
 
     /// <summary>Which kind of piece a cue is about. Heroes and minions are the two the board draws.</summary>
@@ -124,7 +217,9 @@ namespace GuardsDigital.Presentation.Match
             KineticCueKind kind,
             KineticSubject subject,
             KineticSubject target = default,
-            IReadOnlyList<HexCoordinate> route = null)
+            IReadOnlyList<HexCoordinate> route = null,
+            CardInstanceId cardInstanceId = default,
+            int amount = 0)
         {
             if (sequence < 1)
             {
@@ -169,11 +264,40 @@ namespace GuardsDigital.Presentation.Match
                     "A lunge leans toward someone, so it names the piece it struck.", nameof(target));
             }
 
+            // Milestone 8.35z11. THE PRIVACY RULE, ENFORCED BY THE CONSTRUCTOR rather than left
+            // to whoever writes the next arm of the translation. A commitment going facedown is the
+            // one journey on screen whose cargo is secret, so the type refuses to carry an identity
+            // for it; a reveal is public by definition and is required to name what it turned over.
+            if (kind == KineticCueKind.CardCommit && cardInstanceId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A commitment travels facedown. Naming the card would put a hand into a cue, " +
+                    "which is exactly what the match log's selection contract excludes.",
+                    nameof(cardInstanceId));
+            }
+
+            if (kind == KineticCueKind.CardReveal && !cardInstanceId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A reveal turns a specific card face up, so it names the revealed card.",
+                    nameof(cardInstanceId));
+            }
+
+            if ((kind == KineticCueKind.CoinFly || kind == KineticCueKind.LevelPop) && amount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(amount),
+                    "A cue about a quantity carries that quantity: coins that arrived, or the Level " +
+                    "reached. Nothing travelled is not a cue.");
+            }
+
             Sequence = sequence;
             Kind = kind;
             Subject = subject;
             Target = target;
             Route = new ReadOnlyCollection<HexCoordinate>(waypoints);
+            CardInstanceId = cardInstanceId;
+            Amount = amount;
             DurationSeconds = KineticTiming.DurationFor(kind);
         }
 
@@ -204,6 +328,24 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public IReadOnlyList<HexCoordinate> Route { get; }
 
+
+        /// <summary>
+        /// The card this cue is about, where it is about one: the commitment being revealed, the card
+        /// flying back to a hand.
+        ///
+        /// <para><b>It is only ever a card the whole table can see.</b> A reveal names the revealed
+        /// form, which is what the log's own <c>CardRevealed</c> row carries and nothing more; a commit
+        /// names NOTHING, because the card going facedown is a card no one but its owner may know. That
+        /// asymmetry is not an oversight to tidy up later - it is the selection contract, and a commit
+        /// cue that carried an identity would put a hand on a wire that has never carried one.</para>
+        /// </summary>
+        public CardInstanceId CardInstanceId { get; }
+
+        /// <summary>
+        /// How many, where a cue is about a quantity: the coins that arrived, the Level reached.
+        /// Zero for every cue that is not.
+        /// </summary>
+        public int Amount { get; }
 
         public float DurationSeconds { get; }
 
@@ -268,6 +410,16 @@ namespace GuardsDigital.Presentation.Match
                 case KineticCueKind.Flash: return FlashSeconds;
                 case KineticCueKind.Defeat: return DefeatSeconds;
                 case KineticCueKind.Respawn: return RespawnSeconds;
+
+                // Milestone 8.35z11. The card and coin journeys take their durations from the
+                // motion language's own travel band rather than declaring a second set of numbers
+                // here, so one audit case covers every duration the language uses.
+                case KineticCueKind.CardCommit: return KineticMotionDurations.CardCommitArcSeconds;
+                case KineticCueKind.CardReveal: return KineticMotionDurations.CardRevealFlipSeconds;
+                case KineticCueKind.CardRetrieve: return KineticMotionDurations.CardRetrieveSeconds;
+                case KineticCueKind.CoinFly: return KineticMotionDurations.CoinFlySeconds;
+                case KineticCueKind.LevelPop: return KineticMotionDurations.LevelPopSeconds;
+
                 default: throw new ArgumentOutOfRangeException(nameof(kind));
             }
         }

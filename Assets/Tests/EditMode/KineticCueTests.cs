@@ -41,7 +41,8 @@ namespace GuardsDigital.Tests.EditMode
             HexCoordinate destination = default,
             bool hasOrigin = false,
             bool hasDestination = false,
-            MatchLogOutcome outcome = MatchLogOutcome.None) =>
+            MatchLogOutcome outcome = MatchLogOutcome.None,
+            int amount = 0) =>
             new MatchLogEntry(
                 sequence, kind, 1, 1,
                 subjectHeroId: subjectHero,
@@ -52,7 +53,8 @@ namespace GuardsDigital.Tests.EditMode
                 destination: destination,
                 hasOrigin: hasOrigin,
                 hasDestination: hasDestination,
-                outcome: outcome);
+                outcome: outcome,
+                amount: amount);
 
         /// <summary>A stream that has already seen an empty match, so the next row is a real event.</summary>
         private static KineticCueStream PrimedStream()
@@ -293,7 +295,13 @@ namespace GuardsDigital.Tests.EditMode
                 MatchLogEntryKind.Move, MatchLogEntryKind.FastTravel, MatchLogEntryKind.Attack,
                 MatchLogEntryKind.Defense, MatchLogEntryKind.HeroRemoved,
                 MatchLogEntryKind.MinionRemoved, MatchLogEntryKind.MinionBattleMinionRemoved,
-                MatchLogEntryKind.HeroRespawned
+                MatchLogEntryKind.HeroRespawned,
+
+                // Milestone 8.35z11 added these two arms. They are named here rather than left to
+                // fail this case, because this case's whole job is to be the place a new kind has to
+                // be argued for: a kind that starts animating without appearing on this list is a kind
+                // somebody animated by accident.
+                MatchLogEntryKind.CardRevealed, MatchLogEntryKind.LevelPurchased
             };
 
             foreach (MatchLogEntryKind kind in Enum.GetValues(typeof(MatchLogEntryKind)))
@@ -304,7 +312,7 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 Assert.That(
-                    CuesFor(Row(21, kind, subjectHero: Attacker, subjectMinion: Minion)).Count,
+                    CuesFor(Row(21, kind, subjectHero: Attacker, subjectMinion: Minion, amount: 3)).Count,
                     Is.EqualTo(0),
                     kind + " is not a kinetic and must draw nothing.");
             }
@@ -376,8 +384,26 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(stream.ObservedSequence, Is.EqualTo(1));
         }
 
+        /// <summary>
+        /// Milestone 8.35z11 REPLACED this case's rule, and the replacement is the conductor's
+        /// whole point rather than a relaxation.
+        ///
+        /// <para><b>What it used to assert, and why that was right at the time.</b> Milestone 8.35y
+        /// started every cue of a projection change at the SAME INSTANT, so a resync window of thirty
+        /// rows was thirty simultaneous animations - unreadable, and thirty times the per-frame cost.
+        /// It kept the newest six and dropped the rest.</para>
+        ///
+        /// <para><b>What it asserts now.</b> Under a conductor those thirty rows are thirty QUEUED
+        /// moments: the stream hands over all of them, in order, and the conductor plays them one at a
+        /// time, compresses the queue when the viewer is behind, and drops only past
+        /// <see cref="KineticStaging.MaxQueuedScenes"/>. Truncating here would have made the queue
+        /// budget unreachable dead code. The property the old constant named -
+        /// <see cref="KineticTiming.MaxConcurrentCues"/>, "the most kinetics a surface plays at once" -
+        /// is now guaranteed by the SIZE OF A SCENE instead of by a truncation, which is why it is
+        /// asserted here on every scene rather than dropped.</para>
+        /// </summary>
         [Test]
-        public void ABurstOfEvents_KeepsOnlyTheNewest()
+        public void ABurstOfEvents_IsQueuedInFull_AndNoSinglePlaysMoreAtOnceThanTheCap()
         {
             var stream = PrimedStream();
             var log = Enumerable.Range(1, 30)
@@ -385,14 +411,42 @@ namespace GuardsDigital.Tests.EditMode
                     sequence, MatchLogEntryKind.HeroRespawned, subjectHero: Attacker))
                 .ToArray();
 
-            var cues = stream.Observe(log);
+            var scenes = stream.ObserveScenes(log);
 
-            Assert.That(cues.Count, Is.EqualTo(KineticTiming.MaxConcurrentCues),
-                "A resync delivering a whole window must not queue a train of animations.");
-            Assert.That(cues[cues.Count - 1].Sequence, Is.EqualTo(30),
-                "The newest events are the ones kept.");
+            Assert.That(scenes.Count, Is.EqualTo(30),
+                "Every row of the window becomes a moment to stage; the conductor bounds the queue.");
+            Assert.That(scenes[scenes.Count - 1].Order, Is.EqualTo(30),
+                "The scenes stay in the order the match recorded them.");
             Assert.That(stream.ObservedSequence, Is.EqualTo(30),
-                "Dropping a cue must still advance the watermark, or the drop repeats forever.");
+                "Observing a window must still advance the watermark, or it repeats forever.");
+
+            foreach (var scene in scenes)
+            {
+                Assert.That(scene.Cues.Count, Is.LessThanOrEqualTo(KineticTiming.MaxConcurrentCues),
+                    "No single moment may play more kinetics at once than the recorded cap.");
+            }
+        }
+
+        /// <summary>
+        /// The cap above is not vacuous: the biggest scene the vocabulary can build is an attack that
+        /// landed, which is a lunge and the flash it caused - two cues, one moment.
+        /// </summary>
+        [Test]
+        public void AnAttackThatLanded_IsONEScene_BecauseItIsOneMoment()
+        {
+            var stream = PrimedStream();
+            var scenes = stream.ObserveScenes(new[]
+            {
+                Row(11, MatchLogEntryKind.Attack, subjectHero: Attacker, targetHero: Defender,
+                    outcome: MatchLogOutcome.AttackSuccessful)
+            });
+
+            Assert.That(scenes.Count, Is.EqualTo(1),
+                "A lunge and its flash staged apart would tell the player two things happened.");
+            Assert.That(scenes[0].Cues.Count, Is.EqualTo(2));
+            Assert.That(scenes[0].Cues[0].Kind, Is.EqualTo(KineticCueKind.Lunge));
+            Assert.That(scenes[0].Cues[1].Kind, Is.EqualTo(KineticCueKind.Flash));
+            Assert.That(scenes[0].Kind, Is.EqualTo(KineticSceneKind.Board));
         }
 
         /// <summary>

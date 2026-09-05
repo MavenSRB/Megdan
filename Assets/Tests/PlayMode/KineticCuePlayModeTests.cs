@@ -94,8 +94,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blueHeroId),
                 "Blue's Magnetic Dagger at 12 acts before Red's Shock at 8.");
             Assert.That(view.Playback.IsIdle, Is.True,
-                "A commitment is not one of the five events the log admits as kinetic, so two real " +
-                "commitments leave the board still.");
+                "Two real commitments leave the BOARD still. Milestone 8.35z11 did give a " +
+                "commitment and its reveal journeys of their own, but they are HUD journeys - a card " +
+                "arcing to a slot, a card turning over - and `Playback` is the piece clock. The " +
+                "partition is KineticCueFamilies', and this assertion is what it buys: the board " +
+                "reports motion when pieces move, and at no other time.");
 
             var movement = runtime.RoundView.Model.Actions.Single(value =>
                 ActionKindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Movement);
@@ -105,9 +108,16 @@ namespace GuardsDigital.Tests.PlayMode
             var step = runtime.PendingMovementChoice.LegalDestinations
                 .First(value => HexDistanceQuery.Calculate(value.Destination, redAt) == 1);
 
-            // No frame between the submission and these assertions: the cue is begun synchronously
-            // by the projection change, and the scene's own driver would otherwise be advancing it.
+            // No frame between the submission and these assertions, so the scene's own driver cannot
+            // be advancing anything while they run.
             Assert.That(runtime.BoardPresenter.SubmitDestination(step.Destination), Is.True);
+
+            // Milestone 8.35z11. THE ONE SEMANTIC CHANGE THIS FIXTURE HAD TO ABSORB. Before the
+            // conductor, a projection change STARTED its cues; now it QUEUES them, and the head of the
+            // queue begins on the next tick. `Tick(0f)` is that tick with no time passing - the
+            // conductor starts a waiting scene whenever it is idle, and a zero delta advances no clock
+            // - so every assertion below still runs at progress zero with no frame elapsed.
+            view.Tick(0f);
 
             var route = view.Playback.RouteFor(mover);
             Assert.That(route, Is.Not.Null,
@@ -185,8 +195,14 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
             Assert.That(runtime.DeclineDefense(), Is.True);
 
+            // As above: the conductor starts the queued moment on the next tick, and a zero delta is
+            // a tick that advances nothing.
+            view.Tick(0f);
+
             Assert.That(view.Playback.ActiveMotionCount, Is.GreaterThan(0),
                 "The resolved attack left something playing on the board.");
+            Assert.That(view.Conductor.ActiveScene?.Kind, Is.EqualTo(KineticSceneKind.Board),
+                "and it is playing as ONE moment - the lunge and the flash it caused together.");
             Assert.That(view.Playback.LungeTargetFor(attacker), Is.EqualTo(defender),
                 "The attacker leans into the piece the log says it struck, and at no other.");
 

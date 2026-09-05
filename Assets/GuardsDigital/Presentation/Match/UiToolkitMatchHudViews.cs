@@ -1181,6 +1181,13 @@ namespace GuardsDigital.Presentation.Match
         {
             var rail = HudElements.Panel(MatchHudTheme.RailBackground);
             rail.name = "gd-hero-rail";
+            // Milestone 8.35z11. THE ONE LINE the motion pass adds to this file. Six rails share
+            // the name `gd-hero-rail`, so a card flying to a PARTICULAR hero's commitment slot, or a
+            // coin landing in a particular tray, has no way to tell them apart by query alone. This
+            // stamp is that identity; `KineticFlightAnchors.HeroRail` reads it and returns null when it
+            // finds none, so a build without this line loses the flourish and nothing else. It changes
+            // no layout, no style and no behaviour - `userData` is unused on this element otherwise.
+            rail.userData = hero.HeroId;
             rail.style.marginBottom = 8f;
             HudElements.Padding(rail, 9f);
             rail.style.paddingTop = 8f;

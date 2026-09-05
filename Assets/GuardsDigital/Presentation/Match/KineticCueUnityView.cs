@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
 using GuardsDigital.Presentation.Units.Minions;
@@ -57,6 +58,13 @@ namespace GuardsDigital.Presentation.Match
         private VisualElement overlay;
         private KineticCueViewModel model = KineticCueViewModel.Empty;
 
+        // ---- Milestone 8.35z11 (the TWENTIETH AMENDMENT). Three additions, each owning its own
+        // file: the conductor paces what used to all start at once, the flight layer carries the card
+        // and coin journeys the board cannot, and the ambient sweep eases panels into existence.
+        private readonly KineticConductor conductor = new KineticConductor();
+        private readonly KineticFlightLayer flights;
+        private readonly HudAmbientLife ambient = new HudAmbientLife();
+
         public KineticCueUnityView(
             BoardInteractionUnityView board,
             ConfiguredMatchHudRenderer hud = null,
@@ -65,10 +73,24 @@ namespace GuardsDigital.Presentation.Match
             this.board = board ?? throw new ArgumentNullException(nameof(board));
             this.hud = hud;
             this.cameraSource = cameraSource ?? (() => Camera.main);
+            flights = new KineticFlightLayer(
+                () => this.hud?.RootElement, this.cameraSource, BoardPositionOfHero);
         }
 
         /// <summary>The clock, exposed so a Play Mode case can assert what is playing.</summary>
         public KineticPlayback Playback => playback;
+
+        /// <summary>
+        /// Milestone 8.35z11. The queue, exposed for the same reason the clock is: a Play Mode
+        /// case asserting that six reveals stage one at a time has to be able to see the queue.
+        /// </summary>
+        public KineticConductor Conductor => conductor;
+
+        /// <summary>The HUD journeys currently drawing.</summary>
+        public KineticFlightLayer Flights => flights;
+
+        /// <summary>The screen-wide enter easing, exposed so a case can count what it eased.</summary>
+        public HudAmbientLife Ambient => ambient;
 
         /// <summary>The model most recently rendered.</summary>
         public KineticCueViewModel Model => model;
@@ -76,16 +98,27 @@ namespace GuardsDigital.Presentation.Match
         public void Render(KineticCueViewModel viewModel)
         {
             model = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+
+            // Milestone 8.35z11. The screen-wide enter easing runs HERE rather than in the frame
+            // loop, because a projection change is exactly when the HUD rebuilds and therefore the only
+            // moment anything can be newly on screen. It is the same cadence the HUD already pays for.
+            ambient.Sweep(hud?.RootElement);
+
             if (model.SnapToAuthoritative)
             {
-                // A first sight of the match, or a log that went backwards. Everything stops and
-                // every piece is put back.
+                // A first sight of the match, or a log that went backwards. Everything stops, every
+                // piece is put back, every queued moment is dropped and every flight is erased.
+                conductor.CancelAll();
+                flights.CancelAll();
                 playback.CancelAll();
                 RestoreEveryPiece();
+                ambient.Reset();
                 return;
             }
 
-            playback.Begin(model.Cues);
+            // The cues are QUEUED now rather than started. See KineticConductor for why deferring them
+            // is safe, and for the one case - a stale slide - that it is not, which ApplyHero checks.
+            conductor.Enqueue(model.Scenes);
         }
 
         /// <summary>
@@ -94,7 +127,17 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public void Tick(float deltaSeconds)
         {
+            var started = conductor.Advance(deltaSeconds);
+            if (started != null)
+            {
+                // Each family to the layer that can draw it. See KineticCueFamilies for why handing
+                // the piece clock a card's journey would leave it reporting a motion it never animated.
+                playback.Begin(KineticCueFamilies.BoardCuesOf(started));
+                flights.Begin(started, model.ViewerHeroId);
+            }
+
             playback.Advance(deltaSeconds);
+            flights.Advance(deltaSeconds);
             ApplyPieceMotions();
             ApplyBoardMarkPulse();
             ApplyShineSweep();
@@ -140,7 +183,8 @@ namespace GuardsDigital.Presentation.Match
 
             Remember(hero.transform, hero.gameObject, null);
             var origin = AuthoritativeHeroPosition(hero);
-            hero.transform.localPosition = origin + Displacement(subject, motion, origin, hero.OuterRadius);
+            hero.transform.localPosition =
+                origin + Displacement(subject, motion, origin, hero.OuterRadius, hero.Coordinate);
             ApplyScaleAndVisibility(hero.transform, hero.gameObject, motion);
             ApplyHeroTint(hero, motion);
             return true;
@@ -165,7 +209,8 @@ namespace GuardsDigital.Presentation.Match
             Remember(minion.transform, minion.gameObject, renderer);
             var origin = AuthoritativeMinionPosition(minion);
             minion.transform.localPosition =
-                origin + Displacement(subject, motion, origin, minion.OuterRadius);
+                origin + Displacement(
+                    subject, motion, origin, minion.OuterRadius, minion.Occupancy.Coordinate);
             ApplyScaleAndVisibility(minion.transform, minion.gameObject, motion);
             if (renderer != null)
             {
@@ -183,13 +228,28 @@ namespace GuardsDigital.Presentation.Match
         /// placement, never accumulated.
         /// </summary>
         private Vector3 Displacement(
-            KineticSubject subject, KineticPieceMotion motion, Vector3 authoritative, float radius)
+            KineticSubject subject, KineticPieceMotion motion, Vector3 authoritative, float radius,
+            HexCoordinate current)
         {
             var displacement = Vector3.zero;
 
             if (motion.HasRouteTravel)
             {
                 var route = playback.RouteFor(subject);
+
+                // Milestone 8.35z11. THE GUARD THAT MAKES A QUEUED SLIDE SAFE. The offset below
+                // assumes the projection stands this piece at the route's END. Before the conductor
+                // that was true by construction, because a slide started on the very projection that
+                // recorded it. A queued slide can now reach the screen a moment or two later, and if
+                // the piece moved again in between, "current position plus (part-way minus arrival)"
+                // is a position on no path the piece ever took. So a slide whose route no longer ends
+                // where the piece stands travels nothing at all, and the piece is simply drawn where
+                // the projection puts it - the end state it was always going to reach.
+                if (!KineticRouteFreshness.IsRouteStillCurrent(route, current))
+                {
+                    route = null;
+                }
+
                 if (route != null && route.Count >= 2)
                 {
                     // The projection already stands the piece at the route's end, so the slide draws
@@ -245,6 +305,16 @@ namespace GuardsDigital.Presentation.Match
         private static Vector3 AuthoritativeMinionPosition(StandardMinionView minion) =>
             HexWorldLayout.ToWorld(minion.Occupancy.Coordinate, minion.OuterRadius) +
             (Vector3.up * StandardMinionView.DefaultVerticalOffset);
+
+        /// <summary>
+        /// Milestone 8.35z11. Where one hero's miniature authoritatively stands, for the flight
+        /// layer's coin journeys - the same arithmetic every other placement in this file uses, so a
+        /// coin sets out from exactly where the player can see the piece.
+        /// </summary>
+        private Vector3? BoardPositionOfHero(HeroId heroId) =>
+            TryWorldPositionOf(KineticSubject.ForHero(heroId), out var position)
+                ? position
+                : (Vector3?)null;
 
         private bool TryWorldPositionOf(KineticSubject subject, out Vector3 position)
         {
