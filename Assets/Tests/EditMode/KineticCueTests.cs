@@ -85,7 +85,6 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(cues[0].Route.Count, Is.EqualTo(2));
             Assert.That(cues[0].Route[0], Is.EqualTo(new HexCoordinate(0, 0)));
             Assert.That(cues[0].Route[1], Is.EqualTo(new HexCoordinate(2, -1)));
-            Assert.That(cues[0].Number.HasValue, Is.False);
         }
 
         /// <summary>
@@ -196,11 +195,6 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(cues[0].Subject, Is.EqualTo(KineticSubject.ForHero(Attacker)));
             Assert.That(cues[0].Target, Is.EqualTo(KineticSubject.ForMinion(Minion)),
                 "The defender the log now names is the piece the attacker leans into.");
-            Assert.That(cues[0].Number.HasValue, Is.True,
-                "A landed attack on a minion carries its figure exactly as one on a hero does.");
-            Assert.That(cues[0].Number.Role, Is.EqualTo(KineticNumberRole.Damage));
-            Assert.That(cues[0].Number.PrintedAmount, Is.EqualTo(attack.amount));
-            Assert.That(cues[0].Number.Color, Is.EqualTo(attack.definition.Progression.Color));
             Assert.That(cues[1].Kind, Is.EqualTo(KineticCueKind.Flash));
             Assert.That(cues[1].Subject, Is.EqualTo(KineticSubject.ForMinion(Minion)),
                 "The minion that was hit is the piece that registers it.");
@@ -219,7 +213,6 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(cues.Count, Is.EqualTo(1));
             Assert.That(cues[0].Kind, Is.EqualTo(KineticCueKind.Lunge));
-            Assert.That(cues[0].Number.HasValue, Is.False);
         }
 
         [Test]
@@ -430,7 +423,6 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(guest[index].Kind, Is.EqualTo(host[index].Kind));
                 Assert.That(guest[index].Subject, Is.EqualTo(host[index].Subject));
                 Assert.That(guest[index].Target, Is.EqualTo(host[index].Target));
-                Assert.That(guest[index].Number, Is.EqualTo(host[index].Number));
             }
         }
 
@@ -460,10 +452,6 @@ namespace GuardsDigital.Tests.EditMode
                 projection);
 
             Assert.That(cues.Count, Is.EqualTo(1));
-            Assert.That(cues[0].Number.HasValue, Is.True);
-            Assert.That(cues[0].Number.Role, Is.EqualTo(KineticNumberRole.Block));
-            Assert.That(cues[0].Number.PrintedAmount, Is.EqualTo(defense.amount));
-            Assert.That(cues[0].Number.Color, Is.EqualTo(defense.definition.Progression.Color));
 
             var attack = FindCardPrinting(projection, PrintedValueChannel.Attack);
             Assert.That(attack.card, Is.Not.Null);
@@ -476,9 +464,6 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 projection);
 
-            Assert.That(attackCues[0].Number.Role, Is.EqualTo(KineticNumberRole.Damage));
-            Assert.That(attackCues[0].Number.PrintedAmount, Is.EqualTo(attack.amount));
-            Assert.That(attackCues[0].Number.Color, Is.EqualTo(attack.definition.Progression.Color));
         }
 
         /// <summary>
@@ -498,7 +483,6 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(cues.Count, Is.EqualTo(2));
             Assert.That(cues[0].Kind, Is.EqualTo(KineticCueKind.Lunge));
-            Assert.That(cues[0].Number.HasValue, Is.False);
         }
 
         private static (CardInstance card, CardDefinition definition, int amount) FindCardPrinting(
@@ -549,14 +533,6 @@ namespace GuardsDigital.Tests.EditMode
                 1, KineticCueKind.Flash, KineticSubject.ForHero(Attacker),
                 route: new[] { new HexCoordinate(0, 0), new HexCoordinate(1, 0) }));
 
-            Assert.Throws<ArgumentException>(() => new KineticCue(
-                1, KineticCueKind.Defeat, KineticSubject.ForHero(Attacker),
-                number: new KineticNumber(3, KineticNumberRole.Damage, CardColor.Gold)));
-
-            Assert.Throws<ArgumentException>(() => new KineticCue(
-                1, KineticCueKind.Flash, KineticSubject.ForHero(Attacker),
-                number: new KineticNumber(3, KineticNumberRole.Damage, CardColor.Gold)),
-                "Damage is the attacker's statement; a flash states a block.");
 
             Assert.Throws<ArgumentException>(() => new KineticCue(
                 1, KineticCueKind.None, KineticSubject.ForHero(Attacker)));

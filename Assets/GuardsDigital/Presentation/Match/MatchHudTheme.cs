@@ -236,6 +236,28 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The shine's close radiance, between the rim and the halo.</summary>
         public static readonly Color ShineGlow = new Color(1f, 0.925f, 0.667f, 1f);
 
+        /// <summary>
+        /// Milestone 8.35z9. THE ONE MARKER every awaited-answer gold treatment wears, and the only
+        /// thing <c>KineticCueUnityView</c>'s circling sweep looks for.
+        ///
+        /// <para><b>Why it had to exist.</b> Before this, the awaited treatments were three
+        /// unrelated shapes with no name in common: a card face's gold ring is a
+        /// <c>VisualElement</c> called <c>gd-card-awaited-shine</c>, a hero rail's gold is painted
+        /// straight onto the rail with no child element at all, and the sweep went looking for
+        /// <c>Image</c> elements named <c>gd-card-shine</c> - which is a different family entirely,
+        /// the milestone 8.30d PREPARED PRINTED ARTWORK overlay, unrelated to whether anyone is
+        /// being waited on. So the sweep could only ever animate the wrong elements or, in the
+        /// ordinary case, an empty list, and it did so silently for four milestones. Live, the
+        /// board-mark pulse worked and trays lit statically while no sweep ever appeared anywhere.
+        /// </para>
+        ///
+        /// <para>A CLASS rather than a name, deliberately: the treatments are different element
+        /// types on different surfaces and always will be, and a class is the one thing UI Toolkit
+        /// lets all of them carry. Anything that wears the awaited gold adds this; nothing else may.
+        /// </para>
+        /// </summary>
+        public const string AwaitedShineClass = "gd-awaited-shine";
+
         /// <summary>The shine's widest, softest ring.</summary>
         public static readonly Color ShineHalo = new Color(1f, 0.882f, 0.588f, 1f);
 

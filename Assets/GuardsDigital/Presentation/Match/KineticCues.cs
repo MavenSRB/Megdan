@@ -31,7 +31,7 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>A piece travelled its recorded route instead of teleporting.</summary>
         Slide = 1,
 
-        /// <summary>The attacker leans into the defender and returns. Carries the floating number.</summary>
+        /// <summary>The attacker leans into the defender and returns.</summary>
         Lunge = 2,
 
         /// <summary>The struck piece registers the hit.</summary>
@@ -52,16 +52,6 @@ namespace GuardsDigital.Presentation.Match
         Minion = 2
     }
 
-    /// <summary>
-    /// What a floating number means. The two the SIXTEENTH AMENDMENT names: the damage an attack
-    /// dealt, and the value a defense card blocked with.
-    /// </summary>
-    public enum KineticNumberRole
-    {
-        None = 0,
-        Damage = 1,
-        Block = 2
-    }
 
     /// <summary>
     /// The piece a cue is about, by the same stable identity the board already binds its views to.
@@ -120,80 +110,6 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// A floating number and the printed colour it is tinted with.
-    ///
-    /// <para><b>The colour is a card's own printed colour, never a palette choice.</b> The user's
-    /// 2026-09-05 direction: the damage number wears the ATTACKING card's colour and the block number
-    /// the DEFENSE card's, "read from the card definitions ... never a presentation-side palette
-    /// guess". So this struct carries <see cref="CardColor"/> - the rules-facing characteristic every
-    /// <see cref="CardDefinition"/> states through its own <see cref="CardProgressionProfile"/> - and
-    /// not a rendering colour. A view turns it into one through <see cref="MatchHudTheme.Face"/>,
-    /// which is the same mapping every card face on the HUD already draws itself with, so a number and
-    /// the card it came off are the same colour by construction rather than by coincidence.</para>
-    ///
-    /// <para><b>Why the amount is the card's printed value.</b> The seat-public log's Attack and
-    /// Defense rows carry an outcome and the card that resolved, and no amount - <c>MatchLogEntry.
-    /// Amount</c> is documented for the Level bought, the coins collected and the Life counters spent,
-    /// and the attack rows pass none. The printed value on the named card is therefore the only figure
-    /// derivable from the public stream, and it is public on every client for the same reason the
-    /// colour is: both are read off the definition catalog every client holds. It is labelled as the
-    /// printed value rather than as a computed total precisely so nothing downstream mistakes it for
-    /// one.</para>
-    /// </summary>
-    public readonly struct KineticNumber : IEquatable<KineticNumber>
-    {
-        public KineticNumber(int printedAmount, KineticNumberRole role, CardColor color)
-        {
-            if (role == KineticNumberRole.None)
-            {
-                throw new ArgumentException(
-                    "A floating number states what it means. The absence of a number is " +
-                    nameof(None) + ", never a number with no role.",
-                    nameof(role));
-            }
-
-            if (printedAmount < 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(printedAmount),
-                    "A printed attack or defense value is never negative.");
-            }
-
-            PrintedAmount = printedAmount;
-            Role = role;
-            Color = color;
-        }
-
-        public static readonly KineticNumber None = default;
-
-        /// <summary>The value printed on the card the log named. Never a computed damage total.</summary>
-        public int PrintedAmount { get; }
-
-        public KineticNumberRole Role { get; }
-
-        /// <summary>The printed colour of the card this number came off, or
-        /// <see cref="CardColor.None"/> where the log named no card the catalog holds.</summary>
-        public CardColor Color { get; }
-
-        public bool HasValue => Role != KineticNumberRole.None;
-
-        public bool Equals(KineticNumber other) =>
-            PrintedAmount == other.PrintedAmount && Role == other.Role && Color == other.Color;
-
-        public override bool Equals(object obj) => obj is KineticNumber other && Equals(other);
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return (((int)Role * 397) ^ PrintedAmount) * 397 ^ (int)Color;
-            }
-        }
-
-        public override string ToString() => HasValue ? Role + ":" + PrintedAmount + ":" + Color : "none";
-    }
-
-    /// <summary>
     /// One kinetic to play, derived from exactly one seat-public match-log row.
     ///
     /// <para><see cref="Sequence"/> is that row's own sequence, so a cue carries the log's identity
@@ -208,8 +124,7 @@ namespace GuardsDigital.Presentation.Match
             KineticCueKind kind,
             KineticSubject subject,
             KineticSubject target = default,
-            IReadOnlyList<HexCoordinate> route = null,
-            KineticNumber number = default)
+            IReadOnlyList<HexCoordinate> route = null)
         {
             if (sequence < 1)
             {
@@ -254,35 +169,11 @@ namespace GuardsDigital.Presentation.Match
                     "A lunge leans toward someone, so it names the piece it struck.", nameof(target));
             }
 
-            // The two cues that carry a number are the two halves of a resolution the amendment names:
-            // the attacker's lunge shows the damage dealt, and the defender's flash shows the value a
-            // defense card blocked with. No other cue states a figure, because no other cue has one.
-            if (number.HasValue &&
-                kind != KineticCueKind.Lunge && kind != KineticCueKind.Flash)
-            {
-                throw new ArgumentException(
-                    "Only a lunge (damage) or a flash (block) carries a floating number.",
-                    nameof(number));
-            }
-
-            if (number.Role == KineticNumberRole.Damage && kind != KineticCueKind.Lunge)
-            {
-                throw new ArgumentException(
-                    "Damage is what the attacker's lunge states.", nameof(number));
-            }
-
-            if (number.Role == KineticNumberRole.Block && kind != KineticCueKind.Flash)
-            {
-                throw new ArgumentException(
-                    "A block is what the defender's flash states.", nameof(number));
-            }
-
             Sequence = sequence;
             Kind = kind;
             Subject = subject;
             Target = target;
             Route = new ReadOnlyCollection<HexCoordinate>(waypoints);
-            Number = number;
             DurationSeconds = KineticTiming.DurationFor(kind);
         }
 
@@ -313,15 +204,12 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public IReadOnlyList<HexCoordinate> Route { get; }
 
-        /// <summary>The tinted floating number a lunge carries. <see cref="KineticNumber.None"/> otherwise.</summary>
-        public KineticNumber Number { get; }
 
         public float DurationSeconds { get; }
 
         public override string ToString() =>
             Sequence.ToString("0000") + " | " + Kind + " | " + Subject +
-            (Target.IsDefined ? " -> " + Target : string.Empty) +
-            (Number.HasValue ? " | " + Number : string.Empty);
+            (Target.IsDefined ? " -> " + Target : string.Empty);
     }
 
     /// <summary>
@@ -346,29 +234,6 @@ namespace GuardsDigital.Presentation.Match
         public const float DefeatSeconds = 0.38f;
         public const float RespawnSeconds = 0.30f;
 
-        /// <summary>
-        /// How long a floating damage or block number stays up, measured from the moment it APPEARS -
-        /// which milestone 8.35x moved to the striking cue's own impact (see
-        /// <c>KineticPlayback.ImpactMomentFor</c>), not the cue's start.
-        ///
-        /// <para><b>A recorded, deliberate departure from the 200-400ms band, with its reason.</b> That
-        /// band bounds how long a PIECE is displaced from where the projection says it stands - the
-        /// property that keeps kinetics from being mistaken for state. A number floating above the
-        /// board displaces nothing and gates nothing; it has to be READ, and a figure that leaves in a
-        /// third of a second cannot be. It stays concurrent with input, is interrupted by the next
-        /// event exactly as every other kinetic is, and holds no authority, so every constraint the
-        /// amendment actually placed on kinetics still holds.</para>
-        ///
-        /// <para><b>Milestone 8.35x raised this from 0.90s, on the first live internet playtest's
-        /// finding that the figures "show up too fast".</b> Two things made them hard to read, and the
-        /// duration was only the second. The first was that a figure appeared at the cue's START, ~95ms
-        /// BEFORE the lunge it describes had even reached the piece it struck - so the number preceded
-        /// its own cause and the eye had nothing to follow. With the appearance moved onto the impact,
-        /// this value now buys what it was always meant to: with <c>FadeOutTail</c> holding full opacity
-        /// through the first 65%, a figure now sits fully legible for just under a second
-        /// (1.5 x 0.65 = 0.975s) before it begins to leave.</para>
-        /// </summary>
-        public const float FloatingNumberSeconds = 1.5f;
 
         /// <summary>The circling light's loop on a gold tray or card shine. The amendment's ~2-3s.</summary>
         public const float ShineSweepLoopSeconds = 2.4f;

@@ -66,33 +66,6 @@ namespace GuardsDigital.Presentation.Match
             Opacity == 1f && FlashStrength == 0f && !HoldVisible;
     }
 
-    /// <summary>One tinted figure floating above a piece.</summary>
-    public readonly struct KineticFloatingNumber
-    {
-        internal KineticFloatingNumber(
-            int sequence, KineticSubject anchor, KineticNumber number, float rise, float opacity)
-        {
-            Sequence = sequence;
-            Anchor = anchor;
-            Number = number;
-            Rise = rise;
-            Opacity = opacity;
-        }
-
-        /// <summary>The match-log sequence the figure came from; its identity for a view's reuse.</summary>
-        public int Sequence { get; }
-
-        /// <summary>The piece the figure floats above.</summary>
-        public KineticSubject Anchor { get; }
-
-        public KineticNumber Number { get; }
-
-        /// <summary>How far the figure has drifted upward, 0 to 1.</summary>
-        public float Rise { get; }
-
-        public float Opacity { get; }
-    }
-
     /// <summary>
     /// Milestone 8.35y. The kinetic clock: turns cues into per-frame numbers, and nothing
     /// else. No Unity type appears here, so every easing curve, every duration bound and the whole
@@ -122,8 +95,6 @@ namespace GuardsDigital.Presentation.Match
         public const float RespawnStartScale = 0.45f;
 
         private readonly List<Running> running = new List<Running>();
-        private readonly List<Running> numbers = new List<Running>();
-        private readonly List<KineticFloatingNumber> floatingNumbers = new List<KineticFloatingNumber>();
         private float elapsedTotal;
 
         private sealed class Running
@@ -136,21 +107,13 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>Whether anything at all is playing.</summary>
-        public bool IsIdle => running.Count == 0 && numbers.Count == 0;
+        public bool IsIdle => running.Count == 0;
 
         /// <summary>The piece motions currently running, for a view deciding whether to do any work.</summary>
         public int ActiveMotionCount => running.Count;
 
-        public IReadOnlyList<KineticFloatingNumber> FloatingNumbers => floatingNumbers;
-
         /// <summary>
         /// Starts a projection's worth of cues, ending every piece motion already running.
-        ///
-        /// <para>Floating numbers deliberately survive: a figure above the board displaces no piece and
-        /// states no position, so ending it early would cost the one thing it exists for - being read -
-        /// without buying any of the correctness that ending a piece motion buys. A rewind still clears
-        /// them, through <see cref="CancelAll"/>, because a figure for an event that no longer happened
-        /// is a different matter entirely.</para>
         /// </summary>
         public void Begin(IReadOnlyList<KineticCue> cues)
         {
@@ -174,34 +137,16 @@ namespace GuardsDigital.Presentation.Match
                     Elapsed = 0f,
                     Duration = cue.DurationSeconds
                 });
-
-                if (cue.Number.HasValue)
-                {
-                    // Milestone 8.35x. The figure is due at the striking cue's own impact, not at its
-                    // start, so it begins one impact-delay BEHIND the clock: `Elapsed` starts
-                    // negative, `RebuildFloatingNumbers` draws nothing while it is, and the figure
-                    // appears exactly as the lunge reaches what it struck.
-                    numbers.Add(new Running
-                    {
-                        Cue = cue,
-                        Elapsed = -ImpactMomentFor(cue),
-                        Duration = KineticTiming.FloatingNumberSeconds
-                    });
-                }
             }
-
-            RebuildFloatingNumbers();
         }
 
         /// <summary>
-        /// Ends everything, including the floating numbers. The presenter asks for this when it primed
-        /// or re-primed its watermark: a first sight of a match, and a log that went backwards.
+        /// Ends every piece motion. The presenter asks for this when it primed or re-primed its
+        /// watermark: a first sight of a match, and a log that went backwards.
         /// </summary>
         public void CancelAll()
         {
             running.Clear();
-            numbers.Clear();
-            floatingNumbers.Clear();
         }
 
         /// <summary>Advances the clock. Negative and absurd deltas are ignored rather than trusted.</summary>
@@ -225,17 +170,6 @@ namespace GuardsDigital.Presentation.Match
                     running.RemoveAt(index);
                 }
             }
-
-            for (var index = numbers.Count - 1; index >= 0; index--)
-            {
-                numbers[index].Elapsed += delta;
-                if (numbers[index].Finished)
-                {
-                    numbers.RemoveAt(index);
-                }
-            }
-
-            RebuildFloatingNumbers();
         }
 
         /// <summary>
@@ -355,52 +289,6 @@ namespace GuardsDigital.Presentation.Match
             1f + (KineticTiming.MarkPulseAmplitude *
                 Sine(Repeat(elapsedTotal / KineticTiming.MarkPulseLoopSeconds)));
 
-        /// <summary>
-        /// Milestone 8.35x, on the first live internet playtest's finding that the attack and defense
-        /// figures "show up too fast". How long after a striking cue STARTS its figure is due: the
-        /// instant that cue's own motion peaks - the lunge at its furthest lean, the flash at its
-        /// brightest - so the sequence a player watches is lunge, then impact, then the number that
-        /// states what the impact did.
-        ///
-        /// <para>Derived from the curve's own peak rather than written as a literal, so re-timing a
-        /// lunge cannot silently leave its figure landing somewhere else. Before this the figure was
-        /// begun at the same instant as the cue, which put the number on screen roughly 95ms before
-        /// the lunge had reached the piece it struck - the number arrived ahead of its own cause,
-        /// which is what made it read as "too fast" even though it was up for nearly a second.</para>
-        /// </summary>
-        internal static float ImpactMomentFor(KineticCue cue) =>
-            KineticTiming.DurationFor(cue.Kind) *
-                (cue.Kind == KineticCueKind.Lunge ? StrikePeak : FlashPeak);
-
-        private void RebuildFloatingNumbers()
-        {
-            floatingNumbers.Clear();
-            for (var index = 0; index < numbers.Count; index++)
-            {
-                var active = numbers[index];
-                if (active.Elapsed < 0f)
-                {
-                    // Not yet due: the striking cue has not reached its impact, so there is no figure
-                    // to draw. This is what makes the ordering lunge -> impact -> figure observable
-                    // rather than merely intended.
-                    continue;
-                }
-
-                var progress = active.Progress;
-                var cue = active.Cue;
-
-                // Damage floats above the piece that was struck; a block floats above the piece that
-                // blocked. Both are "the piece this figure is about", which is the lunge's target and
-                // the flash's own subject.
-                var anchor = cue.Kind == KineticCueKind.Lunge ? cue.Target : cue.Subject;
-                floatingNumbers.Add(new KineticFloatingNumber(
-                    cue.Sequence,
-                    anchor,
-                    cue.Number,
-                    SmoothStep(progress),
-                    FadeOutTail(progress)));
-            }
-        }
 
         // ---- The curves. Small, named, and here rather than in a view, so a test can hold them.
 
@@ -439,17 +327,6 @@ namespace GuardsDigital.Presentation.Match
             return clamped <= FlashPeak
                 ? SmoothStep(clamped / FlashPeak)
                 : 1f - SmoothStep((clamped - FlashPeak) / (1f - FlashPeak));
-        }
-
-        /// <summary>
-        /// Full opacity until the last third, then out. A figure that starts fading immediately is
-        /// hardest to read exactly when it first appears.
-        /// </summary>
-        internal static float FadeOutTail(float t)
-        {
-            var clamped = Clamp01(t);
-            const float holdUntil = 0.65f;
-            return clamped <= holdUntil ? 1f : 1f - SmoothStep((clamped - holdUntil) / (1f - holdUntil));
         }
 
         internal static float Clamp01(float value) =>

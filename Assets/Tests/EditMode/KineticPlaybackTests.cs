@@ -40,24 +40,12 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        /// <summary>
-        /// Advances past the impact of any striking cue - milestone 8.35x, which moved the floating
-        /// figure's appearance from the cue's START to the moment that cue's own motion peaks. Long
-        /// enough to clear both peaks (a lunge's at 34% of 280ms, a flash's at 50% of 240ms) and far
-        /// short of the figure's own fade, so a case using it is asserting what it means to.
-        /// </summary>
-        private static void AdvancePastImpact(KineticPlayback playback) =>
-            AdvanceBy(playback, KineticTiming.LongestPieceKineticSeconds * 0.6f);
-
         private static KineticCue Slide(int sequence = 1) => new KineticCue(
             sequence, KineticCueKind.Slide, Attacker,
             route: new[] { new HexCoordinate(0, 0), new HexCoordinate(3, 0) });
 
-        private static KineticCue Lunge(int sequence = 2, bool withDamage = true) => new KineticCue(
-            sequence, KineticCueKind.Lunge, Attacker, Defender,
-            number: withDamage
-                ? new KineticNumber(4, KineticNumberRole.Damage, CardColor.Red)
-                : KineticNumber.None);
+        private static KineticCue Lunge(int sequence = 2) => new KineticCue(
+            sequence, KineticCueKind.Lunge, Attacker, Defender);
 
         /// <summary>
         /// The amendment's own bound on a piece kinetic: short, 200-400ms. Asserted over the whole
@@ -137,7 +125,7 @@ namespace GuardsDigital.Tests.EditMode
         public void ALunge_LeansOutAndComesBack()
         {
             var playback = new KineticPlayback();
-            playback.Begin(new[] { Lunge(withDamage: false) });
+            playback.Begin(new[] { Lunge() });
 
             Assert.That(playback.LungeTargetFor(Attacker), Is.EqualTo(Defender));
 
@@ -174,145 +162,6 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(playback.MotionFor(Attacker).IsStill, Is.True,
                 "A half-finished slide does not outlive the projection change after it.");
             Assert.That(playback.MotionFor(Defender).IsStill, Is.False);
-        }
-
-        /// <summary>
-        /// A figure has to be READ, so it is the one thing an ordinary projection change does not cut
-        /// short - and the one thing a rewind must take away with it.
-        /// </summary>
-        [Test]
-        public void AFloatingFigure_OutlivesAnOrdinaryChangeButNotARewind()
-        {
-            var playback = new KineticPlayback();
-            playback.Begin(new[] { Lunge() });
-            AdvancePastImpact(playback);
-            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(1));
-
-            playback.Begin(Array.Empty<KineticCue>());
-            playback.Advance(0.01f);
-            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(1),
-                "An ordinary change must not snatch the figure away before it can be read.");
-
-            playback.CancelAll();
-            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(0),
-                "A rewind takes the figure with it: it described an event that no longer happened.");
-            Assert.That(playback.IsIdle, Is.True);
-        }
-
-        [Test]
-        public void AFigureIsStatedLongEnoughToRead_AndFadesOutRatherThanBlinking()
-        {
-            Assert.That(KineticTiming.FloatingNumberSeconds, Is.GreaterThan(0.5f),
-                "A figure that leaves in a third of a second cannot be read.");
-
-            var playback = new KineticPlayback();
-            playback.Begin(new[] { Lunge() });
-            AdvancePastImpact(playback);
-
-            Assert.That(playback.FloatingNumbers[0].Opacity, Is.EqualTo(1f).Within(0.0001f),
-                "It is fully drawn while it is new.");
-            Assert.That(playback.FloatingNumbers[0].Number.PrintedAmount, Is.EqualTo(4));
-            Assert.That(playback.FloatingNumbers[0].Number.Color, Is.EqualTo(CardColor.Red));
-
-            AdvanceBy(playback, KineticTiming.FloatingNumberSeconds * 0.85f);
-            Assert.That(playback.FloatingNumbers[0].Opacity, Is.LessThan(1f));
-            Assert.That(playback.FloatingNumbers[0].Rise, Is.GreaterThan(0.5f));
-
-            AdvanceBy(playback, KineticTiming.FloatingNumberSeconds);
-            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(0));
-        }
-
-        /// <summary>
-        /// Milestone 8.35x, on the first live internet playtest's finding that the attack and
-        /// defense figures "show up too fast". THE ORDERING: lunge, then impact, then the figure.
-        ///
-        /// <para>Before this the figure was begun at the same instant as its cue, which put the
-        /// number on screen about 95ms BEFORE the lunge had reached the piece it struck - the number
-        /// arrived ahead of its own cause. That is why it read as too fast even though it was
-        /// already up for nearly a second: there was nothing to follow from the blow to the figure,
-        /// because the figure came first.</para>
-        /// </summary>
-        [Test]
-        public void AFigureAppearsAtTheLungesImpact_AndNeverBeforeIt()
-        {
-            var playback = new KineticPlayback();
-            playback.Begin(new[] { Lunge() });
-
-            Assert.That(playback.MotionFor(Attacker).LungeLean, Is.EqualTo(0f).Within(0.0001f),
-                "At the cue's first instant the attacker has not moved yet...");
-            Assert.That(playback.FloatingNumbers, Is.Empty,
-                "...and the figure that describes the blow cannot already be up.");
-
-            var toImpact = KineticTiming.LungeSeconds * KineticPlayback.StrikePeak;
-            AdvanceBy(playback, toImpact * 0.5f);
-
-            Assert.That(playback.MotionFor(Attacker).LungeLean, Is.GreaterThan(0f),
-                "Halfway in, the lunge is visibly under way - it LEADS.");
-            Assert.That(playback.FloatingNumbers, Is.Empty,
-                "and the number still has not preceded its own cause.");
-
-            AdvanceBy(playback, toImpact * 0.6f);
-
-            Assert.That(playback.MotionFor(Attacker).LungeLean, Is.GreaterThan(0.9f),
-                "At the impact the attacker is at its furthest lean...");
-            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(1),
-                "...and THAT is when the figure appears.");
-            Assert.That(playback.FloatingNumbers[0].Number.Role,
-                Is.EqualTo(KineticNumberRole.Damage));
-            Assert.That(playback.FloatingNumbers[0].Opacity, Is.EqualTo(1f).Within(0.0001f),
-                "fully legible from the moment it lands.");
-        }
-
-        /// <summary>
-        /// Milestone 8.35x's other half of the same finding: once it appears, the figure holds long
-        /// enough to be read before it begins to leave.
-        /// </summary>
-        [Test]
-        public void AFigureHoldsForAboutASecondBeforeItBeginsToFade()
-        {
-            var playback = new KineticPlayback();
-            playback.Begin(new[] { Lunge() });
-
-            // Advance to the impact exactly, so what follows is measured from the figure's own
-            // appearance rather than from some point after it.
-            AdvanceBy(playback, KineticTiming.LungeSeconds * KineticPlayback.StrikePeak);
-            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(1),
-                "The figure is up as of the impact.");
-
-            AdvanceBy(playback, 0.85f);
-
-            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(1),
-                "A figure that has left within a second of appearing cannot be read.");
-            Assert.That(playback.FloatingNumbers[0].Opacity, Is.EqualTo(1f).Within(0.0001f),
-                "and it holds at FULL opacity that whole time rather than fading throughout.");
-
-            Assert.That(
-                KineticTiming.FloatingNumberSeconds * 0.65f, Is.GreaterThan(0.9f),
-                "The hold before the fade begins - FadeOutTail's first 65% - is about a second, " +
-                "which is the amendment's own 'long enough to read' restated as arithmetic.");
-        }
-
-        /// <summary>Damage floats over what was struck; a block floats over whoever blocked.</summary>
-        [Test]
-        public void AFigureFloatsOverThePieceItIsAbout()
-        {
-            var playback = new KineticPlayback();
-            playback.Begin(new[]
-            {
-                Lunge(),
-                new KineticCue(
-                    3, KineticCueKind.Flash, Defender,
-                    number: new KineticNumber(2, KineticNumberRole.Block, CardColor.Silver))
-            });
-            AdvancePastImpact(playback);
-
-            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(2));
-            var damage = FindByRole(playback.FloatingNumbers, KineticNumberRole.Damage);
-            var block = FindByRole(playback.FloatingNumbers, KineticNumberRole.Block);
-
-            Assert.That(damage.Anchor, Is.EqualTo(Defender), "Damage floats over the piece that was hit.");
-            Assert.That(block.Anchor, Is.EqualTo(Defender), "A block floats over the piece that blocked.");
-            Assert.That(block.Number.Color, Is.EqualTo(CardColor.Silver));
         }
 
         [Test]
@@ -354,7 +203,7 @@ namespace GuardsDigital.Tests.EditMode
         public void AHitchedFrame_DoesNotSwallowAKinetic()
         {
             var playback = new KineticPlayback();
-            playback.Begin(new[] { Lunge(withDamage: false) });
+            playback.Begin(new[] { Lunge() });
             playback.Advance(4f);
 
             Assert.That(playback.MotionFor(Attacker).IsStill, Is.False,
@@ -414,26 +263,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(KineticPlayback.PingPong(0.5f), Is.EqualTo(1f).Within(0.0001f));
             Assert.That(KineticPlayback.PingPong(1f), Is.EqualTo(0f).Within(0.0001f));
 
-            Assert.That(KineticPlayback.FadeOutTail(0f), Is.EqualTo(1f).Within(0.0001f));
-            Assert.That(KineticPlayback.FadeOutTail(1f), Is.EqualTo(0f).Within(0.0001f));
-
             Assert.That(KineticPlayback.Repeat(2.25f), Is.EqualTo(0.25f).Within(0.0001f));
             Assert.That(KineticPlayback.Repeat(-0.25f), Is.EqualTo(0.75f).Within(0.0001f));
             Assert.That(KineticPlayback.Repeat(float.NaN), Is.EqualTo(0f).Within(0.0001f));
-        }
-
-        private static KineticFloatingNumber FindByRole(
-            IReadOnlyList<KineticFloatingNumber> figures, KineticNumberRole role)
-        {
-            for (var index = 0; index < figures.Count; index++)
-            {
-                if (figures[index].Number.Role == role)
-                {
-                    return figures[index];
-                }
-            }
-
-            throw new AssertionException("No floating figure with role " + role + ".");
         }
     }
 }

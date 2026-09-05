@@ -2094,6 +2094,21 @@ namespace GuardsDigital.Presentation.Match
                 var isAvailableForCommitment = group == TrayCardGroup.Available && canSelect;
                 var isResolvingThisCard = resolvingCardInstanceId.HasValue &&
                     resolvingCardInstanceId.Value.Equals(card.Id);
+                // Milestone 8.35z9, and a defect live testing found: `isResolvingThisCard` is true
+                // from the moment this hero's card is REVEALED until it finishes resolving, which is
+                // a far wider window than "resolving now". Every hero reveals at the start of the
+                // round and turns then run one at a time in Initiative order, so between the reveal
+                // and this hero's own turn - potentially five other turns - the card was claiming the
+                // awaited gold while somebody else acted. The reported symptom was exact: during
+                // another hero's release pause, correctly narrated in the third person and with that
+                // hero's own tray correctly lit, the viewer's own committed card still wore the gold
+                // border that means "act now". The gold's whole grammar is "this is yours to answer",
+                // so a card only keeps it while the turn it belongs to is actually under way and this
+                // hero is the one acting. Both facts are public and unscoped, so this reads the same
+                // for a seat and for the Director.
+                var resolutionIsUnderWayForThisHero = projection.IsTurnActive &&
+                    projection.SelectedActor.IsDefined &&
+                    projection.SelectedActor.ActorId.Equals(heroId);
                 entries.Add(CurrentRoundCards.TrayCard(
                     projection,
                     card,
@@ -2107,7 +2122,8 @@ namespace GuardsDigital.Presentation.Match
                     // a card offered for commitment right now is a legal answer, and so - for the
                     // resolution-focus case - is the one card currently resolving, which is why it
                     // shines exactly like a clickable candidate although it carries no click any more.
-                    isAwaitedAnswer: isAvailableForCommitment || isResolvingThisCard,
+                    isAwaitedAnswer: isAvailableForCommitment ||
+                        (isResolvingThisCard && resolutionIsUnderWayForThisHero),
                     // Every OTHER hand card dims while one is resolving, so the eye lands on the card
                     // whose text is running; the resolving card itself is excluded by construction
                     // (its own group is never Available - it moved to the turn area on commitment).

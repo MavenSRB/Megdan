@@ -1221,6 +1221,14 @@ namespace GuardsDigital.Presentation.Match
                 ? Color.Lerp(MatchHudTheme.NarrationWarmBackground, accent, 0.14f)
                 : Color.Lerp(MatchHudTheme.PanelBackground, accent, 0.055f);
             body.a = 0.97f;
+            if (hero.IsAwaited)
+            {
+                // Milestone 8.35z9. The rail wears its gold as its own border and background - there
+                // is no child element here to find - so the shared marker goes on the rail itself.
+                // Rails are rebuilt by BuildOverview on every render, so this never needs clearing.
+                rail.AddToClassList(MatchHudTheme.AwaitedShineClass);
+            }
+
             rail.style.backgroundColor = body;
             rail.style.overflow = Overflow.Hidden;
             rail.style.flexShrink = 0f;

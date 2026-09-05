@@ -354,22 +354,15 @@ namespace GuardsDigital.Presentation.Match
                         return;
                     }
 
-                    // The number rides the lunge only when the attack actually landed. A defended
-                    // attack's figure is the BLOCK, and it belongs to the defender's own row below -
-                    // so a blocked hit never shows a damage number that was not dealt.
+                    // Milestone 8.35z9 retracted the floating figures on the user's own call after
+                    // live testing ("they just don't work"), so the lunge now carries motion alone.
+                    // `landed` still decides whether the defender flashes, which is a separate claim.
                     var landed = entry.Outcome == MatchLogOutcome.AttackSuccessful;
                     cues.Add(new KineticCue(
                         entry.Sequence,
                         KineticCueKind.Lunge,
                         attacker,
-                        defender,
-                        number: landed
-                            ? KineticCardFacts.PrintedNumber(
-                                projection,
-                                entry.SubjectCardInstanceId,
-                                PrintedValueChannel.Attack,
-                                KineticNumberRole.Damage)
-                            : KineticNumber.None));
+                        defender));
 
                     if (landed)
                     {
@@ -390,15 +383,7 @@ namespace GuardsDigital.Presentation.Match
                         return;
                     }
 
-                    cues.Add(new KineticCue(
-                        entry.Sequence,
-                        KineticCueKind.Flash,
-                        defender,
-                        number: KineticCardFacts.PrintedNumber(
-                            projection,
-                            entry.SubjectCardInstanceId,
-                            PrintedValueChannel.Defense,
-                            KineticNumberRole.Block)));
+                    cues.Add(new KineticCue(entry.Sequence, KineticCueKind.Flash, defender));
                     return;
                 }
 
@@ -442,121 +427,6 @@ namespace GuardsDigital.Presentation.Match
                 default:
                     return;
             }
-        }
-    }
-
-    /// <summary>
-    /// Milestone 8.35y. Reads the two printed facts a floating number needs off the definition
-    /// catalog: the value, and the colour it is tinted with.
-    ///
-    /// <para>Both are read from the same place for the same reason - the user's direction that the
-    /// colour source "is the definition catalog, never a presentation-side palette guess". A card's
-    /// printed colour is stated by its own <see cref="CardProgressionProfile"/>, which
-    /// <see cref="CardDefinition"/> refuses to be constructed without, and its printed values by its
-    /// own action definitions. Every client holds the same catalog, so two clients shown the same log
-    /// row draw the same number in the same colour without anything being sent between them.</para>
-    ///
-    /// <para>An unreadable card answers <see cref="KineticNumber.None"/> rather than throwing or
-    /// guessing: a kinetic is a flourish, and a missing figure must cost the flourish and never the
-    /// frame.</para>
-    /// </summary>
-    public static class KineticCardFacts
-    {
-        public static KineticNumber PrintedNumber(
-            IMatchReadModel projection,
-            CardInstanceId cardInstanceId,
-            PrintedValueChannel channel,
-            KineticNumberRole role)
-        {
-            var definition = FindDefinition(projection, cardInstanceId);
-            if (definition == null || !TryPrintedValue(definition, channel, out var amount))
-            {
-                return KineticNumber.None;
-            }
-
-            return new KineticNumber(amount, role, definition.Progression.Color);
-        }
-
-        /// <summary>The printed colour of a named card, or <see cref="CardColor.None"/>.</summary>
-        public static CardColor ColorOf(IMatchReadModel projection, CardInstanceId cardInstanceId)
-        {
-            var definition = FindDefinition(projection, cardInstanceId);
-            return definition == null ? CardColor.None : definition.Progression.Color;
-        }
-
-        private static CardDefinition FindDefinition(
-            IMatchReadModel projection, CardInstanceId cardInstanceId)
-        {
-            if (projection == null || !cardInstanceId.IsDefined)
-            {
-                return null;
-            }
-
-            var cards = projection.Cards;
-            var definitions = projection.Definitions;
-            if (cards == null || definitions == null)
-            {
-                return null;
-            }
-
-            for (var index = 0; index < cards.Count; index++)
-            {
-                var card = cards[index];
-                if (card == null || !card.Id.Equals(cardInstanceId))
-                {
-                    continue;
-                }
-
-                for (var candidate = 0; candidate < definitions.Count; candidate++)
-                {
-                    var definition = definitions[candidate];
-                    if (definition != null && definition.Reference.Equals(card.DefinitionReference))
-                    {
-                        return definition;
-                    }
-                }
-
-                return null;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// The first value the card prints on <paramref name="channel"/>, in the card's own declared
-        /// action order. Deterministic, so every client reads the same figure off the same card.
-        /// </summary>
-        private static bool TryPrintedValue(
-            CardDefinition definition, PrintedValueChannel channel, out int amount)
-        {
-            amount = 0;
-            var actions = definition.ActionDefinitions;
-            if (actions == null)
-            {
-                return false;
-            }
-
-            for (var index = 0; index < actions.Count; index++)
-            {
-                var action = actions[index];
-                if (action?.BaseValues == null)
-                {
-                    continue;
-                }
-
-                for (var value = 0; value < action.BaseValues.Count; value++)
-                {
-                    if (action.BaseValues[value].Channel != channel)
-                    {
-                        continue;
-                    }
-
-                    amount = action.BaseValues[value].Amount;
-                    return amount >= 0;
-                }
-            }
-
-            return false;
         }
     }
 }

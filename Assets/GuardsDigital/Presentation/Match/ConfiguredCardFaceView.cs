@@ -229,6 +229,9 @@ namespace GuardsDigital.Presentation.Match
                 pickingMode = PickingMode.Ignore,
                 focusable = false
             };
+            // Milestone 8.35z9. The shared marker, so the circling sweep can find this ring without
+            // knowing it is a card - see MatchHudTheme.AwaitedShineClass for why a class and not a name.
+            shine.AddToClassList(MatchHudTheme.AwaitedShineClass);
             var inset = -(CardFootprint.ExteriorOutlineWidth + 3f);
             shine.style.position = Position.Absolute;
             shine.style.left = inset;

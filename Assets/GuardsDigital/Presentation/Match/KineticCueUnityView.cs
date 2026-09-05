@@ -34,9 +34,6 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>How much a struck piece swells at the peak of its flash.</summary>
         public const float FlashScalePunch = 0.14f;
 
-        /// <summary>How far a floating figure drifts upward over its life, in board units.</summary>
-        public const float FloatingNumberRiseWorld = 0.85f;
-
         /// <summary>
         /// The most shine overlays the circling light travels at once. The amendment gates this pass on
         /// the recorded perf thresholds and asks for "few animated elements at once"; a hand of five
@@ -45,15 +42,16 @@ namespace GuardsDigital.Presentation.Match
         public const int MaxSweptShineElements = 8;
 
         private const string OverlayName = "gd-kinetic-overlay";
-        private const string NumberClass = "gd-kinetic-number";
         private const string SweepName = "gd-kinetic-sweep";
-        private const string ShineElementName = "gd-card-shine";
+        // Milestone 8.35z9 retired `ShineElementName = "gd-card-shine"` from here: that name belongs
+        // to milestone 8.30d's prepared printed-artwork overlay, which this file mistook for the
+        // awaited-answer shine for four milestones. The sweep now asks for
+        // MatchHudTheme.AwaitedShineClass, which is the marker the awaited treatments actually wear.
 
         private readonly BoardInteractionUnityView board;
         private readonly ConfiguredMatchHudRenderer hud;
         private readonly Func<Camera> cameraSource;
         private readonly KineticPlayback playback = new KineticPlayback();
-        private readonly Dictionary<int, Label> numberElements = new Dictionary<int, Label>();
         private readonly List<PieceRestore> restorations = new List<PieceRestore>();
         private readonly List<VisualElement> sweeps = new List<VisualElement>();
         private VisualElement overlay;
@@ -80,11 +78,10 @@ namespace GuardsDigital.Presentation.Match
             model = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
             if (model.SnapToAuthoritative)
             {
-                // A first sight of the match, or a log that went backwards. Everything stops, every
-                // piece is put back, and no figure survives to describe an event that was undone.
+                // A first sight of the match, or a log that went backwards. Everything stops and
+                // every piece is put back.
                 playback.CancelAll();
                 RestoreEveryPiece();
-                ClearNumberElements();
                 return;
             }
 
@@ -100,7 +97,6 @@ namespace GuardsDigital.Presentation.Match
             playback.Advance(deltaSeconds);
             ApplyPieceMotions();
             ApplyBoardMarkPulse();
-            ApplyFloatingNumbers();
             ApplyShineSweep();
         }
 
@@ -459,132 +455,6 @@ namespace GuardsDigital.Presentation.Match
                 : Vector3.one;
         }
 
-        // ---- The floating figures.
-
-        private void ApplyFloatingNumbers()
-        {
-            var figures = playback.FloatingNumbers;
-            if (figures.Count == 0)
-            {
-                if (numberElements.Count > 0)
-                {
-                    ClearNumberElements();
-                }
-
-                return;
-            }
-
-            var layer = EnsureOverlay();
-            var camera = cameraSource();
-            if (layer == null || camera == null)
-            {
-                return;
-            }
-
-            var viewport = new Vector2(Screen.width, Screen.height);
-            var live = new HashSet<int>();
-            for (var index = 0; index < figures.Count; index++)
-            {
-                var figure = figures[index];
-                if (!TryWorldPositionOf(figure.Anchor, out var anchor))
-                {
-                    continue;
-                }
-
-                live.Add(figure.Sequence);
-                var element = EnsureNumberElement(layer, figure);
-                var world = anchor + (Vector3.up * (FloatingNumberRiseWorld * figure.Rise));
-                var screen = camera.WorldToScreenPoint(world);
-                if (screen.z <= 0f)
-                {
-                    element.style.opacity = 0f;
-                    continue;
-                }
-
-                var panel = MatchHudPanelScaling.ScreenToPanelPoint(
-                    new Vector2(screen.x, screen.y), viewport.x, viewport.y);
-                element.style.left = panel.x;
-                element.style.top = panel.y;
-                element.style.opacity = figure.Opacity;
-            }
-
-            RemoveNumberElementsExcept(live);
-        }
-
-        private Label EnsureNumberElement(VisualElement layer, KineticFloatingNumber figure)
-        {
-            if (numberElements.TryGetValue(figure.Sequence, out var existing) && existing != null)
-            {
-                return existing;
-            }
-
-            var label = new Label(figure.Number.PrintedAmount.ToString())
-            {
-                name = NumberClass + "-" + figure.Sequence,
-                pickingMode = PickingMode.Ignore
-            };
-            label.AddToClassList(NumberClass);
-
-            // The printed colour of the card the figure came off, drawn through the same mapping every
-            // card face on this HUD already uses. A dark outline stands under it so gold and silver
-            // stay legible over a light board and red and blue over a dark one - the amendment's
-            // "legible over the board in both number sizes".
-            label.style.color = MatchHudTheme.Face(figure.Number.Color);
-            label.style.unityFontStyleAndWeight = FontStyle.Bold;
-            label.style.fontSize = figure.Number.Role == KineticNumberRole.Damage ? 30f : 22f;
-            label.style.position = Position.Absolute;
-            label.style.unityTextOutlineWidth = 2f;
-            label.style.unityTextOutlineColor = MatchHudTheme.TopBarBackground;
-            label.style.translate = new Translate(Length.Percent(-50f), Length.Percent(-100f));
-            layer.Add(label);
-            numberElements[figure.Sequence] = label;
-            return label;
-        }
-
-        private void RemoveNumberElementsExcept(HashSet<int> live)
-        {
-            if (numberElements.Count == 0)
-            {
-                return;
-            }
-
-            List<int> stale = null;
-            foreach (var pair in numberElements)
-            {
-                if (live.Contains(pair.Key))
-                {
-                    continue;
-                }
-
-                (stale ?? (stale = new List<int>())).Add(pair.Key);
-            }
-
-            if (stale == null)
-            {
-                return;
-            }
-
-            for (var index = 0; index < stale.Count; index++)
-            {
-                if (numberElements.TryGetValue(stale[index], out var element))
-                {
-                    element?.RemoveFromHierarchy();
-                }
-
-                numberElements.Remove(stale[index]);
-            }
-        }
-
-        private void ClearNumberElements()
-        {
-            foreach (var pair in numberElements)
-            {
-                pair.Value?.RemoveFromHierarchy();
-            }
-
-            numberElements.Clear();
-        }
-
         /// <summary>
         /// The one absolutely-positioned, non-picking layer every kinetic overlay lives on. It is a
         /// sibling added last rather than an edit to any HUD panel, so it draws above the HUD, takes
@@ -695,19 +565,56 @@ namespace GuardsDigital.Presentation.Match
             mark.style.top = Length.Percent(top);
         }
 
-        private void CollectSweepHosts(VisualElement root)
+        /// <summary>
+        /// Milestone 8.35z9. Every element wearing the awaited gold, found by the ONE shared marker
+        /// <see cref="MatchHudTheme.AwaitedShineClass"/> - a lit hero rail and a shining card face
+        /// alike, which are different element types on different surfaces and cannot share a name.
+        ///
+        /// <para><b>What this replaced, and why it animated nothing for four milestones.</b> It used
+        /// to ask for <c>Image</c> elements NAMED <c>gd-card-shine</c>. That is the milestone 8.30d
+        /// prepared printed-artwork overlay - a different family altogether, present only on cards
+        /// whose art has a traced shine and unrelated to whether the match is waiting on anybody.
+        /// The awaited ring is a <c>VisualElement</c> called <c>gd-card-awaited-shine</c> and the
+        /// awaited rail has no child element at all, so this query could not match either one: wrong
+        /// name AND wrong type. It returned an empty list, the caller returned early, and nothing
+        /// ever swept - silently, because an empty HUD is a legitimate state for this to find.</para>
+        ///
+        /// <para>Exposed <c>internal static</c> rather than kept private so the guard case can assert
+        /// on THIS code rather than on a copy of it: "a composed HUD with a lit tray and a shining
+        /// card yields a non-empty host set" is the claim that had no test.</para>
+        /// </summary>
+        internal static List<VisualElement> FindShineSweepHosts(VisualElement root)
         {
-            sweeps.Clear();
-            var hosts = root.Query<Image>(name: ShineElementName).ToList();
-            for (var index = 0; index < hosts.Count && sweeps.Count < MaxSweptShineElements; index++)
+            var found = new List<VisualElement>();
+            if (root == null)
+            {
+                return found;
+            }
+
+            var hosts = root.Query<VisualElement>(className: MatchHudTheme.AwaitedShineClass).ToList();
+            for (var index = 0; index < hosts.Count && found.Count < MaxSweptShineElements; index++)
             {
                 var host = hosts[index];
-                if (host?.parent == null)
+                if (host == null)
                 {
                     continue;
                 }
 
-                sweeps.Add(EnsureSweepMark(host.parent));
+                found.Add(host);
+            }
+
+            return found;
+        }
+
+        private void CollectSweepHosts(VisualElement root)
+        {
+            sweeps.Clear();
+            var hosts = FindShineSweepHosts(root);
+            for (var index = 0; index < hosts.Count; index++)
+            {
+                // The mark rides INSIDE the element that carries the gold, so its path traces that
+                // element's own border - the card's ring, the rail's frame - rather than a parent's.
+                sweeps.Add(EnsureSweepMark(hosts[index]));
             }
         }
 

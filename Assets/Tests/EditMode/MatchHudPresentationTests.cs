@@ -5569,6 +5569,114 @@ namespace GuardsDigital.Tests.EditMode
                 "The dim lifts once the resolution - and the release - end.");
         }
 
+        /// <summary>
+        /// Milestone 8.35z9. THE GUARD THAT DID NOT EXIST, and whose absence let the circling shine
+        /// sweep animate nothing at all for four milestones.
+        ///
+        /// <para><c>KineticCueUnityView</c> collected its sweep hosts by asking for <c>Image</c>
+        /// elements NAMED <c>gd-card-shine</c> - milestone 8.30d's prepared printed-artwork overlay,
+        /// a different family entirely from the awaited-answer gold, which is a
+        /// <c>VisualElement</c> called <c>gd-card-awaited-shine</c> on a card and no child element
+        /// at all on a rail. Wrong name and wrong type, so the query returned an empty list, the
+        /// caller returned early, and the sweep silently did nothing. Live, that read as trays and
+        /// cards lighting statically while nothing ever circled them.</para>
+        ///
+        /// <para>The claim under test is the one nothing asserted: a composed HUD showing an awaited
+        /// card AND a lit tray yields a NON-EMPTY host set. A zero-host silent failure cannot be
+        /// reshipped past this.</para>
+        /// </summary>
+        [Test]
+        public void TheShineSweep_FindsItsHostsOnAComposedHudWithALitTrayAndAShiningCard()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var actingId = session.Projection.SelectedActor.ActorId;
+
+            var handView = new DirectorHandsUnityView();
+            var handPresenter = new DirectorHandsPresenter(session, handView);
+            handPresenter.SelectViewedHero(actingId);
+            Assert.That(handView.Model.ViewedHand.TrayCards.Any(card => card.IsAwaitedAnswer),
+                Is.True, "The fixture must actually draw a shining card, or this proves nothing.");
+
+            var railView = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, railView).Refresh();
+            Assert.That(railView.Model.Heroes.Any(hero => hero.IsAwaited), Is.True,
+                "and a lit tray, which is the host with no child element of its own.");
+
+            // Both surfaces under one root, exactly as the HUD composes them - the sweep walks the
+            // whole HUD tree rather than one panel.
+            var root = new VisualElement();
+            root.Add(handView.Root);
+            root.Add(railView.Root);
+
+            var hosts = KineticCueUnityView.FindShineSweepHosts(root);
+            Assert.That(hosts, Is.Not.Empty,
+                "The circling sweep must find the elements wearing the awaited gold. An empty host " +
+                "set is the exact silent failure this case exists to make impossible.");
+            Assert.That(
+                hosts.Any(host => HudElements.IsSelfOrDescendant(handView.Root, host)), Is.True,
+                "The shining card is one of them.");
+            Assert.That(
+                hosts.Any(host => HudElements.IsSelfOrDescendant(railView.Root, host)), Is.True,
+                "and so is the lit tray, which is why the marker is a class and not an element name.");
+            Assert.That(hosts.Count, Is.LessThanOrEqualTo(KineticCueUnityView.MaxSweptShineElements),
+                "The recorded 'few animated elements at once' bound still holds.");
+        }
+
+        /// <summary>
+        /// Milestone 8.35z9, and the gold grammar stated as a rule rather than as a habit: GOLD
+        /// MEANS "THIS IS YOURS TO ANSWER", so a player who is not being asked for anything wears
+        /// none of it.
+        ///
+        /// <para>Live testing found the leak. While another hero's turn stood - narrated correctly
+        /// in the third person, that hero's own tray correctly lit - the viewer's own committed card
+        /// still wore the gold border that means act now. The cause was not legacy styling but the
+        /// predicate: <c>isResolvingThisCard</c> is true from the moment a hero's card is REVEALED
+        /// until it finishes resolving, and every hero reveals at the start of the round while turns
+        /// then run one at a time. Between its reveal and its own turn - potentially five other
+        /// turns - a card claimed the awaited gold while somebody else was acting.</para>
+        ///
+        /// <para>Asserted through the shared marker class, which is what makes "zero gold anywhere on
+        /// this viewer's surface" a question a test can ask at all: before milestone 8.35z9 the gold
+        /// treatments shared no name, no type and no class.</para>
+        /// </summary>
+        [Test]
+        public void AHeroWhoIsNotActing_WearsNoAwaitedGoldWhileAnotherHerosTurnStands()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var projection = session.Projection;
+            var actingId = projection.SelectedActor.ActorId;
+            var bystanderId = projection.Setup.Heroes
+                .First(hero => !hero.HeroId.Equals(actingId)).HeroId;
+
+            // The bystander really is in the state the defect was reported from: a card revealed for
+            // this round, not yet resolved, while somebody else holds the turn.
+            Assert.That(projection.GetCommitment(bystanderId).RevealedCardInstanceId.HasValue,
+                Is.True, "The bystander has revealed a card, or this case is not the reported state.");
+            Assert.That(projection.IsTurnActive, Is.True);
+
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            presenter.SelectViewedHero(bystanderId);
+
+            Assert.That(view.Model.ViewedHand.TrayCards,
+                Has.None.Matches<TrayCardViewModel>(card => card.IsAwaitedAnswer),
+                "A hero the match is not waiting on has no awaited answer, so no card of theirs may " +
+                "claim the gold - the committed one included.");
+            Assert.That(
+                Descendants(view.Root).Any(element =>
+                    element.ClassListContains(MatchHudTheme.AwaitedShineClass)),
+                Is.False,
+                "and nothing on that hero's whole surface wears the shared awaited marker.");
+
+            // The same instant, from the acting hero's side: the gold did not simply go away.
+            var actingView = new DirectorHandsUnityView();
+            new DirectorHandsPresenter(session, actingView).SelectViewedHero(actingId);
+            Assert.That(actingView.Model.ViewedHand.TrayCards.Any(card => card.IsAwaitedAnswer),
+                Is.True,
+                "The hero whose turn is actually under way still shines, which is what says this " +
+                "narrowed the grammar rather than removing it.");
+        }
+
         /// <summary>The rail element drawn for one hero, found by the model it was rendered from.</summary>
         private static VisualElement RailOf(HeroOverviewsUnityView view, HeroId heroId)
         {
