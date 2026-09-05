@@ -459,7 +459,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "Rebuilding owns the same bounded highlight resources.");
             foreach (var name in new[]
                      {
-                         "gd-narration", "gd-topbar", "gd-card-buttons", "gd-tie-breaker"
+                         "gd-narration", "gd-topbar", "gd-card-buttons", "gd-tie-breaker-rail-banner"
                      })
             {
                 Assert.That(UiPlayer.Descendants(root.Hud.RootElement)

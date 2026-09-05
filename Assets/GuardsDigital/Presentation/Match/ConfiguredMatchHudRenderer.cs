@@ -171,7 +171,46 @@ namespace GuardsDigital.Presentation.Match
         // Keeps UI Toolkit border/pixel snapping from turning two mathematically adjacent rectangles
         // into a live one-pixel overlap at non-identity panel scales.
         private const float BoardTraySeparation = 2f;
-        public const float TieBreakerDiameter = 160f;
+
+        /// <summary>
+        /// The retired centre-strip Tie Breaker disc's replacement: a slim banner's height above
+        /// the HOLDING team's own rail column. Item 2 of the post-8.35z9 top-strip redesign
+        /// (user-ruled 2026-09-05): "Use team trays to show it somehow. Like a line above it, that
+        /// says tiebreaker or something." Reserved above BOTH rail columns always, whether or not
+        /// that side currently holds it - the standing "reserve the slot, change only its content"
+        /// rule this file already applies to the plaque's own selection edge and the current-card
+        /// marker - so a handover never grows or shrinks either column.
+        ///
+        /// <para><b>16, not a rounder number, because the live three-rail fit gate is a hard
+        /// budget.</b> <see cref="MinimalHexGridPlayModeTests.Scene_DrawsAllSixOfficialRailsInsideTheirOwnColumnsWithTheTrayBetweenThem"/>
+        /// measured the three stacked plaques at 818.6667 reference units - not the 733 an older
+        /// note carried forward unverified - against the old column's 848, a slack of only 29.33.
+        /// This height plus <see cref="TieBreakerRailBannerGap"/> spends 20 of that, leaving the
+        /// column at 828: a real, measured 9.33-unit clearance, not an assumed one.</para>
+        /// </summary>
+        public const float TieBreakerRailBannerHeight = 16f;
+
+        /// <summary>
+        /// The small breathing gap between the TIEBREAKER rail banner and the rail column beneath
+        /// it - deliberately smaller than the standing <see cref="Margin"/> because the three-rail
+        /// fit gate leaves little room to spend (see <see cref="TieBreakerRailBannerHeight"/>).
+        /// </summary>
+        private const float TieBreakerRailBannerGap = 4f;
+
+        /// <summary>
+        /// The TIEBREAKER rail banner's handover transition, in milliseconds. The TWENTIETH
+        /// amendment's motion language ("EASING EVERYWHERE ... 200-450ms") names the band; this
+        /// sits in its middle.
+        /// </summary>
+        private const int TieBreakerRailBannerTransitionMs = 350;
+
+        /// <summary>
+        /// The centred narration bar's preferred width, in reference units - wide enough for the
+        /// longest sentence this build narrates ("XARGATHA — CHOOSING ATTACK TARGET" and the like)
+        /// without spanning the whole strip the way the retired full-width lane did.
+        /// </summary>
+        private const float NarrationBarPreferredWidth = 900f;
+
         private const float EventLogPreferredWidth = 720f;
         private const float EventLogPreferredHeight = 360f;
 
@@ -343,6 +382,9 @@ namespace GuardsDigital.Presentation.Match
         private bool trayShowsUpgradeComparison;
         private VisualElement directorDrawer;
         private Button directorToggle;
+        private VisualElement tieBreakerRailBanner;
+        private Label tieBreakerRailBannerLabel;
+        private TeamSide? tieBreakerRailBannerSide;
         private MatchStatusBarUnityView statusBar;
         private MatchLogUnityView matchLog;
         private DirectorHandsUnityView hands;
@@ -376,7 +418,16 @@ namespace GuardsDigital.Presentation.Match
         public Rect CardPanelRect => GetCardPanelRect();
         public Rect UnavailableCardGroupRect => CalculateUnavailableCardGroupRect(
             PanelViewport.x, PanelViewport.y);
-        public Rect TieBreakerIndicatorRect => GetTieBreakerIndicatorRect();
+        /// <summary>The centred narration bar's own rectangle - the retired full-width lane's replacement.</summary>
+        public Rect NarrationBarRect => GetNarrationBarRect();
+
+        /// <summary>Where the TIEBREAKER rail banner stands when Red holds the Tie Breaker.</summary>
+        public Rect RedTieBreakerRailBannerRect =>
+            CalculateTieBreakerRailBannerRect(PanelViewport.x, PanelViewport.y, TeamSide.Red);
+
+        /// <summary>Where the TIEBREAKER rail banner stands when Blue holds the Tie Breaker.</summary>
+        public Rect BlueTieBreakerRailBannerRect =>
+            CalculateTieBreakerRailBannerRect(PanelViewport.x, PanelViewport.y, TeamSide.Blue);
         public Rect RuleEventLogPanelRect => GetRuleEventLogRect();
         public Rect StatusBarRect => CalculateStatusBarRect(PanelViewport.x, PanelViewport.y);
 
@@ -515,8 +566,7 @@ namespace GuardsDigital.Presentation.Match
                 (IsDirectorDrawerOpen && GetDirectorDrawerRect().Contains(panelPosition)) ||
                 (diagnostics?.Model?.IsExpanded == true && GetRuleEventLogRect().Contains(panelPosition)) ||
                 (matchLog?.Model?.IsOpen == true &&
-                    GetMatchLogDropdownRect(CalculateStatusBarRect(viewport.x, viewport.y))
-                        .Contains(panelPosition)))
+                    GetMatchLogDropdownRect(GetNarrationBarRect()).Contains(panelPosition)))
             {
                 return true;
             }
@@ -725,9 +775,49 @@ namespace GuardsDigital.Presentation.Match
             statusBar = new MatchStatusBarUnityView();
             root.Add(statusBar.Root);
 
+            if (heroOverviews != null)
+            {
+                root.Add(heroOverviews.Root);
+            }
+
+            // Item 2 of the post-8.35z9 top-strip redesign (user-ruled 2026-09-05): the retired
+            // disc's fact moves here, above the HOLDING team's own rail column. One element that
+            // eases its own `left` between the two rails on handover, rather than two elements
+            // toggling visibility - "moves ... with an eased transition ... no pop" is a
+            // TRANSLATION, not a cross-fade. Added after the rails for the same z-order reason the
+            // match-log fix above states.
+            tieBreakerRailBanner = HudElements.Panel(Color.clear);
+            tieBreakerRailBanner.name = "gd-tie-breaker-rail-banner";
+            tieBreakerRailBanner.style.position = Position.Absolute;
+            tieBreakerRailBanner.style.display = DisplayStyle.None;
+            tieBreakerRailBanner.style.alignItems = Align.Center;
+            tieBreakerRailBanner.style.justifyContent = Justify.Center;
+            tieBreakerRailBanner.pickingMode = PickingMode.Ignore;
+            HudElements.Border(tieBreakerRailBanner, Color.clear, 0f, 4f);
+            tieBreakerRailBanner.style.transitionProperty =
+                new List<StylePropertyName> { new StylePropertyName("left") };
+            tieBreakerRailBanner.style.transitionDuration =
+                new List<TimeValue> { new TimeValue(TieBreakerRailBannerTransitionMs, TimeUnit.Millisecond) };
+            tieBreakerRailBanner.style.transitionTimingFunction =
+                new List<EasingFunction> { new EasingFunction(EasingMode.EaseInOutSine) };
+            tieBreakerRailBannerLabel = HudElements.Text(
+                "TIEBREAKER", 10f, Color.white, FontStyle.Bold);
+            tieBreakerRailBannerLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            // The requested word stays one line inside the slim 16-unit banner - the same
+            // no-wrap statement the retired disc's own label made.
+            tieBreakerRailBannerLabel.style.whiteSpace = WhiteSpace.NoWrap;
+            tieBreakerRailBanner.Add(tieBreakerRailBannerLabel);
+            tieBreakerRailBanner.tooltip = "TIEBREAKER";
+            root.Add(tieBreakerRailBanner);
+
             if (matchLog != null)
             {
                 statusBar.HostMatchLogToggle(matchLog.ToggleRoot);
+                // Z-order corrective (post-8.35z9). `root.Add` order is UI Toolkit paint order, and the
+                // drop-down used to be added ahead of the hero rails - so an open panel whose bounds
+                // reached a rail column painted fully BEHIND it, clipping its entries. Added after the
+                // rails now, so the log always paints above both columns; its geometry (clear of both
+                // rails by construction) is unchanged, this is z-order alone.
                 root.Add(matchLog.PanelRoot);
                 // Milestone 8.35x. Click-away: a pointer-down anywhere that is not the drop-down's own
                 // toggle or panel asks it closed. Registered in the capture phase on the whole HUD root
@@ -743,11 +833,6 @@ namespace GuardsDigital.Presentation.Match
                         }
                     },
                     TrickleDown.TrickleDown);
-            }
-
-            if (heroOverviews != null)
-            {
-                root.Add(heroOverviews.Root);
             }
 
             // Milestone 8.30d, the user's final call: the dock draws NO chrome and reserves NO
@@ -922,8 +1007,10 @@ namespace GuardsDigital.Presentation.Match
             var width = viewport.x;
             var height = viewport.y;
             var bar = CalculateStatusBarRect(width, height);
-            statusBar?.Layout(bar, GetTieBreakerIndicatorRect());
-            matchLog?.Layout(GetMatchLogDropdownRect(bar));
+            var narrationBar = CalculateNarrationBarRect(width, height);
+            statusBar?.Layout(bar, narrationBar);
+            matchLog?.Layout(GetMatchLogDropdownRect(narrationBar));
+            LayoutTieBreakerRailBanner(width, height);
             // Milestone 8.25f2. The tray is a transparent full-width layout band. Its fixed ordinary
             // height fits one 420-unit face plus only card chrome, while the five faces overlap inside
             // the compact left footprint. Metadata sits in the separate status dock to the map's left.
@@ -1232,7 +1319,14 @@ namespace GuardsDigital.Presentation.Match
             var x = side == TeamSide.Red
                 ? Margin
                 : Mathf.Max(Margin, panelWidth - width - Margin);
-            var top = StatusBarHeight + Margin;
+            // The rail column's top reserves the TIEBREAKER banner's own slot ABOVE it (item 2 of
+            // the post-8.35z9 top-strip redesign): the banner sits where the column used to start
+            // (the standing gap between the strip and the column is now the gap above the banner),
+            // then a small gap of its own before the column. Reserved for BOTH sides always, so a
+            // Tie Breaker handover moves only which side reads the banner, never either column's
+            // own height. Measured against the live three-rail fit gate, not assumed - see
+            // TieBreakerRailBannerHeight's own doc comment for the exact budget.
+            var top = StatusBarHeight + Margin + TieBreakerRailBannerHeight + TieBreakerRailBannerGap;
             return new Rect(x, top, width, Mathf.Max(0f, bottomBoundary - top - Margin));
         }
 
@@ -1245,26 +1339,52 @@ namespace GuardsDigital.Presentation.Match
             CalculateCardPanelRect(PanelViewport.x, PanelViewport.y);
 
         /// <summary>
-        /// The Tie Breaker badge's own rectangle in the centre of the status strip. Milestone 8.25c made it a
-        /// stated function of the viewport rather than a reader of the current screen, so a check can
-        /// ask where it is at a viewport that is not the one the fixture is running at.
+        /// The centred narration bar's own rectangle, in the strip's own coordinate space (so it is
+        /// used both as the bar's layout rect and, translated by the strip's own origin, as the
+        /// match-log drop-down's anchor). Item 2 of the post-8.35z9 top-strip redesign (user-ruled
+        /// 2026-09-05): the narration - "the game's most important line" - moves from the retired
+        /// full-width lane to a centred bar, keeping its gold treatment, typography and log
+        /// chevron. Bounded against <see cref="CalculateHeroRailWidth"/> so it is clear of both
+        /// rail columns BY CONSTRUCTION at any viewport, not only the reference one.
         /// </summary>
-        public static Rect CalculateTieBreakerIndicatorRect(float panelWidth, float panelHeight)
+        public static Rect CalculateNarrationBarRect(float panelWidth, float panelHeight)
         {
-            var diameter = Mathf.Min(TieBreakerDiameter, Mathf.Max(0f, panelWidth));
+            var railWidth = CalculateHeroRailWidth(panelWidth);
+            var maxWidth = Mathf.Max(0f, panelWidth - ((railWidth + (Margin * 2f)) * 2f));
+            var width = Mathf.Min(NarrationBarPreferredWidth, maxWidth);
+            var height = Mathf.Min(
+                StatusBarNarrationHeight,
+                Mathf.Max(0f, panelHeight - StatusBarIdentityRowHeight));
             return new Rect(
-                Mathf.Max(0f, (panelWidth - diameter) * 0.5f),
-                (Mathf.Min(StatusBarHeight, Mathf.Max(0f, panelHeight)) - diameter) * 0.5f,
-                diameter,
-                diameter);
+                Mathf.Max(0f, (panelWidth - width) * 0.5f),
+                StatusBarIdentityRowHeight,
+                width,
+                height);
         }
 
-        private static Rect GetTieBreakerIndicatorRect() =>
-            CalculateTieBreakerIndicatorRect(PanelViewport.x, PanelViewport.y);
+        private static Rect GetNarrationBarRect() =>
+            CalculateNarrationBarRect(PanelViewport.x, PanelViewport.y);
+
+        /// <summary>
+        /// The slim TIEBREAKER banner's own rectangle above the named side's rail column - the
+        /// retired centre-strip disc's replacement. Always that side's own
+        /// <see cref="CalculateHeroRailRect(float,float,TeamSide)"/> x/width, so the live element's
+        /// eased transition on handover is a pure horizontal move between two named targets rather
+        /// than a re-derivation of anything about the column itself.
+        /// </summary>
+        public static Rect CalculateTieBreakerRailBannerRect(
+            float panelWidth, float panelHeight, TeamSide holdingSide)
+        {
+            var width = CalculateHeroRailWidth(panelWidth);
+            var x = holdingSide == TeamSide.Red
+                ? Margin
+                : Mathf.Max(Margin, panelWidth - width - Margin);
+            return new Rect(x, StatusBarHeight + Margin, width, TieBreakerRailBannerHeight);
+        }
 
         /// <summary>
         /// End Turn's own rectangle in the status bar's top-right slot, stated as a function of the
-        /// viewport for the reason <see cref="CalculateTieBreakerIndicatorRect"/> is: a fixture with no
+        /// viewport for the reason <see cref="CalculateNarrationBarRect"/> is: a fixture with no
         /// live panel has to be able to ask where it lands at a viewport it is not running at.
         ///
         /// <para>The slot replaces the Tie Breaker's former right-side position while the new round
@@ -1686,17 +1806,66 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35x. Where the match-log drop-down unrolls: left-aligned with the top strip it
-        /// hangs from, a small gap below it, bounded well short of the hero rail zone so it never
-        /// reserves board space and never sits over a rail or the tray.
+        /// Milestone 8.35x, re-anchored by item 2 of the post-8.35z9 top-strip redesign: where the
+        /// match-log drop-down unrolls, CENTRED beneath the narration bar it hangs from - the
+        /// TENTH amendment's "opens up as a drop down of a naration bar" read literally now that
+        /// the bar itself is centred rather than full-width. Clamped to the viewport's own margins
+        /// so a preferred width wider than a narrow bar still centres on the SCREEN rather than
+        /// overflowing it; clear of both hero rail columns by construction, the same guarantee
+        /// <see cref="CalculateNarrationBarRect"/> gives the bar itself.
         /// </summary>
-        private static Rect GetMatchLogDropdownRect(Rect bar)
+        private static Rect GetMatchLogDropdownRect(Rect narrationBar)
         {
             var viewport = PanelViewport;
             var width = Mathf.Min(MatchLogDropdownWidth, Mathf.Max(0f, viewport.x - (Margin * 2f)));
             var height = Mathf.Min(
-                MatchLogDropdownHeight, Mathf.Max(0f, viewport.y - bar.yMax - (Margin * 2f)));
-            return new Rect(bar.xMin + Margin, bar.yMax + 4f, width, height);
+                MatchLogDropdownHeight,
+                Mathf.Max(0f, viewport.y - narrationBar.yMax - (Margin * 2f)));
+            var left = Mathf.Clamp(
+                narrationBar.center.x - (width * 0.5f),
+                Margin,
+                Mathf.Max(Margin, viewport.x - Margin - width));
+            return new Rect(left, narrationBar.yMax + 4f, width, height);
+        }
+
+        /// <summary>
+        /// Positions the TIEBREAKER rail banner above the HOLDING team's own rail column, or hides
+        /// it while no side has been decided yet (the opening moments of a match). The element's
+        /// own USS transition on `left` is what turns a handover into the eased slide the SECOND
+        /// item of the post-8.35z9 redesign asks for; this method only ever states the TARGET.
+        /// </summary>
+        private void LayoutTieBreakerRailBanner(float panelWidth, float panelHeight)
+        {
+            if (tieBreakerRailBanner == null)
+            {
+                return;
+            }
+
+            if (header == null || !header.TieBreaker.IsDefined)
+            {
+                tieBreakerRailBannerSide = null;
+                tieBreakerRailBanner.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var side = header.TieBreaker.RevealedSide;
+            var target = CalculateTieBreakerRailBannerRect(panelWidth, panelHeight, side);
+            tieBreakerRailBanner.style.display = DisplayStyle.Flex;
+            tieBreakerRailBanner.style.top = target.y;
+            tieBreakerRailBanner.style.width = target.width;
+            tieBreakerRailBanner.style.height = target.height;
+            if (tieBreakerRailBannerSide != side)
+            {
+                tieBreakerRailBannerSide = side;
+                tieBreakerRailBanner.style.backgroundColor = header.Color;
+                if (tieBreakerRailBannerLabel != null)
+                {
+                    tieBreakerRailBannerLabel.style.color = Color.white;
+                }
+            }
+
+            tieBreakerRailBanner.style.left = target.x;
+            tieBreakerRailBanner.tooltip = header.Text;
         }
     }
 }

@@ -3481,12 +3481,29 @@ namespace GuardsDigital.Tests.EditMode
                 secondary.Q<Label>("gd-ribbon-label").style.color.value,
                 Is.EqualTo(Color.black),
                 "Secondary Fast Travel uses the same black lettering.");
+
+            // Overlay-alignment corrective (post-8.35z9, user screenshots at hand and zoomed-in
+            // scale). The Secondary swallowtail used to anchor against whatever `actionBounds` its
+            // caller passed - the padded 80x82 highlight ring around the boot badge - which
+            // measured about 15-20 reference units clear of the actual printed boot/value ink on
+            // the verified 372x520 scan (confirmed with System.Drawing pixel sampling against
+            // Assets/Resources/Private/Cards/arien/liquid-leap.png's Movement badge). It now
+            // anchors to that ink directly - PreparedActionSourceBounds' own comment's measured
+            // "x=21..69, y=203..249" - regardless of the padded bounds the caller supplies, so the
+            // flag touches the badge it names instead of floating over the artwork beside it.
+            var scaleX = CardFootprint.ArtworkWidth / CardFootprint.ArtworkSourceWidth;
+            var scaleY = CardFootprint.ArtworkHeight / CardFootprint.ArtworkSourceHeight;
+            var tightBadgeInk = new Rect(21f * scaleX, 203f * scaleY, 48f * scaleX, 46f * scaleY);
             Assert.That(secondary.style.left.value.value,
-                Is.EqualTo(secondaryBounds.xMax - 2f).Within(0.001f));
+                Is.EqualTo(tightBadgeInk.xMax - 2f).Within(0.001f),
+                "The flag now touches the printed boot/value ink itself, not the padded ring.");
             Assert.That(secondary.style.top.value.value,
-                Is.EqualTo(secondaryBounds.y +
-                    Mathf.Max(0f, (secondaryBounds.height - 26f) * 0.5f)).Within(0.001f),
-                "The already-approved Secondary keeps its established side placement.");
+                Is.EqualTo(tightBadgeInk.y +
+                    Mathf.Max(0f, (tightBadgeInk.height - 26f) * 0.5f)).Within(0.001f));
+            Assert.That(secondary.style.left.value.value,
+                Is.Not.EqualTo(secondaryBounds.xMax - 2f).Within(0.001f),
+                "Regression guard: must not silently fall back to the caller's padded actionBounds " +
+                "for this branch - that is the exact defect this corrective removes.");
         }
 
         [Test]
@@ -4410,6 +4427,49 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Z-order corrective (post-8.35z9, live user testing): the match-log drop-down's own
+        /// <c>root.Add</c> call landed ahead of the hero rails', which is UI Toolkit's paint order, so
+        /// an open drop-down whose bounds reached a rail column painted entirely BEHIND it - a screen
+        /// showing clipped entries rather than a scrollable log. The fix is add-order alone; this pins
+        /// it structurally so a future re-ordering of <c>Build()</c> cannot silently reintroduce it.
+        /// </summary>
+        [Test]
+        public void MatchLogDropdown_PaintsAboveTheHeroRails()
+        {
+            var host = new GameObject("match-log-z-order");
+            try
+            {
+                var handsView = new DirectorHandsUnityView();
+                var heroOverviewsView = new HeroOverviewsUnityView();
+                var matchLogView = new MatchLogUnityView();
+                var hud = host.AddComponent<ConfiguredMatchHudRenderer>();
+                hud.Configure(
+                    handsView,
+                    new RoundActionUnityView(),
+                    new UndoRestartUnityView(),
+                    new DiagnosticLogUnityView(),
+                    new MinionChoiceUnityView(),
+                    heroOverviewsView,
+                    matchLogView);
+
+                var children = hud.RootElement.Children().ToList();
+                var railIndex = children.IndexOf(heroOverviewsView.Root);
+                var logIndex = children.IndexOf(matchLogView.PanelRoot);
+                Assert.That(railIndex, Is.GreaterThanOrEqualTo(0),
+                    "The hero rail column must be a direct child of the HUD root.");
+                Assert.That(logIndex, Is.GreaterThanOrEqualTo(0),
+                    "The match-log drop-down must be a direct child of the HUD root.");
+                Assert.That(logIndex, Is.GreaterThan(railIndex),
+                    "The drop-down must be added AFTER the hero rails so it paints above them, " +
+                    "never clipped behind a rail column.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
         [Test]
         public void EndTurn_ShinesFullyExactlyWhenItIsTheOnlyOfferLeft()
         {
@@ -5218,7 +5278,23 @@ namespace GuardsDigital.Tests.EditMode
                 var endTurn = ConfiguredMatchHudRenderer.CalculateEndTurnControlRect(
                     viewport.x, viewport.y);
 
-                foreach (var rect in new[] { bar, tray, playfield, red, blue, endTurn })
+                // Item 2 of the post-8.35z9 top-strip redesign (user-ruled 2026-09-05), verified at
+                // both the reference-shaped and this fixture's own narrow viewport, per the
+                // "verify at reference + one narrow viewport" instruction: the centred narration
+                // bar and the two rail-anchored TIEBREAKER banner slots join the same offline
+                // geometry sweep the rest of the strip already gets.
+                var narrationBar = ConfiguredMatchHudRenderer.CalculateNarrationBarRect(
+                    viewport.x, viewport.y);
+                var redTieBreakerBanner = ConfiguredMatchHudRenderer.CalculateTieBreakerRailBannerRect(
+                    viewport.x, viewport.y, TeamSide.Red);
+                var blueTieBreakerBanner = ConfiguredMatchHudRenderer.CalculateTieBreakerRailBannerRect(
+                    viewport.x, viewport.y, TeamSide.Blue);
+
+                foreach (var rect in new[]
+                {
+                    bar, tray, playfield, red, blue, endTurn,
+                    narrationBar, redTieBreakerBanner, blueTieBreakerBanner
+                })
                 {
                     Assert.That(rect.xMin, Is.GreaterThanOrEqualTo(0f), $"{viewport}");
                     Assert.That(rect.yMin, Is.GreaterThanOrEqualTo(0f), $"{viewport}");
@@ -5230,10 +5306,22 @@ namespace GuardsDigital.Tests.EditMode
                     $"End Turn starts at the status strip's top edge at {viewport}.");
                 Assert.That(endTurn.yMax, Is.EqualTo(bar.yMax),
                     $"and fills that strip at {viewport}.");
-                Assert.That(endTurn.Overlaps(
-                        ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(
-                            viewport.x, viewport.y)), Is.False,
-                    $"The centred Tie Breaker remains clear of End Turn at {viewport}.");
+                Assert.That(endTurn.Overlaps(narrationBar), Is.False,
+                    $"The centred narration bar remains clear of End Turn at {viewport}.");
+                Assert.That(endTurn.Overlaps(blueTieBreakerBanner), Is.False,
+                    $"The Blue rail's TIEBREAKER banner remains clear of End Turn at {viewport}.");
+                Assert.That(narrationBar.Overlaps(red), Is.False,
+                    $"The narration bar is clear of the Red rail by construction at {viewport}.");
+                Assert.That(narrationBar.Overlaps(blue), Is.False,
+                    $"The narration bar is clear of the Blue rail by construction at {viewport}.");
+                Assert.That(redTieBreakerBanner.xMax, Is.LessThanOrEqualTo(red.xMax + 0.01f),
+                    $"Red's banner never reaches wider than its own rail column at {viewport}.");
+                Assert.That(blueTieBreakerBanner.xMin, Is.GreaterThanOrEqualTo(blue.xMin - 0.01f),
+                    $"Blue's banner never reaches wider than its own rail column at {viewport}.");
+                Assert.That(redTieBreakerBanner.yMax, Is.LessThanOrEqualTo(red.yMin + 0.01f),
+                    $"Red's banner sits entirely above its own rail column at {viewport}.");
+                Assert.That(blueTieBreakerBanner.yMax, Is.LessThanOrEqualTo(blue.yMin + 0.01f),
+                    $"Blue's banner sits entirely above its own rail column at {viewport}.");
 
                 Assert.That(bar.yMax, Is.LessThanOrEqualTo(playfield.yMin + 0.01f));
                 Assert.That(playfield.yMax, Is.LessThanOrEqualTo(tray.yMin + 0.01f),

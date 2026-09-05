@@ -440,22 +440,29 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void Scene_ContainsCenteredAuthoritativeTieBreakerIndicator()
+        public void Scene_ContainsRailAnchoredTieBreakerBanner()
         {
             OpenConfiguredScene();
             var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
             var side = root.Session.Projection.TieBreakerState.RevealedSide;
-            var indicatorRect = root.Hud.TieBreakerIndicatorRect;
 
             Assert.That(side, Is.EqualTo(TeamSide.Red).Or.EqualTo(TeamSide.Blue));
             Assert.That(root.Hud.Header.Text, Does.Contain("TIE BREAKER"));
             Assert.That(
                 root.Hud.Header.Text,
                 Does.Contain(side == TeamSide.Red ? "[R] RED" : "[B] BLUE"));
-            var bar = root.Hud.StatusBarRect;
-            Assert.That(indicatorRect.center.x, Is.EqualTo(bar.center.x).Within(0.01f));
-            Assert.That(indicatorRect.center.y, Is.EqualTo(bar.center.y).Within(0.01f));
-            Assert.That(indicatorRect.width, Is.EqualTo(indicatorRect.height).Within(0.01f));
+
+            // Item 2 of the post-8.35z9 top-strip redesign (user-ruled 2026-09-05): the centred
+            // disc retired in favour of a slim banner above the HOLDING side's own rail column.
+            var bannerRect = side == TeamSide.Red
+                ? root.Hud.RedTieBreakerRailBannerRect
+                : root.Hud.BlueTieBreakerRailBannerRect;
+            var rail = side == TeamSide.Red ? root.Hud.RedHeroRailRect : root.Hud.BlueHeroRailRect;
+            Assert.That(bannerRect.xMin, Is.EqualTo(rail.xMin).Within(0.01f),
+                "The banner shares its holding rail's own column exactly.");
+            Assert.That(bannerRect.width, Is.EqualTo(rail.width).Within(0.01f));
+            Assert.That(bannerRect.yMax, Is.LessThanOrEqualTo(rail.yMin + 0.01f),
+                "The banner sits entirely above the rail column it names.");
         }
 
         [Test]

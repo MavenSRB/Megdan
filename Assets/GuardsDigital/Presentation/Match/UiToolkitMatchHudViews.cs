@@ -650,8 +650,6 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class MatchStatusBarUnityView
     {
-        private readonly VisualElement tieBreakerChip;
-        private readonly VisualElement tieBreakerDisc;
         private readonly VisualElement content;
         private readonly VisualElement identityRow;
         private readonly VisualElement narrationLane;
@@ -662,11 +660,10 @@ namespace GuardsDigital.Presentation.Match
             Root.name = "gd-topbar";
             Root.style.position = Position.Absolute;
             // Milestone 8.30b: two stacked rows rather than one. The identity row keeps every fact it
-            // carried and the measurements taken of it; the narration lane beneath it is what the
-            // user-approved amendment added.
-            Root.style.flexDirection = FlexDirection.Column;
-            Root.style.alignItems = Align.Stretch;
-            Root.style.justifyContent = Justify.FlexStart;
+            // carried and the measurements taken of it. Item 2 of the post-8.35z9 top-strip redesign
+            // (user-ruled 2026-09-05) re-anchors the narration lane below it as an absolutely-placed,
+            // width-capped, centred bar rather than a full-width flex row - see Layout/Render below -
+            // so Root itself no longer needs a column flex layout to stack the two.
             Root.style.overflow = Overflow.Hidden;
             Root.style.paddingLeft = 14f;
             Root.style.paddingRight = 12f;
@@ -674,10 +671,14 @@ namespace GuardsDigital.Presentation.Match
             Root.style.borderBottomColor = MatchHudTheme.PanelBorder;
 
             identityRow = new VisualElement { name = "gd-topbar-identity" };
+            identityRow.style.position = Position.Absolute;
+            identityRow.style.left = 0f;
+            identityRow.style.top = 0f;
+            identityRow.style.right = 0f;
             identityRow.style.flexDirection = FlexDirection.Row;
             identityRow.style.alignItems = Align.Center;
-            identityRow.style.justifyContent = Justify.SpaceBetween;
-            identityRow.style.flexShrink = 0f;
+            identityRow.style.justifyContent = Justify.FlexStart;
+            identityRow.style.paddingLeft = 14f;
             identityRow.style.height = ConfiguredMatchHudRenderer.StatusBarIdentityRowHeight;
             Root.Add(identityRow);
 
@@ -685,38 +686,22 @@ namespace GuardsDigital.Presentation.Match
             content.style.flexShrink = 1f;
             identityRow.Add(content);
 
-            // The lane the round view's own narration element is re-parented into. This is a host and
-            // never a second renderer: the sentence is derived by the round presenter from the
-            // projection, exactly as it was when it was drawn beside the cards, so there is still one
-            // place that decides what the match is doing and one place that says it.
+            // Item 2 (user-ruled 2026-09-05): "CENTER the narration bar at top-center - the game's
+            // most important line takes the prime spot." The lane the round view's own narration
+            // element is re-parented into is now its own centred, width-capped, rounded bar rather
+            // than the retired full-width lane - a host and never a second renderer: the sentence is
+            // still derived by the round presenter from the projection, exactly as before, so there
+            // is still one place that decides what the match is doing and one place that says it.
             narrationLane = new VisualElement { name = "gd-narration-lane" };
+            narrationLane.style.position = Position.Absolute;
             narrationLane.style.flexDirection = FlexDirection.Row;
             narrationLane.style.alignItems = Align.Center;
-            narrationLane.style.flexGrow = 0f;
-            narrationLane.style.flexShrink = 0f;
-            narrationLane.style.height = ConfiguredMatchHudRenderer.StatusBarNarrationHeight;
+            narrationLane.style.justifyContent = Justify.Center;
             narrationLane.style.overflow = Overflow.Hidden;
-            narrationLane.style.paddingBottom = 4f;
+            narrationLane.style.paddingLeft = 14f;
+            narrationLane.style.paddingRight = 10f;
+            HudElements.Border(narrationLane, MatchHudTheme.PanelBorder, 1f, 14f);
             Root.Add(narrationLane);
-
-            tieBreakerChip = HudElements.Panel(MatchHudTheme.EmptySlot);
-            tieBreakerChip.name = "gd-tie-breaker";
-            tieBreakerChip.style.position = Position.Absolute;
-            tieBreakerChip.style.flexDirection = FlexDirection.Row;
-            tieBreakerChip.style.alignItems = Align.Center;
-            tieBreakerChip.style.justifyContent = Justify.Center;
-            tieBreakerChip.style.backgroundColor = Color.clear;
-            HudElements.Border(tieBreakerChip, Color.clear, 0f, 999f);
-
-            tieBreakerDisc = new VisualElement { name = "gd-tie-breaker-disc" };
-            tieBreakerDisc.style.width = ConfiguredMatchHudRenderer.TieBreakerDiameter;
-            tieBreakerDisc.style.height = ConfiguredMatchHudRenderer.TieBreakerDiameter;
-            tieBreakerDisc.style.flexShrink = 0f;
-            tieBreakerDisc.style.alignItems = Align.Center;
-            tieBreakerDisc.style.justifyContent = Justify.Center;
-            HudElements.Border(tieBreakerDisc, Color.clear, 0f, 999f);
-            tieBreakerChip.Add(tieBreakerDisc);
-            Root.Add(tieBreakerChip);
         }
 
         public VisualElement Root { get; }
@@ -765,30 +750,22 @@ namespace GuardsDigital.Presentation.Match
 
         public MatchHudHeaderViewModel Model { get; private set; }
 
-        /// <summary>Where the Tie Breaker chip sits, in the panel's own top-left-origin pixels.</summary>
-        public Rect ChipRect { get; private set; }
-
-        public void Layout(Rect bar, Rect chip)
+        /// <summary>
+        /// Lays out the strip and, separately, the centred narration bar within it. Item 2 of the
+        /// post-8.35z9 top-strip redesign (user-ruled 2026-09-05): the retired Tie Breaker chip
+        /// rect this method used to also place is gone - that fact now lives on the rail banner
+        /// <see cref="ConfiguredMatchHudRenderer"/> positions directly, above the holding column.
+        /// </summary>
+        public void Layout(Rect bar, Rect narrationBar)
         {
             Root.style.left = bar.x;
             Root.style.top = bar.y;
             Root.style.width = bar.width;
             Root.style.height = bar.height;
-            ChipRect = chip;
-            tieBreakerChip.style.left = chip.x - bar.x;
-            tieBreakerChip.style.top = chip.y - bar.y;
-            tieBreakerChip.style.width = chip.width;
-            tieBreakerChip.style.height = chip.height;
-            tieBreakerDisc.style.width = chip.width;
-            tieBreakerDisc.style.height = chip.height;
-            var leftLaneWidth = Mathf.Max(0f, chip.xMin - bar.xMin - 18f);
-            content.style.width = leftLaneWidth;
-            content.style.maxWidth = leftLaneWidth;
-            // The narration remains one uninterrupted status line. End Turn is intentionally layered
-            // over its right end instead of shortening the gold turn cue.
-            var goldLaneWidth = Mathf.Max(0f, bar.width - 26f);
-            narrationLane.style.width = goldLaneWidth;
-            narrationLane.style.maxWidth = goldLaneWidth;
+            narrationLane.style.left = narrationBar.x - bar.x;
+            narrationLane.style.top = narrationBar.y - bar.y;
+            narrationLane.style.width = narrationBar.width;
+            narrationLane.style.height = narrationBar.height;
         }
 
         public void Render(MatchHudHeaderViewModel model)
@@ -801,37 +778,30 @@ namespace GuardsDigital.Presentation.Match
             Model = model ?? throw new ArgumentNullException(nameof(model));
 
             // The user's requirement is the whole strip and not the lane inside it: "on players turn,
-            // the whole top bar needs to be gold, not just naration bar". Both rows sit inside this
-            // Root, so painting it once carries the identity row and the narration lane together,
-            // and the lane's own warm background still marks the sentence within it. The condition is
-            // the shared `AwaitedInputQuery` answer rather than "your turn" - a commitment, a defense,
-            // a level-up choice and the turn release are all moments the match is waiting on you.
-            Root.style.backgroundColor = model.IsAwaitingViewerInput
+            // the whole top bar needs to be gold, not just naration bar". The condition is the shared
+            // `AwaitedInputQuery` answer rather than "your turn" - a commitment, a defense, a level-up
+            // choice and the turn release are all moments the match is waiting on you. Item 2 keeps
+            // that guarantee: the narration bar is now its OWN bordered pill rather than a lane
+            // painted by Root showing through, so it mirrors the same two colours explicitly instead
+            // of inheriting them.
+            var background = model.IsAwaitingViewerInput
                 ? MatchHudTheme.NarrationWarmBackground
                 : MatchHudTheme.TopBarBackground;
-            Root.style.borderBottomColor = model.IsAwaitingViewerInput
+            var borderColor = model.IsAwaitingViewerInput
                 ? MatchHudTheme.ShineGlow
                 : MatchHudTheme.PanelBorder;
+            Root.style.backgroundColor = background;
+            Root.style.borderBottomColor = borderColor;
+            narrationLane.style.backgroundColor = background;
+            HudElements.Border(narrationLane, borderColor, 1f, 14f);
 
             content.Clear();
-            tieBreakerDisc.Clear();
-
             content.Add(HudElements.Text(
                 "GUARDS DIGITAL", 13f, MatchHudTheme.PrimaryText, FontStyle.Bold));
             content.Add(HudElements.Text(model.RoundTurnLabel, 12f, MatchHudTheme.MutedText));
             content.Add(TeamChip(TeamSide.Red, model.RedLifeLabel));
             content.Add(HudElements.Text(model.WaveLabel, 12f, MatchHudTheme.MutedText));
             content.Add(TeamChip(TeamSide.Blue, model.BlueLifeLabel));
-
-            tieBreakerChip.style.backgroundColor = Color.clear;
-            tieBreakerDisc.style.backgroundColor = model.Color;
-            var chipLabel = HudElements.Text(
-                model.TieBreakerLabel, 14f, Color.white, FontStyle.Bold);
-            chipLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-            chipLabel.style.whiteSpace = WhiteSpace.NoWrap;
-            chipLabel.style.flexGrow = 1f;
-            tieBreakerDisc.Add(chipLabel);
-            tieBreakerChip.tooltip = model.Text;
         }
 
         private static VisualElement TeamChip(TeamSide side, string label)
@@ -3020,30 +2990,46 @@ namespace GuardsDigital.Presentation.Match
                 chip.SetTextColor(Color.black);
             }
             chip.style.position = Position.Absolute;
+            // Overlay-alignment corrective (post-8.35z9, user screenshots at hand and enlarged-
+            // preview scale). The FAST TRAVEL "beside" placement - the only path this reaches,
+            // since Attack never prints as a Secondary badge and CLEAR always attaches to a
+            // Primary title above - used to anchor against the padded highlight ring
+            // (PreparedActionSourceBounds' generous 80x82 glow box around the boot badge), which
+            // measured about 15-20 reference units clear of the actual printed boot/value ink -
+            // PreparedActionSourceBounds' own comment names that ink as roughly
+            // x=21..69, y=203..249 on the shared 372x520 source. Small at hand scale (the ribbon
+            // reads as "near" the badge), the same fixed gap reads as a floating, disconnected
+            // flag once the identical geometry is seen at the enlarged reveal - both draw from
+            // this one rect, so tightening it fixes both at once. The ring/glow geometry itself
+            // is untouched; only the ribbon's own anchor moves onto the ink it names.
+            var ribbonAnchorBounds =
+                fastTravelAbovePreparedMovement && usesPreparedArtwork && !attachedToPreparedPrimaryTitle
+                    ? ScalePreparedActionBounds(new Rect(21f, 203f, 48f, 46f))
+                    : actionBounds;
             var titleBandTop = actionBounds.y +
                 ((region.ActionKind == ActionKind.Attack ? 40f : 36f) *
                     CardFootprint.ArtworkHeight / CardFootprint.ArtworkSourceHeight);
             var attachmentCenterX = attachedToPreparedPrimaryTitle
                 ? CardFootprint.ArtworkWidth * 0.5f
-                : actionBounds.center.x;
+                : ribbonAnchorBounds.center.x;
             var placeBesidePreparedRegion = usesPreparedArtwork &&
                 !clearAbovePreparedAttack &&
-                actionBounds.xMax + 96f <= CardFootprint.ArtworkWidth;
+                ribbonAnchorBounds.xMax + 96f <= CardFootprint.ArtworkWidth;
             chip.style.left = attachedAbovePreparedAction
                 ? Mathf.Clamp(
                     attachmentCenterX - 46f,
                     0f,
                     CardFootprint.ArtworkWidth - 92f)
                 : placeBesidePreparedRegion
-                    ? actionBounds.xMax - 2f
-                    : actionBounds.xMax - 96f;
+                    ? ribbonAnchorBounds.xMax - 2f
+                    : ribbonAnchorBounds.xMax - 96f;
             chip.style.top = attachedAbovePreparedAction
                 ? (attachedToPreparedPrimaryTitle ? titleBandTop : actionBounds.y) - 22f
                 : placeBesidePreparedRegion
-                    ? actionBounds.y + Mathf.Max(0f, (actionBounds.height - 26f) * 0.5f)
+                    ? ribbonAnchorBounds.y + Mathf.Max(0f, (ribbonAnchorBounds.height - 26f) * 0.5f)
                     : usesPreparedArtwork
-                        ? actionBounds.y + 4f
-                        : actionBounds.yMax - 26f;
+                        ? ribbonAnchorBounds.y + 4f
+                        : ribbonAnchorBounds.yMax - 26f;
             chip.style.width = 92f;
             chip.style.height = 22f;
             if (!available)

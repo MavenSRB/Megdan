@@ -250,5 +250,33 @@ namespace GuardsDigital.Tests.EditMode
                 AssertScaleMotionIsWired(pick, "PICK");
             }
         }
+
+        /// <summary>
+        /// Coordinator-directed small QoL item (2026-09-05, PLAN.md's "SMALL QoL ITEM"): "which
+        /// build am I running" is a glance at the lobby screen, after the user lost time to a stale
+        /// package folder. The line renders <see cref="BuildIdentityStamp.Current"/> - the exact
+        /// formula the admission tuple's own <c>BuildIdentity</c> element already reads (see
+        /// <see cref="PrivateSessionIdentity"/>), so the glance and the packaged
+        /// <c>BUILD-IDENTITY.txt</c> record can never disagree.
+        /// </summary>
+        [Test]
+        public void LobbyBuildStamp_RendersTheSameFormulaTheAdmissionTupleReads()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            var model = PrivateLobbyModel.Entry(driver.Session.Roster, string.Empty);
+            var view = new PrivateLobbyUnityView();
+
+            view.Render(model);
+
+            var stamp = Descendants(view.Root)
+                .OfType<Label>()
+                .SingleOrDefault(label => label.name == PrivateLobbyUnityView.BuildStampName);
+            Assert.That(stamp, Is.Not.Null, "The lobby screen carries exactly one build stamp line.");
+            Assert.That(stamp.text, Is.EqualTo(BuildIdentityStamp.Current));
+            Assert.That(stamp.text, Does.Contain(UnityEngine.Application.unityVersion),
+                "The stamp names the Editor version, not only the product version.");
+            Assert.That(stamp.pickingMode, Is.EqualTo(PickingMode.Ignore),
+                "A watermark, never a control - it must not steal a click from the panel above it.");
+        }
     }
 }

@@ -182,40 +182,45 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the bar is showing exactly the sentence the seat own presenter derived. " +
                 UiPlayer.Describe(root.Hud));
 
-            // The strip is the identity row plus the lane. Milestone 8.30l centres the Tie Breaker
-            // across that complete height as a round badge while End Turn takes its former right slot.
+            // The strip is the identity row plus the lane. Item 2 of the post-8.35z9 top-strip
+            // redesign (user-ruled 2026-09-05) retires the centred round Tie Breaker badge in
+            // favour of a slim banner above the holding side's own rail, and centres the
+            // narration bar itself instead - checked below.
             var snap = UiPlayer.PixelSnapping();
             Assert.That(topBar.worldBound.height,
                 Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight).Within(snap));
             Assert.That(Named(root.Hud.RootElement, "gd-topbar-identity").worldBound.height,
                 Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarIdentityRowHeight).Within(snap));
-            var chipElement = Named(root.Hud.RootElement, "gd-tie-breaker");
-            var chip = chipElement.worldBound;
-            Assert.That(chip.yMin, Is.EqualTo(root.Hud.TieBreakerIndicatorRect.yMin).Within(snap));
-            Assert.That(chip.height,
-                Is.EqualTo(root.Hud.TieBreakerIndicatorRect.height).Within(snap));
-            Assert.That(chip.width, Is.EqualTo(chip.height).Within(snap),
-                "The Tie Breaker is a circle, not the retired wide chip.");
-            Assert.That(chip.width,
-                Is.EqualTo(ConfiguredMatchHudRenderer.TieBreakerDiameter).Within(snap * 2f));
-            Assert.That(chip.center.x,
-                Is.EqualTo(topBar.worldBound.center.x).Within(snap),
-                "The round Tie Breaker badge is centred in the status bar.");
-            var badgeLabel = UiPlayer.Descendants(chipElement).OfType<Label>().Single();
+
+            var side = root.Runtime.TieBreakerState.RevealedSide;
+            var bannerElement = Named(root.Hud.RootElement, "gd-tie-breaker-rail-banner");
+            var banner = bannerElement.worldBound;
+            var expectedBanner = side == TeamSide.Red
+                ? root.Hud.RedTieBreakerRailBannerRect
+                : root.Hud.BlueTieBreakerRailBannerRect;
+            var expectedRail = side == TeamSide.Red
+                ? root.Hud.RedHeroRailRect
+                : root.Hud.BlueHeroRailRect;
+            Assert.That(banner.yMin, Is.EqualTo(expectedBanner.yMin).Within(snap));
+            Assert.That(banner.height, Is.EqualTo(expectedBanner.height).Within(snap));
+            Assert.That(banner.width, Is.EqualTo(expectedBanner.width).Within(snap),
+                "The banner shares its holding rail's own column width, not a circle's diameter.");
+            Assert.That(banner.xMin, Is.EqualTo(expectedRail.xMin).Within(snap),
+                "The banner stands directly above the rail column it names.");
+            Assert.That(banner.yMax, Is.LessThanOrEqualTo(expectedRail.yMin + snap),
+                "and clears it entirely rather than overlapping the plaques.");
+            var badgeLabel = UiPlayer.Descendants(bannerElement).OfType<Label>().Single();
             Assert.That(badgeLabel.text, Is.EqualTo("TIEBREAKER"));
             Assert.That(badgeLabel.resolvedStyle.whiteSpace, Is.EqualTo(WhiteSpace.NoWrap),
-                "The requested word remains one line inside the round badge.");
-            Assert.That(chipElement.resolvedStyle.borderTopWidth, Is.Zero,
-                "The enlarged marker has no white outline.");
-            Assert.That(topBar.style.overflow.value, Is.EqualTo(Overflow.Hidden),
-                "The compact bar clips the doubled marker before the map begins.");
-            Assert.That(chip.yMin, Is.LessThan(topBar.worldBound.yMin));
-            Assert.That(chip.yMax, Is.GreaterThan(topBar.worldBound.yMax));
+                "The requested word remains one line inside the slim banner.");
 
-            // The narration reads across the bar rather than being clipped into the corner it left.
+            // The narration bar is now centred in the strip rather than spanning it full-width.
+            Assert.That(lane.worldBound.center.x,
+                Is.EqualTo(topBar.worldBound.center.x).Within(snap),
+                "The narration bar takes top-center per the user's ruling.");
             Assert.That(narration.worldBound.width,
                 Is.GreaterThan(ConfiguredMatchHudRenderer.StatusDockWidth),
-                "The lane is wider than the dock the sentence used to be drawn in.");
+                "The bar is wider than the dock the sentence used to be drawn in.");
             Assert.That(narration.worldBound.yMax,
                 Is.LessThanOrEqualTo(topBar.worldBound.yMax + snap),
                 "and it is inside the strip that carries it.");
@@ -738,20 +743,31 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(drawn.yMax,
                 Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight).Within(snap * 2f),
                 "and fills both rows of the compact status bar.");
-            Assert.That(drawn.Overlaps(root.Hud.TieBreakerIndicatorRect), Is.False,
-                "The centred Tie Breaker badge keeps a clear gap from End Turn.");
+            // Item 2 of the post-8.35z9 top-strip redesign (user-ruled 2026-09-05): the centred
+            // round Tie Breaker badge retired, along with its clear-gap-from-End-Turn guarantee -
+            // replaced by the narration bar and the two rail banners, checked directly.
+            Assert.That(drawn.Overlaps(root.Hud.NarrationBarRect), Is.False,
+                "The centred narration bar keeps a clear gap from End Turn.");
+            Assert.That(
+                drawn.Overlaps(root.Hud.BlueTieBreakerRailBannerRect), Is.False,
+                "The Blue rail's own TIEBREAKER banner keeps a clear gap from End Turn.");
             Assert.That(Named(control, "gd-end-turn-label").style.left.value.value, Is.Zero,
                 "End Turn's visible label spans the complete rectangle rather than reserving " +
                 "swallowtail notches.");
             var narrationBar = Named(root.Hud.RootElement, "gd-narration");
+            var topBar = Named(root.Hud.RootElement, "gd-topbar");
             Assert.That(narrationBar.resolvedStyle.backgroundColor,
                 Is.EqualTo(MatchHudTheme.NarrationWarmBackground),
                 "The gold bar shines while this seat may act.");
-            Assert.That(narrationBar.worldBound.xMax,
-                Is.GreaterThan(root.Hud.TieBreakerIndicatorRect.center.x),
-                "The gold bar extends behind the centred initiative marker.");
-            Assert.That(narrationBar.worldBound.Overlaps(drawn), Is.True,
-                "The narration line continues behind the full-height End Turn overlay.");
+            Assert.That(topBar.resolvedStyle.backgroundColor,
+                Is.EqualTo(MatchHudTheme.NarrationWarmBackground),
+                "The WHOLE strip still shines, not only the now-centred pill inside it - the " +
+                "FIFTH amendment's guarantee is unmoved by item 2's narrower narration bar.");
+            // The pill itself no longer sprawls edge-to-edge (that IS the redesign): it neither
+            // reaches under End Turn's corner nor the old chip's former centre.
+            Assert.That(narrationBar.worldBound.Overlaps(drawn), Is.False,
+                "The centred narration bar no longer reaches under the corner End Turn control - " +
+                "the whole strip behind it is still gold, so no colour gap results.");
 
             // Larger than the row it left. `ActionControlFontSize` is what the action row spends.
             Assert.That(control.resolvedStyle.fontSize,
@@ -785,7 +801,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(ConfiguredMatchHudRenderer.EndTurnControlTopInset).Within(snap));
             Assert.That(drawn.yMax,
                 Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight).Within(snap * 2f));
-            Assert.That(drawn.Overlaps(root.Hud.TieBreakerIndicatorRect), Is.False);
+            Assert.That(drawn.Overlaps(root.Hud.NarrationBarRect), Is.False);
+            Assert.That(drawn.Overlaps(root.Hud.BlueTieBreakerRailBannerRect), Is.False);
             Assert.That(drawn.xMin, Is.EqualTo(root.Hud.BlueHeroRailRect.xMin).Within(snap));
             Assert.That(drawn.xMax, Is.EqualTo(root.Hud.BlueHeroRailRect.xMax).Within(snap));
             Assert.That(UiPlayer.IsShown(unavailable), Is.False);
@@ -859,8 +876,24 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(control.yMax,
                 Is.EqualTo(topBar.yMax).Within(snap * 2f),
                 "and fills both rows of the compact status bar.");
-            Assert.That(control.Overlaps(root.Hud.TieBreakerIndicatorRect), Is.False,
-                "The centred Tie Breaker badge remains separate on the short viewport.");
+            // Item 2 of the post-8.35z9 top-strip redesign (user-ruled 2026-09-05), verified LIVE
+            // at this short/narrow desktop viewport per the "reference + one narrow viewport"
+            // instruction (the offline geometry sweep covers this same pair in
+            // MatchHudPresentationTests, this is the live-panel corroboration).
+            Assert.That(control.Overlaps(root.Hud.NarrationBarRect), Is.False,
+                "The centred narration bar remains clear of End Turn on the short viewport.");
+            var side = root.Runtime.TieBreakerState.RevealedSide;
+            var expectedBanner = side == TeamSide.Red
+                ? root.Hud.RedTieBreakerRailBannerRect
+                : root.Hud.BlueTieBreakerRailBannerRect;
+            Assert.That(control.Overlaps(expectedBanner), Is.False,
+                "The holding rail's TIEBREAKER banner remains separate on the short viewport.");
+            var liveBanner = Named(root.Hud.RootElement, "gd-tie-breaker-rail-banner").worldBound;
+            Assert.That(liveBanner.yMin, Is.EqualTo(expectedBanner.yMin).Within(snap));
+            Assert.That(liveBanner.width, Is.EqualTo(expectedBanner.width).Within(snap));
+            var lane = Named(root.Hud.RootElement, "gd-narration-lane").worldBound;
+            Assert.That(lane.center.x, Is.EqualTo(topBar.center.x).Within(snap),
+                "The narration bar stays centred on the strip on the short viewport too.");
 
             UiPlayer.SetPlayerViewport(
                 restoreWidth, restoreHeight, "8.30b restore the viewport this session was running at");

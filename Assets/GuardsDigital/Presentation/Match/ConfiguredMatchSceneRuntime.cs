@@ -94,8 +94,7 @@ namespace GuardsDigital.Presentation.Match
             // must match before it may hold one of this match's seats. Derived here because the
             // map and configuration are in scope exactly once, at composition.
             SessionIdentity = PrivateSessionIdentity.ForComposition(
-                map, configuration,
-                UnityEngine.Application.version + "+" + UnityEngine.Application.unityVersion);
+                map, configuration, BuildIdentityStamp.Current);
 
             // Milestone 8.30b. One composition serves both surfaces. With no seat named this is the
             // Director's runtime exactly as before; named a seat, every presenter below is handed

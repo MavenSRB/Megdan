@@ -295,9 +295,14 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             // Milestone 8.25f2's rail column: the edge under the status strip and above the reserved
-            // card band. The measured three-rail stack needs about 733 reference units.
+            // card band. Item 2 of the post-8.35z9 top-strip redesign (user-ruled 2026-09-05) added
+            // the TIEBREAKER rail banner's own reserved slot (its height plus its own small gap) on
+            // top of the standing 24-unit gap this floor already spent. The three-rail stack's real
+            // minimum, measured live rather than assumed, is 818.6667 - see
+            // TieBreakerRailBannerHeight's own doc comment for why 733 no longer appears here.
             Assert.That(red.height,
-                Is.EqualTo(tray.yMin - (ConfiguredMatchHudRenderer.StatusBarHeight + 24f))
+                Is.EqualTo(tray.yMin - (ConfiguredMatchHudRenderer.StatusBarHeight + 24f +
+                    ConfiguredMatchHudRenderer.TieBreakerRailBannerHeight + 4f))
                     .Within(0.01f));
             Assert.That(red.height, Is.GreaterThan(733f),
                 "Three measured rails still fit above the enlarged hand.");
@@ -334,12 +339,23 @@ namespace GuardsDigital.Tests.EditMode
                 ConfiguredMatchHudRenderer.CalculateStatusBarRect(width, height),
                 Is.EqualTo(new Rect(0f, 0f, 2560f, 96f)));
 
-            // Milestone 8.30l centres a round Tie Breaker badge across the complete strip. The tray,
-            // compact hand, Level Up card row and round dock remain placed from the panel bottom edge.
+            // Item 2 of the post-8.35z9 top-strip redesign (user-ruled 2026-09-05): the Tie Breaker
+            // disc retires from the centre strip - the fact moves to a slim rail-anchored banner
+            // above the HOLDING team's own column - and the narration bar becomes its own centred,
+            // width-capped pill rather than a lane spanning the strip. The tray, compact hand, Level
+            // Up card row and round dock remain placed from the panel bottom edge, unmoved.
             Assert.That(
-                ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(width, height),
-                Is.EqualTo(new Rect(1200f, -32f, 160f, 160f)),
-                "The doubled Tie Breaker is centred on the compact strip and cropped by it.");
+                ConfiguredMatchHudRenderer.CalculateNarrationBarRect(width, height),
+                Is.EqualTo(new Rect(830f, 56f, 900f, 40f)),
+                "The narration bar is centred beneath the identity row, capped short of both rails.");
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateTieBreakerRailBannerRect(
+                    width, height, TeamSide.Red),
+                Is.EqualTo(new Rect(12f, 108f, 264f, 16f)));
+            Assert.That(
+                ConfiguredMatchHudRenderer.CalculateTieBreakerRailBannerRect(
+                    width, height, TeamSide.Blue),
+                Is.EqualTo(new Rect(2284f, 108f, 264f, 16f)));
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculateCardPanelRect(width, height),
                 Is.EqualTo(new Rect(0f, 968f, 2560f, 460f)));
@@ -355,18 +371,25 @@ namespace GuardsDigital.Tests.EditMode
                 "The round dock is placed from the playfield bottom edge, which the strip did not " +
                 "move, so it kept its footprint exactly.");
 
-            // What it did move, and by how much. The rail column and the board each lost the lane's
-            // forty units off the top; the three-rail stack measured at 733 still clears by 115.
+            // What it did move, and by how much. The rail column now ALSO reserves the TIEBREAKER
+            // banner's own slot off its top (item 2, on top of the lane's forty units milestone
+            // 8.30b already spent). MEASURED, NOT ASSUMED: the live three-rail fit gate
+            // (MinimalHexGridPlayModeTests.Scene_DrawsAllSixOfficialRailsInsideTheirOwnColumnsWithTheTrayBetweenThem)
+            // found the three stacked plaques actually need 818.6667 reference units, not the 733
+            // an older note carried forward unverified - so the banner's own height and gap
+            // (TieBreakerRailBannerHeight, TieBreakerRailBannerGap) are sized against THIS number.
             var red = ConfiguredMatchHudRenderer.CalculateHeroRailRect(width, height, TeamSide.Red);
             var blue = ConfiguredMatchHudRenderer.CalculateHeroRailRect(width, height, TeamSide.Blue);
-            Assert.That(red, Is.EqualTo(new Rect(12f, 108f, 264f, 848f)));
-            Assert.That(blue, Is.EqualTo(new Rect(2284f, 108f, 264f, 848f)));
-            Assert.That(red.height - 733f, Is.EqualTo(115f).Within(0.01f),
-                "Rulebook p.6 three rails a side clear the compact strip.");
+            Assert.That(red, Is.EqualTo(new Rect(12f, 128f, 264f, 828f)));
+            Assert.That(blue, Is.EqualTo(new Rect(2284f, 128f, 264f, 828f)));
+            Assert.That(red.height, Is.GreaterThan(818.6667f),
+                "Rulebook p.6 three rails a side still clear the compact strip and its rail banner - " +
+                "against the live-measured minimum, not the stale 733 estimate.");
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculatePlayfieldRect(width, height),
                 Is.EqualTo(new Rect(1228f, 96f, 1044f, 870f)),
-                "The board remains directly below the compact clipped strip.");
+                "The board remains directly below the compact strip, unmoved by the rail's own " +
+                "vertical reservation - the playfield reads only the rails' X extent.");
 
             // End Turn replaces the Tie Breaker's former top-right slot and fills the status strip.
             var endTurn = ConfiguredMatchHudRenderer.CalculateEndTurnControlRect(width, height);
@@ -379,7 +402,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(endTurn.width, Is.EqualTo(blue.width),
                 "End Turn aligns exactly with the Blue rail column beneath it.");
             Assert.That(endTurn.Overlaps(
-                ConfiguredMatchHudRenderer.CalculateTieBreakerIndicatorRect(width, height)), Is.False);
+                ConfiguredMatchHudRenderer.CalculateNarrationBarRect(width, height)), Is.False);
+            Assert.That(endTurn.Overlaps(
+                ConfiguredMatchHudRenderer.CalculateTieBreakerRailBannerRect(
+                    width, height, TeamSide.Blue)), Is.False,
+                "End Turn keeps a clear gap from the banner above the rail it sits beside.");
         }
 
         /// <summary>

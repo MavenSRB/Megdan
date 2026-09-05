@@ -125,7 +125,6 @@ namespace GuardsDigital.Tests.PlayMode
             var root = Root();
             var header = root.Hud.Header;
             var side = root.Runtime.TieBreakerState.RevealedSide;
-            var indicator = root.Hud.TieBreakerIndicatorRect;
 
             Assert.That(header.TieBreaker, Is.EqualTo(root.Runtime.Setup.TieBreakerState));
             Assert.That(header.Text, Does.Contain(side == TeamSide.Red ? "[R] RED" : "[B] BLUE"));
@@ -135,15 +134,26 @@ namespace GuardsDigital.Tests.PlayMode
             // the margin is measured off the panel's own width and a point on it is turned into the
             // screen pixel a player would click by the same declaration the boundary converts with.
             var panel = ConfiguredMatchHudRenderer.PanelViewport;
-            Assert.That(indicator.center.x, Is.EqualTo(panel.x / 2f).Within(0.01f));
-            Assert.That(indicator.center.y,
-                Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight / 2f).Within(0.01f));
-            Assert.That(indicator.width, Is.EqualTo(indicator.height).Within(0.01f));
+            // Item 2 of the post-8.35z9 top-strip redesign (user-ruled 2026-09-05): the centred
+            // narration bar replaces the retired disc as the thing centred in the strip; the Tie
+            // Breaker fact itself moved to a slim banner above the holding side's own rail.
+            var narrationBar = root.Hud.NarrationBarRect;
+            Assert.That(narrationBar.center.x, Is.EqualTo(panel.x / 2f).Within(0.01f));
             Assert.That(
                 root.Hud.BlocksPointerAt(
                     MatchHudPanelScaling.PanelPointToScreen(
-                        indicator.center, Screen.width, Screen.height)),
+                        narrationBar.center, Screen.width, Screen.height)),
                 Is.True);
+
+            var bannerRect = side == TeamSide.Red
+                ? root.Hud.RedTieBreakerRailBannerRect
+                : root.Hud.BlueTieBreakerRailBannerRect;
+            var rail = side == TeamSide.Red ? root.Hud.RedHeroRailRect : root.Hud.BlueHeroRailRect;
+            Assert.That(bannerRect.xMin, Is.EqualTo(rail.xMin).Within(0.01f),
+                "The TIEBREAKER banner shares its holding rail's own column.");
+            Assert.That(bannerRect.width, Is.EqualTo(rail.width).Within(0.01f));
+            Assert.That(bannerRect.yMax, Is.LessThanOrEqualTo(rail.yMin + 0.01f),
+                "The banner sits entirely above the rail column it names.");
         }
 
         [UnityTest]
@@ -355,7 +365,7 @@ namespace GuardsDigital.Tests.PlayMode
             var compactHand = ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(
                 ConfiguredMatchHudRenderer.PanelViewport.x,
                 ConfiguredMatchHudRenderer.PanelViewport.y);
-            foreach (var rect in new[] { compactHand, hud.TieBreakerIndicatorRect })
+            foreach (var rect in new[] { compactHand, hud.NarrationBarRect })
             {
                 Assert.That(
                     hud.BlocksPointerAt(

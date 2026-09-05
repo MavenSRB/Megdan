@@ -45,6 +45,7 @@ namespace GuardsDigital.Presentation.Interaction
         public const string SeatPickName = "gd-lobby-seat-pick";
         public const string ControlsName = "gd-lobby-controls";
         public const string ControlName = "gd-lobby-control";
+        public const string BuildStampName = "gd-lobby-build-stamp";
 
         /// <summary>The default invitation: this machine, on the protocol's own port.</summary>
         public const string DefaultAddress = "127.0.0.1";
@@ -131,6 +132,19 @@ namespace GuardsDigital.Presentation.Interaction
             controls.style.flexWrap = Wrap.Wrap;
             controls.style.marginTop = 12f;
             frame.Add(controls);
+
+            // Coordinator-directed small QoL item (2026-09-05, PLAN.md's "SMALL QoL ITEM"): the
+            // build/package stamp visible at a glance, so "which build am I running" never again
+            // costs the user an hour to a stale package folder. A quiet corner watermark on the
+            // whole lobby screen rather than inside the centred panel, so it reads before a session
+            // even exists and never competes with the panel's own status/session lines.
+            var buildStamp = Caption(BuildIdentityStamp.Current, 12, BuildStampName);
+            buildStamp.style.position = Position.Absolute;
+            buildStamp.style.left = 10f;
+            buildStamp.style.bottom = 8f;
+            buildStamp.style.color = new Color(PanelText.r, PanelText.g, PanelText.b, 0.5f);
+            buildStamp.pickingMode = PickingMode.Ignore;
+            Root.Add(buildStamp);
         }
 
         public VisualElement Root { get; }
