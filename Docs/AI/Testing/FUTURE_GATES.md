@@ -69,6 +69,8 @@ Recorded at milestone `8.36`, whose deliverable is six invited people completing
 
 **Fix package, 2026-09-05, user-directed.** Supersedes every package above: `Builds/Playtest-8.35z4-fix.zip`, stamp `1.0+20260905104728-15ff9c38`, source `fe947f8f` (code `42581999`, milestone 8.35z4). Protocol, schema, map and content digest are unchanged - verified, not assumed - so an older client is refused on the stamp alone, which is its purpose. Smoke-gated and launch-verified from the package folder; the full tuple is in the package's own `BUILD IDENTITY.txt`.
 
+**Everything build, 2026-09-05, user-directed.** Supersedes every package above: `Builds/Playtest-8.35z9-full.zip`, stamp `1.0+20260905134107-77603f59`, source `03570215` (code through `db341c21`, milestones 8.35z5-8.35z9). Protocol, schema, map and content digest are unchanged from the fix package - verified, not assumed - so an older client is refused on the stamp alone. Smoke-gated and launch-verified from the package folder. Its tester text cuts the KNOWN PROBLEMS list from six entries to one, naming the five closed ones as closed. NOT DISTRIBUTED. The full tuple is in the package's own `BUILD IDENTITY.txt`.
+
 **Distribution boundary.** The exact build is distributed privately to the six invited testers and to nobody else, and who received it is recorded. No public link, store listing, mirror or onward redistribution; the package and the returned logs stay private material under the standing repository boundary. Distribution is the user's own action and no automated step performs it.
 
 **Host runbook.** The host is one dedicated seatless process the operator runs. It holds authority, plays no hero, and all six players are clients of it.
