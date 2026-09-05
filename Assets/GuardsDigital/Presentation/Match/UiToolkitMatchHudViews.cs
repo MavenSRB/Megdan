@@ -860,6 +860,14 @@ namespace GuardsDigital.Presentation.Match
     {
         public const float HeroIdentityEdgeWidth = 2f;
 
+        /// <summary>
+        /// Milestone 8.35z9. How far inside the rail the awaited sweep's path host sits. It must
+        /// exceed half the travelling mark's own size, because the mark is centred on its host's
+        /// border: at zero inset half of it hangs outside the rail's column, which
+        /// `MinimalHexGridPlayModeTests` refuses by measurement rather than by eye.
+        /// </summary>
+        public const float AwaitedRailShineInset = 6f;
+
         private readonly VisualElement redColumn;
         private readonly VisualElement blueColumn;
         private readonly VisualElement preview;
@@ -1223,10 +1231,29 @@ namespace GuardsDigital.Presentation.Match
             body.a = 0.97f;
             if (hero.IsAwaited)
             {
-                // Milestone 8.35z9. The rail wears its gold as its own border and background - there
-                // is no child element here to find - so the shared marker goes on the rail itself.
-                // Rails are rebuilt by BuildOverview on every render, so this never needs clearing.
-                rail.AddToClassList(MatchHudTheme.AwaitedShineClass);
+                // Milestone 8.35z9. The rail wears its gold as its own border and background, with no
+                // child element to find, so the circling sweep needs something here to travel. It
+                // rides a dedicated INSET path host rather than the rail itself, and the inset is not
+                // cosmetic: the sweep's mark is centred on its host's border, so marking the rail put
+                // half of a 10px mark outside the rail's own column and the complete Play Mode run
+                // caught it immediately - `Scene_DrawsAllSixOfficialRailsInsideTheirOwnColumnsWithTheTrayBetweenThem`
+                // measured 280.0 against a 276.5 bound. Inset by more than the mark's half-width, the
+                // whole path stays inside the column that guard protects. Rails are rebuilt by
+                // BuildOverview on every render, so this never needs clearing.
+                var railShinePath = new VisualElement
+                {
+                    name = "gd-rail-awaited-shine",
+                    pickingMode = PickingMode.Ignore,
+                    focusable = false
+                };
+                railShinePath.AddToClassList(MatchHudTheme.AwaitedShineClass);
+                railShinePath.style.position = Position.Absolute;
+                railShinePath.style.left = AwaitedRailShineInset;
+                railShinePath.style.top = AwaitedRailShineInset;
+                railShinePath.style.right = AwaitedRailShineInset;
+                railShinePath.style.bottom = AwaitedRailShineInset;
+                railShinePath.style.backgroundColor = Color.clear;
+                rail.Add(railShinePath);
             }
 
             rail.style.backgroundColor = body;
@@ -4328,7 +4355,13 @@ namespace GuardsDigital.Presentation.Match
             fizzleNoticeOk.style.minWidth = 96f;
             fizzleNoticePanel.Add(fizzleNoticeOk);
             fizzleNoticeHost.Add(fizzleNoticePanel);
-            Root.Add(fizzleNoticeHost);
+            // Milestone 8.35z9. Built once and kept DETACHED until a notice actually stands. It is
+            // not added to Root here, because a hidden control is still a control: this HUD's own
+            // prompt-reachability rules enumerate the buttons under the round view and refuse any
+            // that answers nothing, and the first complete Edit Mode run after this notice shipped
+            // failed four of them on this one OK button - three reachability cases and a Defense
+            // label sweep - while it sat in the tree behind `display: none`. Attaching on demand is
+            // both the fix and the honest reading: when no step has fizzled there is no notice.
 
             defenseCardHoverPreview = new VisualElement { name = "gd-defense-card-hover-preview" };
             defenseCardHoverPreview.style.position = Position.Absolute;
@@ -4378,10 +4411,17 @@ namespace GuardsDigital.Presentation.Match
             if (!model.HasNotice)
             {
                 fizzleNoticeHost.style.display = DisplayStyle.None;
+                fizzleNoticeHost.RemoveFromHierarchy();
                 return;
             }
 
             fizzleNoticeLabel.text = model.Message;
+            if (fizzleNoticeHost.parent == null)
+            {
+                Root.Add(fizzleNoticeHost);
+            }
+
+            fizzleNoticeHost.BringToFront();
             fizzleNoticeHost.style.display = DisplayStyle.Flex;
         }
 

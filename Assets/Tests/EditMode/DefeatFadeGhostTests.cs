@@ -331,6 +331,17 @@ namespace GuardsDigital.Tests.EditMode
             objects.Add(gameObject);
             var hero = gameObject.AddComponent<PrimitiveHeroView>();
             hero.Configure(occupancy, HexWorldLayout.DefaultOuterRadius);
+            // Milestone 8.35z9 (integration). Found by the first complete Edit Mode run this feature
+            // ever had - the authoring worktree could not launch Unity - and it was the FIXTURE that
+            // was wrong, not the code. `Configure` alone leaves `MeshFilter.sharedMesh` null, because
+            // `BoardInteractionUnityView.Render` never builds a hero's visual: the scene composition
+            // root does, through `EnsureVisual`. `SpawnHeroDefeatGhost` then declined to echo a piece
+            // with no mesh - which is CORRECT and deliberate, its own comment saying a missing visual
+            // costs the flourish and nothing else - so all four hero cases measured zero ghosts
+            // against a hero the real board never has. The minion cases passed throughout, because
+            // `StandardMinionView` builds its own renderer. Building the visual here is what makes
+            // this fixture a board piece rather than a bare component.
+            hero.EnsureVisual();
             return hero;
         }
 

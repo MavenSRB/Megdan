@@ -1958,7 +1958,16 @@ namespace GuardsDigital.Tests.EditMode
 
             foreach (var rail in rails)
             {
-                Assert.That(rail.childCount, Is.EqualTo(4),
+                // Milestone 8.35z9 made this count its ROWS rather than its children. An awaited rail
+                // now carries `gd-rail-awaited-shine`, the inset path the circling sweep travels; it
+                // is absolutely positioned and picking-ignored, so it takes part in no layout and is
+                // not a row by any reading - but it is a child, and counting children called it one.
+                // The card faces' own awaited ring has had exactly this shape since 8.35m. What this
+                // case is about is which rows the rail draws, so it now asks that question directly.
+                var rows = rail.Children()
+                    .Where(child => child.style.position.value != Position.Absolute)
+                    .ToArray();
+                Assert.That(rows, Has.Length.EqualTo(4),
                     "This staged position draws the header, the item strip, the four slots and the " +
                     "discard pile. It was five rows before the caption row went, and the two " +
                     "conditional rows - the Ultimate and a held marker - are absent here because " +
@@ -3202,14 +3211,36 @@ namespace GuardsDigital.Tests.EditMode
                     Is.False, "No generic duplicate remains in the contextual tray.");
 
                 var expected = hud.OptionalStepControlRect;
+                // Milestone 8.35z6 corrected this geometry and this assertion characterised the
+                // defect. The row used to anchor at `CardPanelRect.xMin`, which is the SCREEN's own
+                // left edge - that tray band reserves the whole viewport - so the ACCEPT/DECLINE
+                // banners sat on the Red rail's own column at every viewport, reference included.
+                // Milestone 8.35z2 fixed the structurally identical overlap on the team-agreement
+                // panel and recorded this one as its named follow-up. The row now starts at
+                // whichever of the tray edge and the Red rail's right edge is further right.
                 Assert.That(expected.x,
-                    Is.EqualTo(hud.CardPanelRect.xMin +
+                    Is.EqualTo(Mathf.Max(hud.CardPanelRect.xMin, hud.RedHeroRailRect.xMax) +
                         ConfiguredMatchHudRenderer.OptionalStepEdgeClearance).Within(0.01f),
                     "The row aligns left with only enough inset to preserve the complete banner edge.");
-                Assert.That(expected.width,
-                    Is.EqualTo(RoundActionUnityView.OptionalStepActionWidth * 2f +
-                        RoundActionUnityView.OptionalStepActionGap).Within(0.01f),
-                    "The row is compact rather than stretched across the entire hand.");
+                Assert.That(expected.xMin, Is.GreaterThanOrEqualTo(hud.RedHeroRailRect.xMax),
+                    "and it clears the Red rail's own column rather than landing on it, which is " +
+                    "the whole point of the correction.");
+                // Milestone 8.35z6, the other half of the same correction. This asserted the row was
+                // always exactly its two-banner width, which held only because the row used to begin
+                // at the SCREEN's left edge and therefore always had the whole viewport to grow into
+                // - that is, it held because of the defect. Bounded against the Red rail on the left
+                // and the hand and Blue rail on the right, the span at this fixture's viewport is
+                // genuinely narrower than the desired width, and the formula clamps rather than
+                // overlapping its neighbours. The compactness claim is what this case is about, so it
+                // is stated as a bound; the exact per-viewport geometry belongs to
+                // `MatchHudPanelScalingTests`, which measures it at reference, narrow and ultrawide.
+                var compactWidth = RoundActionUnityView.OptionalStepActionWidth * 2f +
+                    RoundActionUnityView.OptionalStepActionGap;
+                Assert.That(expected.width, Is.GreaterThan(0f).And.LessThanOrEqualTo(compactWidth + 0.01f),
+                    "The row is compact rather than stretched across the entire hand, and never " +
+                    "wider than the span its neighbours leave it.");
+                Assert.That(expected.xMax, Is.LessThanOrEqualTo(hud.BlueHeroRailRect.xMin + 0.01f),
+                    "and it stops short of the Blue rail rather than running under it.");
                 Assert.That(round.OptionalStepActionsRoot.style.left.value.value,
                     Is.EqualTo(expected.x).Within(0.01f));
                 Assert.That(round.OptionalStepActionsRoot.style.top.value.value,
