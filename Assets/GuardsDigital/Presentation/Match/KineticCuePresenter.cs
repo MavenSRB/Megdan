@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -112,11 +113,13 @@ namespace GuardsDigital.Presentation.Match
     /// account of what happened.</item>
     /// </list>
     /// </summary>
-    public sealed class KineticCuePresenter
+    public sealed class KineticCuePresenter : ISeatScopedPresenter
     {
         private readonly IMatchClient session;
         private readonly IKineticCueView view;
-        private readonly HeroId viewerHeroId;
+        // Milestone 8.35x: NOT readonly, for the reason `ISeatScopedPresenter` states - a networked
+        // client is composed before its seat exists, so this is bound a second time at admission.
+        private HeroId viewerHeroId;
         private readonly KineticCueStream stream = new KineticCueStream();
         private IMatchReadModel lastProjection;
         private KineticCueViewModel lastViewModel = KineticCueViewModel.Empty;
@@ -126,6 +129,36 @@ namespace GuardsDigital.Presentation.Match
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.view = view ?? throw new ArgumentNullException(nameof(view));
             this.viewerHeroId = viewerHeroId;
+        }
+
+        /// <inheritdoc />
+        public HeroId HomeHeroId => viewerHeroId;
+
+        /// <summary>
+        /// Milestone 8.35x. Binds the viewer identity the board-mark pulse is branched on once the
+        /// lobby admits the seat. Until this existed a networked client pulsed its board marks on
+        /// the Director's "everything is mine" branch for the whole session.
+        /// </summary>
+        /// <remarks>
+        /// Dropping <c>lastProjection</c> here cannot replay kinetics. The stream emits each cue
+        /// once, keyed on the match log's own sequence (rule 1 in this class's own remarks), so
+        /// re-observing an already-observed log yields nothing; what the drop actually buys is the
+        /// standing pulse half being recomputed under the new identity instead of being served back
+        /// from a model composed under the old one.
+        /// </remarks>
+        public bool SetHomeHero(HeroId heroId)
+        {
+            var projection = session.Projection;
+            if (!heroId.IsDefined || projection == null ||
+                !projection.Setup.Heroes.Any(hero => hero.HeroId.Equals(heroId)))
+            {
+                return false;
+            }
+
+            viewerHeroId = heroId;
+            lastProjection = null;
+            Refresh();
+            return true;
         }
 
         /// <summary>The highest match-log sequence this presenter has already turned into cues.</summary>

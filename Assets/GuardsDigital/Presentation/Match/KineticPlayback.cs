@@ -177,10 +177,14 @@ namespace GuardsDigital.Presentation.Match
 
                 if (cue.Number.HasValue)
                 {
+                    // Milestone 8.35x. The figure is due at the striking cue's own impact, not at its
+                    // start, so it begins one impact-delay BEHIND the clock: `Elapsed` starts
+                    // negative, `RebuildFloatingNumbers` draws nothing while it is, and the figure
+                    // appears exactly as the lunge reaches what it struck.
                     numbers.Add(new Running
                     {
                         Cue = cue,
-                        Elapsed = 0f,
+                        Elapsed = -ImpactMomentFor(cue),
                         Duration = KineticTiming.FloatingNumberSeconds
                     });
                 }
@@ -351,12 +355,37 @@ namespace GuardsDigital.Presentation.Match
             1f + (KineticTiming.MarkPulseAmplitude *
                 Sine(Repeat(elapsedTotal / KineticTiming.MarkPulseLoopSeconds)));
 
+        /// <summary>
+        /// Milestone 8.35x, on the first live internet playtest's finding that the attack and defense
+        /// figures "show up too fast". How long after a striking cue STARTS its figure is due: the
+        /// instant that cue's own motion peaks - the lunge at its furthest lean, the flash at its
+        /// brightest - so the sequence a player watches is lunge, then impact, then the number that
+        /// states what the impact did.
+        ///
+        /// <para>Derived from the curve's own peak rather than written as a literal, so re-timing a
+        /// lunge cannot silently leave its figure landing somewhere else. Before this the figure was
+        /// begun at the same instant as the cue, which put the number on screen roughly 95ms before
+        /// the lunge had reached the piece it struck - the number arrived ahead of its own cause,
+        /// which is what made it read as "too fast" even though it was up for nearly a second.</para>
+        /// </summary>
+        internal static float ImpactMomentFor(KineticCue cue) =>
+            KineticTiming.DurationFor(cue.Kind) *
+                (cue.Kind == KineticCueKind.Lunge ? StrikePeak : FlashPeak);
+
         private void RebuildFloatingNumbers()
         {
             floatingNumbers.Clear();
             for (var index = 0; index < numbers.Count; index++)
             {
                 var active = numbers[index];
+                if (active.Elapsed < 0f)
+                {
+                    // Not yet due: the striking cue has not reached its impact, so there is no figure
+                    // to draw. This is what makes the ordering lunge -> impact -> figure observable
+                    // rather than merely intended.
+                    continue;
+                }
+
                 var progress = active.Progress;
                 var cue = active.Cue;
 
@@ -383,25 +412,33 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// Where <see cref="Strike"/> peaks, as a fraction of the lunge's own duration. This is the
+        /// instant the lunging piece is furthest toward what it struck - the impact.
+        /// </summary>
+        internal const float StrikePeak = 0.34f;
+
+        /// <summary>Where <see cref="PingPong"/> peaks: a flash is brightest at its middle.</summary>
+        internal const float FlashPeak = 0.5f;
+
+        /// <summary>
         /// A strike: out fast, back slower. Peaks at a third of the way through rather than the middle,
         /// because a lunge that returns as slowly as it left reads as a lean rather than a hit.
         /// </summary>
         internal static float Strike(float t)
         {
             var clamped = Clamp01(t);
-            const float peak = 0.34f;
-            return clamped <= peak
-                ? SmoothStep(clamped / peak)
-                : 1f - SmoothStep((clamped - peak) / (1f - peak));
+            return clamped <= StrikePeak
+                ? SmoothStep(clamped / StrikePeak)
+                : 1f - SmoothStep((clamped - StrikePeak) / (1f - StrikePeak));
         }
 
         /// <summary>Symmetric 0 to 1 to 0.</summary>
         internal static float PingPong(float t)
         {
             var clamped = Clamp01(t);
-            return clamped <= 0.5f
-                ? SmoothStep(clamped * 2f)
-                : 1f - SmoothStep((clamped - 0.5f) * 2f);
+            return clamped <= FlashPeak
+                ? SmoothStep(clamped / FlashPeak)
+                : 1f - SmoothStep((clamped - FlashPeak) / (1f - FlashPeak));
         }
 
         /// <summary>

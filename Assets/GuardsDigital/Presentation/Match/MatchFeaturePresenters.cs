@@ -1818,7 +1818,7 @@ namespace GuardsDigital.Presentation.Match
         void Render(DirectorHandsViewModel model);
     }
 
-    public sealed class DirectorHandsPresenter
+    public sealed class DirectorHandsPresenter : ISeatScopedPresenter
     {
         private readonly IMatchClient session;
         private readonly IDirectorHandsView view;
@@ -1928,6 +1928,9 @@ namespace GuardsDigital.Presentation.Match
             Refresh();
             return true;
         }
+
+        /// <inheritdoc />
+        public HeroId HomeHeroId => homeHeroId;
 
         private HeroId Resolve(IMatchReadModel projection)
         {
@@ -3369,11 +3372,15 @@ namespace GuardsDigital.Presentation.Match
         void Render(RoundActionViewModel model);
     }
 
-    public sealed class RoundActionPresenter
+    public sealed class RoundActionPresenter : ISeatScopedPresenter
     {
         private readonly IMatchClient session;
         private readonly IRoundActionView view;
-        private readonly HeroId homeHeroId;
+        // Milestone 8.35x: NOT readonly. A networked client is composed before its seat is granted,
+        // so this identity is bound a second time by `ConfiguredMatchSceneRuntime.BindHomeHero`
+        // once the lobby admits the player. See `ISeatScopedPresenter` for what an unrepaired
+        // identity does to every predicate below that asks "is this decision mine?".
+        private HeroId homeHeroId;
         private readonly List<TokenInstanceId> clearSelection = new List<TokenInstanceId>();
         private IMatchReadModel lastProjection;
         private RoundActionViewModel lastViewModel;
@@ -3409,6 +3416,34 @@ namespace GuardsDigital.Presentation.Match
             this.homeHeroId = homeHeroId;
         }
 
+        /// <inheritdoc />
+        public HeroId HomeHeroId => homeHeroId;
+
+        /// <summary>
+        /// Milestone 8.35x. Binds this panel's viewer identity once the interactive lobby admits the
+        /// seat, exactly as <see cref="DirectorHandsPresenter.SetHomeHero"/> has always done for the
+        /// tray. Until this existed the field was <c>readonly</c> and a networked client's round
+        /// panel kept the undefined hero for the whole session, reading every seat's turn release,
+        /// every commitment wait and every END TURN as its own.
+        /// </summary>
+        public bool SetHomeHero(HeroId heroId)
+        {
+            var projection = session.Projection;
+            if (!heroId.IsDefined ||
+                !projection.Setup.Heroes.Any(hero => hero.HeroId.Equals(heroId)))
+            {
+                return false;
+            }
+
+            homeHeroId = heroId;
+            // The cached model was composed against the OLD identity, and the projection reference
+            // does not have to change for the binding to - so without this the next Refresh could
+            // serve back the very view model this binding exists to correct.
+            lastProjection = null;
+            Refresh();
+            return true;
+        }
+
         public event Action<IMatchReadModel> SessionProjectionChanged;
         public event Action<FastTravelOfferViewModel> FastTravelSelectionRequested;
 
@@ -3420,6 +3455,9 @@ namespace GuardsDigital.Presentation.Match
 
         public void Refresh()
         {
+            // Milestone 8.35x: an END TURN press that ran out of things it could submit while the
+            // client was waiting on the host picks up here, on the projection that answered it.
+            ResumeEndTurnComposition();
             view.Render(GetOrCreateViewModel(session.Projection));
         }
 
@@ -3537,6 +3575,9 @@ namespace GuardsDigital.Presentation.Match
             // second half, performed in the same press rather than left for a separate one. Release
             // itself needs no further chaining - reaching this branch already IS the whole press.
             var isEndTurnPress = ReferenceEquals(invocation, current.EndTurnInvocation);
+            // Milestone 8.35x: read BEFORE the submission, because a network client hands back a
+            // projection that has not yet been decided and may already be stripped of the actor.
+            var pressActorId = isEndTurnPress ? PressActorOf(session.Projection) : default;
             if (!Execute(invocation.Command))
             {
                 return false;
@@ -3545,6 +3586,11 @@ namespace GuardsDigital.Presentation.Match
             if (isEndTurnPress && invocation.Command.Kind != DirectorCommandKind.ReleaseTurn)
             {
                 ReleaseTheTurnIfItNowStandsReleasable();
+                // The same asynchronous-client fault this press path has always had: over the wire
+                // the release above finds no standing contract yet, because the completion it
+                // follows has only been SENT. Arm the continuation so the release lands on the
+                // projection that answers it rather than waiting for a second press.
+                ArmOrClearEndTurnContinuation(pressActorId);
             }
 
             return true;
@@ -3580,11 +3626,23 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public bool SubmitEndTurn()
         {
-            var initial = session.Projection;
-            var pressActorId = initial?.SelectedActor.IsDefined == true
-                ? initial.SelectedActor.ActorId
-                : initial?.PendingTurnRelease?.ActorId ?? default;
+            var pressActorId = PressActorOf(session.Projection);
+            var progressed = ComposeEndTurn(pressActorId);
+            ArmOrClearEndTurnContinuation(pressActorId);
+            return progressed;
+        }
 
+        /// <summary>
+        /// The actor one END TURN press is about: the hero currently acting, or - once the turn's
+        /// resolution has finished - the hero its release is standing on.
+        /// </summary>
+        private static HeroId PressActorOf(IMatchReadModel projection) =>
+            projection?.SelectedActor.IsDefined == true
+                ? projection.SelectedActor.ActorId
+                : projection?.PendingTurnRelease?.ActorId ?? default;
+
+        private bool ComposeEndTurn(HeroId pressActorId)
+        {
             var progressed = false;
             for (var guard = 0; guard < MaxEndTurnComposedSteps; guard++)
             {
@@ -3644,6 +3702,120 @@ namespace GuardsDigital.Presentation.Match
         /// case (an open Attack target choice) plus the completion and release it composes into,
         /// with headroom for a repeat-ability's own extra cycle.</summary>
         private const int MaxEndTurnComposedSteps = 8;
+
+        /// <summary>
+        /// Milestone 8.35x, and the SECOND defect the first live internet playtest found: "first end
+        /// turn clears the card, second ends the turn".
+        ///
+        /// <para><b>What 8.35v's one-press rule assumed, and why only the network broke it.</b>
+        /// <see cref="ComposeEndTurn"/> re-reads <c>session.Projection</c> after every step and keeps
+        /// composing until the turn is released. That is exact against a SYNCHRONOUS client - the
+        /// Director's and a local seat's - where a submission has already been decided by the time
+        /// <see cref="Execute"/> returns. Over the wire it is not: <c>NetworkMatchClient.Submit</c>
+        /// returns as soon as the command is SENT, handing back the pre-command projection, and the
+        /// session then refuses every further submission until the host answers. So the second step
+        /// of the composition - the release after a Hold, a movement Stop, an effect Decline - was
+        /// refused, the loop ended having spent exactly one command, and the player had to press
+        /// again. Every existing one-press case passes because every one of them drives a
+        /// synchronous client; nothing in the suite ever composed over the client the shipped build
+        /// actually uses.</para>
+        ///
+        /// <para><b>The fix, and why it lives here.</b> A press that could not finish because the
+        /// client is mid-round-trip is not a finished press - it is a press with more to compose as
+        /// soon as there is something to compose against. The continuation is remembered here, in
+        /// the one place that knows what END TURN means, and resumed from <see cref="Refresh"/>,
+        /// which every projection push already calls. <c>NetworkMatchClient</c> carries a
+        /// hand-written continuation of exactly this shape for the effect select-then-confirm pair
+        /// (<c>PendingEffectAutoConfirm</c>); that one was built before 8.35v's composition and
+        /// 8.35g's release chain existed, and neither got an equivalent until now.</para>
+        ///
+        /// <para><b>What keeps it from spending somebody else's turn.</b> The continuation is bound
+        /// to the ONE actor the press was for and is dropped the moment the state stops concerning
+        /// that hero - the identical bound <see cref="ComposeEndTurn"/> already enforces inside a
+        /// single press, and for the identical reason 8.35v records: a Director client answers for
+        /// everybody, so composing past the actor boundary would silently end a second player's
+        /// turn. It is also dropped after <see cref="MaxEndTurnResumes"/> resumptions, so a state
+        /// that never becomes composable cannot leave a press armed for the rest of the match.</para>
+        /// </summary>
+        private HeroId composingEndTurnFor;
+
+        private int composingEndTurnResumes;
+
+        /// <summary>
+        /// The bound on how many projection pushes one press may be resumed across. Generous enough
+        /// for the deepest composition (rewind, completion, release) to survive a round trip each,
+        /// and finite so a press can never become permanent.
+        /// </summary>
+        private const int MaxEndTurnResumes = 12;
+
+        /// <summary>
+        /// Remembers an END TURN press that has more to compose, or forgets one that is finished.
+        ///
+        /// <para>The signal that a press is unfinished rather than complete is the surface's own
+        /// input gate: a client waiting on the host reports <c>IsInputEnabled == false</c>, which is
+        /// precisely "this press could not continue for a reason that will pass". A synchronous
+        /// client never reports it, so a local press - which always finishes inside its own loop -
+        /// never arms a continuation at all.</para>
+        /// </summary>
+        private void ArmOrClearEndTurnContinuation(HeroId pressActorId)
+        {
+            composingEndTurnResumes = 0;
+            var projection = session.Projection;
+
+            // Deliberately NOT conditioned on whether this press submitted anything. An impatient
+            // second press, landing while the first one's command is still in flight, submits
+            // nothing and must leave the first press's continuation ARMED - clearing it there would
+            // punish the player for pressing twice by making the turn need a third press, which is
+            // the very failure this whole mechanism exists to remove. What decides is the state: a
+            // disabled input gate means the press has somewhere left to go once the host answers.
+            composingEndTurnFor =
+                pressActorId.IsDefined && projection != null &&
+                !projection.IsInputEnabled &&
+                StillConcerns(projection, pressActorId)
+                    ? pressActorId
+                    : default;
+        }
+
+        /// <summary>
+        /// Continues an armed press once the host's answer has landed. Called from
+        /// <see cref="Refresh"/>, which every projection push already reaches.
+        /// </summary>
+        private void ResumeEndTurnComposition()
+        {
+            var actor = composingEndTurnFor;
+            if (!actor.IsDefined)
+            {
+                return;
+            }
+
+            var projection = session.Projection;
+            if (projection == null || !projection.IsInputEnabled)
+            {
+                // Still waiting on the host. Nothing has changed that this press can act on.
+                return;
+            }
+
+            if (++composingEndTurnResumes > MaxEndTurnResumes ||
+                !StillConcerns(projection, actor))
+            {
+                composingEndTurnFor = default;
+                return;
+            }
+
+            // Cleared BEFORE composing, so the refreshes this composition itself provokes find no
+            // armed press and cannot recurse into it. The step below re-arms if there is still more.
+            composingEndTurnFor = default;
+            ComposeEndTurn(actor);
+            ArmOrClearEndTurnContinuation(actor);
+        }
+
+        /// <summary>
+        /// Whether the state still concerns the hero a press was for - still resolving that hero's
+        /// turn, or still awaiting ITS release. The press's own boundary, asked in one place.
+        /// </summary>
+        private static bool StillConcerns(IMatchReadModel projection, HeroId actorId) =>
+            projection.SelectedActor.ActorId.Equals(actorId) ||
+            (projection.PendingTurnRelease?.ActorId.Equals(actorId) ?? false);
 
         private void ReleaseTheTurnIfItNowStandsReleasable()
         {
@@ -5224,16 +5396,14 @@ namespace GuardsDigital.Presentation.Match
             var agreement = projection.TeamAgreement;
             if (agreement?.Kind == TeamAgreementKind.Initiative)
             {
-                return "TIED INITIATIVE — " + NarrationLabels.WaitingOn(
-                    AgreementStillOwed(projection, agreement));
+                return "TIED INITIATIVE — " + FormatAgreementWait(projection, agreement);
             }
 
             if (agreement?.Kind == TeamAgreementKind.MinionBattle)
             {
                 statusDetail = $"{agreement.SelectedUnits.Count} OF " +
                     $"{agreement.RequiredSelectionCount} MINIONS SELECTED";
-                return "MINION BATTLE PROPOSAL — " + NarrationLabels.WaitingOn(
-                    AgreementStillOwed(projection, agreement));
+                return "MINION BATTLE PROPOSAL — " + FormatAgreementWait(projection, agreement);
             }
 
             // Milestone 8.30b, and these two branches are what the user-approved amendment found.
@@ -5432,6 +5602,36 @@ namespace GuardsDigital.Presentation.Match
         /// same per-kind reading <c>AwaitedInputQuery.OwesAnAgreementAnswer</c> and
         /// <c>TeamAgreementHudPresentation.Create</c> both already use.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35x, and the defect the first live internet playtest found within minutes.
+        ///
+        /// <para>A standing team agreement whose participants have ALL answered is an ordinary,
+        /// legal, transient state - the moment between the last statement landing and the authority
+        /// resolving what it unblocked - and every seat refreshes through it. Both branches above
+        /// handed that empty set straight to <see cref="NarrationLabels.WaitingOn"/>, which refuses
+        /// it by design, so the round panel threw on EVERY refresh from that moment on. Milestone
+        /// 8.35h's panel isolation then did its job exactly as designed and contained the throw to
+        /// this one panel - which is what turned a crash into something far quieter and worse: the
+        /// panel froze at its last good text (the playtest's immortal "YOUR TURN — RELEASE TO
+        /// CONTINUE") and everything else riding the same refresh, the kinetic cue emission
+        /// included, was starved for the rest of the match.
+        /// </para>
+        ///
+        /// <para>The fix is here, at the caller, and deliberately not in the vocabulary: an empty
+        /// owed-set is a real state that deserves a real sentence, not a constructed empty list and
+        /// not a relaxed guard. <see cref="NarrationLabels.WaitingOn"/> stays defensive, so the next
+        /// caller that forgets the empty case is still caught rather than quietly printing
+        /// "WAITING ON: ".</para>
+        /// </summary>
+        private static string FormatAgreementWait(
+            IMatchReadModel projection, TeamAgreementProjection agreement)
+        {
+            var stillOwed = AgreementStillOwed(projection, agreement);
+            return stillOwed.Count == 0
+                ? NarrationLabels.EveryAnswerIn
+                : NarrationLabels.WaitingOn(stillOwed);
+        }
+
         private static IReadOnlyList<string> AgreementStillOwed(
             IMatchReadModel projection, TeamAgreementProjection agreement) =>
             Array.AsReadOnly(agreement.Participants

@@ -1224,6 +1224,145 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// THE SECOND DEFECT THE FIRST LIVE INTERNET PLAYTEST FOUND: "first end turn clears the
+        /// card, second ends the turn". Milestone 8.35x.
+        ///
+        /// <para><b>The dimension this whole matrix was missing.</b> Every case above - and every
+        /// other <c>SubmitEndTurn</c> assertion in the repository - drives a SYNCHRONOUS client,
+        /// where a submission has already been decided by the time <c>Submit</c> returns. The
+        /// shipped build's networked seats do not have one. <c>NetworkMatchClient.Submit</c> returns
+        /// as soon as the command is SENT, handing back the pre-command projection, and the session
+        /// then refuses every further submission while it waits on the host. So the composition's
+        /// SECOND step - the release after the Hold - was refused, one command landed per press, and
+        /// the player pressed twice. The rule was never wrong; nothing ever tested it over the
+        /// client that actually ships.</para>
+        ///
+        /// <para>The state is the identical untouched-card Hold of the case above, so the only
+        /// variable between them is the client. What follows the press here is not a second press -
+        /// it is only what <c>PrivateLobbyViews.Update</c> already does every frame while online:
+        /// <c>RefreshAll</c>, and therefore <c>RoundActionPresenter.Refresh</c>.</para>
+        /// </summary>
+        [Test]
+        public void OneEndTurnPressOverAnAsynchronousClient_EndsTheTurnWithNoSecondPress()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var actor = session.Projection.SelectedActor.ActorId;
+            var client = new DeferredMatchClient(session);
+            var presenter = new RoundActionPresenter(client, new CapturingRoundView(), actor);
+
+            Assert.That(presenter.SubmitEndTurn(), Is.True, "The one press the player makes.");
+            Assert.That(client.InFlight, Is.True,
+                "and it lands exactly one command on the wire, because that is all an " +
+                "asynchronous client will accept at a time.");
+            Assert.That(session.Projection.AcceptedCommands.Last().Kind,
+                Is.Not.EqualTo(DirectorCommandKind.ReleaseTurn),
+                "The turn is NOT yet released - which is precisely where the shipped build " +
+                "stopped and asked the player to press again.");
+
+            // An impatient second press, mid-round-trip. It must submit nothing AND must not
+            // disarm the first press's continuation - otherwise the turn would need a THIRD.
+            Assert.That(presenter.SubmitEndTurn(), Is.False,
+                "A press while the client is waiting on the host submits nothing.");
+
+            // From here on: only the frames Unity already runs. No further press.
+            for (var frame = 0; frame < 8; frame++)
+            {
+                client.DeliverPending();
+                presenter.Refresh();
+            }
+
+            Assert.That(session.Projection.PendingTurnRelease, Is.Null,
+                "One press, plus the ordinary per-frame refresh, ends the turn. This is the " +
+                "assertion the shipped build fails.");
+            var commands = session.Projection.AcceptedCommands;
+            Assert.That(commands[commands.Count - 2].Kind, Is.EqualTo(DirectorCommandKind.PerformHold));
+            Assert.That(commands[commands.Count - 1].Kind, Is.EqualTo(DirectorCommandKind.ReleaseTurn),
+                "Both commands are recorded, in order - the same replay shape a synchronous " +
+                "client produces, reached across two round trips instead of inside one call.");
+            Assert.That(
+                commands.Count(command => command.Kind == DirectorCommandKind.ReleaseTurn),
+                Is.EqualTo(1),
+                "and exactly ONE release: the continuation stops at its own actor's boundary " +
+                "rather than running on into the next player's turn.");
+        }
+
+        /// <summary>
+        /// Reproduces <c>NetworkMatchClient</c>'s contract without a wire: a submission is ACCEPTED
+        /// but only SENT - the caller gets the pre-command projection back, that projection reports
+        /// <c>IsInputEnabled == false</c>, and every further submission is refused until the host's
+        /// answer is delivered. Built on the real <c>NetworkMatchReadModel</c> rather than a
+        /// hand-written stub, so the stripped view a waiting client actually renders is the one
+        /// under test.
+        /// </summary>
+        private sealed class DeferredMatchClient : IMatchClient
+        {
+            private readonly IMatchSession session;
+            private readonly MatchHost host;
+            private DirectorCommand pending;
+
+            public DeferredMatchClient(IMatchSession session)
+            {
+                this.session = session;
+                host = new MatchHost(session);
+            }
+
+            public bool InFlight => pending != null;
+
+            public bool IsDirector => false;
+
+            public IMatchReadModel Projection
+            {
+                get
+                {
+                    if (pending == null)
+                    {
+                        return session.Projection;
+                    }
+
+                    var seat = host.Seats.Seats[0];
+                    Assert.That(NetworkSeatProjectionCodec.TryDecode(
+                        NetworkSeatProjectionCodec.Encode(host.ProjectionForSeat(seat.Id)),
+                        out var record), Is.True);
+                    var waiting = new NetworkMatchReadModel(
+                        host.Projection, MatchContentCatalogs.ForThisBuild());
+                    waiting.Replace(record, false);
+                    return waiting;
+                }
+            }
+
+            public MatchClientResult Submit(DirectorCommand command)
+            {
+                if (pending != null)
+                {
+                    return new MatchClientResult(false, "Waiting for the host.", Projection, true);
+                }
+
+                pending = command;
+                return new MatchClientResult(true, "Sent to the host.", Projection, false);
+            }
+
+            public MatchClientResult SubmitAgreement(TeamAgreementCommand command) =>
+                new MatchClientResult(false, "Not used by this fixture.", Projection, true);
+
+            public MatchClientResult SubmitUndo() =>
+                new MatchClientResult(false, "Not used by this fixture.", Projection, true);
+
+            /// <summary>The host's answer arriving - one round trip.</summary>
+            public void DeliverPending()
+            {
+                if (pending == null)
+                {
+                    return;
+                }
+
+                var command = pending;
+                pending = null;
+                session.Execute(command);
+            }
+        }
+
+        /// <summary>
         /// State: mid-movement, free to stop early. One press stops the movement AND releases.
         /// </summary>
         [Test]
@@ -3633,6 +3772,221 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(bluesView.Status, Is.EqualTo(redsView.Status),
                 "The proposal and every participant's statement are public and identical for " +
                 "every seat - only AuthorizedCommands differs, which this line never reads.");
+        }
+
+        // -------------------------------------------------------------------------------------
+        // Milestone 8.35x - THE EMPTY WAITING-SET MATRIX.
+        //
+        // The first live internet playtest crashed the round panel within minutes, on every
+        // refresh, for the rest of the match:
+        //
+        //     GUARDS_HUD: PANEL_REFRESH_FAILED panel=round
+        //     ArgumentException: A waiting-on line requires at least one named hero.
+        //
+        // 2,550 green cases did not see it, and the reason is exactly what these cases add. Every
+        // narration case above stages a waiting set with somebody IN it - which is the interesting
+        // case to a test author and the harmless one to a player. Nothing staged the EMPTY set: the
+        // ordinary, legal, transient moment when the last participant has answered and the
+        // authority has not yet resolved what that unblocked. Every seat refreshes through it.
+        //
+        // These cases stage that moment in each phase that can produce it. The bug they pin is not
+        // "a vocabulary method throws" - it is "a caller handed a decision to a method that had
+        // already documented it would refuse it", so the assertions below are about what the panel
+        // SAYS in that state, not merely that it survives.
+        // -------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// State: a tied-Initiative agreement every participant has already answered. The exact
+        /// shape that took the panel down live.
+        /// </summary>
+        [Test]
+        public void ATiedInitiativeEveryParticipantHasAnswered_ReadsTheEveryAnswerInLine()
+        {
+            var session = CreateSession();
+            var red = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var blue = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue);
+            var redsCard = session.Projection.Cards.First(card => card.OwnerId.Equals(red.HeroId)).Id;
+            var bluesCard = session.Projection.Cards.First(card => card.OwnerId.Equals(blue.HeroId)).Id;
+            var agreement = new TeamAgreementProjection(
+                TeamAgreementKind.Initiative,
+                new TeamAgreementProposalId("every-answer-in-probe"),
+                TeamSide.Blue,
+                new[] { new TeamAgreementCandidateProjection(bluesCard, blue.HeroId) },
+                new[]
+                {
+                    // BOTH have stated. `AgreementStillOwed` reads `!HasStatement` for an
+                    // Initiative agreement, so the owed set is empty - and before this milestone
+                    // that empty set went straight into `NarrationLabels.WaitingOn`.
+                    new TeamAgreementParticipantProjection(red.HeroId, true, redsCard, false),
+                    new TeamAgreementParticipantProjection(blue.HeroId, true, bluesCard, false)
+                },
+                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
+                0,
+                false,
+                Array.Empty<TeamAgreementCommand>());
+            var projection = new AgreementReadModel(session.Projection, agreement);
+
+            var redsView = Narrate(projection, red.HeroId);
+            var bluesView = Narrate(projection, blue.HeroId);
+
+            Assert.That(redsView.Status,
+                Is.EqualTo("TIED INITIATIVE — " + NarrationLabels.EveryAnswerIn),
+                "An answered-by-everyone agreement is a real state and gets a real sentence - " +
+                "never a waiting-on line naming nobody, and never a throw.");
+            Assert.That(bluesView.Status, Is.EqualTo(redsView.Status),
+                "Every participant's statement is public, so this line is identical on every seat.");
+        }
+
+        /// <summary>
+        /// State: a Minion Battle proposal every participant has already agreed to. The second
+        /// branch that reached the same refusing vocabulary, and it also carries a status detail -
+        /// asserted here so the demoted line is not silently lost with the headline.
+        /// </summary>
+        [Test]
+        public void AMinionBattleProposalEveryParticipantHasAgreed_ReadsTheEveryAnswerInLine()
+        {
+            var session = CreateSession();
+            var red = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var blue = session.Projection.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Blue);
+            var agreement = new TeamAgreementProjection(
+                TeamAgreementKind.MinionBattle,
+                new TeamAgreementProposalId("every-agreement-in-probe"),
+                TeamSide.Blue,
+                Array.Empty<TeamAgreementCandidateProjection>(),
+                new[]
+                {
+                    // A Minion Battle agreement reads `!Agreed`, so both agreeing empties the set.
+                    new TeamAgreementParticipantProjection(red.HeroId, false, default, true),
+                    new TeamAgreementParticipantProjection(blue.HeroId, false, default, true)
+                },
+                Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>(),
+                2,
+                false,
+                Array.Empty<TeamAgreementCommand>());
+            var projection = new AgreementReadModel(session.Projection, agreement);
+
+            var model = Narrate(projection, red.HeroId);
+
+            Assert.That(model.Status,
+                Is.EqualTo("MINION BATTLE PROPOSAL — " + NarrationLabels.EveryAnswerIn));
+            Assert.That(model.StatusDetail, Is.EqualTo("0 OF 2 MINIONS SELECTED"),
+                "The demoted detail is composed before the headline and must survive the empty " +
+                "owed-set branch with it.");
+        }
+
+        /// <summary>
+        /// State: the commitment phase with nothing still owed. This branch already guarded its
+        /// empty set before this milestone - it is staged here anyway, because the point of the
+        /// matrix is that EVERY phase which can build a waiting-on line is checked with an empty
+        /// one, not that the two that happened to crash are.
+        /// </summary>
+        [Test]
+        public void TheCommitmentPhaseWithNothingStillOwed_ReadsItsOwnLineAndNeverAnEmptyWaitingOn()
+        {
+            var session = CreateSession();
+            var viewer = session.Projection.Setup.Heroes.First().HeroId;
+            var projection = new CommitmentReadModel(
+                session.Projection, Array.Empty<MatchCommitmentProjection>());
+
+            var model = Narrate(projection, viewer);
+
+            Assert.That(model.Status, Does.Not.Contain("WAITING ON"),
+                "Nobody is owed, so nobody may be named as owed.");
+            Assert.That(model.Status, Does.Contain("choosing their cards"));
+        }
+
+        /// <summary>
+        /// The vocabulary's own guard is deliberately UNCHANGED by this milestone. The fix belongs
+        /// at the callers, which owe a real sentence for the empty case; relaxing this instead would
+        /// have bought a meaningless "WAITING ON: " line on the panel and disarmed the guard for
+        /// every future caller.
+        /// </summary>
+        [Test]
+        public void TheWaitingOnVocabulary_StillRefusesToNameNobody()
+        {
+            Assert.That(
+                () => NarrationLabels.WaitingOn(Array.Empty<string>()),
+                Throws.ArgumentException,
+                "A waiting-on line naming nobody is not a sentence, and the vocabulary must go on " +
+                "saying so - that is what makes the next caller's omission loud instead of silent.");
+            Assert.That(NarrationLabels.EveryAnswerIn, Is.Not.Empty,
+                "and the honest alternative it forces the caller to supply exists.");
+        }
+
+        /// <summary>
+        /// THE GUARD THAT WOULD HAVE CAUGHT THIS CLASS FOREVER, and the one this milestone most
+        /// wants kept.
+        ///
+        /// <para>Every case above pins one state somebody thought to stage. This one stages nothing:
+        /// it drives a real six-seat match through a long seeded walk and rebuilds the round panel
+        /// for EVERY seat, plus the Director, at EVERY step - the same sweep
+        /// <c>ConfiguredMatchSceneRuntime.RefreshAll</c> performs on every projection a live client
+        /// receives. It asserts the failure sink stays empty.</para>
+        ///
+        /// <para>This is the shape of the defect that shipped: not a state anybody got wrong on
+        /// purpose, but a legal state nobody enumerated. A panel that must survive every projection
+        /// of a real match is a claim a walk can check and a hand-written matrix cannot.</para>
+        /// </summary>
+        [Test]
+        public void TheRoundPanelSurvivesEveryProjectionOfASeededMatchForEveryViewer()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var seats = host.Seats.Seats.ToArray();
+            Assert.That(seats, Has.Length.EqualTo(6), "The official six-seat configuration.");
+
+            // The stand-in for milestone 8.35h's panel-failure sink. Live, a throw here is caught,
+            // logged as PANEL_REFRESH_FAILED, and the panel FREEZES at its last good text - which is
+            // why the defect reached a human as a stuck sentence rather than as a crash.
+            var failures = new List<string>();
+            var refreshes = 0;
+
+            void SweepEveryViewer()
+            {
+                foreach (var seat in seats)
+                {
+                    var seatProjection = host.ProjectionForSeat(seat.Id);
+                    refreshes++;
+                    try
+                    {
+                        RoundActionPresenter.CreateViewModel(seatProjection, seat.HeroId);
+                    }
+                    catch (Exception error)
+                    {
+                        failures.Add($"seat {seat.Id} hero {seat.HeroId}: {error.GetType().Name}: " +
+                            error.Message);
+                    }
+                }
+
+                refreshes++;
+                try
+                {
+                    // The Director's own composition, which legitimately passes the undefined hero.
+                    RoundActionPresenter.CreateViewModel(host.Projection);
+                }
+                catch (Exception error)
+                {
+                    failures.Add($"director: {error.GetType().Name}: {error.Message}");
+                }
+            }
+
+            SweepEveryViewer();
+            var walked = OwnerScopedProjectionTests.DriveThroughSeats(host, 600, _ =>
+            {
+                SweepEveryViewer();
+                // Never stop: the hook is being used to sweep the whole walk, not to find a state.
+                return false;
+            });
+
+            Assert.That(walked, Is.GreaterThan(100),
+                "The walk must actually cover a long stretch of a real match, or the sweep below " +
+                "proves very little.");
+            Assert.That(refreshes, Is.GreaterThan(700),
+                "Seven viewers per step over that walk.");
+            Assert.That(failures, Is.Empty,
+                "The round panel must compose for every viewer at every projection of a real " +
+                "match. Any entry here is a live PANEL_REFRESH_FAILED: the panel freezes at its " +
+                "last good text and every surface riding the same refresh - the kinetic cue " +
+                "emission included - is starved for the rest of the match.");
         }
 
         // -------------------------------------------------------------------------------------

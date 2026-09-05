@@ -40,6 +40,15 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Advances past the impact of any striking cue - milestone 8.35x, which moved the floating
+        /// figure's appearance from the cue's START to the moment that cue's own motion peaks. Long
+        /// enough to clear both peaks (a lunge's at 34% of 280ms, a flash's at 50% of 240ms) and far
+        /// short of the figure's own fade, so a case using it is asserting what it means to.
+        /// </summary>
+        private static void AdvancePastImpact(KineticPlayback playback) =>
+            AdvanceBy(playback, KineticTiming.LongestPieceKineticSeconds * 0.6f);
+
         private static KineticCue Slide(int sequence = 1) => new KineticCue(
             sequence, KineticCueKind.Slide, Attacker,
             route: new[] { new HexCoordinate(0, 0), new HexCoordinate(3, 0) });
@@ -176,7 +185,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var playback = new KineticPlayback();
             playback.Begin(new[] { Lunge() });
-            playback.Advance(0.05f);
+            AdvancePastImpact(playback);
             Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(1));
 
             playback.Begin(Array.Empty<KineticCue>());
@@ -198,7 +207,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var playback = new KineticPlayback();
             playback.Begin(new[] { Lunge() });
-            playback.Advance(0.05f);
+            AdvancePastImpact(playback);
 
             Assert.That(playback.FloatingNumbers[0].Opacity, Is.EqualTo(1f).Within(0.0001f),
                 "It is fully drawn while it is new.");
@@ -213,6 +222,76 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(0));
         }
 
+        /// <summary>
+        /// Milestone 8.35x, on the first live internet playtest's finding that the attack and
+        /// defense figures "show up too fast". THE ORDERING: lunge, then impact, then the figure.
+        ///
+        /// <para>Before this the figure was begun at the same instant as its cue, which put the
+        /// number on screen about 95ms BEFORE the lunge had reached the piece it struck - the number
+        /// arrived ahead of its own cause. That is why it read as too fast even though it was
+        /// already up for nearly a second: there was nothing to follow from the blow to the figure,
+        /// because the figure came first.</para>
+        /// </summary>
+        [Test]
+        public void AFigureAppearsAtTheLungesImpact_AndNeverBeforeIt()
+        {
+            var playback = new KineticPlayback();
+            playback.Begin(new[] { Lunge() });
+
+            Assert.That(playback.MotionFor(Attacker).LungeLean, Is.EqualTo(0f).Within(0.0001f),
+                "At the cue's first instant the attacker has not moved yet...");
+            Assert.That(playback.FloatingNumbers, Is.Empty,
+                "...and the figure that describes the blow cannot already be up.");
+
+            var toImpact = KineticTiming.LungeSeconds * KineticPlayback.StrikePeak;
+            AdvanceBy(playback, toImpact * 0.5f);
+
+            Assert.That(playback.MotionFor(Attacker).LungeLean, Is.GreaterThan(0f),
+                "Halfway in, the lunge is visibly under way - it LEADS.");
+            Assert.That(playback.FloatingNumbers, Is.Empty,
+                "and the number still has not preceded its own cause.");
+
+            AdvanceBy(playback, toImpact * 0.6f);
+
+            Assert.That(playback.MotionFor(Attacker).LungeLean, Is.GreaterThan(0.9f),
+                "At the impact the attacker is at its furthest lean...");
+            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(1),
+                "...and THAT is when the figure appears.");
+            Assert.That(playback.FloatingNumbers[0].Number.Role,
+                Is.EqualTo(KineticNumberRole.Damage));
+            Assert.That(playback.FloatingNumbers[0].Opacity, Is.EqualTo(1f).Within(0.0001f),
+                "fully legible from the moment it lands.");
+        }
+
+        /// <summary>
+        /// Milestone 8.35x's other half of the same finding: once it appears, the figure holds long
+        /// enough to be read before it begins to leave.
+        /// </summary>
+        [Test]
+        public void AFigureHoldsForAboutASecondBeforeItBeginsToFade()
+        {
+            var playback = new KineticPlayback();
+            playback.Begin(new[] { Lunge() });
+
+            // Advance to the impact exactly, so what follows is measured from the figure's own
+            // appearance rather than from some point after it.
+            AdvanceBy(playback, KineticTiming.LungeSeconds * KineticPlayback.StrikePeak);
+            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(1),
+                "The figure is up as of the impact.");
+
+            AdvanceBy(playback, 0.85f);
+
+            Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(1),
+                "A figure that has left within a second of appearing cannot be read.");
+            Assert.That(playback.FloatingNumbers[0].Opacity, Is.EqualTo(1f).Within(0.0001f),
+                "and it holds at FULL opacity that whole time rather than fading throughout.");
+
+            Assert.That(
+                KineticTiming.FloatingNumberSeconds * 0.65f, Is.GreaterThan(0.9f),
+                "The hold before the fade begins - FadeOutTail's first 65% - is about a second, " +
+                "which is the amendment's own 'long enough to read' restated as arithmetic.");
+        }
+
         /// <summary>Damage floats over what was struck; a block floats over whoever blocked.</summary>
         [Test]
         public void AFigureFloatsOverThePieceItIsAbout()
@@ -225,7 +304,7 @@ namespace GuardsDigital.Tests.EditMode
                     3, KineticCueKind.Flash, Defender,
                     number: new KineticNumber(2, KineticNumberRole.Block, CardColor.Silver))
             });
-            playback.Advance(0.01f);
+            AdvancePastImpact(playback);
 
             Assert.That(playback.FloatingNumbers.Count, Is.EqualTo(2));
             var damage = FindByRole(playback.FloatingNumbers, KineticNumberRole.Damage);

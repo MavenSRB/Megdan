@@ -81,6 +81,26 @@ namespace GuardsDigital.Presentation.Match
             return "WAITING ON: " + string.Join(", ", names);
         }
 
+        /// <summary>
+        /// Milestone 8.35x. The honest alternative to a <see cref="WaitingOn"/> line once every hero
+        /// it would have named has already answered - the legal transient state between the last
+        /// answer landing and the authority resolving what it unblocked.
+        ///
+        /// <para>It exists because <see cref="WaitingOn"/> is deliberately, and correctly, defensive:
+        /// a waiting-on line naming nobody is a meaningless sentence, so the constructor refuses to
+        /// build one. That leaves the CALLER owing a real sentence for the empty set, and until this
+        /// milestone the two team-agreement branches of <c>RoundActionPresenter.FormatStatus</c> owed
+        /// it and did not pay - they handed the empty set straight to <see cref="WaitingOn"/>, whose
+        /// throw took the whole round panel down on every refresh for the rest of the match. The
+        /// vocabulary's own guard is kept exactly as it was; what changed is that the callers now
+        /// answer the empty case themselves instead of asking for a line that cannot exist.</para>
+        ///
+        /// <para>It claims only what an empty owed-set actually proves - that no participant is still
+        /// owed - and never that the match has moved on, which is a fact no projection publishes
+        /// here.</para>
+        /// </summary>
+        public const string EveryAnswerIn = "EVERY ANSWER IN";
+
         private static string RequireName(string heroDisplayName) =>
             string.IsNullOrWhiteSpace(heroDisplayName)
                 ? throw new ArgumentException(

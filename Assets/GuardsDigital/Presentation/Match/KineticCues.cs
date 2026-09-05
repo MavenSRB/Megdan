@@ -347,7 +347,9 @@ namespace GuardsDigital.Presentation.Match
         public const float RespawnSeconds = 0.30f;
 
         /// <summary>
-        /// How long a floating damage or block number stays up.
+        /// How long a floating damage or block number stays up, measured from the moment it APPEARS -
+        /// which milestone 8.35x moved to the striking cue's own impact (see
+        /// <c>KineticPlayback.ImpactMomentFor</c>), not the cue's start.
         ///
         /// <para><b>A recorded, deliberate departure from the 200-400ms band, with its reason.</b> That
         /// band bounds how long a PIECE is displaced from where the projection says it stands - the
@@ -356,8 +358,17 @@ namespace GuardsDigital.Presentation.Match
         /// third of a second cannot be. It stays concurrent with input, is interrupted by the next
         /// event exactly as every other kinetic is, and holds no authority, so every constraint the
         /// amendment actually placed on kinetics still holds.</para>
+        ///
+        /// <para><b>Milestone 8.35x raised this from 0.90s, on the first live internet playtest's
+        /// finding that the figures "show up too fast".</b> Two things made them hard to read, and the
+        /// duration was only the second. The first was that a figure appeared at the cue's START, ~95ms
+        /// BEFORE the lunge it describes had even reached the piece it struck - so the number preceded
+        /// its own cause and the eye had nothing to follow. With the appearance moved onto the impact,
+        /// this value now buys what it was always meant to: with <c>FadeOutTail</c> holding full opacity
+        /// through the first 65%, a figure now sits fully legible for just under a second
+        /// (1.5 x 0.65 = 0.975s) before it begins to leave.</para>
         /// </summary>
-        public const float FloatingNumberSeconds = 0.90f;
+        public const float FloatingNumberSeconds = 1.5f;
 
         /// <summary>The circling light's loop on a gold tray or card shine. The amendment's ~2-3s.</summary>
         public const float ShineSweepLoopSeconds = 2.4f;

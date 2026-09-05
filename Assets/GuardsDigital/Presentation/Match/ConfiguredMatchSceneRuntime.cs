@@ -369,12 +369,43 @@ namespace GuardsDigital.Presentation.Match
             Seat = host.Seats.Find(online.TargetSeat) ??
                 throw new InvalidOperationException("The admitted seat is not in this build's participant graph.");
             client.Replace(new NetworkMatchClient(online, trustedContent, ContentCatalogs));
-            if (!HandsPresenter.SetHomeHero(Seat.HeroId))
-            {
-                throw new InvalidOperationException("The admitted seat's hero is absent from this build's setup.");
-            }
+            BindHomeHero(Seat.HeroId);
             hud.SetDirectorToolsVisible(false);
             RefreshAll();
+        }
+
+        /// <summary>
+        /// Milestone 8.35x. Every presenter whose output depends on WHICH SEAT is looking, in one
+        /// list, so that "who must be told the admitted seat's hero" has exactly one answer.
+        ///
+        /// <para>The composition order this exists for is unavoidable: a networked client's seat is
+        /// granted by the lobby, which runs after the scene has already built its presenters, so
+        /// every entry below is constructed with the UNDEFINED hero and corrected here. What is
+        /// avoidable - and what the first live internet playtest paid for - is a presenter being
+        /// left OUT of that correction. Before this milestone the repair covered only
+        /// <see cref="HandsPresenter"/>, and the two that were missed stored their identity in
+        /// <c>readonly</c> fields that could not be corrected at all.</para>
+        /// </summary>
+        public IReadOnlyList<ISeatScopedPresenter> SeatScopedPresenters =>
+            new ISeatScopedPresenter[] { HandsPresenter, RoundPresenter, KineticPresenter };
+
+        /// <summary>
+        /// Milestone 8.35x. Binds one hero as the viewer identity of EVERY seat-scoped presenter at
+        /// once. It refuses loudly rather than partially: a hero absent from this build's setup is
+        /// the same condition <c>DirectorHandsPresenter.SetHomeHero</c> has always refused, and a
+        /// half-bound HUD - some panels reading as the seat, others as the Director - is precisely
+        /// the state this fan-out exists to make unreachable.
+        /// </summary>
+        private void BindHomeHero(HeroId heroId)
+        {
+            foreach (var presenter in SeatScopedPresenters)
+            {
+                if (!presenter.SetHomeHero(heroId))
+                {
+                    throw new InvalidOperationException(
+                        "The admitted seat's hero is absent from this build's setup.");
+                }
+            }
         }
 
         public IMatchSession Session => session;
