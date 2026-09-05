@@ -96,6 +96,84 @@ namespace GuardsDigital.Tests.EditMode
                 "Two heroes split the same row in halves; three split it in thirds.");
         }
 
+        /// <summary>
+        /// Milestone 8.35z2 (the empty-button gap a false-alarm invited-playtest finding recorded).
+        /// While a participant's own statement is in flight, <c>TeamAgreement.AuthorizedCommands</c> is
+        /// deliberately empty until the host's correlated projection returns; before this milestone
+        /// <c>BuildTeamAgreement</c> drew the heading and status line over an empty button row with no
+        /// explanation, which read as a vanished control rather than a normal, momentary wait.
+        /// </summary>
+        [Test]
+        public void InitiativeAgreement_WhenAStatementIsInFlightDrawsWaitingForHostInsteadOfEmptyButtons()
+        {
+            var agreement = new TeamAgreementHudViewModel(
+                TeamAgreementKind.Initiative,
+                "WHO ACTS FIRST?",
+                new[]
+                {
+                    new TeamAgreementParticipantViewModel("HERO 1", "chose HERO 1"),
+                    new TeamAgreementParticipantViewModel("HERO 2", "is choosing")
+                },
+                Array.Empty<TeamAgreementChoiceViewModel>(),
+                isInputEnabled: false);
+            var model = new RoundActionViewModel(
+                1, 1, 1, RoundResolutionPhase.ResolvingTurn, string.Empty,
+                Array.Empty<TypedInvocationViewModel>(), null, null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>(),
+                teamAgreement: agreement);
+            var view = new RoundActionUnityView();
+
+            view.Render(model);
+
+            Assert.That(
+                view.OptionalStepActionsRoot.Query<Button>(name: "gd-initiative-preference").ToList(),
+                Is.Empty, "No submit control is offered while the seat has nothing authorized.");
+            Assert.That(Descendants(view.OptionalStepActionsRoot).OfType<Label>()
+                .Any(label => label.text == ActionUnavailabilityLabels.WaitingForHost), Is.True,
+                "The seat's own in-flight statement reads a normal wait, not an empty row.");
+            Assert.That(view.OptionalStepActionsRoot.style.backgroundColor.value,
+                Is.EqualTo(MatchHudTheme.PanelBackground),
+                "The panel now carries the same plate the rest of the HUD's panels use.");
+        }
+
+        /// <summary>
+        /// The other half of the same distinction: a seat that was never a participant at all (the
+        /// permanent case - a hero outside the tied candidates) keeps an empty command set for the
+        /// whole decision, not for one round trip, and drawing "WAITING FOR HOST…" there would be
+        /// misleading - it is not waiting on anything of its own. This is the pre-existing, still-correct
+        /// behaviour the fix must not disturb.
+        /// </summary>
+        [Test]
+        public void InitiativeAgreement_WhenNeverAParticipantDrawsNeitherButtonsNorWaitingText()
+        {
+            var agreement = new TeamAgreementHudViewModel(
+                TeamAgreementKind.Initiative,
+                "WHO ACTS FIRST?",
+                new[]
+                {
+                    new TeamAgreementParticipantViewModel("HERO 1", "chose HERO 1"),
+                    new TeamAgreementParticipantViewModel("HERO 2", "is choosing")
+                },
+                Array.Empty<TeamAgreementChoiceViewModel>());
+            var model = new RoundActionViewModel(
+                1, 1, 1, RoundResolutionPhase.ResolvingTurn, string.Empty,
+                Array.Empty<TypedInvocationViewModel>(), null, null,
+                Array.Empty<TypedInvocationViewModel>(),
+                Array.Empty<TypedInvocationViewModel>(),
+                teamAgreement: agreement);
+            var view = new RoundActionUnityView();
+
+            view.Render(model);
+
+            Assert.That(
+                view.OptionalStepActionsRoot.Query<Button>(name: "gd-initiative-preference").ToList(),
+                Is.Empty);
+            Assert.That(Descendants(view.OptionalStepActionsRoot).OfType<Label>()
+                .Any(label => label.text == ActionUnavailabilityLabels.WaitingForHost), Is.False,
+                "A seat that was never a candidate is not waiting on a host round trip.");
+        }
+
         [Test]
         public void HeroHoverLink_ChangesOnlyTheReservedTopEdgeColorWithoutMovingThePlaqueOrFace()
         {

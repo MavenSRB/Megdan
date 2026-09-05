@@ -474,6 +474,60 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 8.35z2. The team-agreement panel ("WHO ACTS FIRST?" and the Minion Battle confirm
+        /// flow share <see cref="ConfiguredMatchHudRenderer.CalculateTeamAgreementControlRect"/>) used
+        /// to anchor its left edge at the screen's own edge - <c>CalculateCardPanelRect</c>'s full-width
+        /// tray band, not the hand's visible left edge - which put it directly on top of the Red rail's
+        /// own column at every viewport, not only a narrow one, and (the user's live report) over the
+        /// hand fan at some shapes too. Asserted at three sizes: the reference, a narrow window, and an
+        /// ultrawide one - the offline-probe technique the panel-scaling memory records, which predicted
+        /// this fix exactly before any Unity launch.
+        /// </summary>
+        [Test]
+        public void TeamAgreementControlRect_ClearsBothRailsTheHandTrayAndTheUnavailableFanAtThreeSizes()
+        {
+            foreach (var device in new[]
+            {
+                new Vector2(2560f, 1440f), // the reference itself
+                new Vector2(1280f, 1024f), // narrow
+                new Vector2(3440f, 1440f)  // ultrawide
+            })
+            {
+                var panel = MatchHudPanelScaling.ReferenceViewport(device.x, device.y);
+                var agreement = ConfiguredMatchHudRenderer.CalculateTeamAgreementControlRect(
+                    panel.x, panel.y);
+                Assert.That(agreement.width, Is.GreaterThan(0f),
+                    $"The panel collapsed to nothing at {device}.");
+                Assert.That(agreement.height, Is.GreaterThan(0f),
+                    $"The panel collapsed to nothing at {device}.");
+
+                var statusBar = ConfiguredMatchHudRenderer.CalculateStatusBarRect(panel.x, panel.y);
+                var redRail = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
+                    panel.x, panel.y, TeamSide.Red);
+                var blueRail = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
+                    panel.x, panel.y, TeamSide.Blue);
+                var handTray = ConfiguredMatchHudRenderer.CalculateCompactHandPointerRect(
+                    panel.x, panel.y);
+                var unavailableFan = ConfiguredMatchHudRenderer.CalculateUnavailableCardGroupRect(
+                    panel.x, panel.y);
+
+                Assert.That(agreement.yMin, Is.GreaterThanOrEqualTo(statusBar.yMax - 0.01f),
+                    $"The panel rises into the top strip at {device}.");
+                Assert.That(agreement.Overlaps(redRail), Is.False,
+                    $"The panel overlaps the Red hero rail at {device}: {agreement} vs {redRail}.");
+                Assert.That(agreement.Overlaps(blueRail), Is.False,
+                    $"The panel overlaps the Blue hero rail at {device}: {agreement} vs {blueRail}.");
+                Assert.That(agreement.Overlaps(handTray), Is.False,
+                    "The panel overlaps the bottom-left hand tray at " + device +
+                    ": " + agreement + " vs " + handTray +
+                    " - the collision the user actually saw live.");
+                Assert.That(agreement.Overlaps(unavailableFan), Is.False,
+                    $"The panel overlaps the unavailable-card fan at {device}: " +
+                    $"{agreement} vs {unavailableFan}.");
+            }
+        }
+
         private static Dictionary<string, Rect> Regions(float panelWidth, float panelHeight) =>
             new Dictionary<string, Rect>
             {

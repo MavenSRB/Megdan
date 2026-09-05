@@ -1496,13 +1496,28 @@ namespace GuardsDigital.Presentation.Match
                 height);
         }
 
+        /// <summary>
+        /// Milestone 8.35z2 correction. The panel used to start at <c>tray.xMin</c>, which is the
+        /// screen's own left edge rather than the hand's visible left edge - the full-width tray band
+        /// (<see cref="CalculateCardPanelRect"/>) reserves the whole viewport, so anchoring here at the
+        /// bare edge put the box directly on top of the Red rail's own column (its third plaque,
+        /// `DIRECTOR` and `CONFIRM FACEDOWN`) at every viewport, not only a narrow one. Left now yields
+        /// to the Red rail's measured right edge; right is bounded against the Blue rail and the
+        /// unavailable-card fan too, the same "bound it against the neighbour it would collide with"
+        /// rule <see cref="GetEndTurnControlRect"/> already applies, so the panel cannot land on either
+        /// rail, the hand tray, or the fan at a reference, narrow, or wide viewport.
+        /// </summary>
         public static Rect CalculateTeamAgreementControlRect(float panelWidth, float panelHeight)
         {
             var tray = CalculateCardPanelRect(panelWidth, panelHeight);
-            var left = tray.xMin + OptionalStepEdgeClearance;
+            var redRail = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Red);
+            var blueRail = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Blue);
+            var unavailable = CalculateUnavailableCardGroupRect(panelWidth, panelHeight);
+            var left = Mathf.Max(tray.xMin, redRail.xMax) + OptionalStepEdgeClearance;
             var right = Mathf.Min(
-                CompactHandRightEdge - OptionalStepEdgeClearance,
-                Mathf.Max(left, panelWidth - Margin));
+                Mathf.Min(CompactHandRightEdge, blueRail.xMin),
+                Mathf.Min(unavailable.xMin, panelWidth - Margin)) - OptionalStepEdgeClearance;
+            right = Mathf.Max(left, right);
             var height = Mathf.Min(
                 RoundActionUnityView.TeamAgreementHeight,
                 Mathf.Max(0f, tray.yMin - StatusBarHeight - Margin));

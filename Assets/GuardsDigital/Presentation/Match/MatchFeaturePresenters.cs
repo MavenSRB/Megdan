@@ -2808,7 +2808,8 @@ namespace GuardsDigital.Presentation.Match
             TeamAgreementKind kind,
             string heading,
             IEnumerable<TeamAgreementParticipantViewModel> participants,
-            IEnumerable<TeamAgreementChoiceViewModel> choices)
+            IEnumerable<TeamAgreementChoiceViewModel> choices,
+            bool isInputEnabled = true)
         {
             Kind = kind;
             Heading = heading ?? throw new ArgumentNullException(nameof(heading));
@@ -2816,12 +2817,22 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentNullException(nameof(participants))).ToArray());
             Choices = Array.AsReadOnly((choices ??
                 Enumerable.Empty<TeamAgreementChoiceViewModel>()).ToArray());
+            IsInputEnabled = isInputEnabled;
         }
 
         public TeamAgreementKind Kind { get; }
         public string Heading { get; }
         public IReadOnlyList<TeamAgreementParticipantViewModel> Participants { get; }
         public IReadOnlyList<TeamAgreementChoiceViewModel> Choices { get; }
+
+        /// <summary>
+        /// Milestone 8.35z2. Mirrors <c>IMatchReadModel.IsInputEnabled</c> at the moment this model was
+        /// built. A seat whose <see cref="Choices"/> is empty because it is not a participant at all
+        /// keeps this <c>true</c> (nothing to wait on); a participant whose own statement is in flight
+        /// - or whose whole client is momentarily desynchronized - reads <c>false</c> here, which is
+        /// what tells an empty <see cref="Choices"/> apart from a genuinely quiet one.
+        /// </summary>
+        public bool IsInputEnabled { get; }
     }
 
     internal static class TeamAgreementHudPresentation
@@ -2831,6 +2842,14 @@ namespace GuardsDigital.Presentation.Match
             var agreement = projection?.TeamAgreement;
             if (agreement == null)
                 return null;
+
+            // Milestone 8.35z2. `NetworkMatchClient` forces `AuthorizedCommands` empty for the whole
+            // window its own `actionable` gate is false - a participant's just-submitted statement in
+            // flight, or a stale/resynchronizing/disconnected client - which is otherwise
+            // indistinguishable here from a seat that was never a participant at all (permanently
+            // empty, e.g. the non-choosing Minion Battle side). Carrying the flag lets the view draw
+            // "WAITING FOR HOST…" only for the first case.
+            var isInputEnabled = projection.IsInputEnabled;
 
             var heroNames = projection.Setup.Heroes.ToDictionary(
                 hero => hero.HeroId,
@@ -2881,7 +2900,8 @@ namespace GuardsDigital.Presentation.Match
                         new TeamAgreementChoiceViewModel(
                             CandidateName(command.PreferredCardInstanceId),
                             CandidateHero(command.PreferredCardInstanceId),
-                            command)));
+                            command)),
+                    isInputEnabled);
             }
 
             return new TeamAgreementHudViewModel(
@@ -2897,7 +2917,8 @@ namespace GuardsDigital.Presentation.Match
                             ? "WITHDRAW MY AGREEMENT"
                             : "AGREE WITH THIS SELECTION",
                         default,
-                        command)));
+                        command)),
+                isInputEnabled);
         }
     }
 

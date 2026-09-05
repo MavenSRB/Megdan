@@ -4408,6 +4408,14 @@ namespace GuardsDigital.Presentation.Match
             optionalStepActionsHost.Clear();
             optionalStepActionsHost.style.flexDirection = FlexDirection.Row;
             optionalStepActionsHost.style.display = DisplayStyle.None;
+            // Milestone 8.35z2: the team-agreement panel is the only one of this shared host's two
+            // occupants that wants its own plate (the optional-step accept/decline pair is drawn as
+            // two independently-shined `PewterBanner`s with no parent background). Reset here so a
+            // rebuild that lands on the OTHER path never inherits the panel BuildTeamAgreement applied
+            // last time this host was populated.
+            optionalStepActionsHost.style.backgroundColor = Color.clear;
+            HudElements.Padding(optionalStepActionsHost, 0f);
+            HudElements.Border(optionalStepActionsHost, Color.clear, 0f, 0f);
             status.Clear();
             rows.Clear();
             // Milestone 8.30b: End Turn is rebuilt before the branches below, because four of them
@@ -4517,6 +4525,13 @@ namespace GuardsDigital.Presentation.Match
             optionalStepActionsHost.style.flexDirection = FlexDirection.Column;
             optionalStepActionsHost.style.alignItems = Align.Stretch;
             optionalStepActionsHost.style.display = DisplayStyle.Flex;
+            // Milestone 8.35z2 (playtest finding: the panel drew text with no plate of its own, so it
+            // read as broken rather than as a positioned surface). The same panel language every other
+            // standing HUD surface uses - the Defense preview popup, the event log - rather than a new
+            // treatment.
+            optionalStepActionsHost.style.backgroundColor = MatchHudTheme.PanelBackground;
+            HudElements.Border(optionalStepActionsHost, MatchHudTheme.PanelBorder, 1f, 4f);
+            HudElements.Padding(optionalStepActionsHost, 6f);
 
             var heading = HudElements.Text(
                 agreement.Heading, 13f, MatchHudTheme.PrimaryText, FontStyle.Bold);
@@ -4532,25 +4547,42 @@ namespace GuardsDigital.Presentation.Match
             statusLine.style.flexShrink = 0f;
             optionalStepActionsHost.Add(statusLine);
 
-            var buttons = HudElements.Row(6f);
-            buttons.style.width = Length.Percent(100f);
-            buttons.style.flexGrow = 1f;
-            buttons.style.alignItems = Align.Stretch;
-            foreach (var choice in agreement.Choices)
+            if (agreement.Choices.Count > 0)
             {
-                var captured = choice;
-                var control = HudElements.Control(
-                    choice.Label, () => AgreementSubmitted?.Invoke(captured));
-                control.name = "gd-initiative-preference";
-                control.style.flexGrow = 1f;
-                control.style.flexBasis = 0f;
-                control.style.minWidth = 0f;
-                HudElements.OnPointedAt(control, pointedAt =>
-                    AgreementHeroHighlighted?.Invoke(pointedAt ? captured.HeroId : default));
-                buttons.Add(control);
-            }
+                var buttons = HudElements.Row(6f);
+                buttons.style.width = Length.Percent(100f);
+                buttons.style.flexGrow = 1f;
+                buttons.style.alignItems = Align.Stretch;
+                foreach (var choice in agreement.Choices)
+                {
+                    var captured = choice;
+                    var control = HudElements.Control(
+                        choice.Label, () => AgreementSubmitted?.Invoke(captured));
+                    control.name = "gd-initiative-preference";
+                    control.style.flexGrow = 1f;
+                    control.style.flexBasis = 0f;
+                    control.style.minWidth = 0f;
+                    HudElements.OnPointedAt(control, pointedAt =>
+                        AgreementHeroHighlighted?.Invoke(pointedAt ? captured.HeroId : default));
+                    buttons.Add(control);
+                }
 
-            optionalStepActionsHost.Add(buttons);
+                optionalStepActionsHost.Add(buttons);
+            }
+            else if (!agreement.IsInputEnabled)
+            {
+                // Milestone 8.35z2. A participant's own statement is in flight -
+                // `TeamAgreement.AuthorizedCommands` is deliberately empty until the host's correlated
+                // projection returns - and drawing nothing here read as a vanished control rather than
+                // an ordinary, momentary wait (the false-alarm finding an invited playtest recorded).
+                var waiting = HudElements.Text(
+                    ActionUnavailabilityLabels.WaitingForHost,
+                    11f, MatchHudTheme.MutedText, FontStyle.Bold);
+                waiting.name = "gd-agreement-waiting";
+                waiting.style.unityTextAlign = TextAnchor.MiddleCenter;
+                waiting.style.flexShrink = 0f;
+                optionalStepActionsHost.Add(waiting);
+            }
         }
 
         /// <summary>
@@ -6196,14 +6228,28 @@ namespace GuardsDigital.Presentation.Match
                     participant.Label + " " + participant.Status));
                 controls.Add(HudElements.Text(
                     publicStatus, 10f, MatchHudTheme.MutedText, FontStyle.Normal));
-                foreach (var choice in model.Agreement.Choices)
+                if (model.Agreement.Choices.Count > 0)
                 {
-                    var captured = choice;
-                    var agreement = HudElements.Control(
-                        choice.Label, () => AgreementRequested?.Invoke(captured));
-                    agreement.style.backgroundColor = MatchHudTheme.ConfirmAccent;
-                    agreement.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
-                    controls.Add(agreement);
+                    foreach (var choice in model.Agreement.Choices)
+                    {
+                        var captured = choice;
+                        var agreement = HudElements.Control(
+                            choice.Label, () => AgreementRequested?.Invoke(captured));
+                        agreement.style.backgroundColor = MatchHudTheme.ConfirmAccent;
+                        agreement.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
+                        controls.Add(agreement);
+                    }
+                }
+                else if (!model.Agreement.IsInputEnabled)
+                {
+                    // Milestone 8.35z2, the same empty-command window `BuildTeamAgreement` draws for
+                    // tied Initiative: the choosing side's own AGREE/WITHDRAW press is in flight and
+                    // `AuthorizedCommands` is deliberately empty until the host's correlated projection
+                    // returns. The non-choosing side keeps `IsInputEnabled` true and draws nothing here,
+                    // exactly as before - it was never waiting on anything of its own.
+                    controls.Add(HudElements.Text(
+                        ActionUnavailabilityLabels.WaitingForHost,
+                        10f, MatchHudTheme.MutedText, FontStyle.Bold));
                 }
             }
         }

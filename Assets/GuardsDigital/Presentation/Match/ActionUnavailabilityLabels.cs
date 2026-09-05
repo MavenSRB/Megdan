@@ -80,5 +80,15 @@ namespace GuardsDigital.Presentation.Match
 
             return $"BLOCKED BY {blockingHeroDisplayName} — {blockingCardDisplayName}";
         }
+
+        /// <summary>
+        /// Milestone 8.35z2. The team-agreement panel's own empty-command window: a participant's
+        /// statement is in flight, or the client's whole input surface is momentarily disabled
+        /// (<c>IMatchReadModel.IsInputEnabled</c> false while the host's correlated projection has not
+        /// yet returned - `NetworkMatchClient` forces <c>TeamAgreement.AuthorizedCommands</c> empty for
+        /// exactly that window, per its own <c>actionable</c> gate). Drawn in place of the button row
+        /// so a stated seat reads a normal, momentary wait rather than a vanished control.
+        /// </summary>
+        public const string WaitingForHost = "WAITING FOR HOST…";
     }
 }

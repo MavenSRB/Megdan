@@ -4,12 +4,14 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Tests.EditMode
 {
@@ -229,6 +231,68 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(publicStage.ActionResolutionId.IsDefined, Is.False);
             Assert.That(publicStage.ActionChoiceId.IsDefined, Is.False);
             Assert.That(publicStage.SectionLabel, Is.EqualTo("Minion Battle"));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z2 (the empty-button gap a false-alarm invited-playtest finding recorded).
+        /// The choosing side's own AGREE/WITHDRAW press is in flight -
+        /// <c>TeamAgreement.AuthorizedCommands</c> is deliberately empty until the host's correlated
+        /// projection returns - and before this milestone <see cref="MinionChoiceUnityView"/> drew the
+        /// public status line over nothing at all, which read as a vanished control.
+        /// </summary>
+        [Test]
+        public void MinionChoiceView_WhenAStatementIsInFlightDrawsWaitingForHostInsteadOfNoControls()
+        {
+            var agreement = new TeamAgreementHudViewModel(
+                TeamAgreementKind.MinionBattle,
+                "TEAM AGREEMENT",
+                new[]
+                {
+                    new TeamAgreementParticipantViewModel("HERO 1", "agreed"),
+                    new TeamAgreementParticipantViewModel("HERO 2", "is deciding")
+                },
+                Array.Empty<TeamAgreementChoiceViewModel>(),
+                isInputEnabled: false);
+            var publicStage = MinionChoiceViewModel.ForPublicAgreement(
+                1, new TeamId("choosing-team"), TeamSide.Red, 1, 1, agreement);
+            var view = new MinionChoiceUnityView();
+
+            view.Render(publicStage);
+
+            Assert.That(view.Root.Query<Button>().ToList().Any(button =>
+                    button.text == "AGREE WITH THIS SELECTION" || button.text == "WITHDRAW MY AGREEMENT"),
+                Is.False, "No agreement control is offered while the seat has nothing authorized.");
+            Assert.That(view.Root.Query<Label>().ToList().Any(label =>
+                    label.text == ActionUnavailabilityLabels.WaitingForHost),
+                Is.True, "The seat's own in-flight statement reads a normal wait, not a silent gap.");
+        }
+
+        /// <summary>
+        /// The other half: the non-choosing side keeps an empty command set for the whole battle, not
+        /// for one round trip - <c>IsInputEnabled</c> stays true - so drawing "WAITING FOR HOST…" there
+        /// would be misleading. The pre-existing, still-correct silent reading must not change.
+        /// </summary>
+        [Test]
+        public void MinionChoiceView_TheNonChoosingSideDrawsNeitherControlsNorWaitingText()
+        {
+            var agreement = new TeamAgreementHudViewModel(
+                TeamAgreementKind.MinionBattle,
+                "TEAM AGREEMENT",
+                new[]
+                {
+                    new TeamAgreementParticipantViewModel("HERO 1", "agreed"),
+                    new TeamAgreementParticipantViewModel("HERO 2", "is deciding")
+                },
+                Array.Empty<TeamAgreementChoiceViewModel>());
+            var publicStage = MinionChoiceViewModel.ForPublicAgreement(
+                1, new TeamId("choosing-team"), TeamSide.Red, 1, 1, agreement);
+            var view = new MinionChoiceUnityView();
+
+            view.Render(publicStage);
+
+            Assert.That(view.Root.Query<Label>().ToList().Any(label =>
+                    label.text == ActionUnavailabilityLabels.WaitingForHost),
+                Is.False, "The other side is never waiting on a host round trip of its own.");
         }
 
         /// <summary>

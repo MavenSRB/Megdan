@@ -449,6 +449,31 @@ Non-goals: no rules, schema, wire, or gameplay-facing change of any kind; `Playe
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z1-read-a-concurrent-leveling-pause-by-its-open-item-list-in-the-player-build-smoke-driver-completion-evidence).
 
+### [x] 8.35z2 Anchor the team-agreement panel clear of the hand and rails, and say "WAITING FOR HOST…" while a statement is in flight
+
+Corrective, live-defect-driven: found in this morning's live play (the user's own report - "all over the place... depending on the resolution it clips either cards or hero tray") and in last night's invited-playtest false-alarm investigation, recorded in `tmp/8-35d-8-35e-multiplayer-corrections/`.
+
+Observable outcome: the tied-Initiative "WHO ACTS FIRST?" row and the Minion Battle confirm flow's team-agreement panel sit clear of both hero rails, the bottom-left hand tray, and the unavailable-card fan at every viewport, on the same panel plate the rest of the standing HUD uses; and while a participant's own statement is in flight - `TeamAgreement.AuthorizedCommands` deliberately empty until the host's correlated projection returns - the panel reads "WAITING FOR HOST…" instead of an empty, unexplained button row.
+
+Design:
+
+- **The layout defect.** `ConfiguredMatchHudRenderer.CalculateTeamAgreementControlRect` anchored its left edge at `CalculateCardPanelRect`'s `xMin`, which is the screen's own left edge (that tray band reserves the whole viewport width), not the hand's visible left edge. The panel landed squarely on the Red rail's own column - its third plaque, `DIRECTOR`, `CONFIRM FACEDOWN` - at every viewport, reference included, not only a narrow one, and touched the hand tray at some shapes too. Fixed by bounding the rect against its actual neighbours' own measured rects (`CalculateHeroRailRect` for both sides, `CalculateUnavailableCardGroupRect`), the same "bound it against the neighbour it would collide with" rule `GetEndTurnControlRect` already applies, verified offline with a net6.0 console probe compiling Core+Application+Presentation at the reference, a narrow, and an ultrawide viewport before any Unity launch. The panel also carries the standing HUD's own panel background/border/padding now, reset only on the sibling optional-step accept/decline path that shares its host.
+- **The empty-button gap.** `NetworkMatchClient` forces `TeamAgreement.AuthorizedCommands` empty for the whole window its own `actionable` gate is false (a just-submitted statement in flight, or a stale/resynchronizing/disconnected client) - indistinguishable, before this milestone, from a seat that was never a participant at all (the permanent case: a non-tied hero, or Minion Battle's non-choosing side). `TeamAgreementHudViewModel` now carries `IMatchReadModel.IsInputEnabled` alongside its `Choices`, so `RoundActionUnityView.BuildTeamAgreement` and `MinionChoiceUnityView.Rebuild` draw the shared `ActionUnavailabilityLabels.WaitingForHost` only for the first case; a seat that was never a participant keeps its pre-existing silent empty row, unchanged.
+
+Acceptance checks:
+
+- `MatchHudPanelScalingTests.TeamAgreementControlRect_ClearsBothRailsTheHandTrayAndTheUnavailableFanAtThreeSizes`: the panel overlaps neither hero rail, the hand tray, nor the unavailable fan, and stays below the top strip, at the reference viewport, a narrow one, and an ultrawide one.
+- `MatchHudPresentationTests.InitiativeAgreement_WhenAStatementIsInFlightDrawsWaitingForHostInsteadOfEmptyButtons` and `MinionBattleAgreementRenderingTests.MinionChoiceView_WhenAStatementIsInFlightDrawsWaitingForHostInsteadOfNoControls`: `IsInputEnabled: false` with empty `Choices` draws the shared label and no submit control.
+- `MatchHudPresentationTests.InitiativeAgreement_WhenNeverAParticipantDrawsNeitherButtonsNorWaitingText` and `MinionBattleAgreementRenderingTests.MinionChoiceView_TheNonChoosingSideDrawsNeitherControlsNorWaitingText`: the pre-existing silent case is unchanged.
+- `NetworkMatchClientReviewTests`'s existing retain-no-submit-capability assertion stays green untouched, having never needed a change.
+- `SeatScopedMatchHudPlayModeTests.SeatScene_TiedInitiativeUsesOneHeroNameRowAndTheStandingHeroHoverLink`: the live tied-Initiative row still renders correctly at the reference viewport.
+
+Pre-fix/post-fix observed directly in the working tree (the two touched production files reverted to HEAD `20658f34`, the new tests kept): all three new-defect cases red pre-fix, both regression-lock cases already green; all five green post-fix, plus 240/240 across the nine directly affected fixtures (`MatchHudPanelScalingTests`, `MatchHudPresentationTests`, `MinionBattleAgreementRenderingTests`, `MinionChoicePresentationTests`, `TeamAgreementTests`, `MatchFeaturePresenterTests`, `NetworkMatchClientReviewTests`, `SeatScopedMatchHudTests`, `OnlineMatchHudTests`) and the one focused Play Mode case above.
+
+Non-goals: no schema, wire, or rules change; the pre-existing, structurally identical overlap in `CalculateOptionalStepControlRect` (the ACCEPT/DECLINE optional-step banners) is flagged rather than fixed here, out of this milestone's stated territory; no package rebuild - the friends' concurrent session on the 8.35z1 package is undisturbed, and the repackage moment is the user's own call.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z2-anchor-the-team-agreement-panel-clear-of-the-hand-and-rails-and-say-waiting-for-host-while-a-statement-is-in-flight-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.
