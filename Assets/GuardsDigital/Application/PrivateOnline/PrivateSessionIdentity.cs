@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Snapshots;
 
 namespace GuardsDigital.Application
@@ -32,6 +33,7 @@ namespace GuardsDigital.Application
             int snapshotSchemaVersion,
             string mapId,
             int mapContentRevision,
+            string matchFormatId,
             string contentDigest)
         {
             if (string.IsNullOrWhiteSpace(protocolFamily))
@@ -49,6 +51,11 @@ namespace GuardsDigital.Application
                 throw new ArgumentException("An identity requires a map id.", nameof(mapId));
             }
 
+            if (string.IsNullOrWhiteSpace(matchFormatId))
+            {
+                throw new ArgumentException("An identity requires a match format.", nameof(matchFormatId));
+            }
+
             if (string.IsNullOrWhiteSpace(contentDigest))
             {
                 throw new ArgumentException("An identity requires a content digest.", nameof(contentDigest));
@@ -60,6 +67,7 @@ namespace GuardsDigital.Application
             SnapshotSchemaVersion = snapshotSchemaVersion;
             MapId = mapId;
             MapContentRevision = mapContentRevision;
+            MatchFormatId = matchFormatId;
             ContentDigest = contentDigest;
         }
 
@@ -70,6 +78,29 @@ namespace GuardsDigital.Application
         public string MapId { get; }
         public int MapContentRevision { get; }
 
+        /// <summary>
+        /// The ELEVENTH amendment's format element: which of rulebook pp.5-6's printed setups this
+        /// composition is playing, as <see cref="MatchFormat.DescribeComposition"/> names it.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why it is an element of its own rather than a fold into the content digest.</b>
+        /// The two halves of a format land in the tuple very differently. The player count already
+        /// separates two compositions on its own, because a 2v2 deals four printed sets and a 3v3
+        /// deals six, so their <see cref="ContentDigest"/>s were never equal - that half needed
+        /// nothing. The game length changes no card, capability, token or marker at all: a Quick and
+        /// a Long game of the same count register byte-identical content and produce the same
+        /// digest, and before this element the two were admitted to each other's sessions as
+        /// compatible.</para>
+        /// <para>Folding the length into the content digest would have closed it without a wire
+        /// change, and was rejected: that digest's own contract is that it "agrees when and only
+        /// when a snapshot written by one build would rebind on the other", which stays true of a
+        /// Quick-versus-Long pair - they differ in how many Wave counters the table started with,
+        /// not in what a snapshot can bind. `RISK-COMPAT-001` refuses a second, coarser content
+        /// identity beside the snapshot's own, and a content digest that had stopped being about
+        /// content would have been exactly that.</para>
+        /// </remarks>
+        public string MatchFormatId { get; }
+
         /// <summary>The digest of every registered content revision; see <see cref="PrivateSessionContentDigest"/>.</summary>
         public string ContentDigest { get; }
 
@@ -79,10 +110,14 @@ namespace GuardsDigital.Application
         /// registered content.
         /// </summary>
         public static PrivateSessionIdentity ForComposition(
-            BoardMapDefinition map, MatchConfiguration configuration, string buildIdentity)
+            BoardMapDefinition map,
+            MatchConfiguration configuration,
+            QuickGameSetupState setup,
+            string buildIdentity)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+            if (setup == null) throw new ArgumentNullException(nameof(setup));
 
             return new PrivateSessionIdentity(
                 PrivateSessionProtocol.FamilyName,
@@ -91,7 +126,31 @@ namespace GuardsDigital.Application
                 AuthoritativeSnapshotSerializer.CurrentSchemaVersion,
                 map.Id.Value,
                 map.ContentRevision,
+                DescribeFormatOf(configuration, setup),
                 PrivateSessionContentDigest.Compute(configuration));
+        }
+
+        /// <summary>
+        /// The format element of a composition, read off the match that actually exists rather than
+        /// off an intention declared beside it.
+        /// </summary>
+        /// <remarks>
+        /// <para>Deriving it is what makes the element trustworthy. A format passed in as a
+        /// parameter states what the caller MEANT to compose, and the failure this element is here
+        /// to catch - two peers playing different setups - is indistinguishable at the wire from a
+        /// caller that composed one setup and declared another. Read from the participants and the
+        /// setup state, the element cannot disagree with the match it describes.</para>
+        /// <para>The Life count is taken from the teams rather than stored once, and the two teams
+        /// are required to agree: setup step 5 gives a count "per team" and hands the same number to
+        /// both Thrones, so teams holding different counts is not a format this build composes and
+        /// must not be described as one.</para>
+        /// </remarks>
+        private static string DescribeFormatOf(MatchConfiguration configuration, QuickGameSetupState setup)
+        {
+            var lifeCounts = setup.Teams.Select(team => team.LifeCount).Distinct().ToArray();
+            var lifeCountPerTeam = lifeCounts.Length == 1 ? lifeCounts[0] : -1;
+            return MatchFormat.DescribeComposition(
+                configuration.Participants.Players.Count, setup.WaveCount, lifeCountPerTeam);
         }
 
         /// <summary>
@@ -130,6 +189,17 @@ namespace GuardsDigital.Application
                 return SessionRejectionReason.MapRevisionMismatch;
             }
 
+            // Checked BEFORE the content digest, though its enum value was appended after every
+            // existing one: the numeric values are wire codes and this order is the contract, and
+            // the two are independent. A mismatched player count fails both elements at once - four
+            // printed sets are not six - and the first one reported is what the peer is told, so it
+            // is told the fact it can act on ("that host is playing a different format") rather than
+            // the one it cannot ("your content digests differ").
+            if (!string.Equals(MatchFormatId, other.MatchFormatId, StringComparison.Ordinal))
+            {
+                return SessionRejectionReason.MatchFormatMismatch;
+            }
+
             if (!string.Equals(ContentDigest, other.ContentDigest, StringComparison.Ordinal))
             {
                 return SessionRejectionReason.ContentDigestMismatch;
@@ -151,6 +221,7 @@ namespace GuardsDigital.Application
             " build=" + BuildIdentity +
             " schema=" + SnapshotSchemaVersion.ToString(CultureInfo.InvariantCulture) +
             " map=" + MapId + "@" + MapContentRevision.ToString(CultureInfo.InvariantCulture) +
+            " format=" + MatchFormatId +
             " content=" + ContentDigest;
 
         public bool Equals(PrivateSessionIdentity other) =>

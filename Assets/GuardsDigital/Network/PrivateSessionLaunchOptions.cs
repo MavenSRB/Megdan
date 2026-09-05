@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Network
 {
@@ -49,6 +50,43 @@ namespace GuardsDigital.Network
         public const string SessionKeyFlag = "-guardsSessionKey";
         public const string TimeoutFlag = "-guardsOnlineTimeoutSeconds";
 
+        /// <summary>
+        /// ELEVENTH amendment. Which of rulebook pp.5-6's printed setups this process composes,
+        /// named by <see cref="MatchFormat.Id"/>. Absent, the build composes
+        /// <see cref="MatchFormat.Default"/> - milestone 8.25's six-player Quick Game - so every
+        /// existing launch line, script and shortcut keeps starting exactly the match it started.
+        /// </summary>
+        /// <remarks>
+        /// It is accepted beside EVERY role, the lobby included, and that is deliberate rather than
+        /// an oversight of the lobby's "takes no address, bind, port, seat or key" rule. Those five
+        /// are refused there because the lobby is where a player types an invitation, so a command
+        /// line carrying one would be a second answer to a question the surface asks. The format is
+        /// not an invitation: it is the match this process composes, settled before any front door
+        /// opens, and until the lobby grows a control of its own this flag is the only way to ask
+        /// for one.
+        /// </remarks>
+        public const string MatchFormatFlag = "-guardsMatchFormat";
+
+        /// <summary>
+        /// TWELFTH amendment. The staged situation this process loads and plays, named by the path
+        /// of a <c>guards-sandbox-staging/1</c> file. Absent, the build composes the ordinary dealt
+        /// match, so every existing launch line, script and shortcut is untouched.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>It is refused beside every networked role, and that is the enforcement rather
+        /// than a comment.</b> The sandbox is a <c>DEV-004</c> development affordance whose ledger
+        /// row requires it never be exposed in a real online match, and a staged board reaches a
+        /// real online match by exactly one route: a host composing one before seats join. Refusing
+        /// the flag beside the host, client and lobby roles closes that route in the parser, where
+        /// no later surface can reopen it - so "Director-only" is a property of what will parse,
+        /// not of what a caller remembers to check.</para>
+        /// <para>This is the deliberate opposite of <see cref="MatchFormatFlag"/>, which IS accepted
+        /// beside every role. The two differ because a format is the match a whole table agrees to
+        /// play and is checked into the admission tuple, while a staging is one machine's private
+        /// experiment that no admission tuple describes.</para>
+        /// </remarks>
+        public const string SandboxFlag = "-guardsSandbox";
+
         public const int DefaultTimeoutSeconds = 120;
 
         private PrivateSessionLaunchOptions(
@@ -57,6 +95,8 @@ namespace GuardsDigital.Network
             SeatId seat,
             string sessionKey,
             int timeoutSeconds,
+            MatchFormat matchFormat,
+            string sandboxStagingPath,
             string error)
         {
             Role = role;
@@ -64,6 +104,8 @@ namespace GuardsDigital.Network
             Seat = seat;
             SessionKey = sessionKey;
             TimeoutSeconds = timeoutSeconds;
+            MatchFormat = matchFormat ?? MatchFormat.Default;
+            SandboxStagingPath = sandboxStagingPath ?? string.Empty;
             Error = error;
         }
 
@@ -78,6 +120,23 @@ namespace GuardsDigital.Network
         public string SessionKey { get; }
 
         public int TimeoutSeconds { get; }
+
+        /// <summary>
+        /// The printed setup this process composes. Never null - an absent flag reads as
+        /// <see cref="MatchFormat.Default"/> - so no caller has to decide what nothing means.
+        /// </summary>
+        public MatchFormat MatchFormat { get; }
+
+        /// <summary>
+        /// TWELFTH amendment. The staging file this process loads, or empty for the ordinary dealt
+        /// match. Never null, so no caller has to decide what nothing means, and non-empty only on
+        /// a <see cref="PrivateSessionRole.None"/> line - the parser refuses it beside every
+        /// networked role.
+        /// </summary>
+        public string SandboxStagingPath { get; }
+
+        /// <summary>Whether this process composes a staged sandbox board rather than a dealt one.</summary>
+        public bool IsSandbox => SandboxStagingPath.Length > 0;
 
         /// <summary>Why the line was refused; empty when it parsed.</summary>
         public string Error { get; }
@@ -94,6 +153,8 @@ namespace GuardsDigital.Network
             string seatText = null;
             var sessionKey = string.Empty;
             var timeoutSeconds = DefaultTimeoutSeconds;
+            var matchFormat = MatchFormat.Default;
+            var sandboxStagingPath = string.Empty;
 
             for (var index = 0; index < args.Length; index++)
             {
@@ -167,6 +228,34 @@ namespace GuardsDigital.Network
 
                         continue;
 
+                    case MatchFormatFlag:
+                        if (!TryTakeValue(args, ref index, out var matchFormatText))
+                        {
+                            return Refused(
+                                MatchFormatFlag + " requires one of: " +
+                                MatchFormat.DescribeEveryId() + ".");
+                        }
+
+                        matchFormat = MatchFormat.FindById(matchFormatText);
+                        if (matchFormat == null)
+                        {
+                            return Refused(
+                                "'" + matchFormatText + "' is not a printed match format. " +
+                                MatchFormatFlag + " takes one of: " +
+                                MatchFormat.DescribeEveryId() + ".");
+                        }
+
+                        continue;
+
+                    case SandboxFlag:
+                        if (!TryTakeValue(args, ref index, out sandboxStagingPath))
+                        {
+                            return Refused(
+                                SandboxFlag + " requires the path of a staging file.");
+                        }
+
+                        continue;
+
                     case TimeoutFlag:
                         if (!TryTakeValue(args, ref index, out var timeoutText) ||
                             !int.TryParse(timeoutText, NumberStyles.None, CultureInfo.InvariantCulture,
@@ -180,12 +269,26 @@ namespace GuardsDigital.Network
                 }
             }
 
+            // TWELFTH amendment, and the whole of what makes the sandbox Director-only. A staged
+            // board reaches a real online match by exactly one route - a host composing one before
+            // its seats join - so the staging flag is refused beside every networked role here,
+            // before any surface exists that could decide otherwise. DEV-004's "never expose in
+            // real online matches" is therefore a fact about what parses rather than a rule someone
+            // has to remember, and the refusal names the reason so a tester is not left guessing.
+            if (sandboxStagingPath.Length > 0 && role != PrivateSessionRole.None)
+            {
+                return Refused(
+                    SandboxFlag + " is a Director-only development affordance and takes no host, " +
+                    "client or lobby role: a staged board is one machine's private experiment, " +
+                    "and no seat may be dealt one.");
+            }
+
             switch (role)
             {
                 case PrivateSessionRole.None:
                     return new PrivateSessionLaunchOptions(
                         PrivateSessionRole.None, null, default, string.Empty,
-                        timeoutSeconds, string.Empty);
+                        timeoutSeconds, matchFormat, sandboxStagingPath, string.Empty);
 
                 case PrivateSessionRole.Lobby:
                 {
@@ -201,7 +304,7 @@ namespace GuardsDigital.Network
 
                     return new PrivateSessionLaunchOptions(
                         PrivateSessionRole.Lobby, null, default, string.Empty,
-                        timeoutSeconds, string.Empty);
+                        timeoutSeconds, matchFormat, string.Empty, string.Empty);
                 }
 
                 case PrivateSessionRole.Host:
@@ -240,7 +343,7 @@ namespace GuardsDigital.Network
 
                     return new PrivateSessionLaunchOptions(
                         PrivateSessionRole.Host, endpoint, default, sessionKey,
-                        timeoutSeconds, string.Empty);
+                        timeoutSeconds, matchFormat, string.Empty, string.Empty);
                 }
 
                 default:
@@ -267,7 +370,7 @@ namespace GuardsDigital.Network
 
                     return new PrivateSessionLaunchOptions(
                         PrivateSessionRole.Client, endpoint, new SeatId(seatText), sessionKey,
-                        timeoutSeconds, string.Empty);
+                        timeoutSeconds, matchFormat, string.Empty, string.Empty);
                 }
             }
         }
@@ -294,6 +397,6 @@ namespace GuardsDigital.Network
         private static PrivateSessionLaunchOptions Refused(string error) =>
             new PrivateSessionLaunchOptions(
                 PrivateSessionRole.None, null, default, string.Empty,
-                DefaultTimeoutSeconds, error);
+                DefaultTimeoutSeconds, MatchFormat.Default, string.Empty, error);
     }
 }

@@ -234,6 +234,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             attackDefenseBackend.EnsureCoinLedger(participants);
 
         /// <summary>
+        /// Milestone 8.35z17. The same single creation point, given the balances a staged
+        /// situation starts from. The seed is consulted only when no ledger exists yet, so this can
+        /// never replace balances a match has already moved - and calling it with a null seed is
+        /// the overload above, byte for byte.
+        /// </summary>
+        internal HeroCoinLedger EnsureCoinLedger(
+            MatchParticipants participants, HeroCoinLedgerRestoreState seed) =>
+            attackDefenseBackend.EnsureCoinLedger(participants, seed);
+
+        /// <summary>
         /// Milestone 7.2. Hands the backends the match's item state, which the round authority owns.
         /// It is a binding rather than a constructor argument because the dispatcher is composed before
         /// the round that owns the state, and the one thing that must not happen is a second copy: a

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Synthetic;
@@ -241,15 +242,22 @@ namespace GuardsDigital.Core.Participants
         /// one seat, and each definition id already carries its own hero's content-set prefix: a card
         /// id therefore still says both which set it belongs to and which seat holds it.</para>
         /// </summary>
-        public static MatchConfiguration Create()
+        public static MatchConfiguration Create() => Create(Setup.MatchFormat.Default);
+
+        /// <summary>
+        /// The official match for one of rulebook pp.5-6's four printed setups, with p.6's own coin
+        /// flip. <see cref="Setup.MatchFormat.Default"/> is milestone 8.25's six-player Quick Game,
+        /// so <see cref="Create()"/> composes exactly the match it always has.
+        /// </summary>
+        public static MatchConfiguration Create(Setup.MatchFormat format)
         {
             // Milestone 8.28b. The draw happens once, here, and is recorded before anything derives
             // from it, so the coin flip below can be carried out again from the record and land on the
             // same side. It is still a real flip: the seed came from platform entropy a moment ago.
             var setupSeed = SetupRandomnessAuthority.DrawSeed();
 
-            return CreateOfficialSixPlayer(
-                TieBreakerSetupAuthority.CreateNormalSetupState(setupSeed), setupSeed);
+            return CreateOfficial(
+                format, TieBreakerSetupAuthority.CreateNormalSetupState(setupSeed), setupSeed);
         }
 
         /// <summary>
@@ -259,7 +267,16 @@ namespace GuardsDigital.Core.Participants
         /// </summary>
         public static MatchConfiguration CreateOfficialSixPlayerForInternalTest(
             TeamSide initialTieBreakerSide) =>
-            CreateOfficialSixPlayer(
+            CreateOfficialForInternalTest(Setup.MatchFormat.ThreeVersusThreeQuick, initialTieBreakerSide);
+
+        /// <summary>
+        /// The official match for any printed format with p.6's coin flip replaced by an explicitly
+        /// selected side, so a fixture can play it without a draw deciding who acts first. `DEV-005`.
+        /// </summary>
+        public static MatchConfiguration CreateOfficialForInternalTest(
+            Setup.MatchFormat format, TeamSide initialTieBreakerSide) =>
+            CreateOfficial(
+                format,
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 SetupRandomnessSeed.Unrecorded);
 
@@ -272,28 +289,63 @@ namespace GuardsDigital.Core.Participants
         /// makes a side ambiguous - <c>red-01-wasp-magnetic-dagger</c> names the seat, the printed set
         /// and the card in that order.</para>
         /// </summary>
-        private static MatchConfiguration CreateOfficialSixPlayer(
-            TieBreakerState tieBreakerState, SetupRandomnessSeed setupSeed)
+        private static MatchConfiguration CreateOfficial(
+            Setup.MatchFormat format, TieBreakerState tieBreakerState, SetupRandomnessSeed setupSeed)
         {
-            var participants = OfficialSixPlayerParticipants.Create();
-            var hands = new[]
+            if (format == null) throw new ArgumentNullException(nameof(format));
+
+            var participants = format.PlayerCount == 4
+                ? OfficialFourPlayerParticipants.Create()
+                : OfficialSixPlayerParticipants.Create();
+            var seats = format.PlayerCount == 4
+                ? OfficialFourPlayerParticipants.Seats
+                : OfficialSixPlayerParticipants.Seats;
+
+            // The seat's instance-id prefix, which milestone 8.25 made the seat rather than the team
+            // side: three seats a side made a side ambiguous. It is derived from the seat's position
+            // within its own team so that a 2v2 and a 3v3 name the same chair the same way -
+            // `red-01` is Wasp's seat in both, and only the absent third row differs.
+            var redOrdinal = 0;
+            var blueOrdinal = 0;
+            var hands = new List<ConfiguredHand>();
+            foreach (var seat in seats)
             {
-                WaspCardContent.CreateHand(
-                    new HeroId(OfficialSixPlayerParticipants.WaspHeroIdValue), "red-01"),
-                Cards.Verified.XargathaCardContent.CreateHand(
-                    new HeroId(OfficialSixPlayerParticipants.XargathaHeroIdValue), "red-02"),
-                Cards.Verified.TigerclawCardContent.CreateHand(
-                    new HeroId(OfficialSixPlayerParticipants.TigerclawHeroIdValue), "red-03"),
-                Cards.Verified.ArienCardContent.CreateHand(
-                    new HeroId(OfficialSixPlayerParticipants.ArienHeroIdValue), "blue-01"),
-                Cards.Verified.BroganCardContent.CreateHand(
-                    new HeroId(OfficialSixPlayerParticipants.BroganHeroIdValue), "blue-02"),
-                Cards.Verified.SabinaCardContent.CreateHand(
-                    new HeroId(OfficialSixPlayerParticipants.SabinaHeroIdValue), "blue-03")
-            };
+                var prefix = seat.Side == TeamSide.Red
+                    ? "red-0" + (++redOrdinal).ToString(CultureInfo.InvariantCulture)
+                    : "blue-0" + (++blueOrdinal).ToString(CultureInfo.InvariantCulture);
+                hands.Add(CreateVerifiedHand(seat.HeroId, prefix));
+            }
 
             return new MatchConfiguration(
-                participants, hands, tieBreakerState, setupSeed, true);
+                participants, hands.ToArray(), tieBreakerState, setupSeed, true);
+        }
+
+        /// <summary>
+        /// The verified printed set a hero deals, by hero id. One place names the six, so a
+        /// configuration that deals four of them cannot deal a different Wasp than one dealing six.
+        /// </summary>
+        private static ConfiguredHand CreateVerifiedHand(string heroIdValue, string instancePrefix)
+        {
+            var heroId = new HeroId(heroIdValue);
+            switch (heroIdValue)
+            {
+                case OfficialSixPlayerParticipants.WaspHeroIdValue:
+                    return WaspCardContent.CreateHand(heroId, instancePrefix);
+                case OfficialSixPlayerParticipants.XargathaHeroIdValue:
+                    return Cards.Verified.XargathaCardContent.CreateHand(heroId, instancePrefix);
+                case OfficialSixPlayerParticipants.TigerclawHeroIdValue:
+                    return Cards.Verified.TigerclawCardContent.CreateHand(heroId, instancePrefix);
+                case OfficialSixPlayerParticipants.ArienHeroIdValue:
+                    return Cards.Verified.ArienCardContent.CreateHand(heroId, instancePrefix);
+                case OfficialSixPlayerParticipants.BroganHeroIdValue:
+                    return Cards.Verified.BroganCardContent.CreateHand(heroId, instancePrefix);
+                case OfficialSixPlayerParticipants.SabinaHeroIdValue:
+                    return Cards.Verified.SabinaCardContent.CreateHand(heroId, instancePrefix);
+                default:
+                    throw new ArgumentException(
+                        "No verified printed set is registered for hero '" + heroIdValue + "'.",
+                        nameof(heroIdValue));
+            }
         }
 
         /// <summary>

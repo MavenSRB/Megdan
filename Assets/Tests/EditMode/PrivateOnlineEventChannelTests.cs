@@ -555,12 +555,14 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(8),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(9),
                 "This case pins the CURRENT version rather than the one the event channel moved to, " +
                 "so a later move is accounted for here rather than passing unread. Milestone 8.35u " +
                 "took it to 7 for the repeated awaited-hero group p.15's simultaneous leveling made " +
-                "necessary, and milestone 8.35z14-blockerid to 8 for the match log's own blocker-" +
-                "identity fields; a version 5 peer is still refused, and so is a version 6 or 7 one.");
+                "necessary, milestone 8.35z14-blockerid to 8 for the match log's own blocker-" +
+                "identity fields, and the ELEVENTH amendment's match formats to 9 for the format " +
+                "element the admission tuple's Hello now carries; a version 5 peer is still " +
+                "refused, and so is a version 6, 7 or 8 one.");
 
             var harness = PrivateOnlineWireHarness.Compose();
             var seat = harness.Session.Roster[0].Seat.Value;
@@ -745,6 +747,7 @@ namespace GuardsDigital.Tests.EditMode
                 identity.SnapshotSchemaVersion,
                 identity.MapId,
                 identity.MapContentRevision,
+                identity.MatchFormatId,
                 identity.ContentDigest);
 
         /// <summary>The message's payload, past the frame header the assembler would strip.</summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
@@ -382,6 +383,15 @@ namespace GuardsDigital.Presentation.Match
         private bool trayShowsUpgradeComparison;
         private VisualElement directorDrawer;
         private Button directorToggle;
+
+        // TWELFTH amendment, milestone 8.35z18: the Director-only sandbox banner.
+        private VisualElement sandboxBanner;
+        private Label sandboxBannerTitle;
+        private Label sandboxBannerNote;
+        private VisualElement sandboxBannerLines;
+        private bool directorToolsVisible = true;
+        private bool sandboxStagingComposed;
+        private string[] sandboxSummaryLines = Array.Empty<string>();
         private VisualElement tieBreakerRailBanner;
         private Label tieBreakerRailBannerLabel;
         private TeamSide? tieBreakerRailBannerSide;
@@ -394,6 +404,7 @@ namespace GuardsDigital.Presentation.Match
         private MinionChoiceUnityView minionChoice;
         private HeroOverviewsUnityView heroOverviews;
         private MatchHudHeaderViewModel header;
+        private RuntimeTooltipLayer tooltipLayer;
 
         /// <summary>
         /// Raised whenever layout assigns the playable hexes their safe L-shaped surface. The board
@@ -514,6 +525,7 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Removes Director-only tools when the lobby hands this HUD an online seat.</summary>
         public void SetDirectorToolsVisible(bool visible)
         {
+            directorToolsVisible = visible;
             if (directorToggle != null)
             {
                 directorToggle.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
@@ -525,7 +537,83 @@ namespace GuardsDigital.Presentation.Match
                 IsDirectorDrawerOpen = false;
                 ApplyDirectorDrawerState();
             }
+
+            // The sandbox banner is a Director tool and goes with the rest of them. It should never
+            // be reachable from an online seat in the first place - the staging flag is refused
+            // beside every networked role - so this is the second of two independent reasons an
+            // online seat cannot see one, not the only one.
+            ApplySandboxBannerState();
         }
+
+        /// <summary>
+        /// TWELFTH amendment, milestone 8.35z18. Shows the Director-only sandbox banner and the
+        /// summary of what this match's staging changed. Called once by the composition root when a
+        /// staged board was composed, and by nothing else: an ordinary dealt match never calls it
+        /// and its banner stays hidden.
+        /// </summary>
+        /// <remarks>
+        /// It takes the already-derived summary lines rather than the staging itself, so this
+        /// surface holds no opinion about what a staging means - <see cref="SandboxStagingSummary"/>
+        /// owns that, in the engine-free assembly the Unity-free harness covers.
+        /// </remarks>
+        public void ShowSandboxStaging(IReadOnlyList<string> summaryLines)
+        {
+            if (summaryLines == null) throw new ArgumentNullException(nameof(summaryLines));
+
+            sandboxStagingComposed = true;
+            sandboxSummaryLines = summaryLines.ToArray();
+            RenderSandboxBanner();
+            Layout();
+        }
+
+        /// <summary>
+        /// Draws the banner from the retained summary, and is called both by
+        /// <see cref="ShowSandboxStaging"/> and at the end of <see cref="Build"/>.
+        /// </summary>
+        /// <remarks>
+        /// Rendering from retained state rather than from the call is what makes this independent of
+        /// order. The composition root learns the staging before it configures the HUD, and
+        /// <c>Configure</c> rebuilds the whole tree - so a banner drawn only at the moment it was
+        /// announced would be discarded by the very next rebuild, which is exactly the shape of a
+        /// defect that survives every headless test and shows up as a blank panel in a live run.
+        /// </remarks>
+        private void RenderSandboxBanner()
+        {
+            if (sandboxBannerLines == null)
+            {
+                return;
+            }
+
+            sandboxBannerLines.Clear();
+            foreach (var line in sandboxSummaryLines)
+            {
+                var label = HudElements.Text(line, 10f, MatchHudTheme.PrimaryText);
+                label.style.marginTop = 1f;
+                sandboxBannerLines.Add(label);
+            }
+
+            ApplySandboxBannerState();
+        }
+
+        /// <summary>
+        /// The banner is shown only where BOTH conditions hold: this match was composed from a
+        /// staging, and the Director's own tools are visible.
+        /// </summary>
+        private void ApplySandboxBannerState()
+        {
+            if (sandboxBanner == null)
+            {
+                return;
+            }
+
+            sandboxBanner.style.display = sandboxStagingComposed && directorToolsVisible
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+        }
+
+        /// <summary>Whether the Director-only sandbox banner is currently drawn.</summary>
+        public bool IsSandboxBannerVisible =>
+            sandboxBanner != null && sandboxBanner.style.display == DisplayStyle.Flex;
 
         /// <summary>
         /// Whether the HUD consumes the pointer at this screen position, so the board does not also act
@@ -865,6 +953,39 @@ namespace GuardsDigital.Presentation.Match
             diagnostics.ToggleRoot.style.marginTop = 4f;
             directorDrawer.Add(diagnostics.ToggleRoot);
             root.Add(directorDrawer);
+
+            // TWELFTH amendment, milestone 8.35z18. The Director-only sandbox banner. It is built
+            // unconditionally and left hidden, because every other absolutely-positioned element
+            // here is too and the layout pass expects to find it; what decides whether it is ever
+            // shown is ShowSandboxStaging, which only a staged composition calls.
+            //
+            // It sits OUTSIDE the drawer deliberately. Inside it, a tester would have to open
+            // DIRECTOR to discover which board they are on, and the one thing this surface exists
+            // to guarantee is that they never have to ask. It is still Director-only: it is hidden
+            // with the rest of the Director tools when the lobby hands this HUD an online seat.
+            sandboxBanner = HudElements.Panel(MatchHudTheme.RailBackground);
+            sandboxBanner.name = "gd-sandbox-banner";
+            sandboxBanner.style.position = Position.Absolute;
+            sandboxBanner.style.flexDirection = FlexDirection.Column;
+            sandboxBanner.style.display = DisplayStyle.None;
+            sandboxBanner.pickingMode = PickingMode.Ignore;
+            HudElements.Padding(sandboxBanner, 6f);
+            HudElements.Border(sandboxBanner, MatchHudTheme.ConfirmAccent, 1f, 4f);
+            sandboxBannerTitle = HudElements.Text(
+                SandboxStagingSummary.Title, 13f, MatchHudTheme.ConfirmAccent, FontStyle.Bold);
+            sandboxBanner.Add(sandboxBannerTitle);
+            sandboxBannerNote = HudElements.Text(
+                SandboxStagingSummary.DirectorOnlyNote, 10f, MatchHudTheme.MutedText);
+            sandboxBannerNote.style.marginTop = 2f;
+            sandboxBanner.Add(sandboxBannerNote);
+            sandboxBannerLines = new VisualElement();
+            sandboxBannerLines.style.flexDirection = FlexDirection.Column;
+            sandboxBannerLines.style.marginTop = 4f;
+            sandboxBanner.Add(sandboxBannerLines);
+            root.Add(sandboxBanner);
+            // Redraw from retained state, so a rebuild after the staging was announced keeps it.
+            RenderSandboxBanner();
+
             root.Add(diagnostics.PanelRoot);
 
             // The tray is a layout reservation, not a visible card frame. The imported cards already
@@ -971,6 +1092,14 @@ namespace GuardsDigital.Presentation.Match
                 heroOverviews.HoverPreviewRoot.RemoveFromHierarchy();
                 root.Add(heroOverviews.HoverPreviewRoot);
             }
+
+            // Milestone 8.35z19 (placeholder id). Added LAST, after every other surface,
+            // so its popup always paints above whatever it is explaining - a drop-down, a hover
+            // preview, a drag proxy included. One layer serves every `.tooltip` string this whole HUD
+            // sets, because UI Toolkit's own tooltip renders only in the Editor.
+            tooltipLayer = new RuntimeTooltipLayer();
+            root.Add(tooltipLayer.Root);
+            tooltipLayer.Install(root);
 
             ApplyDirectorDrawerState();
             Layout();
@@ -1738,6 +1867,25 @@ namespace GuardsDigital.Presentation.Match
             directorDrawer.style.top = drawer.y;
             directorDrawer.style.width = drawer.width;
             directorDrawer.style.height = drawer.height;
+
+            // TWELFTH amendment. The banner sits in the Director's own column, pinned by its BOTTOM
+            // edge so it grows UPWARD as staged lines are added rather than needing a height this
+            // layout would have to predict. Its width follows the drawer's, so the Director column
+            // stays one column rather than becoming two.
+            //
+            // It clears the DRAWER rather than the toggle, and unconditionally rather than only
+            // while the drawer is open. The drawer opens upward from the toggle (see
+            // CalculateDirectorDrawerRect), so clearing only the toggle would put the banner
+            // underneath it; and reserving the space whether or not it is open keeps the banner
+            // still when a tester opens DIRECTOR, instead of making it jump.
+            if (sandboxBanner != null)
+            {
+                var clearedTop = Mathf.Min(toggle.y, drawer.y);
+                sandboxBanner.style.left = toggle.x;
+                sandboxBanner.style.width = drawer.width;
+                sandboxBanner.style.bottom =
+                    Mathf.Max(0f, viewport.y - clearedTop) + DirectorRailGap;
+            }
         }
 
         /// <summary>

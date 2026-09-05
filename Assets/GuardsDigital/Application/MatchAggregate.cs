@@ -350,7 +350,14 @@ namespace GuardsDigital.Application
                         rebuiltConfiguration.Participants,
                         initialState.Setup.Teams.Select(team =>
                             new System.Collections.Generic.KeyValuePair<TeamId, int>(
-                                team.TeamId, team.LifeCount)))));
+                                team.TeamId, team.LifeCount))),
+                    // Milestone 8.35z17. The staged Levels and balances travel beside the Life
+                    // counters above them because they are the same kind of fact: a starting position
+                    // the composed setup records, rebuilt from that record on every restart and every
+                    // retained-prefix Undo rather than carried across. That is what makes a staged
+                    // situation replay to itself instead of decaying to a dealt one.
+                    initialState.StagedProgression.CreateProgressionState(),
+                    initialState.StagedProgression.CreateCoinLedgerState()));
 
             ReplaceGraphs(MatchGraphSet.ForSetup(
                 rebuiltConfiguration,

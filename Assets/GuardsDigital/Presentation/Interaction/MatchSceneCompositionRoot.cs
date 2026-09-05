@@ -396,6 +396,49 @@ namespace GuardsDigital.Presentation.Interaction
         /// </remarks>
         public static SeatId? NextComposedSeat { get; set; }
 
+        /// <summary>
+        /// ELEVENTH amendment. The printed setup the next composed match plays, or <c>null</c> to
+        /// read the launch line - and, failing that, <see cref="MatchFormat.Default"/>.
+        /// </summary>
+        /// <remarks>
+        /// <para>Unlike the two hooks above this is NOT a development-only affordance: a launched
+        /// player selects a format with <see cref="GuardsDigital.Network.PrivateSessionLaunchOptions
+        /// .MatchFormatFlag"/>, and this property is how a fixture asks for the same thing without a
+        /// command line. It is a one-shot in the same way, consumed and reset by the composition, so
+        /// a fixture that forgets to clear it cannot change what a later scene load deals.</para>
+        /// <para><b>It is read before <see cref="Compose"/> runs, and that is a real constraint on
+        /// where a format may be chosen.</b> The scene composes its match in <c>Awake</c>, before any
+        /// host, client or lobby driver is attached, and <see cref="Compose"/> returns immediately
+        /// once a runtime exists - so the format is settled at scene load and the lobby, which opens
+        /// afterwards, cannot change it. Giving the host a format control inside the lobby means
+        /// composing the match when the lobby says to rather than when the scene loads; that is the
+        /// second half of the amendment and it is deliberately not attempted here.</para>
+        /// </remarks>
+        public static MatchFormat NextComposedMatchFormat { get; set; }
+
+        /// <summary>
+        /// TWELFTH amendment. The staged situation the next composed match begins from, or
+        /// <c>null</c> to read the launch line - and, failing that, to deal the ordinary match.
+        /// </summary>
+        /// <remarks>
+        /// <para>A one-shot in the same way as the two hooks above, consumed and reset by the
+        /// composition, so a fixture that forgets to clear it cannot stage a later scene load.</para>
+        /// <para><b>This is a <c>DEV-004</c> development affordance and the surface it opens is the
+        /// Director's own.</b> Staging happens strictly before an authority exists, so there is no
+        /// moment at which a seat could reach it and nothing for a codec to carry; the launch flag
+        /// that feeds it is refused beside every networked role. "Sandbox" here is the staged-board
+        /// test environment and has nothing to do with the agent process-isolation sandbox that
+        /// <c>Docs/AI/Testing/POLICY.md</c> calls by the same word.</para>
+        /// </remarks>
+        public static SandboxStagingDescription NextComposedSandboxStaging { get; set; }
+
+        /// <summary>
+        /// The staging the current runtime was composed from, or <c>null</c> for an ordinary dealt
+        /// match. Read by the HUD to draw the Director-only sandbox banner, so the banner states
+        /// what was actually composed rather than what a flag asked for.
+        /// </summary>
+        public SandboxStagingDescription ComposedSandboxStaging { get; private set; }
+
         public ConfiguredMatchSceneRuntime Runtime => runtime;
         public IMatchSession Session => runtime?.Session;
         public ConfiguredMatchHudRenderer Hud => hud;
@@ -435,6 +478,12 @@ namespace GuardsDigital.Presentation.Interaction
             // of 6.6a's three modes were controls with nothing to act on. Blue Sentinel and Blue Feint
             // carry those capabilities now, so the scene keeps them at five.
             var content = TakeRequestedCardContent();
+            // ELEVENTH amendment. The format is settled here, before anything is composed, because
+            // this is the only moment at which it can be: the runtime below is built once and every
+            // later surface reads it. A staged arm ignores it - a staged board's subject is one
+            // printed set and its own numbers, not a rulebook setup - so only the configured match
+            // consults it.
+            var format = TakeRequestedMatchFormat();
             var configuration = content switch
             {
                 SceneCardContent.MechanicsShowcaseFixture =>
@@ -550,7 +599,7 @@ namespace GuardsDigital.Presentation.Interaction
                         GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
-                _ => MatchConfiguration.Create()
+                _ => MatchConfiguration.Create(format)
             };
             // Milestone 8.20. The board's hero identities have to agree with the hands the
             // configuration above dealt: a seat's content identity is what addresses its prepared token
@@ -561,7 +610,7 @@ namespace GuardsDigital.Presentation.Interaction
             // Milestone 8.25: the default arm - what a player plays - is now rulebook p.5's official
             // six-player board, and it is the only arm that places six heroes.
             var setup = QuickGameSetupAuthority.Create(
-                SelectSetupConfiguration(content),
+                SelectSetupConfiguration(content, format),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
@@ -582,6 +631,25 @@ namespace GuardsDigital.Presentation.Interaction
                 IsStagedXargatha(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
+            }
+
+            // TWELFTH amendment, the sandbox's second half. The staging slots in exactly here,
+            // beside the mirror restaging above, because both answer the same question - what board
+            // does this scene begin from - and both answer it before any view is generated or any
+            // authority exists. From here the staged setup IS the setup: the views below, the board
+            // rebuild and the runtime all read it without knowing a staged board from a dealt one,
+            // which is what makes Undo, restart, the event log and replay work unchanged.
+            //
+            // The composed initial state is carried to the runtime rather than recomposed there,
+            // because staging mutates the configuration in place (a staged hand is a real card
+            // moved by CardLifecycleAuthority) and composing it twice would deal the hands twice.
+            MatchSessionInitialState stagedInitialState = null;
+            ComposedSandboxStaging = TakeRequestedSandboxStaging();
+            if (ComposedSandboxStaging != null)
+            {
+                stagedInitialState = SandboxMatchComposition.Compose(
+                    ComposedSandboxStaging, map, setup, configuration, new[] { map });
+                setup = stagedInitialState.Setup;
             }
             // Milestone 8.21. A configuration may deal a seat the scene authors no view for - the
             // staged Brogan-with-an-ally match deals three - so any such seat gets a generated view
@@ -631,7 +699,10 @@ namespace GuardsDigital.Presentation.Interaction
                 null,
                 // Milestone 8.30b: the development-only seat selection, consumed once.
                 TakeRequestedSeat(),
-                cornerHighlightTemplate);
+                cornerHighlightTemplate,
+                // TWELFTH amendment: the staged initial state, or null for the dealt match the
+                // runtime composes for itself exactly as it always has.
+                stagedInitialState);
 
             // Milestone 8.35y. The configured match scene has never had a frame loop - every
             // surface redraws on a projection change - so the kinetic pass brings its own, on this
@@ -670,6 +741,16 @@ namespace GuardsDigital.Presentation.Interaction
                 runtime.BoardView,
                 tiles,
                 hud.BlocksPointerAt);
+
+            // TWELFTH amendment. The Director-only banner, announced last so it is drawn over a HUD
+            // the runtime above has already configured. It is told what the staging DID rather than
+            // what it was, and the summary is derived from the composed staging itself, so the
+            // banner cannot describe a board other than the one on screen.
+            if (ComposedSandboxStaging != null)
+            {
+                hud.ShowSandboxStaging(
+                    SandboxStagingSummary.Describe(ComposedSandboxStaging));
+            }
         }
 
         private void RebindConfiguredMinionViews(IReadOnlyList<StandardMinionView> minionViews)
@@ -769,7 +850,8 @@ namespace GuardsDigital.Presentation.Interaction
         /// one-hero-per-team stagings for the five heroes whose journeys were written on them, and the
         /// two-Blue-seat board for the two cards that name a friendly hero.</para>
         /// </summary>
-        private static QuickGameSetupConfiguration SelectSetupConfiguration(SceneCardContent content)
+        private static QuickGameSetupConfiguration SelectSetupConfiguration(
+            SceneCardContent content, MatchFormat format)
         {
             switch (content)
             {
@@ -780,7 +862,7 @@ namespace GuardsDigital.Presentation.Interaction
                 case SceneCardContent.MechanicsShowcaseFixture:
                     return QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne();
                 case SceneCardContent.ConfiguredMatch:
-                    return QuickGameSetupConfiguration.CreateOfficialSixPlayer();
+                    return QuickGameSetupConfiguration.CreateOfficial(format);
                 default:
                     if (IsBroganWithAlly(content))
                     {
@@ -875,6 +957,98 @@ namespace GuardsDigital.Presentation.Interaction
             var requested = NextComposedCardContent;
             NextComposedCardContent = SceneCardContent.ConfiguredMatch;
             return requested;
+        }
+
+        /// <summary>
+        /// ELEVENTH amendment. Reads <see cref="NextComposedMatchFormat"/> and clears it, falling
+        /// back to the launch line's format flag and then to
+        /// <see cref="MatchFormat.Default"/> - so a fixture that forgets to clear it cannot decide
+        /// which setup a later scene load composes.
+        /// </summary>
+        /// <remarks>
+        /// The property wins over the flag because only one of the two can be a mistake: a Play Mode
+        /// fixture setting the property is asking for this composition, while the flag belongs to
+        /// the process and would otherwise apply to every scene the Editor loads after it.
+        /// A malformed flag is NOT refused here - the parse's own error is reported where every
+        /// other malformed launch option is, by the driver attach in <c>Awake</c>, which quits with
+        /// the message rather than starting a session nobody configured. Composing the default in
+        /// the meantime keeps that one refusal in one place.
+        /// </remarks>
+        private static MatchFormat TakeRequestedMatchFormat()
+        {
+            var requested = NextComposedMatchFormat;
+            NextComposedMatchFormat = null;
+            if (requested != null)
+            {
+                return requested;
+            }
+
+            if (!UnityEngine.Application.isPlaying)
+            {
+                return MatchFormat.Default;
+            }
+
+            var options = GuardsDigital.Network.PrivateSessionLaunchOptions.Parse(
+                System.Environment.GetCommandLineArgs());
+            return options.IsValid ? options.MatchFormat : MatchFormat.Default;
+        }
+
+        /// <summary>
+        /// TWELFTH amendment. Reads <see cref="NextComposedSandboxStaging"/> and clears it, falling
+        /// back to the launch line's staging flag, and then to <c>null</c> - the ordinary dealt
+        /// match. The property wins over the flag for the same reason the format's does: a fixture
+        /// setting it is asking for this composition, while the flag belongs to the process and
+        /// would otherwise stage every scene the Editor loads after it.
+        /// </summary>
+        /// <remarks>
+        /// An unreadable or malformed staging file is REFUSED rather than silently dealt around.
+        /// A tester who asked for a staged board and got a dealt one would draw exactly the wrong
+        /// conclusion from whatever they then observed, so this is the one launch fault the scene
+        /// itself reports: the format flag can fall back to a default because every format is a
+        /// real match, while a staging that did not load leaves nothing honest to compose.
+        /// </remarks>
+        private static SandboxStagingDescription TakeRequestedSandboxStaging()
+        {
+            var requested = NextComposedSandboxStaging;
+            NextComposedSandboxStaging = null;
+            if (requested != null)
+            {
+                return requested;
+            }
+
+            if (!UnityEngine.Application.isPlaying)
+            {
+                return null;
+            }
+
+            var options = GuardsDigital.Network.PrivateSessionLaunchOptions.Parse(
+                System.Environment.GetCommandLineArgs());
+            if (!options.IsValid || !options.IsSandbox)
+            {
+                return null;
+            }
+
+            string text;
+            try
+            {
+                text = System.IO.File.ReadAllText(options.SandboxStagingPath);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException(
+                    "The sandbox staging file '" + options.SandboxStagingPath +
+                    "' could not be read: " + exception.Message, exception);
+            }
+
+            if (!SandboxStagingDescription.TryParse(text, out var description, out var error))
+            {
+                throw new InvalidOperationException(
+                    "The sandbox staging file '" + options.SandboxStagingPath +
+                    "' is not a readable " + SandboxStagingDescription.FormatTag + " staging: " +
+                    error);
+            }
+
+            return description;
         }
 
         /// <summary>

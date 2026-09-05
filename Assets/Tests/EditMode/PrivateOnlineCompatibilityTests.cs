@@ -154,7 +154,8 @@ namespace GuardsDigital.Tests.EditMode
             int? schema = null,
             string mapId = null,
             int? mapRevision = null,
-            string digest = null) =>
+            string digest = null,
+            string matchFormatId = null) =>
             new PrivateSessionIdentity(
                 family ?? identity.ProtocolFamily,
                 version ?? identity.ProtocolVersion,
@@ -162,6 +163,7 @@ namespace GuardsDigital.Tests.EditMode
                 schema ?? identity.SnapshotSchemaVersion,
                 mapId ?? identity.MapId,
                 mapRevision ?? identity.MapContentRevision,
+                matchFormatId ?? identity.MatchFormatId,
                 digest ?? identity.ContentDigest);
 
         /// <summary>

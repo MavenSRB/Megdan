@@ -115,6 +115,9 @@ namespace GuardsDigital.Application
                 writer.Write(message.Identity.SnapshotSchemaVersion);
                 writer.Write(message.Identity.MapId);
                 writer.Write(message.Identity.MapContentRevision);
+                // Protocol version 9. Written in the element order FirstMismatch checks, so the
+                // payload reads the way the refusal ladder does.
+                writer.Write(message.Identity.MatchFormatId);
                 writer.Write(message.Identity.ContentDigest);
                 writer.Write(message.KeyProof);
                 writer.Flush();
@@ -136,6 +139,7 @@ namespace GuardsDigital.Application
                     var schema = reader.ReadInt32();
                     var mapId = reader.ReadString();
                     var mapRevision = reader.ReadInt32();
+                    var matchFormatId = reader.ReadString();
                     var digest = reader.ReadString();
                     var proof = reader.ReadString();
                     if (stream.Position != stream.Length)
@@ -144,13 +148,15 @@ namespace GuardsDigital.Application
                     }
 
                     if (string.IsNullOrWhiteSpace(family) || string.IsNullOrWhiteSpace(build) ||
-                        string.IsNullOrWhiteSpace(mapId) || string.IsNullOrWhiteSpace(digest))
+                        string.IsNullOrWhiteSpace(mapId) || string.IsNullOrWhiteSpace(digest) ||
+                        string.IsNullOrWhiteSpace(matchFormatId))
                     {
                         return false;
                     }
 
                     message = new SessionHelloMessage(
-                        new PrivateSessionIdentity(family, version, build, schema, mapId, mapRevision, digest),
+                        new PrivateSessionIdentity(
+                            family, version, build, schema, mapId, mapRevision, matchFormatId, digest),
                         proof);
                     return true;
                 }

@@ -121,9 +121,10 @@ namespace GuardsDigital.Tests.EditMode
         {
             var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var identity = PrivateSessionIdentity.ForComposition(map, configuration, "test-build");
-            var matchHost = GuardsDigital.Application.MatchHost.Compose(
-                OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var initialState = OwnerScopedProjectionTests.CreateOfficialInitialState();
+            var identity = PrivateSessionIdentity.ForComposition(
+                map, configuration, initialState.Setup, "test-build");
+            var matchHost = GuardsDigital.Application.MatchHost.Compose(initialState);
             var outbox = new RecordingSessionOutbox();
             var nonces = new RecordedNonceSource();
             var session = new PrivateSessionHost(matchHost, identity, sessionKey, outbox, nonces);
@@ -204,7 +205,8 @@ namespace GuardsDigital.Tests.EditMode
             int? schema = null,
             string mapId = null,
             int? mapRevision = null,
-            string digest = null) =>
+            string digest = null,
+            string matchFormatId = null) =>
             new PrivateSessionIdentity(
                 family ?? Identity.ProtocolFamily,
                 version ?? Identity.ProtocolVersion,
@@ -212,6 +214,7 @@ namespace GuardsDigital.Tests.EditMode
                 schema ?? Identity.SnapshotSchemaVersion,
                 mapId ?? Identity.MapId,
                 mapRevision ?? Identity.MapContentRevision,
+                matchFormatId ?? Identity.MatchFormatId,
                 digest ?? Identity.ContentDigest);
     }
 }

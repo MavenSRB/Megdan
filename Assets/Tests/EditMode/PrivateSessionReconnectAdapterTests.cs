@@ -45,7 +45,9 @@ namespace GuardsDigital.Tests.EditMode
                 var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
                 var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
                 Identity = PrivateSessionIdentity.ForComposition(
-                    map, configuration, "adapter-reconnect-build");
+                    map, configuration,
+                    OwnerScopedProjectionTests.CreateOfficialInitialState().Setup,
+                    "adapter-reconnect-build");
                 MatchHost = GuardsDigital.Application.MatchHost.Compose(
                     OwnerScopedProjectionTests.CreateOfficialInitialState());
                 Listener = new TcpSessionListener();

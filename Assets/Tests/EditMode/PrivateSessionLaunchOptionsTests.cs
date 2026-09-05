@@ -1,4 +1,5 @@
 using GuardsDigital.Application;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Network;
 using NUnit.Framework;
 
@@ -145,5 +146,86 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(PrivateSessionEndpoint.TryParseAddress(":50123", out _, out _), Is.False);
             Assert.That(PrivateSessionEndpoint.TryParseAddress("127.0.0.1:", out _, out _), Is.False);
         }
+
+        [Test]
+        public void NoFormatFlag_ComposesTheSixPlayerQuickGameEveryExistingLaunchLineComposed()
+        {
+            foreach (var line in new[]
+            {
+                new[] { "-guardsSmokeTest" },
+                new[] { "-guardsPrivateHost" },
+                new[] { "-guardsPrivateLobby" },
+                new[] { "-guardsPrivateClient", "-guardsAddress", "127.0.0.1:45677",
+                    "-guardsSeat", "red-player-01" }
+            })
+            {
+                var options = PrivateSessionLaunchOptions.Parse(line);
+                Assert.That(options.IsValid, Is.True, string.Join(" ", line));
+                Assert.That(options.MatchFormat, Is.SameAs(MatchFormat.Default),
+                    "An absent flag reads as the format milestone 8.25 made the default.");
+            }
+        }
+
+        [Test]
+        public void TheFormatFlag_IsAcceptedBesideEveryRoleIncludingTheLobby()
+        {
+            var host = PrivateSessionLaunchOptions.Parse(new[]
+            {
+                "-guardsPrivateHost", MatchFormatFlagName, "2v2-long"
+            });
+            Assert.That(host.IsValid, Is.True);
+            Assert.That(host.MatchFormat, Is.SameAs(MatchFormat.TwoVersusTwoLong));
+
+            // The lobby refuses an address, bind, port, seat or key because those are typed into
+            // it; the format is not an invitation but the match this process composes, and until
+            // the lobby grows a control of its own this flag is the only way to ask for one.
+            var lobby = PrivateSessionLaunchOptions.Parse(new[]
+            {
+                "-guardsPrivateLobby", MatchFormatFlagName, "2v2-quick"
+            });
+            Assert.That(lobby.IsValid, Is.True);
+            Assert.That(lobby.Role, Is.EqualTo(PrivateSessionRole.Lobby));
+            Assert.That(lobby.MatchFormat, Is.SameAs(MatchFormat.TwoVersusTwoQuick));
+
+            var client = PrivateSessionLaunchOptions.Parse(new[]
+            {
+                "-guardsPrivateClient", "-guardsAddress", "127.0.0.1:45677",
+                "-guardsSeat", "red-player-01", MatchFormatFlagName, "2v2-quick"
+            });
+            Assert.That(client.IsValid, Is.True);
+            Assert.That(client.MatchFormat, Is.SameAs(MatchFormat.TwoVersusTwoQuick));
+        }
+
+        [Test]
+        public void AnUnprintedFormat_IsRefusedAndTheRefusalListsWhatIsPrinted()
+        {
+            var refused = PrivateSessionLaunchOptions.Parse(new[]
+            {
+                "-guardsPrivateHost", MatchFormatFlagName, "1v1-quick"
+            });
+
+            Assert.That(refused.IsValid, Is.False);
+            Assert.That(refused.Error, Does.Contain("1v1-quick"));
+            foreach (var format in MatchFormat.All)
+            {
+                Assert.That(refused.Error, Does.Contain(format.Id));
+            }
+        }
+
+        [Test]
+        public void TheFormatFlag_RequiresAValueAndDoesNotSwallowTheNextFlag()
+        {
+            Assert.That(PrivateSessionLaunchOptions.Parse(new[]
+            {
+                "-guardsPrivateHost", MatchFormatFlagName
+            }).IsValid, Is.False, "A trailing flag has no value.");
+
+            Assert.That(PrivateSessionLaunchOptions.Parse(new[]
+            {
+                "-guardsPrivateHost", MatchFormatFlagName, "-guardsSessionKey"
+            }).IsValid, Is.False, "A flag is not a value for the flag before it.");
+        }
+
+        private const string MatchFormatFlagName = PrivateSessionLaunchOptions.MatchFormatFlag;
     }
 }

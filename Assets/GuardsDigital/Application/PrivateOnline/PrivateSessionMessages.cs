@@ -189,7 +189,18 @@ namespace GuardsDigital.Application
         /// the roster, so nothing is hidden by naming that case; whether a presented capability
         /// was close to the right one is not something a refusal may say at all.
         /// </remarks>
-        ReconnectNotAuthorized = 21
+        ReconnectNotAuthorized = 21,
+
+        /// <summary>
+        /// ELEVENTH amendment. The two peers composed different rulebook setups - a different
+        /// player count, a different game length, or both.
+        /// </summary>
+        /// <remarks>
+        /// Its number is appended after every existing reason because these values are wire codes,
+        /// but <see cref="PrivateSessionIdentity.FirstMismatch"/> checks it between the map revision
+        /// and the content digest. Nothing may infer a check order from an enum value.
+        /// </remarks>
+        MatchFormatMismatch = 22
     }
 
     /// <summary>Milestone 8.31. Whether a seat is open, held by a live connection, or reserved.</summary>

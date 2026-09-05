@@ -120,12 +120,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// creation stays in this type rather than moving to the round for the reason
         /// <see cref="CoinLedger"/> lives here at all: the Defeat that fills it is this backend's.
         /// </summary>
-        internal HeroCoinLedger EnsureCoinLedger(MatchParticipants participants)
+        internal HeroCoinLedger EnsureCoinLedger(MatchParticipants participants) =>
+            EnsureCoinLedger(participants, null);
+
+        /// <summary>
+        /// Milestone 8.35z17. The overload above with the balances a staged situation begins
+        /// from. The seed is read only on the creation this method would have made anyway, so a
+        /// ledger that already exists is returned untouched and no staged number can overwrite a
+        /// balance p.13 or p.15 has moved.
+        /// </summary>
+        internal HeroCoinLedger EnsureCoinLedger(
+            MatchParticipants participants, HeroCoinLedgerRestoreState seed)
         {
             if (coinLedger == null)
             {
-                coinLedger = new HeroCoinLedger(
-                    participants ?? throw new ArgumentNullException(nameof(participants)));
+                if (participants == null) throw new ArgumentNullException(nameof(participants));
+                coinLedger = seed != null
+                    ? HeroCoinLedger.Restore(participants, seed)
+                    : new HeroCoinLedger(participants);
             }
 
             return coinLedger;

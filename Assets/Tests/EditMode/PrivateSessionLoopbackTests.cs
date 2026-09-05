@@ -40,7 +40,10 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
                 var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-                Identity = PrivateSessionIdentity.ForComposition(map, configuration, "loopback-build");
+                Identity = PrivateSessionIdentity.ForComposition(
+                    map, configuration,
+                    OwnerScopedProjectionTests.CreateOfficialInitialState().Setup,
+                    "loopback-build");
                 var matchHost = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
                 Listener = new TcpSessionListener();
                 Listener.Start(Ephemeral());

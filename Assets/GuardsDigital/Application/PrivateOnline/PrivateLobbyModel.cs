@@ -213,6 +213,8 @@ namespace GuardsDigital.Application
                     return "The host is running a different save schema.";
                 case SessionRejectionReason.MapRevisionMismatch:
                     return "The host is running a different map revision.";
+                case SessionRejectionReason.MatchFormatMismatch:
+                    return "The host is playing a different match format.";
                 case SessionRejectionReason.ContentDigestMismatch:
                     return "The host is running different registered content.";
                 case SessionRejectionReason.SessionKeyMismatch:

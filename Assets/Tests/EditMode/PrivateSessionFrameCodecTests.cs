@@ -22,7 +22,7 @@ namespace GuardsDigital.Tests.EditMode
     {
         private static PrivateSessionIdentity Identity() => new PrivateSessionIdentity(
             PrivateSessionProtocol.FamilyName, PrivateSessionProtocol.Version,
-            "build-a", 34, "official-single-lane", 1, "digest-a");
+            "build-a", 34, "official-single-lane", 1, "3v3-quick", "digest-a");
 
         private static SessionFrame OneFrame(byte[] encoded)
         {

@@ -81,6 +81,8 @@ namespace GuardsDigital.Core.Cards
             var compositionLanePush = composition.LanePush;
             var compositionLevelUp = composition.LevelUp;
             var compositionTeamLives = composition.TeamLives;
+            var compositionStartingProgression = composition.StartingProgression;
+            var compositionStartingCoins = composition.StartingCoins;
             var endOfRoundStageAvailability = composition.EndOfRoundStageAvailability;
             var endOfRoundHandlers = composition.EndOfRoundHandlers;
 
@@ -146,7 +148,14 @@ namespace GuardsDigital.Core.Cards
             // match has, at the moment the round authority knows who they are. Restore replaces it
             // below rather than mutating it, so a restored match never passes through Level 1 on its
             // way to the Levels it recorded.
-            HeroProgression = new GuardsDigital.Core.Rules.Progression.HeroProgressionState(participants);
+            // Milestone 8.35z17. A composed starting position replaces that default rather than
+            // mutating it, exactly as the restore below replaces it and for the same stated reason: a
+            // staged match must never pass through Level 1 on its way to the Levels it was staged at.
+            // Absent - which is every caller but the sandbox composition - this is unchanged.
+            HeroProgression = compositionStartingProgression != null
+                ? GuardsDigital.Core.Rules.Progression.HeroProgressionState.Restore(
+                    participants, compositionStartingProgression)
+                : new GuardsDigital.Core.Rules.Progression.HeroProgressionState(participants);
 
             // Milestone 7.2. p.16 gains an item during the Upgrade a Card step of a level purchase, and
             // p.15 makes that purchase an end-of-round step, which is this authority's boundary - the
@@ -190,8 +199,17 @@ namespace GuardsDigital.Core.Cards
             // and for the same reason: this authority owns all three and the transition authority the
             // rules are composed into is built before it.
             levelUp = compositionLevelUp;
-            var roundCoinLedger = this.cardActions?.EnsureCoinLedger(participants) ??
-                new GuardsDigital.Core.Rules.Consequences.HeroCoinLedger(participants);
+            // Milestone 8.35z17. The staged balances seed the one ledger rather than creating a
+            // second: the dispatcher is composed before this authority and has not been asked for a
+            // ledger yet, so the seed is what the lazy creation below produces. Two ledgers would be
+            // two answers to what a hero can afford, which is the one thing that must not happen -
+            // so the seed goes through the same single creation point every other caller uses.
+            var roundCoinLedger =
+                this.cardActions?.EnsureCoinLedger(participants, compositionStartingCoins) ??
+                (compositionStartingCoins != null
+                    ? GuardsDigital.Core.Rules.Consequences.HeroCoinLedger.Restore(
+                        participants, compositionStartingCoins)
+                    : new GuardsDigital.Core.Rules.Consequences.HeroCoinLedger(participants));
             levelUp?.Bind(
                 HeroProgression,
                 HeroItems,

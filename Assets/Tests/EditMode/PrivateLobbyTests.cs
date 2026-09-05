@@ -503,8 +503,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Cast<SessionRejectionReason>()
                 .Where(reason => reason != SessionRejectionReason.None)
                 .ToArray();
-            Assert.That(reasons.Length, Is.GreaterThanOrEqualTo(21),
-                "A sweep reading fewer reasons than the session layer defines is a broken rule.");
+            Assert.That(reasons.Length, Is.GreaterThanOrEqualTo(22),
+                "A sweep reading fewer reasons than the session layer defines is a broken rule. " +
+                "The twenty-second is the ELEVENTH amendment's MatchFormatMismatch.");
 
             foreach (var reason in reasons)
             {
@@ -712,6 +713,7 @@ namespace GuardsDigital.Tests.EditMode
                 identity.SnapshotSchemaVersion + 1,
                 identity.MapId,
                 identity.MapContentRevision,
+                identity.MatchFormatId,
                 identity.ContentDigest);
             harness.Connect(1, harness.Session.Roster[0].Seat.Value, incompatible);
             harness.Pump();

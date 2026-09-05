@@ -46,7 +46,11 @@ namespace GuardsDigital.Presentation.Match
             UnityEngine.Material highlightRimMaterial = null,
             UnityEngine.Material resultingSpaceRimMaterial = null,
             SeatId? seat = null,
-            HexCornerHighlightTemplate cornerHighlightTemplate = null)
+            HexCornerHighlightTemplate cornerHighlightTemplate = null,
+            // TWELFTH amendment. Optional and appended, so every existing composition and fixture
+            // keeps its exact call - the same reason 8.20a's heroOverviews and 8.35y's kinetics
+            // were appended rather than inserted.
+            MatchSessionInitialState stagedInitialState = null)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -82,19 +86,29 @@ namespace GuardsDigital.Presentation.Match
             // directly. Every presenter below, the Director's own controls and the headless smoke
             // driver submit through the one serialized executor a network host will also submit to,
             // so no surface here holds a session reference of its own to reach around it.
+            //
+            // TWELFTH amendment: a staged initial state, when the composition root loaded one, is
+            // used as it stands rather than rebuilt from the scenario above. It already carries the
+            // staged hands, Levels and coins, and rebuilding would deal them a second time. Every
+            // line below this one is identical for a staged and a dealt match, which is the whole
+            // design: from here there is nothing sandbox-shaped left.
             host = MatchHost.Compose(
+                stagedInitialState ??
                 new MatchSessionInitialState(
                     scenario,
                     setup,
                     maps,
                     configuration));
             session = new LocalDirectorMatchClient(host);
+            IsSandbox = stagedInitialState != null;
 
             // Milestone 8.31. The admission tuple this composition publishes: what another process
             // must match before it may hold one of this match's seats. Derived here because the
-            // map and configuration are in scope exactly once, at composition.
+            // map, configuration and setup are in scope exactly once, at composition - and the
+            // ELEVENTH amendment's format element is read off the setup rather than passed beside
+            // it, so the tuple describes the match that exists and not the one that was asked for.
             SessionIdentity = PrivateSessionIdentity.ForComposition(
-                map, configuration, BuildIdentityStamp.Current);
+                map, configuration, setup, BuildIdentityStamp.Current);
 
             // Milestone 8.30b. One composition serves both surfaces. With no seat named this is the
             // Director's runtime exactly as before; named a seat, every presenter below is handed
@@ -402,6 +416,14 @@ namespace GuardsDigital.Presentation.Match
         /// private host and client drivers to agree on before a seat is held.
         /// </summary>
         public PrivateSessionIdentity SessionIdentity { get; }
+
+        /// <summary>
+        /// TWELFTH amendment. Whether this runtime began from a staged sandbox board rather than a
+        /// dealt one. It changes no behaviour here at all - it is read by the HUD to draw the
+        /// Director-only sandbox banner, so a tester can always tell which kind of board they are
+        /// looking at.
+        /// </summary>
+        public bool IsSandbox { get; }
 
         public MatchContentCatalogs ContentCatalogs { get; }
 

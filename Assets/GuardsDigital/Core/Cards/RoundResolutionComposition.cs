@@ -35,7 +35,9 @@ namespace GuardsDigital.Core.Cards
             HeroLevelUpStepRules levelUp,
             TeamLifeState teamLives,
             EndOfRoundStageAvailability endOfRoundStageAvailability,
-            IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers)
+            IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> endOfRoundHandlers,
+            HeroProgressionRestoreState startingProgression = null,
+            HeroCoinLedgerRestoreState startingCoins = null)
         {
             CardActions = cardActions;
             Board = board;
@@ -47,6 +49,8 @@ namespace GuardsDigital.Core.Cards
             TeamLives = teamLives;
             EndOfRoundStageAvailability = endOfRoundStageAvailability;
             EndOfRoundHandlers = endOfRoundHandlers;
+            StartingProgression = startingProgression;
+            StartingCoins = startingCoins;
         }
 
         public CardActionResolutionAuthority CardActions { get; }
@@ -103,6 +107,37 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public TeamLifeState TeamLives { get; }
 
+        /// <summary>
+        /// Milestone 8.35z17: every hero's Level at the moment the match begins, or null for
+        /// p.15's "Your hero starts the game at level 1".
+        ///
+        /// It travels here for the reason <see cref="TeamLives"/> does, and the note above it gives
+        /// that reason in full: a starting count is a setup decision, and the composed setup is the
+        /// one record of it. The Life counters were the first state to need saying so - the
+        /// prototype baseline records five per team and the staged 1v1 fixture composes four - and a
+        /// staged situation's Levels are the same kind of fact seen again. An absent one is
+        /// substituted by the authority with Level 1 for every hero, in the shape the counters
+        /// beside it are substituted, so every existing caller composes exactly what it composed
+        /// before.
+        ///
+        /// <para>This is a starting POSITION and not a rule: nothing here decides when a Level may
+        /// move, what it costs or what it upgrades, which remain entirely
+        /// <see cref="LevelUp"/>'s. The one transition stays
+        /// <c>HeroProgressionState.TryRaiseLevel</c>, unchanged and unreachable from here.</para>
+        /// </summary>
+        public HeroProgressionRestoreState StartingProgression { get; }
+
+        /// <summary>
+        /// Milestone 8.35z17: every hero's coin balance at the moment the match begins, or
+        /// null for the empty purse a match deals.
+        ///
+        /// The same argument as <see cref="StartingProgression"/> beside it, and it travels in the
+        /// same object for the same reason: p.15's purchase spends from the balance p.13's Defeat
+        /// fills, so a staged situation that wants a purchase to be affordable has to say what the
+        /// hero holds. Absent, the ledger is the zero-balance one every match has always begun with.
+        /// </summary>
+        public HeroCoinLedgerRestoreState StartingCoins { get; }
+
         public EndOfRoundStageAvailability EndOfRoundStageAvailability { get; }
         public IReadOnlyDictionary<EndOfRoundStage, IEndOfRoundStageHandler> EndOfRoundHandlers { get; }
 
@@ -118,11 +153,13 @@ namespace GuardsDigital.Core.Cards
             SystemTransitionAuthority systemTransitions,
             LanePushConsumption lanePush,
             HeroLevelUpStepRules levelUp = null,
-            TeamLifeState teamLives = null)
+            TeamLifeState teamLives = null,
+            HeroProgressionRestoreState startingProgression = null,
+            HeroCoinLedgerRestoreState startingCoins = null)
         {
             return new RoundResolutionComposition(
                 cardActions, board, timing, markers, systemTransitions, lanePush, levelUp, teamLives,
-                null, null);
+                null, null, startingProgression, startingCoins);
         }
 
         /// <summary>

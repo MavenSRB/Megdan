@@ -1673,6 +1673,8 @@ namespace GuardsDigital.Application
                 case SessionRejectionReason.MapRevisionMismatch:
                     return "Map revision differs; host runs " + identity.MapId + "@" +
                         identity.MapContentRevision.ToString(CultureInfo.InvariantCulture) + ".";
+                case SessionRejectionReason.MatchFormatMismatch:
+                    return "Match format differs; host is playing " + identity.MatchFormatId + ".";
                 case SessionRejectionReason.ContentDigestMismatch:
                     return "Registered content differs; host digest " + identity.ContentDigest + ".";
                 default:

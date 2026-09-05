@@ -20,8 +20,25 @@ namespace GuardsDigital.Application
         public const string FamilyName = "guards-private-online";
 
         /// <summary>
-        /// Protocol version 8: milestone 8.35z14 (the blocker-identity channel) gave the seat-public
-        /// match log's own <c>BlockedAction</c> row two more optional fields - the hero controlling
+        /// Protocol version 9: the ELEVENTH amendment's host-selectable match formats. The admission
+        /// tuple gains a format element, so the <c>Hello</c> payload carries one more string between
+        /// the map revision and the content digest. A version 8 peer's reader takes that string as
+        /// the content digest and then finds the key proof missing, so its hello does not
+        /// mis-compare - it fails to decode at all, which is precisely why the version is bumped:
+        /// version 8 is refused from the bounded header, before either side interprets a payload.
+        ///
+        /// <para><b>The schema does NOT move, and that is the measured half.</b> Rulebook p.5-6's
+        /// four printed setups differ in three numbers - how many players, how many Wave counters,
+        /// how many Life counters a team starts with - and the snapshot has written all three as
+        /// ordinary counted values since long before this milestone: the Wave total as an
+        /// <c>Int32</c> in the round section, each team's Life counters beside it since v20, and the
+        /// participants as a counted list. A 2v2 payload is therefore a v36 payload of different
+        /// values, not of a different shape, and no corpus digest, pinned constant or bare version
+        /// assertion moves. The wire bump is not evidence to the contrary: the wire grew a NEW
+        /// element that never existed, and the snapshot grew nothing.</para>
+        ///
+        /// <para>Protocol version 8: milestone 8.35z14 (the blocker-identity channel) gave the
+        /// seat-public match log's own <c>BlockedAction</c> row two more optional fields - the hero controlling
         /// the standing rule modification that refused the step, and the card its source came off -
         /// appended after <c>amount</c> at the end of <c>NetworkMatchLogRow</c>. A version 7 peer's
         /// reader stops after <c>amount</c> and never reads these two fields at all, so it does not
@@ -116,7 +133,7 @@ namespace GuardsDigital.Application
         /// version 1 when milestone 8.35b gave SelectedActor its Tie Breaker meaning. Every
         /// superseded version is refused from the bounded header rather than reinterpreted.</para>
         /// </remarks>
-        public const int Version = 8;
+        public const int Version = 9;
 
         /// <summary>The four ASCII bytes that open every frame: G, D, P, O.</summary>
         public const byte FrameMagic0 = 0x47;

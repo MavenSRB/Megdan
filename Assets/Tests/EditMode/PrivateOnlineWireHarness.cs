@@ -209,7 +209,10 @@ namespace GuardsDigital.Tests.EditMode
         {
             var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
-            var identity = PrivateSessionIdentity.ForComposition(map, configuration, "sync-build");
+            var identity = PrivateSessionIdentity.ForComposition(
+                map, configuration,
+                OwnerScopedProjectionTests.CreateOfficialInitialState().Setup,
+                "sync-build");
             PrivateOnlineWireHarness harness = null;
             var session = new PrivateSessionHost(
                 matchHost, identity, sessionKey, new HostOutboxProxy(() => harness),

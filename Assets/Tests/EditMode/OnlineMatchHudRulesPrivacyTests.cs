@@ -263,9 +263,15 @@ namespace GuardsDigital.Tests.EditMode
         /// one number.
         /// </remarks>
         [Test]
-        public void SeatWireMeaning_UsesProtocolEight_AndRejectsEveryOlderFrame()
+        public void SeatWireMeaning_UsesProtocolNine_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(8),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(9),
+                "The ELEVENTH amendment's host-selectable match formats gave the admission tuple a " +
+                "format element, so the Hello payload carries one more string between the map " +
+                "revision and the content digest: a protocol eight peer's reader takes that string " +
+                "as the content digest and then finds the key proof missing, so its hello fails to " +
+                "decode rather than mis-comparing - which is why the version moves rather than the " +
+                "element being folded into the digest. " +
                 "Milestone 8.35z14-blockerid gave the match log's BlockedAction row the hero and card " +
                 "naming the standing rule modification that refused a mid-resolution step: two more " +
                 "optional fields appended after `amount`, so a protocol seven peer's own reader - " +
@@ -292,7 +298,7 @@ namespace GuardsDigital.Tests.EditMode
                 "IsSeatUndoAvailable plus SubmitUndo and UndoResult, which protocol two peers could " +
                 "not decode safely.");
 
-            foreach (var older in new[] { 1, 2, 3, 4, 5, 6, 7 })
+            foreach (var older in new[] { 1, 2, 3, 4, 5, 6, 7, 8 })
             {
                 var bytes = PrivateSessionFrameCodec.ChallengeFrame(
                     new SessionChallengeMessage(new byte[] { 1, 2, 3 }));

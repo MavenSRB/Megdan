@@ -206,48 +206,124 @@ namespace GuardsDigital.Core.Setup
         /// player looking at the official setup is looking at the six dashboards that step names, and
         /// the epithet is how the rulebook names them. It is a label on the seat either way - the
         /// content identity is what a rule, a token and a snapshot read.</para>
+        ///
+        /// <para>The ELEVENTH amendment's format menu made this one row of four rather than the only
+        /// setup, so the board is built by <see cref="CreateOfficial"/> from the same table and the
+        /// same numbers. Everything above still describes exactly what this returns; the name is
+        /// kept because a great many callers, fixtures and journeys say it.</para>
         /// </summary>
-        public static QuickGameSetupConfiguration CreateOfficialSixPlayer()
+        public static QuickGameSetupConfiguration CreateOfficialSixPlayer() =>
+            CreateOfficial(MatchFormat.ThreeVersusThreeQuick);
+
+        /// <summary>
+        /// One row of p.6 setup step 7's line-up: the hero, the printed set it deals, the epithet
+        /// step 7 names it by, and the hero spawn point it stands on.
+        /// </summary>
+        private readonly struct OfficialHeroRow
         {
+            public OfficialHeroRow(
+                string heroIdValue, string contentId, string displayName,
+                string spawn, string space, TeamSide side)
+            {
+                HeroIdValue = heroIdValue;
+                ContentId = contentId;
+                DisplayName = displayName;
+                Spawn = spawn;
+                Space = space;
+                Side = side;
+            }
+
+            public string HeroIdValue { get; }
+            public string ContentId { get; }
+            public string DisplayName { get; }
+            public string Spawn { get; }
+            public string Space { get; }
+            public TeamSide Side { get; }
+        }
+
+        /// <summary>
+        /// p.6 setup step 7's whole line-up in the step's own order - the Red team's, then the
+        /// Blue team's - each hero on the spawn point it has stood on since milestone 8.25.
+        ///
+        /// <para>It is ONE list for both printed player counts because step 7 is written that way:
+        /// the four-player game takes Wasp and Xargatha against Arien and Brogan, and the
+        /// six-player game is that same line-up plus Tigerclaw and Sabina "for the third players on
+        /// the Red and Blue teams". Taking each team's first <c>HeroesPerTeam</c> rows is therefore
+        /// the step's own construction, not a truncation invented here - and it keeps one source
+        /// for every hero's set, epithet and spawn, so the two formats cannot drift apart.</para>
+        /// </summary>
+        private static readonly OfficialHeroRow[] OfficialHeroRows =
+        {
+            new OfficialHeroRow(
+                Participants.OfficialSixPlayerParticipants.WaspHeroIdValue,
+                "wasp", "Wasp the Warmaiden", "red-hero-01", "q-2_r-5", TeamSide.Red),
+            new OfficialHeroRow(
+                Participants.OfficialSixPlayerParticipants.XargathaHeroIdValue,
+                "xargatha", "Xargatha the Changed", "red-hero-02", "q-6_r-4", TeamSide.Red),
+            new OfficialHeroRow(
+                Participants.OfficialSixPlayerParticipants.TigerclawHeroIdValue,
+                "tigerclaw", "Tigerclaw the Cutpurse", "red-hero-03", "q-4_r-4", TeamSide.Red),
+            new OfficialHeroRow(
+                Participants.OfficialSixPlayerParticipants.ArienHeroIdValue,
+                "arien", "Arien the Tidemaster", "blue-hero-01", "q-3_r10", TeamSide.Blue),
+            new OfficialHeroRow(
+                Participants.OfficialSixPlayerParticipants.BroganHeroIdValue,
+                "brogan", "Brogan the Destroyer", "blue-hero-02", "q-1_r10", TeamSide.Blue),
+            new OfficialHeroRow(
+                Participants.OfficialSixPlayerParticipants.SabinaHeroIdValue,
+                "sabina", "Sabina the Gunslinger", "blue-hero-03", "q-5_r11", TeamSide.Blue)
+        };
+
+        /// <summary>
+        /// The official board for any of p.5-6's four printed setups: the format's own heroes on
+        /// their hero spawn points, the format's Wave and Life counts, and setup step 10's minions.
+        ///
+        /// <para><b>Three numbers come from the format and one does not.</b> The Wave count is setup
+        /// step 4's choice of game length and the Life count is setup step 5's table entry for that
+        /// length at that player count, both read off <see cref="MatchFormat"/>, which transcribes
+        /// them. The hero count is setup step 2's equal teams. The minions are none of those: setup
+        /// step 10 places one Ranged, four Melee and one Heavy per team and says nothing about the
+        /// player count, so every format shares the same twelve placements.</para>
+        ///
+        /// <para><b>Which spawn points a short team uses is the one thing p.6 does not print, and it
+        /// is recorded rather than invented.</b> A Throne zone carries three marked hero spawn
+        /// points, and a two-hero team occupies two of them; step 9 says only to place the miniatures
+        /// on the marked spaces of their own Throne Zone, and no step says which. The build answers
+        /// it the way milestone 8.25 answered the identical question about which of a team's three
+        /// dashboards goes to which of its players - the points are interchangeable at setup and a
+        /// draw between them would change nothing any rule, projection or snapshot can observe - by
+        /// stating it once: each hero keeps the spawn point it already stands on in the six-player
+        /// board, so a 2v2 Wasp stands where every existing journey has always found her.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateOfficial(MatchFormat format)
+        {
+            if (format == null) throw new ArgumentNullException(nameof(format));
+
             var mapId = new MapId("official-single-lane");
             ConfiguredSpawnPointReference Spawn(string value) =>
                 new ConfiguredSpawnPointReference(mapId, new SpawnPointId(value));
             ConfiguredSpaceReference Space(string value) =>
                 new ConfiguredSpaceReference(mapId, new SpaceId(value));
-            QuickGameHeroPlacementDefinition Hero(
-                string heroIdValue, string contentId, string displayName, string spawn, string space) =>
-                new QuickGameHeroPlacementDefinition(
-                    new HeroId(heroIdValue),
-                    new HeroContentId(contentId),
-                    displayName,
-                    Spawn(spawn),
-                    Space(space));
+
+            var heroes = OfficialHeroRows
+                .Where(row => row.Side == TeamSide.Red)
+                .Take(format.HeroesPerTeam)
+                .Concat(OfficialHeroRows
+                    .Where(row => row.Side == TeamSide.Blue)
+                    .Take(format.HeroesPerTeam))
+                .Select(row => new QuickGameHeroPlacementDefinition(
+                    new HeroId(row.HeroIdValue),
+                    new HeroContentId(row.ContentId),
+                    row.DisplayName,
+                    Spawn(row.Spawn),
+                    Space(row.Space)))
+                .ToArray();
 
             return new QuickGameSetupConfiguration(
                 new MapDefinitionReference(mapId, 1),
-                3,
-                5,
-                new[]
-                {
-                    Hero(
-                        Participants.OfficialSixPlayerParticipants.WaspHeroIdValue,
-                        "wasp", "Wasp the Warmaiden", "red-hero-01", "q-2_r-5"),
-                    Hero(
-                        Participants.OfficialSixPlayerParticipants.XargathaHeroIdValue,
-                        "xargatha", "Xargatha the Changed", "red-hero-02", "q-6_r-4"),
-                    Hero(
-                        Participants.OfficialSixPlayerParticipants.TigerclawHeroIdValue,
-                        "tigerclaw", "Tigerclaw the Cutpurse", "red-hero-03", "q-4_r-4"),
-                    Hero(
-                        Participants.OfficialSixPlayerParticipants.ArienHeroIdValue,
-                        "arien", "Arien the Tidemaster", "blue-hero-01", "q-3_r10"),
-                    Hero(
-                        Participants.OfficialSixPlayerParticipants.BroganHeroIdValue,
-                        "brogan", "Brogan the Destroyer", "blue-hero-02", "q-1_r10"),
-                    Hero(
-                        Participants.OfficialSixPlayerParticipants.SabinaHeroIdValue,
-                        "sabina", "Sabina the Gunslinger", "blue-hero-03", "q-5_r11")
-                },
+                format.WaveCount,
+                format.LifeCountPerTeam,
+                heroes,
                 CreateOfficialMinionPlacements(mapId));
         }
 
