@@ -257,13 +257,20 @@ namespace GuardsDigital.Tests.EditMode
         /// blocked-reason block on each action offer row. Milestone 8.35r takes it to protocol 6 for
         /// the seat-public match log and the standing rewind marker. Milestone 8.35u takes it to
         /// protocol 7 for the repeated awaited-hero group on DecisionOwner, which p.15's simultaneous
-        /// leveling made plural. Every prior version is
-        /// exercised, so the refusal is about the version and not about any one number.
+        /// leveling made plural. Milestone 8.35z14-blockerid takes it to protocol 8 for the blocker
+        /// identity - two optional fields appended to the match log's own <c>BlockedAction</c> row.
+        /// Every prior version is exercised, so the refusal is about the version and not about any
+        /// one number.
         /// </remarks>
         [Test]
-        public void SeatWireMeaning_UsesProtocolSeven_AndRejectsEveryOlderFrame()
+        public void SeatWireMeaning_UsesProtocolEight_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(7),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(8),
+                "Milestone 8.35z14-blockerid gave the match log's BlockedAction row the hero and card " +
+                "naming the standing rule modification that refused a mid-resolution step: two more " +
+                "optional fields appended after `amount`, so a protocol seven peer's own reader - " +
+                "which stops there - would silently drop a fact rather than mis-decode a following " +
+                "one, which is exactly the kind of drift the bounded header exists to make loud. " +
                 "Milestone 8.35u makes rulebook p.15's leveling simultaneous, so the authority can " +
                 "be waiting on several heroes at once and DecisionOwner carries a repeated hero " +
                 "group where protocol six wrote one optional hero: a protocol six peer reads that " +
@@ -285,7 +292,7 @@ namespace GuardsDigital.Tests.EditMode
                 "IsSeatUndoAvailable plus SubmitUndo and UndoResult, which protocol two peers could " +
                 "not decode safely.");
 
-            foreach (var older in new[] { 1, 2, 3, 4, 5, 6 })
+            foreach (var older in new[] { 1, 2, 3, 4, 5, 6, 7 })
             {
                 var bytes = PrivateSessionFrameCodec.ChallengeFrame(
                     new SessionChallengeMessage(new byte[] { 1, 2, 3 }));

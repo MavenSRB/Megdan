@@ -54,6 +54,64 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35z14-blockerid, protocol version 8: a <c>BlockedAction</c> row naming its
+        /// blocker survives the binary wire format - the two fields appended after <c>amount</c> -
+        /// through the full seat-projection frame, not merely through <see cref="NetworkMatchLogCodec"/>'s
+        /// own bare row conversion.
+        /// </summary>
+        [Test]
+        public void ABlockedActionRowNamingItsBlocker_SurvivesTheWireFrame()
+        {
+            var entry = new MatchLogEntry(
+                1, MatchLogEntryKind.BlockedAction, roundIndex: 1, turnIndex: 1,
+                subjectHeroId: new HeroId("hero-sabina"),
+                subjectCardInstanceId: new CardInstanceId("card-back-to-back"),
+                blockingHeroId: new HeroId("hero-wasp"),
+                blockingCardInstanceId: new CardInstanceId("card-magnetic-dagger"));
+
+            var message = new NetworkSeatProjectionMessage(
+                new NetworkEnvelope("correlation", 1, 7, 0),
+                new byte[] { 1 },
+                Array.AsReadOnly(new[] { NetworkMatchLogCodec.ToRow(entry) }));
+
+            Assert.That(
+                NetworkMessageCodec.TryDecodeSeatProjection(PayloadOf(message), out var decoded),
+                Is.True);
+
+            var rebuilt = decoded.MatchLog.Select(NetworkMatchLogCodec.ToEntry).Single();
+            Assert.That(rebuilt, Is.EqualTo(entry));
+            Assert.That(rebuilt.BlockingHeroId, Is.EqualTo(new HeroId("hero-wasp")));
+            Assert.That(rebuilt.BlockingCardInstanceId, Is.EqualTo(new CardInstanceId("card-magnetic-dagger")));
+        }
+
+        /// <summary>
+        /// The ordinary case, beside it: a row with no blocker to name carries the same absence
+        /// across the wire - never a value manufactured to fill the new fields.
+        /// </summary>
+        [Test]
+        public void ABlockedActionRowNamingNoBlocker_SurvivesTheWireFrameAsAnAbsence()
+        {
+            var entry = new MatchLogEntry(
+                1, MatchLogEntryKind.BlockedAction, roundIndex: 1, turnIndex: 1,
+                subjectHeroId: new HeroId("hero-sabina"),
+                subjectCardInstanceId: new CardInstanceId("card-back-to-back"));
+
+            var message = new NetworkSeatProjectionMessage(
+                new NetworkEnvelope("correlation", 1, 7, 0),
+                new byte[] { 1 },
+                Array.AsReadOnly(new[] { NetworkMatchLogCodec.ToRow(entry) }));
+
+            Assert.That(
+                NetworkMessageCodec.TryDecodeSeatProjection(PayloadOf(message), out var decoded),
+                Is.True);
+
+            var rebuilt = decoded.MatchLog.Select(NetworkMatchLogCodec.ToEntry).Single();
+            Assert.That(rebuilt.BlockingHeroId.IsDefined, Is.False);
+            Assert.That(rebuilt.BlockingCardInstanceId.IsDefined, Is.False);
+            Assert.That(rebuilt, Is.EqualTo(entry));
+        }
+
+        /// <summary>
         /// A truncated or malformed log payload is refused rather than half-read, at every prefix
         /// length - the same truncation discipline milestone 8.32 applied to every other message.
         /// </summary>
@@ -497,11 +555,12 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(7),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(8),
                 "This case pins the CURRENT version rather than the one the event channel moved to, " +
                 "so a later move is accounted for here rather than passing unread. Milestone 8.35u " +
                 "took it to 7 for the repeated awaited-hero group p.15's simultaneous leveling made " +
-                "necessary; a version 5 peer is still refused, and so is a version 6 one.");
+                "necessary, and milestone 8.35z14-blockerid to 8 for the match log's own blocker-" +
+                "identity fields; a version 5 peer is still refused, and so is a version 6 or 7 one.");
 
             var harness = PrivateOnlineWireHarness.Compose();
             var seat = harness.Session.Roster[0].Seat.Value;

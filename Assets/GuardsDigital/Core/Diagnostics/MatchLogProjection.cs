@@ -341,7 +341,9 @@ namespace GuardsDigital.Core.Diagnostics
                 return;
             }
 
-            // ---- The blocked-action pair. The blocker is NOT named: see the milestone record.
+            // ---- The blocked-action pair. Milestone 8.35z14 named the blocker where the refusing node
+            // (or the consumer that narrowed its selection) could explain itself; an undefined
+            // blocking hero/card is a real, honest absence and not something this reads as a fault.
             if (type == SkillEffectNodeStopped ||
                 (type == CardTextApplied && EndsWith(detail, "step", StoppedNodeSuffix)))
             {
@@ -351,7 +353,10 @@ namespace GuardsDigital.Core.Diagnostics
                     round,
                     turn,
                     subjectHeroId: Hero(references, entry),
-                    subjectCardInstanceId: Card(references)));
+                    subjectCardInstanceId: Card(references),
+                    blockingHeroId: Optional(references, "blockingHero", value => new HeroId(value)),
+                    blockingCardInstanceId: Optional(
+                        references, "blockingCard", value => new CardInstanceId(value))));
                 return;
             }
 

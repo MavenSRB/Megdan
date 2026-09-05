@@ -31,7 +31,9 @@ namespace GuardsDigital.Application
             int destinationQ,
             int destinationR,
             int outcome,
-            int amount)
+            int amount,
+            string blockingHeroId = null,
+            string blockingCardInstanceId = null)
         {
             Sequence = sequence;
             Kind = kind;
@@ -50,6 +52,8 @@ namespace GuardsDigital.Application
             DestinationR = destinationR;
             Outcome = outcome;
             Amount = amount;
+            BlockingHeroId = blockingHeroId;
+            BlockingCardInstanceId = blockingCardInstanceId;
         }
 
         public int Sequence { get; }
@@ -69,6 +73,15 @@ namespace GuardsDigital.Application
         public int DestinationR { get; }
         public int Outcome { get; }
         public int Amount { get; }
+
+        /// <summary>
+        /// Milestone 8.35z14 (the blocker-identity channel; protocol version 8). Present only on a
+        /// <c>BlockedAction</c> row whose refusing node could explain itself.
+        /// </summary>
+        public string BlockingHeroId { get; }
+
+        /// <summary>Milestone 8.35z14. Beside <see cref="BlockingHeroId"/>.</summary>
+        public string BlockingCardInstanceId { get; }
     }
 
     /// <summary>
@@ -105,7 +118,9 @@ namespace GuardsDigital.Application
                 entry.Destination.Q,
                 entry.Destination.R,
                 (int)entry.Outcome,
-                entry.Amount);
+                entry.Amount,
+                entry.BlockingHeroId.Value,
+                entry.BlockingCardInstanceId.Value);
         }
 
         /// <summary>
@@ -149,6 +164,12 @@ namespace GuardsDigital.Application
 
             writer.Write(row.Outcome);
             writer.Write(row.Amount);
+
+            // Milestone 8.35z14, protocol version 8: appended at the end, so a version 7 peer's own
+            // reader - which stops after `amount` - is refused from the bounded header rather than
+            // reading these two fields as the start of whatever it expects to come next.
+            WriteOptional(writer, row.BlockingHeroId);
+            WriteOptional(writer, row.BlockingCardInstanceId);
         }
 
         internal static bool TryRead(BinaryReader reader, out NetworkMatchLogRow row)
@@ -200,12 +221,19 @@ namespace GuardsDigital.Application
                 return false;
             }
 
+            var amount = reader.ReadInt32();
+            if (!TryReadOptional(reader, out var blockingHero) ||
+                !TryReadOptional(reader, out var blockingCard))
+            {
+                return false;
+            }
+
             row = new NetworkMatchLogRow(
                 sequence, kind, roundIndex, turnIndex,
                 subjectHero, targetHero, subjectMinion, subjectCard, subjectTeam,
                 hasOrigin, originQ, originR,
                 hasDestination, destinationQ, destinationR,
-                outcome, reader.ReadInt32());
+                outcome, amount, blockingHero, blockingCard);
             return true;
         }
 
@@ -243,7 +271,13 @@ namespace GuardsDigital.Application
                 hasOrigin: row.HasOrigin,
                 hasDestination: row.HasDestination,
                 outcome: (MatchLogOutcome)row.Outcome,
-                amount: row.Amount);
+                amount: row.Amount,
+                blockingHeroId: string.IsNullOrEmpty(row.BlockingHeroId)
+                    ? default
+                    : new HeroId(row.BlockingHeroId),
+                blockingCardInstanceId: string.IsNullOrEmpty(row.BlockingCardInstanceId)
+                    ? default
+                    : new CardInstanceId(row.BlockingCardInstanceId));
         }
 
         private static void WriteOptional(BinaryWriter writer, string value)

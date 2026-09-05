@@ -281,7 +281,9 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// The blocked-action line, in both forms - a stopped skill node and a stopped card-text
-        /// node - and the card-text node that APPLIED, which is not a blocked line at all.
+        /// node - and the card-text node that APPLIED, which is not a blocked line at all. Neither
+        /// stopped fact here names a blocker in its own references, so milestone 8.35z14-blockerid's
+        /// two new fields must come back undefined - never a guessed hero or card.
         /// </summary>
         [Test]
         public void ABlockedStep_IsOneLine_AndNamesNoBlocker()
@@ -305,7 +307,87 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(line.SubjectHeroId, Is.EqualTo(new HeroId("sabina")));
                 Assert.That(line.SubjectCardInstanceId.Value, Is.EqualTo("c8"),
                     "The line names the card whose text stopped.");
+                Assert.That(line.BlockingHeroId.IsDefined, Is.False,
+                    "No blockingHero/blockingCard reference was recorded, so the line names no " +
+                    "blocker rather than guessing one.");
+                Assert.That(line.BlockingCardInstanceId.IsDefined, Is.False);
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z14-blockerid: the same blocked-action shapes, now with the refusing node's
+        /// own explanation recorded on the fact - the same references
+        /// <see cref="GuardsDigital.Core.Diagnostics.RuleEventLogProjection"/> writes off a
+        /// <c>CardActionResolutionEvent</c> whose <c>BlockingHeroId</c>/<c>BlockingCardInstanceId</c>
+        /// are stated. Read straight off the fixture recipe worker-b's diagnosis measured: Sabina's
+        /// Back to Back stopped by Wasp's Magnetic Dagger.
+        /// </summary>
+        [Test]
+        public void ABlockedSkillStep_NamingItsBlocker_CarriesTheBlockerThroughToTheMatchLog()
+        {
+            var references =
+                "round=1;turn=1;resolution=r2;hero=sabina;card=back-to-back;action=a8;" +
+                "blockingHero=wasp;blockingCard=magnetic-dagger";
+            var log = MatchLogProjection.Derive(new[]
+            {
+                Entry(1, "Action.SkillEffectNodeStopped", references, "step=back-swap:ImpossibleMandatory")
+            });
+
+            var blocked = log.Single();
+            Assert.That(blocked.Kind, Is.EqualTo(MatchLogEntryKind.BlockedAction));
+            Assert.That(blocked.SubjectHeroId, Is.EqualTo(new HeroId("sabina")),
+                "The acting-player scoping is unchanged: the subject states whose resolution stopped.");
+            Assert.That(blocked.SubjectCardInstanceId.Value, Is.EqualTo("back-to-back"));
+            Assert.That(blocked.BlockingHeroId, Is.EqualTo(new HeroId("wasp")));
+            Assert.That(blocked.BlockingCardInstanceId.Value, Is.EqualTo("magnetic-dagger"));
+        }
+
+        /// <summary>
+        /// The same shape reached through p.14's card-text pause (Attack card text, not a Skill),
+        /// which is the SIBLING route <see cref="MatchLogProjection"/> recognises by the
+        /// <c>:ImpossibleMandatory</c> step suffix rather than by the fact's own event type.
+        /// </summary>
+        [Test]
+        public void ABlockedCardTextStep_NamingItsBlocker_CarriesTheBlockerThroughToTheMatchLog()
+        {
+            var references =
+                "round=1;turn=1;resolution=r2;hero=sabina;card=back-to-back;action=a8;" +
+                "blockingHero=wasp;blockingCard=magnetic-dagger";
+            var log = MatchLogProjection.Derive(new[]
+            {
+                Entry(1, "Action.CardTextApplied", references, "step=OnAttack:n2:ImpossibleMandatory")
+            });
+
+            var blocked = log.Single();
+            Assert.That(blocked.Kind, Is.EqualTo(MatchLogEntryKind.BlockedAction));
+            Assert.That(blocked.BlockingHeroId, Is.EqualTo(new HeroId("wasp")));
+            Assert.That(blocked.BlockingCardInstanceId.Value, Is.EqualTo("magnetic-dagger"));
+        }
+
+        /// <summary>
+        /// A blocker half-stated is read as though it were unstated: the authority never actually
+        /// produces this shape (<see cref="GuardsDigital.Core.Rules.Modifications.AppliedRuleModification"/>
+        /// always carries both its controlling hero and, wherever a source can name one, its card),
+        /// but a reader must still refuse to print a hole rather than trust a payload's own claim
+        /// that only one half is present.
+        /// </summary>
+        [Test]
+        public void ABlockerNamingOnlyAHero_IsReadAsHavingNoCardEitherAtThisLayer()
+        {
+            var references =
+                "round=1;turn=1;resolution=r2;hero=sabina;card=back-to-back;action=a8;" +
+                "blockingHero=wasp";
+            var log = MatchLogProjection.Derive(new[]
+            {
+                Entry(1, "Action.SkillEffectNodeStopped", references, "step=back-swap:ImpossibleMandatory")
+            });
+
+            var blocked = log.Single();
+            Assert.That(blocked.BlockingHeroId, Is.EqualTo(new HeroId("wasp")));
+            Assert.That(blocked.BlockingCardInstanceId.IsDefined, Is.False,
+                "This layer carries exactly what the references state; a surface that requires " +
+                "both halves before naming a blocker is Presentation's own discipline, not this " +
+                "layer's job to enforce.");
         }
 
         /// <summary>

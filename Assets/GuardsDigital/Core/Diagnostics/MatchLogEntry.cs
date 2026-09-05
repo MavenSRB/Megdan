@@ -43,7 +43,12 @@ namespace GuardsDigital.Core.Diagnostics
         /// <summary>A Clear action, naming the token it removed.</summary>
         Clear = 6,
 
-        /// <summary>A step a standing modification refused. The blocker is NOT named here.</summary>
+        /// <summary>
+        /// A step a standing modification refused. Milestone 8.35z14 named the blocker where the
+        /// refusing node could explain itself - see <see cref="MatchLogEntry.BlockingHeroId"/> and
+        /// <see cref="MatchLogEntry.BlockingCardInstanceId"/> - and left it unstated, honestly, where
+        /// it could not.
+        /// </summary>
         BlockedAction = 7,
 
         MinionDefeated = 8,
@@ -141,7 +146,9 @@ namespace GuardsDigital.Core.Diagnostics
             bool hasOrigin = false,
             bool hasDestination = false,
             MatchLogOutcome outcome = MatchLogOutcome.None,
-            int amount = 0)
+            int amount = 0,
+            HeroId blockingHeroId = default,
+            CardInstanceId blockingCardInstanceId = default)
         {
             if (sequence < 1)
             {
@@ -173,6 +180,8 @@ namespace GuardsDigital.Core.Diagnostics
             HasDestination = hasDestination;
             Outcome = outcome;
             Amount = amount;
+            BlockingHeroId = blockingHeroId;
+            BlockingCardInstanceId = blockingCardInstanceId;
         }
 
         /// <summary>
@@ -223,6 +232,19 @@ namespace GuardsDigital.Core.Diagnostics
         /// </summary>
         public int Amount { get; }
 
+        /// <summary>
+        /// Milestone 8.35z14 (the blocker-identity channel). On a <see cref="MatchLogEntryKind.BlockedAction"/>
+        /// line, the hero controlling the standing rule modification that refused the step - the
+        /// undefined hero where the refusing node could not explain itself, which is a real, honest
+        /// state and never papered over with a guess. Privacy is unaffected: the blocking source is
+        /// always a standing PUBLIC Active effect (rulebook p.17), so naming it reveals nothing a
+        /// viewer's own projection does not already carry as one of <c>ActiveEffectSourceCardInstanceIds</c>.
+        /// </summary>
+        public HeroId BlockingHeroId { get; }
+
+        /// <summary>Milestone 8.35z14. The card the blocking modification's source came off.</summary>
+        public CardInstanceId BlockingCardInstanceId { get; }
+
         public bool Equals(MatchLogEntry other)
         {
             return other != null &&
@@ -240,7 +262,9 @@ namespace GuardsDigital.Core.Diagnostics
                 (!HasOrigin || Origin.Equals(other.Origin)) &&
                 (!HasDestination || Destination.Equals(other.Destination)) &&
                 Outcome == other.Outcome &&
-                Amount == other.Amount;
+                Amount == other.Amount &&
+                BlockingHeroId.Equals(other.BlockingHeroId) &&
+                BlockingCardInstanceId.Equals(other.BlockingCardInstanceId);
         }
 
         public override bool Equals(object obj) => Equals(obj as MatchLogEntry);

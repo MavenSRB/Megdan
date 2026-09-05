@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Match;
@@ -182,12 +185,115 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void Generic_IsTheNoBlockerFallbackWhenNoCardCanBeNamed()
         {
-            // The recorded gap this milestone inherits: MatchLogEntryKind.BlockedAction (and the
-            // Core-side ImpossibleMandatory fact it derives from) never names a blocking hero or
-            // card, so this vocabulary never invents one. Generic is what a surface draws in the
-            // one case a card lookup itself cannot resolve - never a guessed "BLOCKED BY" clause.
+            // The named absence: a fizzled resolution whose own card could not be resolved from the
+            // projection at all - should not happen in practice, since every BlockedAction row
+            // names a card the whole table can see - but a surface must still say something honest
+            // rather than throw if it ever does. Never a guessed "BLOCKED BY" clause.
             Assert.That(FizzleNoticeLabels.Generic, Does.Not.Contain("BLOCKED BY"));
             Assert.That(FizzleNoticeLabels.Generic, Is.Not.Empty);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z14-blockerid: the fixed vocabulary's new member, naming both the fizzled
+        /// card and its blocker.
+        /// </summary>
+        [Test]
+        public void CanceledBlockedBy_NamesTheFizzledCardAndTheBlockerInOneLine()
+        {
+            Assert.That(
+                FizzleNoticeLabels.CanceledBlockedBy("BACK TO BACK", "WASP", "MAGNETIC DAGGER"),
+                Is.EqualTo("BACK TO BACK CANCELED — BLOCKED BY WASP — MAGNETIC DAGGER"));
+        }
+    }
+
+    /// <summary>
+    /// Milestone 8.35z14-blockerid: <see cref="FizzleNoticePresenter.ComposeMessage"/> against the
+    /// real Sabina-Back-to-Back-vs-Magnetic-Dagger fixture worker-b's diagnosis measured (the same
+    /// staging <c>SwapAndPlaceRestrictionFeasibilityTests.TotallyPinnedSwapBoard</c> builds), rather
+    /// than a stubbed projection - so the hero and card display names that actually reach a player
+    /// are the game's own, not names this test invented.
+    /// </summary>
+    /// <remarks>
+    /// The board is staged with the pin standing, exactly as the 8.35l offer-time fixture is, and
+    /// this test reads the same <c>ActionOffer.Unavailability</c> that fixture already proves names
+    /// Wasp and Magnetic Dagger - so the ids fed into the hand-built <see cref="MatchLogEntry"/>
+    /// here are drawn from a real, currently-standing restriction rather than invented. A live
+    /// mid-resolution stop for this EXACT pairing is no longer reachable through the printed
+    /// command surface once milestone 8.35l's own offer-time gate is applied (that gate now refuses
+    /// <c>StartAction</c> outright for a fully-barred Skill, and narrows the candidate list for a
+    /// partially-barred one) - which is 8.35l doing its job, not a gap in this milestone's coverage.
+    /// This is exactly why the mid-resolution fizzle notice exists for the RESIDUAL case (a
+    /// restriction landing between an offer and its answer, or a node the offer-time walk could not
+    /// decide) rather than for this one, and why this test proves the NAMING pipeline - the entry
+    /// composes correctly given the blocker's real identity - rather than re-driving the race
+    /// itself.
+    /// </remarks>
+    public sealed class FizzleNoticePresenterRealFixtureTests
+    {
+        [Test]
+        public void ABlockedBackToBack_ComposesANoticeNamingWaspAndMagneticDagger()
+        {
+            var board = SabinaBoard.Create(
+                clearHerNeighbourhood: false,
+                minionPlacements: new Dictionary<string, HexCoordinate>
+                {
+                    ["blue-melee-02"] = StagedHeroBoard.SecondAdjacent,
+                    ["blue-ranged-01"] = StagedHeroBoard.ThirdAdjacent
+                });
+
+            var offer = board.PrimaryOffer(
+                SabinaCardContent.BackToBack, WaspCardContent.MagneticDagger, letTheEnemyAct: true);
+            Assert.That(offer.Unavailability.IsStated, Is.True,
+                "Sanity: this is the same pin SwapAndPlaceRestrictionFeasibilityTests proves names " +
+                "Wasp's Magnetic Dagger.");
+
+            var entry = new MatchLogEntry(
+                sequence: 1,
+                MatchLogEntryKind.BlockedAction,
+                roundIndex: 1,
+                turnIndex: 1,
+                subjectHeroId: board.Hero,
+                subjectCardInstanceId: offer.SourceCardInstanceId,
+                blockingHeroId: offer.Unavailability.BlockingHeroId,
+                blockingCardInstanceId: offer.Unavailability.BlockingCardInstanceId);
+
+            var message = FizzleNoticePresenter.ComposeMessage(board.Session.Projection, entry);
+
+            Assert.That(message, Does.Contain("WASP"));
+            Assert.That(message, Does.Contain("MAGNETIC DAGGER"));
+            Assert.That(message, Does.StartWith("BACK TO BACK CANCELED"));
+        }
+
+        /// <summary>
+        /// The companion boundary: the identical card and hero, with no standing pin at all, must
+        /// never have a blocker invented for it.
+        /// </summary>
+        [Test]
+        public void ABlockedActionNamingNoBlocker_ComposesTheGenericCanceledLine()
+        {
+            var board = SabinaBoard.Create(
+                clearHerNeighbourhood: false,
+                minionPlacements: new Dictionary<string, HexCoordinate>
+                {
+                    ["blue-melee-02"] = StagedHeroBoard.SecondAdjacent,
+                    ["blue-ranged-01"] = StagedHeroBoard.ThirdAdjacent
+                });
+
+            var offer = board.PrimaryOffer(SabinaCardContent.BackToBack);
+            Assert.That(offer.Unavailability.IsStated, Is.False, "Sanity: no pin stands here.");
+
+            var entry = new MatchLogEntry(
+                sequence: 1,
+                MatchLogEntryKind.BlockedAction,
+                roundIndex: 1,
+                turnIndex: 1,
+                subjectHeroId: board.Hero,
+                subjectCardInstanceId: offer.SourceCardInstanceId);
+
+            var message = FizzleNoticePresenter.ComposeMessage(board.Session.Projection, entry);
+
+            Assert.That(message, Does.Not.Contain("BLOCKED BY"));
+            Assert.That(message, Is.EqualTo("BACK TO BACK CANCELED"));
         }
     }
 

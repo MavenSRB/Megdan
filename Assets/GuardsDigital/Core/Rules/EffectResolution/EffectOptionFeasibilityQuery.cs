@@ -538,18 +538,50 @@ RefusalExplanation explanation = null)
                 return;
             }
 
-            if (handler is IEffectRefusalExplainingCapabilityHandler explaining &&
-                explaining.TryExplainRefusal(capabilityContext, out var own))
+            if (TryExplainNodeRefusal(
+                    handler, node, capabilityContext, frame, outcomes, context, out var blocking))
             {
-                explanation.RecordFirst(own);
-                return;
+                explanation.RecordFirst(blocking);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z14 (the blocker-identity channel): which standing modification explains why a
+        /// node refuses, asked the same way whether the question is "would this be worth offering" (a
+        /// probe, before <see cref="IEffectCapabilityHandler.Execute"/> or
+        /// <see cref="IEffectCapabilityHandler.Resume"/> has run) or "why did this just stop" (the live
+        /// resolution, after one of them already returned
+        /// <see cref="EffectExecutionResultKind.ImpossibleMandatory"/>). Two shapes answer for
+        /// themselves - the refusing node's own <see cref="IEffectRefusalExplainingCapabilityHandler"/>
+        /// where it has one, and otherwise the consumer that narrowed a selection to nothing, via
+        /// <see cref="EffectSelectionEligibilityQuery.TryExplainSelectionRefusal"/> - and this is the
+        /// one answer both moments ask, so a control's greyed reason and a stop's recorded reason can
+        /// never read as two readings of the same rule.
+        /// </summary>
+        internal static bool TryExplainNodeRefusal(
+            IEffectCapabilityHandler handler,
+            EffectNodeDefinition node,
+            EffectCapabilityContext capabilityContext,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            out AppliedRuleModification blocking)
+        {
+            blocking = null;
+            if (handler == null || node == null || capabilityContext == null ||
+                frame == null || context == null)
+            {
+                return false;
             }
 
-            if (EffectSelectionEligibilityQuery.TryExplainSelectionRefusal(
-                    handler, node, capabilityContext, frame, outcomes, context, out var consumed))
+            if (handler is IEffectRefusalExplainingCapabilityHandler explaining &&
+                explaining.TryExplainRefusal(capabilityContext, out blocking))
             {
-                explanation.RecordFirst(consumed);
+                return true;
             }
+
+            return EffectSelectionEligibilityQuery.TryExplainSelectionRefusal(
+                handler, node, capabilityContext, frame, outcomes, context, out blocking);
         }
 
         /// <summary>

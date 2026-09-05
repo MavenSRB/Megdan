@@ -20,6 +20,33 @@ namespace GuardsDigital.Application
         public const string FamilyName = "guards-private-online";
 
         /// <summary>
+        /// Protocol version 8: milestone 8.35z14 (the blocker-identity channel) gave the seat-public
+        /// match log's own <c>BlockedAction</c> row two more optional fields - the hero controlling
+        /// the standing rule modification that refused the step, and the card its source came off -
+        /// appended after <c>amount</c> at the end of <c>NetworkMatchLogRow</c>. A version 7 peer's
+        /// reader stops after <c>amount</c> and never reads these two fields at all, so it does not
+        /// mis-decode a truncated record - it silently drops a fact a newer peer would have carried -
+        /// which is exactly the kind of drift the bounded header exists to make loud instead: version
+        /// 7 is refused before either side interprets a payload.
+        ///
+        /// <para>It rides the existing <c>BlockedAction</c> row rather than opening a new message
+        /// kind, the same reasoning milestone 8.35z3's frame-degradation corrective and milestone
+        /// 8.35r's own event channel both record: the row already exists, is already seat-public
+        /// (rulebook p.17 makes an Active effect's controller and source card public information),
+        /// and the two new fields are absent on every OTHER row kind and on a <c>BlockedAction</c>
+        /// row whose refusing node could not explain itself - the same honest absence milestone
+        /// 8.35l's <c>ActionUnavailability.None</c> already leaves rather than guesses. It is carried
+        /// rather than derived for the same reason 8.35l's own offer-side reason is: a seat holds only
+        /// a flat list of the cards standing effects came off, which cannot say WHICH one refused THIS
+        /// step, so deriving it client-side would be a second reading of the host's rules, free to
+        /// disagree with it.</para>
+        ///
+        /// <para>Schema is UNMOVED at v36: <c>MatchLogEntry</c> is derived from the retained rule-event
+        /// log on every reconstruction and never itself persisted (see its own remark), so widening it
+        /// changes what crosses the wire and nothing an <c>AuthoritativeSnapshotSerializer</c> payload
+        /// contains.</para>
+        /// </summary>
+        /// <remarks>
         /// Protocol version 6: milestone 8.35r opened the seat-public event channel and published
         /// who is being waited on. Three things move, and they move together deliberately - this is
         /// Protocol version 7: milestone 8.35u made rulebook p.15's leveling simultaneous, so the
@@ -88,8 +115,8 @@ namespace GuardsDigital.Application
         /// bounds are facts about the host's recorded history. Version 2 applied the same rule to
         /// version 1 when milestone 8.35b gave SelectedActor its Tie Breaker meaning. Every
         /// superseded version is refused from the bounded header rather than reinterpreted.</para>
-        /// </summary>
-        public const int Version = 7;
+        /// </remarks>
+        public const int Version = 8;
 
         /// <summary>The four ASCII bytes that open every frame: G, D, P, O.</summary>
         public const byte FrameMagic0 = 0x47;

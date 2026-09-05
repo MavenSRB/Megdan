@@ -352,7 +352,14 @@ namespace GuardsDigital.Core.Diagnostics
                 ruleEvent.TargetMinionId.IsDefined ? $"minion={ruleEvent.TargetMinionId.Value}" : null,
                 ruleEvent.TargetTokenInstanceId.IsDefined ? $"token={ruleEvent.TargetTokenInstanceId.Value}" : null,
                 ruleEvent.DefeatOutcomeId.IsDefined ? $"defeat={ruleEvent.DefeatOutcomeId.Value}" : null,
-                ruleEvent.DefenseCardInstanceId.IsDefined ? $"defenseCard={ruleEvent.DefenseCardInstanceId.Value}" : null);
+                ruleEvent.DefenseCardInstanceId.IsDefined ? $"defenseCard={ruleEvent.DefenseCardInstanceId.Value}" : null,
+                // Milestone 8.35z14 (the blocker-identity channel). Present only on the fact a stopped
+                // mandatory node produces, and only where the refusing node (or the consumer that
+                // narrowed its selection) could explain itself - see `EffectResolutionEvent.Blocking`.
+                ruleEvent.BlockingHeroId.IsDefined ? $"blockingHero={ruleEvent.BlockingHeroId.Value}" : null,
+                ruleEvent.BlockingCardInstanceId.IsDefined
+                    ? $"blockingCard={ruleEvent.BlockingCardInstanceId.Value}"
+                    : null);
 
             var detailParts = new List<string> { $"step={ruleEvent.StepId.Value}" };
             if (ruleEvent.Kind == CardActionResolutionEventKind.MovementActionStarted ||

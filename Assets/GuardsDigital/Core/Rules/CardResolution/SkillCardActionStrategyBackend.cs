@@ -588,7 +588,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
                 steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.SkillEffectNode(
                     FactKindOf(effectEvent.ResultKind),
-                    resolutionId, card, action, actor, effectEvent.NodeId.Value)));
+                    resolutionId, card, action, actor, effectEvent.NodeId.Value,
+                    // Milestone 8.35z14 (the blocker-identity channel). Read off the same transient fact
+                    // `EffectResolutionSession` already attached it to, never re-derived here.
+                    effectEvent.Blocking?.ControllerHeroId ?? default,
+                    effectEvent.Blocking?.SourceCardInstanceId ?? default)));
 
                 foreach (var checkpoint in effectEvent.CheckpointsAfter)
                 {

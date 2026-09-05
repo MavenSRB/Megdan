@@ -37,7 +37,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectExecutionResultKind resultKind,
             IEnumerable<EffectOutcomeFact> outputs = null,
             IEnumerable<TimingCheckpoint> checkpointsBefore = null,
-            IEnumerable<TimingCheckpoint> checkpointsAfter = null)
+            IEnumerable<TimingCheckpoint> checkpointsAfter = null,
+            AppliedRuleModification blocking = null)
         {
             NodeId = nodeId;
             ResultKind = resultKind;
@@ -47,6 +48,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 (checkpointsBefore ?? Enumerable.Empty<TimingCheckpoint>()).ToArray());
             CheckpointsAfter = new ReadOnlyCollection<TimingCheckpoint>(
                 (checkpointsAfter ?? Enumerable.Empty<TimingCheckpoint>()).ToArray());
+            Blocking = blocking;
         }
 
         public EffectNodeId NodeId { get; }
@@ -54,6 +56,24 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public IReadOnlyList<EffectOutcomeFact> Outputs { get; }
         public IReadOnlyList<TimingCheckpoint> CheckpointsBefore { get; }
         public IReadOnlyList<TimingCheckpoint> CheckpointsAfter { get; }
+
+        /// <summary>
+        /// Milestone 8.35z14 (the blocker-identity channel). The standing rule modification that
+        /// refused this node, where <see cref="ResultKind"/> is
+        /// <see cref="EffectExecutionResultKind.ImpossibleMandatory"/> and the refusing node (or the
+        /// consumer that narrowed a selection to nothing) could explain itself - the SAME question
+        /// milestone 8.35l already asks at offer time, asked again at the moment a resolution already
+        /// under way actually stops. Null wherever the node stopped for some other reason, which is
+        /// not a fault and must never be papered over with a guess.
+        ///
+        /// <para>Transient by design: this travels only as far as the fact stream a backend turns
+        /// into a <see cref="GuardsDigital.Core.Rules.CardResolution.CardActionResolutionEvent"/>, and
+        /// it is never written onto <see cref="EffectNodeOutcome"/> or any other part of
+        /// <see cref="PendingResolution"/> that a snapshot persists - an outcome of this kind always
+        /// completes the whole resolution (<c>RefuseCapability</c> clears the continuation), so no
+        /// snapshot is ever taken of a "pending" frame carrying one.</para>
+        /// </summary>
+        public AppliedRuleModification Blocking { get; }
     }
 
     public sealed class EffectResolutionStepResult
@@ -711,13 +731,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     var predicateSelection = choice.SelectedCandidates
                         .Select(candidate => candidate.Value)
                         .ToArray();
-                    var resumedPredicate = context.Catalog.Load(node.Capability).Resume(
-                        BuildCapabilityContext(frame, node, outcomes, context), predicateSelection);
+                    var resumedPredicateHandler = context.Catalog.Load(node.Capability);
+                    var resumedPredicateContext = BuildCapabilityContext(frame, node, outcomes, context);
+                    var resumedPredicate = resumedPredicateHandler.Resume(
+                        resumedPredicateContext, predicateSelection);
                     if (resumedPredicate.Kind != EffectExecutionResultKind.Applied)
                     {
                         var routedPredicate = ApplyCapabilityResult(
                             frame, node, resumedPredicate, continuation, outcomes, choices, events,
-                            context);
+                            context, resumedPredicateHandler, resumedPredicateContext);
                         if (routedPredicate != null)
                         {
                             return routedPredicate;
@@ -756,11 +778,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     }
 
                     var handler = context.Catalog.Load(node.Capability);
-                    var resumed = handler.Resume(
-                        BuildCapabilityContext(frame, node, outcomes, context), selected);
+                    var answerCapabilityContext = BuildCapabilityContext(frame, node, outcomes, context);
+                    var resumed = handler.Resume(answerCapabilityContext, selected);
                     frame = CaptureBoundTarget(frame, node, resumed, context);
                     var terminal = ApplyCapabilityResult(
-                        frame, node, resumed, continuation, outcomes, choices, events, context);
+                        frame, node, resumed, continuation, outcomes, choices, events, context,
+                        handler, answerCapabilityContext);
                     if (terminal != null)
                     {
                         return terminal;
@@ -913,13 +936,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             // pause and this pass may not come back: the outcome list is what survives,
                             // and a second factless record at the end would shadow this one, since an
                             // input binding reads the last outcome a node published.
-                            var predicate = context.Catalog.Load(node.Capability)
-                                .Execute(BuildCapabilityContext(frame, node, outcomes, context));
+                            var predicateHandler = context.Catalog.Load(node.Capability);
+                            var predicateContext = BuildCapabilityContext(frame, node, outcomes, context);
+                            var predicate = predicateHandler.Execute(predicateContext);
                             if (predicate.Kind != EffectExecutionResultKind.Applied)
                             {
                                 var routed = ApplyCapabilityResult(
                                     frame, node, predicate, continuation, outcomes, choices, events,
-                                    context);
+                                    context, predicateHandler, predicateContext);
                                 if (routed != null)
                                 {
                                     return routed;
@@ -997,7 +1021,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             : handler.Execute(capabilityContext);
                         frame = CaptureBoundTarget(frame, node, result, context);
                         var applied = ApplyCapabilityResult(
-                            frame, node, result, continuation, outcomes, choices, events, context);
+                            frame, node, result, continuation, outcomes, choices, events, context,
+                            handler, capabilityContext);
                         if (applied != null)
                         {
                             return applied;
@@ -1027,7 +1052,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             List<EffectNodeOutcome> outcomes,
             List<EffectChoiceRecord> choices,
             List<EffectResolutionEvent> events,
-            EffectResolutionContext context)
+            EffectResolutionContext context,
+            IEffectCapabilityHandler handler = null,
+            EffectCapabilityContext capabilityContext = null)
         {
             switch (result.Kind)
             {
@@ -1066,8 +1093,16 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         // place, which is what the handler itself reports as impossible. The refusal
                         // carries no result, because the one this node produced was a request for a
                         // choice that is not going to be opened.
+                        //
+                        // Milestone 8.35z14. Asked exactly as the offer-time walk asks it - the same
+                        // consumer, the same question - because this selection was narrowed to
+                        // nothing by that same consumer's own refusal.
+                        EffectOptionFeasibilityQuery.TryExplainNodeRefusal(
+                            handler, node, capabilityContext, frame, outcomes, context,
+                            out var selectionBlocking);
                         return RefuseCapability(
-                            frame, node, null, continuation, outcomes, choices, events, context);
+                            frame, node, null, continuation, outcomes, choices, events, context,
+                            selectionBlocking);
                     }
 
                     return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
@@ -1080,8 +1115,17 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         declinableRegardlessOfMinimum: node.FailurePolicy == EffectFailurePolicy.May));
 
                 case EffectExecutionResultKind.ImpossibleMandatory:
+                    // Milestone 8.35z14 (the blocker-identity channel). The node just refused itself at
+                    // Execute() time, on live board state - which is exactly the moment milestone
+                    // 8.35l's offer-time probe cannot reach for a node the feasibility walk could not
+                    // decide in advance. Asking here is the SAME question asked of the SAME handler on
+                    // the SAME context that just produced the refusal, never a second reading of it.
+                    EffectOptionFeasibilityQuery.TryExplainNodeRefusal(
+                        handler, node, capabilityContext, frame, outcomes, context,
+                        out var executionBlocking);
                     return RefuseCapability(
-                        frame, node, result, continuation, outcomes, choices, events, context);
+                        frame, node, result, continuation, outcomes, choices, events, context,
+                        executionBlocking);
 
                 case EffectExecutionResultKind.DeclinedOptional:
                     Pop(continuation);
@@ -1122,7 +1166,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             List<EffectNodeOutcome> outcomes,
             List<EffectChoiceRecord> choices,
             List<EffectResolutionEvent> events,
-            EffectResolutionContext context)
+            EffectResolutionContext context,
+            AppliedRuleModification blocking = null)
         {
             Pop(continuation);
             if (node.FailurePolicy != EffectFailurePolicy.Mandatory)
@@ -1133,7 +1178,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
             // The action stops here. Everything already applied stays applied - a repeat this
             // instance already asked for included, because asking is applied work like any other.
-            Record(outcomes, events, node.Id, EffectExecutionResultKind.ImpossibleMandatory, result);
+            Record(
+                outcomes, events, node.Id, EffectExecutionResultKind.ImpossibleMandatory, result,
+                blocking);
             continuation.Clear();
             return EffectResolutionStepResult.Accept(
                 Rebuild(frame, continuation, outcomes, choices), true, events,
@@ -1405,11 +1452,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             ICollection<EffectResolutionEvent> events,
             EffectNodeId nodeId,
             EffectExecutionResultKind kind,
-            EffectExecutionResult result = null)
+            EffectExecutionResult result = null,
+            AppliedRuleModification blocking = null)
         {
+            // The blocking modification is carried on the transient event only, deliberately never on
+            // the persisted `EffectNodeOutcome` - see `EffectResolutionEvent.Blocking`'s own remark.
             outcomes.Add(new EffectNodeOutcome(nodeId, kind, result?.Outcomes));
             events.Add(new EffectResolutionEvent(
-                nodeId, kind, result?.Outcomes, result?.CheckpointsBefore, result?.CheckpointsAfter));
+                nodeId, kind, result?.Outcomes, result?.CheckpointsBefore, result?.CheckpointsAfter,
+                blocking));
         }
 
         private static void AdvanceTop(IList<EffectContinuationFrame> continuation) =>

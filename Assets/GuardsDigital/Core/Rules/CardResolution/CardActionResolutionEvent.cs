@@ -84,7 +84,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroDefeatFactKind heroDefeatFactKind = HeroDefeatFactKind.None,
             CardInstanceId resolvedCardInstanceId = default,
             int lifeCountersSpent = 0,
-            int remainingLifeCounters = 0)
+            int remainingLifeCounters = 0,
+            HeroId blockingHeroId = default,
+            CardInstanceId blockingCardInstanceId = default)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -144,6 +146,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ResolvedCardInstanceId = resolvedCardInstanceId;
             LifeCountersSpent = lifeCountersSpent;
             RemainingLifeCounters = remainingLifeCounters;
+            BlockingHeroId = blockingHeroId;
+            BlockingCardInstanceId = blockingCardInstanceId;
         }
 
         public CardActionResolutionEventKind Kind { get; }
@@ -202,6 +206,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Milestone 7.4: what that team has left afterwards, or zero.</summary>
         public int RemainingLifeCounters { get; }
+
+        /// <summary>
+        /// Milestone 8.35z14 (the blocker-identity channel). On a <see cref="CardActionResolutionEventKind.SkillEffectNodeStopped"/>
+        /// or a <see cref="CardActionResolutionEventKind.CardTextApplied"/> fact whose own node stopped,
+        /// the hero controlling the standing rule modification that refused the step - or the undefined
+        /// hero where none could be named, exactly as milestone 8.35l already leaves an offer's own
+        /// reason unstated rather than guessed.
+        /// </summary>
+        public HeroId BlockingHeroId { get; }
+
+        /// <summary>
+        /// Milestone 8.35z14. The card the blocking modification's source came off, beside
+        /// <see cref="BlockingHeroId"/>.
+        /// </summary>
+        public CardInstanceId BlockingCardInstanceId { get; }
 
         public static CardActionResolutionEvent MovementActionStarted(
             PendingCardActionResolution resolution)
@@ -707,7 +726,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 HeroDefeatFactKind == other.HeroDefeatFactKind &&
                 ResolvedCardInstanceId.Equals(other.ResolvedCardInstanceId) &&
                 LifeCountersSpent == other.LifeCountersSpent &&
-                RemainingLifeCounters == other.RemainingLifeCounters;
+                RemainingLifeCounters == other.RemainingLifeCounters &&
+                BlockingHeroId.Equals(other.BlockingHeroId) &&
+                BlockingCardInstanceId.Equals(other.BlockingCardInstanceId);
         }
 
         public override bool Equals(object obj)
@@ -744,7 +765,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ (int)HeroDefeatFactKind;
                 hashCode = (hashCode * 397) ^ ResolvedCardInstanceId.GetHashCode();
                 hashCode = (hashCode * 397) ^ LifeCountersSpent;
-                return (hashCode * 397) ^ RemainingLifeCounters;
+                hashCode = (hashCode * 397) ^ RemainingLifeCounters;
+                hashCode = (hashCode * 397) ^ BlockingHeroId.GetHashCode();
+                return (hashCode * 397) ^ BlockingCardInstanceId.GetHashCode();
             }
         }
 
@@ -811,7 +834,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
             HeroId actorId,
-            string nodeId)
+            string nodeId,
+            HeroId blockingHeroId = default,
+            CardInstanceId blockingCardInstanceId = default)
         {
             if (kind != CardActionResolutionEventKind.SkillEffectNodeApplied &&
                 kind != CardActionResolutionEventKind.SkillEffectNodeDeclined &&
@@ -826,7 +851,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 sourceCardInstanceId,
                 actionDefinitionId,
                 actorId,
-                new ActionResolutionStepId(nodeId));
+                new ActionResolutionStepId(nodeId),
+                blockingHeroId,
+                blockingCardInstanceId);
         }
 
         /// <summary>
@@ -851,7 +878,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 sourceCardInstanceId,
                 actionDefinitionId,
                 actorId,
-                new ActionResolutionStepId($"{timing}:{node.NodeId.Value}:{node.ResultKind}"));
+                new ActionResolutionStepId($"{timing}:{node.NodeId.Value}:{node.ResultKind}"),
+                // Milestone 8.35z14. `node` is the same transient fact `EffectResolutionSession` already
+                // attaches the blocking modification to, so this is read rather than re-derived.
+                node.Blocking?.ControllerHeroId ?? default,
+                node.Blocking?.SourceCardInstanceId ?? default);
 
         public static CardActionResolutionEvent SkillChoiceRequested(
             ActionResolutionId resolutionId,
@@ -886,7 +917,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
             HeroId actorId,
-            ActionResolutionStepId stepId) =>
+            ActionResolutionStepId stepId,
+            HeroId blockingHeroId = default,
+            CardInstanceId blockingCardInstanceId = default) =>
             new CardActionResolutionEvent(
                 kind,
                 resolutionId,
@@ -902,7 +935,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 0,
                 AttackResolutionOutcome.None,
                 default,
-                default);
+                default,
+                blockingHeroId: blockingHeroId,
+                blockingCardInstanceId: blockingCardInstanceId);
 
         /// <summary>
         /// Milestone 6.4a. Correction facts belong to the action whose boundary triggered them, so they
