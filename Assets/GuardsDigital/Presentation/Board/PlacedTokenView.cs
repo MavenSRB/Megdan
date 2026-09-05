@@ -30,7 +30,14 @@ namespace GuardsDigital.Presentation.Board
 
         public const float NameCharacterSize = 0.035f;
 
-        private static readonly Vector3 NameLocalPosition = new Vector3(0f, 0.01f, 0f);
+        /// <summary>
+        /// Milestone 8.35z12. The name hangs over the disc's TOP face, which
+        /// <see cref="BoardPieceDepth.Standard"/> raised. Left at its old 0.01 the label would be
+        /// inside the solid piece - invisible, and invisible in a way every existing local-offset
+        /// assertion about it would still have passed.
+        /// </summary>
+        private static readonly Vector3 NameLocalPosition =
+            new Vector3(0f, BoardPieceDepth.Standard + 0.01f, 0f);
 
         [SerializeField, HideInInspector]
         private string boundTokenId;
@@ -145,7 +152,10 @@ namespace GuardsDigital.Presentation.Board
             var meshFilter = GetComponent<MeshFilter>();
             if (meshFilter.sharedMesh == null)
             {
-                ownedMesh = FlatHexMeshBuilder.Create(outerRadius * DiscRadiusFraction);
+                // Milestone 8.35z12: solid rather than flat. The silhouette from directly
+                // above is identical - see BoardPieceDepth - so the standing board is unchanged and
+                // only a tilted camera can tell the difference.
+                ownedMesh = FlatHexMeshBuilder.CreateSolid(outerRadius * DiscRadiusFraction);
                 ownedMesh.name = "Placed Token";
                 meshFilter.sharedMesh = ownedMesh;
             }

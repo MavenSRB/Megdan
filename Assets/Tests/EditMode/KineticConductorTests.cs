@@ -410,6 +410,151 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(KineticScene.Flatten(null).Count, Is.EqualTo(0));
         }
 
+        // ---- Milestone 8.35z12: the reconciliation of the two conductors that were designed in
+        // ---- parallel. These four cases are the whole of what integration had to prove.
+
+        /// <summary>
+        /// THE ONE FLAGGED CONFLICT BETWEEN THE TWO DESIGNS, PINNED SO IT CANNOT COME BACK.
+        ///
+        /// <para>8.35z11's conductor self-releases a held scene after 20 seconds; 8.35z12's spotlight
+        /// self-releases after 6. Neither number was wrong - they answer different questions, and the
+        /// rule that reconciles them is <b>the valve is short when the chrome is hidden</b>. A held
+        /// scene that leaves the HUD up is merely slow; one that has hidden the HUD leaves the viewer
+        /// holding a client they cannot play. The spotlight is the first scene of the second kind, so
+        /// its own constant and the conductor's chrome-hidden constant must be the same number, and
+        /// this asserts they are rather than trusting two files to stay in step.</para>
+        /// </summary>
+        [Test]
+        public void TheChromeHiddenHoldValve_IsTheSameNumberOnBothSidesOfTheReconciliation()
+        {
+            Assert.That(
+                KineticStaging.ChromeHiddenHoldSeconds,
+                Is.EqualTo(AttackSpotlightTiming.MaximumHeldSeconds).Within(0.0001f),
+                "The conductor's chrome-hidden valve and the spotlight's own hold must be one number.");
+
+            Assert.That(
+                KineticStaging.ChromeHiddenHoldSeconds,
+                Is.LessThan(KineticStaging.MaxHoldSeconds),
+                "Hiding the chrome must SHORTEN the valve, never lengthen it.");
+        }
+
+        /// <summary>
+        /// The valve is chosen by the scene, not by a single global constant - and the two cases are
+        /// asserted against each other at the same instant so the difference cannot be a coincidence.
+        /// </summary>
+        [Test]
+        public void AHeldSceneThatHidTheChrome_ReleasesOnTheShortValve_WhileOneThatDidNot_IsStillWaiting()
+        {
+            var hiding = new KineticConductor();
+            var showing = new KineticConductor();
+            hiding.Enqueue(new[] { ChromeHidingHeldScene() });
+            showing.Enqueue(new[] { Scene(1, holds: true) });
+
+            hiding.Advance(0f);
+            showing.Advance(0f);
+
+            // Past the short valve, comfortably short of the long one.
+            var elapsed = 0f;
+            var target = KineticStaging.ChromeHiddenHoldSeconds + 1f;
+            while (elapsed < target)
+            {
+                hiding.Advance(1f / 60f);
+                showing.Advance(1f / 60f);
+                elapsed += 1f / 60f;
+            }
+
+            Assert.That(target, Is.LessThan(KineticStaging.MaxHoldSeconds),
+                "The window this case measures in must sit between the two valves to mean anything.");
+            Assert.That(hiding.IsIdle, Is.True,
+                "A held scene that hid the HUD must let go on the short valve.");
+            Assert.That(showing.IsHoldingForAcknowledgement, Is.True,
+                "A held scene that left the HUD up is merely slow and keeps its long valve.");
+        }
+
+        /// <summary>
+        /// ONE CONDUCTOR. The spotlight's stage is not made of cues, so it is registered as the
+        /// conductor's <c>ConductedScene</c> rather than queued - and principle 3 then covers it too:
+        /// a scene that is not made of cues still gets the stage to itself.
+        /// </summary>
+        [Test]
+        public void AConductedSceneIsGrantedTheStage_AndNoCueSceneStartsWhileItHoldsIt()
+        {
+            var conductor = new KineticConductor();
+            var conducted = new FakeConductedScene();
+            conductor.ConductedScene = conducted;
+            conductor.Enqueue(new[] { Scene(1, label: "waiting") });
+
+            conducted.Requesting = true;
+            var started = conductor.Advance(1f / 60f);
+
+            Assert.That(conducted.Grants, Is.EqualTo(1), "A requesting scene is granted the stage.");
+            Assert.That(started, Is.Null, "Granting the stage starts no cue scene on the same frame.");
+
+            conducted.Requesting = false;
+            conducted.Holding = true;
+            for (var frame = 0; frame < 120; frame++)
+            {
+                Assert.That(conductor.Advance(1f / 60f), Is.Null,
+                    "Nothing may start behind a scene that holds the stage.");
+            }
+
+            Assert.That(conductor.PendingSceneCount, Is.EqualTo(1),
+                "The waiting scene is HELD, not dropped - it plays when the stage is free.");
+
+            conducted.Holding = false;
+            Assert.That(conductor.Advance(1f / 60f), Is.Not.Null,
+                "The moment the stage is free the queue resumes.");
+        }
+
+        /// <summary>
+        /// The null registration is a supported composition, and it is the one every existing case in
+        /// this fixture runs under - stated explicitly so the reconciliation cannot have changed the
+        /// behaviour of a composition that has no spotlight.
+        /// </summary>
+        [Test]
+        public void WithNoConductedSceneRegistered_TheConductorPacesExactlyAsItAlwaysDid()
+        {
+            var conductor = new KineticConductor();
+            Assert.That(conductor.ConductedScene, Is.Null, "Nothing is registered by default.");
+
+            conductor.Enqueue(new[] { Scene(1, label: "a"), Scene(2, label: "b") });
+            var order = PlayOut(conductor);
+
+            Assert.That(order, Is.EqualTo(new[] { "a", "b" }));
+        }
+
+        private static KineticScene ChromeHidingHeldScene() =>
+            new KineticScene(
+                1,
+                KineticSceneKind.Spotlight,
+                new[] { new KineticCue(1, KineticCueKind.Respawn, KineticSubject.ForHero(Hero)) },
+                holdsForAcknowledgement: true,
+                label: "chrome-hidden",
+                hidesChrome: true);
+
+        /// <summary>A conducted scene with no Unity, no camera and no cues - just the six members.</summary>
+        private sealed class FakeConductedScene : IConductedScene
+        {
+            public bool Requesting;
+            public bool Holding;
+            public int Grants;
+            public ConductedSceneInterruption LastInterruption = ConductedSceneInterruption.None;
+
+            public string Name => "fake";
+
+            public bool IsRequestingStage => Requesting;
+
+            public bool HoldsStage => Holding;
+
+            public void GrantStage() => Grants++;
+
+            public void Advance(float deltaSeconds)
+            {
+            }
+
+            public void Interrupt(ConductedSceneInterruption reason) => LastInterruption = reason;
+        }
+
         private static KineticCue AnyCue() =>
             new KineticCue(1, KineticCueKind.Respawn, KineticSubject.ForHero(Hero));
 

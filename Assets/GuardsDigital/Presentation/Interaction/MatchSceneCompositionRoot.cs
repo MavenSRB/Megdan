@@ -640,6 +640,16 @@ namespace GuardsDigital.Presentation.Interaction
             // falls back to exactly the projection-change redraw it did before this milestone.
             Match.KineticCueDriver.Attach(gameObject, runtime.KineticView);
 
+            // Milestone 8.35z12. The spotlight drives the camera every frame while it is up
+            // (see AttackSpotlightUnityView's own remarks for why it reasserts rather than owns), so
+            // it brings its own isolated, self-disabling driver on the same terms as the two beside
+            // it. The camera and the board's own reframing are handed over here rather than guessed
+            // at: this root already resolved both.
+            runtime.SpotlightView.CameraSource = () => eventCamera;
+            runtime.SpotlightView.BoardFramingRestored = mapView.ReapplyCameraFrame;
+            Match.AttackSpotlightDriver.Attach(
+                gameObject, runtime.SpotlightPresenter, runtime.SpotlightView);
+
             // Milestone 8.35z6. Defeat's shrink-and-fade needs its own per-frame tick for the
             // same reason the kinetic pass above does, and it stays a SEPARATE driver rather than one
             // more thing threaded through KineticCueDriver: the board's own fade ghosts never reach into

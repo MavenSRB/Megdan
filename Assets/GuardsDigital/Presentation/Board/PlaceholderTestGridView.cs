@@ -184,6 +184,25 @@ namespace GuardsDigital.Presentation.Board
             }
         }
 
+        /// <summary>
+        /// Milestone 8.35z12. Writes this view's own board framing onto the camera again.
+        ///
+        /// <para>The spotlight borrows the camera and gives it back by restoring the pose it captured.
+        /// That is exact unless the HUD's safe layout moved while the spotlight was up, in which case
+        /// the captured pose is a frame the board no longer wants. Asking the owner to reassert is the
+        /// answer, and it is cheap: <see cref="FrameWholeMap"/> serves the identical inputs straight
+        /// from its own cache. It does nothing at all before a map has been rendered.</para>
+        /// </summary>
+        public void ReapplyCameraFrame()
+        {
+            if (sceneCamera == null || renderedDefinition == null)
+            {
+                return;
+            }
+
+            FrameWholeMap(sceneCamera, renderedDefinition);
+        }
+
         public void Rebuild(BoardMapDefinition definition)
         {
             RebuildMap(definition, true);

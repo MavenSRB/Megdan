@@ -155,6 +155,53 @@ namespace GuardsDigital.Presentation.Match
             KineticPresenter = new KineticCuePresenter(
                 client, KineticView, Seat?.HeroId ?? default);
 
+            // Milestone 8.35z12 (the NINETEENTH AMENDMENT). Composed like every other panel,
+            // and scoped to the same seat, so a seat's client and the Director's each frame the story
+            // their own projection carries.
+            SpotlightView = new AttackSpotlightUnityView(BoardView, hud);
+            SpotlightPresenter = new AttackSpotlightPresenter(client, SpotlightView);
+
+            // MILESTONE 8.35z12: THE TWO CONDUCTORS BECOME ONE, AND THIS IS THE WHOLE OF IT.
+            //
+            // The motion pass (8.35z11) and this one independently designed the same seam, and the
+            // mapping between them is exact: KineticConductor <-> IConductedScene, a held scene <->
+            // the Held phase, Acknowledge() <-> the CONTINUE press. 8.35z11's is the more developed
+            // piece because it paces every cue kind and not only this one, so IT is the conductor
+            // that survives and this milestone's stage becomes a scene it grants.
+            //
+            // AutoGrantsStage exists so the spotlight could ship standalone with no conductor at all;
+            // a conductor now exists, so it takes ownership here and nowhere else.
+            SpotlightPresenter.Stage.AutoGrantsStage = false;
+            KineticView.Conductor.ConductedScene = SpotlightPresenter.Stage;
+            SpotlightView.ContinueRequested += () =>
+            {
+                SpotlightPresenter.Continue();
+                // The CONTINUE press is ONE release for both mechanisms. Acknowledge() does nothing
+                // unless a cue scene is itself holding, so this can never skip a beat the viewer has
+                // not seen - the conductor's own guard, not a hope.
+                KineticView.Conductor.Acknowledge();
+            };
+
+            // THE DEFERRAL SURVIVES, AGAINST THE BRANCH NOTE'S OWN RECOMMENDATION, AND THE REASON IS
+            // MEASURABLE FROM THE TWO PREDICATES RATHER THAN A MATTER OF TASTE.
+            //
+            // worker-spotlight/NOTES.md section 10 step 4 proposed deleting this pair because "the
+            // conductor already holds cues while a scene is on stage, so keeping both would hold them
+            // twice". Reading the two predicates side by side shows they are NOT the same hold:
+            //
+            //   AttackSpotlightStage.HoldsStage       = Entering | Held | Exiting   (the conductor's)
+            //   AttackSpotlightPresenter.DefersCues   = Requested | Entering | Exiting
+            //
+            // They differ at exactly one phase, HELD, and that phase is the point of the feature. The
+            // conductor's hold covers Held, so relying on it alone would keep the attack's own lunge
+            // and flash queued until the spotlight had CLOSED - and the ranged smack is built on those
+            // cues being released mid-hold, framed, with both faces up ("lose the UI, zoom in, show
+            // the cards, show the smack"). The deferral is what lands them there. So the conductor
+            // owns WHICH scene plays and the deferral owns WHEN within a granted spotlight its cues
+            // fire; they are two jobs, and only the first was ever done twice.
+            KineticPresenter.DeferWhile(() => SpotlightPresenter.DefersCues);
+            SpotlightPresenter.CuesReleased += () => KineticPresenter.Resume();
+
             BoardView.BindIntentHandlers(
                 // Milestone 7.8a: the map pointer is the only hero-selection control there is. A click
                 // is first offered to the authority, because a hero the current choice makes a legal
@@ -316,7 +363,8 @@ namespace GuardsDigital.Presentation.Match
                     UnityEngine.Debug.LogException(error);
                 },
                 KineticPresenter,
-                MatchLogPresenter);
+                MatchLogPresenter,
+                SpotlightPresenter);
             RefreshAll();
         }
 
@@ -621,6 +669,11 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Milestone 8.35y. The kinetic surface and its presenter.</summary>
         public KineticCueUnityView KineticView { get; }
         public KineticCuePresenter KineticPresenter { get; }
+
+        /// <summary>Milestone 8.35z12. Public so a Play Mode case can assert what is framed.</summary>
+        public AttackSpotlightUnityView SpotlightView { get; }
+
+        public AttackSpotlightPresenter SpotlightPresenter { get; }
 
         /// <summary>
         /// Milestone 8.35x (the TENTH amendment's drop-down). The narration bar's match log and its

@@ -383,36 +383,50 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// inset by <see cref="HeroTokenArtwork.FaceInset"/>. The mesh is a disc rather than a quad for
         /// the same reason: the prepared face is a circle with cleared corners, the shader that draws
         /// it is opaque, and a quad would render those corners as black.
+        ///
+        /// <para><b>Milestone 8.35z12 gave it thickness.</b> The NINETEENTH AMENDMENT asks for
+        /// "a bit of depth, so we can even tilt camera a bit", and this token was the one piece with
+        /// none - the generated prism it replaces has stood 0.5 tall since milestone 4.4. The face and
+        /// its rim moved up by <see cref="BoardPieceDepth.Standard"/> and a wall in the TEAM RIM's own
+        /// submesh now runs from the board plane to meet them. Under the standing top-down orthographic
+        /// camera this changes nothing at all - see <see cref="BoardPieceDepth"/> for why - and the
+        /// ring that fits this piece is measured from the lowest vertices, which are still a full
+        /// perimeter at the original radius on the original plane.</para>
         /// </summary>
         private static Mesh CreateTokenMesh()
         {
             var segments = HeroTokenArtwork.Segments;
             var faceRadius = HeroTokenArtwork.FaceRadius;
             var rimRadius = HeroTokenArtwork.TokenOuterRadius;
-            var vertices = new Vector3[(segments * 2) + 1];
+            var depth = BoardPieceDepth.Standard;
+            var skirtStart = (segments * 2) + 1;
+            var vertices = new Vector3[(segments * 3) + 1];
             var uv = new Vector2[vertices.Length];
             var normals = new Vector3[vertices.Length];
-            vertices[0] = Vector3.zero;
+            vertices[0] = new Vector3(0f, depth, 0f);
             uv[0] = new Vector2(0.5f, 0.5f);
+            normals[0] = Vector3.up;
             for (var segment = 0; segment < segments; segment++)
             {
                 var angle = (Mathf.PI * 2f / segments) * segment;
                 var x = Mathf.Cos(angle);
                 var z = Mathf.Sin(angle);
-                vertices[1 + segment] = new Vector3(x * faceRadius, 0f, z * faceRadius);
+                vertices[1 + segment] = new Vector3(x * faceRadius, depth, z * faceRadius);
                 uv[1 + segment] = new Vector2(
                     0.5f + (0.5f * HeroTokenArtwork.FaceInset * x),
                     0.5f + (0.5f * HeroTokenArtwork.FaceInset * z));
-                vertices[1 + segments + segment] = new Vector3(x * rimRadius, 0f, z * rimRadius);
+                normals[1 + segment] = Vector3.up;
+                vertices[1 + segments + segment] = new Vector3(x * rimRadius, depth, z * rimRadius);
                 uv[1 + segments + segment] = new Vector2(0.5f, 0.5f);
+                normals[1 + segments + segment] = Vector3.up;
+
+                // The skirt: the rim's own perimeter, left on the board plane.
+                vertices[skirtStart + segment] = new Vector3(x * rimRadius, 0f, z * rimRadius);
+                uv[skirtStart + segment] = new Vector2(0.5f, 0.5f);
+                normals[skirtStart + segment] = new Vector3(x, 0f, z);
             }
 
-            for (var index = 0; index < normals.Length; index++)
-            {
-                normals[index] = Vector3.up;
-            }
-
-            var rim = new int[segments * 6];
+            var rim = new int[segments * 12];
             var faceTriangles = new int[segments * 3];
             for (var segment = 0; segment < segments; segment++)
             {
@@ -421,18 +435,30 @@ namespace GuardsDigital.Presentation.Units.Heroes
                 var nextInner = 1 + next;
                 var outer = 1 + segments + segment;
                 var nextOuter = 1 + segments + next;
+                var skirt = skirtStart + segment;
+                var nextSkirt = skirtStart + next;
 
                 // Wound so every triangle's normal is +Y, which is the way the framing camera looks.
                 faceTriangles[(segment * 3) + 0] = 0;
                 faceTriangles[(segment * 3) + 1] = nextInner;
                 faceTriangles[(segment * 3) + 2] = inner;
 
-                rim[(segment * 6) + 0] = inner;
-                rim[(segment * 6) + 1] = nextInner;
-                rim[(segment * 6) + 2] = nextOuter;
-                rim[(segment * 6) + 3] = inner;
-                rim[(segment * 6) + 4] = nextOuter;
-                rim[(segment * 6) + 5] = outer;
+                rim[(segment * 12) + 0] = inner;
+                rim[(segment * 12) + 1] = nextInner;
+                rim[(segment * 12) + 2] = nextOuter;
+                rim[(segment * 12) + 3] = inner;
+                rim[(segment * 12) + 4] = nextOuter;
+                rim[(segment * 12) + 5] = outer;
+
+                // The wall, in the rim's submesh: it is the team colour a player has been reading
+                // since milestone 4.4, and giving it a third material would be a third thing to keep
+                // in step for no visible gain.
+                rim[(segment * 12) + 6] = outer;
+                rim[(segment * 12) + 7] = nextOuter;
+                rim[(segment * 12) + 8] = nextSkirt;
+                rim[(segment * 12) + 9] = outer;
+                rim[(segment * 12) + 10] = nextSkirt;
+                rim[(segment * 12) + 11] = skirt;
             }
 
             var mesh = new Mesh

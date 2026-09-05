@@ -58,7 +58,8 @@ namespace GuardsDigital.Presentation.Match
             IReadOnlyList<KineticCue> cues,
             float staggerAfterSeconds = KineticStaging.SceneStaggerSeconds,
             bool holdsForAcknowledgement = false,
-            string label = null)
+            string label = null,
+            bool hidesChrome = false)
         {
             if (kind == KineticSceneKind.None)
             {
@@ -85,6 +86,7 @@ namespace GuardsDigital.Presentation.Match
             Cues = new ReadOnlyCollection<KineticCue>(array);
             StaggerAfterSeconds = staggerAfterSeconds;
             HoldsForAcknowledgement = holdsForAcknowledgement;
+            HidesChrome = hidesChrome;
             Label = label ?? kind.ToString();
 
             var longest = 0f;
@@ -133,6 +135,20 @@ namespace GuardsDigital.Presentation.Match
         /// queue has had since 8.35y - stated as a flag rather than left implicit.</para>
         /// </summary>
         public bool HoldsForAcknowledgement { get; }
+
+        /// <summary>
+        /// Whether this scene hides the HUD while it plays, which SHORTENS its own hold valve.
+        ///
+        /// <para>Milestone 8.35z12's reconciliation, and the rule is general rather than a special case
+        /// for one scene kind: <b>the valve is short when the chrome is hidden.</b> A held scene that
+        /// leaves the HUD up is merely slow for a viewer who walked away, so it may wait
+        /// <see cref="KineticStaging.MaxHoldSeconds"/>. A held scene that has HIDDEN the HUD leaves that
+        /// viewer with a client they cannot play, so it waits only
+        /// <see cref="KineticStaging.ChromeHiddenHoldSeconds"/>. The attack spotlight is the first scene
+        /// of the second kind and its own <c>AttackSpotlightTiming.MaximumHeldSeconds</c> is pinned
+        /// equal to that constant by a test, so the two sources cannot drift apart.</para>
+        /// </summary>
+        public bool HidesChrome { get; }
 
         public string Label { get; }
 
@@ -206,6 +222,22 @@ namespace GuardsDigital.Presentation.Match
         /// than to a spotlight frozen since round three.</para>
         /// </summary>
         public const float MaxHoldSeconds = 20f;
+
+        /// <summary>
+        /// The same valve for a scene that has HIDDEN the HUD - milestone 8.35z12's one flagged conflict
+        /// between the two conductors that were designed in parallel, resolved as a rule rather than as
+        /// a special case.
+        ///
+        /// <para>Twenty seconds of a paused BOARD is merely slow: everything a player needs is still on
+        /// screen and still accepting input. Twenty seconds of a HIDDEN HUD is a client they cannot use,
+        /// because the controls are not there to press. So the valve tracks the chrome and not the scene
+        /// kind: <see cref="KineticScene.HidesChrome"/> selects this one.</para>
+        ///
+        /// <para>It is the attack spotlight's own <c>AttackSpotlightTiming.MaximumHeldSeconds</c>, and
+        /// <c>TheChromeHiddenHoldValve_IsTheSameNumberOnBothSidesOfTheReconciliation</c> asserts the two
+        /// constants are equal so no future edit can move one without the other.</para>
+        /// </summary>
+        public const float ChromeHiddenHoldSeconds = 6f;
     }
 
     /// <summary>
@@ -241,6 +273,23 @@ namespace GuardsDigital.Presentation.Match
         private float activeElapsed;
         private float holdElapsed;
         private int droppedScenes;
+
+        /// <summary>
+        /// The one scene this conductor paces that is NOT made of cues - milestone 8.35z12's attack
+        /// spotlight, registered here as an <see cref="IConductedScene"/> so there is ONE conductor
+        /// rather than two.
+        ///
+        /// <para><b>It is a settable property and not a constructor parameter on purpose.</b>
+        /// <c>TheConductor_HoldsNothingAuthoritative</c> asserts by reflection that this type's
+        /// constructor takes nothing, which is the guarantee that a conductor cannot be handed a
+        /// session; the registration has to arrive afterwards to keep that guarantee true. An
+        /// <see cref="IConductedScene"/> is a lifecycle, not a read model, so the assertion still holds
+        /// with this field present.</para>
+        ///
+        /// <para>Leaving it null is a supported composition: the conductor then paces cue scenes alone,
+        /// exactly as it did before the spotlight existed.</para>
+        /// </summary>
+        public IConductedScene ConductedScene { get; set; }
 
         /// <summary>Whether nothing is playing and nothing is waiting.</summary>
         public bool IsIdle => active == null && pending.Count == 0;
@@ -336,7 +385,7 @@ namespace GuardsDigital.Presentation.Match
             if (IsHoldingForAcknowledgement)
             {
                 holdElapsed += delta;
-                if (holdElapsed < KineticStaging.MaxHoldSeconds)
+                if (holdElapsed < HoldValveSeconds(active))
                 {
                     return null;
                 }
@@ -385,8 +434,37 @@ namespace GuardsDigital.Presentation.Match
             holdElapsed = 0f;
         }
 
+        /// <summary>
+        /// How long <paramref name="scene"/> may hold before releasing itself. See
+        /// <see cref="KineticStaging.ChromeHiddenHoldSeconds"/> for why a scene that hid the HUD gets a
+        /// shorter valve than one that did not.
+        /// </summary>
+        private static float HoldValveSeconds(KineticScene scene) =>
+            scene != null && scene.HidesChrome
+                ? KineticStaging.ChromeHiddenHoldSeconds
+                : KineticStaging.MaxHoldSeconds;
+
         private KineticScene StartIfIdle()
         {
+            // Milestone 8.35z12. The registered conducted scene is offered the stage FIRST and holds it
+            // exclusively while it has it. This is principle 3 - one thing at a time - applied to the
+            // one scene that is not made of cues: a spotlight framing an attack must not open while a
+            // reveal is flipping, and a reveal must not flip behind a hidden HUD.
+            var conducted = ConductedScene;
+            if (conducted != null)
+            {
+                if (conducted.IsRequestingStage)
+                {
+                    conducted.GrantStage();
+                    return null;
+                }
+
+                if (conducted.HoldsStage)
+                {
+                    return null;
+                }
+            }
+
             if (active != null || pending.Count == 0)
             {
                 return null;

@@ -173,6 +173,9 @@ namespace GuardsDigital.Presentation.Match
         private readonly KineticProjectionWatch watch = new KineticProjectionWatch();
         private IMatchReadModel lastProjection;
         private KineticCueViewModel lastViewModel = KineticCueViewModel.Empty;
+        // Milestone 8.35z12: null on a composition with no spotlight, which is exactly the
+        // behaviour this presenter had before one existed.
+        private Func<bool> deferral;
 
         public KineticCuePresenter(IMatchClient session, IKineticCueView view, HeroId viewerHeroId = default)
         {
@@ -214,9 +217,64 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The highest match-log sequence this presenter has already turned into cues.</summary>
         public int ObservedSequence => stream.ObservedSequence;
 
+        /// <summary>
+        /// Milestone 8.35z12. Asked before every observation: while it answers true, this
+        /// presenter holds its cues instead of playing them, and - crucially - does NOT advance its
+        /// watermark or consume the projection, so nothing is lost while it waits.
+        ///
+        /// <para><b>Why the presenter and not the stream.</b> The three rules that make a kinetic layer
+        /// safe all live in <see cref="KineticCueStream"/> and are about the LOG. Pacing is not about
+        /// the log at all - it is about what this viewer is looking at - so it belongs on the side that
+        /// knows about a viewer. A composition that sets no deferral behaves exactly as this presenter
+        /// did before the spotlight existed.</para>
+        ///
+        /// <para>Set it with <see cref="DeferWhile"/>, and call <see cref="Resume"/> when the
+        /// predicate goes false so the held rows drain on that frame rather than on the next
+        /// authoritative change - which might be a long time coming, or never.</para>
+        /// </summary>
+        public bool IsDeferred => deferral != null && deferral();
+
+        /// <summary>
+        /// Holds this presenter's cues while <paramref name="predicate"/> answers true. Passing
+        /// <c>null</c> removes the deferral. See <see cref="IsDeferred"/>.
+        /// </summary>
+        public void DeferWhile(Func<bool> predicate)
+        {
+            deferral = predicate;
+        }
+
+        /// <summary>
+        /// Drains whatever the deferral held. It is an ordinary refresh: the stream's own emit-once
+        /// watermark decides what has not been played yet, so calling this when nothing was held
+        /// costs one comparison and plays nothing.
+        /// </summary>
+        public void Resume()
+        {
+            if (IsDeferred)
+            {
+                return;
+            }
+
+            Refresh();
+        }
+
         public void Refresh()
         {
             var projection = session.Projection;
+            if (IsDeferred)
+            {
+                // Held. The standing highlight half is handed over again so a waiting tray keeps
+                // breathing, and the transient half is empty - but `lastProjection` is deliberately
+                // NOT advanced, so the rows that arrived while this was held are still unobserved and
+                // play in full on the next resume.
+                lastViewModel = new KineticCueViewModel(
+                    Array.Empty<KineticCue>(),
+                    lastViewModel.PulseBoardMarks,
+                    lastViewModel.SweepingShineHeroes);
+                view.Render(lastViewModel);
+                return;
+            }
+
             if (ReferenceEquals(projection, lastProjection))
             {
                 // The same projection cannot produce a second round of kinetics. It can still be

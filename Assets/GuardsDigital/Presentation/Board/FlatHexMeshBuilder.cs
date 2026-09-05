@@ -51,5 +51,38 @@ namespace GuardsDigital.Presentation.Board
             mesh.RecalculateBounds();
             return mesh;
         }
+
+        /// <summary>
+        /// Milestone 8.35z12. The same hex with a skirt beneath it, so the NINETEENTH
+        /// AMENDMENT's tilt has something to catch.
+        ///
+        /// <para><see cref="Create"/> is deliberately left alone: it is the flat plate that tiles and
+        /// several fitted cues are built from, and the pieces that stand ON the board are the only
+        /// ones that want thickness. See <see cref="BoardPieceDepth"/> for why the solid form is
+        /// invisible under the standing top-down orthographic camera.</para>
+        /// </summary>
+        public static Mesh CreateSolid(
+            float outerRadius = HexWorldLayout.DefaultOuterRadius,
+            float depth = BoardPieceDepth.Standard)
+        {
+            var flat = Create(outerRadius);
+            try
+            {
+                var solid = BoardPieceDepth.ExtrudeFan(flat, depth);
+                solid.name = "Solid Hex Placeholder";
+                return solid;
+            }
+            finally
+            {
+                if (UnityEngine.Application.isPlaying)
+                {
+                    UnityEngine.Object.Destroy(flat);
+                }
+                else
+                {
+                    UnityEngine.Object.DestroyImmediate(flat);
+                }
+            }
+        }
     }
 }

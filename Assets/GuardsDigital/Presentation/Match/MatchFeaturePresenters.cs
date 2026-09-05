@@ -6527,6 +6527,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly MinionChoicePresenter minionChoice;
         private readonly HeroOverviewsPresenter heroOverviews;
         private readonly KineticCuePresenter kinetics;
+        private readonly AttackSpotlightPresenter attackSpotlight;
         private readonly MatchLogPresenter matchLog;
         private readonly Action<string, Exception> panelRefreshFailed;
         private IReadOnlyList<string> failedPanelNames = Array.Empty<string>();
@@ -6549,11 +6550,16 @@ namespace GuardsDigital.Presentation.Match
             // isolated fan-out rather than the unisolated header callback beside it, so one broken
             // log line degrades that one panel and nothing else - the EIGHTH amendment's own rule,
             // applied to the panel it did not yet cover.
-            MatchLogPresenter matchLog = null)
+            MatchLogPresenter matchLog = null,
+            // Milestone 8.35z12. Same reason, same shape, and it is refreshed BEFORE the
+            // kinetics below it deliberately: the spotlight's pacing decides whether that panel plays
+            // its cues or holds them, so it has to have seen this projection first.
+            AttackSpotlightPresenter attackSpotlight = null)
         {
             this.panelRefreshFailed = panelRefreshFailed;
             this.heroOverviews = heroOverviews;
             this.kinetics = kinetics;
+            this.attackSpotlight = attackSpotlight;
             this.matchLog = matchLog;
             this.board = board ?? throw new ArgumentNullException(nameof(board));
             this.hands = hands ?? throw new ArgumentNullException(nameof(hands));
@@ -6616,6 +6622,10 @@ namespace GuardsDigital.Presentation.Match
             RefreshPanel("diagnostics", () => diagnostics?.Refresh(), failed, errors);
             RefreshPanel("minion-choice", minionChoice.Refresh, failed, errors);
             RefreshPanel("hero-overviews", () => heroOverviews?.Refresh(), failed, errors);
+            // Milestone 8.35z12, immediately before the kinetics it paces: the spotlight
+            // decides whether that panel plays this projection's cues now or holds them until the
+            // camera has arrived, so it must observe this projection first.
+            RefreshPanel("attack-spotlight", () => attackSpotlight?.Refresh(), failed, errors);
             // Last, and isolated like every other panel: a kinetic is a flourish, and it must be the
             // one thing on this list that can never cost a player a fact on the surfaces above it.
             RefreshPanel("kinetics", () => kinetics?.Refresh(), failed, errors);
