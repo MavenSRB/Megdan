@@ -682,6 +682,39 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35z15. Thunder Boomerang's board with every minion taken off it, so the Blue
+        /// hero is the only unit the card admits.
+        ///
+        /// <para>It is the board the fixture above says it deliberately avoids - "a board with one
+        /// legal target would end the repeat for lack of anyone rather than for the reason under
+        /// test" - and that is exactly the reason it is under test here. Once the printed instance
+        /// takes the only unit in reach, "on a different target" names nobody, and p.10's
+        /// confirm-or-decline has nothing to offer.</para>
+        /// </summary>
+        public static MatchSession CreateThunderBoomerangSessionWithOnlyTheEnemyHeroInReach()
+        {
+            var configuration = WithCardSwappedIntoTheRedHand(
+                WaspCardContent.ThunderBoomerang, out var redHeroId);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var session = CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                WithBlueHeroOutOfLineFromTheRedHero(map, setup),
+                Array.Empty<QuickGameMinionSetupState>()));
+
+            AssertTheHandStillHoldsFive(session, redHeroId);
+            return session;
+        }
+
+        /// <summary>
         /// The Blue hero moved to the nearest empty playable space inside Range 3 of the Red hero and
         /// on no file through them - the same search
         /// <see cref="WithAMeleeMinionOutOfLineFromTheRedHero"/> runs, asked about the hero.

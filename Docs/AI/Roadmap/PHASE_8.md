@@ -412,6 +412,30 @@ Non-goals: no schema move, no new message kind, no change to the match log's sea
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z14-name-the-blocker-in-a-mid-resolution-fizzle-and-advance-the-wire-to-8-completion-evidence).
 
+### [x] 8.35z15 Stop offering a card-text repeat that has no legal subject
+
+From a live user report: Xargatha resolved Cleave - "Target a unit adjacent to you. After the attack: May repeat once on a different enemy hero" - against the only enemy hero adjacent to her, who defended, and rulebook p.10's confirm-or-decline opened anyway for a repeat whose subject set was empty. The fourth instance of the class milestones 8.29d, 8.29e and 8.35z5 closed elsewhere.
+
+Observable outcome: a repeat printed inside rulebook p.14 whose second instance has nobody legal to take is not offered at all, and one that has a legal subject is offered exactly as before.
+
+Design: the judgement already existed and was already recorded. Milestone 8.25e extracted `AttackDefenseCardActionStrategyBackend.CanStartRepeatedAttack` and `Rules/RULE_SYSTEMS.md` row 48 has since stated the ruling for every path - "whether the second instance can start is asked of the board as it then stands, under the target binding the asking node declares, rather than of the action that ended". Only the after-action-ability path asked it; the card-text path supplied no `repeatCanBePerformed` probe at either of its two `EffectResolutionContext` sites, so `RepeatIsUnavailableFor` fell through and the `May` node paused unconditionally. Both sites now supply one. The exclusion the offer is judged against is extracted as `CardTextRepeatExclusionFor`, so the offer and the answer read one statement. **No schema move, no wire move, no content revision**: the probe is a question asked of existing state.
+
+The gate is whether the enclosing Attack's target is known, deliberately not which of p.14's moments the text prints at. Arien's Violent Torrent prints its repeat at "Before the attack:" and a moment-shaped gate excused it - but driven, its node is reached with the target already chosen, and it opened the offer, took the confirmation and started nothing. Judging it also required telling `PlanRepeatedAttack` that the Attack occupying `pendingAttackResolution` is the subject of the question rather than an obstacle to it; without that, every Violent Torrent repeat would have been suppressed instead.
+
+Suppression rather than milestone 8.35s's grey-with-reason vocabulary, because that grammar attaches a cause to an `ActionOffer` a player can hover, and a repeat node publishes none - its only states are a pause that stands and a pause that does not. Drawing a greyed ACCEPT nobody can answer is the "ask, then do nothing" outcome the node's own rule has forbidden since milestone 8.23.
+
+Acceptance checks:
+
+- Every `RepeatAction` node the dealt roster's action definitions print is named by one content-derived table, classified by the kind of action it repeats, so a seventh hero's repeat arrives as a new row rather than as a new unjudged prompt.
+- Every repeat in that table that repeats an Attack has an empty-subject case driven on a real board - all four of them, each failing at the pre-fix revision.
+- The reported shape is reproduced exactly: one adjacent enemy hero, targeted, successfully defending, no confirm opened, and the action reaching its own natural end with the card resolved.
+- A defended Attack whose repeat still has a legal subject is offered unchanged, so the outcome is never what the suppression keys on.
+- Complete unfiltered Edit Mode and Play Mode pass.
+
+Non-goals: no schema move, no wire move, no content revision, no change to what a repeat that legitimately starts may then do, and no attempt to decide whether an instance that starts will finish - a board that changes between the offer and the instance stays rulebook p.10's own residual, as `CanStartRepeatedAttack` already documents.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z15-stop-offering-a-card-text-repeat-that-has-no-legal-subject-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

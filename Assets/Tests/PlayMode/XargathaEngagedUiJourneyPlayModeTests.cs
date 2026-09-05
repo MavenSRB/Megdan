@@ -59,13 +59,41 @@ namespace GuardsDigital.Tests.PlayMode
         internal static readonly HexCoordinate DefenceContact = new HexCoordinate(-1, 2);
 
         /// <summary>
+        /// The one square on this staging that is adjacent to the staged hero AND to an enemy minion,
+        /// so a repeat narrowed to enemy heroes has somewhere to go once the printed instance has
+        /// taken the minion. Milestone 8.35z15.
+        ///
+        /// <para><b>Why a journey has to put somebody here, and why that is the milestone's own
+        /// finding.</b> <see cref="EngagedMirrorStaging"/> stages the two heroes exactly two spaces
+        /// apart - it searches for the pair and skips any candidate whose distance is not 2, because
+        /// the gap is what makes a Radius 2 disk and a bent ranged line meaningful. Cleave's repeat
+        /// admits a different enemy <em>hero</em> and Cleave is melee, so on the untouched staging her
+        /// repeat has no legal subject at all and rulebook p.10 does not offer it. Before milestone
+        /// 8.35z15 it was offered anyway, and this journey answered that offer by declining it - which
+        /// is how a prompt that could never produce an instance survived three journeys whose names
+        /// said they drove a repeat.</para>
+        /// </summary>
+        internal static readonly HexCoordinate BesideHerAndTheMinion = new HexCoordinate(-2, 1);
+
+        /// <summary>
         /// Cleave: "Target a unit adjacent to you. After the attack: May repeat once on a different
         /// enemy hero."
         ///
         /// <para>Two board decisions and one printed offer between them. She attacks the enemy minion
-        /// standing beside her, p.14's step 7 asks whether to repeat, and the repeat - if it is taken -
-        /// admits enemy heroes alone. That narrowing is what no earlier repeat in this build does, and
-        /// it is why the card's own parenthesis can say the first target may have been a minion.</para>
+        /// standing beside her, p.14's step 7 asks whether to repeat, and the repeat admits enemy
+        /// heroes alone. That narrowing is what no earlier repeat in this build does, and it is why the
+        /// card's own parenthesis can say the first target may have been a minion.</para>
+        ///
+        /// <para><b>The enemy walks into reach first, and that is the whole setup.</b> Wasp's Magnetic
+        /// Dagger prints Initiative 12 against Cleave's 11, so the enemy seat takes its turn first and
+        /// spends its secondary Movement stepping onto
+        /// <see cref="BesideHerAndTheMinion"/> - the only square adjacent to both her and the staged
+        /// enemy Ranged minion. Nothing is placed by hand: it is a position the rules produce, the same
+        /// shape milestone 8.29e used when it let Wasp's Dagger clear a square before Arien acted.</para>
+        ///
+        /// <para><b>This journey takes the repeat rather than declining it.</b> Milestone 8.35z15's own
+        /// record: until then, every journey naming a repeat only ever pressed its decline, so no live
+        /// coverage had once driven a second instance through the real controls.</para>
         /// </summary>
         [UnityTest]
         public IEnumerator Cleave_AttacksAnAdjacentMinionAndIsOfferedItsRepeatOnAHero()
@@ -75,11 +103,14 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var hud = root.Hud;
             var xargathaId = XargathaSeat(runtime).HeroId;
+            var enemyId = OtherHeroId(runtime, xargathaId);
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
 
-            CommitSoTheNamedSeatActs(runtime, xargathaId, XargathaCardContent.Cleave);
-            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(xargathaId),
-                "Cleave's printed Initiative 11 acts before the lowest card the enemy holds.");
+            Commit(runtime, enemyId, WaspCardContent.MagneticDagger);
+            Commit(runtime, xargathaId, XargathaCardContent.Cleave);
+            yield return YieldUntilTheNamedSeatActs(runtime, enemyId);
+            yield return WalkHeadlesslyTo(runtime, enemyId, BesideHerAndTheMinion);
+            yield return YieldUntilTheNamedSeatActs(runtime, xargathaId);
 
             yield return PointTrayAt(root, xargathaId);
             yield return StartActionThroughControl(root, ActionKind.Attack);
@@ -89,6 +120,9 @@ namespace GuardsDigital.Tests.PlayMode
             var targets = runtime.PendingAttackTargetChoice.LegalTargetMinionIds;
             Assert.That(targets, Is.Not.Empty,
                 "An enemy minion stands beside her on the staged board, and \"a unit\" admits it.");
+            Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds, Has.Member(enemyId),
+                "and the enemy hero who just stepped in is admitted too, which is what gives the " +
+                "repeat somewhere to go. " + Remaining(runtime));
             var targetView = MinionView(targets[0]);
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, targetView.transform.position), Is.True,
                 "The target is chosen by clicking the miniature where it stands.");
@@ -98,18 +132,47 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "\"After the attack: May repeat once\" is p.14's step 7 and it asks. " +
                 Remaining(runtime));
-            var decline = DeclineControl(runtime);
-            Assert.That(decline, Is.Not.Null,
+            Assert.That(DeclineControl(runtime), Is.Not.Null,
                 "A printed \"May\" has to be declinable on its own control - the user's rule, and " +
                 "the one milestone 8.20a made an offer that must be named rather than implied.");
 
-            UiPlayer.Click(UiPlayer.Button(hud, decline.Label));
+            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            Assert.That(confirm, Is.Not.Null,
+                "and it has to be takeable on its own control too. " + Remaining(runtime));
+            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
+            yield return null;
+            yield return null;
+
+            var repeat = runtime.PendingAttackTargetChoice;
+            Assert.That(repeat, Is.Not.Null,
+                "Confirming starts the second instance, which opens its own target question. " +
+                Remaining(runtime));
+            Assert.That(repeat.LegalTargetHeroIds, Is.EqualTo(new[] { enemyId }),
+                "\"on a different enemy hero\": the one enemy hero in reach is the whole set.");
+            Assert.That(repeat.LegalTargetMinionIds, Is.Empty,
+                "and the minion still standing beside her is not in it, though the printed instance " +
+                "admitted it - the narrowing milestone 8.24 derived and 8.35z15 now judges the offer by.");
+
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, HeroView(enemyId).transform.position), Is.True,
+                "The repeated instance's target is chosen by clicking the hero where they stand.");
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null,
+                "A hero target opens p.14's Defense question for the repeated instance exactly as it " +
+                "does for the printed one - the page is the same page. " + Remaining(runtime));
+            Assert.That(runtime.SubmitProjectedCommand(DirectorCommand.DeclineDefense()), Is.True,
+                "The defender's answer is aftermath here, so it is given headlessly.");
+            yield return null;
             yield return null;
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
-                "Declining the repeat closes the card. " + Remaining(runtime));
+                "The second instance reaches its own step 7 and p.10 forbids repeating a repeat, so " +
+                "nothing is asked again. " + Remaining(runtime));
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
-                "and no second Attack opened a target question, which is what declining means.");
+                "and no third instance of one played Cleave opened a target question.");
         }
 
         /// <summary>
@@ -413,6 +476,12 @@ namespace GuardsDigital.Tests.PlayMode
         /// re-derivation that came back with the wrong instance has something to be wrong about. The
         /// Undo half is proved on the live session before the capture, because a restore adopts a
         /// state rather than a history and clears the retained prefix behind it.</para>
+        ///
+        /// <para><b>The enemy steps into reach first for the reason milestone 8.35z15 records</b> on
+        /// <see cref="BesideHerAndTheMinion"/>: the engaged staging holds the two heroes two spaces
+        /// apart by construction, so without that step Cleave's repeat has no legal subject and is
+        /// correctly not offered - and there would be no standing decision for this journey to undo
+        /// and restore.</para>
         /// </summary>
         [UnityTest]
         public IEnumerator CleavesRepeat_IsAnsweredAgainAfterAnUndoAndAfterARestore()
@@ -422,9 +491,13 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var hud = root.Hud;
             var xargathaId = XargathaSeat(runtime).HeroId;
+            var enemyId = OtherHeroId(runtime, xargathaId);
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
 
-            CommitSoTheNamedSeatActs(runtime, xargathaId, XargathaCardContent.Cleave);
+            Commit(runtime, enemyId, WaspCardContent.MagneticDagger);
+            Commit(runtime, xargathaId, XargathaCardContent.Cleave);
+            yield return YieldUntilTheNamedSeatActs(runtime, enemyId);
+            yield return WalkHeadlesslyTo(runtime, enemyId, BesideHerAndTheMinion);
             yield return YieldUntilTheNamedSeatActs(runtime, xargathaId);
             yield return PointTrayAt(root, xargathaId);
             yield return StartActionThroughControl(root, ActionKind.Attack);

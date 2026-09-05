@@ -1903,7 +1903,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
-            var card = (instances ?? throw new ArgumentNullException(nameof(instances)))
+            var materializedInstances = (instances ??
+                throw new ArgumentNullException(nameof(instances))).ToArray();
+            var card = materializedInstances
                 .Single(candidate => candidate.Id.Equals(step.CheckpointSourceCardInstanceId));
             var definition = materializedDefinitions.Single(candidate =>
                 candidate.Reference.Equals(card.DefinitionReference));
@@ -1962,7 +1964,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // its own second instance and a third instance started - measured, not assumed.
                 repeatIsUnavailable: RepeatedActionQuery.IsRepeatedInstance(
                     step.CardTextRemainderResolution?.InvocationContext ??
-                    ActionInvocationContext.PrintedPrimary));
+                    ActionInvocationContext.PrintedPrimary),
+                // Milestone 8.35z15. The other half of the same gate, and the half this path never
+                // had: p.10's repeat is an offer, so the node asks whether the instance it would
+                // offer can start at all - with the binding it declares, against the board this
+                // moment is standing on. See CardTextRepeatCanBePerformed.
+                repeatCanBePerformed: binding => CardTextRepeatCanBePerformed(
+                    binding,
+                    step.CardTextRemainderResolution,
+                    materializedDefinitions,
+                    materializedInstances,
+                    participants,
+                    modifications));
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"card-text-{card.Id.Value}-{action.Id.Value}-{step.CardTextTiming}"),
@@ -2172,15 +2185,97 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             owedAttackRepeat = attack;
-            // Milestone 8.24. Xargatha's "on a different enemy hero" excludes the target this instance
-            // took exactly as "on a different target" does; what it adds is a narrowing of the kinds
-            // left, and that half is derived from the card when the repeated instance builds its
-            // candidates rather than carried here.
             owedAttackRepeatExclusion =
-                result.RepeatRequested.Binding == RepeatTargetBinding.DifferentTarget ||
-                result.RepeatRequested.Binding == RepeatTargetBinding.DifferentEnemyHero
-                    ? attack.Target
-                    : default;
+                CardTextRepeatExclusionFor(result.RepeatRequested.Binding, attack);
+        }
+
+        /// <summary>
+        /// The unit a card-text repeat of this Attack may not take, read off the binding the asking
+        /// node declares.
+        ///
+        /// <para>Milestone 8.24. Xargatha's "on a different enemy hero" excludes the target this
+        /// instance took exactly as "on a different target" does; what it adds is a narrowing of the
+        /// kinds left, and that half is derived from the card when the repeated instance builds its
+        /// candidates rather than carried here.</para>
+        ///
+        /// <para><b>Milestone 8.35z15 extracted it, and the extraction is the point.</b> The offer has
+        /// to be judged against the exclusion the instance it offers would carry, or it is not judging
+        /// that instance - which is milestone 8.25e's <see cref="ExclusionFor"/> argument on the
+        /// after-action path, made once more here so the card-text offer and the card-text answer read
+        /// one statement rather than two copies that can drift.</para>
+        /// </summary>
+        private static AttackTarget CardTextRepeatExclusionFor(
+            RepeatTargetBinding binding, PendingAttackResolution attack) =>
+            binding == RepeatTargetBinding.DifferentTarget ||
+            binding == RepeatTargetBinding.DifferentEnemyHero
+                ? attack.Target
+                : default;
+
+        /// <summary>
+        /// Milestone 8.35z15: whether the repeat a card text printed inside rulebook p.14 is about to
+        /// offer could actually be performed, asked before the offer is made rather than discovered
+        /// after it is taken.
+        ///
+        /// <para><b>The defect this closes.</b> Milestone 8.25e made p.10's repeat an honest offer on
+        /// the after-action-ability path - "you may perform the entire action again" is an offer, so
+        /// whether a second instance can start is asked of the board as it then stands - and
+        /// <c>Rules/RULE_SYSTEMS.md</c> row 48 has recorded that ruling ever since. The card-text path
+        /// never asked it. So Xargatha's Cleave, whose repeat admits enemy heroes and nothing else,
+        /// opened p.10's confirm-or-decline against a board whose only adjacent enemy hero was the one
+        /// the printed instance had just attacked - a live report, and the fourth instance of the
+        /// offer-admits-more-than-the-answer-can-perform class after milestones 8.29d, 8.29e and
+        /// 8.35z5.</para>
+        ///
+        /// <para><b>The board it judges against is the one this moment is standing on, and that is a
+        /// recorded ruling rather than a choice made here.</b> <c>Rules/RULE_SYSTEMS.md</c> row 48
+        /// says the question is "asked of the board as it then stands" - not of the board the second
+        /// instance will eventually start from, which no moment can read. So both of p.14's moments
+        /// that reach a repeat are judged the same way, and the residual p.10 keeps for itself - a
+        /// board that changes between the offer and the instance - stays exactly where
+        /// <see cref="AttackDefenseCardActionStrategyBackend.CanStartRepeatedAttack"/> already
+        /// documents it, outside this question's reach.</para>
+        ///
+        /// <para><b>What makes the question answerable is the target, not the moment.</b> Every
+        /// binding here excludes the Attack's own target, so a repeat reached before the page has
+        /// chosen one would have nothing to measure its exclusion against - and this returns true
+        /// there, which is <see cref="EffectOptionFeasibilityQuery"/>'s own standing direction
+        /// restated: refuse a repeat that can be proved to have nowhere to go, never one that merely
+        /// cannot be read. Arien's Violent Torrent is why this was measured rather than assumed. Its
+        /// repeat is printed at p.14's step 1, so a moment-shaped gate would have excused it - but the
+        /// node is reached with the target already chosen, and driven on a board holding one adjacent
+        /// minion it opened p.10's confirm, took the confirmation, and started nothing. It is the
+        /// second card of the class, not an exception to it.</para>
+        ///
+        /// <para><b>What it deliberately does not ask.</b> Whether the Attack was defended. p.10 says
+        /// "After you perform this action, you may perform the entire action again" and conditions
+        /// nothing on the outcome, so a successfully defended Attack was still performed and still
+        /// offers its repeat. The live report was a defended Attack, and the empty subject set is the
+        /// whole of what is refused here.</para>
+        /// </summary>
+        private bool CardTextRepeatCanBePerformed(
+            RepeatTargetBinding binding,
+            PendingAttackResolution enclosing,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (enclosing == null || !enclosing.Target.IsDefined)
+            {
+                return true;
+            }
+
+            return attackDefenseBackend.CanStartRepeatedAttack(
+                enclosing,
+                CardTextRepeatResolutionIdFor(enclosing),
+                CardTextRepeatExclusionFor(binding, enclosing),
+                definitions,
+                instances,
+                participants,
+                modifications,
+                // The text asking this is a step of the Attack it offers to repeat, so that Attack
+                // being under way is the subject of the question rather than an obstacle to it.
+                theAskingInstanceIsStillUnderWay: true);
         }
 
         /// <summary>
@@ -2506,6 +2601,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = (instances ??
+                throw new ArgumentNullException(nameof(instances))).ToArray();
             var effectRoot = SkillCardActionStrategyBackend.FindEffectRoot(
                 materializedDefinitions, pendingCardText.Frame);
             if (effectRoot == null)
@@ -2542,7 +2639,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // the node is reached from.
                 repeatIsUnavailable: RepeatedActionQuery.IsRepeatedInstance(
                     pendingCardText.Attack?.InvocationContext ??
-                    ActionInvocationContext.PrintedPrimary));
+                    ActionInvocationContext.PrintedPrimary),
+                // Milestone 8.35z15, the resume half of the same question the start half asks: a
+                // frame that comes back to a `RepeatAction` node after answering an earlier question
+                // is offered that repeat here, so it is judged here too - and from the board as it
+                // now stands, which is a later board than the one the start half read.
+                repeatCanBePerformed: binding => CardTextRepeatCanBePerformed(
+                    binding,
+                    pendingCardText.Attack,
+                    materializedDefinitions,
+                    materializedInstances,
+                    participants,
+                    modifications));
             var step = EffectResolutionSession.Answer(pendingCardText.Frame, command, context);
             if (!step.Accepted)
             {

@@ -402,6 +402,43 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35z15. The condition is true and the repeat still has nowhere to go: on a board
+        /// holding no unit but the hero the Attack took, "on a different target" names nobody, and
+        /// rulebook p.10's confirm-or-decline is not opened at all.
+        ///
+        /// <para>It is the third answer this one sentence has, and the one that was missing. The case
+        /// above proves the repeat offered when another unit is standing; the case beside it proves it
+        /// never asked when the Attack took a minion, because the printed condition is false. This one
+        /// holds the condition true and empties the subject set instead - which before this milestone
+        /// opened the offer, took the player's confirmation, and started no second instance.</para>
+        /// </summary>
+        [Test]
+        public void ThunderBoomerang_OffersNoRepeatWhenItTookTheOnlyUnitInReach()
+        {
+            var session =
+                ConfiguredMatchFixtures.CreateThunderBoomerangSessionWithOnlyTheEnemyHeroInReach();
+            var enemy = HeroOn(session, TeamSide.Blue);
+
+            StartTheBoomerang(session, WaspCardContent.ThunderBoomerang);
+            var choice = session.Projection.PendingAttackTargetChoice;
+            Assert.That(choice.LegalTargetMinionIds, Is.Empty,
+                "Every minion is off this board, which is the whole of the staging.");
+            Assert.That(choice.LegalTargetHeroIds, Does.Contain(enemy),
+                "and the enemy hero is the one unit left in reach.");
+
+            ConfiguredMatchFixtures.Accept(
+                session,
+                DirectorCommand.ChooseAttackTarget(choice.ResolutionId, choice.ChoiceId, enemy));
+            ResolveTheDefenseResponse(session);
+
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
+                "\"If you targeted a hero may repeat once on a different target\" - the condition " +
+                "holds and the exclusion empties the set, so p.10's offer is not made.");
+            Assert.That(session.Projection.PendingAttackTargetChoice, Is.Null,
+                "and no second instance started.");
+        }
+
+        /// <summary>
         /// Milestone 8.25d. The same repeat, read for what the instance says about itself: it runs
         /// under <see cref="ActionInvocationContext.Repeated"/>, and its offered set is unchanged.
         ///

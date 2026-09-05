@@ -257,6 +257,19 @@ namespace GuardsDigital.Tests.PlayMode
         // Tier III
         // ---------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// Violent Torrent's "May repeat once on a different unit", taken rather than refused.
+        ///
+        /// <para><b>The enemy is walked into contact first, and milestone 8.35z15 is why.</b>
+        /// <see cref="EngagedMirrorStaging"/> stages the two heroes exactly two spaces apart by
+        /// construction - it skips any candidate pair whose distance is not 2 - and on the untouched
+        /// staging Violent Torrent admits exactly one unit, the enemy Ranged minion beside him. "On a
+        /// different unit" then names nobody, so rulebook p.10 does not offer the repeat at all. Before
+        /// that milestone it was offered anyway, and this journey pressed its decline: an offer whose
+        /// only exercised answer was "no", on a board where "yes" could never have produced an
+        /// instance. Closing to adjacency gives the repeat a real second unit, so the journey now
+        /// drives what its name says.</para>
+        /// </summary>
         [UnityTest]
         public IEnumerator ViolentTorrent_RepeatsItsBeforeAttackTextOnADifferentUnitByItsRepeatControl()
         {
@@ -265,7 +278,10 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var hud = root.Hud;
             var arienId = ArienSeat(runtime).HeroId;
+            var waspId = OtherHeroId(runtime, arienId);
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            yield return CloseToAdjacency(root, arienId, waspId, ArienCardContent.ViolentTorrent);
 
             CommitActingFirst(runtime, arienId, ArienCardContent.ViolentTorrent);
 
@@ -300,26 +316,42 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
             }
 
-            // "May repeat once on a different unit" - the printed decision, declined on its control.
+            // "May repeat once on a different unit" - the printed decision, taken on its control.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The repeat is asked once the line has been answered. " + Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice.Candidates, Is.Empty,
                 "and it is a decision rather than a selection. " + Remaining(runtime));
-            var repeat = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
-            Assert.That(repeat, Is.Not.Null,
+            Assert.That(
+                runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline),
+                Is.Not.Null,
                 "The repeat must be offered as a decision a player can refuse. " +
                 Remaining(runtime));
+            var take = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            Assert.That(take, Is.Not.Null,
+                "and one they can take, which is the half no journey had ever pressed. " +
+                Remaining(runtime));
             var commandsBefore = runtime.AcceptedCommands.Count;
-            UiPlayer.Click(UiPlayer.Button(hud, repeat.Label));
+            UiPlayer.Click(UiPlayer.Button(hud, take.Label));
+            yield return null;
             yield return null;
 
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsBefore + 1),
                 "One click on the repeat's control is one command.");
-            Assert.That(runtime.PendingEffectChoice, Is.Null,
-                "Declining the repeat ends the card's text after its one run. " + Remaining(runtime));
-            Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
-                "and the Attack it was printed on completed.");
+
+            var second = runtime.PendingAttackTargetChoice;
+            Assert.That(second, Is.Not.Null,
+                "Taking the repeat starts a second Attack instance, which asks for its own target. " +
+                Remaining(runtime));
+            Assert.That(
+                second.LegalTargetMinionIds.Contains(targetId), Is.False,
+                "\"on a different unit\": the unit the first instance took is out of the set.");
+            Assert.That(
+                second.LegalTargetHeroIds.Count + second.LegalTargetMinionIds.Count,
+                Is.GreaterThan(0),
+                "and the set it leaves is not empty, which is the whole reason p.10 offered it. " +
+                Remaining(runtime));
         }
 
         [UnityTest]

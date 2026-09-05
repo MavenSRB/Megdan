@@ -364,6 +364,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Mandatory and Optional Steps rather than an offer that should not have been made. Deciding
         /// that here would mean running the card text speculatively at the checkpoint.</para>
         /// </summary>
+        /// <param name="theAskingInstanceIsStillUnderWay">
+        /// Milestone 8.35z15. Whether the instance being asked about is the one currently occupying
+        /// <see cref="pendingAttackResolution"/> - which is the ordinary case when card text printed
+        /// inside rulebook p.14 asks this, because that text is a step of the very Attack it offers to
+        /// repeat.
+        ///
+        /// <para><b>Why the guard has to be told.</b> <see cref="PlanRepeatedAttack"/> refuses while a
+        /// resolution is pending, and that guard exists so <see cref="StartRepeatedAttack"/> cannot
+        /// clobber a live one. Asked as a question rather than as a start, the pending resolution is
+        /// not a blocker but the subject: Arien's Violent Torrent reaches its repeat at p.14's step 1,
+        /// with its own Attack still under way, and judging it against that guard would have refused
+        /// every one of its repeats - which is measurably worse than the defect being closed. Only the
+        /// named instance is excused; any other pending resolution still refuses.</para>
+        /// </param>
         internal bool CanStartRepeatedAttack(
             PendingAttackResolution completed,
             ActionResolutionId repeatedResolutionId,
@@ -371,7 +385,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications) =>
+            RuleModificationSet modifications,
+            bool theAskingInstanceIsStillUnderWay = false) =>
             completed != null &&
             repeatedResolutionId.IsDefined &&
             definitions != null &&
@@ -379,7 +394,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PlanRepeatedAttack(
                 completed, repeatedResolutionId, excludedTarget, definitions.ToArray(),
                 instances.ToArray(), participants, modifications,
-                out _, out _, out _) == CardActionResolutionRejectionReason.None;
+                out _, out _, out _, theAskingInstanceIsStillUnderWay) ==
+                CardActionResolutionRejectionReason.None;
 
         /// <summary>
         /// Everything <see cref="StartRepeatedAttack"/> decides before it commits anything: the
@@ -396,12 +412,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             out PendingAttackResolution planned,
             out PendingAttackTargetChoice plannedChoice,
-            out bool targetIsBoundByCardText)
+            out bool targetIsBoundByCardText,
+            bool theAskingInstanceIsStillUnderWay = false)
         {
             planned = null;
             plannedChoice = null;
             targetIsBoundByCardText = false;
-            if (pendingAttackResolution != null)
+            if (pendingAttackResolution != null &&
+                !(theAskingInstanceIsStillUnderWay &&
+                    pendingAttackResolution.ResolutionId.Equals(completed.ResolutionId)))
             {
                 return CardActionResolutionRejectionReason.ResolutionAlreadyPending;
             }
