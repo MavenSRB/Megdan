@@ -3590,7 +3590,7 @@ namespace GuardsDigital.Presentation.Match
                 // the release above finds no standing contract yet, because the completion it
                 // follows has only been SENT. Arm the continuation so the release lands on the
                 // projection that answers it rather than waiting for a second press.
-                ArmOrClearEndTurnContinuation(pressActorId);
+                ArmOrClearEndTurnContinuation(pressActorId, isFreshPress: true);
             }
 
             return true;
@@ -3628,7 +3628,7 @@ namespace GuardsDigital.Presentation.Match
         {
             var pressActorId = PressActorOf(session.Projection);
             var progressed = ComposeEndTurn(pressActorId);
-            ArmOrClearEndTurnContinuation(pressActorId);
+            ArmOrClearEndTurnContinuation(pressActorId, isFreshPress: true);
             return progressed;
         }
 
@@ -3757,9 +3757,21 @@ namespace GuardsDigital.Presentation.Match
         /// client never reports it, so a local press - which always finishes inside its own loop -
         /// never arms a continuation at all.</para>
         /// </summary>
-        private void ArmOrClearEndTurnContinuation(HeroId pressActorId)
+        private void ArmOrClearEndTurnContinuation(HeroId pressActorId, bool isFreshPress)
         {
-            composingEndTurnResumes = 0;
+            // Milestone 8.35z4. The budget belongs to the PRESS, not to each resumption of it.
+            // Resetting it unconditionally here made MaxEndTurnResumes unreachable: every resume
+            // re-arms through this method, so the counter returned to zero before it could ever be
+            // compared, and a press whose submission kept being refused resumed forever. The
+            // six-client rehearsal found it - one seat spent 17,486 refused submissions at a single
+            // authoritative version while the match stood still. No offline probe could reach it,
+            // because against an in-memory wire the composition always completed within two frames
+            // and disarmed at the actor boundary long before the bound could matter.
+            if (isFreshPress)
+            {
+                composingEndTurnResumes = 0;
+            }
+
             var projection = session.Projection;
 
             // Deliberately NOT conditioned on whether this press submitted anything. An impatient
@@ -3806,7 +3818,7 @@ namespace GuardsDigital.Presentation.Match
             // armed press and cannot recurse into it. The step below re-arms if there is still more.
             composingEndTurnFor = default;
             ComposeEndTurn(actor);
-            ArmOrClearEndTurnContinuation(actor);
+            ArmOrClearEndTurnContinuation(actor, isFreshPress: false);
         }
 
         /// <summary>

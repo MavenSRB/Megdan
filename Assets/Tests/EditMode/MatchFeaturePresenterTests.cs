@@ -1363,6 +1363,316 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35z4, and the case the six-client rehearsal wrote. The continuation's
+        /// <c>MaxEndTurnResumes</c> bound was UNREACHABLE as first written: every resumption re-armed
+        /// through <c>ArmOrClearEndTurnContinuation</c>, which reset the counter, so the comparison
+        /// could never be met and a press whose submissions kept being refused resumed on every
+        /// frame forever. Live, one seat spent 17,486 refused submissions at a single authoritative
+        /// version while the whole table stood still.
+        ///
+        /// <para>Nothing offline had reached it. Against an in-memory wire the composition always
+        /// COMPLETED within two frames, so the state left the press's own actor and the continuation
+        /// disarmed at its boundary long before any bound mattered. The missing dimension is a host
+        /// that answers without ever changing the match: the gate re-opens, the state still concerns
+        /// the same actor, and the press has somewhere to go again - forever, unless the budget is
+        /// spent rather than refreshed.</para>
+        /// </summary>
+        [Test]
+        public void AnEndTurnPressWhoseSubmissionsAreAlwaysRefused_SpendsItsBudgetInsteadOfResumingForever()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var actor = session.Projection.SelectedActor.ActorId;
+            var client = new RefusedDeferredMatchClient(session);
+            var presenter = new RoundActionPresenter(client, new CapturingRoundView(), actor);
+
+            Assert.That(presenter.SubmitEndTurn(), Is.True, "The one press the player makes.");
+
+            // Only the frames Unity already runs, and a host that refuses every one of them.
+            for (var frame = 0; frame < 200; frame++)
+            {
+                client.DeliverRefusal();
+                presenter.Refresh();
+            }
+
+            Assert.That(client.SubmissionsSent, Is.GreaterThan(1),
+                "Anti-vacuity: the continuation must really have resumed, or this case would " +
+                "pass against a mechanism that never armed at all.");
+            Assert.That(client.SubmissionsSent, Is.LessThanOrEqualTo(13),
+                "One press plus at most MaxEndTurnResumes (12) resumptions. Pre-fix this reached " +
+                "201 - one submission per frame, without end - which is the live runaway.");
+            Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(actor),
+                "and the match is exactly where it was: a refused press changes nothing, which " +
+                "is why the loop could never terminate itself.");
+        }
+
+        /// <summary>
+        /// A host that ACCEPTS the send and then refuses it, leaving the match untouched. The gate
+        /// closes on submission and re-opens on the refusal, so the press is offered its own
+        /// unchanged state back on every frame - the shape the live rehearsal produced.
+        /// </summary>
+        private sealed class RefusedDeferredMatchClient : IMatchClient
+        {
+            private readonly IMatchSession session;
+            private readonly MatchHost host;
+            private bool inFlight;
+
+            public RefusedDeferredMatchClient(IMatchSession session)
+            {
+                this.session = session;
+                host = new MatchHost(session);
+            }
+
+            public int SubmissionsSent { get; private set; }
+
+            public bool IsDirector => false;
+
+            public IMatchReadModel Projection
+            {
+                get
+                {
+                    if (!inFlight)
+                    {
+                        return session.Projection;
+                    }
+
+                    var seat = host.Seats.Seats[0];
+                    Assert.That(NetworkSeatProjectionCodec.TryDecode(
+                        NetworkSeatProjectionCodec.Encode(host.ProjectionForSeat(seat.Id)),
+                        out var record), Is.True);
+                    var waiting = new NetworkMatchReadModel(
+                        host.Projection, MatchContentCatalogs.ForThisBuild());
+                    waiting.Replace(record, false);
+                    return waiting;
+                }
+            }
+
+            public MatchClientResult Submit(DirectorCommand command)
+            {
+                if (inFlight)
+                {
+                    return new MatchClientResult(false, "Waiting for the host.", Projection, true);
+                }
+
+                inFlight = true;
+                SubmissionsSent++;
+                return new MatchClientResult(true, "Sent to the host.", Projection, false);
+            }
+
+            public MatchClientResult SubmitAgreement(TeamAgreementCommand command) =>
+                new MatchClientResult(false, "Not used by this fixture.", Projection, true);
+
+            public MatchClientResult SubmitUndo() =>
+                new MatchClientResult(false, "Not used by this fixture.", Projection, true);
+
+            /// <summary>The host's REFUSAL arriving: the gate re-opens, the match is untouched.</summary>
+            public void DeliverRefusal() => inFlight = false;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z4. The Hold path was the only multi-command press the defect batch probed
+        /// over an asynchronous client, and the shape table names four more. This is the movement
+        /// Stop at two commands: the composition that stops the movement and then releases, each
+        /// step now costing its own round trip.
+        /// </summary>
+        [Test]
+        public void OneEndTurnPressOverAnAsynchronousClient_StopsAMovementAndReleasesWithNoSecondPress()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session, ActionKind.Movement);
+            var movement = session.Projection.AvailableTurnActions.Single(offer =>
+                GetActionKind(session.Projection, offer) == ActionKind.Movement);
+            Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted,
+                Is.True);
+            Assert.That(session.Projection.PendingMovementChoice?.CanStop, Is.True,
+                "The fixture is only this state while an early stop is legal.");
+
+            var actor = session.Projection.SelectedActor.ActorId;
+            var client = new DeferredMatchClient(session);
+            var presenter = new RoundActionPresenter(client, new CapturingRoundView(), actor);
+
+            Assert.That(presenter.SubmitEndTurn(), Is.True, "The one press the player makes.");
+
+            for (var frame = 0; frame < 8; frame++)
+            {
+                client.DeliverPending();
+                presenter.Refresh();
+            }
+
+            Assert.That(session.Projection.PendingMovementChoice, Is.Null);
+            Assert.That(session.Projection.PendingTurnRelease, Is.Null,
+                "One press stopped the movement AND released it, across two round trips.");
+            var commands = session.Projection.AcceptedCommands;
+            Assert.That(commands[commands.Count - 2].Kind, Is.EqualTo(DirectorCommandKind.StopMovement));
+            Assert.That(commands[commands.Count - 1].Kind, Is.EqualTo(DirectorCommandKind.ReleaseTurn));
+            Assert.That(
+                commands.Count(command => command.Kind == DirectorCommandKind.ReleaseTurn),
+                Is.EqualTo(1),
+                "and exactly one release, at this press's own actor boundary.");
+        }
+
+        /// <summary>
+        /// Milestone 8.35z4, and the DEEPEST composition the shape table names: an open Attack
+        /// target discarded, the action completed, the turn released - three host commands from one
+        /// press, each now costing its own round trip. Staged exactly as the synchronous case above
+        /// does, through the seeded walk, then driven over the asynchronous contract.
+        /// </summary>
+        [Test]
+        public void OneEndTurnPressOverAnAsynchronousClient_CancelsAnOpenAttackTargetAndReleases()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var budget = 1800;
+            MatchSeat actingSeat = null;
+            while (budget > 0)
+            {
+                budget -= OwnerScopedProjectionTests.DriveThroughSeats(
+                    host, budget, projection => projection.PendingAttackTargetChoice != null, 6);
+                var projection = host.Projection;
+                if (projection.PendingAttackTargetChoice == null)
+                {
+                    break;
+                }
+
+                var seat = host.Seats.FindByHero(projection.SelectedActor.ActorId);
+                var seatClient = host.ClientForSeat(seat.Id);
+                if (seatClient.Projection.IsSeatUndoAvailable)
+                {
+                    actingSeat = seat;
+                    break;
+                }
+
+                var target = seatClient.Projection.AuthorizedCommands.First(command =>
+                    command.Kind == DirectorCommandKind.ChooseAttackTarget);
+                Assert.That(seatClient.Submit(new SeatSubmission(
+                        new SubmissionId("skip-target-" + projection.AcceptedCommands.Count),
+                        seatClient.Projection.Version, target))
+                    .Accepted, Is.True);
+            }
+
+            Assert.That(actingSeat, Is.Not.Null,
+                "The seeded walk must reach an Attack target choice whose actor still holds a " +
+                "rewind into its own turn, or this case proves nothing about the cancel.");
+
+            var client = new DeferringSeatClient(
+                new SeatMatchClient(host.ClientForSeat(actingSeat.Id)), host, actingSeat);
+            var attackCommandFloor = host.Projection.AcceptedCommands.Count;
+            var presenter = new RoundActionPresenter(
+                client, new CapturingRoundView(), actingSeat.HeroId);
+
+            Assert.That(presenter.SubmitEndTurn(), Is.True, "The one press the player makes.");
+
+            for (var frame = 0; frame < 12; frame++)
+            {
+                client.DeliverPending();
+                presenter.Refresh();
+            }
+
+            Assert.That(host.Projection.PendingAttackTargetChoice, Is.Null);
+            Assert.That(host.Projection.PendingTurnRelease, Is.Null,
+                "One press discarded the open target, completed the action and released the " +
+                "turn - three commands over three round trips, with no second press.");
+            Assert.That(
+                host.Projection.AcceptedCommands.Skip(attackCommandFloor)
+                    .Any(command => command.Kind == DirectorCommandKind.ChooseAttackTarget),
+                Is.False,
+                "and the open target was still never answered, not even to a legal candidate.");
+        }
+
+        /// <summary>
+        /// The same asynchronous contract as <see cref="DeferredMatchClient"/>, wrapped around a
+        /// SEAT client rather than the session, so a state reachable only through a real host and
+        /// its seats can be driven over the wire's own accepted-but-only-sent semantics.
+        /// </summary>
+        private sealed class DeferringSeatClient : IMatchClient
+        {
+            private readonly IMatchClient inner;
+            private readonly MatchHost host;
+            private readonly MatchSeat seat;
+            private DirectorCommand pending;
+            private bool pendingUndo;
+
+            public DeferringSeatClient(IMatchClient inner, MatchHost host, MatchSeat seat)
+            {
+                this.inner = inner;
+                this.host = host;
+                this.seat = seat;
+            }
+
+            public bool IsDirector => false;
+
+            /// <summary>
+            /// The open-Attack-target composition opens with the seat's own REWIND, not with a
+            /// command, so a wrapper that deferred only <c>Submit</c> would refuse the press's very
+            /// first step and report no progress at all. Both carriers are in flight here.
+            /// </summary>
+            private bool InFlight => pending != null || pendingUndo;
+
+            public IMatchReadModel Projection
+            {
+                get
+                {
+                    if (!InFlight)
+                    {
+                        return inner.Projection;
+                    }
+
+                    Assert.That(NetworkSeatProjectionCodec.TryDecode(
+                        NetworkSeatProjectionCodec.Encode(host.ProjectionForSeat(seat.Id)),
+                        out var record), Is.True);
+                    var waiting = new NetworkMatchReadModel(
+                        host.Projection, MatchContentCatalogs.ForThisBuild());
+                    waiting.Replace(record, false);
+                    return waiting;
+                }
+            }
+
+            public MatchClientResult Submit(DirectorCommand command)
+            {
+                if (InFlight)
+                {
+                    return new MatchClientResult(false, "Waiting for the host.", Projection, true);
+                }
+
+                pending = command;
+                return new MatchClientResult(true, "Sent to the host.", Projection, false);
+            }
+
+            public MatchClientResult SubmitAgreement(TeamAgreementCommand command) =>
+                new MatchClientResult(false, "Not used by this fixture.", Projection, true);
+
+            public MatchClientResult SubmitUndo()
+            {
+                if (InFlight)
+                {
+                    return new MatchClientResult(false, "Waiting for the host.", Projection, true);
+                }
+
+                pendingUndo = true;
+                return new MatchClientResult(true, "Sent to the host.", Projection, false);
+            }
+
+            /// <summary>The host's answer arriving - one round trip, of whichever carrier is out.</summary>
+            public void DeliverPending()
+            {
+                if (pendingUndo)
+                {
+                    pendingUndo = false;
+                    inner.SubmitUndo();
+                    return;
+                }
+
+                if (pending == null)
+                {
+                    return;
+                }
+
+                var command = pending;
+                pending = null;
+                inner.Submit(command);
+            }
+        }
+
+        /// <summary>
         /// State: mid-movement, free to stop early. One press stops the movement AND releases.
         /// </summary>
         [Test]
