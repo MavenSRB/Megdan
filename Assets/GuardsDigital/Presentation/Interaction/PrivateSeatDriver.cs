@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Match;
 using UnityEngine;
@@ -184,9 +187,15 @@ namespace GuardsDigital.Presentation.Interaction
     /// answer at a human-followable pace instead of racing to the end of the match.
     /// </summary>
     /// <remarks>
-    /// <para>NOT an AI opponent: there is no board evaluation, no difficulty, no notion of a good
-    /// move versus a bad one - every legal answer is equally likely, which is the whole of the
-    /// design. That is a durable non-goal, not a limitation this milestone works around.</para>
+    /// <para>NOT an AI opponent, and this milestone (the tier-0.5 greedy-nudge pass) does not change
+    /// that: there is still no board evaluation, no simulation, no lookahead. What changed is that
+    /// three of the game's own already-published facts - a legal Attack target existing, a
+    /// destination's hex distance to the nearest fight, and whether a standing Defense preview
+    /// already says an unanswered hit is lethal - now narrow the random pick to the subset of
+    /// legal answers those facts prefer, with the die still deciding among ties. Card SELECTION at
+    /// a commitment (which card to play), leveling picks, and which candidate a team agreement
+    /// converges on are untouched: durable non-goals, not oversights. See
+    /// <see cref="SelectGreedyCommand"/> for the three preferences themselves.</para>
     /// <para>An ordinary keyed client in every way the host or another player's client can observe:
     /// it dials in, presents the session key, and claims its seat exactly as
     /// <see cref="PrivateClientDriver"/>'s command-line role does, just through the lobby rather
@@ -468,8 +477,217 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            var selected = commands[random.Next(commands.Count)];
+            var selected = SelectGreedyCommand(commands, runtime.ReadModel, runtime.Seat.HeroId, random) ??
+                commands[random.Next(commands.Count)];
             Submit(runtime.SubmitProjectedCommand(selected));
+        }
+
+        /// <summary>
+        /// The tier-0.5 greedy-nudge layer (see the class remarks): three deterministic preferences,
+        /// tried in the order below, each reading only facts already published on this seat's own
+        /// <paramref name="readModel"/> and each returning <c>null</c> - "defer to random-legal" -
+        /// the instant its own facts are absent. Never widens <paramref name="commands"/>, so a
+        /// result here is always a member of it and therefore always as legal as random-legal was.
+        /// </summary>
+        /// <remarks>
+        /// The order does not matter for correctness - the four sub-selectors key off disjoint
+        /// <see cref="DirectorCommandKind"/> subsets of <paramref name="commands"/>, because exactly
+        /// one pending decision family is ever standing at a time (<see
+        /// cref="ConfiguredMatchSceneRuntime.EnumerateProjectedCommands"/>'s own shape) - but it is
+        /// written defense-first, since a lethal, undefended hit is the one mistake this pass exists
+        /// to prevent a practice opponent from making by pure bad luck.
+        /// </remarks>
+        internal static DirectorCommand SelectGreedyCommand(
+            IReadOnlyList<DirectorCommand> commands,
+            IMatchReadModel readModel,
+            HeroId ownHeroId,
+            System.Random random)
+        {
+            if (commands == null || commands.Count == 0 || readModel == null)
+            {
+                return null;
+            }
+
+            return PreferSufficientDefense(commands, readModel, random) ??
+                PreferKillableAttackTarget(commands, readModel, random) ??
+                PreferAdvancingMovement(commands, readModel, ownHeroId, random) ??
+                PreferAttackStart(commands, readModel, random);
+        }
+
+        /// <summary>
+        /// Preference 1 (the "start an action" half): among enumerated <see
+        /// cref="DirectorCommandKind.StartAction"/> commands, prefer one whose action is an Attack.
+        /// Safe without checking for a legal target separately - <c>TurnResolutionAuthority
+        /// .CanStartAttack</c> already refuses to offer an Attack with nobody to hit, so an Attack
+        /// StartAction command reaching this list has already cleared that bar. Falls back to
+        /// <c>null</c> (random-legal over every offered action, Attack or not) the moment no
+        /// StartAction is offered at all, or none of the ones offered is an Attack.
+        /// </summary>
+        internal static DirectorCommand PreferAttackStart(
+            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, System.Random random)
+        {
+            var starts = commands.Where(command => command.Kind == DirectorCommandKind.StartAction).ToArray();
+            if (starts.Length == 0)
+            {
+                return null;
+            }
+
+            var attackStarts = starts.Where(command => IsAttackAction(readModel, command)).ToArray();
+            return attackStarts.Length == 0 ? null : attackStarts[random.Next(attackStarts.Length)];
+        }
+
+        private static bool IsAttackAction(IMatchReadModel readModel, DirectorCommand startCommand)
+        {
+            var card = readModel.Cards.FirstOrDefault(value => value.Id.Equals(startCommand.CardInstanceId));
+            var definition = card == null
+                ? null
+                : readModel.Definitions.FirstOrDefault(value => value.Reference.Equals(card.DefinitionReference));
+            var action = definition?.ActionDefinitions.FirstOrDefault(
+                value => value.Id.Equals(startCommand.ActionDefinitionId));
+            return action != null && action.Kind == ActionKind.Attack;
+        }
+
+        /// <summary>
+        /// Preference 1 (the "choose a target" half): among <see
+        /// cref="DirectorCommandKind.ChooseAttackTarget"/> commands that name a hero, prefer the
+        /// target on the team with the fewest remaining <see cref="IMatchReadModel.TeamLifeCounters"/>
+        /// - the game's own "closest to losing" vocabulary, which is what "lowest-Life" reads as for
+        /// a hero rather than a per-hero hit-point pool this game does not have - tie-broken by the
+        /// lowest total minion Defense bonus <see cref="IMatchReadModel.PendingAttackTargetDefensePreviews"/>
+        /// already previews for that hero, i.e. "killable": the fewer nearby minions would help this
+        /// target's Defense, the more likely a Life-costing hit lands. Falls back to <c>null</c> when
+        /// every legal target is a minion (no comparable "Life" fact exists for one), preserving
+        /// random-legal exactly as instructed.
+        /// </summary>
+        internal static DirectorCommand PreferKillableAttackTarget(
+            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, System.Random random)
+        {
+            var targets = commands.Where(command =>
+                command.Kind == DirectorCommandKind.ChooseAttackTarget && command.HeroId.IsDefined).ToArray();
+            if (targets.Length == 0)
+            {
+                return null;
+            }
+
+            var lifeByTeam = (readModel.TeamLifeCounters ?? Array.Empty<KeyValuePair<TeamId, int>>())
+                .ToDictionary(entry => entry.Key, entry => entry.Value);
+            var previews = readModel.PendingAttackTargetDefensePreviews ??
+                Array.Empty<AttackTargetDefensePreviewProjection>();
+
+            var scored = targets
+                .Select(command =>
+                {
+                    var team = readModel.Participants.GetTeamForHero(command.HeroId);
+                    var life = lifeByTeam.TryGetValue(team.Id, out var counters) ? counters : int.MaxValue;
+                    var preview = previews.FirstOrDefault(value => value.HeroId.Equals(command.HeroId));
+                    var defenseBonus = preview?.MinionContributions.Sum(value => value.Amount) ?? 0;
+                    return (Command: command, Life: life, Bonus: defenseBonus);
+                })
+                .OrderBy(value => value.Life)
+                .ThenBy(value => value.Bonus)
+                .ToArray();
+
+            var best = scored[0];
+            var tied = scored
+                .Where(value => value.Life == best.Life && value.Bonus == best.Bonus)
+                .Select(value => value.Command)
+                .ToArray();
+            return tied[random.Next(tied.Length)];
+        }
+
+        /// <summary>
+        /// Preference 2: among <see cref="DirectorCommandKind.ChooseMovementDestination"/> commands,
+        /// prefer the destination with the lowest simple hex distance
+        /// (<see cref="HexDistanceQuery.Calculate"/> - no pathfinding beyond what the offer itself
+        /// already enumerates) to the nearest objective, where "objective" is every enemy hero's
+        /// current space plus every minion's current space - minions being the one board-public proxy
+        /// for "the lane battle" this read model exposes; the current Battle Zone id itself is
+        /// Director-only board state, never published to a seat. Falls back to <c>null</c> (stays
+        /// random-legal) when the board has neither an enemy hero nor a minion to read a distance to.
+        /// </summary>
+        internal static DirectorCommand PreferAdvancingMovement(
+            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, HeroId ownHeroId, System.Random random)
+        {
+            var moves = commands.Where(command =>
+                command.Kind == DirectorCommandKind.ChooseMovementDestination).ToArray();
+            if (moves.Length == 0)
+            {
+                return null;
+            }
+
+            var ownTeamId = readModel.Participants.GetTeamForHero(ownHeroId).Id;
+            var objectives = readModel.Heroes
+                .Where(occupancy => !occupancy.HeroId.Equals(ownHeroId) &&
+                    !readModel.Participants.GetTeamForHero(occupancy.HeroId).Id.Equals(ownTeamId))
+                .Select(occupancy => occupancy.Coordinate)
+                .Concat(readModel.Minions.Select(minion => minion.Coordinate))
+                .ToArray();
+            if (objectives.Length == 0)
+            {
+                return null;
+            }
+
+            var scored = moves
+                .Select(command => (
+                    Command: command,
+                    Distance: objectives.Min(objective => HexDistanceQuery.Calculate(command.Coordinate, objective))))
+                .OrderBy(value => value.Distance)
+                .ToArray();
+            var bestDistance = scored[0].Distance;
+            var tied = scored
+                .Where(value => value.Distance == bestDistance)
+                .Select(value => value.Command)
+                .ToArray();
+            return tied[random.Next(tied.Length)];
+        }
+
+        /// <summary>
+        /// Preference 3: when this seat's own standing <see cref="IMatchReadModel.PendingDefensePreview"/>
+        /// already says Declining would let the Attack succeed - the hero would be Defeated - play the
+        /// cheapest-sufficient Defense card instead: the legal, non-decline choice whose own preview
+        /// Outcome is <see cref="AttackResolutionOutcome.SuccessfullyDefended"/>, ordered by the lowest
+        /// Defense Total that still clears the Attack Total (a Block preview carries no Total and sorts
+        /// last, since there is nothing cheaper to compare it against). Falls back to <c>null</c> - stays
+        /// random-legal, matching the instruction that a non-lethal hit is not this preference's
+        /// business - the instant the preview is absent, Declining already survives, or no legal card
+        /// would save the hero anyway.
+        /// </summary>
+        internal static DirectorCommand PreferSufficientDefense(
+            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, System.Random random)
+        {
+            var defenseCommands = commands.Where(command =>
+                command.Kind == DirectorCommandKind.ChooseDefenseCard ||
+                command.Kind == DirectorCommandKind.DeclineDefense).ToArray();
+            if (defenseCommands.Length == 0)
+            {
+                return null;
+            }
+
+            var preview = readModel.PendingDefensePreview;
+            var decline = preview?.Choices.FirstOrDefault(choice => choice.IsDecline);
+            if (decline == null || decline.Outcome != AttackResolutionOutcome.AttackSuccessful)
+            {
+                return null;
+            }
+
+            var sufficientCardIds = preview.Choices
+                .Where(choice => !choice.IsDecline && choice.Outcome == AttackResolutionOutcome.SuccessfullyDefended)
+                .OrderBy(choice => choice.DefenseTotal ?? int.MaxValue)
+                .ThenBy(choice => choice.CardInstanceId.Value.Value, StringComparer.Ordinal)
+                .Select(choice => choice.CardInstanceId.Value)
+                .ToArray();
+
+            foreach (var cardId in sufficientCardIds)
+            {
+                var match = defenseCommands.FirstOrDefault(command =>
+                    command.Kind == DirectorCommandKind.ChooseDefenseCard && command.CardInstanceId.Equals(cardId));
+                if (match != null)
+                {
+                    return match;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
