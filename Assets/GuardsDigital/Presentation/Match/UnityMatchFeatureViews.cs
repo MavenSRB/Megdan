@@ -69,6 +69,17 @@ namespace GuardsDigital.Presentation.Match
         public BoardInteractionViewModel Model { get; private set; }
         public IReadOnlyList<StandardMinionView> MinionViews => minions;
 
+        /// <summary>The hero pieces this board draws, so a kinetic pass can offset the ones an event
+        /// names without holding a second roster of its own. Milestone 8.35y.</summary>
+        public IReadOnlyList<PrimitiveHeroView> HeroViews => heroes;
+
+        /// <summary>
+        /// The one acting-hero ring this board owns, or null before one has been needed. Milestone
+        /// 8.35y pulses it while the viewer is being waited on; it stays this view's to
+        /// position and to hide.
+        /// </summary>
+        public ActingHeroMarker ActingHeroMarker => actingHeroMarker;
+
         /// <summary>Every token view this board has ever built, active or pooled.</summary>
         public IReadOnlyList<PlacedTokenView> TokenViews => tokens;
 

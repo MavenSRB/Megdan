@@ -137,6 +137,14 @@ namespace GuardsDigital.Presentation.Match
             DiagnosticPresenter = Seat == null ? new DiagnosticLogPresenter(session, DiagnosticView) : null;
             MinionChoicePresenter = new MinionChoicePresenter(client, MinionChoiceView);
 
+            // Milestone 8.35y. The kinetic pass is composed like any other panel: a view that
+            // consumes typed cues, and a presenter that derives them from the seat-public match log.
+            // It is scoped to the same seat as every surface above, so a seat's client and the
+            // Director's client each play the story their own projection carries.
+            KineticView = new KineticCueUnityView(BoardView, hud);
+            KineticPresenter = new KineticCuePresenter(
+                client, KineticView, Seat?.HeroId ?? default);
+
             BoardView.BindIntentHandlers(
                 // Milestone 7.8a: the map pointer is the only hero-selection control there is. A click
                 // is first offered to the authority, because a hero the current choice makes a legal
@@ -294,7 +302,8 @@ namespace GuardsDigital.Presentation.Match
                 {
                     UnityEngine.Debug.LogError("GUARDS_HUD: PANEL_REFRESH_FAILED panel=" + panel);
                     UnityEngine.Debug.LogException(error);
-                });
+                },
+                KineticPresenter);
             RefreshAll();
         }
 
@@ -561,6 +570,10 @@ namespace GuardsDigital.Presentation.Match
         public MinionChoiceUnityView MinionChoiceView { get; }
         public HeroOverviewsUnityView HeroOverviewsView { get; }
         public HeroOverviewsPresenter HeroOverviewsPresenter { get; }
+
+        /// <summary>Milestone 8.35y. The kinetic surface and its presenter.</summary>
+        public KineticCueUnityView KineticView { get; }
+        public KineticCuePresenter KineticPresenter { get; }
         public BoardInteractionPresenter BoardPresenter { get; }
         public DirectorHandsPresenter HandsPresenter { get; }
         public RoundActionPresenter RoundPresenter { get; }

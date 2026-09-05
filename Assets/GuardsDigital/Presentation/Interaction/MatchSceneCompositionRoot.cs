@@ -633,6 +633,13 @@ namespace GuardsDigital.Presentation.Interaction
                 TakeRequestedSeat(),
                 cornerHighlightTemplate);
 
+            // Milestone 8.35y. The configured match scene has never had a frame loop - every
+            // surface redraws on a projection change - so the kinetic pass brings its own, on this
+            // composition root's own object, and it is the only per-frame work in the scene. It
+            // isolates its tick and disables itself after a small budget of failures, so the board
+            // falls back to exactly the projection-change redraw it did before this milestone.
+            Match.KineticCueDriver.Attach(gameObject, runtime.KineticView);
+
             foreach (var selector in pointerSelectors.Where(value => value != null))
             {
                 selector.Configure(runtime.BoardView);
