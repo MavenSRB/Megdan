@@ -349,6 +349,27 @@ namespace GuardsDigital.Presentation.Match
             element.style.backgroundColor = background;
             return element;
         }
+
+        /// <summary>
+        /// Milestone 8.35x. Whether <paramref name="candidate"/> is <paramref name="ancestor"/> itself
+        /// or is nested inside it - the match-log drop-down's click-away test, so a click on the
+        /// drop-down or its own toggle is never also read as "outside" it.
+        /// </summary>
+        internal static bool IsSelfOrDescendant(VisualElement ancestor, VisualElement candidate)
+        {
+            var node = candidate;
+            while (node != null)
+            {
+                if (ReferenceEquals(node, ancestor))
+                {
+                    return true;
+                }
+
+                node = node.parent;
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -625,6 +646,24 @@ namespace GuardsDigital.Presentation.Match
             narration.style.marginTop = 0f;
             narration.style.marginBottom = 0f;
             narrationLane.Add(narration);
+        }
+
+        /// <summary>
+        /// Milestone 8.35x (the TENTH amendment's revised placement). Hosts the match-log drop-down's
+        /// own chevron toggle in the same lane the narration text lives in, beside it - so the whole
+        /// narration bar reads as the log's own newest-entry-plus-toggle, per the amendment's words.
+        /// </summary>
+        public void HostMatchLogToggle(VisualElement toggle)
+        {
+            if (toggle == null)
+            {
+                throw new ArgumentNullException(nameof(toggle));
+            }
+
+            toggle.RemoveFromHierarchy();
+            toggle.style.flexShrink = 0f;
+            toggle.style.marginLeft = 6f;
+            narrationLane.Add(toggle);
         }
 
         public MatchHudHeaderViewModel Model { get; private set; }
@@ -6384,5 +6423,112 @@ namespace GuardsDigital.Presentation.Match
             PanelRoot.style.width = panel.width;
             PanelRoot.style.height = panel.height;
         }
+    }
+
+    /// <summary>
+    /// Milestone 8.35x (the TENTH amendment's revised placement). The seat-facing match log: no
+    /// standing panel, a chevron toggle riding beside the narration text, and a scrollable overlay
+    /// that unrolls beneath the top strip when open.
+    /// </summary>
+    /// <remarks>
+    /// Built the same way <see cref="DiagnosticLogUnityView"/> is - a toggle, a panel that starts
+    /// hidden, a <see cref="ScrollView"/> rebuilt on every render while open - because that Director-
+    /// only control already proved the shape a bounded, scrollable log needs. The differences are
+    /// what make this one seat-facing: the toggle is a bare chevron riding in the narration lane
+    /// rather than a labelled button of its own, and closing is exposed as its own
+    /// <see cref="DismissRequested"/> event so a click-away can ask for "closed" without risking a
+    /// "toggle" reopening it.
+    /// </remarks>
+    public sealed class MatchLogUnityView : IMatchLogView
+    {
+        private readonly Label toggle;
+        private readonly Label panelTitle;
+        private readonly ScrollView entries;
+
+        public MatchLogUnityView()
+        {
+            toggle = HudElements.Text("▾", 13f, MatchHudTheme.MutedText, FontStyle.Bold);
+            toggle.name = "gd-match-log-toggle";
+            toggle.pickingMode = PickingMode.Position;
+            toggle.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                evt.StopPropagation();
+                ToggleRequested?.Invoke();
+            });
+            ToggleRoot = toggle;
+
+            PanelRoot = HudElements.Panel(MatchHudTheme.PanelBackground);
+            PanelRoot.name = "gd-match-log";
+            PanelRoot.style.position = Position.Absolute;
+            PanelRoot.style.display = DisplayStyle.None;
+            PanelRoot.style.flexDirection = FlexDirection.Column;
+            HudElements.Padding(PanelRoot, 10f);
+            HudElements.Border(PanelRoot, MatchHudTheme.PanelBorder, 1f, 4f);
+            panelTitle = HudElements.Text("MATCH LOG", 11f, MatchHudTheme.MutedText, FontStyle.Bold);
+            entries = new ScrollView(ScrollViewMode.Vertical);
+            entries.style.flexGrow = 1f;
+            PanelRoot.Add(panelTitle);
+            PanelRoot.Add(entries);
+        }
+
+        public VisualElement ToggleRoot { get; }
+
+        public VisualElement PanelRoot { get; }
+
+        public MatchLogViewModel Model { get; private set; }
+
+        /// <summary>Raised by the chevron, or by the narration lane click it rides in.</summary>
+        public event Action ToggleRequested;
+
+        /// <summary>Raised by a click-away, or by anything else that wants the drop-down CLOSED.</summary>
+        public event Action DismissRequested;
+
+        /// <summary>What the chevron does, for a driver that has no pointer.</summary>
+        public void ForwardToggle() => ToggleRequested?.Invoke();
+
+        /// <summary>What a click-away does, for a driver that has no pointer.</summary>
+        public void ForwardDismiss() => DismissRequested?.Invoke();
+
+        public void Render(MatchLogViewModel model)
+        {
+            if (ReferenceEquals(Model, model))
+            {
+                return;
+            }
+
+            Model = model ?? throw new ArgumentNullException(nameof(model));
+            toggle.text = Model.ToggleLabel;
+            PanelRoot.style.display = Model.IsOpen ? DisplayStyle.Flex : DisplayStyle.None;
+            entries.Clear();
+            if (!Model.IsOpen)
+            {
+                return;
+            }
+
+            foreach (var line in Model.Lines)
+            {
+                entries.Add(HudElements.Text(
+                    line.Text,
+                    11f,
+                    line.IsHeader ? MatchHudTheme.MutedText : MatchHudTheme.PrimaryText,
+                    line.IsHeader ? FontStyle.Bold : FontStyle.Normal));
+            }
+        }
+
+        public void Layout(Rect panel)
+        {
+            PanelRoot.style.left = panel.x;
+            PanelRoot.style.top = panel.y;
+            PanelRoot.style.width = panel.width;
+            PanelRoot.style.height = panel.height;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="candidate"/> is this drop-down's own toggle or panel (or nested
+        /// inside either) - the click-away test a host renders against everything else on screen.
+        /// </summary>
+        public bool Contains(VisualElement candidate) =>
+            HudElements.IsSelfOrDescendant(PanelRoot, candidate) ||
+            HudElements.IsSelfOrDescendant(ToggleRoot, candidate);
     }
 }

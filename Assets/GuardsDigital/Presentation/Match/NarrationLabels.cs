@@ -48,9 +48,14 @@ namespace GuardsDigital.Presentation.Match
         /// <see cref="IMatchReadModel.SelectedActor"/> alone, which is public and unscoped - the same
         /// fact the acting-hero board highlight reads. It says only that this hero is currently
         /// acting, never whether a decision (a defender's answer, say) is standing on top of that
-        /// turn: nothing on <see cref="IMatchReadModel"/> tells a non-owning viewer that today, and the
-        /// gap is a recorded non-goal - the same one <see cref="AwaitedInputQuery.IsHeroAwaited"/>
-        /// already records for the hero-scope tray shine - rather than an oversight here.
+        /// turn.
+        ///
+        /// <para><b>Milestone 8.35x note.</b> <see cref="IMatchReadModel.DecisionOwner"/> now
+        /// publishes exactly the fact that would tell a non-owning viewer whether such a decision
+        /// stands, and <see cref="AwaitedInputQuery.IsHeroAwaited"/> reads it for the hero-scope tray
+        /// shine - but composing a richer STATUS SENTENCE from it (naming the family, not only that
+        /// the turn is not the actor's own to continue) is this label's own separate surface and
+        /// stays a follow-up, not something this milestone's tray-arm fix touched.</para>
         /// </summary>
         public static string HeroActing(string heroDisplayName, int initiative) =>
             $"{RequireName(heroDisplayName)} — ACTING (INITIATIVE {initiative})";

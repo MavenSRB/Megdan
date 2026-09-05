@@ -126,34 +126,33 @@ namespace GuardsDigital.Presentation.Match
         /// asks of the viewer, asked instead of one named hero, so every hero's tray can read one shine
         /// answer rather than each surface guessing at "whose turn is it" a second way.
         ///
-        /// <para><b>This is deliberately a NARROWER predicate than the viewer one above, and the gap is
-        /// recorded rather than papered over.</b> <see cref="OwnsAStandingDecision"/> and
-        /// <see cref="MayTakeATurnAction"/> are both read off facts <see cref="IMatchReadModel"/> scopes
-        /// to the seat that owns them - a seat privately knows whether IT owns the standing decision or
-        /// has an open turn offer, but nothing on this interface names WHICH hero a decision or offer
-        /// belongs to when it is not the viewer's own. <c>SeatProjection.DecisionOwner</c> carries
-        /// exactly that fact - "we are waiting for Blue" is public, by its own doc comment - but it is
-        /// not a member of <see cref="IMatchReadModel"/>, so a Presentation query cannot reach it today.
-        /// Extending this method to read it would be a read-model addition in Application, which trips
-        /// <c>PrivateOnlineSynchronizationTests.EveryReadModelMember_IsCarriedOrNamedExcluded</c> and is
-        /// a protocol-bump decision outside Presentation's territory - not this method's to make.</para>
+        /// <para><b>The event-channel follow-up (milestone 8.35x) completes the four arms 8.35m
+        /// deferred.</b> The gap that milestone recorded - <see cref="OwnsAStandingDecision"/> and
+        /// <see cref="MayTakeATurnAction"/> both read facts <see cref="IMatchReadModel"/> scoped to the
+        /// seat that owns them, so nothing on the interface named WHICH hero a non-viewer's decision or
+        /// offer belonged to - is closed now that <see cref="IMatchReadModel.DecisionOwner"/> (milestone
+        /// 8.35r) publishes exactly that fact unscoped: table-public by design, naming who is awaited
+        /// while <see cref="IMatchReadModel.DecisionContract"/> - what they may choose - stays owner-
+        /// private. Extending this method to read it is therefore no longer a read-model addition;
+        /// it is reading one that already shipped.</para>
         ///
-        /// <para>So only the three arms provably reachable from what <see cref="IMatchReadModel"/>
-        /// already publishes for EVERY hero, not only the viewer, are read here: the commitment a hero
-        /// owes (public, per-hero, the same fact <see cref="OwesACommitment"/> reads for the viewer),
-        /// the turn release's named owner (unscoped by 8.35g's own deliberate decision), and a standing
-        /// team agreement's participants who have not yet answered (<see cref="IMatchReadModel.
-        /// TeamAgreement"/> is published complete to every seat, by its own doc comment: "public
-        /// statements and the proposal are identical for all six seats"). The acting hero's own turn,
-        /// the hero whose leveling upgrade is paused, and an awaited defense or respawn answer are
-        /// deliberately NOT read here - each needs the same missing owner fact, and a naive
-        /// <see cref="IMatchReadModel.SelectedActor"/> read for the first would reproduce, one level up,
-        /// the exact bug <see cref="MayTakeATurnAction"/> exists to avoid: the acting hero's tray would
-        /// keep shining through a standing decision - a defender's answer, say - that the actor is no
-        /// longer the one being asked for. Better a tray that stays dark than one that shines on the
-        /// wrong hero. Those four arms are pinned to the Core track's event-channel milestone, which
-        /// adds the missing owner fact to <see cref="IMatchReadModel"/> in the same wire bump as the
-        /// player-facing log; a small follow-up milestone completes this predicate once that lands.</para>
+        /// <para>Seven arms in total now. Three are unchanged from 8.35m: the commitment a hero owes
+        /// (public, per-hero, the same fact <see cref="OwesACommitment"/> reads for the viewer), the
+        /// turn release's named owner (unscoped by 8.35g's own deliberate decision, read directly off
+        /// <see cref="IMatchReadModel.PendingTurnRelease"/> rather than through <c>DecisionOwner</c> -
+        /// it was already reachable and stays that way), and a standing team agreement's participants
+        /// who have not yet answered. Four are new, each read through <c>DecisionOwner</c>: the
+        /// leveling hero or heroes - <see cref="OwesALevelingAnswer"/>, plural since milestone 8.35u's
+        /// simultaneous leveling, because <c>DecisionOwner.HeroIds</c> already carries every awaited
+        /// hero at once and <see cref="IsHeroOwnedFamily"/> tests membership rather than the single
+        /// first-named hero; the defense answerer - <see cref="OwesADefenseAnswer"/>; the respawn
+        /// chooser - <see cref="OwesARespawnAnswer"/>; and the acting hero's own turn, corrected for
+        /// the exact bug 8.35m's doc comment named and left unsolved - <see
+        /// cref="IsActingWithNoDecisionStandingOnTop"/> - a naive <see cref="IMatchReadModel.
+        /// SelectedActor"/> read stays true while an attacker's Attack is still being asked of the
+        /// DEFENDER, so this arm shines the actor only while <c>DecisionOwner</c> names nobody else -
+        /// "better a tray that stays dark than one that shines on the wrong hero" no longer needs to
+        /// mean "dark", now that the owner fact exists to tell the two apart.</para>
         /// </summary>
         public static bool IsHeroAwaited(IMatchReadModel projection, HeroId heroId)
         {
@@ -165,7 +164,65 @@ namespace GuardsDigital.Presentation.Match
 
             return OwesACommitment(projection, heroId) ||
                 IsTurnReleaseOwner(projection, heroId) ||
-                OwesAnAgreementAnswer(projection, heroId);
+                OwesAnAgreementAnswer(projection, heroId) ||
+                OwesALevelingAnswer(projection, heroId) ||
+                OwesADefenseAnswer(projection, heroId) ||
+                OwesARespawnAnswer(projection, heroId) ||
+                IsActingWithNoDecisionStandingOnTop(projection, heroId);
+        }
+
+        /// <summary>
+        /// Milestone 8.35x. Rulebook p.15's leveling, simultaneous since 8.35u: every hero the standing
+        /// decision's owner names, not only the first, per <see cref="PendingDecisionOwner.HeroIds"/>'s
+        /// own doc comment - "true for each of them at once".
+        /// </summary>
+        private static bool OwesALevelingAnswer(IMatchReadModel projection, HeroId heroId) =>
+            IsHeroOwnedFamily(projection, PendingDecisionFamilies.SystemTransition, heroId);
+
+        /// <summary>Milestone 8.35x. Whether <paramref name="heroId"/> is the awaited defense answer.</summary>
+        private static bool OwesADefenseAnswer(IMatchReadModel projection, HeroId heroId) =>
+            IsHeroOwnedFamily(projection, PendingDecisionFamilies.Defense, heroId);
+
+        /// <summary>Milestone 8.35x. Whether <paramref name="heroId"/> is the awaited respawn chooser.</summary>
+        private static bool OwesARespawnAnswer(IMatchReadModel projection, HeroId heroId) =>
+            IsHeroOwnedFamily(projection, PendingDecisionFamilies.HeroRespawn, heroId);
+
+        /// <summary>
+        /// Whether <see cref="IMatchReadModel.DecisionOwner"/> stands on <paramref name="familyId"/>
+        /// and names <paramref name="heroId"/> among its hero-owned awaited heroes. Team-owned decisions
+        /// (an Initiative tie, a Correction, a Minion Battle) never match here - <see
+        /// cref="PendingDecisionOwner.IsTeamOwned"/> names no single hero, by design, and a family's own
+        /// identity keeps this reading from ever crossing into another family's owner.
+        /// </summary>
+        private static bool IsHeroOwnedFamily(
+            IMatchReadModel projection, PendingDecisionFamilyId familyId, HeroId heroId)
+        {
+            var owner = projection.DecisionOwner;
+            return owner.IsDefined && !owner.IsTeamOwned && owner.FamilyId.Equals(familyId) &&
+                owner.HeroIds.Any(candidate => candidate.Equals(heroId));
+        }
+
+        /// <summary>
+        /// Milestone 8.35x. The acting hero's own turn - <see cref="IMatchReadModel.SelectedActor"/> and
+        /// <see cref="IMatchReadModel.IsTurnActive"/> are both public and unscoped, the same pair
+        /// <c>MatchFeaturePresenters.IsViewerTheActingHero</c>'s own remarks note reaching every viewer
+        /// - corrected for the bug this method's own doc comment names: a defender's standing Defense
+        /// answer (or any other
+        /// hero's standing decision produced by the actor's own turn) must NOT shine the actor's tray,
+        /// because the actor is no longer who is being asked. <see cref="PendingDecisionOwner.None"/> -
+        /// nothing stands - and a decision this same hero owns both count as "nothing else is standing
+        /// on top of it"; a decision naming anyone else does not.
+        /// </summary>
+        private static bool IsActingWithNoDecisionStandingOnTop(IMatchReadModel projection, HeroId heroId)
+        {
+            if (!projection.IsTurnActive || !projection.SelectedActor.IsDefined ||
+                !projection.SelectedActor.ActorId.Equals(heroId))
+            {
+                return false;
+            }
+
+            var owner = projection.DecisionOwner;
+            return !owner.IsDefined || (!owner.IsTeamOwned && owner.HeroIds.Any(heroId.Equals));
         }
 
         /// <summary>

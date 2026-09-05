@@ -124,6 +124,10 @@ namespace GuardsDigital.Presentation.Match
             DiagnosticView = new DiagnosticLogUnityView();
             MinionChoiceView = new MinionChoiceUnityView();
             HeroOverviewsView = new HeroOverviewsUnityView();
+            // Milestone 8.35x (the TENTH amendment's drop-down). Composed for both the Director and a
+            // seat, unlike the Director-only diagnostics beside it: the match log's own contract is
+            // "the same log for everyone", so there is no scoped-out composition for it to skip.
+            MatchLogView = new MatchLogUnityView();
             BoardPresenter = new BoardInteractionPresenter(client, BoardView);
             HandsPresenter = new DirectorHandsPresenter(
                 client, HandsView, Seat?.HeroId ?? default);
@@ -136,6 +140,7 @@ namespace GuardsDigital.Presentation.Match
             UndoRestartPresenter = Seat == null ? new UndoRestartPresenter(session, UndoRestartView) : null;
             DiagnosticPresenter = Seat == null ? new DiagnosticLogPresenter(session, DiagnosticView) : null;
             MinionChoicePresenter = new MinionChoicePresenter(client, MinionChoiceView);
+            MatchLogPresenter = new MatchLogPresenter(client, MatchLogView);
 
             // Milestone 8.35y. The kinetic pass is composed like any other panel: a view that
             // consumes typed cues, and a presenter that derives them from the seat-public match log.
@@ -253,6 +258,8 @@ namespace GuardsDigital.Presentation.Match
             UndoRestartView.UndoRequested += () => UndoRestartPresenter?.Undo();
             UndoRestartView.RestartRequested += () => UndoRestartPresenter?.Restart();
             DiagnosticView.ToggleRequested += () => DiagnosticPresenter?.Toggle();
+            MatchLogView.ToggleRequested += () => MatchLogPresenter.Toggle();
+            MatchLogView.DismissRequested += () => MatchLogPresenter.Dismiss();
             MinionChoiceView.CandidateSubmitted += candidate => MinionChoicePresenter.Submit(candidate);
             MinionChoiceView.ConfirmRequested += () => MinionChoicePresenter.Confirm();
             MinionChoiceView.AgreementRequested += choice =>
@@ -278,7 +285,7 @@ namespace GuardsDigital.Presentation.Match
 
             hud.Configure(
                 HandsView, RoundView, UndoRestartView, DiagnosticView, MinionChoiceView,
-                HeroOverviewsView);
+                HeroOverviewsView, MatchLogView);
             coordinator = new MatchFeatureCoordinator(
                 BoardPresenter,
                 HandsPresenter,
@@ -303,7 +310,8 @@ namespace GuardsDigital.Presentation.Match
                     UnityEngine.Debug.LogError("GUARDS_HUD: PANEL_REFRESH_FAILED panel=" + panel);
                     UnityEngine.Debug.LogException(error);
                 },
-                KineticPresenter);
+                KineticPresenter,
+                MatchLogPresenter);
             RefreshAll();
         }
 
@@ -605,6 +613,14 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Milestone 8.35y. The kinetic surface and its presenter.</summary>
         public KineticCueUnityView KineticView { get; }
         public KineticCuePresenter KineticPresenter { get; }
+
+        /// <summary>
+        /// Milestone 8.35x (the TENTH amendment's drop-down). The narration bar's match log and its
+        /// presenter - composed for every viewer, Director included, since the contract's own log is
+        /// the same for everyone.
+        /// </summary>
+        public MatchLogUnityView MatchLogView { get; }
+        public MatchLogPresenter MatchLogPresenter { get; }
         public BoardInteractionPresenter BoardPresenter { get; }
         public DirectorHandsPresenter HandsPresenter { get; }
         public RoundActionPresenter RoundPresenter { get; }

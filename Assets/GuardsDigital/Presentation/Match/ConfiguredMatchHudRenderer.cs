@@ -176,6 +176,17 @@ namespace GuardsDigital.Presentation.Match
         private const float EventLogPreferredHeight = 360f;
 
         /// <summary>
+        /// Milestone 8.35x. The match-log drop-down's own size, in reference units. It is deliberately
+        /// bounded well short of the hero rails' own vertical reach, per the TENTH amendment's revised
+        /// placement: a temporary overlay beneath the top strip that "never blocks an owed input" -
+        /// which this satisfies structurally, by never covering the rails or the tray it would
+        /// otherwise sit above.
+        /// </summary>
+        private const float MatchLogDropdownWidth = 640f;
+
+        private const float MatchLogDropdownHeight = 320f;
+
+        /// <summary>
         /// The identity row of the standing status strip: the build name, the round and turn, both
         /// Life counters, the Wave count, and the Tie Breaker chip. It is what the whole strip was
         /// before milestone 8.30b, and the chip's rectangle is still measured against it, so widening
@@ -333,6 +344,7 @@ namespace GuardsDigital.Presentation.Match
         private VisualElement directorDrawer;
         private Button directorToggle;
         private MatchStatusBarUnityView statusBar;
+        private MatchLogUnityView matchLog;
         private DirectorHandsUnityView hands;
         private RoundActionUnityView round;
         private UndoRestartUnityView undoRestart;
@@ -404,7 +416,11 @@ namespace GuardsDigital.Presentation.Match
             UndoRestartUnityView undoRestartView,
             DiagnosticLogUnityView diagnosticView,
             MinionChoiceUnityView minionChoiceView,
-            HeroOverviewsUnityView heroOverviewsView = null)
+            HeroOverviewsUnityView heroOverviewsView = null,
+            // Milestone 8.35x. Optional, and appended, so every existing composition and fixture keeps
+            // its exact call - the same reason milestone 8.20a's heroOverviews and 8.35y's kinetics
+            // were appended rather than inserted.
+            MatchLogUnityView matchLogView = null)
         {
             hands = handsView ?? throw new ArgumentNullException(nameof(handsView));
             hands.SetCompactPeekMode(true);
@@ -412,6 +428,7 @@ namespace GuardsDigital.Presentation.Match
             undoRestart = undoRestartView ?? throw new ArgumentNullException(nameof(undoRestartView));
             diagnostics = diagnosticView ?? throw new ArgumentNullException(nameof(diagnosticView));
             minionChoice = minionChoiceView ?? throw new ArgumentNullException(nameof(minionChoiceView));
+            matchLog = matchLogView;
             if (heroOverviews != null)
             {
                 heroOverviews.ColumnGeometryChanged -= LayoutResolvedHudGeometry;
@@ -496,7 +513,10 @@ namespace GuardsDigital.Presentation.Match
                 EndTurnBlocksPointerAt(panelPosition) ||
                 GetDirectorToggleRect().Contains(panelPosition) ||
                 (IsDirectorDrawerOpen && GetDirectorDrawerRect().Contains(panelPosition)) ||
-                (diagnostics?.Model?.IsExpanded == true && GetRuleEventLogRect().Contains(panelPosition)))
+                (diagnostics?.Model?.IsExpanded == true && GetRuleEventLogRect().Contains(panelPosition)) ||
+                (matchLog?.Model?.IsOpen == true &&
+                    GetMatchLogDropdownRect(CalculateStatusBarRect(viewport.x, viewport.y))
+                        .Contains(panelPosition)))
             {
                 return true;
             }
@@ -705,6 +725,26 @@ namespace GuardsDigital.Presentation.Match
             statusBar = new MatchStatusBarUnityView();
             root.Add(statusBar.Root);
 
+            if (matchLog != null)
+            {
+                statusBar.HostMatchLogToggle(matchLog.ToggleRoot);
+                root.Add(matchLog.PanelRoot);
+                // Milestone 8.35x. Click-away: a pointer-down anywhere that is not the drop-down's own
+                // toggle or panel asks it closed. Registered in the capture phase on the whole HUD root
+                // so it sees every click before whatever it lands on consumes it - `root` itself picks
+                // no pointer (see above), but a trickled event still walks every ancestor of its real
+                // target on the way down, `root` included, exactly as `pickingMode` leaves untouched.
+                root.RegisterCallback<PointerDownEvent>(
+                    evt =>
+                    {
+                        if (!matchLog.Contains(evt.target as VisualElement))
+                        {
+                            matchLog.ForwardDismiss();
+                        }
+                    },
+                    TrickleDown.TrickleDown);
+            }
+
             if (heroOverviews != null)
             {
                 root.Add(heroOverviews.Root);
@@ -883,6 +923,7 @@ namespace GuardsDigital.Presentation.Match
             var height = viewport.y;
             var bar = CalculateStatusBarRect(width, height);
             statusBar?.Layout(bar, GetTieBreakerIndicatorRect());
+            matchLog?.Layout(GetMatchLogDropdownRect(bar));
             // Milestone 8.25f2. The tray is a transparent full-width layout band. Its fixed ordinary
             // height fits one 420-unit face plus only card chrome, while the five faces overlap inside
             // the compact left footprint. Metadata sits in the separate status dock to the map's left.
@@ -1642,6 +1683,20 @@ namespace GuardsDigital.Presentation.Match
                 Mathf.Max(StatusBarHeight + Margin, cardPanel.y - aboveHeight - Margin),
                 Mathf.Max(0f, cardPanel.xMax - aboveLeft),
                 aboveHeight);
+        }
+
+        /// <summary>
+        /// Milestone 8.35x. Where the match-log drop-down unrolls: left-aligned with the top strip it
+        /// hangs from, a small gap below it, bounded well short of the hero rail zone so it never
+        /// reserves board space and never sits over a rail or the tray.
+        /// </summary>
+        private static Rect GetMatchLogDropdownRect(Rect bar)
+        {
+            var viewport = PanelViewport;
+            var width = Mathf.Min(MatchLogDropdownWidth, Mathf.Max(0f, viewport.x - (Margin * 2f)));
+            var height = Mathf.Min(
+                MatchLogDropdownHeight, Mathf.Max(0f, viewport.y - bar.yMax - (Margin * 2f)));
+            return new Rect(bar.xMin + Margin, bar.yMax + 4f, width, height);
         }
     }
 }

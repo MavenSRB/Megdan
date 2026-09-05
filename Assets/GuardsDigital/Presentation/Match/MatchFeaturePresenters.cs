@@ -6511,6 +6511,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly MinionChoicePresenter minionChoice;
         private readonly HeroOverviewsPresenter heroOverviews;
         private readonly KineticCuePresenter kinetics;
+        private readonly MatchLogPresenter matchLog;
         private readonly Action<string, Exception> panelRefreshFailed;
         private IReadOnlyList<string> failedPanelNames = Array.Empty<string>();
 
@@ -6527,11 +6528,17 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.35y. Optional, and appended, so every existing composition and
             // fixture keeps its exact call. A surface with no kinetics is the surface this project had
             // before the milestone, which is also the state a failed driver falls back to.
-            KineticCuePresenter kinetics = null)
+            KineticCuePresenter kinetics = null,
+            // Milestone 8.35x. Same reason, same shape: the narration bar's log drop-down joins the
+            // isolated fan-out rather than the unisolated header callback beside it, so one broken
+            // log line degrades that one panel and nothing else - the EIGHTH amendment's own rule,
+            // applied to the panel it did not yet cover.
+            MatchLogPresenter matchLog = null)
         {
             this.panelRefreshFailed = panelRefreshFailed;
             this.heroOverviews = heroOverviews;
             this.kinetics = kinetics;
+            this.matchLog = matchLog;
             this.board = board ?? throw new ArgumentNullException(nameof(board));
             this.hands = hands ?? throw new ArgumentNullException(nameof(hands));
             this.round = round ?? throw new ArgumentNullException(nameof(round));
@@ -6596,6 +6603,7 @@ namespace GuardsDigital.Presentation.Match
             // Last, and isolated like every other panel: a kinetic is a flourish, and it must be the
             // one thing on this list that can never cost a player a fact on the surfaces above it.
             RefreshPanel("kinetics", () => kinetics?.Refresh(), failed, errors);
+            RefreshPanel("match-log", () => matchLog?.Refresh(), failed, errors);
 
             failedPanelNames = failed.Count == 0
                 ? Array.Empty<string>()

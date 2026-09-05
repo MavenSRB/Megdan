@@ -780,31 +780,140 @@ namespace GuardsDigital.Tests.EditMode
                 "Agreed already - the AGREE/WITHDRAW toggle lets them revise, but that is not owed.");
         }
 
+        // -------------------------------------------------------------------------------------
+        // Milestone 8.35x (the event-channel follow-up). The FOUR arms 8.35m deferred, now
+        // derivable through IMatchReadModel.DecisionOwner (milestone 8.35r) - the same non-goal
+        // proved above FLIPS to these positive assertions deliberately, per the milestone's own
+        // instruction: the gap that test proved is exactly what closes here.
+        // -------------------------------------------------------------------------------------
+
         /// <summary>
-        /// THE DELIBERATE NON-GOAL, proved rather than merely documented. A standing decision
-        /// genuinely exists and genuinely belongs to some seat, but hero scope cannot name whom -
-        /// <see cref="AwaitedInputQuery.IsHeroAwaited"/>'s own doc comment records exactly why (the
-        /// missing owner fact lives only on the concrete <c>SeatProjection.DecisionOwner</c>, not on
-        /// <see cref="IMatchReadModel"/>). This case is what the Core track's event-channel milestone
-        /// must flip red before it can honestly extend the predicate to the four deferred arms - the
-        /// leveling hero, the defense answerer, the respawn chooser, and the acting hero.
+        /// The amendment's own multi-leveler example, now at hero scope: rulebook p.15's leveling is
+        /// simultaneous since milestone 8.35u, so <see cref="PendingDecisionOwner.ForHeroes"/> names
+        /// several heroes at once and every one of them shines, not only the first.
         /// </summary>
         [Test]
-        public void AHeroWithAGenuinelyStandingDecision_DoesNotYetShineAtHeroScope_TheFourDeferredArms()
+        public void TheLevelingHeroesShineTogetherAtHeroScope_TheMultiLevelerCase()
         {
             var session = CreateSession();
-            var hero = session.Projection.Setup.Heroes.First().HeroId;
-            var projection = new ContractReadModel(
-                new CommitmentReadModel(session.Projection, Committed(session.Projection, hero)),
-                StandingContract());
+            var heroes = session.Projection.Setup.Heroes.Select(hero => hero.HeroId).ToArray();
+            Assert.That(heroes, Has.Length.EqualTo(2),
+                "The mirrored fixture's own two heroes stand in for 'several' here, exactly as the " +
+                "commitment case above already established.");
+            var owner = PendingDecisionOwner.ForHeroes(PendingDecisionFamilies.SystemTransition, heroes);
+            var projection = new DecisionOwnerReadModel(
+                new CommitmentReadModel(session.Projection, Committed(session.Projection, heroes[0])),
+                owner);
 
-            Assert.That(projection.DecisionContract, Is.Not.Null,
-                "A decision genuinely stands, owned by some seat - the read model just cannot name " +
-                "whom, beyond the viewer's own scope.");
-            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, hero), Is.False,
-                "So this hero's tray does not shine merely because a standing decision exists " +
-                "somewhere - better dark than wrong, per the same reasoning that kept SelectedActor " +
-                "out of the turn arm.");
+            Assert.That(heroes.Select(hero => AwaitedInputQuery.IsHeroAwaited(projection, hero)),
+                Is.All.True,
+                "Every hero still levelling shines, several at once - the same shine-together shape " +
+                "the commitment arm proved, now for milestone 8.35u's own simultaneous family.");
+        }
+
+        /// <summary>
+        /// The defense answerer's tray shines - and, proved in the SAME case, the M3 trap this
+        /// milestone answers: the attacker is still <see cref="IMatchReadModel.SelectedActor"/> while
+        /// the DEFENDER is who is being asked, so the actor's tray must not shine through a decision
+        /// that is no longer theirs.
+        /// </summary>
+        [Test]
+        public void TheDefenseAnswererShinesAtHeroScope_AndTheActingHeroDoesNotWhileItStands()
+        {
+            var session = CreateSession();
+            var heroes = session.Projection.Setup.Heroes.ToArray();
+            var attacker = heroes[0];
+            var defender = heroes[1];
+            var card = GetHandCards(session, attacker.TeamSide)[0].Id;
+            var actorState = new SelectedInitiativeActor(
+                card, attacker.HeroId, attacker.TeamSide, 5, false);
+            var owner = PendingDecisionOwner.ForHero(PendingDecisionFamilies.Defense, defender.HeroId);
+            var projection = new DecisionOwnerReadModel(
+                new SelectedActorReadModel(
+                    new CommitmentReadModel(
+                        session.Projection, Committed(session.Projection, attacker.HeroId)),
+                    actorState),
+                owner);
+
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, defender.HeroId), Is.True,
+                "The defense answerer's tray shines.");
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, attacker.HeroId), Is.False,
+                "THE M3 TRAP: SelectedActor still names the attacker while the defender is being " +
+                "asked, so a naive SelectedActor read would shine the attacker's tray through " +
+                "someone else's standing decision - this predicate must not.");
+        }
+
+        [Test]
+        public void TheRespawnChooserShinesAtHeroScope_AndNoOtherHeroDoes()
+        {
+            var session = CreateSession();
+            var heroes = session.Projection.Setup.Heroes.ToArray();
+            var chooser = heroes[0];
+            var other = heroes[1];
+            var owner = PendingDecisionOwner.ForHero(PendingDecisionFamilies.HeroRespawn, chooser.HeroId);
+            var projection = new DecisionOwnerReadModel(
+                new CommitmentReadModel(session.Projection, Committed(session.Projection, chooser.HeroId)),
+                owner);
+
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, chooser.HeroId), Is.True);
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, other.HeroId), Is.False);
+        }
+
+        /// <summary>
+        /// The positive half of the M3 trap: with NOTHING else standing on top of the actor's own
+        /// turn, their tray shines - the acting-hero arm 8.35m recorded as underivable and this
+        /// milestone completes.
+        /// </summary>
+        [Test]
+        public void TheActingHeroShinesAtHeroScope_WhenNoDecisionStandsOnTopOfTheirTurn()
+        {
+            var session = CreateSession();
+            var heroes = session.Projection.Setup.Heroes.ToArray();
+            var actor = heroes[0];
+            var other = heroes[1];
+            var card = GetHandCards(session, actor.TeamSide)[0].Id;
+            var actorState = new SelectedInitiativeActor(card, actor.HeroId, actor.TeamSide, 5, false);
+            var projection = new DecisionOwnerReadModel(
+                new SelectedActorReadModel(
+                    new CommitmentReadModel(session.Projection, Committed(session.Projection, actor.HeroId)),
+                    actorState),
+                PendingDecisionOwner.None);
+
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, actor.HeroId), Is.True,
+                "Their own turn, nothing else standing on top of it.");
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(projection, other.HeroId), Is.False);
+        }
+
+        /// <summary>
+        /// Integration confidence beside the four synthetic cases above, and the privacy case in the
+        /// same breath: a REAL p.15 pause walked to through
+        /// <see cref="ConfiguredMatchFixtures.CreateSessionPausedOnLevelUpUpgrade"/> exercises the
+        /// production <c>SeatProjectionFactory.OwnerOfStandingDecision</c> derivation this predicate
+        /// now depends on, end to end - and a non-owning seat's own projection carries no
+        /// <see cref="IMatchReadModel.DecisionContract"/> for a pause it does not own, yet still
+        /// shines the levelling hero's tray, because who is awaited is public while what they may
+        /// choose is not.
+        /// </summary>
+        [Test]
+        public void TheLevelingHero_ShinesFromARealPause_AndStaysPublicAtANonOwningSeat()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionPausedOnLevelUpUpgrade(
+                out var levellingHeroId);
+            var host = new MatchHost(session);
+            var other = host.Seats.Seats.First(seat => !seat.HeroId.Equals(levellingHeroId));
+
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(host.Projection, levellingHeroId), Is.True,
+                "The real p.15 pause: the levelling hero's tray shines on the Director's own view.");
+
+            var otherProjection = host.ProjectionForSeat(other.Id);
+            Assert.That(otherProjection.DecisionContract, Is.Null,
+                "PRIVACY: the non-owning seat's own projection carries no answer for a pause it " +
+                "does not own.");
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(otherProjection, levellingHeroId), Is.True,
+                "but who is awaited is still public, so this seat's own read still shines the " +
+                "levelling hero's tray.");
+            Assert.That(AwaitedInputQuery.IsHeroAwaited(otherProjection, other.HeroId), Is.False,
+                "and this seat's own tray does not shine merely from watching someone else's pause.");
         }
 
         [Test]
@@ -827,6 +936,321 @@ namespace GuardsDigital.Tests.EditMode
                 : base(inner) => this.release = release;
 
             public override GuardsDigital.Core.Cards.PendingTurnRelease PendingTurnRelease => release;
+        }
+
+        /// <summary>
+        /// Milestone 8.35x. Overrides the standing decision's public owner directly - the synthetic
+        /// composition every hero-scope case above the four new arms uses, the same way
+        /// <see cref="ContractReadModel"/> overrides the owner's private half.
+        /// </summary>
+        private sealed class DecisionOwnerReadModel : DelegatingReadModel
+        {
+            private readonly PendingDecisionOwner owner;
+
+            public DecisionOwnerReadModel(IMatchReadModel inner, PendingDecisionOwner owner)
+                : base(inner) => this.owner = owner;
+
+            public override PendingDecisionOwner DecisionOwner => owner;
+        }
+
+        /// <summary>
+        /// Milestone 8.35x. Overrides the acting hero directly, for the acting-hero arm's cases - the
+        /// same public, unscoped fact <see cref="IMatchReadModel.SelectedActor"/> the board's own
+        /// acting-hero marker already reads.
+        /// </summary>
+        private sealed class SelectedActorReadModel : DelegatingReadModel
+        {
+            private readonly SelectedInitiativeActor actor;
+
+            public SelectedActorReadModel(IMatchReadModel inner, SelectedInitiativeActor actor)
+                : base(inner) => this.actor = actor;
+
+            public override SelectedInitiativeActor SelectedActor => actor;
+            public override bool IsTurnActive => true;
+        }
+
+        // -------------------------------------------------------------------------------------
+        // Milestone 8.35x (the TENTH amendment's drop-down). MatchLogFormatter, MatchLogPresenter,
+        // and MatchLogUnityView - the log the narration bar unrolls.
+        // -------------------------------------------------------------------------------------
+
+        /// <summary>Overrides the seat-public log and the standing undo marker directly.</summary>
+        private sealed class MatchLogReadModel : DelegatingReadModel
+        {
+            private readonly IReadOnlyList<MatchLogEntry> log;
+            private readonly MatchUndoMarker marker;
+
+            public MatchLogReadModel(
+                IMatchReadModel inner, IReadOnlyList<MatchLogEntry> log, MatchUndoMarker marker)
+                : base(inner)
+            {
+                this.log = log;
+                this.marker = marker;
+            }
+
+            public override IReadOnlyList<MatchLogEntry> MatchLog => log;
+            public override MatchUndoMarker UndoMarker => marker;
+        }
+
+        private sealed class RecordingMatchLogView : IMatchLogView
+        {
+            public MatchLogViewModel LastModel { get; private set; }
+            public int RenderCount { get; private set; }
+
+            public void Render(MatchLogViewModel model)
+            {
+                LastModel = model;
+                RenderCount++;
+            }
+        }
+
+        /// <summary>
+        /// Log rendering per entry kind. Every <see cref="MatchLogEntryKind"/> the selection contract
+        /// carries produces a line, ROUND/TURN boundaries render as headers and everything else does
+        /// not - a closed switch proved against the closed vocabulary rather than a handful of samples.
+        /// </summary>
+        [Test]
+        public void EveryMatchLogEntryKind_RendersItsOwnLineOrHeader()
+        {
+            var session = CreateSession();
+            var heroes = session.Projection.Setup.Heroes.ToArray();
+            var hero = heroes[0].HeroId;
+            var otherHero = heroes[1].HeroId;
+            var minion = new MinionId("probe-minion");
+            var origin = new HexCoordinate(0, 0);
+            var destination = new HexCoordinate(1, 1);
+            var sequence = 1;
+
+            var cases = new (MatchLogEntry Entry, string MustContain, bool IsHeader)[]
+            {
+                (new MatchLogEntry(sequence++, MatchLogEntryKind.RoundStarted, 3, 0),
+                    "ROUND 3", true),
+                (new MatchLogEntry(sequence++, MatchLogEntryKind.RoundCompleted, 3, 0),
+                    "ROUND 3 COMPLETE", true),
+                (new MatchLogEntry(sequence++, MatchLogEntryKind.TurnStarted, 3, 2),
+                    "TURN 2", true),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.TurnEnded, 3, 2, subjectHeroId: hero),
+                    "TURN 2 ENDED", true),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.Move, 1, 1, subjectHeroId: hero,
+                        origin: origin, destination: destination, hasOrigin: true, hasDestination: true),
+                    "MOVED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.FastTravel, 1, 1, subjectHeroId: hero,
+                        destination: destination, hasDestination: true),
+                    "FAST TRAVELED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.Attack, 1, 1, subjectHeroId: hero,
+                        targetHeroId: otherHero, outcome: MatchLogOutcome.AttackSuccessful),
+                    "ATTACKED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.Defense, 1, 1, subjectHeroId: otherHero,
+                        targetHeroId: hero, outcome: MatchLogOutcome.DefenseCardDiscarded),
+                    "DEFENDED", false),
+                (new MatchLogEntry(sequence++, MatchLogEntryKind.SkillUsed, 1, 1, subjectHeroId: hero),
+                    "USED", false),
+                (new MatchLogEntry(sequence++, MatchLogEntryKind.Clear, 1, 1, subjectHeroId: hero),
+                    "CLEARED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.BlockedAction, 1, 1, subjectHeroId: hero),
+                    "BLOCKED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.MinionDefeated, 1, 1, subjectMinionId: minion),
+                    "DEFEATED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.MinionRemoved, 1, 1, subjectMinionId: minion),
+                    "REMOVED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.MinionRemovalPrevented, 1, 1,
+                        subjectMinionId: minion),
+                    "PREVENTED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.HeroDefeated, 1, 1, subjectHeroId: hero),
+                    "DEFEATED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.HeroRemoved, 1, 1, subjectHeroId: hero),
+                    "REMOVED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.HeroRemovalPrevented, 1, 1, subjectHeroId: hero),
+                    "PREVENTED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.HeroRespawned, 1, 1, subjectHeroId: hero),
+                    "RESPAWNED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.TeamLifeSpent, 1, 1, subjectHeroId: hero),
+                    "LIFE", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.TeamEliminated, 1, 1, subjectHeroId: hero),
+                    "ELIMINATED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.DisplacedMinionCorrected, 1, 1,
+                        subjectMinionId: minion, origin: origin, destination: destination,
+                        hasOrigin: true, hasDestination: true),
+                    "CORRECTED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.MinionBattleMinionRemoved, 1, 1,
+                        subjectMinionId: minion),
+                    "MINION BATTLE", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.LanePush, 1, 1, subjectHeroId: hero),
+                    "LANE PUSH", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.LevelPurchased, 1, 1, subjectHeroId: hero,
+                        amount: 2),
+                    "LEVEL 2", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.CardUpgraded, 1, 1, subjectHeroId: hero),
+                    "UPGRADED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.ItemGained, 1, 1, subjectHeroId: hero),
+                    "GAINED", false),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.PityCoinCollected, 1, 1, subjectHeroId: hero,
+                        amount: 1),
+                    "PITY COIN", false),
+                (new MatchLogEntry(sequence++, MatchLogEntryKind.GameEnded, 1, 1),
+                    "GAME ENDED", true),
+                (new MatchLogEntry(
+                        sequence++, MatchLogEntryKind.CardRevealed, 1, 1, subjectHeroId: hero),
+                    "REVEALED", false),
+            };
+
+            Assert.That(cases.Select(entry => entry.Entry.Kind).Distinct().Count(),
+                Is.EqualTo(Enum.GetValues(typeof(MatchLogEntryKind)).Length - 1),
+                "One case per named kind (every member but the unused None), so a kind added to the " +
+                "enum without a rendering case here is caught by this count rather than by a silent " +
+                "gap in the switch.");
+
+            var projection = new MatchLogReadModel(
+                session.Projection, cases.Select(entry => entry.Entry).ToArray(), MatchUndoMarker.None);
+            var viewModel = MatchLogFormatter.CreateViewModel(projection, isOpen: true);
+
+            Assert.That(viewModel.Lines, Has.Count.EqualTo(cases.Length));
+            for (var index = 0; index < cases.Length; index++)
+            {
+                var line = viewModel.Lines[index];
+                var expected = cases[index];
+                Assert.That(line.Text, Does.Contain(expected.MustContain),
+                    $"Case {index} ({expected.Entry.Kind}): '{line.Text}'.");
+                Assert.That(line.IsHeader, Is.EqualTo(expected.IsHeader),
+                    $"Case {index} ({expected.Entry.Kind})'s header styling.");
+                Assert.That(line.Sequence, Is.EqualTo(expected.Entry.Sequence));
+            }
+        }
+
+        /// <summary>
+        /// The undo marker: "&lt;HERO&gt; took back N actions", reading last - the current status
+        /// rather than a moment in the history above it.
+        /// </summary>
+        [Test]
+        public void TheUndoMarker_RendersLastAsTheCurrentStatus()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First().HeroId;
+            var entry = new MatchLogEntry(1, MatchLogEntryKind.RoundStarted, 1, 0);
+            var projection = new MatchLogReadModel(
+                session.Projection, new[] { entry }, MatchUndoMarker.Of(hero, 2));
+
+            var viewModel = MatchLogFormatter.CreateViewModel(projection, isOpen: true);
+
+            Assert.That(viewModel.Lines, Has.Count.EqualTo(2));
+            var marker = viewModel.Lines[1];
+            Assert.That(marker.Text, Does.Contain("TOOK BACK 2 ACTIONS"));
+            Assert.That(marker.Sequence, Is.EqualTo(int.MaxValue),
+                "Reads last - it names no rule event, so it cannot sort by one.");
+        }
+
+        [Test]
+        public void NoStandingUndo_RendersNoMarkerLine()
+        {
+            var session = CreateSession();
+            var entry = new MatchLogEntry(1, MatchLogEntryKind.RoundStarted, 1, 0);
+            var projection = new MatchLogReadModel(
+                session.Projection, new[] { entry }, MatchUndoMarker.None);
+
+            var viewModel = MatchLogFormatter.CreateViewModel(projection, isOpen: true);
+
+            Assert.That(viewModel.Lines, Has.Count.EqualTo(1));
+        }
+
+        /// <summary>
+        /// A closed drop-down composes no lines at all - the amendment's own "nothing for a closed
+        /// drop-down to draw", proved rather than assumed.
+        /// </summary>
+        [Test]
+        public void AClosedDropDown_ComposesNoLines()
+        {
+            var session = CreateSession();
+            var entry = new MatchLogEntry(1, MatchLogEntryKind.RoundStarted, 1, 0);
+            var projection = new MatchLogReadModel(
+                session.Projection, new[] { entry }, MatchUndoMarker.Of(
+                    session.Projection.Setup.Heroes.First().HeroId, 1));
+
+            var viewModel = MatchLogFormatter.CreateViewModel(projection, isOpen: false);
+
+            Assert.That(viewModel.IsOpen, Is.False);
+            Assert.That(viewModel.Lines, Is.Empty);
+            Assert.That(viewModel.ToggleLabel, Is.EqualTo("▾"));
+        }
+
+        /// <summary>
+        /// The window is derived, never accumulated: an entry present in one call's window and
+        /// absent from the next (the exact shape of an undo, a resync, or the retained-window
+        /// truncation itself) does not survive into the new rendering - there is no buffer inside
+        /// this formatter for it to survive in.
+        /// </summary>
+        [Test]
+        public void ARewoundEntry_DoesNotSurviveIntoTheNextRendering()
+        {
+            var session = CreateSession();
+            var before = new MatchLogEntry(1, MatchLogEntryKind.Clear, 1, 1,
+                subjectHeroId: session.Projection.Setup.Heroes.First().HeroId);
+            var after = new MatchLogEntry(1, MatchLogEntryKind.RoundStarted, 1, 0);
+
+            var firstViewModel = MatchLogFormatter.CreateViewModel(
+                new MatchLogReadModel(session.Projection, new[] { before }, MatchUndoMarker.None),
+                isOpen: true);
+            var secondViewModel = MatchLogFormatter.CreateViewModel(
+                new MatchLogReadModel(session.Projection, new[] { after }, MatchUndoMarker.None),
+                isOpen: true);
+
+            Assert.That(firstViewModel.Lines.Single().Text, Does.Contain("CLEARED"));
+            Assert.That(secondViewModel.Lines, Has.Count.EqualTo(1),
+                "The rewound Clear line does not persist alongside the truncated window's own line.");
+            Assert.That(secondViewModel.Lines.Single().Text, Does.Not.Contain("CLEARED"));
+        }
+
+        /// <summary>Drop-down toggle/overlay state: open, close, and the idempotent dismiss.</summary>
+        [Test]
+        public void MatchLogPresenter_TogglesOpenAndClosed_AndDismissNeverReopens()
+        {
+            var session = CreateSession();
+            var client = new DirectorMatchClient(session);
+            var view = new RecordingMatchLogView();
+            var presenter = new MatchLogPresenter(client, view);
+
+            presenter.Refresh();
+            Assert.That(presenter.IsOpen, Is.False);
+            Assert.That(view.LastModel.IsOpen, Is.False);
+            Assert.That(view.LastModel.Lines, Is.Empty, "Closed, so nothing is composed to draw.");
+
+            presenter.Toggle();
+            Assert.That(presenter.IsOpen, Is.True);
+            Assert.That(view.LastModel.IsOpen, Is.True);
+
+            var afterOpenRenderCount = view.RenderCount;
+            presenter.Dismiss();
+            Assert.That(presenter.IsOpen, Is.False, "Dismiss closes an open drop-down.");
+            Assert.That(view.LastModel.IsOpen, Is.False);
+            Assert.That(view.RenderCount, Is.EqualTo(afterOpenRenderCount + 1));
+
+            var afterCloseRenderCount = view.RenderCount;
+            presenter.Dismiss();
+            Assert.That(presenter.IsOpen, Is.False,
+                "Dismiss on an already-closed drop-down must not reopen it.");
+            Assert.That(view.RenderCount, Is.EqualTo(afterCloseRenderCount),
+                "and composes nothing new - the whole point of Dismiss over Toggle for a click-away.");
         }
 
         [Test]
