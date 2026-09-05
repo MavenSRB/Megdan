@@ -238,6 +238,67 @@ namespace GuardsDigital.Tests.EditMode
                 .Outputs.Single().OutputName, Is.EqualTo("chosen"));
         }
 
+        /// <summary>
+        /// Milestone 8.35x, the queued corrective the 8.35l worker found: Arien's Living Tsunami "you
+        /// may move 1 space" projected BOTH a Confirm carrying an empty selection and a Decline for
+        /// the same "no" answer, and the rules accepted the Decline while refusing the Confirm as
+        /// incomplete. The shape is general rather than Living Tsunami's alone - ANY
+        /// <see cref="EffectNodeKind.Capability"/> node marked `may` whose handler needs more than
+        /// zero once a choice actually opens (Living Tsunami's and Tigerclaw's "you may move 1 space"
+        /// over <c>direct-move@3</c>; every `may`-wrapped Retrieve and owned-card Discard) hits it, so
+        /// this proves the class on a synthetic handler rather than one hero's card: `choose-hero@1`
+        /// needs exactly one candidate, same as those.
+        /// </summary>
+        [Test]
+        public void MayNodeWhoseHandlerNeedsOne_OffersOnlyDeclineAsTheEmptyAnswer()
+        {
+            var definition = Definition(
+                Sequence("root", "pick"),
+                new EffectNodeDefinition(
+                    new EffectNodeId("pick"), EffectNodeKind.Capability, EffectFailurePolicy.May,
+                    SyntheticEffectCapabilities.ChooseHeroV1,
+                    outputs: new[] { new EffectOutputBinding("chosen", EffectValueKind.Hero) }));
+
+            var paused = Start(definition);
+            var choice = paused.Frame.PendingChoice;
+
+            Assert.That(choice.Kind, Is.EqualTo(EffectChoiceKind.SelectTarget));
+            Assert.That(choice.DeclineInvocation, Is.Not.Null,
+                "A `may` node always offers an honest way to take nothing, from its own failure " +
+                "policy rather than from the handler's floor.");
+            Assert.That(choice.ConfirmInvocation, Is.Null,
+                "The handler needs exactly one candidate, so an empty Confirm must not stand beside " +
+                "Decline as a second way to say the same thing - before this milestone it did, and " +
+                "the rules refused it as incomplete only after the card was already spent choosing it.");
+
+            var declined = EffectResolutionSession.Answer(
+                paused.Frame, choice.DeclineInvocation, Context(definition));
+            Assert.That(declined.Accepted, Is.True);
+            Assert.That(declined.IsComplete, Is.True,
+                "Declining the whole step completes the node having taken nothing, exactly as it " +
+                "always did.");
+
+            // A hand-forged Confirm with nothing selected is refused defensively even though the
+            // offer above already withholds it - the answering side and the offering side agree.
+            var forged = new EffectChoiceCommand(
+                paused.Frame.ResolutionId, choice.ChoiceId, EffectChoiceCommandKind.Confirm,
+                default, choice.ChooserId);
+            var forgedResult = EffectResolutionSession.Answer(paused.Frame, forged, Context(definition));
+            Assert.That(forgedResult.Accepted, Is.False);
+            Assert.That(forgedResult.RejectionReason,
+                Is.EqualTo(EffectResolutionRejectionReason.IncompleteSelection));
+
+            // Selecting then confirming still runs the handler exactly as an ordinary mandatory
+            // single-target selection would - the fix narrows what an empty answer may do, not
+            // what a complete one can.
+            var selected = EffectResolutionSession.Answer(
+                paused.Frame, choice.SelectInvocations[0], Context(definition));
+            var confirmed = EffectResolutionSession.Answer(
+                selected.Frame, selected.Frame.PendingChoice.ConfirmInvocation, Context(definition));
+            Assert.That(confirmed.Accepted, Is.True);
+            Assert.That(confirmed.IsComplete, Is.True);
+        }
+
         [Test]
         public void TwoIdenticalRuns_ProduceIdenticalOrderedFacts()
         {

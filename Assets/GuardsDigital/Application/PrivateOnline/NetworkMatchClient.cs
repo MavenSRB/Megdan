@@ -818,6 +818,13 @@ namespace GuardsDigital.Application
                 return null;
             }
 
+            // Milestone 8.35x-tsunami. A `may` node's Decline no longer follows from
+            // `MinimumSelections` alone - the host derives it from the node's own `EffectFailurePolicy`,
+            // which this client never loaded any content to read. `row.HasDeclineInvocation` is that
+            // same bit, written by the host's own authoritative choice
+            // (`NetworkProjectionDetailCodec` copies it from `DeclineInvocation != null` directly), so
+            // it is the wire's ground truth rather than something reconstructed a second way that could
+            // disagree with it.
             var result = new PendingEffectChoice(
                 new EffectResolutionId(row.ResolutionId),
                 new EffectChoiceId(row.ChoiceId),
@@ -829,7 +836,8 @@ namespace GuardsDigital.Application
                 row.MaximumSelections,
                 row.SelectedCandidates.Select(ToEffectCandidate),
                 row.UnavailableCandidates.Select(ToEffectCandidate),
-                row.HasStopInvocation);
+                row.HasStopInvocation,
+                row.HasDeclineInvocation);
             if ((result.ConfirmInvocation != null) != row.HasConfirmInvocation ||
                 (result.DeclineInvocation != null) != row.HasDeclineInvocation ||
                 (result.StopInvocation != null) != row.HasStopInvocation)

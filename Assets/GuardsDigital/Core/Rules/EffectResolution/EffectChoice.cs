@@ -198,7 +198,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             int maximumSelections,
             IEnumerable<EffectChoiceCandidate> selected = null,
             IEnumerable<EffectChoiceCandidate> unavailableCandidates = null,
-            bool canStop = false)
+            bool canStop = false,
+            bool declinableRegardlessOfMinimum = false)
         {
             if (!resolutionId.IsDefined || !choiceId.IsDefined || !nodeId.IsDefined)
             {
@@ -288,6 +289,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             UnavailableCandidates = new ReadOnlyCollection<EffectChoiceCandidate>(refused);
             MinimumSelections = minimumSelections;
             MaximumSelections = maximumSelections;
+            DeclinableRegardlessOfMinimum = declinableRegardlessOfMinimum;
 
             SelectInvocations = new ReadOnlyCollection<EffectChoiceCommand>(options
                 .Where(candidate => !refused.Contains(candidate))
@@ -306,10 +308,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             // Arien's Living Tsunami - "Once per turn, before performing an Attack action, you may
             // move 1 space" - reached the table as four spaces and no way to stay put.
             //
-            // It is derived from the minimum rather than carried as a flag so that a restored,
-            // replayed or undone pause offers exactly what the live one did: the minimum is already
-            // part of every payload, and a separately persisted flag could disagree with it.
-            DeclineInvocation = kind == EffectChoiceKind.ConfirmOrDecline || minimumSelections == 0
+            // Milestone 8.35x correction. That fix derived the offer from `minimumSelections` alone,
+            // which conflated two different questions for a genuine `may` node whose HANDLER needs
+            // more than zero: "is the whole step declinable" (yes, always, for `may`) and "how few
+            // may a taken answer name" (whatever the handler's operation actually requires - one
+            // space, exactly, for Living Tsunami's move). Forcing the second down to zero to answer
+            // the first also legalised an empty CONFIRM the handler had never agreed to, so the
+            // table offered a Confirm the rules then refused right beside the Decline that was the
+            // honest empty answer. `declinableRegardlessOfMinimum` carries the first question on its
+            // own, sourced fresh from the node's `EffectFailurePolicy` at every pause exactly as
+            // `minimumSelections` already is - so a restored, replayed or undone pause still offers
+            // exactly what the live one did, and nothing here is persisted separately from the
+            // content that decides it.
+            DeclineInvocation = kind == EffectChoiceKind.ConfirmOrDecline || minimumSelections == 0 ||
+                declinableRegardlessOfMinimum
                 ? new EffectChoiceCommand(
                     resolutionId, choiceId, EffectChoiceCommandKind.Decline, default, chooserId)
                 : null;
@@ -318,7 +330,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             // named: closing an `up to` with nothing chosen runs the node having taken none, and
             // declining records that it was refused. Milestone 6.5's own cases hold the first of
             // those - "`up to 2` includes none, so the decision may be closed with nothing named" -
-            // so the confirm stays exactly as it was and the decline is added beside it.
+            // so the confirm stays exactly as it was and the decline is added beside it. That is
+            // exactly the "up to" case: its handler already declares the zero floor honestly, so
+            // `minimumSelections` says the same thing for both invocations and nothing above ever
+            // has to widen it separately. A `may` node whose handler needs more stays gated here on
+            // that real floor - `declinableRegardlessOfMinimum` never relaxes Confirm, only Decline.
             ConfirmInvocation = chosen.Length >= minimumSelections
                 ? new EffectChoiceCommand(
                     resolutionId, choiceId, EffectChoiceCommandKind.Confirm, default, chooserId)
@@ -350,6 +366,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         public int MinimumSelections { get; }
         public int MaximumSelections { get; }
+
+        /// <summary>
+        /// Milestone 8.35x. Whether <see cref="DeclineInvocation"/> is offered on the node's own
+        /// `may` policy rather than on <see cref="MinimumSelections"/> being zero - the two used to
+        /// be answered by the same number, which is what let an empty <see cref="ConfirmInvocation"/>
+        /// stand beside Decline for a `may` node whose handler needs more than nothing. See the
+        /// constructor for the full account.
+        /// </summary>
+        public bool DeclinableRegardlessOfMinimum { get; }
 
         public IReadOnlyList<EffectChoiceCommand> SelectInvocations { get; }
         public IReadOnlyList<EffectChoiceCommand> DeselectInvocations { get; }
@@ -385,6 +410,6 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             new PendingEffectChoice(
                 ResolutionId, ChoiceId, NodeId, ChooserId, Kind,
                 Candidates, MinimumSelections, MaximumSelections, selected, UnavailableCandidates,
-                StopInvocation != null);
+                StopInvocation != null, DeclinableRegardlessOfMinimum);
     }
 }

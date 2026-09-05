@@ -240,8 +240,16 @@ namespace GuardsDigital.Tests.EditMode
         /// carry the property and replaced the two that stopped, choosing the richest available rather
         /// than the next that merely passes: seeds 1, 2, 8 and 12 take four, five, four and five
         /// Attack targets. The sweep is about real p.14 endings, so more of them is more evidence.
+        ///
+        /// <para>Milestone 8.35x-tsunami re-derived it again, {1, 2, 8, 12} -> {1, 2, 12, 15}, after
+        /// closing Living Tsunami's empty-Confirm defect: an offer seed 8's walk used to be able to take
+        /// is gone, so its trajectory reroutes and it now completes no Attack at all inside the budget -
+        /// the same shape 8.35u's own re-derivation describes, one milestone later. A thirty-seed offline
+        /// scan found seed 15 the richest replacement available (five Attack targets, tying seeds 1 and
+        /// 12 rather than merely passing), so it is what took seed 8's place; seeds 1, 2 and 12 all
+        /// survived unmoved.</para>
         /// </summary>
-        private static readonly int[] SweepSeeds = { 1, 2, 8, 12 };
+        private static readonly int[] SweepSeeds = { 1, 2, 12, 15 };
 
         private const int SweepBudget = 1200;
 

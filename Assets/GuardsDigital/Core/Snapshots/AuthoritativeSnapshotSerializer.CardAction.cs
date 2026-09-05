@@ -1216,13 +1216,24 @@ namespace GuardsDigital.Core.Snapshots
                 unavailable.Count == candidates.Length &&
                 node.FailurePolicy == EffectFailurePolicy.Mandatory;
 
+            // Milestone 8.35x-tsunami: nor is this. It follows from the trusted node's own failure
+            // policy exactly as `canStop` does above, for the same reason - a `may` node's Decline
+            // must be offered on restore precisely when the live pause offered it, and deriving it
+            // fresh from content rather than from the persisted `minimum` is what keeps that true
+            // once `minimum` stops doubling as "is this declinable" (see PendingEffectChoice's
+            // constructor for the full account of why the two questions were never one).
+            var declinableRegardlessOfMinimum =
+                choiceKind == EffectChoiceKind.SelectTarget &&
+                node.FailurePolicy == EffectFailurePolicy.May;
+
             return restored.With(
                 restored.Continuation,
                 restored.CompletedOutcomes,
                 restored.AcceptedChoices,
                 new PendingEffectChoice(
                     new EffectResolutionId(common.ResolutionId.Value), choiceId, nodeId, chooserId,
-                    choiceKind, candidates, minimum, maximum, selected, unavailable, canStop));
+                    choiceKind, candidates, minimum, maximum, selected, unavailable, canStop,
+                    declinableRegardlessOfMinimum));
         }
 
         /// <summary>

@@ -64,8 +64,19 @@ namespace GuardsDigital.Tests.EditMode
         /// this way, now after 14 rounds and 1,191 commands. The trajectory moved - simultaneous
         /// levelling asks p.15's questions in a different order, so the stream diverges after the
         /// first level-up - but the outcome it reaches did not.</para>
+        ///
+        /// <para>Milestone 8.35x-tsunami re-scanned it again after closing Living Tsunami's empty-Confirm
+        /// defect: an offer a walk could take before is gone, so the whole trajectory reroutes exactly
+        /// as every earlier release here has - seed 8 no longer ends inside the 2,400-command budget at
+        /// all (28 rounds and still going). The lowest that still ends this way is seed 21, but it needs
+        /// 2,116 of the 2,400 commands - 88%, tighter even than <see cref="FinalWaveMatchSeed"/>'s old
+        /// 82% that this file already declines to keep - so this follows that same precedent rather than
+        /// taking the lowest ordinal: seed 25 ends after 5 rounds and 404 commands, 17% of budget, and
+        /// scanning 1-60 offline found no lower seed with comparable headroom (52 is the only seed
+        /// smaller in absolute footprint, at 13%, but 25 is the lower of the two and both are far inside
+        /// the ceiling).</para>
         /// </summary>
-        private const int LifeCounterMatchSeed = 8;
+        private const int LifeCounterMatchSeed = 25;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the unmodified official six-player setup

@@ -1038,22 +1038,28 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     var offered = EffectSelectionEligibilityQuery.EligibleCandidates(
                         node, result.Choice.Candidates, frame, outcomes, context);
 
-                    // Milestone 8.20a. A node the card marks `may` or `up to` may be answered having
-                    // taken nothing, whatever floor its handler declares for the selection itself -
-                    // the handler states how many the operation needs, and the printed word states
-                    // whether it has to happen. Living Tsunami's "you may move 1 space" is the case:
-                    // its direct move needs exactly one space, and the player may still decline.
+                    // Milestone 8.20a. A node the card marks `may` may still be answered having taken
+                    // nothing - the printed word states whether the step has to happen at all, which
+                    // is a question distinct from how many the handler's own operation needs once the
+                    // player has said yes. Living Tsunami's "you may move 1 space" is the case: its
+                    // direct move needs exactly one space, and the player may still decline outright.
                     //
-                    // It reaches `may` alone, because `up to` is already answered where it belongs.
-                    // A handler that admits the printed "up to" sets its own floor to zero for it -
-                    // p.18's batch push does exactly that - and one node can ask more than one
-                    // question: milestone 8.8's kinetic push asks which units and then how far, the
-                    // `up to` is over the units, and the distance is exact. Widening this to `up to`
-                    // would have given that second question a floor it must not have, because a node
-                    // carries one policy and its two questions do not.
-                    var minimumSelections = node.FailurePolicy == EffectFailurePolicy.May
-                        ? 0
-                        : result.Choice.MinimumSelections;
+                    // Milestone 8.35x. Those are TWO different questions and this seam used to answer
+                    // both with one number. Forcing the floor to zero for every `may` node made an
+                    // empty Confirm legal in the choice's own bounds, but Living Tsunami's move (and
+                    // every sibling built the same way: Tigerclaw's five "you may move 1 space" faces
+                    // over DirectMoveV3, and every `may`-wrapped Retrieve or owned-card Discard) never
+                    // accepts an empty answer - their handlers declare a real floor of one, and Resume
+                    // refuses a selection that does not meet it. So the offer stood with a Confirm the
+                    // rules would refuse right beside the Decline that was the honest empty answer all
+                    // along. The printed reading settles which side owns the truth: "you may move 1
+                    // space" leaves the distance exact and makes only the move itself optional, so
+                    // Confirm keeps requiring the handler's own floor - unmodified - and Decline is
+                    // offered from the node's `may` policy directly rather than by borrowing the
+                    // floor. `up to` needs no change: a handler that admits the printed "up to" (p.18's
+                    // batch push) already declares a floor of zero itself, so Confirm-with-nothing was
+                    // always a real execution there and stays exactly as before.
+                    var minimumSelections = result.Choice.MinimumSelections;
                     if (offered.Count == 0 || offered.Count < minimumSelections)
                     {
                         // Nothing left to name is the same position as nothing to name in the first
@@ -1070,7 +1076,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         minimumSelections,
                         Math.Min(result.Choice.MaximumSelections, offered.Count),
                         result.Choice.Chooser,
-                        chooserHeroOverride: result.Choice.ChooserHeroId));
+                        chooserHeroOverride: result.Choice.ChooserHeroId,
+                        declinableRegardlessOfMinimum: node.FailurePolicy == EffectFailurePolicy.May));
 
                 case EffectExecutionResultKind.ImpossibleMandatory:
                     return RefuseCapability(
@@ -1159,7 +1166,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectChooserRole chooserOverride = EffectChooserRole.None,
             IReadOnlyList<EffectChoiceCandidate> unavailableCandidates = null,
             bool canStop = false,
-            HeroId chooserHeroOverride = default) =>
+            HeroId chooserHeroOverride = default,
+            bool declinableRegardlessOfMinimum = false) =>
             new PendingEffectChoice(
                 frame.ResolutionId,
                 new EffectChoiceId($"node-{node.Id.Value}"),
@@ -1178,7 +1186,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 maximumSelections,
                 null,
                 unavailableCandidates,
-                canStop);
+                canStop,
+                declinableRegardlessOfMinimum);
 
         private static HeroId ResolveChooser(
             EffectChooserRole role,

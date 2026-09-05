@@ -176,7 +176,7 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            // Seed 2 is a walk whose match reaches its own ending past forty completed rounds -
+            // Seed 5 is a walk whose match reaches its own ending past forty completed rounds -
             // the top of the length a human table plays, rather than a prefix.
             //
             // Re-pinned from seed 9 when this milestone was integrated onto 8.35u. A seeded walk is a
@@ -188,8 +188,16 @@ namespace GuardsDigital.Tests.EditMode
             // therefore unchanged; only this one walk moved, which is why the seed is re-pinned rather
             // than the round floor lowered - lowering it would quietly retire the property the case
             // exists to hold.
+            //
+            // Milestone 8.35x-tsunami re-pinned it again, 2 -> 5, after closing Living Tsunami's
+            // empty-Confirm defect: an offer this walk used to be able to take is gone, so seed 2 no
+            // longer completes at all (54 rounds and still going at the 4,200-command ceiling, and
+            // seeds 1, 4, 10, 15 and 30 all hit the same wall in a thirty-seed offline scan). Seed 5
+            // still ends, at 46 completed rounds and 3,641 commands - six rounds of margin above the
+            // floor this case asserts and 87% of budget, matching the shape every earlier re-pin here
+            // records.
             var submitted = OwnerScopedProjectionTests.DriveThroughSeats(
-                host, 4200, projection => { Measure(); return false; }, seed: 2);
+                host, 4200, projection => { Measure(); return false; }, seed: 5);
             Measure();
 
             var playedRounds = host.Projection.RoundIndex - 1;
