@@ -279,6 +279,7 @@ namespace GuardsDigital.Application
         private readonly List<PrivateSessionEventRecord> events =
             new List<PrivateSessionEventRecord>();
         private int discardedRetiredConnectionFrames;
+        private int trimmedProjectionLogRows;
         private bool sessionEnded;
 
         /// <summary>
@@ -378,6 +379,16 @@ namespace GuardsDigital.Application
         /// one would be the only way a replaced connection could still move the match.
         /// </remarks>
         public int DiscardedRetiredConnectionFrames => discardedRetiredConnectionFrames;
+
+        /// <summary>
+        /// How many match-log rows the frame-bound compose has dropped to keep projection frames
+        /// inside their bound, in total across every send. Zero in any healthy match - the retained
+        /// windows are sized to keep the whole frame well under the bound - so a nonzero value is
+        /// the observable trace that graceful degradation actually fired, counted for the same
+        /// reason retired-connection discards are: silent coping is how the last frame-bound defect
+        /// stayed invisible until it was terminal.
+        /// </summary>
+        public int TrimmedProjectionLogRows => trimmedProjectionLogRows;
 
         /// <summary>
         /// Milestone 8.34. The seat's current connection epoch, or <c>0</c> if that seat has never
@@ -1051,9 +1062,11 @@ namespace GuardsDigital.Application
                 // and offered one bounded current-projection resync. Offering it here, unasked,
                 // is what lets a client that answered against an old view converge on the next
                 // frame rather than waiting for someone else's acceptance to push one.
-                SendProjectionTo(record, message.Envelope.Correlation);
-                Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
-                    seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+                if (SendProjectionTo(record, message.Envelope.Correlation))
+                {
+                    Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
+                        seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+                }
             }
         }
 
@@ -1131,9 +1144,11 @@ namespace GuardsDigital.Application
             else if (result.RejectionReason == TeamAgreementSubmissionRejectionReason.StaleProjection ||
                 result.RejectionReason == TeamAgreementSubmissionRejectionReason.StaleProposal)
             {
-                SendProjectionTo(record, message.Envelope.Correlation);
-                Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
-                    seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+                if (SendProjectionTo(record, message.Envelope.Correlation))
+                {
+                    Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
+                        seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+                }
             }
         }
 
@@ -1157,9 +1172,11 @@ namespace GuardsDigital.Application
             }
 
             var seat = matchHost.Seats.Find(record.Seat);
-            SendProjectionTo(record, message.Envelope.Correlation);
-            Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
-                seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+            if (SendProjectionTo(record, message.Envelope.Correlation))
+            {
+                Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
+                    seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+            }
         }
 
         /// <summary>
@@ -1249,9 +1266,11 @@ namespace GuardsDigital.Application
             }
             else if (result.RejectionReason == SeatSubmissionRejectionReason.StaleProjection)
             {
-                SendProjectionTo(record, message.Envelope.Correlation);
-                Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
-                    seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+                if (SendProjectionTo(record, message.Envelope.Correlation))
+                {
+                    Record(PrivateSessionEventKind.ResyncServed, record.Ordinal, record.Seat,
+                        seat.HeroId, seat.TeamSide, SessionRejectionReason.None);
+                }
             }
         }
 
@@ -1333,12 +1352,33 @@ namespace GuardsDigital.Application
             return true;
         }
 
-        private void SendProjectionTo(ConnectionRecord record, long correlation = 0)
+        /// <summary>
+        /// The projection frame's compose budget: the SEALED bound, which is the tighter of the two
+        /// the frame must eventually pass, so one number governs plaintext and sealed links alike.
+        /// </summary>
+        internal const int ProjectionFrameBudgetBytes = PrivateSessionSecureChannel.MaxSealedPayloadBytes;
+
+        /// <summary>
+        /// One seat projection composed against the production budget - the exact decision
+        /// <see cref="SendProjectionTo"/> acts on, stated once so a fixture can drive it past the
+        /// bound without needing match state the retained windows exist to make impossible.
+        /// </summary>
+        internal static bool TryComposeProjectionFrame(
+            NetworkSeatProjectionMessage message, out byte[] frame, out int droppedLogRows) =>
+            NetworkMessageCodec.TrySeatProjectionFrameWithin(
+                message, ProjectionFrameBudgetBytes, out frame, out droppedLogRows);
+
+        /// <returns>
+        /// Whether a projection frame was actually delivered - false when this seat's payload
+        /// outgrew the frame bound and the connection was refused instead, so a caller about to
+        /// record a served resync does not claim a delivery that never happened.
+        /// </returns>
+        private bool SendProjectionTo(ConnectionRecord record, long correlation = 0)
         {
             var seat = matchHost.Seats.Find(record.Seat);
             if (seat == null)
             {
-                return;
+                return false;
             }
 
             var projection = matchHost.ProjectionForSeat(seat.Id);
@@ -1356,9 +1396,35 @@ namespace GuardsDigital.Application
                 log[index] = NetworkMatchLogCodec.ToRow(projection.MatchLog[index]);
             }
 
-            Deliver(record, NetworkMessageCodec.SeatProjectionFrame(
-                new NetworkSeatProjectionMessage(
-                    NextEnvelope(record, correlation), payload, Array.AsReadOnly(log))));
+            // The frame-bound corrective's send discipline. The envelope names the NEXT sequence
+            // without committing it, because committing first was half of the recorded table-killer:
+            // when the unwindowed round history outgrew the frame, the sequence had already advanced
+            // when the encode threw, so the seat read every later frame as a gap and every resync
+            // was served down the same throwing path. The sequence now moves only beside a frame
+            // that exists.
+            var envelope = new NetworkEnvelope(
+                identity.Correlation, record.Epoch, record.GameplaySendSequence + 1, correlation);
+            if (!TryComposeProjectionFrame(
+                new NetworkSeatProjectionMessage(envelope, payload, Array.AsReadOnly(log)),
+                out var frame, out var droppedLogRows))
+            {
+                // The projection payload alone no longer fits any frame this protocol can carry.
+                // No trimming can mend that, and nothing this seat is ever sent again would fit
+                // either - so the failure is one connection's, loud and recoverable: a named
+                // refusal the player sees, the seat left Reserved with its road back, and every
+                // other seat still served. What it must never be again is a throw out of the
+                // publish path that stalls the whole table with nothing on screen.
+                RejectAndClose(record, SessionRejectionReason.OversizedFrame,
+                    "This seat's projection (" + payload.Length.ToString(CultureInfo.InvariantCulture) +
+                    " bytes) outgrew the session frame bound; the connection is closed rather than" +
+                    " left waiting on a frame that cannot exist.");
+                return false;
+            }
+
+            trimmedProjectionLogRows += droppedLogRows;
+            record.GameplaySendSequence++;
+            Deliver(record, frame);
+            return true;
         }
 
         /// <summary>
@@ -1370,7 +1436,10 @@ namespace GuardsDigital.Application
             ConnectionRecord initiatingRecord = null,
             long initiatingCorrelation = 0)
         {
-            foreach (var record in connections.Values)
+            // A snapshot, because one seat's send may now end in RejectAndClose - the frame-bound
+            // refusal - which removes that record. One connection's failure is one connection's:
+            // the iteration survives it and every other seat is still served.
+            foreach (var record in new List<ConnectionRecord>(connections.Values))
             {
                 if (record.Phase == ConnectionPhase.Seated)
                 {

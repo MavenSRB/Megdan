@@ -159,8 +159,11 @@ namespace GuardsDigital.Tests.EditMode
                 var projection = host.ProjectionForSeat(seat.Id);
                 var rows = projection.MatchLog.Select(NetworkMatchLogCodec.ToRow).ToArray();
 
-                // Built through the real frame codec, so an over-long frame fails here as the
-                // ArgumentException the host would have thrown, not as a number this case compares.
+                // Built through the RAW frame codec deliberately: an over-long frame fails here as
+                // the codec's own ArgumentException rather than as a number this case compares.
+                // The host itself no longer takes this path - its bounded compose trims the log or
+                // refuses the one connection by name - so this guard is what keeps even the
+                // graceful degradation from quietly becoming the norm.
                 var frame = NetworkMessageCodec.SeatProjectionFrame(
                     new NetworkSeatProjectionMessage(
                         envelope,
@@ -208,6 +211,120 @@ namespace GuardsDigital.Tests.EditMode
                 " deliberately rather than letting the frame grow into its limit.");
             Assert.That(largest, Is.GreaterThan(4096),
                 "A frame this small means the walk measured the wrong thing.");
+        }
+
+        /// <summary>
+        /// The frame-bound corrective's SEND half, driven at the host's own compose decision: a
+        /// projection-and-log message past the bound - the state that crashed the live solo
+        /// rehearsal host out of <see cref="PrivateSessionFrameCodec"/> and stalled the whole
+        /// table in silence - is now sent successfully with the OLDEST log rows dropped. Never a
+        /// throw, never silence.
+        /// </summary>
+        /// <remarks>
+        /// The retained windows make this state unreachable through real match state, which is
+        /// exactly why this case builds the message directly: the degradation path exists for the
+        /// NEXT growth term nobody has met yet, and a guard that waited for real state to reach it
+        /// again would wait forever or arrive with the playtest frozen. The raw encoder's throw is
+        /// asserted beside the compose so the crash shape this corrects stays pinned.
+        /// </remarks>
+        [Test]
+        public void AMessagePastTheFrameBound_IsTrimmedToTheNewestLogRows_NeverThrown()
+        {
+            var rows = Enumerable.Range(1, MatchLogProjection.RetainedEntries)
+                .Select(sequence => NetworkMatchLogCodec.ToRow(Line(sequence)))
+                .ToArray();
+            var message = new NetworkSeatProjectionMessage(
+                new NetworkEnvelope("correlation", 1, 1, 0),
+                new byte[60000],
+                Array.AsReadOnly(rows));
+
+            // The crash the corrective answers, pinned: the raw frame encoder still refuses an
+            // over-bound payload - that bound is the anti-allocation cap on what any peer may
+            // declare, and it does not move - so the graceful path must decide BEFORE it.
+            Assert.That(
+                Assert.Throws<ArgumentException>(
+                    () => NetworkMessageCodec.SeatProjectionFrame(message)).Message,
+                Does.StartWith("A payload is bounded."));
+
+            Assert.That(
+                PrivateSessionHost.TryComposeProjectionFrame(message, out var frame, out var dropped),
+                Is.True,
+                "The host's compose refused a message a trimmed log would fit.");
+            Assert.That(dropped, Is.GreaterThan(0).And.LessThan(rows.Length),
+                "Trimming dropped everything or nothing; either way nothing here was proved.");
+            Assert.That(frame.Length - PrivateSessionProtocol.FrameHeaderBytes,
+                Is.LessThanOrEqualTo(PrivateSessionSecureChannel.MaxSealedPayloadBytes),
+                "The composed frame does not fit the sealed bound it exists to fit.");
+
+            var assembler = new PrivateSessionFrameAssembler();
+            Assert.That(assembler.Add(frame, 0, frame.Length), Is.True);
+            Assert.That(assembler.TryDequeue(out var assembled), Is.True);
+            Assert.That(
+                NetworkMessageCodec.TryDecodeSeatProjection(assembled.Payload, out var decoded),
+                Is.True, "A trimmed frame did not decode under the ordinary read discipline.");
+            Assert.That(decoded.ProjectionPayload, Is.EqualTo(message.ProjectionPayload),
+                "The projection payload is authoritative state and must cross untouched.");
+            Assert.That(decoded.MatchLog.Select(row => row.Sequence),
+                Is.EqualTo(Enumerable.Range(1 + dropped, rows.Length - dropped)),
+                "The rows that survive must be the NEWEST suffix, in order - the retained " +
+                "window's own idea of which lines matter.");
+        }
+
+        /// <summary>
+        /// The other arm of the same corrective: a projection payload ALONE past the compose
+        /// budget - which no log trimming can mend - fails composition by returning false, never
+        /// by throwing. The host answers that with a named <see
+        /// cref="SessionRejectionReason.OversizedFrame"/> refusal for that one connection, which
+        /// is the loud, one-seat, recoverable failure the silent whole-table stall is corrected to.
+        /// </summary>
+        [Test]
+        public void AProjectionPayloadNoFrameCanCarry_FailsComposition_RatherThanThrows()
+        {
+            // Sized to fit the plaintext frame bound and NOT the sealed budget: the sharper case,
+            // because a compose pinned to the loose bound would pass here and then throw inside
+            // Seal on every keyed session - the same crash one layer later.
+            var sealedOnlyOverflow = new NetworkSeatProjectionMessage(
+                new NetworkEnvelope("correlation", 1, 1, 0),
+                new byte[PrivateSessionSecureChannel.MaxSealedPayloadBytes - 10],
+                Array.Empty<NetworkMatchLogRow>());
+            Assert.That(
+                PrivateSessionHost.TryComposeProjectionFrame(sealedOnlyOverflow, out _, out _),
+                Is.False,
+                "A payload only the PLAINTEXT bound could carry was composed; the budget must be " +
+                "the sealed bound, the tighter of the two every frame must eventually pass.");
+
+            var farPastEveryBound = new NetworkSeatProjectionMessage(
+                new NetworkEnvelope("correlation", 1, 1, 0),
+                new byte[PrivateSessionProtocol.MaxPayloadBytes + 1],
+                Array.Empty<NetworkMatchLogRow>());
+            Assert.That(
+                PrivateSessionHost.TryComposeProjectionFrame(farPastEveryBound, out var frame, out _),
+                Is.False);
+            Assert.That(frame, Is.Null);
+        }
+
+        /// <summary>
+        /// A message already inside the bound crosses the bounded compose byte-for-byte as the
+        /// plain encoder writes it, with nothing dropped - so the byte-level convergence
+        /// assertions the wire suites hold are still looking at ONE encoder, not two.
+        /// </summary>
+        [Test]
+        public void AFrameInsideTheBound_IsByteIdentical_ThroughTheBoundedCompose()
+        {
+            var rows = Enumerable.Range(1, 40)
+                .Select(sequence => NetworkMatchLogCodec.ToRow(Line(sequence)))
+                .ToArray();
+            var message = new NetworkSeatProjectionMessage(
+                new NetworkEnvelope("correlation", 3, 21, 9),
+                new byte[] { 1, 2, 3, 4, 5 },
+                Array.AsReadOnly(rows));
+
+            Assert.That(
+                PrivateSessionHost.TryComposeProjectionFrame(message, out var frame, out var dropped),
+                Is.True);
+            Assert.That(dropped, Is.Zero, "A fitting message lost log rows.");
+            Assert.That(frame, Is.EqualTo(NetworkMessageCodec.SeatProjectionFrame(message)),
+                "The bounded compose and the plain encoder disagree about a fitting message.");
         }
 
         /// <summary>
@@ -573,6 +690,29 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(assembled.Kind, Is.EqualTo(SessionMessageKind.SeatProjection));
             return assembled.Payload;
         }
+
+        /// <summary>
+        /// One log line at one sequence, sized like a real one: ids of the shape and length the
+        /// official configuration actually writes, so a bound driven with these is driven with
+        /// honest bytes rather than with a synthetic balloon.
+        /// </summary>
+        private static MatchLogEntry Line(int sequence) =>
+            new MatchLogEntry(
+                sequence,
+                MatchLogEntryKind.Attack,
+                roundIndex: 1 + sequence / 8,
+                turnIndex: 1 + sequence % 4,
+                subjectHeroId: new HeroId("hero-tigerclaw"),
+                targetHeroId: new HeroId("hero-xargatha"),
+                subjectMinionId: default,
+                subjectCardInstanceId: new CardInstanceId("red-01-wasp-magnetic-dagger"),
+                subjectTeamId: new TeamId("team-red"),
+                origin: new HexCoordinate(sequence % 5, -(sequence % 5)),
+                destination: new HexCoordinate(-(sequence % 3), sequence % 3),
+                hasOrigin: true,
+                hasDestination: true,
+                outcome: MatchLogOutcome.AttackSuccessful,
+                amount: sequence);
 
         /// <summary>One specimen per kind, populated with whatever that kind's row may name.</summary>
         private static MatchLogEntry Specimen(MatchLogEntryKind kind)

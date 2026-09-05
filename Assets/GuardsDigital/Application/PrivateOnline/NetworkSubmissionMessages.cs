@@ -523,6 +523,102 @@ namespace GuardsDigital.Application
             }
         }
 
+        /// <summary>
+        /// The projection frame composed to FIT: the same layout as
+        /// <see cref="SeatProjectionFrame"/>, with the OLDEST match-log rows dropped first when the
+        /// whole message would not fit <paramref name="maxPayloadBytes"/>. Returns false - never a
+        /// throw - when the envelope and projection payload alone cannot fit, which no amount of
+        /// log trimming can mend.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is the send half of the frame-bound corrective whose growth half was 8.35w's
+        /// retained-round window. <see cref="PrivateSessionFrameCodec.EncodeFrame"/> throws past
+        /// <see cref="PrivateSessionProtocol.MaxPayloadBytes"/>, and a throw out of the host's own
+        /// publish path is the recorded table-killer: the send sequence has already advanced, every
+        /// resync is served down the same throwing path, and the match stalls for everyone with
+        /// nothing on screen. The windows make that state unreachable today; this method is what
+        /// keeps any future growth from being silent again.</para>
+        /// <para>The log is the one trimmable tenant, and trimming it from the oldest end is the
+        /// log's own recorded semantics - "recent history a player scrolls, not an archive" - so a
+        /// shortened window is a smaller copy of exactly what the retained window already means.
+        /// The projection payload is authoritative state and is never touched.</para>
+        /// <para>A message that already fits produces byte-for-byte what
+        /// <see cref="SeatProjectionFrame"/> produces, so the byte-level convergence assertions are
+        /// not looking at a second encoder.</para>
+        /// </remarks>
+        public static bool TrySeatProjectionFrameWithin(
+            NetworkSeatProjectionMessage message,
+            int maxPayloadBytes,
+            out byte[] frame,
+            out int droppedLogRows)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+            if (maxPayloadBytes < 1 || maxPayloadBytes > PrivateSessionProtocol.MaxPayloadBytes)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maxPayloadBytes), maxPayloadBytes,
+                    "A compose budget is positive and never looser than the frame bound itself.");
+            }
+
+            frame = null;
+            droppedLogRows = 0;
+            int prefixBytes;
+            var rowBytes = new int[message.MatchLog.Count];
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                WriteEnvelope(writer, message.Envelope);
+                writer.Write(message.ProjectionPayload.Length);
+                writer.Write(message.ProjectionPayload);
+                writer.Flush();
+                prefixBytes = checked((int)stream.Length);
+
+                // Each row's own encoded size, measured through the one real row writer, so the
+                // fit decision and the bytes actually sent can never disagree.
+                for (var index = 0; index < rowBytes.Length; index++)
+                {
+                    var before = stream.Length;
+                    NetworkMatchLogCodec.Write(writer, message.MatchLog[index]);
+                    writer.Flush();
+                    rowBytes[index] = checked((int)(stream.Length - before));
+                }
+            }
+
+            if (prefixBytes + sizeof(int) > maxPayloadBytes)
+            {
+                return false;
+            }
+
+            // The largest suffix of rows that fits: newest kept, oldest dropped, exactly the
+            // retained window's own idea of which lines matter.
+            var budget = maxPayloadBytes - prefixBytes - sizeof(int);
+            var firstRetained = rowBytes.Length;
+            while (firstRetained > 0 && budget >= rowBytes[firstRetained - 1])
+            {
+                firstRetained--;
+                budget -= rowBytes[firstRetained];
+            }
+
+            droppedLogRows = firstRetained;
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                WriteEnvelope(writer, message.Envelope);
+                writer.Write(message.ProjectionPayload.Length);
+                writer.Write(message.ProjectionPayload);
+                writer.Write(message.MatchLog.Count - firstRetained);
+                for (var index = firstRetained; index < message.MatchLog.Count; index++)
+                {
+                    NetworkMatchLogCodec.Write(writer, message.MatchLog[index]);
+                }
+
+                writer.Flush();
+                frame = PrivateSessionFrameCodec.EncodeFrame(
+                    SessionMessageKind.SeatProjection, stream.ToArray());
+                return true;
+            }
+        }
+
         public static bool TryDecodeSeatProjection(
             byte[] payload, out NetworkSeatProjectionMessage message)
         {

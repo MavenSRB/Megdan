@@ -669,6 +669,19 @@ namespace GuardsDigital.Application
 
                 if (reading == EnvelopeReading.Stale)
                 {
+                    // A stale copy is set aside unapplied - but a stale copy carrying THIS seat's
+                    // awaited correlation still proves the host answered the in-flight press, and
+                    // it is the only copy that ever will: the host echoes a correlation exactly
+                    // once. Under a reordered delivery the broadcast that overtook this frame has
+                    // already been adopted, so the view the latch was protecting is at least as
+                    // new as the answer it awaited - discarding the release with the frame would
+                    // leave the latch closed forever and this one seat silently unable to act.
+                    if (IsWaitingForHost && awaitingProjectionCorrelation != 0 &&
+                        projection.Envelope.Correlation == awaitingProjectionCorrelation)
+                    {
+                        ClearWaitingForHost();
+                    }
+
                     DiscardedFrameCount++;
                     return;
                 }

@@ -119,6 +119,51 @@ namespace GuardsDigital.Tests.EditMode
             harness.AssertConverged();
         }
 
+        /// <summary>
+        /// The delayed frame that matters most: the SUBMITTING seat's own correlated answer,
+        /// overtaken by a broadcast. The stale copy is still set aside unapplied - but it is the
+        /// only frame that will ever carry this seat's awaited correlation, so it must release the
+        /// input latch on its way out. Discarding the release with the frame left
+        /// <c>IsWaitingForHost</c> latched forever: one seat silently unable to act for the rest
+        /// of the match, with every assertion about convergence still green.
+        /// </summary>
+        [Test]
+        public void AReorderedCorrelatedProjection_StillReleasesTheInputLatch()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            harness.SeatAll();
+
+            // To the submitting seat, frame 0 is its result and frame 1 its correlated
+            // projection; holding frame 1 past one later frame is exactly a reorder of two.
+            var injector = new PrivateSessionFaultInjector(new PrivateSessionFaultPlan(
+                "delay-own-correlated-projection",
+                new[] { new SessionFaultStep(1, SessionFaultKind.Delay, 1) }));
+            harness.SetHostToClientInjector(1, injector);
+
+            var actor = harness.Client(1);
+            Assert.That(actor.TrySubmitCommand(
+                actor.LatestProjection.AuthorizedCommands[0], out _), Is.True);
+            harness.Pump();
+
+            Assert.That(actor.LastSubmissionResult.Accepted, Is.True);
+            Assert.That(actor.IsWaitingForHost, Is.True,
+                "An accepted result alone must keep the latch; its projection releases it.");
+
+            // Another seat's accepted step broadcasts a newer projection, which overtakes the
+            // held correlated one and releases it from the injector a frame late.
+            harness.SubmitOneAcceptedCommand(excludedOrdinal: 1);
+
+            Assert.That(actor.DiscardedFrameCount, Is.EqualTo(1),
+                "The late correlated copy must still be set aside unapplied.");
+            Assert.That(actor.RecoveredProjectionGapCount, Is.EqualTo(1),
+                "The overtaking broadcast must have healed the gap it revealed.");
+            Assert.That(actor.IsWaitingForHost, Is.False,
+                "The seat's awaited correlation arrived - late and stale, but it arrived - and " +
+                "the latch stayed closed. This seat can never act again.");
+            Assert.That(actor.State, Is.EqualTo(PrivateSessionClientState.Seated));
+            harness.AssertConverged();
+        }
+
         /// <summary>Duplication: the second delivery is a stale sequence, discarded unapplied.</summary>
         [Test]
         public void ADuplicatedProjection_IsDiscardedOnItsSecondDelivery()
