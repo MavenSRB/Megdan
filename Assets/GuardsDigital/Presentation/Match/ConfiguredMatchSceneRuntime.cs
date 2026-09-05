@@ -135,6 +135,12 @@ namespace GuardsDigital.Presentation.Match
                 client, HeroOverviewsView, () => HandsPresenter.ViewedHeroId);
             RoundPresenter = new RoundActionPresenter(client, RoundView, Seat?.HeroId ?? default);
 
+            // Milestone 8.35x (SIXTH amendment part b, "old M7"). Composed independently of
+            // MatchFeatureCoordinator/RoundActionPresenter, deliberately: the fizzle notice reads
+            // the seat-public match log directly rather than through RoundActionViewModel, which
+            // keeps this milestone's edits out of the file a parallel milestone is reworking.
+            FizzleNoticePresenter = new FizzleNoticePresenter(client, RoundView, Seat?.HeroId ?? default);
+
             // The Director's own controls exist only in the Director's runtime. A seat's HUD is not
             // given an Undo it must remember to hide; it is given a composition that has none.
             UndoRestartPresenter = Seat == null ? new UndoRestartPresenter(session, UndoRestartView) : null;
@@ -395,7 +401,10 @@ namespace GuardsDigital.Presentation.Match
         /// <c>readonly</c> fields that could not be corrected at all.</para>
         /// </summary>
         public IReadOnlyList<ISeatScopedPresenter> SeatScopedPresenters =>
-            new ISeatScopedPresenter[] { HandsPresenter, RoundPresenter, KineticPresenter };
+            new ISeatScopedPresenter[]
+            {
+                HandsPresenter, RoundPresenter, KineticPresenter, FizzleNoticePresenter
+            };
 
         /// <summary>
         /// Milestone 8.35x. Binds one hero as the viewer identity of EVERY seat-scoped presenter at
@@ -624,6 +633,9 @@ namespace GuardsDigital.Presentation.Match
         public BoardInteractionPresenter BoardPresenter { get; }
         public DirectorHandsPresenter HandsPresenter { get; }
         public RoundActionPresenter RoundPresenter { get; }
+
+        /// <summary>Milestone 8.35x. The fizzle notice's own presenter; see its own doc for why.</summary>
+        public FizzleNoticePresenter FizzleNoticePresenter { get; }
         public UndoRestartPresenter UndoRestartPresenter { get; }
         public DiagnosticLogPresenter DiagnosticPresenter { get; }
         public MinionChoicePresenter MinionChoicePresenter { get; }
@@ -639,6 +651,7 @@ namespace GuardsDigital.Presentation.Match
                 client.Projection.TurnIndex,
                 AwaitedInputQuery.IsWaitingOnViewer(client.Projection, Seat?.HeroId ?? default)));
             coordinator.RefreshAll();
+            FizzleNoticePresenter.Refresh();
             hud.ApplyExclusiveContext();
         }
 

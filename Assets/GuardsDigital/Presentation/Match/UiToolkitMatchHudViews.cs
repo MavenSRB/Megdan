@@ -188,9 +188,106 @@ namespace GuardsDigital.Presentation.Match
             button.style.flexShrink = 0f;
             button.style.fontSize = 12f;
             button.style.color = MatchHudTheme.PrimaryText;
-            button.style.backgroundColor = new Color(0.145f, 0.169f, 0.184f, 1f);
-            Border(button, MatchHudTheme.PanelBorder, 1f, 4f);
+            button.style.backgroundColor = MatchHudTheme.ButtonIdleBackground;
+            Border(button, MatchHudTheme.PanelBorder, 1f, MatchHudTheme.ButtonCornerRadius);
+            ApplyButtonMotion(button, tintBackground: true);
             return button;
+        }
+
+        /// <summary>
+        /// Milestone 8.35x (the EIGHTEENTH amendment, the button-system pass). One shared press/
+        /// hover feel for every clickable HUD or lobby control - idle, a slight hover lift, a
+        /// quick ~80ms press dip, and disabled (left untouched here: <see cref="MarkUnavailable"/>
+        /// already states that state through opacity and <c>SetEnabled(false)</c>, and this method
+        /// itself never reacts to a pointer over a disabled control).
+        /// </summary>
+        /// <remarks>
+        /// <para>A transform scale rather than a redraw of whatever the control paints, so the same
+        /// call reads on a flat chip's rectangle, a full card face acting as its own button, and a
+        /// custom-painted banner alike - each keeps its own face and gains only the lift and dip.
+        /// <paramref name="tintBackground"/> layers a second, optional ease over the control's own
+        /// background colour for the ordinary flat chip family (<see cref="Control"/> and the
+        /// lobby's own controls): the idle colour is read back lazily, on the control's own first
+        /// hover, rather than captured at this call - so a caller that colours a specific button
+        /// after this method runs (Confirm's orange, Clear's accent) still eases toward and from
+        /// its own colour rather than a stale generic one captured before that override landed.</para>
+        /// </remarks>
+        internal static void ApplyButtonMotion(VisualElement element, bool tintBackground = false)
+        {
+            element.style.transitionProperty = new List<StylePropertyName> { new StylePropertyName("scale") };
+            element.style.transitionTimingFunction =
+                new List<EasingFunction> { new EasingFunction(EasingMode.EaseOutSine) };
+            element.style.scale = new Scale(Vector3.one);
+
+            Color? idleBackground = null;
+            var hovered = false;
+            var pressed = false;
+
+            void Refresh()
+            {
+                var scale = pressed
+                    ? MatchHudTheme.ButtonPressedScale
+                    : hovered ? MatchHudTheme.ButtonHoverScale : 1f;
+                var ms = pressed
+                    ? MatchHudTheme.ButtonPressTransitionMs
+                    : MatchHudTheme.ButtonHoverTransitionMs;
+                element.style.transitionDuration =
+                    new List<TimeValue> { new TimeValue(ms, TimeUnit.Millisecond) };
+                element.style.scale = new Scale(new Vector3(scale, scale, 1f));
+
+                if (!tintBackground)
+                {
+                    return;
+                }
+
+                if (!idleBackground.HasValue)
+                {
+                    idleBackground = element.style.backgroundColor.value;
+                }
+
+                element.style.backgroundColor = pressed
+                    ? MatchHudTheme.Darken(idleBackground.Value, 0.16f)
+                    : hovered
+                        ? MatchHudTheme.Lighten(idleBackground.Value, 0.12f)
+                        : idleBackground.Value;
+            }
+
+            element.RegisterCallback<PointerEnterEvent>(_ =>
+            {
+                if (!element.enabledInHierarchy)
+                {
+                    return;
+                }
+
+                hovered = true;
+                Refresh();
+            });
+            element.RegisterCallback<PointerLeaveEvent>(_ =>
+            {
+                hovered = false;
+                pressed = false;
+                Refresh();
+            });
+            element.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0 || !element.enabledInHierarchy)
+                {
+                    return;
+                }
+
+                pressed = true;
+                Refresh();
+            });
+            element.RegisterCallback<PointerUpEvent>(_ =>
+            {
+                pressed = false;
+                Refresh();
+            });
+            element.RegisterCallback<PointerCaptureOutEvent>(_ =>
+            {
+                pressed = false;
+                Refresh();
+            });
         }
 
         internal static void Border(VisualElement element, Color color, float width, float radius)
@@ -4118,6 +4215,16 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement seatUndoHost;
 
         /// <summary>
+        /// Milestone 8.35x (SIXTH amendment part b, "old M7"). The acknowledge-to-continue notice
+        /// for a resolution the recorded <c>ImpossibleMandatory</c> fact says applied nothing mid-
+        /// resolution - hosted on the contextual region itself, an absolute overlay so it can stand
+        /// over whatever the region is otherwise drawing without displacing it, exactly as the
+        /// Defense breakdown preview already does on this same view.
+        /// </summary>
+        private readonly VisualElement fizzleNoticeHost;
+        private readonly Label fizzleNoticeLabel;
+
+        /// <summary>
         /// The Defense-card controls this rebuild drew. Milestone 8.11b, for milestone 8.8a's reason:
         /// a driver with no pointer has to reach an offer the way its own control does, and an offer
         /// this rebuild did not draw must reach nothing.
@@ -4184,6 +4291,37 @@ namespace GuardsDigital.Presentation.Match
             optionalStepActionsHost.style.overflow = Overflow.Visible;
             optionalStepActionsHost.style.display = DisplayStyle.None;
             Root.Add(optionalStepActionsHost);
+
+            fizzleNoticeHost = new VisualElement { name = "gd-fizzle-notice" };
+            fizzleNoticeHost.style.position = Position.Absolute;
+            fizzleNoticeHost.style.left = 0f;
+            fizzleNoticeHost.style.top = 0f;
+            fizzleNoticeHost.style.right = 0f;
+            fizzleNoticeHost.style.bottom = 0f;
+            fizzleNoticeHost.style.display = DisplayStyle.None;
+            fizzleNoticeHost.style.alignItems = Align.Center;
+            fizzleNoticeHost.style.justifyContent = Justify.Center;
+            fizzleNoticeHost.style.backgroundColor = new Color(0f, 0f, 0f, 0.55f);
+            var fizzleNoticePanel = HudElements.Panel(MatchHudTheme.PanelBackground);
+            fizzleNoticePanel.name = "gd-fizzle-notice-panel";
+            fizzleNoticePanel.style.flexDirection = FlexDirection.Column;
+            fizzleNoticePanel.style.alignItems = Align.Center;
+            fizzleNoticePanel.style.maxWidth = 420f;
+            HudElements.Padding(fizzleNoticePanel, 16f);
+            HudElements.Border(fizzleNoticePanel, MatchHudTheme.PanelBorder, 1f, MatchHudTheme.ButtonCornerRadius);
+            fizzleNoticeLabel = HudElements.Text(
+                string.Empty, 16f, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            fizzleNoticeLabel.name = "gd-fizzle-notice-label";
+            fizzleNoticeLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            fizzleNoticePanel.Add(fizzleNoticeLabel);
+            var fizzleNoticeOk = HudElements.Control("OK", () => FizzleNoticeAcknowledged?.Invoke(), 32f);
+            fizzleNoticeOk.name = "gd-fizzle-notice-ok";
+            fizzleNoticeOk.style.marginTop = 12f;
+            fizzleNoticeOk.style.minWidth = 96f;
+            fizzleNoticePanel.Add(fizzleNoticeOk);
+            fizzleNoticeHost.Add(fizzleNoticePanel);
+            Root.Add(fizzleNoticeHost);
+
             defenseCardHoverPreview = new VisualElement { name = "gd-defense-card-hover-preview" };
             defenseCardHoverPreview.style.position = Position.Absolute;
             defenseCardHoverPreview.style.display = DisplayStyle.None;
@@ -4206,6 +4344,38 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The two optional-step answers hosted above the retained ordinary hand.</summary>
         public VisualElement OptionalStepActionsRoot => optionalStepActionsHost;
+
+        /// <summary>
+        /// Milestone 8.35x. The fizzle notice's own element, hosted on the contextual region so it
+        /// reads as belonging to it - the same idiom the game already uses to pause for a decision.
+        /// </summary>
+        public VisualElement FizzleNoticeRoot => fizzleNoticeHost;
+
+        /// <summary>The viewer's OK, dismissing the standing fizzle notice.</summary>
+        public event Action FizzleNoticeAcknowledged;
+
+        /// <summary>Whether the fizzle notice is currently shown, for a driver with no pointer.</summary>
+        public bool HasFizzleNotice => fizzleNoticeHost.style.display == DisplayStyle.Flex;
+
+        /// <summary>
+        /// Milestone 8.35x. Drawn independently of <see cref="Render"/>: the recorded
+        /// <c>ImpossibleMandatory</c> fact this notice answers is not one of
+        /// <see cref="RoundActionViewModel"/>'s own pending-decision families (Core does not pause
+        /// on it - the resolution has already stopped by the time the match log names it), so this
+        /// is a second, additive entry point rather than a new field threaded through the model
+        /// every other pause is built from.
+        /// </summary>
+        public void RenderFizzleNotice(FizzleNoticeViewModel model)
+        {
+            if (!model.HasNotice)
+            {
+                fizzleNoticeHost.style.display = DisplayStyle.None;
+                return;
+            }
+
+            fizzleNoticeLabel.text = model.Message;
+            fizzleNoticeHost.style.display = DisplayStyle.Flex;
+        }
 
         /// <summary>The ordinary hand-style complete face raised from an overlapped Defense card.</summary>
         public VisualElement DefenseCardHoverPreviewRoot => defenseCardHoverPreview;
@@ -4875,6 +5045,7 @@ namespace GuardsDigital.Presentation.Match
                 new KeyValuePair<SystemTransitionOptionViewModel, VisualElement>(option, control));
             HudElements.OnPointedAt(control, pointedAt =>
                 ForwardUpgradeOptionHighlight(pointedAt ? option : null));
+            HudElements.ApplyButtonMotion(control);
 
             control.Add(DirectorHandsUnityView.BuildStandaloneCard(option.Card));
             control.Add(BuildUpgradeOptionFacts(option));
@@ -5249,6 +5420,7 @@ namespace GuardsDigital.Presentation.Match
             HudElements.Padding(control, 0f);
             control.style.backgroundColor = Color.clear;
             HudElements.Border(control, Color.clear, 0f, 0f);
+            HudElements.ApplyButtonMotion(control);
 
             var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
             // Milestone 8.30d: a card Defense offer shines exactly the shield it would defend
@@ -5688,6 +5860,10 @@ namespace GuardsDigital.Presentation.Match
                 Add(visibleLabel);
                 RegisterCallback<PointerEnterEvent>(_ => SetHovered(true));
                 RegisterCallback<PointerLeaveEvent>(_ => SetHovered(false));
+                // Milestone 8.35x: the banner already lifts its own glow on hover; the shared
+                // scale motion adds the same quick press dip every other control now gets, on top
+                // of - never instead of - that cloth.
+                HudElements.ApplyButtonMotion(this);
             }
 
             private readonly Label visibleLabel;
@@ -5996,6 +6172,7 @@ namespace GuardsDigital.Presentation.Match
             HudElements.Padding(control, 0f);
             control.style.backgroundColor = Color.clear;
             HudElements.Border(control, Color.clear, 0f, 0f);
+            HudElements.ApplyButtonMotion(control);
 
             var face = DirectorHandsUnityView.BuildStandaloneCard(choice.Card);
             // Milestone 8.30d: a card Defense offer shines exactly the shield it would defend

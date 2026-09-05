@@ -92,13 +92,23 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The roster, pinned. This is a tripwire rather than a truth: adding a fourth seat-scoped
+        /// The roster, pinned. This is a tripwire rather than a truth: adding a further seat-scoped
         /// presenter SHOULD fail here, so that whoever adds it visits
         /// <c>ConfiguredMatchSceneRuntime.BindHomeHero</c> deliberately instead of discovering the
         /// omission on a playtest.
+        ///
+        /// <para><b>It did exactly that at milestone 8.35z8's integration, which is the first
+        /// evidence this tripwire works.</b> The buttons/fizzle branch was written against
+        /// `983aa205`, before milestone 8.35z4 existed, so its new <see
+        /// cref="FizzleNoticePresenter"/> took a viewer <c>HeroId</c> into a <c>readonly</c> field
+        /// and the runtime composed it with `Seat?.HeroId ?? default` - the same shape, in a fourth
+        /// place, as the two presenters 8.35z4 had to repair. Left alone it would have shown every
+        /// seat an acknowledge-to-continue notice for every OTHER player's blocked action, because
+        /// the stream reads an undefined viewer as the Director, who owns every hero's fizzle. The
+        /// presenter now implements the interface and the roster is four.</para>
         /// </summary>
         [Test]
-        public void TheSeatScopedRoster_IsExactlyTheThreePresentersTheFanOutBinds()
+        public void TheSeatScopedRoster_IsExactlyThePresentersTheFanOutBinds()
         {
             var roster = typeof(RoundActionPresenter).Assembly.GetTypes()
                 .Where(type => type.IsClass && !type.IsAbstract &&
@@ -110,6 +120,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(roster, Is.EqualTo(new[]
             {
                 nameof(DirectorHandsPresenter),
+                nameof(FizzleNoticePresenter),
                 nameof(KineticCuePresenter),
                 nameof(RoundActionPresenter)
             }), "If this list changed, ConfiguredMatchSceneRuntime.SeatScopedPresenters must have " +

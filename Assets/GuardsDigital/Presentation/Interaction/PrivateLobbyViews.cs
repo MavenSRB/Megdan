@@ -206,6 +206,7 @@ namespace GuardsDigital.Presentation.Interaction
                 };
                 pick.style.minWidth = 120f;
                 pick.style.height = 40f;
+                ApplyButtonChrome(pick);
                 element.Add(pick);
             }
 
@@ -224,7 +225,25 @@ namespace GuardsDigital.Presentation.Interaction
             button.style.height = 56f;
             button.style.marginRight = 10f;
             button.style.fontSize = 20f;
+            ApplyButtonChrome(button);
             return button;
+        }
+
+        /// <summary>
+        /// Milestone 8.35x (the EIGHTEENTH amendment). The lobby's own controls drew Unity's stock
+        /// button skin - the one place in this HUD family that had never adopted
+        /// <see cref="MatchHudTheme"/>'s dark chip language at all, which is exactly what read as
+        /// "pasted over" a hand-styled dark panel. This gives HOST/JOIN/FILL/LEAVE and a seat's PICK
+        /// the same background, border, corner radius and press/hover motion every match-HUD
+        /// control now shares, through the same <see cref="HudElements.ApplyButtonMotion"/> this
+        /// file borrows rather than re-implements.
+        /// </summary>
+        private static void ApplyButtonChrome(VisualElement button)
+        {
+            button.style.color = PanelText;
+            button.style.backgroundColor = MatchHudTheme.ButtonIdleBackground;
+            HudElements.Border(button, PanelEdge, 1f, MatchHudTheme.ButtonCornerRadius);
+            HudElements.ApplyButtonMotion(button, tintBackground: true);
         }
 
         private static Label Caption(string text, int fontSize, string name)

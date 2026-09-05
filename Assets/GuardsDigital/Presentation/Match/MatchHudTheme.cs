@@ -116,6 +116,67 @@ namespace GuardsDigital.Presentation.Match
         public static readonly Color EmptySlot = new Color(0.188f, 0.212f, 0.227f, 1f);
 
         /// <summary>
+        /// Milestone 8.35x (the EIGHTEENTH amendment: "make these buttons nicer... they look
+        /// pasted over"). The one push-button chrome and press/hover feel every HUD and lobby
+        /// control shares - <see cref="Presentation.Match.HudElements.ApplyButtonMotion"/> reads
+        /// these rather than each control inventing its own dip and lift, and a flat control's
+        /// background is drawn from <see cref="ButtonIdleBackground"/> rather than a literal so
+        /// it reads as the same family everywhere it appears, from the seat HUD to the lobby.
+        /// </summary>
+        public static readonly Color ButtonIdleBackground = new Color(0.145f, 0.169f, 0.184f, 1f);
+
+        /// <summary>
+        /// The corner radius every ordinary push-button shares with the panel it sits in - the
+        /// value most of this HUD's own panels already draw at (the printed-action ring, the
+        /// event log panel, the round-action panel border), so a button integrates with its host
+        /// rather than reading as a second, disagreeing shape pasted on top of it.
+        /// </summary>
+        public const float ButtonCornerRadius = 4f;
+
+        /// <summary>The scale a control eases toward while the pointer rests on it.</summary>
+        public const float ButtonHoverScale = 1.035f;
+
+        /// <summary>
+        /// The scale a control snaps toward the instant it is pressed - the "clicking animation"
+        /// the user asked for, distinct from the slower hover lift so a click always reads as a
+        /// quick, deliberate dip rather than a continuation of the hover ease.
+        /// </summary>
+        public const float ButtonPressedScale = 0.94f;
+
+        /// <summary>The hover ease's own duration, in milliseconds.</summary>
+        public const int ButtonHoverTransitionMs = 120;
+
+        /// <summary>The press dip's own duration, in milliseconds - roughly the ~100ms the user asked for.</summary>
+        public const int ButtonPressTransitionMs = 80;
+
+        /// <summary>
+        /// A control's own idle background, eased brighter for the pointer resting on it. A
+        /// fraction of the way to white rather than a fixed swatch, so a button that borrows a
+        /// caller's own accent (the Confirm orange, a card's own colour) still lightens toward
+        /// its own hue instead of toward this theme's neutral chip.
+        /// </summary>
+        public static Color Lighten(Color color, float amount)
+        {
+            var t = Mathf.Clamp01(amount);
+            return new Color(
+                color.r + (1f - color.r) * t,
+                color.g + (1f - color.g) * t,
+                color.b + (1f - color.b) * t,
+                color.a);
+        }
+
+        /// <summary>The same ease, toward black, for the instant a control is pressed.</summary>
+        public static Color Darken(Color color, float amount)
+        {
+            var t = Mathf.Clamp01(amount);
+            return new Color(
+                color.r * (1f - t),
+                color.g * (1f - t),
+                color.b * (1f - t),
+                color.a);
+        }
+
+        /// <summary>
         /// The struck coin milestone 8.23a draws p.15's balance on: its metal, its rim, and the ink
         /// that reads against them.
         ///
