@@ -112,12 +112,28 @@ namespace GuardsDigital.Tests.PlayMode
             // be advancing anything while they run.
             Assert.That(runtime.BoardPresenter.SubmitDestination(step.Destination), Is.True);
 
-            // Milestone 8.35z11. THE ONE SEMANTIC CHANGE THIS FIXTURE HAD TO ABSORB. Before the
-            // conductor, a projection change STARTED its cues; now it QUEUES them, and the head of the
-            // queue begins on the next tick. `Tick(0f)` is that tick with no time passing - the
-            // conductor starts a waiting scene whenever it is idle, and a zero delta advances no clock
-            // - so every assertion below still runs at progress zero with no frame elapsed.
-            view.Tick(0f);
+            // Milestone 8.35z11. THE SEMANTIC CHANGE THIS FIXTURE HAD TO ABSORB, and the wave's first
+            // complete Play Mode run is what got it right. Before the conductor a projection change
+            // STARTED its cues; now it queues them and the conductor plays ONE MOMENT AT A TIME. This
+            // fixture's own two commitments are moments now - a CardCommit scene each, plus their
+            // reveals - so they sit in the queue AHEAD of the slide, and a single `Tick(0f)` starts
+            // the head of that queue rather than the move. The run reported it exactly:
+            // `active=commit:primitive-hero pending=3`, with the spotlight at None and nothing
+            // deferred, so this is the conductor doing its job and not a defect in it.
+            //
+            // So drain to the moment under test instead of assuming it is first. The slide then
+            // starts on the tick that reaches it, which is where every assertion below reads from.
+            const float Frame = 1f / 60f;
+            var drainedFrames = 0;
+            while (view.Playback.RouteFor(mover) == null && drainedFrames < 600)
+            {
+                view.Tick(Frame);
+                drainedFrames++;
+            }
+
+            Assert.That(drainedFrames, Is.LessThan(600),
+                "The slide must reach the head of the conductor's queue within ten seconds of " +
+                "presentation time; if it never does, the queue is stuck rather than merely staged.");
 
             var route = view.Playback.RouteFor(mover);
             Assert.That(route, Is.Not.Null,
@@ -128,8 +144,20 @@ namespace GuardsDigital.Tests.PlayMode
                 "in between.");
             Assert.That(view.Playback.MotionFor(mover).HasRouteTravel, Is.True);
 
+            // MID-SLIDE IS READ WHERE THE DRAIN LEFT IT, not at a fixed offset past a real frame,
+            // and the wave's first complete Play Mode run is why. One real frame in batch mode can
+            // carry a large `Time.deltaTime`; adding a fixed half-duration on top of it pushed this
+            // assertion past the END of a 0.32 s slide, and the fixture then reported a finished
+            // slide as a missing one. The drain above stops on the tick that starts the slide, so
+            // exactly one frame of it has played here - genuinely between the two spaces, by
+            // construction rather than by arithmetic that depends on the frame rate.
+            var midSlide = view.Playback.MotionFor(mover);
+            Assert.That(midSlide.HasRouteTravel, Is.True);
+            Assert.That(midSlide.RouteProgress, Is.GreaterThan(0f).And.LessThan(1f),
+                "Mid-slide the piece is genuinely between its two spaces.");
+
             // The scene's driver is live: one ordinary frame, nothing ticked by this fixture.
-            var progressBefore = view.Playback.MotionFor(mover).RouteProgress;
+            var progressBefore = midSlide.RouteProgress;
             yield return null;
             Assert.That(driver.FailureCount, Is.EqualTo(0),
                 "The driver isolates its tick and disables itself after three failures; a failure " +
@@ -139,13 +167,19 @@ namespace GuardsDigital.Tests.PlayMode
                 "The slide advanced across one real frame without this case ticking it, which is " +
                 "the whole of what 'plays on the real HUD' means.");
 
-            view.Tick(KineticTiming.SlideSeconds * 0.5f);
-            var midSlide = view.Playback.MotionFor(mover);
-            Assert.That(midSlide.HasRouteTravel, Is.True);
-            Assert.That(midSlide.RouteProgress, Is.GreaterThan(0f).And.LessThan(1f),
-                "Mid-slide the piece is genuinely between its two spaces.");
+            // AND THE THIRD CLAMP LESSON THIS FIXTURE PAID FOR: every clock in this stack caps a
+            // SINGLE delta at 0.25 s, so "tick the whole duration" cannot finish anything longer -
+            // a 0.32 s slide included. Advance in frame-sized steps until it is genuinely over
+            // rather than handing the clock one number and trusting it.
+            var settleFrames = 0;
+            while (view.Playback.RouteFor(mover) != null && settleFrames < 600)
+            {
+                view.Tick(Frame);
+                settleFrames++;
+            }
 
-            view.Tick(KineticTiming.SlideSeconds);
+            Assert.That(settleFrames, Is.LessThan(600),
+                "The slide must end inside its own declared duration rather than running on.");
             Assert.That(view.Playback.RouteFor(mover), Is.Null);
             Assert.That(view.Playback.MotionFor(mover).IsStill, Is.True,
                 "A finished cue leaves the piece at the placement the projection alone decides - " +
@@ -195,9 +229,27 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
             Assert.That(runtime.DeclineDefense(), Is.True);
 
-            // As above: the conductor starts the queued moment on the next tick, and a zero delta is
-            // a tick that advances nothing.
-            view.Tick(0f);
+            // As above, and with the wave's second lesson folded in: BOTH clocks have to be driven.
+            // A resolved attack now also asks milestone 8.35z12's spotlight for the stage, and the
+            // real scene advances two drivers per frame - the kinetic view's and the spotlight's.
+            // While the spotlight is TRAVELLING (Requested, Entering, Exiting) the cue layer holds
+            // its cues and the conductor starts nothing; the moment it HOLDS, the cues are released
+            // and play framed, which is the whole point of the sequence. A fixture that ticked only
+            // the kinetic view would sit at Requested for ever and read as a dead conductor.
+            var attackFrames = 0;
+            while (!view.Playback.LungeTargetFor(attacker).IsDefined && attackFrames < 600)
+            {
+                runtime.SpotlightPresenter.Tick(Frame);
+                view.Tick(Frame);
+                attackFrames++;
+            }
+
+            Assert.That(attackFrames, Is.LessThan(600),
+                "The lunge must reach the board once the spotlight stops travelling.");
+            Assert.That(runtime.SpotlightPresenter.Stage.Phase,
+                Is.EqualTo(AttackSpotlightPhase.Held),
+                "and it reaches it DURING the hold, not after the spotlight has closed - the smack " +
+                "belongs in the shot, framed, with both faces up.");
 
             Assert.That(view.Playback.ActiveMotionCount, Is.GreaterThan(0),
                 "The resolved attack left something playing on the board.");

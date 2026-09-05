@@ -66,6 +66,16 @@ namespace GuardsDigital.Presentation.Match
             Phase == AttackSpotlightPhase.Held ||
             Phase == AttackSpotlightPhase.Exiting;
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// The same three phases <see cref="AttackSpotlightPresenter.DefersCues"/> holds cues for,
+        /// and deliberately NOT <see cref="Phase"/> = <see cref="AttackSpotlightPhase.Held"/>: the
+        /// held phase is where this milestone's own smack plays, framed. One predicate now answers
+        /// both the conductor's question and the cue layer's, so they cannot drift apart -
+        /// `TheConductorsGateAndTheCueDeferral_AreTheSamePhaseSet` asserts that.
+        /// </remarks>
+        public bool DefersOtherScenes => AttackSpotlightPresenter.DefersCuesInPhase(Phase);
+
         /// <summary>Whether the viewer may press CONTINUE right now.</summary>
         public bool IsContinueArmed => Phase == AttackSpotlightPhase.Held;
 

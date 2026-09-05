@@ -5796,6 +5796,86 @@ namespace GuardsDigital.Tests.EditMode
                 "narrowed the grammar rather than removing it.");
         }
 
+        /// <summary>
+        /// WAVE ONE (milestones 8.35z11-8.35z14). The zero-gold state matrix gains the state the
+        /// user reported from live play, and the one milestone 8.35z9's own case could not see:
+        /// <b>the viewer is committed AND ANOTHER ACTOR IS MID-RESOLUTION.</b>
+        ///
+        /// <para>8.35z9 proved zero gold during another hero's RELEASE - revealed, turn active,
+        /// nothing started. It never drove past that into a running action, and it asserted only over
+        /// <see cref="MatchHudTheme.AwaitedShineClass"/>, which the card-scope ring wears and the
+        /// PRINTED-ACTION shine family does not. Both gaps are closed here: this case starts the
+        /// acting hero's action first, and it asserts over the printed-action shine elements by name
+        /// as well as over the shared marker.</para>
+        ///
+        /// <para>The defect it pins: <c>AddPrintedActionOverlay</c> was reached from
+        /// <c>card.IsResolving</c> alone, and that flag is true from a card's REVEAL until it finishes
+        /// resolving - up to five other heroes' turns on a six-player board. Every other gold
+        /// treatment had already been moved onto the awaited predicate; this one had not, so one card
+        /// - the viewer's own committed card - could still wear "act now" while somebody else acted.
+        /// The card keeps its raised, full-strength committed treatment above a dimmed hand, which is
+        /// a true thing to say about it; only the colour that means "yours to answer" goes.</para>
+        /// </summary>
+        [Test]
+        public void AHeroWhoIsNotActing_WearsNoGold_WhileAnotherHerosResolutionIsActuallyUnderWay()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var actingId = session.Projection.SelectedActor.ActorId;
+            var bystanderId = session.Projection.Setup.Heroes
+                .First(hero => !hero.HeroId.Equals(actingId)).HeroId;
+
+            // Drive PAST the release state 8.35z9 covered and into a running action.
+            var start = session.Projection.AvailableTurnActions
+                .FirstOrDefault(offer => offer.IsAvailable);
+            Assert.That(start, Is.Not.Null,
+                "The acting hero must have a printed action to start, or this case never reaches " +
+                "the state it exists for.");
+            ConfiguredMatchFixtures.Accept(
+                session, DirectorCommand.StartAction(start.ActionDefinitionId));
+
+            var projection = session.Projection;
+            Assert.That(projection.IsTurnActive, Is.True);
+            Assert.That(projection.SelectedActor.ActorId, Is.EqualTo(actingId),
+                "The turn is still the other hero's.");
+            Assert.That(projection.GetCommitment(bystanderId).RevealedCardInstanceId.HasValue,
+                Is.True, "and the bystander is committed and revealed, which is the reported state.");
+
+            var view = new DirectorHandsUnityView();
+            var presenter = new DirectorHandsPresenter(session, view);
+            presenter.SelectViewedHero(bystanderId);
+
+            var committed = view.Model.ViewedHand.TrayCards
+                .SingleOrDefault(card => card.IsResolving);
+            Assert.That(committed, Is.Not.Null,
+                "The bystander's committed card is still 'resolving' in the wide sense - that wide " +
+                "window is exactly what made this defect possible.");
+
+            Assert.That(committed.IsAwaitedAnswer, Is.False,
+                "GOLD MEANS 'THIS IS YOURS TO ANSWER'. Nothing is being asked of this hero.");
+            Assert.That(committed.IsDimmedByResolution, Is.False,
+                "and the committed card is still NOT dimmed - it keeps its raised, full-strength " +
+                "committed identity, which is the half of the treatment that was always correct.");
+
+            Assert.That(
+                Descendants(view.Root).Any(element =>
+                    element.ClassListContains(MatchHudTheme.AwaitedShineClass)),
+                Is.False,
+                "No element on this hero's surface wears the shared awaited marker.");
+
+            // The half 8.35z9's assertion was structurally blind to: the printed-action shine family
+            // carries no marker class, so it has to be named.
+            var goldNames = new[]
+            {
+                "gd-card-shine-primary-contrast", "gd-prepared-action-glow", "gd-card-awaited-shine",
+                "gd-primary-offer-glow"
+            };
+            Assert.That(
+                Descendants(view.Root).Any(element => goldNames.Contains(element.name)),
+                Is.False,
+                "and none of the printed-action shine elements is drawn either - the family the " +
+                "8.35z9 matrix could not see, which is why this state slipped through it.");
+        }
+
         /// <summary>The rail element drawn for one hero, found by the model it was rendered from.</summary>
         private static VisualElement RailOf(HeroOverviewsUnityView view, HeroId heroId)
         {

@@ -60,9 +60,28 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// True from the moment the stage is granted until the scene has completely released it.
-        /// While it is true, a conductor starts nothing else and every other cue is buffered.
         /// </summary>
         bool HoldsStage { get; }
+
+        /// <summary>
+        /// Whether a conductor must start NOTHING ELSE right now - the seventh member, added by the
+        /// wave-one integration because <see cref="HoldsStage"/> turned out to be the wrong question
+        /// for it, and the first complete Play Mode run is what showed the difference.
+        ///
+        /// <para><b>These are not the same predicate, and the gap between them is the feature.</b>
+        /// A spotlight holds the stage while it is ENTERING, HELD and EXITING. But the whole point of
+        /// the held phase is that the attack's own cues are RELEASED into it - the user's sequence is
+        /// "lose the UI, zoom in, show the cards, show the smack", and the smack is those cues playing
+        /// framed, with both faces up. A conductor that refused to start anything while the scene
+        /// merely held the stage would keep them queued until the spotlight had CLOSED, which moves
+        /// the smack out of the shot it exists for.</para>
+        ///
+        /// <para>So this is true while the scene is TRAVELLING - asking for the stage, moving onto it,
+        /// or moving off - and false while it merely holds. It is the same phase set the cue layer's
+        /// own deferral uses, published here so the two cannot drift apart: the conductor and the
+        /// deferral now answer one question, rather than two that happen to agree.</para>
+        /// </summary>
+        bool DefersOtherScenes { get; }
 
         /// <summary>
         /// The conductor's go-ahead. Idempotent: granting a scene that already holds the stage, or

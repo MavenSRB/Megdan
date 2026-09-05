@@ -492,18 +492,56 @@ namespace GuardsDigital.Tests.EditMode
 
             conducted.Requesting = false;
             conducted.Holding = true;
+            conducted.Deferring = true;
             for (var frame = 0; frame < 120; frame++)
             {
                 Assert.That(conductor.Advance(1f / 60f), Is.Null,
-                    "Nothing may start behind a scene that holds the stage.");
+                    "Nothing may start while the scene is travelling onto or off the stage.");
             }
 
             Assert.That(conductor.PendingSceneCount, Is.EqualTo(1),
                 "The waiting scene is HELD, not dropped - it plays when the stage is free.");
 
-            conducted.Holding = false;
+            conducted.Deferring = false;
             Assert.That(conductor.Advance(1f / 60f), Is.Not.Null,
-                "The moment the stage is free the queue resumes.");
+                "The moment the scene stops travelling the queue resumes.");
+        }
+
+        /// <summary>
+        /// THE DEFECT THE FIRST COMPLETE PLAY MODE RUN OF THE WAVE FOUND, pinned so it cannot come
+        /// back. The conductor's first gate asked <c>HoldsStage</c>, which is true through the
+        /// spotlight's HELD phase - and that is precisely the phase the attack's own released cues
+        /// have to play in, framed, with both faces up. Gating on it kept the smack queued until the
+        /// spotlight had CLOSED, moving it out of the shot it exists for.
+        ///
+        /// <para>The gate is <c>DefersOtherScenes</c> now, which is the same phase set the cue
+        /// layer's own deferral uses - so the conductor and the deferral answer ONE question rather
+        /// than two that happen to agree. This asserts they are still the same set.</para>
+        /// </summary>
+        [Test]
+        public void TheConductorsGateAndTheCueDeferral_AreTheSamePhaseSet()
+        {
+            var stage = new AttackSpotlightStage { AutoGrantsStage = false };
+            var phases = (AttackSpotlightPhase[])Enum.GetValues(typeof(AttackSpotlightPhase));
+
+            Assert.That(stage.DefersOtherScenes, Is.False,
+                "A stage doing nothing defers nothing.");
+
+            foreach (var phase in phases)
+            {
+                var travelling =
+                    phase == AttackSpotlightPhase.Requested ||
+                    phase == AttackSpotlightPhase.Entering ||
+                    phase == AttackSpotlightPhase.Exiting;
+                Assert.That(
+                    AttackSpotlightPresenter.DefersCuesInPhase(phase), Is.EqualTo(travelling),
+                    "The cue deferral covers exactly the travelling phases: " + phase);
+            }
+
+            Assert.That(
+                AttackSpotlightPresenter.DefersCuesInPhase(AttackSpotlightPhase.Held), Is.False,
+                "HELD is not a deferring phase - it is where the framed smack plays, and that is " +
+                "the whole reason this pair of predicates is not HoldsStage.");
         }
 
         /// <summary>
@@ -537,6 +575,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             public bool Requesting;
             public bool Holding;
+            public bool Deferring;
             public int Grants;
             public ConductedSceneInterruption LastInterruption = ConductedSceneInterruption.None;
 
@@ -545,6 +584,8 @@ namespace GuardsDigital.Tests.EditMode
             public bool IsRequestingStage => Requesting;
 
             public bool HoldsStage => Holding;
+
+            public bool DefersOtherScenes => Deferring;
 
             public void GrantStage() => Grants++;
 

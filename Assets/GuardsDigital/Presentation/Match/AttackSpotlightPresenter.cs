@@ -145,10 +145,19 @@ namespace GuardsDigital.Presentation.Match
         /// cue that arrives during the hold or the exit waits for the next release, which is the
         /// buffering the amendment asks for.</para>
         /// </summary>
-        public bool DefersCues =>
-            stage.Phase == AttackSpotlightPhase.Requested ||
-            stage.Phase == AttackSpotlightPhase.Entering ||
-            stage.Phase == AttackSpotlightPhase.Exiting;
+        public bool DefersCues => DefersCuesInPhase(stage.Phase);
+
+        /// <summary>
+        /// The deferral as a pure function of the phase - ONE definition, so the cue layer's hold and
+        /// the conductor's `IConductedScene.DefersOtherScenes` gate cannot drift apart. The wave-one
+        /// integration's first complete Play Mode run is why that matters: the conductor was gating on
+        /// `HoldsStage`, which also covers HELD, and that kept the framed smack queued until the
+        /// spotlight had closed.
+        /// </summary>
+        public static bool DefersCuesInPhase(AttackSpotlightPhase phase) =>
+            phase == AttackSpotlightPhase.Requested ||
+            phase == AttackSpotlightPhase.Entering ||
+            phase == AttackSpotlightPhase.Exiting;
 
         /// <summary>The highest match-log sequence already turned into scenes.</summary>
         public int ObservedSequence => observedSequence;

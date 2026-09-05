@@ -2773,6 +2773,31 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            // MILESTONE 8.35z11-z14 (wave one), and it closes the LAST gold path that milestone
+            // 8.35z9's grammar pass did not reach.
+            //
+            // 8.35z9 stated the rule - GOLD MEANS "THIS IS YOURS TO ANSWER" - and narrowed
+            // `IsAwaitedAnswer` so a committed card stops claiming it the moment somebody else is
+            // acting. Every gold treatment on this surface was moved onto that predicate EXCEPT this
+            // one, which is still reached by `card.IsResolving` alone at the call site. And
+            // `IsResolving` is the WIDE window: it is true from the instant a hero's card is REVEALED
+            // until it finishes resolving, which spans up to five other heroes' turns on a six-player
+            // board. So the printed-action shine on a viewer's own committed card could stay lit while
+            // another player resolved theirs - one card, exactly as the user reported it, and a
+            // different element from the card-scope ring 8.35z9 fixed.
+            //
+            // `card.IsAwaitedAnswer` is the right predicate and not a second guess at the same
+            // question: this method only runs for a resolving card, and a resolving card is never in
+            // the Available group, so within this method the flag reduces to exactly "this is the
+            // viewer's own resolving card AND its turn is actually under way".
+            //
+            // The card KEEPS everything else. The overlay is still built, so the regions, their hit
+            // targets, their tooltips, the assistive reading and the layout are untouched; the card
+            // still stands at full strength above a dimmed hand, because being the committed card is a
+            // true and wanted thing to say. It simply stops wearing the colour that means "act now"
+            // while it is not the viewer's turn to act.
+            var lit = card.IsAwaitedAnswer;
+
             var overlay = new VisualElement { name = "gd-printed-action-overlay" };
             overlay.style.position = Position.Absolute;
             overlay.style.left = 0f;
@@ -2812,7 +2837,8 @@ namespace GuardsDigital.Presentation.Match
                 Image shine = null;
                 Image primaryContrast = null;
                 PrimaryOfferGlow primaryGlow = null;
-                if (usesPreparedArtwork &&
+                if (lit &&
+                    usesPreparedArtwork &&
                     region.Invocation != null &&
                     ConfiguredCardShine.TryLoadTexture(
                         card.DefinitionReference, ShineSlotFor(region), out var shineTexture))
@@ -2835,13 +2861,16 @@ namespace GuardsDigital.Presentation.Match
                     }
                     overlay.Add(shine);
                 }
-                else if (isPrimary && region.Invocation != null)
+                else if (lit && isPrimary && region.Invocation != null)
                 {
                     // A prepared front without its ring overlay, and every generated-face
                     // primary: the drawn approximation of the same statement.
                     HudElements.Border(control, Color.clear, 0f, 0f);
                     control.style.overflow = Overflow.Visible;
-                    primaryGlow = new PrimaryOfferGlow();
+                    // Named for the same reason milestone 8.35z9 gave the other gold treatments a
+                    // shared class: a gold element a test cannot find is a gold element no state
+                    // matrix can prove absent.
+                    primaryGlow = new PrimaryOfferGlow { name = "gd-primary-offer-glow" };
                     ApplyActionBounds(
                         primaryGlow,
                         new Rect(
@@ -2857,13 +2886,13 @@ namespace GuardsDigital.Presentation.Match
                     AddPreparedArtworkHighlight(
                         control,
                         region.ActionKind,
-                        region.Invocation != null);
+                        lit && region.Invocation != null);
                 }
                 else
                 {
                     HudElements.Border(control, Color.clear, 0f, 0f);
                     SetGeneratedChipShine(
-                        cardSurface, ShineSlotFor(region), region.Invocation != null, false);
+                        cardSurface, ShineSlotFor(region), lit && region.Invocation != null, false);
                 }
 
                 if (region.Invocation == null)

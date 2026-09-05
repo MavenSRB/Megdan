@@ -459,7 +459,10 @@ namespace GuardsDigital.Presentation.Match
                     return null;
                 }
 
-                if (conducted.HoldsStage)
+                // DefersOtherScenes and not HoldsStage, and the difference is the whole feature: the
+                // scene holds the stage through its HELD phase too, and that phase is exactly where
+                // the attack's own released cues must play, framed. See IConductedScene.
+                if (conducted.DefersOtherScenes)
                 {
                     return null;
                 }
