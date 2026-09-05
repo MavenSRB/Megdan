@@ -432,6 +432,23 @@ Non-goals: no schema move, no wire change, no new cue kind, no rules change, and
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z-lunge-at-the-minion-too-and-settle-what-that-costs-the-snapshot-corpus-completion-evidence).
 
+### [x] 8.35z1 Read a concurrent leveling pause by its open-item list in the player-build smoke driver
+
+Corrective, live-defect-driven: found while building the friends-playtest final package, which requires the player-build smoke gate to pass. Milestone 8.35u made rulebook p.15's leveling simultaneous and gave `PendingSystemTransitionStep` a documented rule: its single-item `ItemId`/`ChoosingSide`/`Options` accessors throw once several items stand open, rather than silently answering "the" item that no longer has one meaning. `PlayerSmokeTestDriver` - the player-build smoke gate's only in-player probe - still read `step.Options.Count` for a diagnostic log line and had not been touched since, so the gate has thrown `InvalidOperationException: Paused step 'level-up-purchase-and-upgrade' is waiting on 6 items at once...` on its own second-round Upgrade a Card pause at every revision since milestone 8.35u, unnoticed because the gate is not on the required list for any of 8.35u through 8.35z.
+
+Observable outcome: `Invoke-PlayerBuildSmoke.ps1` reaches and answers a concurrent six-hero leveling pause and reports `GATE PASSED`.
+
+Design: the diagnostic line reads `step.OpenItems.Count` and `step.AllOptions.Count`, both of which are the documented never-throwing summaries across however many items stand open, in place of the single-item `Options.Count`. The command the driver actually submits was already correct: `decision.Commands` names its own item on every entry, per 8.35u's own design, so the existing `FirstOrDefault` answers one open item per call and a concurrent pause is walked down one hero at a time across successive commands, same as any other multi-step decision this driver plays through.
+
+Acceptance checks:
+
+- `Invoke-PlayerBuildSmoke.ps1` fails at the pre-fix revision with the `InvalidOperationException` above thrown from `PlayerSmokeTestDriver.NextCommand`, and passes post-fix with `GUARDS_SMOKE: PASS` and exit code 0.
+- The built player's log shows the level-up step's `PAUSE_ANSWERED items=` count strictly decreasing across six accepted commands (6, 5, 4, 3, 2, 1), one per simultaneously-open hero choice.
+
+Non-goals: no rules, schema, wire, or gameplay-facing change of any kind; `PlayerSmokeTestDriver` is test-only scaffolding, gated behind `-guardsSmokeTest` and never constructed by `MatchSceneCompositionRoot` in a normally launched build.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z1-read-a-concurrent-leveling-pause-by-its-open-item-list-in-the-player-build-smoke-driver-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

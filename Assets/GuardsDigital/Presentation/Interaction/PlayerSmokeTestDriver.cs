@@ -214,10 +214,19 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 if (decision.FamilyId.Equals(PendingDecisionFamilies.SystemTransition))
                 {
+                    // Milestone 8.35u made p.15's leveling simultaneous: a step may now be waiting on
+                    // several heroes' choices at once, and PendingSystemTransitionStep's single-item
+                    // ItemId/ChoosingSide/Options accessors throw rather than guess which one "the"
+                    // pause means. OpenItems/AllOptions never throw and are exactly what a caller that
+                    // only wants to log "what is on the table" needs; the command itself still comes
+                    // from decision.Commands below, which names its own item on every entry and answers
+                    // one open item per call - so a concurrent pause is walked one hero at a time here,
+                    // same as everywhere else that is not the specific chooser's own screen.
                     var step = projection.PendingSystemTransitionStep;
                     pauses++;
                     Debug.Log($"{MarkerPrefix} PAUSE_ANSWERED transition={step.DefinitionId.Value} " +
-                        $"step={step.StepId.Value} options={step.Options.Count}");
+                        $"step={step.StepId.Value} items={step.OpenItems.Count} " +
+                        $"options={step.AllOptions.Count}");
                 }
 
                 if (decision.FamilyId.Equals(PendingDecisionFamilies.MinionBattle))
