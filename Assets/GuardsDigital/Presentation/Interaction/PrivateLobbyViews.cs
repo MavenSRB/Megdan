@@ -263,13 +263,15 @@ namespace GuardsDigital.Presentation.Interaction
     internal sealed class TestDriverSpawnRequest
     {
         public TestDriverSpawnRequest(
-            SeatId seat, string address, int port, string sessionKey, double? thinkSecondsOverride = null)
+            SeatId seat, string address, int port, string sessionKey,
+            double? thinkSecondsOverride = null, int parentProcessId = 0)
         {
             Seat = seat;
             Address = address;
             Port = port;
             SessionKey = sessionKey;
             ThinkSecondsOverride = thinkSecondsOverride;
+            ParentProcessId = parentProcessId;
         }
 
         public SeatId Seat { get; }
@@ -285,6 +287,15 @@ namespace GuardsDigital.Presentation.Interaction
         /// window instead of the many minutes six-players'-worth of human-paced bots would take.
         /// </summary>
         public double? ThinkSecondsOverride { get; }
+
+        /// <summary>
+        /// 8.35t corrective. The OS process id of the host that is about to spawn this child - the
+        /// one fact a watchdog on the child's own side needs to notice its parent is gone even when
+        /// the parent never got the chance to run its own <c>Leave()</c>/<c>OnDestroy()</c> teardown
+        /// (a crash, a closed window, a task-killed process). Zero means "no parent to watch",
+        /// kept non-fatal so a manually-launched driver (outside any host's own spawn) still runs.
+        /// </summary>
+        public int ParentProcessId { get; }
     }
 
     /// <summary>
@@ -349,6 +360,11 @@ namespace GuardsDigital.Presentation.Interaction
             info.EnvironmentVariables[PrivateSeatDriverOptions.PortEnvironmentVariable] =
                 request.Port.ToString(CultureInfo.InvariantCulture);
             info.EnvironmentVariables[PrivateSeatDriverOptions.KeyEnvironmentVariable] = request.SessionKey;
+            if (request.ParentProcessId > 0)
+            {
+                info.EnvironmentVariables[PrivateSeatDriverOptions.ParentProcessIdEnvironmentVariable] =
+                    request.ParentProcessId.ToString(CultureInfo.InvariantCulture);
+            }
 
             return System.Diagnostics.Process.Start(info);
         }
@@ -412,14 +428,43 @@ namespace GuardsDigital.Presentation.Interaction
         private string signature = string.Empty;
 
         /// <summary>
+        /// 8.35t corrective. Why a spawned child never reached this host at all: the address a
+        /// human types to HOST is the bind address, not necessarily a dialable one from a second
+        /// process on this same machine. A listener bound to this machine's own real network
+        /// address (typed so a remote friend's port-forward lands on it - the shape the tester
+        /// instructions' own solo-practice paragraph invites, not only the multi-human case)
+        /// actively refuses a loopback dial; confirmed directly with a bare
+        /// <c>TcpListener</c>/<c>TcpClient</c> pair before touching this file. Resolved once, right
+        /// after a successful bind, so every later spawn dials the address that will actually
+        /// answer rather than the form's own unrelated placeholder text.
+        /// </summary>
+        private string hostDialAddress = string.Empty;
+
+        /// <summary>
         /// THIRTEENTH amendment. This host's own spawned test-driver children - its own OS process
         /// tree, killed when this session ends, per the amendment's own "who owns them, how they
-        /// shut down" design point.
+        /// shut down" design point. 8.35t adds a parent-PID watchdog on the child's own side as a
+        /// second, independent line of defense: a host that dies without a clean Leave (crash,
+        /// closed window, task-killed) still orphaned every spawned child before that corrective,
+        /// because nothing but this list's own teardown ever reaped them.
         /// </summary>
         private readonly System.Collections.Generic.List<System.Diagnostics.Process>
             testDriverProcesses = new System.Collections.Generic.List<System.Diagnostics.Process>();
         private readonly System.Collections.Generic.HashSet<SeatId> testDriverSeats =
             new System.Collections.Generic.HashSet<SeatId>();
+
+        /// <summary>
+        /// 8.35t corrective. One seat's own join grace period, keyed only while that seat's own
+        /// spawn is still unconfirmed: a seat that claims itself before its deadline is simply
+        /// removed, never reported as failed. Its presence is also what "must not stack" checks -
+        /// a seat already carrying a live deadline is a seat FILL has already tried, so a repeated
+        /// press skips it rather than spawning a second, redundant child onto the same seat.
+        /// </summary>
+        private readonly System.Collections.Generic.Dictionary<SeatId, DateTime> testDriverDeadlines =
+            new System.Collections.Generic.Dictionary<SeatId, DateTime>();
+
+        private const double TestDriverJoinGraceSeconds = 12.0;
+
         private ITestDriverProcessLauncher testDriverLauncher = new RealTestDriverProcessLauncher();
 
         /// <summary>
@@ -466,6 +511,16 @@ namespace GuardsDigital.Presentation.Interaction
         internal PrivateSessionHost RehearsalHost => session;
 
         internal bool RehearsalHudAttached => onlineHudAttached;
+
+        /// <summary>
+        /// 8.35t corrective. Set the instant <see cref="BeginJoining"/> takes either of its own
+        /// silent early returns, cleared the instant a join is attempted again: the one thing a
+        /// spawned <see cref="PrivateSeatDriver"/> could not previously observe about its own
+        /// "successful" Join press - <see cref="PrivateLobbyPresenter.Press"/> returns true the
+        /// moment the control was OFFERED, which says nothing about whether the join it triggered
+        /// actually reached anyone.
+        /// </summary>
+        internal string LastJoinFailure { get; private set; }
 
         private void Start()
         {
@@ -546,6 +601,12 @@ namespace GuardsDigital.Presentation.Interaction
                     PrivateOnlineMarkers.LogHostEvent(record, session);
                     HostEventObserved?.Invoke(record);
                 }
+
+                // 8.35t corrective. A spawned test driver that never claims its seat must not look
+                // identical to nothing having happened - checked every frame, but cheap: the
+                // dictionary is empty whenever FILL has never been pressed or every prior spawn has
+                // already resolved one way or the other.
+                CheckTestDriverJoinTimeouts();
             }
 
             if (machine != null && transport != null)
@@ -770,7 +831,13 @@ namespace GuardsDigital.Presentation.Interaction
             console = new HostConsoleReader();
             console.Start();
             signature = string.Empty;
+            // 8.35t corrective. The endpoint itself resolves this - a socket-typed decision the
+            // architecture record confines to the adapter, per
+            // PrivateSessionArchitectureConformanceTests.SocketTypes_LiveOnlyInTheNetworkAdapter -
+            // rather than this file naming the socket type its own answer would otherwise require.
+            hostDialAddress = endpoint.ResolveLocalDialAddress();
             testDriverSeats.Clear();
+            testDriverDeadlines.Clear();
             presenter.AttachHost(session, string.Empty);
             PrivateOnlineMarkers.Log(
                 "LOBBY_HOSTING port=" + listener.BoundPort.ToString(CultureInfo.InvariantCulture) +
@@ -788,10 +855,20 @@ namespace GuardsDigital.Presentation.Interaction
 
         /// <summary>
         /// THIRTEENTH amendment. Spawns one real keyed test-driver client onto every seat still
-        /// Open, exactly as an operator running "PLAY - Join Match.bat" would claim one by hand -
-        /// each child dials this host's own loopback listener and presents the same session key
-        /// this host was hosted with, an ordinary keyed join with no shortcut around it.
+        /// Open and not already carrying an outstanding attempt of its own, exactly as an operator
+        /// running "PLAY - Join Match.bat" would claim one by hand - each child dials
+        /// <see cref="hostDialAddress"/> (this host's own actually-bound address, resolved once at
+        /// hosting time - 8.35t's corrective, replacing a hardcoded loopback constant that a
+        /// non-loopback bind silently defeated) and presents the same session key this host was
+        /// hosted with, an ordinary keyed join with no shortcut around it.
         /// </summary>
+        /// <remarks>
+        /// 8.35t corrective, "must not stack": a seat already carrying a live entry in
+        /// <see cref="testDriverDeadlines"/> is a seat this method has already sent a driver to and
+        /// not yet heard back from - skipped rather than sent a second, redundant child, so a
+        /// player mashing the button out of exactly the frustration this defect caused cannot
+        /// accumulate orphaned processes the way the interim-4 report's 34 did.
+        /// </remarks>
         private void FillEmptySeatsWithTestDrivers()
         {
             if (session == null || listener == null)
@@ -800,17 +877,34 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var openSeats = new List<SeatId>();
+            var freshSeats = new List<SeatId>();
             foreach (var entry in session.Roster)
             {
-                if (entry.Occupancy == SeatOccupancyState.Open)
+                if (entry.Occupancy != SeatOccupancyState.Open)
                 {
-                    openSeats.Add(entry.Seat);
+                    continue;
+                }
+
+                openSeats.Add(entry.Seat);
+                if (!testDriverDeadlines.ContainsKey(entry.Seat))
+                {
+                    freshSeats.Add(entry.Seat);
                 }
             }
 
             if (openSeats.Count == 0)
             {
                 presenter.SetTestDriverSeats(testDriverSeats, "Every seat is already taken.");
+                return;
+            }
+
+            if (freshSeats.Count == 0)
+            {
+                // Every still-open seat already has an outstanding attempt - a repeated press is
+                // refused with a visible reason instead of silently spawning a second child onto
+                // the same seat.
+                presenter.SetTestDriverSeats(
+                    testDriverSeats, "Test drivers are already on their way for every open seat.");
                 return;
             }
 
@@ -824,11 +918,12 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var spawned = 0;
-            foreach (var seat in openSeats)
+            var deadline = DateTime.UtcNow.AddSeconds(TestDriverJoinGraceSeconds);
+            foreach (var seat in freshSeats)
             {
                 var request = new TestDriverSpawnRequest(
-                    seat, PrivateLobbyUnityView.DefaultAddress, listener.BoundPort, sessionKey,
-                    thinkSecondsOverride);
+                    seat, hostDialAddress, listener.BoundPort, sessionKey, thinkSecondsOverride,
+                    System.Diagnostics.Process.GetCurrentProcess().Id);
                 try
                 {
                     var process = testDriverLauncher.Launch(request);
@@ -838,8 +933,10 @@ namespace GuardsDigital.Presentation.Interaction
                     }
 
                     testDriverSeats.Add(seat);
+                    testDriverDeadlines[seat] = deadline;
                     spawned++;
-                    PrivateOnlineMarkers.Log("LOBBY_TEST_DRIVER_SPAWNED seat=" + seat.Value);
+                    PrivateOnlineMarkers.Log(
+                        "LOBBY_TEST_DRIVER_SPAWNED seat=" + seat.Value + " address=" + hostDialAddress);
                 }
                 catch (Exception exception)
                 {
@@ -848,10 +945,82 @@ namespace GuardsDigital.Presentation.Interaction
                 }
             }
 
-            var status = spawned < openSeats.Count
-                ? spawned + "/" + openSeats.Count + " test drivers spawned; see the log for the rest."
-                : null;
+            var status = spawned < freshSeats.Count
+                ? spawned + "/" + freshSeats.Count + " test drivers spawned; see the log for the rest."
+                : "Sent " + spawned + " test driver(s); watch the seats below for who joins.";
             presenter.SetTestDriverSeats(testDriverSeats, status);
+        }
+
+        /// <summary>
+        /// 8.35t corrective, "must produce visible feedback even when spawning fails". A spawned
+        /// child that never claims its seat within its own grace period is reported rather than
+        /// left to look identical to nothing having happened: logged for anyone reading the host's
+        /// log, and surfaced on the host's own screen through the same feedback line FILL itself
+        /// writes to. The seat is then dropped from <see cref="testDriverDeadlines"/> - removed,
+        /// not merely expired - so a later FILL press is free to try that seat again rather than
+        /// treat a proven failure as a permanently "already attempted" seat.
+        /// </summary>
+        private void CheckTestDriverJoinTimeouts()
+        {
+            if (testDriverDeadlines.Count == 0 || session == null)
+            {
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+            List<SeatId> timedOut = null;
+            foreach (var pair in testDriverDeadlines)
+            {
+                if (now < pair.Value)
+                {
+                    continue;
+                }
+
+                (timedOut ?? (timedOut = new List<SeatId>())).Add(pair.Key);
+            }
+
+            if (timedOut == null)
+            {
+                return;
+            }
+
+            var stillOpen = new List<SeatId>();
+            foreach (var seat in timedOut)
+            {
+                testDriverDeadlines.Remove(seat);
+                var occupancy = SeatOccupancyState.Open;
+                foreach (var entry in session.Roster)
+                {
+                    if (entry.Seat.Equals(seat))
+                    {
+                        occupancy = entry.Occupancy;
+                        break;
+                    }
+                }
+
+                if (occupancy == SeatOccupancyState.Open)
+                {
+                    stillOpen.Add(seat);
+                    testDriverSeats.Remove(seat);
+                }
+            }
+
+            if (stillOpen.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var seat in stillOpen)
+            {
+                PrivateOnlineMarkers.Fail("test-driver-join-timeout seat=" + seat.Value);
+            }
+
+            presenter.SetTestDriverSeats(
+                testDriverSeats,
+                stillOpen.Count + " test driver(s) failed to join in time (seat"
+                + (stillOpen.Count == 1 ? " " : "s ")
+                + string.Join(", ", stillOpen.ConvertAll(seat => seat.Value))
+                + ") - see the log, or press FILL WITH TEST DRIVERS again to retry.");
         }
 
         /// <summary>
@@ -883,12 +1052,20 @@ namespace GuardsDigital.Presentation.Interaction
 
             testDriverProcesses.Clear();
             testDriverSeats.Clear();
+            testDriverDeadlines.Clear();
         }
 
         private void BeginJoining(PrivateLobbyEntry entry)
         {
+            // 8.35t corrective. Cleared on every attempt, not only a failing one: a retry that
+            // succeeds must not leave a stale failure standing for a caller - a spawned
+            // PrivateSeatDriver among them - that only checks this once, right after pressing.
+            LastJoinFailure = null;
+
             if (!TryReadEndpoint(entry, out var endpoint, out var error))
             {
+                LastJoinFailure = error;
+                PrivateOnlineMarkers.Fail("lobby-join " + error);
                 presenter.ShowEntry(LocalSeats(), error);
                 return;
             }
@@ -907,6 +1084,12 @@ namespace GuardsDigital.Presentation.Interaction
             OpenTransport();
             if (!Dial())
             {
+                // 8.35t corrective. Dial() already wrote its own reason onto the presenter's
+                // feedback line; before this fix that was the ONLY place it went - invisible to
+                // any log reader and to a spawned driver, which has no feedback line of its own
+                // anyone is watching. A named seat makes this readable out of context.
+                LastJoinFailure = "seat=" + joinedSeat.Value + " could not reach the host at " + dialled;
+                PrivateOnlineMarkers.Fail("lobby-join " + LastJoinFailure);
                 machine = null;
                 return;
             }

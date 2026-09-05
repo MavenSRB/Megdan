@@ -35,6 +35,14 @@ namespace GuardsDigital.Presentation.Interaction
         public const string KeyEnvironmentVariable = "GUARDS_TESTDRIVER_SESSION_KEY";
 
         /// <summary>
+        /// 8.35t corrective. Optional, and not validated the way the other three are: a manually
+        /// launched driver (outside any host's own spawn, e.g. this session's own diagnostic
+        /// reproduction) has no parent worth watching, and an absent or unparsable value simply
+        /// leaves the watchdog off rather than refusing the whole launch over it.
+        /// </summary>
+        public const string ParentProcessIdEnvironmentVariable = "GUARDS_TESTDRIVER_PARENT_PID";
+
+        /// <summary>
         /// The default think-delay: long enough for a solo player watching their own screen to
         /// follow what just happened before the next bot acts, short enough that six bots do not
         /// make a full round take minutes. The rehearsal drivers' own 0.02 s pace is the thing the
@@ -48,6 +56,9 @@ namespace GuardsDigital.Presentation.Interaction
         public string SessionKey { get; private set; }
         public double ThinkSeconds { get; private set; }
         public int Seed { get; private set; }
+
+        /// <summary>Zero when absent or unparsable: no parent process to watch.</summary>
+        public int ParentProcessId { get; private set; }
 
         public static bool TryParse(string[] args, out PrivateSeatDriverOptions result, out string error)
         {
@@ -101,10 +112,19 @@ namespace GuardsDigital.Presentation.Interaction
                 return true;
             }
 
-            if (!GuardsDigital.Network.PrivateSessionEndpoint.TryCreate(
-                    address, port, out var endpoint, out _) || !endpoint.IsLoopback)
+            // 8.35t corrective. This used to require IsLoopback here too, on the assumption a host
+            // ever worth spawning a practice bot onto would always be loopback-bound - the exact
+            // assumption the live defect disproved: the tester instructions' own solo-practice
+            // paragraph, and a host rehearsing the real port-forwarded setup even alone, both bind
+            // to this machine's own real address, not loopback, and a bot confined to loopback then
+            // dials an address nothing is listening on. Dropping the restriction grants no new
+            // capability - PrivateClientDriver's own "-guardsPrivateClient" role has always been
+            // free to dial any address with any key, and the session key is what actually gates
+            // entry, exactly as for that role. Only a numeric, well-formed endpoint is still
+            // required.
+            if (!GuardsDigital.Network.PrivateSessionEndpoint.TryCreate(address, port, out var endpoint, out _))
             {
-                error = "a spawned test driver is confined to a numeric loopback address";
+                error = "a test driver requires a valid " + AddressEnvironmentVariable + " in its environment";
                 return true;
             }
 
@@ -123,6 +143,14 @@ namespace GuardsDigital.Presentation.Interaction
 
             int.TryParse(seedText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seed);
 
+            // 8.35t corrective. Best-effort only, per the field's own doc comment: an absent or
+            // unparsable value leaves ParentProcessId at 0, which the driver reads as "no parent to
+            // watch" rather than a reason to refuse the whole launch.
+            var parentProcessIdText = Environment.GetEnvironmentVariable(ParentProcessIdEnvironmentVariable);
+            int.TryParse(
+                parentProcessIdText, NumberStyles.None, CultureInfo.InvariantCulture,
+                out var parentProcessId);
+
             result = new PrivateSeatDriverOptions
             {
                 Seat = new SeatId(seat),
@@ -130,7 +158,8 @@ namespace GuardsDigital.Presentation.Interaction
                 Port = port,
                 SessionKey = key,
                 ThinkSeconds = thinkSeconds,
-                Seed = seed
+                Seed = seed,
+                ParentProcessId = parentProcessId
             };
             return true;
         }
@@ -168,11 +197,21 @@ namespace GuardsDigital.Presentation.Interaction
     {
         private const double OutcomeLingerSeconds = 2.0;
 
+        /// <summary>
+        /// 8.35t corrective. Cheap enough to poll often, but no reason to check every frame: the
+        /// one condition this guards against - the spawning host process dying without a clean
+        /// <c>Leave()</c> - does not need sub-second reaction time to still be an enormous
+        /// improvement over "never", which was the only outcome the game's own two lifecycle hooks
+        /// (<c>Leave()</c>, <c>OnDestroy()</c>) already covered.
+        /// </summary>
+        private const double ParentCheckIntervalSeconds = 3.0;
+
         private MatchSceneCompositionRoot compositionRoot;
         private PrivateLobbyDriver lobby;
         private PrivateSeatDriverOptions options;
         private System.Random random;
         private DateTime nextActionUtc;
+        private DateTime nextParentCheckUtc;
         private DateTime? outcomeSeenUtc;
         private bool entryPressed;
         private bool readinessPressed;
@@ -223,6 +262,22 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 Fail("test-driver-configuration");
                 return;
+            }
+
+            // 8.35t corrective. A watchdog on the spawning host's own PID, independent of any
+            // network state: the host that spawned this child could die before this child ever
+            // reaches Seated, and per-seat join timeouts on the host's own side are exactly that -
+            // on the HOST's side, no help to a child that has already lost its host and now has no
+            // one left to time it out.
+            if (options.ParentProcessId > 0 && DateTime.UtcNow >= nextParentCheckUtc)
+            {
+                nextParentCheckUtc = DateTime.UtcNow.AddSeconds(ParentCheckIntervalSeconds);
+                if (!IsProcessAlive(options.ParentProcessId))
+                {
+                    Marker("parent-lost");
+                    Quit(0);
+                    return;
+                }
             }
 
             if (!entryPressed)
@@ -319,8 +374,41 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            // 8.35t corrective. Press(Join, ...) returns true the instant the control was OFFERED -
+            // it says nothing about whether the join it triggered actually reached anyone.
+            // BeginJoining runs synchronously inside that same call, so by the time Press returns,
+            // a failed dial has already recorded its reason here: the interim-4 live defect was
+            // exactly this - a driver that pressed successfully, by this same measure, then sat
+            // doing nothing forever because nothing ever told it the join underneath had failed.
+            if (lobby.LastJoinFailure != null)
+            {
+                Fail("test-driver-join-failed " + lobby.LastJoinFailure);
+                return;
+            }
+
             entryPressed = true;
             Marker("begin");
+        }
+
+        private static bool IsProcessAlive(int processId)
+        {
+            try
+            {
+                using (var process = System.Diagnostics.Process.GetProcessById(processId))
+                {
+                    return !process.HasExited;
+                }
+            }
+            catch (ArgumentException)
+            {
+                // No process with that id - it already exited, and something else may even have
+                // reused the id by now. Either way, its watcher is not still there.
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
         }
 
         /// <summary>

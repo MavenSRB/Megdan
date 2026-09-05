@@ -28,6 +28,26 @@ namespace GuardsDigital.Network
 
         public IPEndPoint ToIPEndPoint() => new IPEndPoint(Address, Port);
 
+        /// <summary>
+        /// 8.35t corrective. The address a second process, spawned on this same machine, should
+        /// dial to reach a listener bound at THIS endpoint. A wildcard bind (<c>0.0.0.0</c> or
+        /// <c>::</c>) is not itself a valid destination - substituted with loopback, which always
+        /// reaches a wildcard-bound listener from the same machine. Any other concrete address
+        /// (typed so a remote friend's own port-forward lands on it, or to rehearse that exact
+        /// setup solo) is the ONE interface actually accepting a connection, and is returned
+        /// verbatim - confirmed directly against a real socket pair: a listener bound to a
+        /// concrete address refuses a dial to a different one, wildcard or not.
+        /// </summary>
+        /// <remarks>
+        /// Lives here, in the adapter, rather than beside its one caller in Presentation, because
+        /// that caller may name no socket type of its own - the architecture record's own rule,
+        /// enforced by <c>PrivateSessionArchitectureConformanceTests.SocketTypes_LiveOnlyInTheNetworkAdapter</c>.
+        /// </remarks>
+        public string ResolveLocalDialAddress() =>
+            IPAddress.Any.Equals(Address) || IPAddress.IPv6Any.Equals(Address)
+                ? "127.0.0.1"
+                : Address.ToString();
+
         public static bool TryParseAddress(string text, out PrivateSessionEndpoint endpoint, out string error)
         {
             endpoint = null;

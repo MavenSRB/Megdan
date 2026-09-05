@@ -522,6 +522,30 @@ Non-goals: no fizzle notice, no omnipresent END TURN, no rule or wire change.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835s-name-why-a-greyed-control-cannot-be-taken-in-a-cursor-tooltip-completion-evidence).
 
+### [x] 8.35t Dial the address the host actually bound, not a hardcoded loopback constant
+
+Corrective, live-defect-driven. Milestone 8.35q's FILL WITH TEST DRIVERS spawned every test-driver child with its dial address hardcoded to `"127.0.0.1"`, regardless of what the host itself had bound - so a host bound to this machine's own real network address (the shape the tester instructions' own solo-practice paragraph invites, and the one a host rehearsing its real port-forwarded setup even alone requires) spawned children that dialed an address nothing was listening on. Each pressed Join, and each then sat forever: `PrivateLobbyPresenter.Press` returns true the instant the control is offered, saying nothing about whether the join it triggered ever reached anyone, so nothing ever told the driver its dial had failed - the live report named 34 orphaned `GuardsDigitalSmoke.exe` processes left running after repeated FILL presses tried to work around it.
+
+Observable outcome: a spawned test driver dials whatever address the host actually bound - loopback by default, this machine's own address when the host bound one, falling back to loopback only for a wildcard bind, since every spawned child runs on the host's own machine regardless. A join that cannot reach anyone now fails within its own dial attempt, is logged and reported on the host's own screen by name, and the driver process exits promptly instead of hanging. A second FILL press no longer spawns a redundant child onto a seat already carrying an outstanding attempt, and every spawned child now also watches its own spawning host's OS process id and exits if that host disappears without a clean Leave.
+
+Design:
+
+- `PrivateSessionEndpoint.ResolveLocalDialAddress()` (Network) is the one place a wildcard bind resolves to loopback and any concrete address is returned verbatim - confirmed directly against a real `TcpListener`/`TcpClient` pair, not assumed. It lives in the adapter, not beside its one caller in Presentation, because that caller may name no socket type of its own (`PrivateSessionArchitectureConformanceTests.SocketTypes_LiveOnlyInTheNetworkAdapter`).
+- `PrivateSeatDriverOptions.TryParse` no longer confines a spawned driver's dial address to loopback - the assumption the live defect disproved. `-guardsPrivateClient` has always been free to dial any address with any key, and the session key is what actually gates entry here too; only a numeric, well-formed endpoint is still required.
+- `PrivateLobbyDriver.BeginJoining`'s two silent failure paths - a malformed endpoint and a failed `Dial()` - now set `LastJoinFailure` and log through `PrivateOnlineMarkers.Fail`, which a spawned `PrivateSeatDriver` checks immediately after pressing Join and fails loudly on if set.
+- `FillEmptySeatsWithTestDrivers` tracks a 12-second per-seat join deadline: a seat still open when its deadline passes is reported by name, in the log and the lobby's own feedback line, and freed for a later FILL to retry; a seat already carrying a live deadline is skipped by a repeated press rather than sent a second child.
+- Every spawned driver also carries its parent host's OS process id and polls it independently of `Leave()`/`OnDestroy()`, so a host that dies without a clean shutdown still orphans nothing.
+
+Acceptance checks:
+
+- `PrivateSeatDriverTests`: `ResolveLocalDialAddress` returns a concrete bind verbatim, falls back to loopback for both the IPv4 and IPv6 wildcard; a non-loopback dial address is now accepted where it was refused, a malformed one is still refused; a parent process id parses when present and leaves the watchdog off when absent or unparsable. Pre-fix red, isolated (both call sites behavior-reverted in place, new vocabulary kept present and inert, per this repo's own ceremony rule): exactly the two cases pinning the defect fail, 18/20; restored, 20/20.
+- `PrivateLobbyPlayModeTests.AJoinToAHostThatIsNotThere_IsDrawnOnTheEntryForm` now also expects the new host-log FAIL line the fix introduces (`LogAssert.Expect`), a companion fixture update this milestone owes since it added that line.
+- `Invoke-PrivateOnlineRehearsal.ps1 -Topology Solo -FaultPlan None`: the packaged interactive-lobby command line (both shipped `.bat` launchers' own flag shape) still boots cleanly to its real lobby; a join dialed at a port nothing is listening on now fails fast and visibly (exit 1) instead of hanging; the host presses FILL WITH TEST DRIVERS twice back to back and spawns exactly five test-driver clients, not ten, all five dialing the host's own address, before all six seats claim and the match begins.
+
+Non-goals: No wire, protocol, or schema change. No change to the host's own bind rules (8.35a1's unkeyed-bind refusal is untouched). No AI, strategy, or difficulty change to the test-driver's own random-legal play.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835t-dial-the-address-the-host-actually-bound-not-a-hardcoded-loopback-constant-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

@@ -63,6 +63,16 @@
         GuardsDigitalSmoke.exe process is still running - the host's proof that it killed its own
         children rather than leaving them behind.
 
+    8.35t corrective additions to -Topology Solo. Two more proofs run ahead of the main cohort:
+    the packaged interactive-lobby command line - exactly the flag shape both shipped ".bat"
+    launchers use (-guardsPrivateLobby, no rehearsal-role flags, so no scripted driver ever
+    attaches) - still reaches the real lobby's own GUARDS_ONLINE: LOBBY_BEGIN cleanly, since
+    nothing headless can drive it further than boot the way a human double-clicking the launcher
+    would; and a join dialed at a port nothing is listening on - the interim-4 live defect's exact
+    shape - now fails fast and visibly (GUARDS_ONLINE: FAIL test-driver-join-failed, exit 1) instead
+    of the old silent hang, read with its own bounded wait rather than the shared helpers every
+    other wait in this script uses, because a FAIL line here is the proof, not a reason to abort.
+
     -Topology SixClient requires -FaultPlan Full, -Topology LoopbackSmoke and -Topology Solo both
     require -FaultPlan None. The 8.35c matrix row names exactly one six-client combination - "full match,
     selected fault plan, reconnect/resync, terminal host loss probe" - so a six-client run without
@@ -994,6 +1004,111 @@ else {
     try {
         Build-DisposablePlayer -UnityPath $unityPath
 
+        # 8.35t corrective, "packaged interactive-lobby path". The two ".bat" launchers a real
+        # invited tester actually double-clicks (Tools/PlaytestLaunchers/*.bat) pass nothing but
+        # -guardsPrivateLobby and a log path - no rehearsal-role flags, no address/port/key
+        # environment, so MatchSceneCompositionRoot never attaches a PrivateOnlineRehearsalDriver
+        # and nothing can press this session's controls headlessly the way a human would. This
+        # proves only what a boot-time regression on the literal shipped command line CAN prove
+        # without a real mouse: that exact flag shape reaches the real interactive lobby cleanly,
+        # with no crash and no degradation pattern, before the scripted cohort below exercises the
+        # rest through its rehearsal-flag'd equivalent of that same lobby.
+        Write-Output '== Step 1b: the packaged interactive-lobby command line boots cleanly =='
+        $packagedLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-solo-packaged-boot.log')
+        if (Test-Path -LiteralPath $packagedLog) { Remove-Item -LiteralPath $packagedLog -Force }
+        $packagedInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $packagedInfo.FileName = $executablePath
+        $packagedInfo.WorkingDirectory = [System.IO.Path]::GetDirectoryName($executablePath)
+        $packagedInfo.UseShellExecute = $false
+        $packagedInfo.CreateNoWindow = $true
+        # -batchmode -nographics are this rehearsal box's own headless requirement, absent from the
+        # packaged .bat text itself (written for a tester's own monitored machine) - every other
+        # topology in this runner carries the same two flags for the same reason.
+        $packagedInfo.Arguments = '-batchmode -nographics -guardsPrivateLobby -logFile "' + $packagedLog + '"'
+        $packagedProcess = [System.Diagnostics.Process]::Start($packagedInfo)
+        $processes += $packagedProcess
+        try {
+            $packagedDeadline = (Get-Date).AddSeconds(60)
+            $packagedSeen = $false
+            while ((Get-Date) -lt $packagedDeadline) {
+                if ((Get-LogText -LogPath $packagedLog) -match 'GUARDS_ONLINE: LOBBY_BEGIN') { $packagedSeen = $true; break }
+                if ($packagedProcess.HasExited) { break }
+                Start-Sleep -Milliseconds 250
+            }
+            if (-not $packagedSeen) {
+                Write-Output "FAIL: the packaged interactive-lobby command line never reached LOBBY_BEGIN. See $packagedLog"
+                $rehearsalFailed = $true
+            }
+            else {
+                Write-Output ('Confirmed: the packaged -guardsPrivateLobby command line reaches the real ' +
+                    'interactive lobby, exactly as both shipped launchers do.')
+            }
+        }
+        finally {
+            try { if (-not $packagedProcess.HasExited) { $packagedProcess.Kill() } } catch { }
+        }
+        $allLogs += $packagedLog
+
+        # 8.35t corrective, "failed-join feedback case". Before this fix, a scripted seat dialing an
+        # address nothing was listening on - exactly what the interim-4 live defect did to every one
+        # of its spawned bots - pressed Join, got no exception, and sat forever: Press(Join, ...)
+        # returns true the instant the control was OFFERED, saying nothing about whether the dial it
+        # triggered actually reached anyone. This reproduces that exact shape directly - no host is
+        # ever started on this port - and requires the opposite of Wait-ForLogMarker's own default
+        # behaviour: a GUARDS_ONLINE: FAIL line here is the PROOF the fix works, not a reason to
+        # abort the run, so it is read with its own bounded loop rather than the shared helpers
+        # every other wait in this script uses.
+        Write-Output '== Step 1c: a join with nothing listening now fails fast, visibly =='
+        # 8.35t corrective, first draft's own bug, caught by this exact run: Start-RehearsalPlayer
+        # drives PrivateOnlineRehearsalDriver (-guardsRehearsalRole), the CI-only choreography class
+        # - a DIFFERENT component from PrivateSeatDriver (-guardsTestDriver), the one
+        # FillEmptySeatsWithTestDrivers actually spawns and the one this milestone's fix lives on.
+        # The rehearsal driver has its own generic rehearsal-timeout failure, unrelated to
+        # LastJoinFailure, so it could never show test-driver-join-failed - confirmed the hard way,
+        # not assumed. Launched directly here, matching RealTestDriverProcessLauncher's own exact
+        # argument/environment shape, so this really is the code path FILL WITH TEST DRIVERS uses.
+        $failPort = Get-FreeLoopbackPort
+        $failLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-solo-failed-join.log')
+        if (Test-Path -LiteralPath $failLog) { Remove-Item -LiteralPath $failLog -Force }
+        $failInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $failInfo.FileName = $executablePath
+        $failInfo.WorkingDirectory = [System.IO.Path]::GetDirectoryName($executablePath)
+        $failInfo.UseShellExecute = $false
+        $failInfo.CreateNoWindow = $true
+        $failInfo.Arguments = (
+            '-guardsPrivateLobby -guardsTestDriver -guardsTestDriverSeat red-player-01 ' +
+            '-batchmode -nographics -logFile "' + $failLog + '"')
+        $failInfo.EnvironmentVariables['GUARDS_TESTDRIVER_ADDRESS'] = '127.0.0.1'
+        $failInfo.EnvironmentVariables['GUARDS_TESTDRIVER_PORT'] = $failPort.ToString([System.Globalization.CultureInfo]::InvariantCulture)
+        $failInfo.EnvironmentVariables['GUARDS_TESTDRIVER_SESSION_KEY'] = [System.Guid]::NewGuid().ToString('N')
+        $failProcess = [System.Diagnostics.Process]::Start($failInfo)
+        $processes += $failProcess
+        $failDeadline = (Get-Date).AddSeconds(60)
+        $failSeen = $false
+        while ((Get-Date) -lt $failDeadline) {
+            if ((Get-LogText -LogPath $failLog) -match 'GUARDS_ONLINE: FAIL test-driver-join-failed') { $failSeen = $true; break }
+            if ($failProcess.HasExited) { break }
+            Start-Sleep -Milliseconds 250
+        }
+        if (-not $failSeen) {
+            Write-Output "FAIL: a join with nothing listening never reported test-driver-join-failed. See $failLog"
+            $rehearsalFailed = $true
+        }
+        elseif (-not $failProcess.WaitForExit(15000)) {
+            Write-Output "FAIL: the failed-join client reported the failure but did not exit on its own. See $failLog"
+            $rehearsalFailed = $true
+            try { $failProcess.Kill() } catch { }
+        }
+        elseif ($failProcess.ExitCode -ne 1) {
+            Write-Output "FAIL: the failed-join client exited $($failProcess.ExitCode); expected 1 (Fail's own Quit code)."
+            $rehearsalFailed = $true
+        }
+        else {
+            Write-Output ('Confirmed: a join with nothing listening now fails fast and visibly, exiting 1, ' +
+                'instead of the old silent hang.')
+        }
+        $allLogs += $failLog
+
         $soloPort = Get-FreeLoopbackPort
         $soloKey = [System.Guid]::NewGuid().ToString('N')
         $rehearsalKeys += $soloKey
@@ -1034,6 +1149,16 @@ else {
             -DeadlineSeconds 60 -Description 'the host to press its own FILL WITH TEST DRIVERS control'
         Write-Output 'Host pressed FILL WITH TEST DRIVERS through its real lobby control.'
 
+        # 8.35t corrective, "must not stack": immediately after the first fill, the host presses
+        # the exact same control again, unattended, while every seat it just sent a driver to is
+        # still Open (a fresh child has not had time to dial in yet) - precisely the condition a
+        # real player mashing the button, out of the frustration the live defect caused, would
+        # recreate. The spawn-count assertion below is what actually proves the dedupe fix; this
+        # wait only confirms the second press was attempted at all.
+        Wait-ForLogMarker -LogPath $soloHostLog -Pattern 'GUARDS_ONLINE: REHEARSAL_SOLO_REFILL_ATTEMPTED' `
+            -DeadlineSeconds 60 -Description 'the host to press FILL WITH TEST DRIVERS a second time'
+        Write-Output 'Host pressed FILL WITH TEST DRIVERS again immediately - proving dedupe next.'
+
         Wait-ForCohortMarkers -Requirements @(
                 [pscustomobject]@{ Log = $soloHostLog; Pattern = 'GUARDS_ONLINE: MATCH_STARTED' }
             ) -WatchLogs @($soloHostLog, $soloClientLog) -DeadlineSeconds 300 `
@@ -1052,6 +1177,7 @@ else {
         Write-Output '== Step 4: read the logs; exit codes alone are never evidence =='
         $soloHostText = Get-LogText -LogPath $soloHostLog
         foreach ($marker in @('GUARDS_ONLINE: LOBBY_HOSTING port=', 'GUARDS_ONLINE: REHEARSAL_SOLO_FILLED',
+                'GUARDS_ONLINE: REHEARSAL_SOLO_REFILL_ATTEMPTED',
                 'GUARDS_ONLINE: MATCH_STARTED', 'GUARDS_ONLINE: REHEARSAL_OUTCOME version=',
                 'GUARDS_ONLINE: MATCH_OUTCOME version=', 'GUARDS_ONLINE: EXIT 0')) {
             if ($soloHostText -notmatch $marker) {
@@ -1072,6 +1198,17 @@ else {
         $soloSpawnedSeats = @($soloDistinct | Where-Object { $_ -ne $soloSeat })
         if ($soloSpawnedSeats.Count -ne 5) {
             Write-Output "FAIL: expected the five non-scripted seats to be the spawned test drivers; saw $($soloSpawnedSeats.Count)."
+            $rehearsalFailed = $true
+        }
+
+        # 8.35t corrective, "must not stack": the host pressed FILL twice above, back to back, while
+        # every one of the five seats was still Open for the second press. Five distinct
+        # LOBBY_TEST_DRIVER_SPAWNED lines - not ten - is the actual proof the dedupe fix works; ten
+        # would mean the second press spawned a redundant child onto every seat already carrying an
+        # outstanding attempt.
+        $soloSpawnMarkers = @([regex]::Matches($soloHostText, 'GUARDS_ONLINE: LOBBY_TEST_DRIVER_SPAWNED seat='))
+        if ($soloSpawnMarkers.Count -ne 5) {
+            Write-Output "FAIL: expected exactly 5 LOBBY_TEST_DRIVER_SPAWNED lines (one press's worth, the second press deduped away); saw $($soloSpawnMarkers.Count)."
             $rehearsalFailed = $true
         }
 
@@ -1100,12 +1237,14 @@ else {
             Write-Output 'Confirmed: no test-driver process outlived the host session that spawned it.'
         }
 
-        $allLogs = @($soloHostLog, $soloClientLog)
+        # 8.35t corrective. Appended, not assigned - $allLogs already carries the Step 1b/1c logs
+        # from above, and an assignment here would silently drop both from the privacy review below.
+        $allLogs += @($soloHostLog, $soloClientLog)
     }
     catch {
         Write-Output "FAIL: $($_.Exception.Message)"
         $rehearsalFailed = $true
-        $allLogs = @($soloHostLog, $soloClientLog)
+        $allLogs += @($soloHostLog, $soloClientLog)
     }
     finally {
         foreach ($process in $processes) {
@@ -1177,8 +1316,10 @@ elseif ($Topology -eq 'SixClient') {
     Write-Output 'A same-machine rehearsal proves no relay, NAT traversal, external latency, multi-network, or real-internet behaviour.'
 }
 else {
-    Write-Output ('REHEARSAL PASSED: one host pressed its own real FILL WITH TEST DRIVERS control, spawning ' +
-        'five real keyed test-driver clients that seated alongside one scripted seat and completed a full ' +
-        'match to one converged outcome, and every spawned driver was gone again once the host session ended.')
+    Write-Output ('REHEARSAL PASSED: the packaged interactive-lobby command line boots cleanly, a join with ' +
+        'nothing listening now fails fast and visibly instead of hanging, one host pressed its own real FILL ' +
+        'WITH TEST DRIVERS control twice back to back and spawned exactly five test-driver clients (not ten) ' +
+        'that seated alongside one scripted seat and completed a full match to one converged outcome, and ' +
+        'every spawned driver was gone again once the host session ended.')
 }
 exit 0

@@ -414,6 +414,13 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(Text(driver, PrivateLobbyUnityView.PickedSeatName),
                 Does.StartWith("SEAT: "));
 
+            // 8.35t corrective. BeginJoining's own failed Dial() now logs the host-console-side
+            // diagnostic PrivateOnlineMarkers.Fail writes - the exact fix for this test's own
+            // scenario, a join to nothing listening, which used to leave no seam for anyone but the
+            // player-facing feedback line to observe. Expected here as the log-side half of that
+            // same fix; the assertions below are unchanged and still read the player-facing text.
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex(
+                "^GUARDS_ONLINE: FAIL lobby-join seat=.+ could not reach the host at 127\\.0\\.0\\.1:\\d+$"));
             UiPlayer.Click(Control(driver, "JOIN"));
             yield return null;
 

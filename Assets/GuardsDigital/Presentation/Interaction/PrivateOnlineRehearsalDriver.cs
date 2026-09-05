@@ -245,6 +245,7 @@ namespace GuardsDigital.Presentation.Interaction
         private bool entryPressed;
         private bool readinessPressed;
         private bool testDriversFillAttempted;
+        private bool testDriversRefillAttempted;
         private bool hudReported;
         private bool stopped;
         private bool privacyFailed;
@@ -445,6 +446,20 @@ namespace GuardsDigital.Presentation.Interaction
 
                     PrivateOnlineMarkers.Log("REHEARSAL_SOLO_FILLED");
                 }
+            }
+
+            // 8.35t corrective, "must not stack". Pressed a second time immediately after the
+            // first, still unattended: every seat FILL just sent a driver to is still Open at this
+            // exact instant (a fresh child has not had time to dial in yet), so a naive repeat
+            // would spawn a second, redundant process onto each of those same five seats if the
+            // dedupe fix were not in place. The regression's own log-count assertion is what
+            // actually proves it - this press only creates the condition to prove.
+            if (options.Mode == PrivateOnlineRehearsalMode.Solo && testDriversFillAttempted &&
+                !testDriversRefillAttempted && !host.HasMatchStarted)
+            {
+                testDriversRefillAttempted = true;
+                lobby.Presenter.Press(PrivateLobbyControl.FillWithTestDrivers, null);
+                PrivateOnlineMarkers.Log("REHEARSAL_SOLO_REFILL_ATTEMPTED");
             }
 
             if (!host.HasMatchStarted)
