@@ -474,6 +474,24 @@ Non-goals: no schema, wire, or rules change; the pre-existing, structurally iden
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z2-anchor-the-team-agreement-panel-clear-of-the-hand-and-rails-and-say-waiting-for-host-while-a-statement-is-in-flight-completion-evidence).
 
+### [x] 8.35z3 Degrade gracefully when a seat projection outgrows the session frame
+
+Corrective, hardening the failure mode 8.35w's diagnosis recorded but its window could not remove: the completed-round window bounded the growth term, yet the host's own publish path still had no answer for an over-bound frame. `PrivateSessionFrameCodec.EncodeFrame` throws, the throw lands after `NextEnvelope` has already advanced the connection's send sequence, it unwinds `PublishProjections` for every seat behind the first, and the resync that should recover is served down the same throwing path - the recorded live shape (`tmp/private-online-solo-host.log`) is a whole table frozen mid-match with nothing on any screen. A sibling latch in `PrivateSessionClient` had the same silent-freeze character: a correlated projection judged stale under a reordered delivery was discarded before releasing `IsWaitingForHost`, muting that one seat forever.
+
+Observable outcome: a seat projection message past the sealed frame bound is either delivered with the OLDEST match-log rows dropped - the log's own recorded scrollback semantics - or, when the projection payload alone cannot fit any legal frame, refused loudly for that one connection with `SessionRejectionReason.OversizedFrame` and a named detail while every other seat is still served; the connection's send sequence advances only beside a frame that exists. A reordered correlated projection judged stale still releases the client's input latch on its way out.
+
+Design: `NetworkMessageCodec.TrySeatProjectionFrameWithin` composes the frame to a caller-stated budget, measuring each log row through the one real row writer and keeping the largest newest suffix; it returns false, never throws, when the prefix alone cannot fit. The host's one budget is `PrivateSessionHost.ProjectionFrameBudgetBytes = PrivateSessionSecureChannel.MaxSealedPayloadBytes` - the tighter of the two bounds every frame must eventually pass, so `Seal` can never throw either. `PublishProjections` iterates a snapshot so the refusal's `RejectAndClose` cannot unwind the loop, `TrimmedProjectionLogRows` counts degradation observably (zero in any healthy match), and `ResyncServed` is recorded only when a frame was actually delivered.
+
+Acceptance checks:
+
+- An over-bound projection-and-log message composes to a trimmed frame that decodes under the ordinary read discipline carrying exactly the newest row suffix, with the raw encoder's `"A payload is bounded."` throw pinned beside it; a payload only the looser plaintext bound could carry is refused, proving the budget is the sealed bound.
+- A message already inside the bound crosses the bounded compose byte-for-byte identical to the plain encoder, so byte-level convergence still measures one encoder.
+- The reordered correlated-echo case fails on the permanently latched seat with the client release reverted and passes with it restored.
+
+Non-goals: no wire vocabulary, protocol version, or schema movement - `OversizedFrame` is 8.31 vocabulary and a shorter row list is a smaller legal payload in the unchanged frame layout; no change to what any healthy match sends (byte-identity is an acceptance check); the 8.35w growth windows and their deliberate-resize guards are untouched.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z3-degrade-gracefully-when-a-seat-projection-outgrows-the-session-frame-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.
