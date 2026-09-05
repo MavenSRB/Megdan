@@ -304,7 +304,8 @@ namespace GuardsDigital.Tests.EditMode
             {
                 OwnerScopedProjectionTests.DriveThroughSeats(host, 5);
                 acting = host.Seats.Seats.FirstOrDefault(value =>
-                    RoundActionPresenter.CreateViewModel(host.ProjectionForSeat(value.Id))
+                    RoundActionPresenter.CreateViewModel(
+                            host.ProjectionForSeat(value.Id), value.HeroId)
                         .EndTurnInvocation != null);
             }
 
@@ -312,7 +313,8 @@ namespace GuardsDigital.Tests.EditMode
                 "The drive must reach a seat that may end its turn; a skipped case would be a hole " +
                 "in this milestone's evidence rather than a pass.");
 
-            var actingModel = RoundActionPresenter.CreateViewModel(host.ProjectionForSeat(acting.Id));
+            var actingModel = RoundActionPresenter.CreateViewModel(
+                host.ProjectionForSeat(acting.Id), acting.HeroId);
             var actingView = new RoundActionUnityView();
             actingView.Render(actingModel);
 
@@ -338,11 +340,24 @@ namespace GuardsDigital.Tests.EditMode
 
             foreach (var other in host.Seats.Seats.Where(value => !value.Id.Equals(acting.Id)))
             {
-                var otherModel = RoundActionPresenter.CreateViewModel(host.ProjectionForSeat(other.Id));
+                var otherModel = RoundActionPresenter.CreateViewModel(
+                    host.ProjectionForSeat(other.Id), other.HeroId);
                 if (otherModel.EndTurnInvocation != null)
                 {
                     continue;
                 }
+
+                // Milestone 8.35v: END TURN is now drawn (disabled, never hidden) for a seat that
+                // IS the acting hero but has nothing left it can complete or cancel. A seat that is
+                // not the acting hero at all - every "other" seat this drive reaches - still draws
+                // nothing, because `IsViewerTheActingHero` gates both new facts on the exact viewer,
+                // not merely on some turn being active.
+                Assert.That(otherModel.EndTurnCancelsOpenAttack, Is.False,
+                    "A seat that is not the acting hero has no open Attack selection of its own " +
+                    "to cancel.");
+                Assert.That(otherModel.EndTurnUnavailableReason, Is.Null,
+                    "A seat that is not the acting hero draws no disabled End Turn either - it is " +
+                    "not that seat's control to refuse.");
 
                 var otherView = new RoundActionUnityView();
                 otherView.Render(otherModel);
@@ -567,15 +582,27 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ASeatWaitingOnAnothersEndOfRoundDecisionIsDrawnNoContinueControl()
         {
+            // Milestone 8.35u. The stop condition gained its third clause, and the reason is this
+            // milestone's own behaviour: rulebook p.15 now asks every hero that bought a level at
+            // once, and p.8's pity coin makes "everybody levels" the ordinary round rather than a
+            // rare one - so an end-of-round decision can be owned by ALL SIX seats and leave no
+            // waiting seat to draw. This case is about a seat waiting on somebody else's answer, so
+            // it must stop where one exists; without the clause it stopped on a decision nobody was
+            // waiting for and threw "Sequence contains no matching element" from the line below.
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             var walked = OwnerScopedProjectionTests.DriveThroughSeats(host, 2000,
                 projection => projection.Phase == RoundResolutionPhase.EndOfRound &&
-                    projection.DecisionContract != null);
+                    projection.DecisionContract != null &&
+                    host.Seats.Seats.Any(seat => host.ProjectionForSeat(seat.Id)
+                        .IsWaitingForAnotherSeat));
 
             Assert.That(host.Projection.DecisionContract, Is.Not.Null,
                 "The seeded seat walk reached no end-of-round decision in " + walked + " commands.");
             var owner = SeatProjectionFactory.OwnerOfStandingDecision(host.Projection);
-            var waiting = host.Seats.Seats.First(seat => !owner.IsOwnedBy(seat));
+            var waiting = host.Seats.Seats.FirstOrDefault(seat => !owner.IsOwnedBy(seat));
+            Assert.That(waiting, Is.Not.Null,
+                "The walk stopped on an end-of-round decision every seat owns, so no seat is " +
+                "waiting on another's and this case would prove nothing.");
             var client = new SeatMatchClient(host.ClientForSeat(waiting.Id));
 
             Assert.That(client.SeatProjection.AuthorizedCommands, Is.Empty,

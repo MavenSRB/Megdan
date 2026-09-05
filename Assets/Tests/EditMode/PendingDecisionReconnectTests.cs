@@ -66,16 +66,18 @@ namespace GuardsDigital.Tests.EditMode
             var reached = 0;
             if (staged == null)
             {
-                // Milestone 8.35g re-derived the seed again, and for a sharper reason than
-                // 8.35d's: the release is drawn from a one-command set, and `Next(1)` still
-                // advances the stream, so every seeded trajectory is a different match rather
-                // than the old one with a command inserted per turn. Seed 3 stopped reaching
-                // Attack-target, correction and Minion-Battle at all. An offline scan of ten
-                // seeds put every walked family on seed 1, the last of them - Minion Battle -
-                // at step 1,167, which is what the raised budget above leaves room for.
+                // Milestone 8.35u re-derived the seed AGAIN, and the cause is the same class as
+                // 8.35g's: p.15 now pauses once for every hero that bought a level instead of once
+                // per hero in turn, so the number of standing answers at an end of round changed
+                // and every seeded trajectory after the first level-up is a different match. Seed 1
+                // stopped reaching Minion Battle at all inside 2,600 steps, and Attack-target
+                // slipped to step 2,549. An offline scan of twenty-four seeds
+                // (`tmp/8-35d-8-35e-multiplayer-corrections/seed-scan-results.txt`) put every
+                // walked family on SEED 6, the last of them - Minion Battle - at step 408, which is
+                // a third of what seed 1 used to need and leaves the budget below generous.
                 reached = harness.DriveThroughWire(WalkBudget, projection =>
                     projection.DecisionContract != null &&
-                    projection.DecisionContract.FamilyId.Value == family, seed: 1);
+                    projection.DecisionContract.FamilyId.Value == family, seed: 6);
             }
 
             Assert.That(harness.MatchHost.Projection.DecisionContract, Is.Not.Null,

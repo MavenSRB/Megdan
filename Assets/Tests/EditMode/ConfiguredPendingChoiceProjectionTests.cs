@@ -534,6 +534,13 @@ namespace GuardsDigital.Tests.EditMode
             nameof(MatchSessionProjection.PendingDefensePreview),
             nameof(MatchSessionProjection.PendingLanePushRequest),
             nameof(MatchSessionProjection.PendingSystemTransitionDescription),
+
+            // Milestone 8.35u. The same companion, once per open item, because rulebook p.15 asks
+            // every hero that bought a level at the same time and each of them is asking a different
+            // question. It is a companion and not a family for exactly the reason the singular one
+            // is: it describes the pause the system-transition family already stands on, and adds no
+            // decision of its own.
+            nameof(MatchSessionProjection.PendingSystemTransitionDescriptions),
             nameof(MatchSessionProjection.PendingImmediateLanePush)
         };
 

@@ -510,7 +510,7 @@ namespace GuardsDigital.Core.Cards
                 RoundResolutionEventKind.SystemTransitionProgressed,
                 roundIndex,
                 turnIndex,
-                teamSide: result.PendingStep?.ChoosingSide ?? TeamSide.None,
+                teamSide: result.PendingStep?.AwaitedSide ?? TeamSide.None,
                 systemTransitionStep: result.PendingStep,
                 systemTransitionCompleted: result.TransitionCompleted);
         }
@@ -534,7 +534,7 @@ namespace GuardsDigital.Core.Cards
                 RoundResolutionEventKind.SystemTransitionProgressed,
                 roundIndex,
                 turnIndex,
-                teamSide: pendingStep.ChoosingSide,
+                teamSide: pendingStep.AwaitedSide,
                 systemTransitionStep: pendingStep,
                 systemTransitionCompleted: false);
         }

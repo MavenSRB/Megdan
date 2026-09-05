@@ -604,17 +604,27 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(pending.DefinitionId.Value);
             writer.Write(pending.StepId.Value);
 
-            // Milestone 6.11's item, written as a present/absent pair rather than a blank string,
-            // because "this pause is about no item" and "this pause is about an item whose name is
-            // empty" are different claims and only the first is legal.
-            writer.Write(pending.ItemId.IsDefined);
-            if (pending.ItemId.IsDefined)
+            // Milestone 8.35u. v36: the item, its chooser and its options became a repeated group,
+            // because rulebook p.15 asks every hero that bought a level at once and a pause can now
+            // stand on several. The count leads, as every repeated group in this format does. What did
+            // NOT move is the resume location below it - there is still exactly one, and writing one
+            // per item is the divergence the single continuation exists to make unrepresentable.
+            writer.Write(pending.OpenItems.Count);
+            foreach (var open in pending.OpenItems)
             {
-                writer.Write(pending.ItemId.Value);
+                // Milestone 6.11's item, written as a present/absent pair rather than a blank string,
+                // because "this pause is about no item" and "this pause is about an item whose name is
+                // empty" are different claims and only the first is legal.
+                writer.Write(open.ItemId.IsDefined);
+                if (open.ItemId.IsDefined)
+                {
+                    writer.Write(open.ItemId.Value);
+                }
+
+                writer.Write((int)open.ChoosingSide);
+                WriteStrings(writer, open.Options.Select(option => option.Value));
             }
 
-            writer.Write((int)pending.ChoosingSide);
-            WriteStrings(writer, pending.Options.Select(option => option.Value));
             WriteStrings(writer, pending.CompletedStepIds.Select(step => step.Value));
             WriteStrings(writer, pending.CompletedItemIds.Select(item => item.Value));
         }
@@ -633,17 +643,30 @@ namespace GuardsDigital.Core.Snapshots
                     new GuardsDigital.Core.Rules.Transitions.SystemTransitionDefinitionId(reader.ReadString());
                 var stepId =
                     new GuardsDigital.Core.Rules.Transitions.SystemTransitionStepId(reader.ReadString());
-                var itemId = reader.ReadBoolean()
-                    ? new GuardsDigital.Core.Rules.Transitions.SystemTransitionItemId(reader.ReadString())
-                    : GuardsDigital.Core.Rules.Transitions.SystemTransitionItemId.None;
+                // Milestone 8.35u. v36's repeated open-item group. The count is guarded like every
+                // other repeated group here, and the pause record's own constructor is what refuses a
+                // payload that opened the same item twice or opened none at all - the reader states no
+                // second opinion about what a legal pause is.
+                var openCount = ReadCount(reader, "transition open items");
+                var openItems = new GuardsDigital.Core.Rules.Transitions.SystemTransitionOpenItem[openCount];
+                for (var index = 0; index < openCount; index++)
+                {
+                    var itemId = reader.ReadBoolean()
+                        ? new GuardsDigital.Core.Rules.Transitions.SystemTransitionItemId(reader.ReadString())
+                        : GuardsDigital.Core.Rules.Transitions.SystemTransitionItemId.None;
+                    openItems[index] = new GuardsDigital.Core.Rules.Transitions.SystemTransitionOpenItem(
+                        itemId,
+                        SnapshotEnumReader.Read<TeamSide>(reader, "transition choosing side"),
+                        ReadStrings(reader, "transition options")
+                            .Select(value =>
+                                new GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId(value)));
+                }
+
                 pending = new GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep(
                     instanceId,
                     definitionId,
                     stepId,
-                    itemId,
-                    SnapshotEnumReader.Read<TeamSide>(reader, "transition choosing side"),
-                    ReadStrings(reader, "transition options")
-                        .Select(value => new GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId(value)),
+                    openItems,
                     ReadStrings(reader, "transition completed steps")
                         .Select(value => new GuardsDigital.Core.Rules.Transitions.SystemTransitionStepId(value)),
                     ReadStrings(reader, "transition completed items")

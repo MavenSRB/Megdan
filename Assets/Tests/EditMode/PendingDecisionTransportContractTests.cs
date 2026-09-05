@@ -87,13 +87,13 @@ namespace GuardsDigital.Tests.EditMode
         private static IEnumerable<string> WalkTheOfficialMatch()
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
-            // Milestone 8.35g re-derived it again. The release is drawn from a one-command set
-            // and `Next(1)` still advances the stream, so every seeded trajectory is a different
-            // match rather than the old one with a command per turn inserted: seed 3 stopped
-            // reaching the Attack target, the correction and the Minion Battle at all. An
-            // offline scan of ten seeds put every walked family on seed 1, the last of them at
-            // step 1,167.
-            var random = new MatchLoopRandom(1);
+            // Milestone 8.35u re-derived it again. p.15 now pauses once for every hero that bought
+            // a level rather than once per hero in turn, so the number of standing answers at an
+            // end of round changed and every seeded trajectory diverges after the first level-up:
+            // seed 1 stopped reaching Minion Battle at all inside 2,600 steps. An offline scan of
+            // twenty-four seeds (`tmp/8-35d-8-35e-multiplayer-corrections/seed-scan-results.txt`)
+            // put every walked family on SEED 6, the last of them at step 408.
+            var random = new MatchLoopRandom(6);
             var observed = new List<string>();
             var target = new[]
             {
@@ -131,7 +131,7 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(observed, Is.SupersetOf(target),
-                "Seed 1 of the official six-player board reaches these seven families; a change " +
+                "Seed 6 of the official six-player board reaches these seven families; a change " +
                 "that reroutes it must be understood before this list is edited.");
             return observed;
         }
@@ -169,11 +169,11 @@ namespace GuardsDigital.Tests.EditMode
             var owner = SeatProjectionFactory.OwnerOfStandingDecision(projection);
 
             Assert.That(owner.FamilyId, Is.EqualTo(family));
-            if (expected.HeroId.IsDefined)
+            if (expected.HeroIds.Count > 0)
             {
-                Assert.That(owner.IsTeamOwned, Is.False, family.Value + " is answered by one hero.");
-                Assert.That(owner.HeroId, Is.EqualTo(expected.HeroId),
-                    family.Value + " must be owned by the chooser the authority recorded.");
+                Assert.That(owner.IsTeamOwned, Is.False, family.Value + " is answered by heroes.");
+                Assert.That(owner.HeroIds, Is.EqualTo(expected.HeroIds),
+                    family.Value + " must be owned by the choosers the authority recorded.");
             }
             else
             {
@@ -182,16 +182,29 @@ namespace GuardsDigital.Tests.EditMode
                     family.Value + " must be owned by the side the authority recorded.");
             }
 
+            // Milestone 8.35u AMENDED this guard rather than relaxing it. It used to say "an owning
+            // seat receives the exact answers the authority published", which was the same statement
+            // as "the whole contract" only while one seat owned all of it. p.15's simultaneous
+            // levelling publishes one contract holding several heroes' answers, so the claim becomes
+            // two, and together they are STRICTER than what they replaced: each owning seat receives
+            // exactly the answers that are ITS OWN, and the owning seats' shares partition the
+            // contract - nothing published reaches nobody, and nothing reaches a seat twice.
             var owning = new List<MatchSeat>();
+            var sharedOut = new List<DirectorCommand>();
             foreach (var seat in host.Seats.Seats)
             {
                 var seatProjection = host.ProjectionForSeat(seat.Id);
                 if (owner.IsOwnedBy(seat))
                 {
                     owning.Add(seat);
-                    Assert.That(seatProjection.DecisionContract, Is.SameAs(contract),
-                        "An owning seat receives the exact answers the authority published.");
-                    var directCommands = contract.Commands.Where(command =>
+                    Assert.That(seatProjection.DecisionContract, Is.Not.Null,
+                        "An owning seat receives the answers it may give.");
+                    Assert.That(seatProjection.DecisionContract.FamilyId, Is.EqualTo(family));
+                    Assert.That(contract.Commands, Is.SupersetOf(seatProjection.DecisionContract.Commands),
+                        "A seat is never shown an answer the authority did not publish.");
+                    sharedOut.AddRange(seatProjection.DecisionContract.Commands);
+
+                    var directCommands = seatProjection.DecisionContract.Commands.Where(command =>
                         !TeamAgreementTestDriver.IsFinalAgreementCommand(command)).ToArray();
                     Assert.That(seatProjection.AuthorizedCommands, Is.EqualTo(directCommands));
                     if (contract.Commands.Any(TeamAgreementTestDriver.IsFinalAgreementCommand))
@@ -210,10 +223,25 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(owning, Is.Not.Empty, family.Value + " must be answerable by somebody.");
+            if (owner.IsTeamOwned)
+            {
+                // A team decision is one question the whole side is looking at, so every owning
+                // seat is shown the same whole contract. Replication, not partition.
+                Assert.That(sharedOut.Count, Is.EqualTo(owning.Count * contract.Commands.Count));
+                Assert.That(sharedOut.Distinct(), Is.EquivalentTo(contract.Commands));
+            }
+            else
+            {
+                Assert.That(sharedOut, Is.EquivalentTo(contract.Commands),
+                    "A hero-owned decision's shares PARTITION the published contract: every answer " +
+                    "the authority published reaches exactly one seat, and none reaches two. That " +
+                    "is the property milestone 8.35u had to keep true once one contract could hold " +
+                    "several heroes' answers at the same time.");
+            }
             if (!owner.IsTeamOwned)
             {
-                Assert.That(owning.Count, Is.EqualTo(1),
-                    "A hero-owned decision belongs to exactly one seat.");
+                Assert.That(owning.Count, Is.EqualTo(owner.HeroIds.Count),
+                    "A hero-owned decision belongs to exactly one seat per awaited hero.");
             }
             else
             {
@@ -225,6 +253,34 @@ namespace GuardsDigital.Tests.EditMode
                 !TeamAgreementTestDriver.IsFinalAgreementCommand(command));
             if (directAnswer != null)
                 AssertANonOwnerCannotAnswer(host, owning, directAnswer, family.Value);
+
+            // Milestone 8.35u. When every seat owns something - which p.15's simultaneous levelling
+            // makes ordinary - the intruder check above finds nobody outside `owning` and silently
+            // proves nothing. The refusal that matters then is one OWNER submitting ANOTHER owner's
+            // answer, which is the shape of the defect 8.35d fixed and the shape it could recur in.
+            foreach (var seat in owning)
+            {
+                var seatProjection = host.ProjectionForSeat(seat.Id);
+                var foreign = contract.Commands.FirstOrDefault(command =>
+                    !TeamAgreementTestDriver.IsFinalAgreementCommand(command) &&
+                    !seatProjection.DecisionContract.Commands.Contains(command));
+                if (foreign == null)
+                {
+                    continue;
+                }
+
+                var version = host.Version;
+                var refused = host.SubmitForSeat(seat.Id, new SeatSubmission(
+                    new SubmissionId("foreign-" + family.Value + "-" + seat.Id.Value),
+                    version,
+                    foreign));
+                Assert.That(refused.RejectionReason,
+                    Is.EqualTo(SeatSubmissionRejectionReason.UnauthorizedCommand),
+                    "Seat " + seat.Id + " owns a question of its own in " + family.Value + " and " +
+                    "still may not answer another seat's.");
+                Assert.That(host.Version, Is.EqualTo(version));
+            }
+
             return family.Value;
         }
 
@@ -259,47 +315,47 @@ namespace GuardsDigital.Tests.EditMode
         /// production rule reads. Stated independently on purpose: a production rule edited to read
         /// the wrong field would still agree with itself.
         /// </summary>
-        private static (HeroId HeroId, TeamSide TeamSide) IndependentChooser(
+        private static (IReadOnlyList<HeroId> HeroIds, TeamSide TeamSide) IndependentChooser(
             MatchSessionProjection projection, PendingDecisionFamilyId family)
         {
             if (family.Equals(PendingDecisionFamilies.Initiative))
             {
-                return (default, projection.PendingInitiativeChoice.OwningSide);
+                return (Array.Empty<HeroId>(), projection.PendingInitiativeChoice.OwningSide);
             }
 
             if (family.Equals(PendingDecisionFamilies.Movement))
             {
-                return (projection.PendingMovementChoice.ChooserId, TeamSide.None);
+                return (new[] { projection.PendingMovementChoice.ChooserId }, TeamSide.None);
             }
 
             if (family.Equals(PendingDecisionFamilies.AttackTarget))
             {
-                return (projection.PendingAttackTargetChoice.ChooserId, TeamSide.None);
+                return (new[] { projection.PendingAttackTargetChoice.ChooserId }, TeamSide.None);
             }
 
             if (family.Equals(PendingDecisionFamilies.Defense))
             {
-                return (projection.PendingDefenseChoice.ChooserId, TeamSide.None);
+                return (new[] { projection.PendingDefenseChoice.ChooserId }, TeamSide.None);
             }
 
             if (family.Equals(PendingDecisionFamilies.Effect))
             {
-                return (projection.PendingEffectChoice.ChooserId, TeamSide.None);
+                return (new[] { projection.PendingEffectChoice.ChooserId }, TeamSide.None);
             }
 
             if (family.Equals(PendingDecisionFamilies.Correction))
             {
-                return (default, projection.PendingDisplacedMinionCorrection.ChoosingSide);
+                return (Array.Empty<HeroId>(), projection.PendingDisplacedMinionCorrection.ChoosingSide);
             }
 
             if (family.Equals(PendingDecisionFamilies.MinionBattle))
             {
-                return (default, projection.PendingMinionBattleChoice.ChoosingSide);
+                return (Array.Empty<HeroId>(), projection.PendingMinionBattleChoice.ChoosingSide);
             }
 
             if (family.Equals(PendingDecisionFamilies.HeroRespawn))
             {
-                return (projection.PendingHeroRespawnChoice.HeroId, TeamSide.None);
+                return (new[] { projection.PendingHeroRespawnChoice.HeroId }, TeamSide.None);
             }
 
             if (family.Equals(PendingDecisionFamilies.SystemTransition))
@@ -309,16 +365,21 @@ namespace GuardsDigital.Tests.EditMode
                 // the step's side: the item names the hero whose level it is. Restated here from
                 // the same source the production rule reads, so the two agree by derivation
                 // rather than by both being written down twice.
+                //
+                // Milestone 8.35u. Once per open item, because p.15 asks every hero that bought a
+                // level at the same time and there is then no single chooser to restate.
                 var step = projection.PendingSystemTransitionStep;
                 return step.DefinitionId.Equals(HeroLevelUpSystemTransition.DefinitionId) &&
-                    step.ItemId.IsDefined
-                    ? (HeroLevelUpItem.Read(step.ItemId).HeroId, TeamSide.None)
-                    : (default, step.ChoosingSide);
+                    step.OpenItems.All(open => open.ItemId.IsDefined)
+                    ? (step.OpenItems
+                        .Select(open => HeroLevelUpItem.Read(open.ItemId).HeroId)
+                        .ToArray(), TeamSide.None)
+                    : (Array.Empty<HeroId>(), step.AwaitedSide);
             }
 
             if (family.Equals(PendingDecisionFamilies.RemovalPrevention))
             {
-                return (projection.PendingRemovalPrevention.DecidingHeroId, TeamSide.None);
+                return (new[] { projection.PendingRemovalPrevention.DecidingHeroId }, TeamSide.None);
             }
 
             if (family.Equals(PendingDecisionFamilies.TurnRelease))
@@ -327,11 +388,11 @@ namespace GuardsDigital.Tests.EditMode
                 // and so does handing it on. Read from the paused record itself, which is where
                 // the production rule reads it, so the two agree by derivation rather than by
                 // being written down twice.
-                return (projection.PendingTurnRelease.ActorId, TeamSide.None);
+                return (new[] { projection.PendingTurnRelease.ActorId }, TeamSide.None);
             }
 
             Assert.Fail("This fixture has no independent chooser for family " + family.Value + ".");
-            return (default, TeamSide.None);
+            return (Array.Empty<HeroId>(), TeamSide.None);
         }
 
         /// <summary>The three families a bounded seeded walk does not reach.</summary>

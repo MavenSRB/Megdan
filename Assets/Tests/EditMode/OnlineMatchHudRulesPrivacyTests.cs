@@ -255,14 +255,23 @@ namespace GuardsDigital.Tests.EditMode
         /// that a protocol 2 host answers with <c>UnexpectedMessage</c>. Milestone 8.35g takes it to
         /// protocol 4 for the carried turn-release family, and milestone 8.35l to protocol 5 for the
         /// blocked-reason block on each action offer row. Milestone 8.35r takes it to protocol 6 for
-        /// the seat-public match log and the standing rewind marker. Every prior version is
+        /// the seat-public match log and the standing rewind marker. Milestone 8.35u takes it to
+        /// protocol 7 for the repeated awaited-hero group on DecisionOwner, which p.15's simultaneous
+        /// leveling made plural. Every prior version is
         /// exercised, so the refusal is about the version and not about any one number.
         /// </remarks>
         [Test]
-        public void SeatWireMeaning_UsesProtocolSix_AndRejectsEveryOlderFrame()
+        public void SeatWireMeaning_UsesProtocolSeven_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(6),
-                "Milestone 8.35r opens the seat-public event channel: the match log rides inside " +
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(7),
+                "Milestone 8.35u makes rulebook p.15's leveling simultaneous, so the authority can " +
+                "be waiting on several heroes at once and DecisionOwner carries a repeated hero " +
+                "group where protocol six wrote one optional hero: a protocol six peer reads that " +
+                "count where it expects a present/absent boolean and mis-decodes the rest of the " +
+                "record. The paused transition's own detail row is byte-identical, because each " +
+                "seat's payload is narrowed to the one item that seat may answer and so never " +
+                "carried more than one. Protocol six opened the seat-public event channel: the " +
+                "match log rides inside " +
                 "the seat projection message as a bounded window of typed lines, and the projection " +
                 "detail record gained the standing rewind marker at its end, so a protocol five " +
                 "peer would read a line count it does not expect and run off the end of the " +
@@ -276,7 +285,7 @@ namespace GuardsDigital.Tests.EditMode
                 "IsSeatUndoAvailable plus SubmitUndo and UndoResult, which protocol two peers could " +
                 "not decode safely.");
 
-            foreach (var older in new[] { 1, 2, 3, 4, 5 })
+            foreach (var older in new[] { 1, 2, 3, 4, 5, 6 })
             {
                 var bytes = PrivateSessionFrameCodec.ChallengeFrame(
                     new SessionChallengeMessage(new byte[] { 1, 2, 3 }));

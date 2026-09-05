@@ -270,7 +270,19 @@ namespace GuardsDigital.Core.Snapshots
         // honest answer for every Attack whose card never asks - but a v32 payload holding a paused
         // Combat Reflexes would restore reporting that he had not moved whether or not he had, and the
         // page would then hand him a second move the card does not give.
-        public const int CurrentSchemaVersion = 35;
+        //
+        // Milestone 8.35u moves it to 36: rulebook p.15 levels every hero at the same time, so a
+        // paused system transition writes a repeated open-item group - item, chooser and options once
+        // per hero still choosing - where v35 wrote exactly one of each. The single resume location
+        // beneath it is unmoved, which is the point: several questions, still one record of where the
+        // transition is.
+        //
+        // v35 is rejected rather than migrated, and for once the reason is not a missing reading but a
+        // layout one: the count this version writes sits exactly where v35 wrote its item-present
+        // boolean, so a v35 payload read as v36 does not fail to mean something - it means something
+        // else, and would run off the end of the pause. There is no reading of the old bytes that is
+        // true of both builds.
+        public const int CurrentSchemaVersion = 36;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

@@ -451,6 +451,74 @@ namespace GuardsDigital.Core.Rules.Transitions
     }
 
     /// <summary>
+    /// Milestone 8.35u. One question a paused step is currently asking: which item of the step it is
+    /// about, who chooses, and what they may choose.
+    ///
+    /// It exists because rulebook p.15 levels every hero at once. A step that stops on several items
+    /// simultaneously has several choosers and several option lists, and those three travel together
+    /// or not at all - an item whose options belonged to a different item would be answerable by a
+    /// command nothing offered. What it deliberately does NOT carry is a resume location: there is
+    /// still exactly one of those, on the pause that holds these, which is the whole reason this is a
+    /// list inside one pause rather than a list of pauses.
+    /// </summary>
+    public sealed class SystemTransitionOpenItem : IEquatable<SystemTransitionOpenItem>
+    {
+        public SystemTransitionOpenItem(
+            SystemTransitionItemId itemId,
+            TeamSide choosingSide,
+            IEnumerable<SystemTransitionOptionId> options)
+        {
+            if (choosingSide != TeamSide.Red && choosingSide != TeamSide.Blue)
+            {
+                throw new ArgumentException(
+                    "An open item is open on somebody; an item with no chooser never stops.",
+                    nameof(choosingSide));
+            }
+
+            var optionArray = (options ?? throw new ArgumentNullException(nameof(options))).ToArray();
+            if (optionArray.Length == 0 || optionArray.Any(option => !option.IsDefined) ||
+                optionArray.Distinct().Count() != optionArray.Length)
+            {
+                throw new ArgumentException(
+                    "An open item offers at least one defined option and never the same one twice.",
+                    nameof(options));
+            }
+
+            ItemId = itemId;
+            ChoosingSide = choosingSide;
+            Options = Array.AsReadOnly(optionArray);
+        }
+
+        /// <summary>
+        /// Which pause of the step this is, or the named absence when the step pauses once for itself.
+        /// </summary>
+        public SystemTransitionItemId ItemId { get; }
+
+        public TeamSide ChoosingSide { get; }
+        public IReadOnlyList<SystemTransitionOptionId> Options { get; }
+
+        public bool Equals(SystemTransitionOpenItem other) =>
+            other != null && ItemId.Equals(other.ItemId) && ChoosingSide == other.ChoosingSide &&
+            Options.SequenceEqual(other.Options);
+
+        public override bool Equals(object obj) => Equals(obj as SystemTransitionOpenItem);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = ItemId.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)ChoosingSide;
+                return Options.Aggregate(hashCode, (current, option) =>
+                    (current * 397) ^ option.GetHashCode());
+            }
+        }
+
+        public override string ToString() =>
+            $"{(ItemId.IsDefined ? ItemId.Value : "<step>")} ({ChoosingSide}, {Options.Count} options)";
+    }
+
+    /// <summary>
     /// The intra-stage continuation itself: a multi-step transition stopped on one step, holding
     /// everything needed to resume exactly where it stopped and nothing that would let it resume
     /// anywhere else.
@@ -468,6 +536,10 @@ namespace GuardsDigital.Core.Rules.Transitions
     /// </summary>
     public sealed class PendingSystemTransitionStep
     {
+        /// <summary>
+        /// The one-item pause, which is every step but p.15's leveling. Kept as its own door because
+        /// most callers genuinely have one item and should not have to build a list to say so.
+        /// </summary>
         public PendingSystemTransitionStep(
             SystemTransitionInstanceId instanceId,
             SystemTransitionDefinitionId definitionId,
@@ -477,28 +549,59 @@ namespace GuardsDigital.Core.Rules.Transitions
             IEnumerable<SystemTransitionOptionId> options,
             IEnumerable<SystemTransitionStepId> completedStepIds,
             IEnumerable<SystemTransitionItemId> completedItemIds)
+            : this(
+                instanceId,
+                definitionId,
+                stepId,
+                new[] { new SystemTransitionOpenItem(itemId, choosingSide, options) },
+                completedStepIds,
+                completedItemIds)
+        {
+        }
+
+        /// <summary>
+        /// Milestone 8.35u. The general pause: one step, one resume location, and one open item per
+        /// chooser the step is currently waiting on.
+        /// </summary>
+        public PendingSystemTransitionStep(
+            SystemTransitionInstanceId instanceId,
+            SystemTransitionDefinitionId definitionId,
+            SystemTransitionStepId stepId,
+            IEnumerable<SystemTransitionOpenItem> openItems,
+            IEnumerable<SystemTransitionStepId> completedStepIds,
+            IEnumerable<SystemTransitionItemId> completedItemIds)
         {
             if (!instanceId.IsDefined || !definitionId.IsDefined || !stepId.IsDefined)
             {
                 throw new ArgumentException("A paused transition step requires stable typed identities.");
             }
 
-            if (choosingSide != TeamSide.Red && choosingSide != TeamSide.Blue)
+            var openArray = (openItems ?? throw new ArgumentNullException(nameof(openItems))).ToArray();
+            if (openArray.Length == 0 || openArray.Any(item => item == null))
             {
                 throw new ArgumentException(
-                    "A paused step is paused on somebody; a step with no chooser never stops.",
-                    nameof(choosingSide));
+                    "A paused step is waiting on at least one open item; a step waiting on none is " +
+                    "not paused.",
+                    nameof(openItems));
             }
 
-            var optionArray = (options ?? throw new ArgumentNullException(nameof(options))).ToArray();
-            if (optionArray.Length == 0 || optionArray.Any(option => !option.IsDefined) ||
-                optionArray.Distinct().Count() != optionArray.Length)
+            if (openArray.Select(item => item.ItemId).Distinct().Count() != openArray.Length)
             {
                 throw new ArgumentException(
-                    "A paused step offers at least one defined option and never the same one twice.",
-                    nameof(options));
+                    "A paused step never opens the same item twice; two answers for one item would " +
+                    "have two right answers.",
+                    nameof(openItems));
             }
 
+            if (openArray.Length > 1 && openArray.Any(item => !item.ItemId.IsDefined))
+            {
+                throw new ArgumentException(
+                    "A step that pauses once for itself has exactly one open item, because the item " +
+                    "is what a second answer would have to be told apart by.",
+                    nameof(openItems));
+            }
+
+            var itemId = openArray[0].ItemId;
             var completedArray = (completedStepIds ?? throw new ArgumentNullException(nameof(completedStepIds)))
                 .ToArray();
             if (completedArray.Any(completed => !completed.IsDefined) ||
@@ -514,10 +617,15 @@ namespace GuardsDigital.Core.Rules.Transitions
                 (completedItemIds ?? throw new ArgumentNullException(nameof(completedItemIds))).ToArray();
             if (completedItemArray.Any(completed => !completed.IsDefined) ||
                 completedItemArray.Distinct().Count() != completedItemArray.Length ||
-                completedItemArray.Any(completed => completed.Equals(itemId)))
+                completedItemArray.Any(completed =>
+                    openArray.Any(open => open.ItemId.Equals(completed))))
             {
+                // Milestone 8.35u generalises 6.11's clause from "the item still pending" to "any
+                // item still open": an item that was both answered and still being asked would have
+                // two truths about the same question, which is the disagreement the single resume
+                // location exists to make unrepresentable.
                 throw new ArgumentException(
-                    "Completed items are unique, defined, and never include the item still pending.",
+                    "Completed items are unique, defined, and never include an item still open.",
                     nameof(completedItemIds));
             }
 
@@ -531,14 +639,12 @@ namespace GuardsDigital.Core.Rules.Transitions
             InstanceId = instanceId;
             DefinitionId = definitionId;
             StepId = stepId;
-            ItemId = itemId;
-            ChoosingSide = choosingSide;
-            Options = Array.AsReadOnly(optionArray);
+            OpenItems = Array.AsReadOnly(openArray);
             CompletedStepIds = Array.AsReadOnly(completedArray);
             CompletedItemIds = Array.AsReadOnly(completedItemArray);
-            Invocations = Array.AsReadOnly(optionArray
-                .Select(option => new SystemTransitionChoiceCommand(
-                    instanceId, stepId, itemId, choosingSide, option))
+            Invocations = Array.AsReadOnly(openArray
+                .SelectMany(open => open.Options.Select(option => new SystemTransitionChoiceCommand(
+                    instanceId, stepId, open.ItemId, open.ChoosingSide, option)))
                 .ToArray());
         }
 
@@ -547,15 +653,83 @@ namespace GuardsDigital.Core.Rules.Transitions
         public SystemTransitionStepId StepId { get; }
 
         /// <summary>
+        /// Milestone 8.35u. Every question this step is currently asking, one per chooser it waits on.
+        ///
+        /// One entry is the ordinary case and every step but p.15's leveling has exactly one. The
+        /// order is the producing rules' own and is stable across a re-derivation, which is what lets
+        /// a restored pause be compared with a re-derived one at all.
+        /// </summary>
+        public IReadOnlyList<SystemTransitionOpenItem> OpenItems { get; }
+
+        /// <summary>
+        /// Whether this step is waiting on more than one chooser at once - true only for rulebook
+        /// p.15's simultaneous leveling in this build.
+        /// </summary>
+        public bool IsConcurrent => OpenItems.Count > 1;
+
+        /// <summary>
         /// Which pause of this step the transition is stopped on, or the named absence when the step
         /// pauses once for itself. Milestone 6.11's respawn pauses once per minion whose Spawn point an
         /// obstacle blocks, which is what the acceptance check means by "stable current step/minion
         /// identity".
+        ///
+        /// <para><b>Milestone 8.35u: this throws when several items are open, and that is the point.</b>
+        /// Returning the first would answer a question about "the" item that no longer has one answer,
+        /// and a silently wrong first element is the failure mode that survives to a playtest. Every
+        /// caller is therefore either provably single-item or reads <see cref="OpenItems"/>.</para>
         /// </summary>
-        public SystemTransitionItemId ItemId { get; }
+        public SystemTransitionItemId ItemId => Single().ItemId;
 
-        public TeamSide ChoosingSide { get; }
-        public IReadOnlyList<SystemTransitionOptionId> Options { get; }
+        /// <inheritdoc cref="ItemId"/>
+        public TeamSide ChoosingSide => Single().ChoosingSide;
+
+        /// <inheritdoc cref="ItemId"/>
+        public IReadOnlyList<SystemTransitionOptionId> Options => Single().Options;
+
+        /// <summary>
+        /// Milestone 8.35u. The one side this step is waiting on, or <see cref="TeamSide.None"/> when it
+        /// is waiting on both.
+        ///
+        /// <para>Unlike <see cref="ChoosingSide"/> this never throws, because it is what a reader that
+        /// summarises a pause by side actually wants: rulebook p.15 levels heroes on both teams at the
+        /// same moment, and "neither side in particular" is the honest answer for such a pause rather
+        /// than an error. A reader that needs to know exactly who is being waited on reads
+        /// <see cref="OpenItems"/>, which always says.</para>
+        /// </summary>
+        public TeamSide AwaitedSide
+        {
+            get
+            {
+                var side = OpenItems[0].ChoosingSide;
+                return OpenItems.All(open => open.ChoosingSide == side) ? side : TeamSide.None;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35u. Every option this step is offering, across every open item, once each.
+        ///
+        /// <para>Unlike <see cref="Options"/> this never throws, because it is what a caller that
+        /// wants "the options on the table" actually means when several questions stand - the
+        /// headless and Director paths that name an option by identity rather than by finding a
+        /// control. Option ids are unique per hero (they name that hero's own two cards), so the
+        /// union is unambiguous and an answer built from it still reaches exactly one item through
+        /// <see cref="Invocations"/>.</para>
+        /// </summary>
+        public IReadOnlyList<SystemTransitionOptionId> AllOptions => Array.AsReadOnly(
+            OpenItems.SelectMany(open => open.Options).Distinct().ToArray());
+
+        private SystemTransitionOpenItem Single()
+        {
+            if (OpenItems.Count > 1)
+            {
+                throw new InvalidOperationException(
+                    $"Paused step '{StepId}' is waiting on {OpenItems.Count} items at once, so it has " +
+                    "no single item, chooser or option list. Read OpenItems, or Invocations, which " +
+                    "names its own item on every command.");
+            }
+
+            return OpenItems[0];
+        }
 
         /// <summary>The steps that have already happened. The exact resume location, stated positively.</summary>
         public IReadOnlyList<SystemTransitionStepId> CompletedStepIds { get; }
@@ -567,7 +741,15 @@ namespace GuardsDigital.Core.Rules.Transitions
         /// </summary>
         public IReadOnlyList<SystemTransitionItemId> CompletedItemIds { get; }
 
-        /// <summary>The exact commands that answer this step, in the option order the definition declares.</summary>
+        /// <summary>
+        /// The exact commands that answer this step, in the option order the definition declares,
+        /// across every open item.
+        ///
+        /// <para>Milestone 8.35u: this is the one member that is well defined however many items are
+        /// open, because every command names the item it answers. That is why the Director's surface
+        /// needed no change to be able to answer all of them - it looks an invocation up by the option
+        /// the player pressed and submits it, and the item travels with it.</para>
+        /// </summary>
         public IReadOnlyList<SystemTransitionChoiceCommand> Invocations { get; }
     }
 
@@ -636,34 +818,64 @@ namespace GuardsDigital.Core.Rules.Transitions
     {
         private SystemTransitionStepResolution(
             SystemTransitionStepResolutionKind kind,
-            SystemTransitionItemId itemId,
-            TeamSide choosingSide,
-            IEnumerable<SystemTransitionOptionId> options)
+            SystemTransitionItemId completedItemId,
+            IReadOnlyList<SystemTransitionOpenItem> openItems)
         {
             Kind = kind;
-            ItemId = itemId;
-            ChoosingSide = choosingSide;
-            Options = Array.AsReadOnly(options.ToArray());
+            CompletedItemId = completedItemId;
+            OpenItems = openItems;
         }
 
         public SystemTransitionStepResolutionKind Kind { get; }
-        public SystemTransitionItemId ItemId { get; }
-        public TeamSide ChoosingSide { get; }
-        public IReadOnlyList<SystemTransitionOptionId> Options { get; }
+
+        /// <summary>
+        /// Milestone 8.35u. Every item this step is now waiting on, empty unless it paused.
+        /// </summary>
+        public IReadOnlyList<SystemTransitionOpenItem> OpenItems { get; }
+
+        /// <summary>The item an <see cref="SystemTransitionStepResolutionKind.ItemCompleted"/> finished.</summary>
+        private SystemTransitionItemId CompletedItemId { get; }
+
+        /// <summary>
+        /// The one item this resolution is about. For a pause of several items it throws, for the
+        /// reason <see cref="PendingSystemTransitionStep.ItemId"/> does.
+        /// </summary>
+        public SystemTransitionItemId ItemId =>
+            Kind == SystemTransitionStepResolutionKind.Paused ? Single().ItemId : CompletedItemId;
+
+        /// <inheritdoc cref="ItemId"/>
+        public TeamSide ChoosingSide =>
+            Kind == SystemTransitionStepResolutionKind.Paused ? Single().ChoosingSide : TeamSide.None;
+
+        /// <inheritdoc cref="ItemId"/>
+        public IReadOnlyList<SystemTransitionOptionId> Options =>
+            Kind == SystemTransitionStepResolutionKind.Paused
+                ? Single().Options
+                : Array.Empty<SystemTransitionOptionId>();
+
+        private SystemTransitionOpenItem Single()
+        {
+            if (OpenItems.Count > 1)
+            {
+                throw new InvalidOperationException(
+                    $"A step resolution paused on {OpenItems.Count} items at once has no single item, " +
+                    "chooser or option list. Read OpenItems.");
+            }
+
+            return OpenItems[0];
+        }
 
         public static SystemTransitionStepResolution Completed { get; } =
             new SystemTransitionStepResolution(
                 SystemTransitionStepResolutionKind.Completed,
                 SystemTransitionItemId.None,
-                TeamSide.None,
-                Array.Empty<SystemTransitionOptionId>());
+                Array.Empty<SystemTransitionOpenItem>());
 
         public static SystemTransitionStepResolution EndedTransition { get; } =
             new SystemTransitionStepResolution(
                 SystemTransitionStepResolutionKind.EndedTransition,
                 SystemTransitionItemId.None,
-                TeamSide.None,
-                Array.Empty<SystemTransitionOptionId>());
+                Array.Empty<SystemTransitionOpenItem>());
 
         public static SystemTransitionStepResolution ItemCompleted(SystemTransitionItemId itemId)
         {
@@ -676,8 +888,7 @@ namespace GuardsDigital.Core.Rules.Transitions
             return new SystemTransitionStepResolution(
                 SystemTransitionStepResolutionKind.ItemCompleted,
                 itemId,
-                TeamSide.None,
-                Array.Empty<SystemTransitionOptionId>());
+                Array.Empty<SystemTransitionOpenItem>());
         }
 
         public static SystemTransitionStepResolution Paused(
@@ -693,11 +904,43 @@ namespace GuardsDigital.Core.Rules.Transitions
                     nameof(itemId));
             }
 
+            return PausedOn(new[]
+            {
+                new SystemTransitionOpenItem(
+                    itemId, choosingSide, options ?? throw new ArgumentNullException(nameof(options)))
+            });
+        }
+
+        /// <summary>
+        /// Milestone 8.35u. A step that stops on several choosers at once - rulebook p.15's leveling,
+        /// which asks every hero that bought a level the same question at the same time.
+        ///
+        /// It is opt-in per step and deliberately not the default: milestone 6.11's blocked respawn
+        /// stays one Place at a time, because a placement changes the board the next placement reads
+        /// and those items are genuinely sequential. Leveling's are not - a hero's cards, coins and
+        /// Level are that hero's own - which is the whole reason this shape is honest there.
+        /// </summary>
+        public static SystemTransitionStepResolution PausedOn(
+            IEnumerable<SystemTransitionOpenItem> openItems)
+        {
+            var openArray = (openItems ?? throw new ArgumentNullException(nameof(openItems))).ToArray();
+            if (openArray.Length == 0 || openArray.Any(item => item == null))
+            {
+                throw new ArgumentException(
+                    "A pause names at least one open item; a step waiting on nothing has completed.",
+                    nameof(openItems));
+            }
+
+            if (openArray.Select(item => item.ItemId).Distinct().Count() != openArray.Length)
+            {
+                throw new ArgumentException(
+                    "A pause never opens the same item twice.", nameof(openItems));
+            }
+
             return new SystemTransitionStepResolution(
                 SystemTransitionStepResolutionKind.Paused,
-                itemId,
-                choosingSide,
-                options ?? throw new ArgumentNullException(nameof(options)));
+                SystemTransitionItemId.None,
+                Array.AsReadOnly(openArray));
         }
     }
 
@@ -831,7 +1074,7 @@ namespace GuardsDigital.Core.Rules.Transitions
     /// decision rather than a switch somebody has to remember to extend.
     /// </summary>
     public sealed class SystemTransitionStepRuleSet
-        : ISystemTransitionStepRules, IDescribingSystemTransitionStepRules
+        : ISystemTransitionStepRules, IDescribingConcurrentSystemTransitionStepRules
     {
         private readonly IReadOnlyDictionary<SystemTransitionDefinitionId, ISystemTransitionStepRules> rules;
 
@@ -865,6 +1108,21 @@ namespace GuardsDigital.Core.Rules.Transitions
             pendingStep != null &&
             For(pendingStep.DefinitionId) is IDescribingSystemTransitionStepRules describing
                 ? describing.Describe(pendingStep)
+                : null;
+
+        /// <summary>
+        /// Milestone 8.35u. The same routing for one named open item.
+        ///
+        /// <para>It forwards only to rules that declare simultaneity, and answers null otherwise -
+        /// which is not a fallback but the honest answer: a step whose rules describe only "the" pause
+        /// has no per-item description to give, and this set must not invent one by describing the
+        /// whole pause under one item's name.</para>
+        /// </summary>
+        public SystemTransitionStepDescription DescribeOpenItem(
+            PendingSystemTransitionStep pendingStep, SystemTransitionItemId itemId) =>
+            pendingStep != null &&
+            For(pendingStep.DefinitionId) is IDescribingConcurrentSystemTransitionStepRules concurrent
+                ? concurrent.DescribeOpenItem(pendingStep, itemId)
                 : null;
 
         private ISystemTransitionStepRules For(SystemTransitionDefinitionId definitionId) =>

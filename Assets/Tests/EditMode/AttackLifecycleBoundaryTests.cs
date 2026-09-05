@@ -230,7 +230,18 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
-        private static readonly int[] SweepSeeds = { 1, 2, 3, 4 };
+        /// <summary>
+        /// Milestone 8.35u re-derived the set, {1, 2, 3, 4} -> {1, 2, 8, 12}. Simultaneous levelling
+        /// asks rulebook p.15's questions in a different order, so every trajectory diverges after the
+        /// first level-up: seed 3 now completes NO Attack inside the budget, which this sweep's own
+        /// counter caught and reported rather than passing vacuously, and seed 4 completes only one.
+        /// A thirty-seed offline scan
+        /// (`tmp/8-35d-8-35e-multiplayer-corrections/seed-scan-attacks.txt`) kept the two that still
+        /// carry the property and replaced the two that stopped, choosing the richest available rather
+        /// than the next that merely passes: seeds 1, 2, 8 and 12 take four, five, four and five
+        /// Attack targets. The sweep is about real p.14 endings, so more of them is more evidence.
+        /// </summary>
+        private static readonly int[] SweepSeeds = { 1, 2, 8, 12 };
 
         private const int SweepBudget = 1200;
 

@@ -753,10 +753,20 @@ namespace GuardsDigital.Application
                     new[] { DirectorCommand.ReleaseTurn() }));
             }
 
+            // Milestone 8.35u AMENDED this guard rather than removing it, and the distinction is the
+            // whole of what it still protects. What was never legal, and still is not, is two
+            // different FAMILIES standing at once - two exclusive questions with two resume locations,
+            // which is the class of defect this has been catching since it was written. What became
+            // legal is one family holding several open ITEMS, because rulebook p.15 asks every hero
+            // that bought a level at the same time. The count below is of families; the items live
+            // inside the one contract, and the seat surface is what decides which of them each player
+            // may answer.
             if (standing.Count > 1)
             {
                 throw new InvalidOperationException(
-                    "One immutable match projection cannot publish multiple pending player decisions.");
+                    "One immutable match projection cannot publish multiple pending player decision " +
+                    "families. A single family may stand on several items at once - rulebook p.15's " +
+                    "simultaneous leveling does - but two families never may.");
             }
 
             return standing.SingleOrDefault();
@@ -823,8 +833,8 @@ namespace GuardsDigital.Application
             IEnumerable<KeyValuePair<TeamId, int>> teamLifeCounters = null,
             GuardsDigital.Core.Rules.Victory.MatchOutcome outcome = default,
             IEnumerable<HeroProgressionProjection> heroProgression = null,
-            GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
-                pendingSystemTransitionDescription = null,
+            IEnumerable<GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription>
+                pendingSystemTransitionDescriptions = null,
             IEnumerable<CardInstanceId> activeEffectSourceCardInstanceIds = null,
             GuardsDigital.Core.Rules.CardResolution.RemovalPreventionPrompt
                 pendingRemovalPrevention = null,
@@ -965,16 +975,30 @@ namespace GuardsDigital.Application
                     nameof(activeEffectSourceCardInstanceIds));
             }
 
-            PendingSystemTransitionDescription = pendingSystemTransitionDescription;
-            if (pendingSystemTransitionDescription != null &&
-                !ReferenceEquals(
-                    pendingSystemTransitionDescription.PendingStep, pendingSystemTransitionStep))
+            // Milestone 8.35u. One description per open item, because rulebook p.15 now asks every
+            // hero that bought a level at once and each of them is asking a different question. The
+            // list is in the rules' own order and the first of it is what the Director's own single
+            // surface reads, which is the serialization that page always had at one controller.
+            PendingSystemTransitionDescriptions = Array.AsReadOnly(
+                (pendingSystemTransitionDescriptions
+                    ?? Array.Empty<GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription>())
+                .ToArray());
+            if (PendingSystemTransitionDescriptions.Any(description =>
+                    !ReferenceEquals(description.PendingStep, pendingSystemTransitionStep)))
             {
                 // A description of some other pause would be a second answer to what the match is
                 // waiting on, and the surface built from it would offer options the authority refuses.
                 throw new ArgumentException(
                     "A projected transition description describes the pause this projection carries.",
-                    nameof(pendingSystemTransitionDescription));
+                    nameof(pendingSystemTransitionDescriptions));
+            }
+
+            if (PendingSystemTransitionDescriptions.Select(description => description.ItemId)
+                    .Distinct().Count() != PendingSystemTransitionDescriptions.Count)
+            {
+                throw new ArgumentException(
+                    "A projection describes each open item of its pause at most once.",
+                    nameof(pendingSystemTransitionDescriptions));
             }
 
             // Milestone 8.35g. The release yields to EVERY other standing decision, and this is the
@@ -1339,7 +1363,20 @@ namespace GuardsDigital.Application
         /// one. Every option it names is one of that step's own, in that step's order.
         /// </summary>
         public GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
-            PendingSystemTransitionDescription { get; }
+            PendingSystemTransitionDescription => PendingSystemTransitionDescriptions.Count == 0
+                ? null
+                : PendingSystemTransitionDescriptions[0];
+
+        /// <summary>
+        /// Milestone 8.35u. Every open item of the paused step, described - one per hero when
+        /// rulebook p.15 is levelling them all at once, and exactly one for every other pause.
+        ///
+        /// <para>A seat is projected the one that is its own; this whole list reaches only the
+        /// Director's own full-trust read model, because an option list names cards in the hand of
+        /// the hero it belongs to.</para>
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription>
+            PendingSystemTransitionDescriptions { get; }
 
         public PendingLanePushRequest PendingLanePushRequest { get; }
 

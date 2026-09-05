@@ -205,7 +205,18 @@ namespace GuardsDigital.Tests.EditMode
                 // seeds 1-24 was run offline; 14 observes five Attack target selections against the
                 // old seed's zero, so the replacement strengthens the evidence rather than hunting for
                 // any seed that passes.
-            }, 14);
+                //
+                // Milestone 8.35u moved it again, 14 -> 11, for the same class of reason and caught the
+                // same way: rulebook p.15 now asks every hero that bought a level at once, so the
+                // trajectory diverges after the first level-up and seed 14 reached no Attack at all in
+                // 1,600 commands. A thirty-seed offline scan
+                // THIS is the one seed a forward-walking probe could not predict: the sweep above presses
+                // the rewind at every third offer, so the walk is taken apart as fast as it is
+                // played and a probe replicating its inputs but not its undos reported five Attack
+                // targets on a seed that reaches none. Candidates were therefore tried against the
+                // real fixture; five of twelve pass (11, 12, 17, 21, 28), so 11 is the lowest of a
+                // healthy set rather than a lucky singleton.
+            }, 11);
 
             Assert.That(rewinds, Is.GreaterThan(0),
                 "The walk pressed no rewind in " + walked + " commands, so the property is vacuous.");
@@ -238,7 +249,7 @@ namespace GuardsDigital.Tests.EditMode
             while (budget > 0 && midActionRefusals == 0 && attacks < 8)
             {
                 budget -= OwnerScopedProjectionTests.DriveThroughSeats(
-                    host, budget, projection => projection.PendingAttackTargetChoice != null, 1);
+                    host, budget, projection => projection.PendingAttackTargetChoice != null, 6);
                 var projection = host.Projection;
                 if (projection.PendingAttackTargetChoice == null)
                 {
@@ -295,7 +306,7 @@ namespace GuardsDigital.Tests.EditMode
                         "A refused rewind moves nothing at all.");
                     midActionRefusals++;
 
-                    var stepped = OwnerScopedProjectionTests.DriveThroughSeats(host, 1, null, 1);
+                    var stepped = OwnerScopedProjectionTests.DriveThroughSeats(host, 1, null, 6);
                     budget -= stepped;
                     if (stepped == 0)
                     {

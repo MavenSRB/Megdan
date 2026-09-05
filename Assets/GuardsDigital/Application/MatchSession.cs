@@ -938,7 +938,7 @@ namespace GuardsDigital.Application
                 CreateHeroProgression(round),
                 // Milestone 7.8a. The pause and what it means are read in the same breath, from the same
                 // authority, so a reader can never hold a description of one pause beside another one.
-                round.SystemTransitions.DescribePendingStep(),
+                round.SystemTransitions.DescribePendingSteps(),
                 CreateActiveEffectSourceCards(round),
                 // Milestone 8.21. The same pairing the effect choice has above: the pause and the
                 // affordable answers to it are read in one breath, from the authority that holds both.

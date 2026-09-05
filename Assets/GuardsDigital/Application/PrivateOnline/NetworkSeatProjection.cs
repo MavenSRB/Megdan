@@ -199,18 +199,28 @@ namespace GuardsDigital.Application
 
     public sealed class NetworkDecisionOwnerRecord
     {
-        public NetworkDecisionOwnerRecord(string familyId, string heroId, int teamSide)
+        public NetworkDecisionOwnerRecord(string familyId, IReadOnlyList<string> heroIds, int teamSide)
         {
             FamilyId = familyId;
-            HeroId = heroId;
+            HeroIds = heroIds ?? Array.Empty<string>();
             TeamSide = teamSide;
         }
 
         /// <summary>Null while nothing is pending.</summary>
         public string FamilyId { get; }
 
-        /// <summary>The owning hero, or null for a team-owned decision.</summary>
-        public string HeroId { get; }
+        /// <summary>
+        /// Milestone 8.35u. Every hero the authority is waiting on, empty for a team-owned decision.
+        ///
+        /// <para>It became a repeated group because rulebook p.15 asks every hero that bought a level
+        /// at the same time, and "we are waiting on these players" is table-public in a way "what they
+        /// were each offered" is not - each seat still receives only its own question in the detail
+        /// record beside this.</para>
+        /// </summary>
+        public IReadOnlyList<string> HeroIds { get; }
+
+        /// <summary>The first owning hero, or null for a team-owned decision.</summary>
+        public string HeroId => HeroIds.Count == 0 ? null : HeroIds[0];
 
         public int TeamSide { get; }
     }
@@ -623,8 +633,17 @@ namespace GuardsDigital.Application
                 if (projection.DecisionOwner.IsDefined)
                 {
                     writer.Write(projection.DecisionOwner.FamilyId.Value);
-                    WriteOptional(writer, projection.DecisionOwner.HeroId.IsDefined,
-                        projection.DecisionOwner.HeroId.Value);
+
+                    // Milestone 8.35u, protocol 7: a repeated hero group where protocol 6 wrote one
+                    // optional hero. The count sits exactly where that present/absent boolean sat, so
+                    // an older client does not read a shorter record - it reads a different one, which
+                    // is why this moved the protocol version rather than riding the old one.
+                    writer.Write(projection.DecisionOwner.HeroIds.Count);
+                    foreach (var heroId in projection.DecisionOwner.HeroIds)
+                    {
+                        writer.Write(heroId.Value);
+                    }
+
                     writer.Write((int)projection.DecisionOwner.TeamSide);
                 }
 
@@ -969,12 +988,30 @@ namespace GuardsDigital.Application
                     if (reader.ReadBoolean())
                     {
                         var family = reader.ReadString();
-                        if (string.IsNullOrWhiteSpace(family) || !TryReadOptional(reader, out var ownerHero))
+                        if (string.IsNullOrWhiteSpace(family))
                         {
                             return false;
                         }
 
-                        owner_ = new NetworkDecisionOwnerRecord(family, ownerHero, reader.ReadInt32());
+                        var ownerHeroCount = reader.ReadInt32();
+                        if (ownerHeroCount < 0 || ownerHeroCount > MaxListEntries)
+                        {
+                            return false;
+                        }
+
+                        var ownerHeroes = new List<string>(ownerHeroCount);
+                        for (var index = 0; index < ownerHeroCount; index++)
+                        {
+                            var ownerHero = reader.ReadString();
+                            if (string.IsNullOrWhiteSpace(ownerHero))
+                            {
+                                return false;
+                            }
+
+                            ownerHeroes.Add(ownerHero);
+                        }
+
+                        owner_ = new NetworkDecisionOwnerRecord(family, ownerHeroes, reader.ReadInt32());
                     }
                     else
                     {

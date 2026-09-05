@@ -595,7 +595,11 @@ namespace GuardsDigital.Tests.EditMode
                 "minion-battle", "movement", "removal-prevention", "system-transition", "turn-release"
             }));
             Assert.That(DecisionFamilyInventory.AuditProductionInventory(), Is.Empty);
-            Assert.That(DecisionFamilyInventory.CompanionProjectionMembers, Has.Length.EqualTo(9));
+            // Milestone 8.35u adds the tenth: the per-open-item transition descriptions p.15's
+            // simultaneous levelling needs, one per hero still choosing. It is a companion and not a
+            // twelfth family for the same reason the singular description is one - it describes the
+            // pause the system-transition family already stands on and adds no decision of its own.
+            Assert.That(DecisionFamilyInventory.CompanionProjectionMembers, Has.Length.EqualTo(10));
             Assert.That(DecisionFamilyInventory.Families, Has.Length.EqualTo(11));
             // Milestone 8.35g: thirty until the turn release, which adds exactly one answer row
             // because pressing the release is the whole of what that family admits.

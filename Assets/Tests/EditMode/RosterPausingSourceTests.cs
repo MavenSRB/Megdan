@@ -523,7 +523,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaVersionMovesForThreeDecisionsV26CannotHold()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(35),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(36),
                 "Milestone 8.19c1 adds a trigger frame standing inside the effect it interrupted, a " +
                 "Defeat waiting at its removal stage with the coin operations that paid it, and a " +
                 "round-scoped record that p.8's pre-battle moment has already run. None of the three " +
@@ -550,7 +550,13 @@ namespace GuardsDigital.Tests.EditMode
                 "first pause that exists because a turn is COMPLETE rather than interrupted: the " +
                 "finished turn waiting for its own player's release, unre-derivable because " +
                 "acknowledging the resolved card is what clears the selection that would say " +
-                "whose it was. This " +
+                "whose it was - and once more at milestone 8.35u, which is the first move that adds " +
+                "no new decision at all and instead changes the ARITY of one: rulebook p.15 levels " +
+                "every hero simultaneously, so the paused step writes one item, chooser and option " +
+                "list PER HERO still choosing where v35 wrote exactly one of each. No v35 payload " +
+                "can be reinterpreted, because the count this version writes sits where that one " +
+                "wrote its item-present boolean - the old bytes do not fail to mean something, they " +
+                "mean something else. This " +
                 "case pins the current version rather than its own, so a later move has to be " +
                 "accounted for here rather than passing unread.");
         }

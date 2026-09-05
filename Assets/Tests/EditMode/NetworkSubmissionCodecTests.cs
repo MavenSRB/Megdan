@@ -169,7 +169,7 @@ namespace GuardsDigital.Tests.EditMode
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             var coveredKinds = new HashSet<DirectorCommandKind>();
             var roundTripped = 0;
-            var submitted = OwnerScopedProjectionTests.DriveThroughSeats(host, 1800, seed: 1,
+            var submitted = OwnerScopedProjectionTests.DriveThroughSeats(host, 1800, seed: 6,
                 stopBeforeCommand: projection =>
             {
                 foreach (var seat in host.Seats.Seats)

@@ -25,28 +25,69 @@ namespace GuardsDigital.Application
     /// <para>The owner is read off the authoritative pending object, never inferred: each of the ten
     /// families already records its own chooser, so this derives nothing and restates the authority.</para>
     /// </remarks>
-    public readonly struct PendingDecisionOwner
+    public readonly struct PendingDecisionOwner : IEquatable<PendingDecisionOwner>
     {
-        private PendingDecisionOwner(PendingDecisionFamilyId familyId, HeroId heroId, TeamSide teamSide)
+        private PendingDecisionOwner(
+            PendingDecisionFamilyId familyId, IReadOnlyList<HeroId> heroIds, TeamSide teamSide)
         {
             FamilyId = familyId;
-            HeroId = heroId;
+            HeroIds = heroIds;
             TeamSide = teamSide;
         }
 
         public static readonly PendingDecisionOwner None =
-            new PendingDecisionOwner(default, default, TeamSide.None);
+            new PendingDecisionOwner(default, Array.Empty<HeroId>(), TeamSide.None);
 
         internal static PendingDecisionOwner ForHero(PendingDecisionFamilyId familyId, HeroId heroId) =>
-            new PendingDecisionOwner(familyId, heroId, TeamSide.None);
+            new PendingDecisionOwner(familyId, new[] { heroId }, TeamSide.None);
+
+        /// <summary>
+        /// Milestone 8.35u. Several heroes awaited at once - rulebook p.15's simultaneous leveling,
+        /// where every hero that bought a level is asked its own question at the same moment.
+        /// </summary>
+        internal static PendingDecisionOwner ForHeroes(
+            PendingDecisionFamilyId familyId, IEnumerable<HeroId> heroIds)
+        {
+            var awaited = (heroIds ?? throw new ArgumentNullException(nameof(heroIds))).ToArray();
+            if (awaited.Length == 0 || awaited.Any(heroId => !heroId.IsDefined) ||
+                awaited.Distinct().Count() != awaited.Length)
+            {
+                throw new ArgumentException(
+                    "A hero-owned decision is awaited on at least one defined hero, each named once.",
+                    nameof(heroIds));
+            }
+
+            return new PendingDecisionOwner(familyId, Array.AsReadOnly(awaited), TeamSide.None);
+        }
 
         internal static PendingDecisionOwner ForTeam(PendingDecisionFamilyId familyId, TeamSide side) =>
-            new PendingDecisionOwner(familyId, default, side);
+            new PendingDecisionOwner(familyId, Array.Empty<HeroId>(), TeamSide.None == side
+                ? TeamSide.None
+                : side);
 
         public PendingDecisionFamilyId FamilyId { get; }
 
-        /// <summary>The one hero that may answer, or undefined for a team-owned decision.</summary>
-        public HeroId HeroId { get; }
+        /// <summary>
+        /// Milestone 8.35u. Every hero the authority is waiting on, empty for a team-owned decision.
+        ///
+        /// <para>This is the public half in full: "we are waiting for these players" is what a table
+        /// can see and what a waiting client has to show. What each of them was asked stays with the
+        /// seat that owns it.</para>
+        /// </summary>
+        public IReadOnlyList<HeroId> HeroIds { get; }
+
+        /// <summary>
+        /// The hero that may answer, or undefined for a team-owned decision.
+        ///
+        /// <para><b>Milestone 8.35u: when several heroes are awaited this returns the first in the
+        /// authority's own order, and does not throw.</b> That is a deliberate departure from the
+        /// throwing single-item accessors on the pause record, and the difference is what each is for:
+        /// this one is read by surfaces to say whose input is wanted, and a throw on a surface reader
+        /// path is what froze a live playtest at milestone 8.35e. Nothing authorizes anything from it -
+        /// authorization is <see cref="IsOwnedBy"/> and the per-item command filtering in
+        /// <see cref="SeatProjectionFactory.AuthorizedCommands"/>, both of which read the whole set.</para>
+        /// </summary>
+        public HeroId HeroId => HeroIds.Count == 0 ? default : HeroIds[0];
 
         /// <summary>The side that may answer, or <c>None</c> for a hero-owned decision.</summary>
         public TeamSide TeamSide { get; }
@@ -55,6 +96,11 @@ namespace GuardsDigital.Application
 
         public bool IsTeamOwned => TeamSide != TeamSide.None;
 
+        /// <summary>
+        /// Whether this seat is one of the seats being waited on. With several heroes awaited it is
+        /// true for each of them at once - which is the whole of milestone 8.35u at this boundary, and
+        /// why it must be read instead of comparing against <see cref="HeroId"/>.
+        /// </summary>
         public bool IsOwnedBy(MatchSeat seat)
         {
             if (seat == null || !IsDefined)
@@ -62,8 +108,45 @@ namespace GuardsDigital.Application
                 return false;
             }
 
-            return IsTeamOwned ? seat.PlaysFor(TeamSide) : seat.Owns(HeroId);
+            return IsTeamOwned
+                ? seat.PlaysFor(TeamSide)
+                : HeroIds.Any(seat.Owns);
         }
+
+        /// <summary>
+        /// Milestone 8.35u. Written out rather than inherited, because the awaited heroes became a LIST
+        /// and <see cref="ValueType"/>'s field-wise default would then compare list references - so two
+        /// owners naming the same heroes would have reported themselves different, silently, in every
+        /// equality the projections and their fixtures perform.
+        /// </summary>
+        public bool Equals(PendingDecisionOwner other) =>
+            FamilyId.Equals(other.FamilyId) && TeamSide == other.TeamSide &&
+            HeroIds.SequenceEqual(other.HeroIds);
+
+        public override bool Equals(object obj) => obj is PendingDecisionOwner other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = FamilyId.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)TeamSide;
+                return HeroIds.Aggregate(hashCode, (current, heroId) =>
+                    (current * 397) ^ heroId.GetHashCode());
+            }
+        }
+
+        public static bool operator ==(PendingDecisionOwner left, PendingDecisionOwner right) =>
+            left.Equals(right);
+
+        public static bool operator !=(PendingDecisionOwner left, PendingDecisionOwner right) =>
+            !left.Equals(right);
+
+        public override string ToString() => !IsDefined
+            ? "none"
+            : IsTeamOwned
+                ? $"{FamilyId.Value} ({TeamSide})"
+                : $"{FamilyId.Value} ({string.Join(", ", HeroIds.Select(heroId => heroId.Value))})";
     }
 
     /// <summary>
@@ -104,7 +187,7 @@ namespace GuardsDigital.Application
     public sealed class SeatPendingSurface
     {
         internal SeatPendingSurface(
-            MatchSessionProjection source, bool ownsDecision, bool isActor)
+            MatchSessionProjection source, MatchSeat seat, bool ownsDecision, bool isActor)
         {
             var standing = source.DecisionContract != null;
             var resolving = ownsDecision || isActor;
@@ -125,8 +208,22 @@ namespace GuardsDigital.Application
             DisplacedMinionCorrection = ownsDecision ? source.PendingDisplacedMinionCorrection : null;
             MinionBattleChoice = ownsDecision ? source.PendingMinionBattleChoice : null;
             HeroRespawnChoice = ownsDecision ? source.PendingHeroRespawnChoice : null;
-            SystemTransitionStep = ownsDecision ? source.PendingSystemTransitionStep : null;
-            SystemTransitionDescription = ownsDecision ? source.PendingSystemTransitionDescription : null;
+            // Milestone 8.35u. Narrowed to this seat's own open item rather than handed over whole.
+            // A pause that stands on several heroes carries several option lists, and an option list
+            // names cards in that hero's HAND - so another hero's options are the deck-and-hand
+            // subtraction rule in a different costume, and they are ABSENT here rather than present
+            // and unrendered, which is what F-ER2-07 means by a separate read model. Who is still
+            // choosing stays public, through DecisionOwner.HeroIds; what they may choose does not.
+            // This is exactly the line rulebook p.7's commitments already draw.
+            //
+            // A seat owns exactly one hero, so the narrowed pause holds at most one item and every
+            // single-item reader downstream keeps working unchanged.
+            SystemTransitionStep = ownsDecision
+                ? NarrowSystemTransition(source.PendingSystemTransitionStep, seat)
+                : null;
+            SystemTransitionDescription = ownsDecision
+                ? NarrowSystemTransitionDescription(source, SystemTransitionStep)
+                : null;
             RemovalPrevention = ownsDecision ? source.PendingRemovalPrevention : null;
 
             // Milestone 8.35g. Unscoped, unlike every owner-private line above it, and deliberately:
@@ -150,6 +247,94 @@ namespace GuardsDigital.Application
                 ? source.AvailableClearOptions
                 : Array.Empty<ClearOptionProjection>();
             HoldOffer = offering ? source.AvailableHoldOffer : null;
+        }
+
+        /// <summary>
+        /// Milestone 8.35u. The paused step as this seat may see it: its own open item and nothing
+        /// else when several stand, and the pause unchanged when only one does.
+        /// </summary>
+        private static GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep
+            NarrowSystemTransition(
+                GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep step, MatchSeat seat)
+        {
+            if (step == null || !step.IsConcurrent)
+            {
+                return step;
+            }
+
+            var own = step.OpenItems.Where(open =>
+                open.ItemId.IsDefined &&
+                IsLevelUpItem(open.ItemId) &&
+                seat.Owns(GuardsDigital.Core.Rules.Progression.HeroLevelUpItem
+                    .Read(open.ItemId).HeroId)).ToArray();
+
+            // A seat that owns none of the open items is being waited on for nothing, which the
+            // ownership rule above has already decided; returning null rather than an empty pause is
+            // the same statement the surface makes for every family this seat does not own.
+            return own.Length == 0
+                ? null
+                : new GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep(
+                    step.InstanceId,
+                    step.DefinitionId,
+                    step.StepId,
+                    own,
+                    step.CompletedStepIds,
+                    step.CompletedItemIds);
+        }
+
+        /// <summary>
+        /// The description of the narrowed pause, chosen by item rather than by position - the
+        /// Director's list is in hero-id order and this seat's own question is rarely first.
+        /// </summary>
+        private static GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription
+            NarrowSystemTransitionDescription(
+                MatchSessionProjection source,
+                GuardsDigital.Core.Rules.Transitions.PendingSystemTransitionStep narrowed)
+        {
+            if (narrowed == null)
+            {
+                return null;
+            }
+
+            if (ReferenceEquals(narrowed, source.PendingSystemTransitionStep))
+            {
+                return source.PendingSystemTransitionDescription;
+            }
+
+            // THE DESCRIPTION CARRIES ITS PAUSE, so handing this seat the Director's description would
+            // hand it the Director's pause - and a surface reading `description.PendingStep.
+            // Invocations` would then hold every hero's answers, which is precisely what narrowing the
+            // pause was for. It is rebuilt against the narrowed pause instead. That the constructor
+            // re-checks the options against it is the point: a description and the pause it travels
+            // with cannot disagree about what this seat was offered.
+            var itemId = narrowed.OpenItems[0].ItemId;
+            var own = source.PendingSystemTransitionDescriptions
+                .FirstOrDefault(description => description.ItemId.Equals(itemId));
+            return own == null
+                ? null
+                : new GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription(
+                    own.Kind,
+                    narrowed,
+                    own.HeroId,
+                    own.Options,
+                    own.Level,
+                    own.PaidCoins,
+                    own.RemainingCoins,
+                    own.ItemId);
+        }
+
+        private static bool IsLevelUpItem(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionItemId itemId)
+        {
+            try
+            {
+                GuardsDigital.Core.Rules.Progression.HeroLevelUpItem.Read(itemId);
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
         }
 
         public PendingInitiativeChoice InitiativeChoice { get; }
@@ -481,9 +666,9 @@ namespace GuardsDigital.Application
                 Array.AsReadOnly(publicCards),
                 Array.AsReadOnly(handSummaries),
                 owner,
-                ownsDecision ? source.DecisionContract : null,
+                ownsDecision ? NarrowContract(source.DecisionContract, seat) : null,
                 AuthorizedCommands(source, seat, owner),
-                new SeatPendingSurface(source, ownsDecision, isActor),
+                new SeatPendingSurface(source, seat, ownsDecision, isActor),
                 teamAgreement,
                 isSeatUndoAvailable,
                 undoMarker);
@@ -564,16 +749,27 @@ namespace GuardsDigital.Application
                 // whose hero it was about. Every other transition - milestone 6.11's blocked
                 // respawn Place among them - is a question about the team's board and stays with
                 // the side the authority named.
+                //
+                // Milestone 8.35u runs that same derivation ONCE PER OPEN ITEM, because p.15 now
+                // asks every hero that bought a level at the same time. Evaluating ownership once
+                // over a set of items is exactly how the 8.35d defect would come back one level up:
+                // whichever hero happened to be named would receive every hero's upgrade commands
+                // and the others would receive none, with the identical symptom - leveling looking
+                // skipped for the player whose hero it was about.
                 var step = source.PendingSystemTransitionStep;
                 if (step.DefinitionId.Equals(
                         GuardsDigital.Core.Rules.Progression.HeroLevelUpSystemTransition.DefinitionId) &&
-                    step.ItemId.IsDefined)
+                    step.OpenItems.All(open => open.ItemId.IsDefined))
                 {
-                    return PendingDecisionOwner.ForHero(
+                    return PendingDecisionOwner.ForHeroes(
                         family,
-                        GuardsDigital.Core.Rules.Progression.HeroLevelUpItem.Read(step.ItemId).HeroId);
+                        step.OpenItems.Select(open =>
+                            GuardsDigital.Core.Rules.Progression.HeroLevelUpItem.Read(open.ItemId).HeroId));
                 }
 
+                // Every other transition - milestone 6.11's blocked respawn Place among them - stops
+                // on one item at a time and is a question about the team's board, so it keeps the
+                // side the authority named.
                 return PendingDecisionOwner.ForTeam(family, step.ChoosingSide);
             }
 
@@ -644,9 +840,24 @@ namespace GuardsDigital.Application
                         : Array.Empty<DirectorCommand>();
                 }
 
-                return owner.IsOwnedBy(seat)
-                    ? source.DecisionContract.Commands
-                    : Array.Empty<DirectorCommand>();
+                if (!owner.IsOwnedBy(seat))
+                {
+                    return Array.Empty<DirectorCommand>();
+                }
+
+                if (source.DecisionContract.FamilyId.Equals(PendingDecisionFamilies.SystemTransition))
+                {
+                    // Milestone 8.35u. THE point of this milestone at this boundary. A pause that
+                    // stands on several heroes publishes every hero's answers into one contract, and
+                    // "this seat owns the contract" is no longer the same statement as "this seat may
+                    // submit this command". Each command names the item it answers, and the item names
+                    // the hero, so the filter restates milestone 8.35d's ownership rule per command
+                    // rather than per contract. Without it, whichever seat matched first would be
+                    // offered every hero's upgrades - the 8.35d live defect exactly, one level up.
+                    return SystemTransitionCommandsFor(source.DecisionContract, seat);
+                }
+
+                return source.DecisionContract.Commands;
             }
 
             if (source.Phase == RoundResolutionPhase.EndOfRound)
@@ -670,6 +881,89 @@ namespace GuardsDigital.Application
             }
 
             return TurnActionCommands(source);
+        }
+
+        /// <summary>
+        /// Milestone 8.35u. The standing contract as this seat may see it.
+        /// </summary>
+        /// <remarks>
+        /// <para>Narrowing <see cref="AuthorizedCommands"/> alone was NOT enough, and finding that out
+        /// is the second half of R2. A seat's <c>DecisionContract</c> is read directly by the prompt
+        /// presenters - <c>MatchFeaturePresenters</c> requires a contract of the matching family and
+        /// draws from its commands - so a seat holding the whole contract would have been DRAWN every
+        /// hero's upgrade options even while the host refused all but its own. That is both the 8.35d
+        /// symptom at the surface and a privacy leak, because an option id names the two cards it
+        /// moves and those are in another hero's hand.</para>
+        /// <para>Only the system-transition family is narrowed here. Every other family is returned
+        /// untouched deliberately: the Initiative and Minion-Battle arms of
+        /// <see cref="AuthorizedCommands"/> withhold commands for reasons about who may EMIT them
+        /// rather than about who may see the question, and rebuilding their contracts from the
+        /// authorized set would change what those surfaces draw.</para>
+        /// </remarks>
+        private static PendingDecisionContract NarrowContract(
+            PendingDecisionContract contract, MatchSeat seat)
+        {
+            if (contract == null ||
+                !contract.FamilyId.Equals(PendingDecisionFamilies.SystemTransition))
+            {
+                return contract;
+            }
+
+            var own = SystemTransitionCommandsFor(contract, seat);
+            return own.Count == contract.Commands.Count
+                ? contract
+                : own.Count == 0 ? null : new PendingDecisionContract(contract.FamilyId, own);
+        }
+
+        /// <summary>
+        /// Milestone 8.35u. The answers in a system-transition contract that belong to this seat.
+        /// </summary>
+        /// <remarks>
+        /// <para>Only rulebook p.15's leveling ever puts more than one hero's answers into one
+        /// contract, and only its item ids name a hero, so every other transition falls through the
+        /// last line and keeps the team-wide authorization the authority gave it - milestone 6.11's
+        /// blocked respawn Place included, which is a question about the team's board and stays one.
+        /// The filter is the same shape the Minion-Battle arm above already uses: an owned contract
+        /// whose commands are still not all this seat's to send.</para>
+        /// <para>Read as a rule: a seat may answer a level-up item when the item's own hero is the
+        /// hero this seat plays. That is milestone 8.35d's sentence unchanged; what 8.35u changed is
+        /// only how many times it has to be asked.</para>
+        /// </remarks>
+        private static IReadOnlyList<DirectorCommand> SystemTransitionCommandsFor(
+            PendingDecisionContract contract, MatchSeat seat)
+        {
+            var levelUp = contract.Commands.Where(command =>
+                command.Kind == DirectorCommandKind.AnswerSystemTransitionStep &&
+                command.SystemTransitionChoice.ItemId.IsDefined &&
+                IsLevelUpItem(command.SystemTransitionChoice.ItemId)).ToArray();
+            if (levelUp.Length == 0)
+            {
+                return contract.Commands;
+            }
+
+            return Array.AsReadOnly(contract.Commands.Where(command =>
+                !levelUp.Contains(command) ||
+                seat.Owns(GuardsDigital.Core.Rules.Progression.HeroLevelUpItem
+                    .Read(command.SystemTransitionChoice.ItemId).HeroId)).ToArray());
+        }
+
+        /// <summary>
+        /// Whether an item id is one rulebook p.15's leveling minted - decided by trying to read it
+        /// rather than by matching its shape, because the reader is the one authority on that encoding
+        /// and a second copy of the format here could disagree with it.
+        /// </summary>
+        private static bool IsLevelUpItem(
+            GuardsDigital.Core.Rules.Transitions.SystemTransitionItemId itemId)
+        {
+            try
+            {
+                GuardsDigital.Core.Rules.Progression.HeroLevelUpItem.Read(itemId);
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
         }
 
         /// <summary>

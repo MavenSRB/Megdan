@@ -547,7 +547,12 @@ namespace GuardsDigital.Tests.EditMode
         // advances the RNG stream even though it is the only legal command, so seed 21 now runs
         // 43 rounds and 3,613 commands. Seed 14 ends on the final Wave after 10 rounds and 896,
         // which is the shape seed 21 used to have.
-        private const int CaptureSeed = 14;
+        //
+        // Milestone 8.35u re-derived it again, 14 -> 5, after 11 rounds and 971 commands. Seed 14 no
+        // longer reaches an ending at all inside the budget: simultaneous levelling asks p.15's
+        // questions in a different order, so every trajectory diverges after the first level-up. The
+        // run still has to be longer than the longest fixed sample (128), and 971 is comfortably so.
+        private const int CaptureSeed = 5;
         private const int CaptureBudget = 2400;
 
         /// <summary>Twelve samples of one command kind: six at the start of the match and six at the end.</summary>

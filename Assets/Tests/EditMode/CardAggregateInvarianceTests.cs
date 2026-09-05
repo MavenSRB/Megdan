@@ -592,17 +592,26 @@ namespace GuardsDigital.Tests.EditMode
         // which is why the corpus beside this one moves by one byte on fourteen fixtures and by none
         // on `verified-hand-setup`. Nothing about these scenarios moved, no trigger runs in any of
         // them, and the same three equality groups remain exact.
+        //
+        // Milestone 8.35u re-baselines them for schema v36, and this move costs these nine scenarios
+        // NOTHING but the version int: rulebook p.15's simultaneous levelling writes one item,
+        // chooser and option list per hero still choosing, and not one of these payloads carries a
+        // paused transition at all. So every digest here moves while every byte count stays put -
+        // measured in a worktree at the pre-change revision, where the only fixture in the whole
+        // corpus beside this one that grew was `paused-level-up`, by exactly the 4-byte count. The
+        // same three equality groups remain exact, which is the statement that matters: a version
+        // bump that reordered or dropped anything would have split them.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "9d2c12b2ceeef6aa0cb17df3317acd42b7947b7642ed6eb563c16d973b26a8d1", "ab76df913b538eef7c2af031b211d0abaeff206b63664b636a29dca4b9fc116a"),
-            new ScenarioDigest("rejected", "9d2c12b2ceeef6aa0cb17df3317acd42b7947b7642ed6eb563c16d973b26a8d1", "ab76df913b538eef7c2af031b211d0abaeff206b63664b636a29dca4b9fc116a"),
-            new ScenarioDigest("stale", "9d2c12b2ceeef6aa0cb17df3317acd42b7947b7642ed6eb563c16d973b26a8d1", "ab76df913b538eef7c2af031b211d0abaeff206b63664b636a29dca4b9fc116a"),
-            new ScenarioDigest("restored", "9d2c12b2ceeef6aa0cb17df3317acd42b7947b7642ed6eb563c16d973b26a8d1", "ab76df913b538eef7c2af031b211d0abaeff206b63664b636a29dca4b9fc116a"),
-            new ScenarioDigest("replayed", "9d2c12b2ceeef6aa0cb17df3317acd42b7947b7642ed6eb563c16d973b26a8d1", "ab76df913b538eef7c2af031b211d0abaeff206b63664b636a29dca4b9fc116a"),
-            new ScenarioDigest("undo-truncated", "4274af664b68975c35c3c14e3e2c53f00f923c38b4bb96140331343646984e13", "6837145e615340aca733d0e22e95cd2f0cb05ef3e0270aa41ced69cc85f7c242"),
-            new ScenarioDigest("defense-discarded", "7363835f63304fc0dc5f7d1b216488e940171ef12da2ce58716c1d803a280cca", "8571edd5d0ddc14ed856ca6c79e1406bca02a45f14eb9713e23a5fed443147fb"),
-            new ScenarioDigest("defense-discarded-restored", "7363835f63304fc0dc5f7d1b216488e940171ef12da2ce58716c1d803a280cca", "8571edd5d0ddc14ed856ca6c79e1406bca02a45f14eb9713e23a5fed443147fb"),
-            new ScenarioDigest("defense-discarded-replayed", "7363835f63304fc0dc5f7d1b216488e940171ef12da2ce58716c1d803a280cca", "8571edd5d0ddc14ed856ca6c79e1406bca02a45f14eb9713e23a5fed443147fb")
+            new ScenarioDigest("accepted", "5063588603f44a2f64be324b6635d5a17d82767da59d0512c45fb1fa3ade4733", "a81fa97f4b459f4949c5a84e0e775be17f14e88d1df66b7de8f878563d916152"),
+            new ScenarioDigest("rejected", "5063588603f44a2f64be324b6635d5a17d82767da59d0512c45fb1fa3ade4733", "a81fa97f4b459f4949c5a84e0e775be17f14e88d1df66b7de8f878563d916152"),
+            new ScenarioDigest("stale", "5063588603f44a2f64be324b6635d5a17d82767da59d0512c45fb1fa3ade4733", "a81fa97f4b459f4949c5a84e0e775be17f14e88d1df66b7de8f878563d916152"),
+            new ScenarioDigest("restored", "5063588603f44a2f64be324b6635d5a17d82767da59d0512c45fb1fa3ade4733", "a81fa97f4b459f4949c5a84e0e775be17f14e88d1df66b7de8f878563d916152"),
+            new ScenarioDigest("replayed", "5063588603f44a2f64be324b6635d5a17d82767da59d0512c45fb1fa3ade4733", "a81fa97f4b459f4949c5a84e0e775be17f14e88d1df66b7de8f878563d916152"),
+            new ScenarioDigest("undo-truncated", "8cf51a1b1517d3123b8936c45d22fc65f8aae668c29323dd76963c9086a1b351", "e2cddd26a95423f581348e7c0d23b59a7a27a98eb882718362e71bea4e78bb34"),
+            new ScenarioDigest("defense-discarded", "2e5c279c1159cae6d2fcbb7933c353bd1f02cd8daa78886b94b12b903f3ff767", "adefec9fa3e2043f405f02a9b01cc6bcde9c13f6fae895f8235ee05574088d64"),
+            new ScenarioDigest("defense-discarded-restored", "2e5c279c1159cae6d2fcbb7933c353bd1f02cd8daa78886b94b12b903f3ff767", "adefec9fa3e2043f405f02a9b01cc6bcde9c13f6fae895f8235ee05574088d64"),
+            new ScenarioDigest("defense-discarded-replayed", "2e5c279c1159cae6d2fcbb7933c353bd1f02cd8daa78886b94b12b903f3ff767", "adefec9fa3e2043f405f02a9b01cc6bcde9c13f6fae895f8235ee05574088d64"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

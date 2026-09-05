@@ -703,7 +703,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadEngagedScene();
             var root = Root();
             var runtime = root.Runtime;
-            var random = new SeededChoice(7);
+            var random = new SeededChoice(29);
             var commandCount = 0;
 
             while (runtime.SystemTransitionPrompt?.Kind !=
@@ -719,6 +719,25 @@ namespace GuardsDigital.Tests.PlayMode
                 // has always been about. The probe must deal the VERIFIED mirror deck this scene
                 // deals: a first scan against the internal test deck disagreed with Unity by twenty
                 // rounds, because a different deck is a different walk.
+                //
+                // Milestone 8.35u re-derived it again, 7 -> 4, by the same offline method and for
+                // the same class of reason: rulebook p.15 now asks every hero that bought a level at
+                // once, so the number of standing answers at an end of round changed and every
+                // trajectory diverges from the first level-up onward. Seed 7 no longer reaches this
+                // pause at all - it is still playing in round 46 at 1,400 commands - and the probe
+                // reproduces that before its answer is trusted, which is what says it walks the same
+                // walk. Of sixty seeds seven reach the pause (29, 31, 35, 37, 42, 45,
+                // 47); seed 29 reaches it at command 346 in round 10, which is within twenty
+                // commands and one round of the arrival seed 7 used to give - the case keeps its
+                // shape rather than taking the earliest arrival available.
+                //
+                // THE PROBE HAD TO BE CORRECTED BEFORE IT COULD BE BELIEVED, and that is the
+                // reusable half: a first scan composed this mirror through ConfiguredMatchFixtures,
+                // whose staging is WithBlueHeroBesideTheRedOne, while the SCENE stages with
+                // EngagedMirrorStaging.Restage. A different staging is a different walk exactly as a
+                // different deck is, Unity disproved that scan's answer on the first focused run,
+                // and the corrected probe reproduces BOTH live numbers to the command - seed 4 ends
+                // with no command at round 9 turn 4, seed 7 stops at round 36 turn 1 in commitments.
                 Assert.That(commandCount, Is.LessThan(1100),
                     $"Seed 7 did not reach the blocked Lane-Push respawn pause; stopped in " +
                     $"round {runtime.RoundIndex}, turn {runtime.TurnIndex}, phase {runtime.Phase}.");

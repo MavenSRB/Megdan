@@ -54,8 +54,16 @@ namespace GuardsDigital.Tests.EditMode
         /// rounds with 548 commands is the closest shape to the 19 and 455 it replaces. Seeds that
         /// end in one round were rejected deliberately: a gate that ends before anything happens
         /// proves nothing.
+        ///
+        /// <para>Milestone 8.35u re-derived it again, 18 -> 6, after 2 rounds and 48 commands: seed
+        /// 18 now ends on the final Wave instead, because simultaneous levelling asks p.15's
+        /// questions in a different order and every trajectory diverges after the first level-up.
+        /// The one-round rejection above still binds and is why this is 6 rather than the lower
+        /// candidates - seeds 1, 3, 4, 8, 11, 14 and 19 all end this way but inside a single round,
+        /// several of them in under ten commands. Seed 6 crosses a round boundary and takes two
+        /// Attack targets on the way, which is the least this gate can be and still be a gate.</para>
         /// </summary>
-        private const int LifeCounterMatchSeed = 18;
+        private const int LifeCounterMatchSeed = 6;
 
         /// <summary>
         /// Ends by p.8's last Wave counter on the engaged mirror carrying two Life counters a side
@@ -87,8 +95,17 @@ namespace GuardsDigital.Tests.EditMode
         /// no stage at all, which is what makes the push a mid-turn one. Reaching it by playing
         /// rather than by staging a position is the whole evidence here, so the slower scan was
         /// the honest answer.
+        ///
+        /// <para>Milestone 8.35u re-derived it again, 167 -> 28, after 47 rounds and 1,457 commands.
+        /// Seed 167 still ends by Throne capture but now names `ResolveRequestedLanePush`, which is
+        /// exactly the end-of-round arm this case exists not to duplicate - so the property, not the
+        /// ending, is what moved. A 200-seed scan found four mid-turn endings (28, 42, 55, 75) and
+        /// seed 28 is the only one of them that ends by Throne capture; the other three end on Life
+        /// counters, which this case does not assert. That the search is still this narrow is the
+        /// same finding 8.35g recorded, and it is why the scan is widened rather than the claim
+        /// weakened.</para>
         /// </summary>
-        private const int MidTurnPushMatchSeed = 167;
+        private const int MidTurnPushMatchSeed = 28;
 
         /// <summary>
         /// Generous enough that every complete match above finishes well inside it, and small enough

@@ -59,23 +59,40 @@ namespace GuardsDigital.Tests.EditMode
         /// 1,836 commands: the turn release is drawn from a one-command set and `Next(1)` still
         /// advances the stream, so every seeded walk became a different match rather than the old
         /// one with a command inserted per turn, and seed 3 now ends on the final Wave instead.
+        ///
+        /// <para>Milestone 8.35u re-scanned it and the seed SURVIVED: 8 is still the lowest that ends
+        /// this way, now after 14 rounds and 1,191 commands. The trajectory moved - simultaneous
+        /// levelling asks p.15's questions in a different order, so the stream diverges after the
+        /// first level-up - but the outcome it reaches did not.</para>
         /// </summary>
         private const int LifeCounterMatchSeed = 8;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the unmodified official six-player setup
         /// to p.8's last Wave counter. Milestone 8.35g re-derived it from 21 to 14, after 10 rounds
-        /// and 896 commands - close to the shape seed 21 used to have. Seed 21 itself still ends the
-        /// same way but now takes 43 rounds and 3,613 commands, which is the clearest measure of how
-        /// far the release moved every trajectory.
+        /// and 896 commands - close to the shape seed 21 used to have.
+        ///
+        /// <para>Milestone 8.35u re-derived it again, 14 -> 5, after 11 rounds and 971 commands. Seed
+        /// 14 no longer ends at all inside the budget - 29 rounds and still going - which is what
+        /// simultaneous levelling does to a trajectory: the same questions in a different order send
+        /// the walk somewhere else entirely.</para>
+        ///
+        /// <para><b>This is the one seed constant not chosen by the "lowest scanned" rule, and the
+        /// deviation is deliberate rather than an oversight.</b> The lowest that still ends this way
+        /// is seed 3, but it needs 1,971 of the 2,400-command budget - 82% - and a constant that close
+        /// to its own ceiling is one the next milestone to reroute a trajectory will break again.
+        /// Seed 5 uses 40%. Headroom is worth more here than ordinal minimality, and saying so is
+        /// cheaper than the re-derivation it avoids.</para>
         /// </summary>
-        private const int FinalWaveMatchSeed = 14;
+        private const int FinalWaveMatchSeed = 5;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the official-roster uncontested-push
         /// scenario to p.8's Throne capture, after 2 rounds and - since milestone 8.35g's release -
         /// 181 commands rather than 116. This is the one recorded seed the release did not move:
-        /// the uncontested push ends before the trajectory has room to diverge.
+        /// the uncontested push ends before the trajectory has room to diverge. Milestone 8.35u did
+        /// not move it either, for the same reason, at 172 commands: the push ends in round 2, before
+        /// anybody has the coins to level.
         /// </summary>
         private const int ThroneCaptureMatchSeed = 1;
 
@@ -93,6 +110,11 @@ namespace GuardsDigital.Tests.EditMode
         /// ending, so 20 is the only one that reaches a Clear by playing a match through to its end:
         /// 2,337 commands over 73 rounds. Nothing about the p.13 page-coverage assertion was
         /// weakened to fit; a narrow search is what the property costs.
+        ///
+        /// <para>Milestone 8.35u re-scanned it and 20 SURVIVED, at 1,363 commands over 42 rounds. The
+        /// scan is worth recording for one detail it changed: seed 51 still takes a Clear and now
+        /// REACHES AN ENDING as well (2,091 commands, 67 rounds), so this fixture is no longer down to
+        /// a single candidate. 20 stays because it is the lower and the shorter of the two.</para>
         /// </remarks>
         private const int ClearReachabilitySeed = 20;
 

@@ -32,8 +32,21 @@ namespace GuardsDigital.Tests.EditMode
         /// seed 3 now reaches four of the seven families. Seed 1 at 1,200 is the ONLY pair in that
         /// scan reaching all seven - correction at 1,049, the Attack target at 1,122 and the Minion
         /// Battle at 1,166 - so the floor below is still met by play rather than by lowering it.
+        ///
+        /// <para>Milestone 8.35u re-derived the pair again, to seed 6 at 900 steps. Simultaneous
+        /// levelling asks p.15's questions in a different order, so every trajectory diverges after
+        /// the first level-up and seed 1 stopped reaching the Attack target and the Minion Battle at
+        /// all. A twenty-four-seed offline scan
+        /// (`tmp/8-35d-8-35e-multiplayer-corrections/seed-scan-results.txt`) put all seven families
+        /// on seed 6 and put them EARLY - the last of them, the Minion Battle, at step 408.</para>
+        ///
+        /// <para><b>The budget comes down and that is a strengthening, not a relaxation.</b> Seed 6's
+        /// match ENDS at step 911, so 1,200 is unreachable on it - a budget a walk cannot spend is a
+        /// floor that measures the budget rather than the play. 900 is more than twice what this
+        /// sweep's own family floor needs, and every step of it is a live match rather than a walk
+        /// standing on a finished one.</para>
         /// </summary>
-        private const int WireSweepBudget = 1200;
+        private const int WireSweepBudget = 900;
 
         [Test]
         public void SixClients_ConvergeByteForByte_AcrossTheSeededWireWalk()
@@ -58,7 +71,7 @@ namespace GuardsDigital.Tests.EditMode
                     maxPayloadBytes = Math.Max(
                         maxPayloadBytes, harness.LastProjectionPayload(ordinal).Length);
                 }
-            }, seed: 1);
+            }, seed: 6);
 
             Assert.That(submitted, Is.EqualTo(WireSweepBudget),
                 "The seeded walk ended early; the sweep saw less of the match than it must.");

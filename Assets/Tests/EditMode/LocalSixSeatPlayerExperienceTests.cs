@@ -384,7 +384,19 @@ namespace GuardsDigital.Tests.EditMode
                 if (owner.IsOwnedBy(seat))
                 {
                     Assert.That(projection.DecisionContract, Is.Not.Null);
-                    var directCommands = global.DecisionContract.Commands.Where(command =>
+
+                    // Milestone 8.35u AMENDED this rather than relaxing it. It compared the seat's
+                    // answers against the WHOLE published contract, which was the same statement only
+                    // while one seat owned all of it. Rulebook p.15 now asks every hero that bought a
+                    // level at once, so one contract carries several heroes' answers and a seat is
+                    // shown exactly its own share - the privacy line, since a p.15 option names the
+                    // two cards it moves and those sit in that hero's hand. The claim below is
+                    // stricter than what it replaced: the seat's authorized set is exactly its own
+                    // contract's direct commands, AND that contract is a subset of the published one.
+                    Assert.That(global.DecisionContract.Commands,
+                        Is.SupersetOf(projection.DecisionContract.Commands),
+                        "A seat is never shown an answer the authority did not publish.");
+                    var directCommands = projection.DecisionContract.Commands.Where(command =>
                         !TeamAgreementTestDriver.IsFinalAgreementCommand(command)).ToArray();
                     Assert.That(projection.AuthorizedCommands, Is.EqualTo(directCommands));
                     if (global.DecisionContract.Commands.Any(

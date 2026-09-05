@@ -22,7 +22,29 @@ namespace GuardsDigital.Application
         /// <summary>
         /// Protocol version 6: milestone 8.35r opened the seat-public event channel and published
         /// who is being waited on. Three things move, and they move together deliberately - this is
-        /// the one bump the remaining wire growth was gathered into, rather than three.
+        /// Protocol version 7: milestone 8.35u made rulebook p.15's leveling simultaneous, so the
+        /// authority can be waiting on several heroes at once and <c>DecisionOwner</c> carries a
+        /// repeated hero group where version 6 wrote one optional hero. A version 6 peer reads the
+        /// count where it expects a present/absent boolean, so it does not read a truncated record -
+        /// it reads a different one - and version 6 is refused from the bounded header.
+        ///
+        /// <para><b>What did NOT move, and it is the more interesting half.</b> The paused
+        /// transition's own detail row - item, chooser, options - is byte-identical to version 6,
+        /// because milestone 8.32's per-seat encoding discipline had already made each seat's payload
+        /// its own: the seat projection narrows a pause standing on six heroes to the one item that
+        /// seat may answer, so the row has never had more than one item to carry and still does not.
+        /// The public half of a simultaneous pause is who is being waited on, and that is exactly the
+        /// field that grew. A shape change absorbed by an existing privacy boundary is worth
+        /// recording as a property of that boundary rather than as luck.</para>
+        ///
+        /// <para>The bump is honesty rather than a hole being closed: milestone 8.35u also moves the
+        /// snapshot schema to v36, and <c>PrivateSessionIdentity</c> already refuses admission on a
+        /// <c>SnapshotSchemaMismatch</c>, so a mixed-version session was impossible before this line
+        /// was written. The ratchet is kept anyway - a protocol version that only moves when it has
+        /// to is a protocol version nobody trusts.</para>
+        ///
+        /// <para>Version 6 was the one bump the remaining wire growth was gathered into, rather than
+        /// three.</para>
         ///
         /// <para>(1) The seat projection message now carries the match log beside that seat's own
         /// record, as a bounded window of typed lines. A version 5 peer reaches the end of the
@@ -67,7 +89,7 @@ namespace GuardsDigital.Application
         /// version 1 when milestone 8.35b gave SelectedActor its Tie Breaker meaning. Every
         /// superseded version is refused from the bounded header rather than reinterpreted.</para>
         /// </summary>
-        public const int Version = 6;
+        public const int Version = 7;
 
         /// <summary>The four ASCII bytes that open every frame: G, D, P, O.</summary>
         public const byte FrameMagic0 = 0x47;

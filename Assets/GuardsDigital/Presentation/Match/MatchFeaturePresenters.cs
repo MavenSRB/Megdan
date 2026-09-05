@@ -4021,7 +4021,9 @@ namespace GuardsDigital.Presentation.Match
                 return null;
             }
 
-            var side = description.PendingStep.ChoosingSide == TeamSide.Red ? "RED" : "BLUE";
+            // Milestone 8.35u: the DESCRIPTION's own chooser, not the pause's. Rulebook p.15 can
+            // hold one open item per hero, so the pause has no single side and asking it throws.
+            var side = description.ChoosingSide == TeamSide.Red ? "RED" : "BLUE";
             if (description.Kind ==
                 GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind.LevelUpUpgrade)
             {

@@ -649,7 +649,9 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public IReadOnlyList<GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId>
             PausedSystemTransitionOptions =>
-            client.Projection.PendingSystemTransitionStep?.Options ??
+            // Milestone 8.35u: every open item's options, since p.15 can hold one per hero and
+            // asking the pause for "the" option list throws when several stand.
+            client.Projection.PendingSystemTransitionStep?.AllOptions ??
             (IReadOnlyList<GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId>)
                 Array.Empty<GuardsDigital.Core.Rules.Transitions.SystemTransitionOptionId>();
 

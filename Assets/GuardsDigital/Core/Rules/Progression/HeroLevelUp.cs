@@ -398,7 +398,7 @@ namespace GuardsDigital.Core.Rules.Progression
     /// It is the same invariant the Lane-Push respawn keeps.
     /// </summary>
     public sealed class HeroLevelUpStepRules
-        : ISystemTransitionStepRules, IDescribingSystemTransitionStepRules
+        : ISystemTransitionStepRules, IDescribingConcurrentSystemTransitionStepRules
     {
         private readonly MatchParticipants participants;
         private readonly IReadOnlyList<CardDefinition> definitions;
@@ -522,8 +522,30 @@ namespace GuardsDigital.Core.Rules.Progression
         /// Heroes are taken in hero-id order, and a hero finishes every level it can afford before the
         /// next hero starts. p.15 has them level "simultaneously" and then wait for each other, and
         /// nothing one hero's purchase does can change what another's offers - the cards, the coins and
-        /// the Level are all that hero's own - so the order is a serialization of the page's
-        /// simultaneity rather than a rule about who goes first.
+        /// the Level are all that hero's own.
+        ///
+        /// <para><b>Milestone 8.35u took the page at its word and removed the serialization.</b> The
+        /// hero-id order above is still here and still decides who buys first, because somebody has to
+        /// be enumerated first; what it no longer decides is who is <em>asked</em> first. This runs in
+        /// two phases. Phase one is everything that resolves itself, one item per call so the
+        /// authority's own loop drains it: a hero holding an outstanding purchase that p.16 turns into
+        /// an Ultimate unlock completes it, and a hero holding no outstanding purchase buys the next
+        /// level it can afford. Phase two is pure: every hero still holding an outstanding purchase
+        /// owes p.15's Upgrade a Card, and they are all opened at once.</para>
+        ///
+        /// <para>The per-hero rule is untouched, which is what keeps this honest: a hero who can afford
+        /// several levels still finishes each one before buying the next, because phase one skips any
+        /// hero with an outstanding purchase. So the set holds one item per hero and never one per
+        /// level, and a hero who answers can re-enter it with its next level while others are still
+        /// choosing - answering does not always shrink the set.</para>
+        ///
+        /// <para><b>One invariant this order creates is non-local and is named here because a restore
+        /// depends on it.</b> <see cref="SystemTransitionAuthority.Restore"/> re-runs this over
+        /// restored state to verify a persisted pause, and phase one can spend coins. It is a pure
+        /// query in exactly the state a pause can exist in: phase two is reached only when no hero
+        /// without an outstanding purchase could buy anything, so re-running at a standing pause
+        /// re-reaches phase two without buying. A fixture asserts that rather than a comment - restore
+        /// at a multi-hero pause moves neither a coin nor a Level.</para>
         /// </summary>
         private SystemTransitionStepResolution ResolvePurchaseAndUpgrade(SystemTransitionStepContext context)
         {
@@ -532,19 +554,48 @@ namespace GuardsDigital.Core.Rules.Progression
             {
                 if (TryFindOutstandingPurchase(completed, hero.Id, out var level))
                 {
-                    return ResolveOutstandingPurchase(hero.Id, level);
-                }
-            }
+                    // p.16's either/or resolves itself: the Ultimate is unlocked instead of a card
+                    // being upgraded, so this hero never joins the set of heroes being asked.
+                    if (TryResolveOutstandingUltimate(hero.Id, level, out var unlocked))
+                    {
+                        return unlocked;
+                    }
 
-            foreach (var hero in OrderedHeroes())
-            {
+                    continue;
+                }
+
+                // MEASURED, not assumed: without this guard a restore threw. A snapshot restores the
+                // paused transition BEFORE it has read the Levels, coins and items, so during that
+                // verification the rules are composed without them - which is exactly what the
+                // pre-8.35u note meant by "before anything has to ask what a hero can afford, which is
+                // state the payload has not been read far enough to supply". The old order got this
+                // for free because an outstanding purchase returned before reaching here; asking every
+                // hero in turn does not, so the same fact is stated rather than relied on. Unbound
+                // rules can buy nothing, which is the right answer in that state and the only one
+                // available.
+                if (!IsBound)
+                {
+                    continue;
+                }
+
                 if (TryPurchaseLevel(hero.Id, out var purchased))
                 {
                     return purchased;
                 }
             }
 
-            return SystemTransitionStepResolution.Completed;
+            var openItems = new List<SystemTransitionOpenItem>();
+            foreach (var hero in OrderedHeroes())
+            {
+                if (TryFindOutstandingPurchase(completed, hero.Id, out var level))
+                {
+                    openItems.Add(OpenUpgradeItem(hero.Id, level));
+                }
+            }
+
+            return openItems.Count > 0
+                ? SystemTransitionStepResolution.PausedOn(openItems)
+                : SystemTransitionStepResolution.Completed;
         }
 
         /// <summary>
@@ -577,27 +628,44 @@ namespace GuardsDigital.Core.Rules.Progression
             return outstanding.Length == 1;
         }
 
-        private SystemTransitionStepResolution ResolveOutstandingPurchase(HeroId heroId, HeroLevel level)
+        /// <summary>
+        /// p.16's alternative, when this hero's outstanding purchase is one: the Ultimate is unlocked
+        /// and the level is spent without anybody being asked anything.
+        /// </summary>
+        private bool TryResolveOutstandingUltimate(
+            HeroId heroId, HeroLevel level, out SystemTransitionStepResolution resolution)
         {
-            if (TryFindUnlockableUltimate(heroId, out var ultimateCard))
+            resolution = null;
+            if (!TryFindUnlockableUltimate(heroId, out var ultimateCard))
             {
-                var unlock = UltimateUnlockQuery.TryUnlock(
-                    ultimateCard,
-                    UltimateUnlockQuery.UpgradeCompletionReading(heroId),
-                    definitions,
-                    instances);
-                if (!unlock.IsUnlocked)
-                {
-                    throw new InvalidOperationException(
-                        $"Hero '{heroId}' reached p.16's Ultimate unlock and it was refused as " +
-                        $"{unlock.RejectionReason}.");
-                }
-
-                outcomes.Add(HeroLevelUpOutcome.UltimateUnlocked(heroId, level, ultimateCard.Id));
-                return SystemTransitionStepResolution.ItemCompleted(
-                    new HeroLevelUpItem(heroId, level, HeroLevelUpItemKind.Ultimate).ToItemId());
+                return false;
             }
 
+            var unlock = UltimateUnlockQuery.TryUnlock(
+                ultimateCard,
+                UltimateUnlockQuery.UpgradeCompletionReading(heroId),
+                definitions,
+                instances);
+            if (!unlock.IsUnlocked)
+            {
+                throw new InvalidOperationException(
+                    $"Hero '{heroId}' reached p.16's Ultimate unlock and it was refused as " +
+                    $"{unlock.RejectionReason}.");
+            }
+
+            outcomes.Add(HeroLevelUpOutcome.UltimateUnlocked(heroId, level, ultimateCard.Id));
+            resolution = SystemTransitionStepResolution.ItemCompleted(
+                new HeroLevelUpItem(heroId, level, HeroLevelUpItemKind.Ultimate).ToItemId());
+            return true;
+        }
+
+        /// <summary>
+        /// p.15's Upgrade a Card as one open question about one hero's own deck - the unit of milestone
+        /// 8.35u's simultaneity. It derives options and nothing else, so building the whole set costs
+        /// only reads.
+        /// </summary>
+        private SystemTransitionOpenItem OpenUpgradeItem(HeroId heroId, HeroLevel level)
+        {
             var options = BuildUpgradeOptions(heroId);
             if (options.Count == 0)
             {
@@ -606,7 +674,7 @@ namespace GuardsDigital.Core.Rules.Progression
                     "non-Basic card in hand leads to a card of the next Tier in that hero's deck.");
             }
 
-            return SystemTransitionStepResolution.Paused(
+            return new SystemTransitionOpenItem(
                 new HeroLevelUpItem(heroId, level, HeroLevelUpItemKind.Upgrade).ToItemId(),
                 participants.GetTeamForHero(heroId).Side,
                 options.Select(option => option.ToOptionId()));
@@ -669,18 +737,45 @@ namespace GuardsDigital.Core.Rules.Progression
         /// so the level the pause names is the one already bought, and its price is the cost printed for
         /// the level the hero was on before it.
         /// </summary>
-        public SystemTransitionStepDescription Describe(PendingSystemTransitionStep pendingStep)
+        /// <remarks>
+        /// <para>Milestone 8.35u. p.15 now asks every hero that bought a level at once, so a pause can
+        /// hold several open items and this describes the FIRST of them, in the rules' own hero-id
+        /// order. That is the Director's serialization and it is deliberate: one controller asks one
+        /// question at a time, answering it removes that item, and the next appears - so the Director
+        /// still reaches every hero. Simultaneity is a seat-surface property, exactly as it is for
+        /// p.7's commitments, whose Director surface also asks each hero in turn. A surface that wants
+        /// one named hero's question asks <see cref="DescribeOpenItem"/>; a seat is projected its own
+        /// single open item and reaches this door with nothing to choose between.</para>
+        /// </remarks>
+        public SystemTransitionStepDescription Describe(PendingSystemTransitionStep pendingStep) =>
+            pendingStep == null || pendingStep.OpenItems.Count == 0
+                ? null
+                : DescribeOpenItem(pendingStep, pendingStep.OpenItems[0].ItemId);
+
+        /// <summary>
+        /// Milestone 8.35u. The same description for one named open item of a pause that may hold
+        /// several - which hero's question is being described is then the caller's statement rather
+        /// than a position in a list.
+        /// </summary>
+        public SystemTransitionStepDescription DescribeOpenItem(
+            PendingSystemTransitionStep pendingStep, SystemTransitionItemId itemId)
         {
             if (pendingStep == null ||
                 !pendingStep.DefinitionId.Equals(HeroLevelUpSystemTransition.DefinitionId) ||
                 !pendingStep.StepId.Equals(HeroLevelUpSystemTransition.PurchaseAndUpgradeStepId) ||
-                !pendingStep.ItemId.IsDefined ||
+                !itemId.IsDefined ||
                 levels == null || items == null || coins == null)
             {
                 return null;
             }
 
-            var item = HeroLevelUpItem.Read(pendingStep.ItemId);
+            var open = pendingStep.OpenItems.FirstOrDefault(value => value.ItemId.Equals(itemId));
+            if (open == null)
+            {
+                return null;
+            }
+
+            var item = HeroLevelUpItem.Read(open.ItemId);
             if (item.Kind != HeroLevelUpItemKind.Upgrade || !item.Level.IsDefined ||
                 item.Level.Value <= HeroLevel.Minimum)
             {
@@ -695,7 +790,7 @@ namespace GuardsDigital.Core.Rules.Progression
             }
 
             var described = new List<SystemTransitionOptionDescription>();
-            foreach (var optionId in pendingStep.Options)
+            foreach (var optionId in open.Options)
             {
                 var option = HeroLevelUpOption.Read(optionId);
                 var upgraded = Card(option.UpgradedCardInstanceId);
@@ -730,7 +825,8 @@ namespace GuardsDigital.Core.Rules.Progression
                 described,
                 item.Level.Value,
                 HeroLevelSchedule.LevelUpCost(new HeroLevel(item.Level.Value - 1)),
-                coins.GetCoins(item.HeroId));
+                coins.GetCoins(item.HeroId),
+                open.ItemId);
         }
 
         private bool CanCompletePurchase(HeroId heroId) =>
@@ -864,6 +960,13 @@ namespace GuardsDigital.Core.Rules.Progression
         private CardInstance Card(CardInstanceId cardInstanceId) =>
             instances.FirstOrDefault(card => card.Id.Equals(cardInstanceId)) ??
             throw new InvalidOperationException($"Card '{cardInstanceId}' is not in this match.");
+
+        /// <summary>
+        /// Whether this build composed the leveling rules with the state p.15 moves. False during a
+        /// snapshot restore's verification pass, which re-derives the pause from the cards before the
+        /// payload's Levels, coins and items have been read.
+        /// </summary>
+        private bool IsBound => levels != null && items != null && coins != null;
 
         private void RequireBinding()
         {

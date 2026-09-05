@@ -418,9 +418,10 @@ namespace GuardsDigital.Application
                 }
 
                 var family = new PendingDecisionFamilyId(owner.FamilyId);
-                return string.IsNullOrEmpty(owner.HeroId)
+                return owner.HeroIds.Count == 0
                     ? PendingDecisionOwner.ForTeam(family, (TeamSide)owner.TeamSide)
-                    : PendingDecisionOwner.ForHero(family, new HeroId(owner.HeroId));
+                    : PendingDecisionOwner.ForHeroes(
+                        family, owner.HeroIds.Select(value => new HeroId(value)));
             }
         }
 

@@ -21,14 +21,17 @@ namespace GuardsDigital.Tests.EditMode
             var seen = new System.Collections.Generic.HashSet<string>();
 
             AssertAllSeats(harness, seen);
-            // Milestone 8.35g re-derived the pair offline over seeds 1-16 at two budgets. The
-            // release draws from the same stream even as the only legal command, so seed 3 now
-            // reaches four of these seven families in 700 steps; seed 1 at 1,200 is the only pair
-            // in that scan reaching all seven, the last of them (the Minion Battle) at step 1,166.
-            var submitted = harness.DriveThroughWire(1200, afterAcceptedStep: () =>
-                AssertAllSeats(harness, seen), seed: 1);
+            // Milestone 8.35u re-derived the pair again. p.15 now pauses once for every hero that
+            // bought a level rather than once per hero in turn, so every seeded trajectory diverges
+            // after the first level-up and seed 1 stopped reaching the Attack target and the Minion
+            // Battle inside 2,600 steps. An offline scan of twenty-four seeds
+            // (`tmp/8-35d-8-35e-multiplayer-corrections/seed-scan-results.txt`) put all seven
+            // families on SEED 6, the last of them (the Minion Battle) at step 408 - so the budget
+            // comes down from 1,200 to 600 and the case gets faster as well as correct.
+            var submitted = harness.DriveThroughWire(600, afterAcceptedStep: () =>
+                AssertAllSeats(harness, seen), seed: 6);
 
-            Assert.That(submitted, Is.EqualTo(1200));
+            Assert.That(submitted, Is.EqualTo(600));
             Assert.That(seen, Is.SupersetOf(new[]
             {
                 "initiative", "movement", "attack-target", "effect", "correction",

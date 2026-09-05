@@ -101,6 +101,46 @@ namespace GuardsDigital.Core.Rules.Transitions
                 : null;
 
         /// <summary>
+        /// Milestone 8.35u. The same read, once per open item, for a step that is waiting on several
+        /// choosers at the same time - rulebook p.15's leveling.
+        ///
+        /// <para>Descriptions that come back null are dropped rather than carried as holes: the
+        /// describing rules return null for a pause they do not describe, and a list of those is a
+        /// list of nothing. The order is the pause's own, so the first entry is what
+        /// <see cref="DescribePendingStep"/> returns and the Director's single surface keeps the
+        /// serialization it has always had.</para>
+        /// </summary>
+        public IReadOnlyList<SystemTransitionStepDescription> DescribePendingSteps()
+        {
+            if (PendingStep == null || !(rules is IDescribingSystemTransitionStepRules describing))
+            {
+                return Array.Empty<SystemTransitionStepDescription>();
+            }
+
+            if (!PendingStep.IsConcurrent)
+            {
+                var single = describing.Describe(PendingStep);
+                return single == null
+                    ? Array.Empty<SystemTransitionStepDescription>()
+                    : new[] { single };
+            }
+
+            if (!(describing is IDescribingConcurrentSystemTransitionStepRules concurrent))
+            {
+                // A step that stopped on several items whose rules describe only one of them at a
+                // time would publish a description for one hero and silence for the rest. Reporting
+                // nothing is the honest answer; the surface then falls back to what it shows for any
+                // undescribed pause, rather than to one arbitrary player's question.
+                return Array.Empty<SystemTransitionStepDescription>();
+            }
+
+            return Array.AsReadOnly(PendingStep.OpenItems
+                .Select(open => concurrent.DescribeOpenItem(PendingStep, open.ItemId))
+                .Where(description => description != null)
+                .ToArray());
+        }
+
+        /// <summary>
         /// Begins a declared transition and runs it until it stops on a step or finishes.
         ///
         /// The instance identity is composed from the definition and the caller's occasion rather than
@@ -158,19 +198,24 @@ namespace GuardsDigital.Core.Rules.Transitions
                 return SystemTransitionResult.Reject(SystemTransitionRejectionReason.StaleStep);
             }
 
-            if (!command.ItemId.Equals(pending.ItemId))
+            // Milestone 8.35u. Selecting the open item the answer names, rather than comparing against
+            // "the" item, is the whole of what makes several standing questions answerable in any
+            // order. StaleItem keeps its exact meaning - "no pause stands for that item" - and now
+            // covers one more way to be stale: an item of this step that somebody else already
+            // answered.
+            var open = pending.OpenItems
+                .FirstOrDefault(candidate => candidate.ItemId.Equals(command.ItemId));
+            if (open == null)
             {
-                // The same statement one level down, for a step that stops once per minion: an answer
-                // about an already-placed minion, or one not yet reached, is not about this pause.
                 return SystemTransitionResult.Reject(SystemTransitionRejectionReason.StaleItem);
             }
 
-            if (command.ChoosingSide != pending.ChoosingSide)
+            if (command.ChoosingSide != open.ChoosingSide)
             {
                 return SystemTransitionResult.Reject(SystemTransitionRejectionReason.WrongChooser);
             }
 
-            if (!pending.Options.Any(option => option.Equals(command.OptionId)))
+            if (!open.Options.Any(option => option.Equals(command.OptionId)))
             {
                 return SystemTransitionResult.Reject(SystemTransitionRejectionReason.IllegalOption);
             }
@@ -178,15 +223,15 @@ namespace GuardsDigital.Core.Rules.Transitions
             var definition = catalog.Load(pending.DefinitionId);
             var step = definition.Steps.Single(candidate => candidate.Id.Equals(pending.StepId));
             rules.ApplyAnswer(new SystemTransitionAnswerContext(
-                pending.InstanceId, definition, step, pending.ItemId, pending.ChoosingSide,
+                pending.InstanceId, definition, step, open.ItemId, open.ChoosingSide,
                 command.OptionId));
 
             // A declared step is finished by its one answer. A derived step is finished when its rules
             // say so, because only they know whether another minion is owed a Place, so answering one
             // of its items completes the item and leaves the step where it is.
-            if (pending.ItemId.IsDefined)
+            if (open.ItemId.IsDefined)
             {
-                completedItemIds.Add(pending.ItemId);
+                completedItemIds.Add(open.ItemId);
             }
             else
             {
@@ -273,7 +318,8 @@ namespace GuardsDigital.Core.Rules.Transitions
 
             if (step.ChoiceSource == SystemTransitionStepChoiceSource.Declared)
             {
-                if (pending.ItemId.IsDefined || step.ChoosingSide != pending.ChoosingSide ||
+                if (pending.IsConcurrent || pending.ItemId.IsDefined ||
+                    step.ChoosingSide != pending.ChoosingSide ||
                     !step.Options.SequenceEqual(pending.Options))
                 {
                     throw new ArgumentException(
@@ -286,10 +332,15 @@ namespace GuardsDigital.Core.Rules.Transitions
                 var derived = rules.ResolveStep(new SystemTransitionStepContext(
                     pending.InstanceId, definition, step, pending.CompletedStepIds,
                     pending.CompletedItemIds));
+
+                // Milestone 8.35u. The WHOLE open set has to reproduce, compared as a sequence rather
+                // than as a set: the producing rules emit in their own stable order, so a payload
+                // whose items arrive in a different order came from rules this build does not have.
+                // What must NOT depend on order is which items are open at all, and that is a
+                // property of the derivation - it filters the completed ids by membership - rather
+                // than of this comparison.
                 if (derived.Kind != SystemTransitionStepResolutionKind.Paused ||
-                    !derived.ItemId.Equals(pending.ItemId) ||
-                    derived.ChoosingSide != pending.ChoosingSide ||
-                    !derived.Options.SequenceEqual(pending.Options))
+                    !derived.OpenItems.SequenceEqual(pending.OpenItems))
                 {
                     throw new ArgumentException(
                         $"Restored transition step '{pending.StepId}' does not reproduce from the " +
@@ -342,13 +393,16 @@ namespace GuardsDigital.Core.Rules.Transitions
                             "without saying so would be answerable by a command nothing offered.");
                     }
 
+                    // Milestone 8.35u. The rules hand back every item they are waiting on, and the
+                    // pause is rebuilt from that set on every pass. Nothing here edits a stored set:
+                    // an answer appends one completed id and this re-derives, which is why the
+                    // remaining questions cannot depend on the order the answered ones arrived in,
+                    // and why a hero who answers can immediately reappear with its next level.
                     PendingStep = new PendingSystemTransitionStep(
                         instanceId,
                         definition.Id,
                         step.Id,
-                        resolution.ItemId,
-                        resolution.ChoosingSide,
-                        resolution.Options,
+                        resolution.OpenItems,
                         completedStepIds,
                         completedItemIds);
                     return SystemTransitionResult.Accept(PendingStep, completedStepIds, false);

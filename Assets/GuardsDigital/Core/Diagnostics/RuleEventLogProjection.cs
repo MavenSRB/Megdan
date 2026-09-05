@@ -203,9 +203,15 @@ namespace GuardsDigital.Core.Diagnostics
                                 $"transition={step.InstanceId.Value}",
                                 $"definition={step.DefinitionId.Value}",
                                 $"step={step.StepId.Value}"),
+                        // Milestone 8.35u. One clause per open item, because rulebook p.15 asks every
+                        // hero that bought a level at once and a log that named only "the" chooser
+                        // would be describing one of several questions as if it were all of them. A
+                        // pause on one item reads exactly as it always did, which is what keeps this
+                        // a line the existing recorded history can still be compared against.
                         step == null
                             ? $"completed={ruleEvent.SystemTransitionCompleted}"
-                            : $"chooser={step.ChoosingSide};options={step.Options.Count}");
+                            : string.Join(",", step.OpenItems.Select(open =>
+                                $"chooser={open.ChoosingSide};options={open.Options.Count}")));
                     return;
                 }
 

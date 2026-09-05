@@ -180,8 +180,11 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(6),
-                "This case pins the version the event channel moved to.");
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(7),
+                "This case pins the CURRENT version rather than the one the event channel moved to, " +
+                "so a later move is accounted for here rather than passing unread. Milestone 8.35u " +
+                "took it to 7 for the repeated awaited-hero group p.15's simultaneous leveling made " +
+                "necessary; a version 5 peer is still refused, and so is a version 6 one.");
 
             var harness = PrivateOnlineWireHarness.Compose();
             var seat = harness.Session.Roster[0].Seat.Value;

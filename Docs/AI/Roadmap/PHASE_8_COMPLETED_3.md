@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard holding additional Phase 8 milestone definitions that are complete and self-contained. Return to [ROADMAP.md](../ROADMAP.md) or the active shard [PHASE_8.md](PHASE_8.md). Historical completion evidence: [PHASE_8 handoffs](../Archive/Phase-Handoffs/PHASE_8.md).
 
-Created 2026-09-04 during milestone 8.35o's required warning-threshold ownership review. Milestone 8.30 moved here verbatim, the oldest definition the active shard still held, because both existing completed shards (`PHASE_8_COMPLETED.md`, `PHASE_8_COMPLETED_2.md`) were themselves within a few hundred words of their own warning line and could not absorb it without becoming the next ownership review. Milestones 8.30a through 8.30d followed on the same date during milestone 8.35p's review, which is the rest of the same contiguous run: the owner-scoped projections and command authorization every later seat contract reads against, the seat-scoped HUD prompt flow, its complete six-seat validation, and the printed-icon lighting that finished the action surfaces. Keeping the run together is the point - 8.30a onward read 8.30 by id, and splitting them across shards would have left each half pointing at the other. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
+Created 2026-09-04 during milestone 8.35o's required warning-threshold ownership review. Milestone 8.30 moved here verbatim, the oldest definition the active shard still held, because both existing completed shards (`PHASE_8_COMPLETED.md`, `PHASE_8_COMPLETED_2.md`) were themselves within a few hundred words of their own warning line and could not absorb it without becoming the next ownership review. Milestones 8.30a through 8.30d followed on the same date during milestone 8.35p's review, which is the rest of the same contiguous run: the owner-scoped projections and command authorization every later seat contract reads against, the seat-scoped HUD prompt flow, its complete six-seat validation, and the printed-icon lighting that finished the action surfaces. Keeping the run together is the point - 8.30a onward read 8.30 by id, and splitting them across shards would have left each half pointing at the other. Milestones 8.31 through 8.35a1 followed on 2026-09-05 during milestone 8.35u's required warning-threshold ownership review, continuing the same contiguous run one step further: the direct-TCP host and six player seats with their two correctives, the owner-scoped network authorization, the disconnect/reconnect/host-loss policy, the primitive host/join lobby, and the unkeyed-bind refusal that corrected it. They move for the same reason their parents did - the active shard could not hold another milestone definition without crossing its own warning line, and this shard is the only one of the three with room. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
 
 ### [x] 8.30 Move match authority behind a transport-neutral session boundary
 
@@ -125,3 +125,119 @@ Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#mile
 **2026-08-30 late-HUD amendment, user-directed.** Proposed milestones **8.30f**, **8.30g**, and **8.30h** are defined in [the late HUD and card-interaction correction shard](PHASE_8_LATE_HUD_CORRECTIONS.md). Milestone 8.30c was already being implemented when they were defined, so it completes first. Milestone 8.30f keeps End Turn bottom-right, moves only commitment confirmation below `DIRECTOR`, strengthens fixed action highlights, centres/enlarges compact numbers, and reorders a Defense discard; 8.30g adds immediate facedown commitment by dragging an eligible hand card onto the map while preserving click-then-confirm; 8.30h separately iterates Movement and Attack colours while lighting all six printed corner marks of every projected choice hex. Each correction refreshes the 8.30c checks it affects. The route is 8.30c, 8.30f, 8.30g, 8.30h, then 8.31. The removed 8.30e stays removed. Further 2026-08-31 amendments add **8.30i-8.30m** after 8.30h: completed 8.30i moves minion Defense contributions and the Defense hover breakdown into the corrected shine language and previews authority-projected contributions when a legal hero is hovered during Attack targeting; completed corrective **8.30i1** replaces the prepared hero faces' coloured interior fields with white while preserving portraits and team rings on both board and rail; completed corrective **8.30i2** removes generic effect-choice confirm/undo buttons, auto-completes a filled selection, and keeps spatial selection and deselection on the map; completed corrective **8.30i3** keeps the ordinary hand visible as non-actionable context beneath facedown-style `ACCEPT`/`DECLINE` banners during an optional step; completed **8.30j** makes p.15's Upgrade-a-Card choice lose its comparison box, pair captions and pair/option outlines while retaining six ordered card controls and no `GAINS` prefix; completed **8.30k** replaces hero-plaque and Upgrade-a-Card item abbreviations with shared printed symbols and places each solid upgrade box over its candidate's bottom item position; completed corrective **8.30k1** restarts Hub/licensing before every fixed-launcher validation; non-resolving unavailable cards leave the bottom playable hand; and every rendered card receives one shared thick black exterior outline. A 2026-09-01 user-directed amendment places 8.30l's unavailable-card group on the right side, renders it like the current hand, and retains the existing unavailable dimming. Further 2026-09-01 amendments add **8.30n** so tied candidate owners publicly state bounded preferences and unanimously agree who acts first, and all three members of a Minion Battle's losing team publicly agree to its exact selected removal set before the existing authoritative confirmation is submitted. The final affected six-seat evidence refresh moves to 8.30n, and the route ends 8.30h, 8.30i, 8.30i1, 8.30i2, 8.30i3, 8.30j, 8.30k, 8.30k1, 8.30l, 8.30m, 8.30n, then 8.31.
 
 **2026-09-01 completion amendment.** Milestone **8.30n** is complete: tied Initiative candidate owners and all three Minion Battle choosing-team seats now use bounded public unanimous agreement before the existing final rules command is submitted. The remaining route is **8.31**; the late-HUD shard owns the exact checks.
+
+### [x] 8.31 Establish the private host and six player seats
+
+Blocked by: Milestone 8.30n must correct and validate public teammate agreement for tied Initiative and Minion Battle removal after milestones 8.30c, 8.30f-8.30i, 8.30i1-8.30i3, and 8.30j-8.30m.
+
+**2026-09-01 transport and topology amendment, user-directed.** The user replaced milestone 8.29's player-hosted UGS Multiplayer Services/Relay-DTLS selection with direct TCP sockets and a dedicated seatless host, invoking the reassessment clause [the amended architecture record](../Project/PRIVATE_ONLINE_ARCHITECTURE.md) opens with; that record is the canonical statement. No Unity cloud account, package installation, anonymous authentication, or join-code service remains in scope. The host is a seventh process holding the authoritative session and no seat; all six players are clients addressing it by IP and port, on one machine now and on an operator-run Windows host later. Invite-only admission is carried by an optional pre-shared session key, and the link is plaintext while no owner-private byte crosses it; the encryption decision is owed at milestone 8.32 before owner projections reach the wire. Protocol family `guards-private-online` version 1, the admission tuple, structural owner projections, host-bound seats, terminal host loss, and the transport-neutral port with its adapter beneath it stand unchanged. Milestones 8.32-8.36a keep their definitions: each names the selected architecture rather than a provider, so the substitution reaches them through that record without rewriting them.
+
+Observable outcome: One dedicated seatless host process listens on a configured address and port, and six compatible Windows client processes each occupy exactly one stable player/hero seat, with duplicate claims, unauthorized seat changes, incompatible build/schema/content revisions, a wrong session key, and a full session rejected by named reason before any match state is shared.
+
+Acceptance checks:
+
+- The host publishes one immutable admission tuple - protocol `guards-private-online/1`, build identity, snapshot schema 34, map `official-single-lane` at its pinned revision, and the registered content digest - and refuses a client whose tuple differs, naming the exact mismatching element, before that client learns anything else about the session.
+- When the host holds a pre-shared session key, admission requires the client to answer the host's random challenge with proof of the same key, a wrong or missing answer is rejected by named reason, and the host binds to the loopback interface unless an operator names another address explicitly.
+- Each admitted client claims exactly one seat from the authoritative six-seat binding derived through `MatchParticipants`. A claim naming a held seat, a claim naming an unknown seat, a second claim from an already-seated connection, and a compatible connection arriving when no seat remains open each receive their own bounded rejection reason and leave the host's seat map unchanged.
+- Seat ownership is host state bound to one live connection: no frame field establishes, changes, or transfers a seat, and a disconnected claimed seat stays reserved and unclaimable for the rest of the session rather than being released to whoever asks next; restoring it to its player is milestone 8.34's reconnect work.
+- Every frame is length-prefixed and bounded: an unknown magic, protocol version, or message kind, a truncated frame, a declared length past the configured maximum, or a handshake that misses its deadline is refused before allocation-heavy decode and disconnects only that connection.
+- Every socket type stays inside the adapter assembly beneath the transport-neutral session port; the port, the authority, and the application boundary name none, and the conformance checks fail if one appears.
+- One rehearsal run builds the disposable Win64 player and starts one host and six client processes locally, proving six distinct seats claimed, a duplicate claim refused, an incompatible client refused, and every process exiting on its own inside a bounded time.
+- Host and client diagnostics carry protocol/build/schema/map/content identity, an opaque connection ordinal, the seat, and the rejection reason, and never a remote address, a hand, or another seat's state.
+
+Non-goals: No gameplay over the wire - no command codec, no seat projection on the wire, no state synchronization, and no snapshot, Undo, or restart transfer (milestones 8.32-8.33); no reconnect, resynchronization, heartbeat, or host-loss recovery beyond immediate termination (8.34); no lobby, readiness, menu, or HUD surface (8.35a-8.35b); no encryption (decided at 8.32); no NAT traversal, relay, account system, matchmaking, telemetry, package installation, public distribution, or non-Windows host.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-831-establish-the-private-host-and-six-player-seats-completion-evidence).
+
+### [x] 8.31a Keep private-online processes running without window focus
+
+Blocked by: Completed milestone 8.31's first manual windowed run exposed the defect: the checked-in player pauses its whole loop on focus loss (`runInBackground: 0`), so of seven visible processes only the focused one pumps its session and the handshake silently stalls while unfocused windows freeze before their first rendered frame.
+
+Observable outcome: A process launched with a private-online host or client flag keeps pumping its session while its window is hidden or unfocused, so a windowed host plus six windowed clients on one desktop reach `SEATS_COMPLETE claimed=6/6` exactly as the batch rehearsal does, while a normally launched build keeps the existing pause-on-focus-loss behavior.
+
+Acceptance checks:
+
+- Configuring either private-online driver enables background execution for that one process; no other launch path changes the player's focus behavior.
+- The closing check `PrivateOnlineBackgroundExecutionTests` records its failing-then-passing transition for both drivers, and one windowed non-batch hidden host-plus-six-client run reaches `SEATS_COMPLETE claimed=6/6` with every process self-exiting.
+
+Non-goals: No rehearsal-script topology change, no project-wide `runInBackground` setting change, no reconnect, heartbeat, lobby, or gameplay networking.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-831a-keep-private-online-processes-running-without-window-focus-completion-evidence).
+
+### [x] 8.31b Draw the board's blended overlays correctly in a built player
+
+Blocked by: Corrective 8.31a's first windowed run exposed the defect: in a built player every hex tile over the official artwork renders as opaque white instead of transparent, hiding the whole playfield, while the same scene is correct in the Editor. Every board overlay is a runtime-created URP Lit material blended by keyword, so nothing in the build data declares a transparent Lit material and its variant does not survive the build.
+
+Observable outcome: A built player draws the official board artwork with its playfield visible rather than covered, and a build-time visual check looks at the running player's own pixels rather than assuming them.
+
+Acceptance checks:
+
+- A board fill that is fully transparent draws nothing by not being rendered at all, so no stripped shader variant can turn it into an opaque cover; spaces stay pickable, because a space is chosen by where the pointer ray meets the board plane and never by what is drawn on it.
+- Board materials that must genuinely blend derive their surface state from template material assets that ship under `Resources`, so the configuration is present in build data rather than only asserted at runtime, and no board source blends a material it built from a found shader.
+- A named build-time visual gate builds the disposable Win64 player, launches it, captures the running player's own frame, and fails when the playfield is one flat colour; it records the defect's failing observation and the fixed passing observation across separate builds.
+- The Editor keeps its current board appearance: existing artwork registration, overlay alpha, rim, highlight and resource-lifetime checks pass unchanged.
+
+Non-goals: No board artwork change, no camera or registration change, no new overlay treatment, no project-wide render-pipeline or stripping-setting change, and no networking change. **Known residual:** this corrective proves the playfield is not covered; it does not prove that a partly blended overlay - a highlight at its overlay alpha - reaches a built player blended rather than opaque, because shipping a transparent template alone was observed to retain that variant on one build and not on the next. The templates are kept as the best available retention, and a later slice owns proving highlight fidelity inside a player, most likely through a preloaded shader-variant collection.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-831b-draw-the-boards-blended-overlays-correctly-in-a-built-player-completion-evidence).
+
+### [x] 8.32 Enforce owner-scoped projections and command authorization across the network boundary
+
+Blocked by: Milestone 8.31 must establish the private host and six network seats.
+
+Observable outcome: Each network client receives the already-proven seat-scoped projection and can submit commands only for its owned hero or an explicitly team-owned choice; untrusted transport input cannot bypass host-side revalidation.
+
+Acceptance checks:
+
+- The host constructs each submission's trusted caller context from the authenticated connection-to-seat binding established by milestone 8.31, attaches a unique command identity and expected projection version outside the untrusted gameplay-command payload, and derives player/hero/team ownership through authoritative `MatchParticipants`. Payload fields, including any `HeroId`, `TeamSide`, or forged identity/version claim, never establish or override the caller's identity, seat, command identity, or expected version.
+- Automated negative cases cover cross-seat hero commands, unauthorized team choices, hidden-hand/pre-reveal leakage, replayed or duplicated command identities, stale expected projection versions, mismatches between payload targets and ownership derived through `MatchParticipants`, malformed/oversized envelopes, and forged payload identities or versions without partial host mutation.
+- Diagnostic output needed for support does not expose another seat's owner-private hand or pre-reveal commitment identity.
+- Network serialization and delivery preserve the local projection's absence of unauthorized fields rather than sending complete director state and relying on client-side hiding.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-832-enforce-owner-scoped-projections-and-command-authorization-across-the-network-boundary-completion-evidence).
+
+### [x] 8.34 Add disconnect, reconnect, resynchronization, and host-loss policy
+
+Blocked by: Milestone 8.33 must prove authorized synchronization under fault injection.
+
+Observable outcome: A temporarily disconnected player can return to the same compatible private session and rebuild the correct authorized projection; stale commands, unrecoverable host loss, and version mismatch fail explicitly without corrupting the match.
+
+Acceptance checks:
+
+- Fixed scenarios disconnect and reconnect during commitment, joint reveal, incomplete and disagreed same-team Initiative agreement, partial Minion Battle removal agreement, Movement continuation, Defense reaction, and end-of-round progression, then prove convergence or the documented terminal result. A returning eligible player receives the host's current public statements and standing proposal and may revise only their own; reconnect never converts partial or conflicting statements into agreement.
+- Reconnect to stale, future, incompatible, or unauthorized session state cannot transfer seat control, reveal private information, or partially replace authoritative state.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-834-add-disconnect-reconnect-resynchronization-and-host-loss-policy-completion-evidence).
+
+### [x] 8.35a Add the primitive private host/join lobby
+
+Blocked by: Milestones 8.31-8.34 must establish seats, authorized synchronization, and reconnect/host-loss policy.
+
+Observable outcome: Without production styling, invited players can host or join by the selected private invitation mechanism, identify their seat and team, observe compatibility and connection state, become ready, enter the match, leave, and begin an authorized reconnect.
+
+Acceptance checks:
+
+- The lobby exposes exactly the selected architecture's minimum host/join and invitation flow, six stable seats, team/hero identity, readiness, compatibility/version rejection, and transition-to-match state.
+- Duplicate claims, unauthorized seat changes, full/incompatible sessions, host loss, join failure, and reconnect eligibility receive explicit bounded feedback without exposing another player's private match state or sensitive diagnostic data.
+- Team identity and status never rely on color alone, and all required controls remain reachable at the supported desktop validation resolutions.
+- Lobby state remains presentation-only over the session contracts and cannot assign authoritative match ownership by mutating Unity views.
+
+Non-goals: No account system, friends list, public matchmaking, server browser, text/voice chat, spectator mode, ranking, moderation, general main menu, or production styling.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835a-add-the-primitive-private-hostjoin-lobby-completion-evidence).
+
+### [x] 8.35a1 Refuse an unkeyed bind off loopback from the lobby's host control
+
+Corrective milestone for a gap milestone 8.36's readiness review found, approved by the user on 2026-09-03. An unkeyed session derives no channel keys, so its link stays plaintext, and [the architecture record](../Project/PRIVATE_ONLINE_ARCHITECTURE.md) permits an owner-private byte to cross plaintext only on the loopback interface. The command-line host role has refused an unkeyed non-loopback bind since milestone 8.32; milestone 8.35a's `HOST` control - the path an operator actually uses to host an invited playtest - applied no such rule and would have opened an unkeyed public listener.
+
+Observable outcome: Hosting from the lobby obeys the same rule as the command line - an unkeyed session may bind only loopback, a keyed session may bind any interface - and a refused bind is named on the entry form before any listener exists.
+
+Acceptance checks:
+
+- Closing check `PrivateLobbyPlayModeTests.HostingOffLoopbackWithoutASessionKey_IsRefusedBeforeAnyBind`, recorded failing at the pre-fix revision, where pressing `HOST` on a non-loopback address with an empty key reached a bind attempt and reported the failed bind, and passing after, where the entry form names the missing session key and no session is opened.
+- The rule is stated once and read by both surfaces, so the two cannot drift apart again; each surface keeps its own bounded wording, because a lobby names its key field rather than a command-line flag.
+- No stricter behavior is introduced: an unkeyed loopback bind and a keyed non-loopback bind stay accepted, the latter proven by its own journey.
+
+Non-goals: No new admission rule, key-strength policy, transport, encryption, diagnostic, or lobby redesign; no change to the command-line rule this mirrors or to any other launch path.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835a1-refuse-an-unkeyed-bind-off-loopback-from-the-lobbys-host-control-completion-evidence).

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.Transitions
@@ -195,7 +196,8 @@ namespace GuardsDigital.Core.Rules.Transitions
             IEnumerable<SystemTransitionOptionDescription> options,
             int level = 0,
             int paidCoins = 0,
-            int remainingCoins = 0)
+            int remainingCoins = 0,
+            SystemTransitionItemId itemId = default)
         {
             if (kind == SystemTransitionPromptKind.None)
             {
@@ -213,15 +215,37 @@ namespace GuardsDigital.Core.Rules.Transitions
                     nameof(options));
             }
 
-            if (described.Length != pendingStep.Options.Count ||
+            // Milestone 8.35u. A pause may now hold one open item per hero, so a description says WHICH
+            // one it describes and is checked against that item's own options. Omitting the item is
+            // still legal and still means "the pause's one item" - it reaches PendingStep.Options,
+            // which throws rather than guessing when several stand.
+            var describedItem = itemId.IsDefined
+                ? pendingStep.OpenItems.FirstOrDefault(open => open.ItemId.Equals(itemId))
+                : null;
+            if (itemId.IsDefined && describedItem == null)
+            {
+                throw new ArgumentException(
+                    $"A description names item '{itemId}', which this pause is not waiting on.",
+                    nameof(itemId));
+            }
+
+            var offered = describedItem?.Options ?? pendingStep.Options;
+            if (described.Length != offered.Count ||
                 described.Select(option => option.OptionId).Distinct().Count() != described.Length ||
-                described.Any(option => !pendingStep.Options.Contains(option.OptionId)))
+                described.Any(option => !offered.Contains(option.OptionId)))
             {
                 throw new ArgumentException(
                     "A description names exactly the options the paused step offered, once each.",
                     nameof(options));
             }
 
+            ItemId = itemId;
+
+            // Milestone 8.35u. The described item's own chooser, carried rather than read back off
+            // the pause: a pause may now hold one open item per hero, so `PendingStep.ChoosingSide`
+            // has no single answer and throws. A description is always about ONE question, so it
+            // always has one, and a surface that draws "whose question is this" reads it here.
+            ChoosingSide = describedItem?.ChoosingSide ?? pendingStep.OpenItems[0].ChoosingSide;
             Kind = kind;
             HeroId = heroId;
             Level = level;
@@ -234,6 +258,18 @@ namespace GuardsDigital.Core.Rules.Transitions
 
         /// <summary>The pause this describes, carrying the chooser and the exact typed invocations.</summary>
         public PendingSystemTransitionStep PendingStep { get; }
+
+        /// <summary>
+        /// Milestone 8.35u. Which open item of that pause this describes, or the named absence when the
+        /// pause has one and the caller did not have to say.
+        /// </summary>
+        public SystemTransitionItemId ItemId { get; }
+
+        /// <summary>
+        /// Milestone 8.35u. The side that answers the ONE question this describes - never the pause's,
+        /// which may be waiting on both sides at once.
+        /// </summary>
+        public TeamSide ChoosingSide { get; }
 
         /// <summary>
         /// The hero whose decision this is, for a pause that belongs to one. Undefined for p.8's Place,
@@ -269,5 +305,26 @@ namespace GuardsDigital.Core.Rules.Transitions
         /// did not produce it. Reading changes nothing.
         /// </summary>
         SystemTransitionStepDescription Describe(PendingSystemTransitionStep pendingStep);
+    }
+
+    /// <summary>
+    /// Milestone 8.35u. Step rules whose pause can stand on several choosers at once, and which can
+    /// therefore describe one named item of it rather than only "the" pause.
+    ///
+    /// Optional for the same reason the interface above it is, and separate from it for a stronger one:
+    /// implementing it is what a step DECLARES when it opts into simultaneity. Milestone 6.11's blocked
+    /// respawn implements only the single door and stays one Place at a time, which is correct - a
+    /// placement changes the board the next placement reads, so those items are genuinely sequential.
+    /// Rulebook p.15's leveling implements this one, because a hero's cards, coins and Level are that
+    /// hero's own and nothing one hero chooses changes what another is offered.
+    /// </summary>
+    public interface IDescribingConcurrentSystemTransitionStepRules : IDescribingSystemTransitionStepRules
+    {
+        /// <summary>
+        /// Describes one named open item of the paused step, or returns null when these rules did not
+        /// produce it or the pause is not waiting on that item. Reading changes nothing.
+        /// </summary>
+        SystemTransitionStepDescription DescribeOpenItem(
+            PendingSystemTransitionStep pendingStep, SystemTransitionItemId itemId);
     }
 }
