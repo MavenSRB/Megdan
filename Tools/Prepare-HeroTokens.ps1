@@ -60,7 +60,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha')]
+    [ValidateSet('wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha', 'dodger')]
     [string] $Hero = 'wasp',
     [switch] $Check,
     [switch] $Force
@@ -87,6 +87,12 @@ $declaredHeroes = @{
     # miniature, not rulebook p.19's token category - and its id is recorded in
     # Docs/AI/Rules/HERO_XARGATHA.md beside the atlas it is cut from.
     xargatha = @{ ElementId = 8597214; ElementName = 'Xargatha'; DisplayName = 'Xargatha' }
+
+    # Milestone 8.35z34. The SEVENTH hero, and the first from outside the 8.17 roster. Same element
+    # shape as the six above - the manifest's `VerticalTokens` standee, Tabletopia's label for the
+    # hero miniature rather than rulebook p.19's token category - and its id is recorded in
+    # Docs/AI/Rules/HERO_DODGER.md beside the atlas it is cut from.
+    dodger = @{ ElementId = 8596247; ElementName = 'Dodger'; DisplayName = 'Dodger' }
 }
 
 $declared = $declaredHeroes[$Hero]

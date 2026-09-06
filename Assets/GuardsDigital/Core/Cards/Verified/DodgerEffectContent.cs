@@ -757,11 +757,16 @@ namespace GuardsDigital.Core.Cards.Verified
         /// "Respawn a friendly minion in an empty friendly spawn point [adjacent to you / in radius] in
         /// the battle zone." - Necromancy at p.19's innermost ring, Necromastery at its printed Radius 1.
         ///
-        /// <para><b>The whole sentence is one node, because the card asks one question.</b> The user's
-        /// 2026-09-06 ruling on D-07 makes the chosen Spawn point decide what comes back - p.8's own
-        /// respawn already says "one minion of the <em>matching type</em>" - so the actor names a space
-        /// and never a minion. A composition that asked for a type as well would be offering a choice
-        /// the card does not print.</para>
+        /// <para><b>The whole sentence is one node, because the card asks one question - and under
+        /// RULING 48 that one node may ask it in two parts.</b> The user's 2026-09-06 ruling on D-07
+        /// makes a chosen <em>printed</em> Spawn point decide what comes back - p.8's own respawn
+        /// already says "one minion of the <em>matching type</em>". RULING 48 then settled the case
+        /// D-07 could not reach: post-Ultimate, "Respawn anywhere in reach", where the destination is a
+        /// point the card granted and names no type. There the type comes from p.19's own eligibility
+        /// count, and p.10's default gives the actor the choice when the page admits more than one.
+        /// Both readings live in the capability rather than in this definition, which is why the
+        /// composition is unchanged by the ruling: the card says "respawn a friendly minion in an empty
+        /// friendly spawn point in reach", and which questions that takes is the rules' business.</para>
         ///
         /// <para><b>Heavies are excluded by p.19's arithmetic and by nothing written here.</b> The
         /// ruling records the user's derivation rather than an added restriction: p.13's immunity means

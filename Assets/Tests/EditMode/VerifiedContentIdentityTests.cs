@@ -34,7 +34,16 @@ namespace GuardsDigital.Tests.EditMode
             // settled-corrections block), which is the whole reason this digest moved.
             new IdentityPin("tigerclaw", "tigerclaw-8-35z25-rev-1", "f1291921057ecaee084cecbab9e8c1aca07924e4fe49fcadfe11d34b0c4f8da1"),
             new IdentityPin("wasp", "wasp-8-25e7-rev-1", "eb7cf4f63a247c31b2f94faa93125fbd4ee977ebe260b91b803b0c92296db927"),
-            new IdentityPin("xargatha", "xargatha-8-25e5f1-rev-1", "15ed75b47588e0ef758fd9cf0b3e06fb1458bb1113da26b6e019eba7dee08b77")
+            new IdentityPin("xargatha", "xargatha-8-25e5f1-rev-1", "15ed75b47588e0ef758fd9cf0b3e06fb1458bb1113da26b6e019eba7dee08b77"),
+            // Milestone 8.35z34. THE SEVENTH PIN, and the first added since this oracle was built -
+            // every one above it was pinned at milestone 8.25e7 and has only ever moved. It arrives
+            // now rather than at the milestone that composed her because a pin is a claim about
+            // content a configured match loads, and 8.35z28 composed her without dealing her.
+            //
+            // MEASURED, not predicted. The digest below was read off this oracle's own failure output
+            // after the pin was added with a deliberately wrong value, on a COMPLETE unfiltered run -
+            // never off a filtered pin run, on the near-miss milestone 8.35z32 recorded.
+            new IdentityPin("dodger", "dodger-8-35z34-rev-1", "c17dd5f7626150d6d2407fa3a730e201b055478e350b563cca2bd0487bbe853c")
         };
 
         [Test]
@@ -102,13 +111,35 @@ namespace GuardsDigital.Tests.EditMode
                 "attributed to Wasp by the same uniform owner walk used for all six heroes.");
         }
 
+        /// <summary>
+        /// Every definition this build deals to anybody, from every configuration that deals one.
+        ///
+        /// <para>Until milestone 8.35z34 this was one configuration - rulebook p.5's official
+        /// six-player line-up - because the six pinned heroes were exactly that line-up. Dodger the
+        /// Warlock is dealt by a staged configuration and by no official one, so reading the official
+        /// line-up alone would have measured her as absent, which is what it did on this pin's first
+        /// run.</para>
+        ///
+        /// <para><b>The union is the honest source rather than a widening of convenience.</b> What
+        /// this oracle claims is that a face's identity moves when its content moves, and the claim is
+        /// about content a match can load - not about which line-up happens to load it. A definition
+        /// appears once however many configurations deal it, because a definition IS its identity and
+        /// two seats holding one are not two faces.</para>
+        /// </summary>
+        private static IReadOnlyList<CardDefinition> EveryDealtDefinition() =>
+            MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red).CardDefinitions
+                .Concat(MatchConfiguration.CreateStagedDodgerForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
+                .Select(group => group.First())
+                .ToArray();
+
         private static IReadOnlyList<MeasuredIdentity> Measure(MatchContentCatalogs catalogs)
         {
-            var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(
-                TeamSide.Red);
+            var dealt = EveryDealtDefinition();
             return Pins.Select(pin =>
                 {
-                    var definitions = configuration.CardDefinitions
+                    var definitions = dealt
                         .Where(definition => definition.Id.Value.StartsWith(
                             pin.Owner + "-", StringComparison.Ordinal))
                         .OrderBy(definition => definition.Id.Value, StringComparer.Ordinal)

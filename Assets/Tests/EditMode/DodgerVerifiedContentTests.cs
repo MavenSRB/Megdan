@@ -366,16 +366,20 @@ namespace GuardsDigital.Tests.EditMode
             {
                 ["dodger-rusty-razor"] = "first odd-player-count configuration",
                 ["dodger-middlefinger-of-death"] =
-                    "the modal second-sequence seam - one Attack action driving two complete p.14 " +
-                    "orders without being p.10's Repeat"
+                    "the attack-sequence bullet's subject narrowing - a per-candidate predicate on " +
+                    "AttackSequenceBullet, which is a snapshot schema claimant"
             }),
                 "Two faces owe a composition, and neither owes an answer. p.20's Handicap card is " +
                 "parked under the standing 2026-08-21 user decision. Middlefinger of Death is parked " +
-                "on a seam rather than a question: the user's 2026-09-06 ruling on D-06 settled that " +
-                "its two bullets resolve two complete p.14 orders, and the only shape in this build " +
-                "that produces a second complete order is p.10's Repeat - which Enfeeblement, composed " +
-                "in the same milestone, is ruled to forbid. Composing it as a repeat would hand one " +
-                "card a restriction neither card prints. Every other face composes.");
+                "on a seam, and milestone 8.35z34 NARROWED that seam rather than inheriting it: " +
+                "milestone 8.35z27 built the multi-sequence contract this card's two bullets need, so " +
+                "the repeat-mislabelling defect phase two measured can no longer occur and the first " +
+                "bullet would compose today. Only the second bullet's own clause is unbuilt - 'a hero " +
+                "in range who has one or more cards in the discard' is a predicate about the " +
+                "candidate, where a bullet carries a PrintedAttackTargetPolicy that cannot state one. " +
+                "That extension widens a type the snapshot persists, and this milestone already moves " +
+                "the pinned handler list and the corpus digests by dealing her, so it is owed a " +
+                "milestone where it is the only cause moving the schema. Every other face composes.");
         }
 
         /// <summary>
@@ -650,11 +654,12 @@ namespace GuardsDigital.Tests.EditMode
                 DodgerCardContent.AllDefinitions
                     .Select(definition => definition.ContentRevision).Distinct(),
                 Is.EqualTo(new[] { DodgerCardContent.ContentRevision }));
-            // Moved at milestone 8.35z28, which composed six faces the user's 2026-09-06 rulings
-            // unparked. The bump owes no ConfiguredCardArtworkCatalog.json rows - milestone 8.35l's
-            // trap - because that catalog names the six dealt heroes explicitly and no phase has dealt
-            // her; her rows and her identity pin arrive at her dealing milestone.
-            Assert.That(DodgerCardContent.ContentRevision, Is.EqualTo("dodger-8-35x-rev-2"));
+            // Re-based at milestone 8.35z34, the milestone that DEALS her - so this is the first
+            // revision of hers that any match has loaded, that the artwork catalog names, and that an
+            // identity pin measures. Both earlier strings were minted under the placeholder id
+            // `8.35x`, which is a claim rather than a milestone; nothing read them, which is what made
+            // the re-base free once and will not make it free again.
+            Assert.That(DodgerCardContent.ContentRevision, Is.EqualTo("dodger-8-35z34-rev-1"));
             Assert.That(
                 DodgerCardContent.AllDefinitions
                     .Select(definition => definition.ContentAuthority).Distinct(),

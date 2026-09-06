@@ -902,6 +902,43 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, BlueProfiles, BlueUltimateProfile, null,
                 rosterTheftSkillProfile: BlueRosterTheftSkillProfile);
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.35z34: the four handler types Dodger the Warlock's dealing registers, proved
+        // here on cards that are nobody's
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.35z34's grave-tending Skill, sitting outside its team's ordinary Initiative band
+        /// for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedSpawnPointSkillProfile { get; } =
+            new SyntheticSkillProfile("red-gravedigger", "Red Gravedigger", 25);
+
+        /// <summary>Milestone 8.35z34's item-granting Skill, on the same terms.</summary>
+        private static SyntheticSkillProfile RedBoxItemSkillProfile { get; } =
+            new SyntheticSkillProfile("red-reliquary", "Red Reliquary", 26);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.35z34's spawn-point Skill, which is how
+        /// <c>empty-minion-spawn-points-adjacent@1</c> and
+        /// <c>synthetic-respawn-friendly-minion-adjacent@1</c> become reachable from showcase content
+        /// rather than arriving for the first time inside Dodger's own slice.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithSpawnPointSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                spawnPointSkillProfile: RedSpawnPointSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.35z34's item Skill, which is how
+        /// <c>ultimate-unlocked@1</c> and <c>gain-item-from-the-box@1</c> become reachable on the same
+        /// terms.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithBoxItemSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                boxItemSkillProfile: RedBoxItemSkillProfile);
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1002,6 +1039,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile rosterPaymentSkillProfile = null,
             SyntheticSkillProfile rosterCommandSkillProfile = null,
             SyntheticSkillProfile rosterTheftSkillProfile = null,
+            SyntheticSkillProfile spawnPointSkillProfile = null,
+            SyntheticSkillProfile boxItemSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1167,6 +1206,22 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateRosterCommandSkillDefinition(rosterCommandSkillProfile),
                     rosterCommandSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (spawnPointSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateSpawnPointSkillDefinition(spawnPointSkillProfile),
+                    spawnPointSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (boxItemSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateBoxItemSkillDefinition(boxItemSkillProfile),
+                    boxItemSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -2538,6 +2593,167 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 {
                     new ActionDefinition(
                         new ActionDefinitionId("primary-roster-theft-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 8.35z34. A Skill that asks the two board contracts Dodger the Warlock's set is the
+        /// first printed content to reach: how many empty minion Spawn points stand beside the actor,
+        /// and rulebook p.19's Respawn into one of them.
+        ///
+        /// <para>Every number here is a fixture number and the sentence is nobody's card. What it
+        /// proves is that each contract composes and runs, so neither arrives for the first time inside
+        /// a verified hero's slice - which is the second half of the rule
+        /// <c>ConfiguredCardMatrixTests</c> asks, and that half is asked of the handler TYPE. One
+        /// declaration per type is therefore what this card carries: the adjacent arm of the count and
+        /// the adjacent arm of the Respawn. Her own faces reach the printed-Radius arms of both, and
+        /// the gate's first half is satisfied by dealing her.</para>
+        ///
+        /// <para><b>The count gates nothing and the Respawn is <c>IfAble</c>.</b> Same reason the
+        /// command Skill's count gates nothing: a conditional would make the rest unreachable on a
+        /// board with no qualifying point, and this card exists to be reached. p.19's own eligibility
+        /// is a live board question - "a minion must first be removed, before it can be respawned" - so
+        /// a mandatory Respawn here would make the card unplayable on a full board, which is a fixture
+        /// stating a rule rather than proving a contract.</para>
+        /// </summary>
+        private static CardDefinition CreateSpawnPointSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("spawn-point-root");
+            var count = new EffectNodeId("spawn-point-count");
+            var respawn = new EffectNodeId("spawn-point-respawn");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-35z34-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { count, respawn }),
+                    new EffectNodeDefinition(
+                        count, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.EmptyMinionSpawnPointsAdjacentV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.MinimumPresentParameter,
+                                EffectValue.Integer(1))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.CountOutput, EffectValueKind.Integer),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.PresentOutput, EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        respawn, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticPlacementCapabilities.RespawnFriendlyMinionAdjacentV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticPlacementCapabilities.RespawnedOutputName,
+                                EffectValueKind.Minion),
+                            new EffectOutputBinding(
+                                SyntheticPlacementCapabilities.RespawnedAtOutputName,
+                                EffectValueKind.Coordinate)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-35z34-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-spawn-point-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 8.35z34. A Skill that asks the two progression contracts Dodger's Darkest Ritual is
+        /// the first printed content to reach: whether the actor has unlocked their Ultimate, and
+        /// rulebook p.16's Gain an Item granted by card text.
+        ///
+        /// <para>One card asks both because her own card does - "If you have Ultimate, gain +1 [Attack]
+        /// Attack item" - and because what is under test is the contract rather than the sentence. The
+        /// unlock question gates nothing here for the reason every other fixture predicate gates
+        /// nothing: a hand whose Ultimate is still locked would otherwise never reach the grant, and
+        /// the grant is half of what this card exists to prove.</para>
+        /// </summary>
+        private static CardDefinition CreateBoxItemSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("box-item-root");
+            var unlocked = new EffectNodeId("box-item-unlocked");
+            var grant = new EffectNodeId("box-item-grant");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-35z34-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { unlocked, grant }),
+                    new EffectNodeDefinition(
+                        unlocked, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.UltimateUnlockedV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.PresentOutput, EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        grant, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticRosterCapabilities.GainItemFromTheBoxV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                "recipient", EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.ItemIconParameter,
+                                PrintedValueChannel.Attack)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("recipient", EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.GrantedItemOrderOutput,
+                                EffectValueKind.Integer)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-35z34-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-box-item-skill"),
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
                         Array.Empty<PrintedValueDefinition>(),

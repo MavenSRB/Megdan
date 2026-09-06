@@ -86,16 +86,30 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="XargathaCardContent.ContentRevision"/> has: it moves when Dodger's content does.
         ///
-        /// <para>Moved to <c>rev-2</c> at milestone 8.35z28, which composed six faces the user's
-        /// 2026-09-06 rulings unparked. <b>This bump owes no
-        /// <c>ConfiguredCardArtworkCatalog.json</c> rows</b>, and that is measured rather than assumed:
-        /// milestone 8.35l's trap is that a content-revision bump owes the artwork catalog, but that
-        /// catalog's <c>Configured</c> list names the six dealt heroes explicitly and Dodger is in
-        /// none of it, because no phase has dealt her. Her artwork rows and her identity pin arrive
-        /// together at her dealing milestone, which is the same milestone that registers her contracts
-        /// - three debts with one cause, and none of them separable.</para>
+        /// <para>Milestone 8.35z28 moved it to <c>rev-2</c>, composing six faces the user's 2026-09-06
+        /// rulings unparked, and recorded that the bump owed no <c>ConfiguredCardArtworkCatalog.json</c>
+        /// rows - measured rather than assumed, because that catalog's <c>Configured</c> list names
+        /// dealt heroes explicitly and no phase had dealt her.</para>
+        ///
+        /// <para><b>Milestone 8.35z34 is that dealing milestone, and it pays all three debts at once
+        /// because they have one cause.</b> Her eighteen artwork rows, her identity pin and the
+        /// registration of her six contracts arrive together, and none of them is separable from the
+        /// others: the catalog names dealt heroes, the pin is a claim about content a match can load,
+        /// and milestone 7.9's gate refuses a registration no dealt card can start.</para>
+        ///
+        /// <para><b>The revision is re-based rather than incremented, and that is deliberate.</b> Both
+        /// earlier revisions were minted under the placeholder id <c>8.35x</c>, which is a claim rather
+        /// than a milestone - the wave-one law's own words. This is her first revision under an id that
+        /// exists, and the first one any match has dealt, so it is <c>rev-1</c> of that id rather than
+        /// <c>rev-3</c> of a chain no build ever ran. Nothing reads the old string: no pin named her,
+        /// no artwork row named her, and no configuration dealt her, which is exactly what makes the
+        /// re-base free here and would not make it free again.</para>
+        ///
+        /// <para>It also moves for a real content reason, so the bump would be owed regardless: RULING
+        /// 48 re-parked Middlefinger of Death on a narrower named deferral, and a deferral's text is
+        /// part of the face.</para>
         /// </summary>
-        public const string ContentRevision = "dodger-8-35x-rev-2";
+        public const string ContentRevision = "dodger-8-35z34-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat
@@ -350,23 +364,31 @@ namespace GuardsDigital.Core.Cards.Verified
                 "to a space not adjacent to you.",
                 PrintedTextComposition.None),
 
-            // STILL PARKED, but no longer on a question. The user's 2026-09-06 ruling on D-06 answered
-            // it: "choose one or both" resolves the complete p.14 order against target one and then
-            // completely against target two, each defending separately. What this face now waits on is
-            // a seam the engine does not have.
+            // STILL PARKED at milestone 8.35z34, and the reason has NARROWED TWICE - which is worth
+            // reading as a record of how a deferral should behave.
             //
-            // The only shape that produces a second complete p.14 sequence today is
-            // EffectNodeKind.RepeatAction, and composing this card on it would be wrong in a way a
-            // green harness would never show. p.10 keeps Modal Actions and Repeat as two different
-            // rules, and the user's ruling on D-09 scopes Enfeeblement's "cannot repeat actions" to the
-            // Repeat keyword alone - so a Middlefinger built as a repeat would have its second bullet
-            // silently forbidden by Enfeeblement, which is a rule neither card prints. That is a
-            // measured interaction rather than a worry: this same milestone composed the restriction
-            // and its two gates, so the defect would exist the moment both faces were composed.
+            // Phase one parked it on a question. The user's 2026-09-06 ruling on D-06 answered that:
+            // "choose one or both" resolves the complete p.14 order against target one and then
+            // completely against target two, each defending separately. Phase two re-parked it on a
+            // seam, having measured that the only shape then producing a second complete p.14 order
+            // was EffectNodeKind.RepeatAction - and that composing this card on a repeat would have let
+            // Enfeeblement's "cannot repeat actions" silently forbid its second bullet, a rule neither
+            // card prints.
+            //
+            // Milestone 8.35z27 BUILT that seam. `attack-sequence@1` runs one action as two complete
+            // p.14 orders and is deliberately not labelled a Repeat, so the defect phase two measured
+            // no longer has a way to occur, and this card's FIRST bullet - "target a unit adjacent to
+            // you" - would compose against it today.
+            //
+            // What remains is the second bullet alone: "a hero in range WHO HAS one or more cards in
+            // the discard". That clause is a predicate about the candidate, and the sentence a bullet
+            // carries is a PrintedAttackTargetPolicy - which units, how far, whether p.19's line is
+            // excluded - with no way to say it. AttackSequenceBullet's own documentation names this as
+            // its one open extension point, and it is a snapshot schema claimant, so it is taken in a
+            // milestone where it is the only thing moving the schema. See the deferral below.
             //
             // The face's printed values, its words and its Tier III item icon ship here, exactly as
-            // they did in phase one; the composition and its card-text target binding wait together
-            // for a modal second-sequence seam that is not a repeat.
+            // they did in phase one.
             new DodgerCardProfile(
                 MiddlefingerOfDeath, "Middlefinger of Death", 10, 6, 4,
                 DodgerPrimaryKind.RangedAttack, 5, PrintedValueChannel.Range, 3,
@@ -374,9 +396,27 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Red, CardTier.III, PrintedValueChannel.Movement),
                 "Choose one or both (on different targets) — • Target a unit adjacent to you. • Target " +
                 "a hero in range who has one or more cards in the discard.",
+                // RE-PARKED at milestone 8.35z34, on a NARROWER and now precisely located reason.
+                // Milestone 8.35z27 built the seam the old deferral named - `attack-sequence@1` runs
+                // two complete p.14 orders under one action without being p.10's Repeat - so the first
+                // bullet of this card would compose today. What is still missing is the SECOND
+                // bullet's own sentence: "a hero in range WHO HAS one or more cards in the discard" is
+                // a predicate about the candidate, and AttackSequenceBullet carries a
+                // PrintedAttackTargetPolicy, which states which units, how far and whether p.19's line
+                // is excluded, and cannot state a predicate. That type's own documentation names this
+                // as its one open extension point.
+                //
+                // The extension is deliberately not taken here, and the reason is measurement rather
+                // than size: AttackSequenceBullet is persisted by the snapshot serializer, so widening
+                // it is a schema event - and THIS milestone already moves the pinned handler list, the
+                // corpus digests and the snapshot's own capability bytes by dealing and registering
+                // her. Two independent causes behind one set of re-pinned numbers is exactly what makes
+                // a moved byte unattributable, which is the discipline every identity re-pin in this
+                // project rests on. The bullet narrowing is therefore owed its own milestone, where it
+                // is the only thing moving the schema.
                 PrintedTextComposition.DeferredUntil(
-                    "the modal second-sequence seam - one Attack action driving two complete p.14 " +
-                    "orders without being p.10's Repeat")),
+                    "the attack-sequence bullet's subject narrowing - a per-candidate predicate on " +
+                    "AttackSequenceBullet, which is a snapshot schema claimant")),
 
             new DodgerCardProfile(
                 BlazingSkull, "Blazing Skull", 10, 5, 4,

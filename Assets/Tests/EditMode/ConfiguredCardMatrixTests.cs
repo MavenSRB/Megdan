@@ -366,7 +366,16 @@ namespace GuardsDigital.Tests.EditMode
                     // real consumers are unlanded - Middlefinger of Death is on a hero branch, and
                     // Grim Reaper and Spirit Bear are future heroes - which is exactly the case this
                     // gate's synthetic half exists for.
-                    SyntheticShowcaseHand.CreateRedWithModalSequenceAttackText(owner)
+                    SyntheticShowcaseHand.CreateRedWithModalSequenceAttackText(owner),
+                    // Milestone 8.35z34's two, and the reason there are two rather than four: the
+                    // showcase half of this gate is asked of a handler TYPE, and Dodger's dealing
+                    // registers four types across six capability ids. The Gravedigger reaches the
+                    // empty-Spawn-point count and rulebook p.19's Respawn; the Reliquary reaches the
+                    // Ultimate predicate and p.16's card-text item grant. Her printed-Radius arms of
+                    // the first two run on the same two types and are admitted by the concat below,
+                    // which is exactly the division this gate draws.
+                    SyntheticShowcaseHand.CreateRedWithSpawnPointSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithBoxItemSkill(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -407,6 +416,15 @@ namespace GuardsDigital.Tests.EditMode
                 // Her two end-of-round sources reach their effects through the triggered-effect concat
                 // below rather than through a card node, which is what that concat is there for.
                 .Concat(XargathaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.35z34. Dodger's printed set is the SEVENTH, and the first from outside
+                // the 8.17 roster - admitted on the same half of the rule: a capability named by a card
+                // a configured match deals is not a deferral. The other half still binds, and this is
+                // the first hero for whom it did real work: four of her six new contracts are new
+                // HANDLER TYPES, so her dealing had to add showcase consumers for them before this
+                // concat could admit the cards that name them. Her Active-effect pair is the exception
+                // and says why - it runs on ActiveEffectCreationHandler, which the showcase has reached
+                // since milestone 6.8.
+                .Concat(DodgerCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

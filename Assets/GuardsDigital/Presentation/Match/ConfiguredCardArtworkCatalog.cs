@@ -38,7 +38,7 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// The validated 108-card presentation catalog used by both local preparation and runtime lookup.
+    /// The validated 126-card presentation catalog used by both local preparation and runtime lookup.
     /// </summary>
     public sealed class CardArtworkCatalog
     {
@@ -52,7 +52,8 @@ namespace GuardsDigital.Presentation.Match
                 { "tigerclaw", "Tigerclaw" },
                 { "arien", "Arien" },
                 { "brogan", "Brogan" },
-                { "sabina", "Sabina" }
+                { "sabina", "Sabina" },
+                { "dodger", "Dodger" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -113,7 +114,7 @@ namespace GuardsDigital.Presentation.Match
             byReference.TryGetValue(reference, out entry);
 
         /// <summary>
-        /// Proves that the catalog and the configured six-hero dealt-definition set are the same set.
+        /// Proves that the catalog and the configured dealt-definition set are the same set.
         /// </summary>
         public void ValidateBijection(IEnumerable<CardDefinitionReference> configuredReferences)
         {
@@ -142,7 +143,7 @@ namespace GuardsDigital.Presentation.Match
                 var reason = current.IsDefined
                     ? $"uses revision '{entry.Reference.ContentRevision}' while the configured " +
                       $"definition uses '{current.ContentRevision}'"
-                    : "is not a configured six-hero dealt definition";
+                    : "is not a configured dealt definition of any hero this build deals";
                 throw EntryFailure(entry, reason);
             }
 
@@ -288,7 +289,8 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// Loads and pins the one tracked catalog against the six configured heroes' 108 dealt definitions.
+    /// Loads and pins the one tracked catalog against every dealt definition of every hero this build
+    /// deals - seven heroes and 126 cards since milestone 8.35z34 dealt Dodger the Warlock.
     /// </summary>
     public static class ConfiguredCardArtworkCatalog
     {
@@ -301,6 +303,12 @@ namespace GuardsDigital.Presentation.Match
                 .Concat(ArienCardContent.DealtDefinitions)
                 .Concat(BroganCardContent.DealtDefinitions)
                 .Concat(SabinaCardContent.DealtDefinitions)
+                // Milestone 8.35z34. Dodger's eighteen, joining at the milestone that deals her -
+                // which is the only thing this list has ever been a statement about. Milestone 8.35l's
+                // trap is that a content-revision bump owes rows here and a green harness is
+                // structurally blind to the omission, so her own content file records the same debt
+                // from the other side and neither can move alone.
+                .Concat(DodgerCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

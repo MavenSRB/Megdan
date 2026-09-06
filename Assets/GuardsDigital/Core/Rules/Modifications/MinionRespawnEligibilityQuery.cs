@@ -72,12 +72,20 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// and this method adds only the two words those nine do not print - "friendly", which p.19
         /// makes a statement about sides, and the eligibility p.19 attaches to a Respawn.</para>
         ///
-        /// <para><b>A point the Ultimate granted is not a destination</b>, and that is the printed
-        /// silence rather than a restriction. Tide of Darkness grants "a friendly minion spawn point"
-        /// and names no type; the user's D-07 ruling makes the chosen point's type decide what comes
-        /// back, and p.19's count is stated per type. A typeless point answers neither question, so it
-        /// counts towards every face that asks whether an empty Spawn point is there and hosts no
-        /// Respawn. The alternative would be choosing a type the card does not print.</para>
+        /// <para><b>A point the Ultimate granted IS a destination - RULING 48 (2026-09-06), which
+        /// overrules the reading milestone 8.35z28 shipped.</b> The user settled it in one sentence,
+        /// "Respawn anywhere in reach": post-Ultimate she may respawn into any empty space in the
+        /// card's reach, because the Ultimate's whole content is that every space has a friendly minion
+        /// Spawn point and p.19 asks nothing more of a destination than that. What the earlier reading
+        /// got right is that a granted point names no type; what it got wrong is concluding that the
+        /// question is therefore unanswerable. p.19 answers it from the other side: the page's own
+        /// eligibility count already says which types may come back at all, so a typeless destination
+        /// takes its type from <see cref="EligibleTypesFor"/> instead of from the point. Heavies stay
+        /// structurally excluded because that count never favours one - RULING 12's derivation is
+        /// untouched - and where more than one type is eligible, p.10's default gives the choice to the
+        /// actor, which the handler asks as its second question. At a REAL printed point, RULING 12's
+        /// destination-fixes-type still governs and this method still filters on the point's own
+        /// type.</para>
         /// </summary>
         public static IReadOnlyList<EmptyMinionSpawnPointFact> FindRespawnDestinationsWithin(
             IBoardDisplacementAuthority board,
@@ -101,12 +109,85 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return Array.Empty<EmptyMinionSpawnPointFact>();
             }
 
-            return EmptyMinionSpawnPointQuery
-                .FindFactsInCurrentBattleZone(board, spaces, overlay)
-                .Where(fact => fact.IsPrinted)
-                .Where(fact => fact.TeamSide == side)
-                .Where(fact => HexDistanceQuery.Calculate(origin, fact.At) <= distance)
-                .Where(fact => IsTypeEligible(board, side, fact.MinionType, overlay))
+            // Computed once rather than per candidate space: the count is a fact about the Zone, and
+            // every granted point in it reads the same answer.
+            var eligibleAtATypelessPoint = EligibleTypesFor(board, side, overlay);
+
+            var found = new List<EmptyMinionSpawnPointFact>();
+            foreach (var fact in EmptyMinionSpawnPointQuery
+                         .FindFactsInCurrentBattleZone(board, spaces, overlay))
+            {
+                if (HexDistanceQuery.Calculate(origin, fact.At) > distance)
+                {
+                    continue;
+                }
+
+                // A real printed friendly point, which RULING 48 leaves exactly as RULING 12 left it:
+                // the destination fixes what comes back, so the point is a destination only while its
+                // own type may come back at all.
+                if (fact.IsPrinted && fact.TeamSide == side)
+                {
+                    if (IsTypeEligible(board, side, fact.MinionType, overlay))
+                    {
+                        found.Add(fact);
+                    }
+
+                    continue;
+                }
+
+                // Everything else is a destination only through the Ultimate's grant, and is typeless
+                // whatever the map prints on it. Two spaces reach here: one the map prints nothing on,
+                // and one printing an ENEMY point - and the second is a destination for the same reason
+                // the first is, because the card grants a friendly point on ALL spaces and says nothing
+                // about what a space already carries. Excluding it would be an unprinted restriction.
+                //
+                // Note what does NOT reach here: an empty friendly point whose own type is ineligible.
+                // RULING 48 names the two readings as alternatives - "at an untyped granted point ...
+                // at a REAL printed spawn point" - so a space with a printed friendly point is governed
+                // by that point, which is also what keeps one space to one destination and the offer
+                // unambiguous.
+                if (!overlay.IsActive || eligibleAtATypelessPoint.Count == 0)
+                {
+                    continue;
+                }
+
+                found.Add(new EmptyMinionSpawnPointFact(
+                    default, fact.At, side, StandardMinionType.None, isPrinted: false));
+            }
+
+            return found;
+        }
+
+        /// <summary>
+        /// The minion types p.19 lets this side bring back into the Battle Zone right now - what a
+        /// destination that names no type of its own respawns. RULING 48.
+        ///
+        /// <para>It is the same comparison <see cref="IsTypeEligible"/> makes, asked of every type
+        /// instead of one, and it is deliberately stated that way rather than as a list of "types
+        /// Dodger may respawn": the page's count is the only rule in play, so a Heavy is absent from
+        /// this list exactly when the arithmetic says so and never because this method was told to leave
+        /// it out. <c>DodgerNecromancyTests</c> proves the Heavy's absence against the shipped
+        /// configuration, which is only evidence while the exclusion is derived here rather than
+        /// written.</para>
+        ///
+        /// <para>Ordered by the enum's own order so that the candidate list a player is offered is
+        /// stable across runs, restores and replays - the same reason
+        /// <see cref="EmptyMinionSpawnPointQuery.FindFactsInCurrentBattleZone"/> sorts its facts.</para>
+        /// </summary>
+        public static IReadOnlyList<StandardMinionType> EligibleTypesFor(
+            IBoardDisplacementAuthority board,
+            TeamSide side,
+            SpawnPointOverlay overlay)
+        {
+            if (board == null) throw new ArgumentNullException(nameof(board));
+
+            if (side == TeamSide.None)
+            {
+                return Array.Empty<StandardMinionType>();
+            }
+
+            return new[] { StandardMinionType.Melee, StandardMinionType.Ranged, StandardMinionType.Heavy }
+                .Where(type => IsTypeEligible(board, side, type, overlay))
                 .ToArray();
         }
 

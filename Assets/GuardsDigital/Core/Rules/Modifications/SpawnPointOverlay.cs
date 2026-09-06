@@ -96,10 +96,15 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// <para><b>A point granted by the Ultimate carries no type, and that is a printed absence rather
     /// than a modelling gap.</b> Tide of Darkness says every space "had a friendly minion spawn point"
     /// and names no type; p.19's Respawn eligibility is stated per type and colour, and p.8's only
-    /// other respawn places "one minion of the matching type". So a granted point answers the nine
-    /// faces that ask whether an empty Spawn point is there, and answers nothing to the two faces that
-    /// ask which minion comes back - the card does not say, and under the standing ruling a face's
-    /// silence is recorded as absence rather than filled in with a chosen type.</para>
+    /// other respawn places "one minion of the matching type".</para>
+    ///
+    /// <para><b>What the absence does NOT mean is that nothing can respawn there</b> - RULING 48
+    /// (2026-09-06), which overruled the reading milestone 8.35z28 shipped here. A granted point
+    /// answers the nine faces that ask whether an empty Spawn point is there, and a Respawn onto one
+    /// takes its type from p.19's eligibility count rather than from the point: the page names which
+    /// types may come back at all, so the question the point cannot answer is one the rule already
+    /// has. Nothing is filled in with a type the card does not print - the type is read from the
+    /// rulebook, and where the page admits more than one, p.10 hands the choice to the actor.</para>
     /// </summary>
     public readonly struct EmptyMinionSpawnPointFact
     {

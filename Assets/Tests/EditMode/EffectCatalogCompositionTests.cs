@@ -93,6 +93,11 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(BroganActiveEffectContent.Handlers())
                 .Concat(TigerclawActiveEffectContent.Handlers())
                 .Concat(TigerclawComponentContent.Handlers())
-                .Concat(XargathaActiveEffectContent.Handlers());
+                .Concat(XargathaActiveEffectContent.Handlers())
+                // Milestone 8.35z34. Dodger's Weakness and Enfeeblement, joining the moment her
+                // dealing milestone put them into MatchContentCatalogs - which this list deliberately
+                // mirrors by hand rather than calling, because a mirror that called the production
+                // composer would agree with it by construction and prove nothing.
+                .Concat(DodgerActiveEffectContent.Handlers());
     }
 }

@@ -13,20 +13,25 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class ConfiguredCardArtworkCatalogTests
     {
         [Test]
-        public void ConfiguredCatalog_IsA108EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA126EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
                 catalog.ValidateBijection(ConfiguredCardArtworkCatalog.ConfiguredReferences));
-            Assert.That(catalog.Entries, Has.Count.EqualTo(108));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(108));
+            // Milestone 8.35z34 took this from 108 to 126: dealing Dodger the Warlock adds her eighteen
+            // dealt definitions, and the catalog names DEALT heroes rather than composed ones. It is a
+            // Unity-only fixture - the dotnet harness excludes it, because the catalog is Presentation -
+            // so this is exactly the pin a green harness is structurally blind to, which is milestone
+            // 8.35l's recorded trap arriving on schedule.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(126));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(126));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(108),
+                Is.EqualTo(126),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -34,7 +39,7 @@ namespace GuardsDigital.Tests.EditMode
                     .OrderBy(group => group.Hero),
                 Is.EqualTo(new[]
                 {
-                    ("arien", 18), ("brogan", 18), ("sabina", 18),
+                    ("arien", 18), ("brogan", 18), ("dodger", 18), ("sabina", 18),
                     ("tigerclaw", 18), ("wasp", 18), ("xargatha", 18)
                 }));
 

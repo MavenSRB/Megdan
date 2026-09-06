@@ -279,6 +279,39 @@ Non-goals: she is not dealt or registered; RULING 17's two-tier modal rule is UN
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z33-compose-whisper-the-outcasts-printed-set-and-settle-the-waves-shared-declarations-completion-evidence).
 
+### [x] 8.35z34 Deal, register and player-path gate Dodger the Warlock as the seventh hero
+
+The six-hero content wave composed six printed sets and dealt none of them. This is the first of the six dealing milestones, and it is the whole per-hero completion ceremony the roster's first six each took: register, deal, gate, journey, govern, verify.
+
+Observable outcome: a player loads a staged match, is dealt Dodger's eighteen cards, and can reach every face of hers a printed sentence allows - with her contracts in the build's registered set, her identity pinned, her artwork addressed, and her player-path gate passing beside the six that came before it.
+
+**RULING 48 landed first, because it is content rather than plumbing.** The user overruled the reading milestone 8.35z28 shipped: a Spawn point her Ultimate granted DOES host a Respawn. The superseded reading got the silence right - a granted point names no minion type - and the conclusion wrong, because rulebook p.19 answers the type question from its own side. So the type now comes from the page's eligibility count, heavies stay excluded by that arithmetic rather than by a written rule, and where the page admits more than one type p.10 hands the choice to the actor. That gives one capability node **two questions**, on the shape p.18's batch Push has used since milestone 8.8, and it needed no new state: the second answer re-reads the first from the resolution's own accepted choices, so a restore resumes with exactly the answers it had.
+
+**The registration is what moves the numbers, and each movement was measured with its cause isolated.** Six capability contracts crossed from the deferred lists into the registered set across exactly **four** new handler types - two count declarations share one handler and two Respawn declarations share another - so the pinned handler count moved 53 to 57 rather than by six. Her two Active-effect creations moved it by nothing, being further registrations over a type this build has had since milestone 6.8. Every corpus digest and both scenario-digest families moved, schema **unmoved at v38**, and the migrate decision is recorded beside the pins with the evidence that it is registration rather than behaviour: all three of the scenario pin's own invariants survived the move intact.
+
+**A conformance rule was silent about a defect for as long as its subject was deferred.** `maximumCounted` is an integer parameter declaring no enum domain and carrying no recognised quantity name, and the rule that would have caught it scans only REGISTERED parameters. Dealing a hero who shares that handler is what made it visible. The class is worth carrying: a conformance rule scoped to the registered set says nothing about any deferred hero's declarations until somebody deals a hero who shares one.
+
+**The gate table was written from a derivation rather than checked against one.** An offline probe printed what `HeroPlayerPathMatrix` derives for each of her nineteen faces before a row existed, and all nine gate cases passed on their first run. The same probe proved the addition generalises rather than re-fits: one new interaction shape and six capability classifications left every one of the six earlier heroes' 114 derived rows byte-identical.
+
+**THE PLAY MODE TIER FOUND A REAL DEFECT IN RULING 48'S OWN SHAPE, and it is the milestone's most valuable result.** A snapshot captured while the type question stood came back showing the DESTINATION question: the answer the node already had was asked for a second time. The cause is general - a restored pause re-enters a node through `Execute` rather than through `Resume`, so a node that asks twice re-asks its first question unless `Execute` is idempotent with respect to the answers already recorded against it. The fix is that idempotence, and it is now pinned offline as well as journeyed. Two riders: it was findable only by isolating the operations, because a run that composes Undo and restore cannot say which of them lost the answer; and **p.18's batch Push shares the two-question shape and consults those answers only in `Resume`**, so whether it has the same gap is untested rather than known - no journey has ever captured a snapshot on its second question.
+
+**Two further engine facts the same tier established, both recorded at their sites.** The two questions share a node, so `PendingEffectChoice.NodeId` cannot tell them apart and an Undo that stepped one command too far satisfied a node-identity assertion anyway - what distinguishes them is that the type question draws controls and the destination is answered on the board. And the order of the two session operations is forced rather than chosen: a restore permanently disables history, so an Undo attempted after one is testing nothing.
+
+**Two staging facts were measured before any journey was written, and both changed where journeys live.** Every minion Spawn point inside the Battle Zone is OCCUPIED at the engaged staging, so all nine of her spawn-point faces read false there - which is her card design rather than a staging defect, and which moves every journey whose subject is a spawn-point clause onto the Tier III arms where her Ultimate makes every empty space count. And no card in Wasp's Red set at any Tier prints a repeat, so Enfeeblement's restriction had nothing to grey; that arm now deals the enemy the set that can repeat, because a restriction is only honest if the player who is stopped can see they are stopped.
+
+Acceptance checks:
+
+- Dodger is dealt by a configured match, her six contracts are registered, and the fixture that asserted the opposite while she was undealt is inverted rather than deleted.
+- The registered-handler count is 53 to 57, her identity pin is measured on a complete unfiltered run, and the other six pins are byte-identical in that same run.
+- Her eighteen artwork rows exist and the catalog's bijection holds at 126 dealt definitions across seven heroes.
+- Her player-path gate passes, every row's shapes match the derivation exactly, and the six earlier heroes' derived rows are unmoved.
+- The Respawn's paused type choice survives a retained-prefix Undo and a snapshot restore, answered again on the real control each time.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision.
+
+Non-goals: Middlefinger of Death stays parked, on a narrowed and precisely located seam - its second bullet needs a per-candidate predicate on a type the snapshot persists, which is a schema event and is owed a milestone where it alone moves the schema; the five other composed heroes are not dealt; and no official six-player line-up changes, which milestone 8.25 owns.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z34-deal-register-and-player-path-gate-dodger-the-warlock-as-the-seventh-hero-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

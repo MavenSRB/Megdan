@@ -116,6 +116,27 @@ namespace GuardsDigital.Tests.PlayMode
         PushDistanceChoice,
 
         /// <summary>
+        /// Milestone 8.35z34. Which minion type comes back, answered on a control naming the
+        /// miniatures the supply holds - Dodger's Necromancy and Necromastery, once her Ultimate has
+        /// granted the Spawn point she is respawning into.
+        ///
+        /// <para><b>It is its own shape because its subject is not on the board.</b> Every other
+        /// selection this table names points at a piece standing somewhere or a space a player can
+        /// click; this one picks among miniatures in the supply, which is a control and not a board
+        /// click. Classifying it as <see cref="BoardUnitSelection"/> would claim a journey in which a
+        /// player clicks a piece, and there is no piece to click.</para>
+        ///
+        /// <para><b>Why it is derived from the capability rather than from the node</b>, unlike the
+        /// push distance and the named Move destination beside it. Those two are read off a literal the
+        /// card declared, so the derivation can tell in advance whether a player is asked. Whether this
+        /// question is asked depends on live board state - RULING 48 gives the type to p.19's own
+        /// eligibility count, and one eligible type opens no control at all - so no reading of the
+        /// definition can decide it. A capability that may ask therefore declares the shape, and the
+        /// hero who prints it owes a journey where the question is actually put.</para>
+        /// </summary>
+        RespawnedMinionTypeChoice,
+
+        /// <summary>
         /// Milestone 8.23. A printed quantity of a resource, answered by its own numeric controls -
         /// Tigerclaw's three thieving Greens, "Take 1 coin" and Master Thief's "Take 1 or 2 coins".
         ///
@@ -565,7 +586,42 @@ namespace GuardsDigital.Tests.PlayMode
                 ["tigerclaw-give-poison-marker-1"] =
                     new[] { PlayerInteractionShape.HeldMarkerReading },
                 ["tigerclaw-give-poison-marker-2"] =
-                    new[] { PlayerInteractionShape.HeldMarkerReading }
+                    new[] { PlayerInteractionShape.HeldMarkerReading },
+
+                // Milestone 8.35z34. Dodger the Warlock's six, and the split between them is the
+                // difference between a question and a fact.
+                //
+                // The two Spawn-point counts ask nobody anything: "if you are adjacent to an empty
+                // spawn point" and "if there are 2 or more empty spawn points in radius" are readings
+                // of the board that gate a step, and a player who plays the card is not shown a
+                // control for them. That is the same classification `presence-count@1` has carried
+                // since milestone 8.22 for the identical grammar.
+                ["empty-minion-spawn-points-adjacent"] = Array.Empty<PlayerInteractionShape>(),
+                ["empty-minion-spawn-points-in-radius"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Her two progression contracts, on the same terms. Whether the Ultimate is unlocked
+                // is a fact about the hero's own area, and p.16's item grant is a consequence whose
+                // recipient the card names - "gain +1 Attack item" asks nothing and offers nothing.
+                // What the item does afterwards is read on the dashboard, which is the hero's own
+                // component row and not this card's.
+                ["ultimate-unlocked"] = Array.Empty<PlayerInteractionShape>(),
+                ["gain-item-from-the-box"] = Array.Empty<PlayerInteractionShape>(),
+
+                // p.19's two Respawns, which are the one place her content asks TWO questions on one
+                // node. The destination is a space clicked on the board, exactly as every Place is;
+                // the type is a control among miniatures in the supply, which is not a board click at
+                // all - see RespawnedMinionTypeChoice. Both arms declare both, because the arms differ
+                // only in where the reach comes from and not in what is asked.
+                ["synthetic-respawn-friendly-minion-adjacent"] = new[]
+                {
+                    PlayerInteractionShape.BoardSpaceSelection,
+                    PlayerInteractionShape.RespawnedMinionTypeChoice
+                },
+                ["synthetic-respawn-friendly-minion-in-radius"] = new[]
+                {
+                    PlayerInteractionShape.BoardSpaceSelection,
+                    PlayerInteractionShape.RespawnedMinionTypeChoice
+                }
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

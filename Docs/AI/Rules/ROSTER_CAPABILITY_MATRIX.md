@@ -1,10 +1,11 @@
-# Six-Hero Roster Capability Matrix
+# Roster Capability Matrix
 
 <!-- operative-claim:F-DOC-024 status:CurrentDemonstrated -->
 
 Canonical planning map for milestone 8.19. Return to [CARD_COVERAGE.md](CARD_COVERAGE.md). Source truth and
-exact face text remain in the six hero shards; this file owns only capability classification, effect-node
-contracts, dependency order, and source-linked scenario IDs for the five heroes added after Wasp.
+exact face text remain in the hero shards; this file owns only capability classification, effect-node
+contracts, dependency order, and source-linked scenario IDs for every hero added after Wasp - the five
+milestone 8.19 planned, and Dodger, added at milestone 8.35z34 from outside that line-up.
 
 ## Reading the matrix
 
@@ -33,7 +34,7 @@ revision: `synthetic-direct-move@1`, `synthetic-object-push@3`, `synthetic-place
 `synthetic-range-target@1`, `synthetic-radius-target@1`, `synthetic-choose-target@1`, and
 `repeat-action@1`. New or refined identities must be introduced by an approved dependency slice and registered before verified content can use them.
 
-Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v34 and pins the complete registered contract set used by restore.
+Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete, and milestone 8.35z34 added a seventh - Dodger, composed at 8.35z28 and dealt, registered and gated at 8.35z34. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v38 and pins the complete registered contract set used by restore, which is why a dealing milestone moves every corpus digest and says why. **Five further heroes are composed and NOT dealt** - Misa, Silverarrow, Ursafar, Tali and Whisper, from the six-hero content wave - and their contracts stay in the deferred lists until each hero's own dealing milestone, which is milestone 7.9's gate working rather than an omission.
 
 **The block's own prerequisite claim needs qualifying, and this is now three heroes running:** each of
 8.20, 8.20a and 8.21 found printed sentences needing vocabulary no 8.19 slice built - a restriction
@@ -140,6 +141,31 @@ Source: [HERO_XARGATHA.md](HERO_XARGATHA.md). Xargatha owns no token, marker, al
 | Constrict / Final Embrace | R, N | `create-active-effect@1 (EndOfRound, before MinionBattle, enemy Melee / Melee-or-Ranged minion adjacent to A)`; trigger uses `synthetic-defeat-minion@1 (automatic when one candidate; chooser=A when several; M/One; staged reward/removal/immediate Lane Push)` `[xargatha/constrict-embrace]`. |
 | Metamorphosis | R, N | Ultimate source declares `enemy-adjacent-count@1`, `modify-value@2 (Movement +1 and Initiative +1 per count, recalculated at each owning query)`, and existing Move-Through permission `[xargatha/metamorphosis]`. |
 | Profile, dashboard, standee | R | `hero-content-definition@1 (hero-content/xargatha, team slot, deck, profile/dashboard references; validation-only)` `[xargatha/components]`. No rules component supply. |
+
+## Dodger
+
+Source: [HERO_DODGER.md](HERO_DODGER.md). Dodger owns no token, marker, alternate form, or statue. She was
+added at milestone 8.35z34, after this file's own six, and is the first hero here from outside milestone
+8.17's line-up.
+
+**Nine of her nineteen faces read ONE derived board quantity**, and the rows below name it once rather than
+per face: `EmptyMinionSpawnPointQuery` is that derivation, reached three ways because a Defense value is a
+number, a ritual is a step, and a Silver basic's clause is a narrowing on who may be picked. All nine read
+`SpawnPointOverlay.ForActor`, which is her Ultimate's switch.
+
+| Faces / component | Class | Effect nodes and exact contract |
+| --- | --- | --- |
+| Dread Razor / Rusty Razor | R, F | p.10 modal over two printed bullets: adjacent-unit target, or `empty-minion-spawn-points-adjacent@1 (minimum=1)` gating a printed-Range unit target. Both bind at p.14 step 1. Rusty Razor is p.20's Handicap and carries the standing deferral `[dodger/razors]`. |
+| Death Trap | R, N | `synthetic-radius-hero-target@1 (enemy hero in printed Radius, narrowed by adjacentToEmptyMinionSpawnPoint)` then `synthetic-discard-chosen-card@1 (IfAble)`. Two bounds measured from two places - the disk from Dodger, the adjacency from each candidate `[dodger/death-trap]`. |
+| Littlefinger / Finger of Death | R, F | p.10 modal: adjacent-unit target, or `synthetic-range-hero-target@1 (hasCardInDiscard=true)`. The pile is bound to the named hero by "who has", and p.10 empties it at the round boundary `[dodger/fingers]`. |
+| Middlefinger of Death | R, F | **DEFERRED.** Its first bullet composes against milestone 8.35z27's `attack-sequence@1`; its second needs a per-candidate predicate an `AttackSequenceBullet`'s printed target policy cannot state, and that widening is a snapshot schema event `[dodger/middlefinger]`. |
+| Burning Skull / Blazing Skull | R, N | Printed-Range unit Attack then step-7 `synthetic-direct-move@3 (mover=chosen adjacent minion, 1 space, destination NotAdjacentToActor; UpTo)`, once or twice `[dodger/skulls]`. |
+| Shield of Decay / Vampiric Shield / Aegis of Doom | R, N | Primary Defense declaring `RosterValueContributionDefinition (Defense +2/+2/+4)` against `TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius`. p.14 prints the `+` on the number, so the whole sentence is a value and there is no step - the first conditional printed Defense in this build `[dodger/shields]`. |
+| Weakness / Enfeeblement | F, N | `create-active-effect@1 (ThisTurn, HeroesInRadius, OpposingSource)` declaring `ForValue(Attack, -4/-6)`, and Enfeeblement additionally `ForRestriction(RuleActivity.Repeat)`. The drain is a signed contribution on the Attack **Total** with no floor at zero `[dodger/drains]`. |
+| Dark / Darker / Darkest Ritual | R, N | `empty-minion-spawn-points-in-radius@1 (minimum=2)` gating `gain-resource@1 (1/2/2 coins)`. Darkest Ritual adds a SECOND independent gate - `ultimate-unlocked@1` feeding `gain-item-from-the-box@1 (icon=Attack)` - side by side rather than nested, which is what the user's D-04 ruling makes of the semicolon `[dodger/rituals]`. |
+| Necromancy / Necromastery | R, N | `synthetic-respawn-friendly-minion-adjacent@1` / `-in-radius@1`. p.19's eligibility is stated once in `MinionRespawnEligibilityQuery`. Under RULING 48 the node asks up to TWO questions: which empty space in reach, and - at a point the Ultimate granted - which eligible type comes back `[dodger/necromancy]`. |
+| Tide of Darkness | R, N | p.16 permanent ability declaring one `RuleModification` member, `AllSpacesCountAsFriendlyMinionSpawnPointsInBattleZone`. The whole rule lives in the member's NAME rather than in a field beside it, because adding a property to a shared declaration struct moves every hero who reaches it `[dodger/tide]`. |
+| Profile, dashboard, standee | R | `hero-content-definition@1 (hero-content/dodger, team slot, deck, profile/dashboard references; validation-only)` `[dodger/components]`. No rules component supply. |
 
 ## Delta register and dependency order
 

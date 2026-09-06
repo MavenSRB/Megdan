@@ -8,6 +8,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Effects.Synthetic
@@ -171,11 +172,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// color present in that Battle Zone". <c>MinionRespawnEligibilityQuery</c> is that rule, stated
         /// once for both faces.</para>
         ///
-        /// <para><b>The only choice is which point, and the point decides what comes back.</b> That is
-        /// the user's 2026-09-06 ruling on D-07, following p.8's own respawn - "Respawn one minion of
-        /// the matching type in each Spawn point in the new Battle Zone". So the chooser names a space
-        /// and never a minion type, and a Heavy is excluded by the arithmetic rather than by a rule
-        /// written here.</para>
+        /// <para><b>At a printed point the point decides what comes back.</b> That is the user's
+        /// 2026-09-06 ruling on D-07, following p.8's own respawn - "Respawn one minion of the matching
+        /// type in each Spawn point in the new Battle Zone" - and a Heavy is excluded by the arithmetic
+        /// rather than by a rule written here.</para>
+        ///
+        /// <para><b>At a point Dodger's Ultimate granted there is a second question, and RULING 48 is
+        /// what puts it there.</b> "Respawn anywhere in reach": post-Ultimate every empty space in the
+        /// card's reach is a destination, and a granted point names no type for the point to decide
+        /// with. p.19 answers from its own side instead - the page's eligibility count already says
+        /// which types may return at all - so the type comes from
+        /// <c>MinionRespawnEligibilityQuery.EligibleTypesFor</c>, and where the page admits more than
+        /// one, p.10's default hands the choice to the actor. This node therefore asks up to two
+        /// questions, on the same one-capability-asking-twice shape p.18's batch Push has used since
+        /// milestone 8.8; one eligible type opens no control at all, for the reason milestone 8.20b
+        /// gives about a single printed push distance.</para>
         /// </summary>
         public static EffectCapabilityId RespawnFriendlyMinionAdjacent { get; } =
             new EffectCapabilityId("synthetic-respawn-friendly-minion-adjacent");
@@ -220,7 +231,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new PlaceHandler(PlaceV2, PrintedValueChannel.None),
                 new PlaceHandler(PlaceInRangeV1, PrintedValueChannel.Range),
                 new PlaceHandler(PlaceInRadiusV1, PrintedValueChannel.Radius),
-                new SpawnHandler()
+                new SpawnHandler(),
+
+                // Milestone 8.35z34. p.19's two Respawns, moved across by the milestone that deals
+                // Dodger the Warlock: Necromancy starts the adjacent arm and Necromastery the
+                // printed-Radius one, and both are now cards a configured match puts in a hand. The
+                // showcase half of the gate is answered by that milestone's Red Gravedigger, because
+                // RespawnFriendlyMinionHandler is a handler type this build had never registered.
+                new RespawnFriendlyMinionHandler(
+                    RespawnFriendlyMinionAdjacentV1, readsPrintedRadius: false),
+                new RespawnFriendlyMinionHandler(
+                    RespawnFriendlyMinionInRadiusV1, readsPrintedRadius: true)
             };
 
         /// <summary>
@@ -237,10 +258,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// Swoop In measures the printed Radius and then asks each candidate space who is standing
         /// beside it.</para>
         ///
-        /// <para>Milestone 8.35z28's two are p.19's Respawn, held apart from the <see cref="Spawn"/>
-        /// they are not: that capability puts a miniature back on the Spawn point it belongs to and
-        /// asks p.19's eligibility nothing. They are reachable only from Dodger's Necromancy and
-        /// Necromastery.</para>
+        /// <para>Milestone 8.35z28's two Respawns HAVE LEFT this list. Milestone 8.35z34 deals Dodger,
+        /// so Necromancy and Necromastery are cards a match puts in a hand, and the gate that held them
+        /// here is satisfied on both halves at once - see <see cref="RegisteredHandlers"/>. What
+        /// remains is Misa's, whose own dealing milestone will do the same.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             new IEffectCapabilityHandler[]
@@ -251,11 +272,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new PlaceHandler(
                     PlaceInRadiusBesideTwoOrMoreEnemiesV1, PrintedValueChannel.Radius,
                     PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
-                    PlaceDestinationQualifier.AdjacentToTwoOrMoreEnemyUnits),
-                new RespawnFriendlyMinionHandler(
-                    RespawnFriendlyMinionAdjacentV1, readsPrintedRadius: false),
-                new RespawnFriendlyMinionHandler(
-                    RespawnFriendlyMinionInRadiusV1, readsPrintedRadius: true)
+                    PlaceDestinationQualifier.AdjacentToTwoOrMoreEnemyUnits)
             };
 
         /// <summary>
@@ -875,6 +892,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
+                // RESTORE SAFETY, AND IT IS MEASURED RATHER THAN DEFENSIVE. A restored pause re-enters
+                // a node through Execute rather than through Resume, so a node that asks TWO questions
+                // must not ask the first one again once the first has been answered. Milestone
+                // 8.35z34's Play Mode work measured exactly that failure: a snapshot captured while
+                // the type question stood came back showing the DESTINATION question, because Execute
+                // always asked for a destination and knew nothing of the answer already recorded
+                // against this node.
+                //
+                // The rule this states, which is wider than this handler: a capability that asks more
+                // than once is only restore-safe while its Execute is idempotent with respect to
+                // `AnswersAlreadyGiven`. p.18's batch Push shares the two-question shape and consults
+                // those answers only in Resume; no journey has ever captured a snapshot on its second
+                // question, so whether it has the same gap is untested rather than known.
+                if (TryReadDestinationAnswer(context, out var alreadyAnswered))
+                {
+                    return ResumeWithDestination(context, alreadyAnswered);
+                }
+
                 var destinations = Destinations(context);
                 if (destinations.Count == 0)
                 {
@@ -891,30 +926,119 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
-                if (selected == null || selected.Count != 1 ||
-                    selected[0].Kind != EffectValueKind.Coordinate)
+                if (selected == null || selected.Count != 1)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
+                // RULING 48 gives this node two questions rather than one, on the shape p.18's batch
+                // Push has used since milestone 8.8: which destination, and - only at a point the
+                // Ultimate granted, and only while p.19 lets more than one type back - which minion
+                // type comes back. The stage is read off the answer's own kind rather than stored,
+                // which is what keeps a restored pause re-deriving with exactly the answers it had.
+                switch (selected[0].Kind)
+                {
+                    case EffectValueKind.Coordinate:
+                        return ResumeWithDestination(context, selected[0].Coordinate);
+                    case EffectValueKind.Minion:
+                        return ResumeWithChosenType(context, selected[0].MinionId);
+                    default:
+                        return EffectExecutionResult.ImpossibleMandatory();
+                }
+            }
+
+            /// <summary>
+            /// The destination answer. A printed friendly point knows what comes back; a granted one
+            /// takes p.19's own eligibility list, and asks the actor which when the page admits more
+            /// than one.
+            /// </summary>
+            private EffectExecutionResult ResumeWithDestination(
+                EffectCapabilityContext context, HexCoordinate chosen)
+            {
                 // Re-derived against current state rather than trusted from the paused choice, exactly
                 // as the Spawn above is and for the same reason: a Spawn point empty when the choice
                 // opened may have been taken before the answer arrived, and p.19's eligibility count is
                 // live board state on both sides of its comparison.
-                var chosen = selected[0].Coordinate;
-                var destination = Destinations(context)
-                    .FirstOrDefault(fact => fact.At.Equals(chosen));
-                if (!destination.IsPrinted)
+                if (!TryFindDestination(context, chosen, out var destination))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var components = context.Components;
-                var miniature = components.Units.FindUnitSupply()
-                    .Where(candidate => candidate.TeamSide == destination.TeamSide &&
-                        candidate.MinionType == destination.MinionType)
+                if (destination.IsPrinted)
+                {
+                    return Commit(context, destination, destination.MinionType);
+                }
+
+                var eligible = EligibleTypes(context, destination.TeamSide);
+                if (eligible.Count == 0)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                if (eligible.Count == 1)
+                {
+                    // One legal answer is not a question. The same reading milestone 8.20b took for
+                    // Kinetic Repulse's single printed push distance: a control with one option is a
+                    // control no player is shown.
+                    return Commit(context, destination, eligible[0]);
+                }
+
+                var candidates = eligible
+                    .Select(type => FindSupplyMiniature(context, destination.TeamSide, type))
+                    .Where(id => id.IsDefined)
+                    .Select(EffectValue.Minion)
+                    .ToArray();
+                if (candidates.Length == 0)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                if (candidates.Length == 1)
+                {
+                    return ResumeWithChosenType(context, candidates[0].MinionId);
+                }
+
+                // p.10's default: a decision the card leaves open belongs to the player performing it.
+                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.Actor, candidates, 1, 1));
+            }
+
+            /// <summary>
+            /// The type answer, which only a granted destination ever opens. The destination itself is
+            /// re-read from this node's own earlier answer and re-validated, never trusted.
+            /// </summary>
+            private EffectExecutionResult ResumeWithChosenType(
+                EffectCapabilityContext context, MinionId chosenMiniature)
+            {
+                if (!TryReadDestinationAnswer(context, out var chosen) ||
+                    !TryFindDestination(context, chosen, out var destination) ||
+                    destination.IsPrinted)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var miniature = context.Components.Units.FindUnitSupply()
+                    .Where(candidate => candidate.MinionId.Equals(chosenMiniature))
+                    .Where(candidate => candidate.TeamSide == destination.TeamSide)
+                    .Where(candidate => EligibleTypes(context, destination.TeamSide)
+                        .Contains(candidate.MinionType))
                     .Select(candidate => candidate.MinionId)
                     .FirstOrDefault(id => id.IsDefined);
+                if (!miniature.IsDefined)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return CommitMiniature(context, destination, miniature);
+            }
+
+            /// <summary>The whole commit for a destination whose type is settled.</summary>
+            private EffectExecutionResult Commit(
+                EffectCapabilityContext context,
+                EmptyMinionSpawnPointFact destination,
+                StandardMinionType minionType)
+            {
+                var miniature = FindSupplyMiniature(context, destination.TeamSide, minionType);
                 if (!miniature.IsDefined)
                 {
                     // p.19's count said a miniature of this type and colour is missing from the Zone,
@@ -923,20 +1047,111 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var committed = components.Lanes.CommitValidatedRespawnAtSpawnPoint(
-                    miniature, destination.SpawnPointId);
-                if (!committed.Accepted)
+                return CommitMiniature(context, destination, miniature);
+            }
+
+            /// <summary>
+            /// p.19's placement, taken through the port half that matches the destination: a printed
+            /// point is respawned onto by its own identity, and a point the Ultimate granted has no
+            /// identity to name, so it goes onto the chosen empty space - which is the same commit
+            /// p.8's own sidebar uses when a Spawn point cannot take its miniature.
+            /// </summary>
+            private static EffectExecutionResult CommitMiniature(
+                EffectCapabilityContext context,
+                EmptyMinionSpawnPointFact destination,
+                MinionId miniature)
+            {
+                var components = context.Components;
+                HexCoordinate at;
+                if (destination.IsPrinted)
                 {
-                    return EffectExecutionResult.ImpossibleMandatory();
+                    var committed = components.Lanes.CommitValidatedRespawnAtSpawnPoint(
+                        miniature, destination.SpawnPointId);
+                    if (!committed.Accepted)
+                    {
+                        return EffectExecutionResult.ImpossibleMandatory();
+                    }
+
+                    at = committed.Destination;
+                }
+                else
+                {
+                    if (!components.Lanes.CommitValidatedLanePushPlacement(miniature, destination.At))
+                    {
+                        return EffectExecutionResult.ImpossibleMandatory();
+                    }
+
+                    at = destination.At;
                 }
 
                 return EffectExecutionResult.Applied(new[]
                 {
                     new EffectOutcomeFact(RespawnedOutputName, EffectValue.Minion(miniature)),
-                    new EffectOutcomeFact(
-                        RespawnedAtOutputName, EffectValue.Space(committed.Destination))
+                    new EffectOutcomeFact(RespawnedAtOutputName, EffectValue.Space(at))
                 });
             }
+
+            /// <summary>
+            /// The destination this node was already answered with, read off the resolution's own
+            /// accepted choices rather than remembered - so a snapshot restore resumes with exactly the
+            /// answer it had. The newest coordinate answer wins, which is the same scan
+            /// <c>SyntheticDisplacementCapabilities</c>' two-question push makes.
+            /// </summary>
+            private static bool TryReadDestinationAnswer(
+                EffectCapabilityContext context, out HexCoordinate destination)
+            {
+                for (var index = context.AnswersAlreadyGiven.Count - 1; index >= 0; index--)
+                {
+                    var answer = context.AnswersAlreadyGiven[index];
+                    if (answer.Count == 1 && answer[0].Kind == EffectValueKind.Coordinate)
+                    {
+                        destination = answer[0].Coordinate;
+                        return true;
+                    }
+                }
+
+                destination = default;
+                return false;
+            }
+
+            /// <summary>
+            /// One destination by coordinate, matched by membership rather than by
+            /// <c>FirstOrDefault</c>: the fact is a struct, so a miss would come back as a default whose
+            /// own coordinate is a real space on the board.
+            /// </summary>
+            private bool TryFindDestination(
+                EffectCapabilityContext context,
+                HexCoordinate chosen,
+                out EmptyMinionSpawnPointFact destination)
+            {
+                foreach (var candidate in Destinations(context))
+                {
+                    if (candidate.At.Equals(chosen))
+                    {
+                        destination = candidate;
+                        return true;
+                    }
+                }
+
+                destination = default;
+                return false;
+            }
+
+            private static IReadOnlyList<StandardMinionType> EligibleTypes(
+                EffectCapabilityContext context, TeamSide side) =>
+                MinionRespawnEligibilityQuery.EligibleTypesFor(
+                    context.Components.Board,
+                    side,
+                    SpawnPointOverlay.ForActor(
+                        context.Modifications, context.Participants, context.ActorId));
+
+            private static MinionId FindSupplyMiniature(
+                EffectCapabilityContext context, TeamSide side, StandardMinionType minionType) =>
+                context.Components.Units.FindUnitSupply()
+                    .Where(candidate => candidate.TeamSide == side &&
+                        candidate.MinionType == minionType)
+                    .Select(candidate => candidate.MinionId)
+                    .FirstOrDefault(id => id.IsDefined);
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 Destinations(context).Count == 0

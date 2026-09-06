@@ -330,7 +330,59 @@ namespace GuardsDigital.Presentation.Interaction
         /// that reads which hero the match is waiting on does not need to know which way it landed, and
         /// one that does should not be asking a coin.</para>
         /// </summary>
-        VerifiedStagedArien = 34
+        VerifiedStagedArien = 34,
+
+        /// <summary>
+        /// Milestone 8.35z34. The staged Wasp-versus-Dodger hands with both heroes restaged already
+        /// engaged, exactly as <see cref="VerifiedEngagedStagedXargatha"/> stages its two. She is the
+        /// seventh hero this build deals and the first from outside the mapped pitch roster.
+        ///
+        /// <para>Dodger takes the Blue seat rather than joining it, for the reason the four arms
+        /// before hers record: milestone 8.25 owns the official six-player configuration. She needs no
+        /// ally arm - every clause of hers naming another hero names an enemy one.</para>
+        ///
+        /// <para><b>What her arms need that no earlier hero's did is the staging's minions left
+        /// standing on their SPAWN POINTS.</b> Nine of her faces read empty minion Spawn points in the
+        /// Battle Zone, so the engaged position's occupied points are what makes her conditions
+        /// measurable at all - and a fixture that swept the board clear would silently satisfy every
+        /// one of them rather than break.</para>
+        /// </summary>
+        VerifiedEngagedStagedDodger = 35,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Dodger holding the first sibling
+        /// of each colour: Finger of Death, Vampiric Shield and Darker Ritual.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedDodger = 36,
+
+        /// <summary>
+        /// The Tier II staging with Dodger holding the <em>second</em> sibling of each colour - Burning
+        /// Skull, Weakness and Necromancy - which is the half of p.15's upgrade the row above does not
+        /// deal. It is the only Tier II arm of hers that can bring a minion back: Necromancy is Darker
+        /// Ritual's Green sibling, so the branch decides whether this match contains a Respawn at all.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedDodger = 37,
+
+        /// <summary>
+        /// The engaged staging at p.15's Tier III stage, with p.16's Ultimate unlocked on both seats -
+        /// High Voltage in Wasp's area and Tide of Darkness in Dodger's - and Dodger holding the first
+        /// sibling of each colour: Middlefinger of Death, Aegis of Doom and Darkest Ritual.
+        ///
+        /// <para>Hers is the widest-reaching unlocked Ultimate in this build. Like Xargatha's it asks
+        /// nothing and waits for nothing, but what it is true about is the BOARD: while she performs
+        /// any action, every space counts as being in the Battle Zone and as carrying a friendly minion
+        /// Spawn point. This staging therefore starts with all nine of her spawn-point conditions
+        /// already satisfied.</para>
+        /// </summary>
+        VerifiedTierThreeEngagedStagedDodger = 38,
+
+        /// <summary>
+        /// The Tier III staging with Dodger holding the second sibling of each colour: Blazing Skull,
+        /// Enfeeblement and Necromastery. This is the one arm in which RULING 48 is reachable through a
+        /// player's own input - her Ultimate is up, so Necromastery's Respawn takes any empty space in
+        /// its printed Radius, and at a granted point it asks which minion type comes back.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedDodger = 39
     }
 
     [ExecuteAlways]
@@ -597,6 +649,25 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedXargathaTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.XargathaUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedDodger =>
+                    MatchConfiguration.CreateStagedDodgerForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedDodger =>
+                    MatchConfiguration.CreateStagedDodgerTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.DodgerUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedDodger =>
+                    MatchConfiguration.CreateStagedDodgerTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.DodgerUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedDodger =>
+                    MatchConfiguration.CreateStagedDodgerTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.DodgerUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedDodger =>
+                    MatchConfiguration.CreateStagedDodgerTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.DodgerUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 _ => MatchConfiguration.Create(format)
@@ -628,7 +699,8 @@ namespace GuardsDigital.Presentation.Interaction
                 IsStagedBrogan(content) ||
                 IsStagedSabina(content) ||
                 IsStagedTigerclaw(content) ||
-                IsStagedXargatha(content))
+                IsStagedXargatha(content) ||
+                IsStagedDodger(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -889,6 +961,11 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusXargathaOneVsOne();
                     }
 
+                    if (IsStagedDodger(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusDodgerOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -941,6 +1018,20 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedXargatha ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedXargatha ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedXargatha;
+
+        /// <summary>
+        /// Whether this content puts Dodger the Warlock on the Blue seat. Milestone 8.35z34's five
+        /// arms, on the one-hero-per-team setup and the ordinary engaged restaging: every clause of
+        /// hers that names another hero names an enemy one, so a friendly hero would widen no candidate
+        /// set she has - and the one thing her kit names on her own side, a friendly minion, is what
+        /// p.8's waves already put on the board.
+        /// </summary>
+        private static bool IsStagedDodger(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedDodger ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedDodger ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedDodger ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedDodger ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedDodger;
 
         /// <summary>
         /// Whether this content deals two heroes to the Blue team with Brogan beside Arien. Milestone

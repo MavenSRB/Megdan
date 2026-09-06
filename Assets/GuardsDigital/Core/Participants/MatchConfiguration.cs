@@ -623,6 +623,106 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// Milestone 8.35z34. The staged Wasp-versus-Dodger match, on the same `DEV-005` terms the
+        /// staged Arien, Brogan, Sabina, Tigerclaw and Xargatha matches are on. This is the
+        /// configuration that makes Dodger the seventh dealt hero.
+        ///
+        /// <para>Dodger takes the Blue seat though the roster-expansion amendment has not yet placed
+        /// her in an official line-up at all, for the reason
+        /// <see cref="CreateStagedBroganForInternalTest"/> records: milestone 8.25 owns the official
+        /// six-player configuration and every hero spawn it assigns. <see cref="Create"/> - the scene a
+        /// player loads - is untouched and still deals rulebook p.5's six.</para>
+        ///
+        /// <para><b>She needs no ally seat, and needs one thing no earlier staged hero needed: minions
+        /// on the board.</b> Nine of her nineteen faces read empty minion Spawn points in the Battle
+        /// Zone, and two of them respawn into one - so what her staged match must supply is not a
+        /// second friendly hero but p.8's own waves, which every configuration this build has already
+        /// puts there. What that means for a journey is worth stating: at p.6's setup every Spawn point
+        /// holds its minion, so her count reads zero and p.19 admits nothing back. Her kit switches on
+        /// as the wave dies, which is the card design and not a staging problem.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedDodgerForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedDodgerHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z34. The staged Wasp-versus-Dodger match at rulebook p.15's Tier II stage,
+        /// with Dodger holding one Tier II card of each colour on the branch the caller names - the
+        /// same pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
+        ///
+        /// <para>Which branch a staged hand took decides whether this match contains a Respawn at all:
+        /// Necromancy is the Green Tier II sibling of Darker Ritual, so only
+        /// <see cref="Cards.Verified.DodgerUpgradeBranch.SecondSibling"/> can bring a minion back. See
+        /// <see cref="Cards.Verified.DodgerProgressedHands"/>.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedDodgerTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.DodgerUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedDodgerHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z34. The staged Wasp-versus-Dodger match at rulebook p.15's Tier III stage
+        /// with p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and
+        /// Tide of Darkness in Dodger's.
+        ///
+        /// <para><b>Hers is the widest-reaching unlocked Ultimate in this build.</b> Like Xargatha's it
+        /// asks nothing and waits for nothing, but what it is true about is the board rather than the
+        /// hero: while she performs any action - a Defense action included, per the user's D-02 ruling
+        /// - every space counts as being in the Battle Zone and as carrying a friendly minion Spawn
+        /// point. So a Tier III Dodger's nine spawn-point faces all read their condition satisfied, and
+        /// RULING 48 makes her two Respawns reach any empty space in their printed reach. This
+        /// configuration is therefore the only one in which several of her faces do anything at
+        /// all.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedDodgerTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.DodgerUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                // THE ENEMY'S HAND IS PART OF THIS ARM'S CONTENT, on the second branch alone, and it
+                // is chosen rather than defaulted. Enfeeblement is the only face in this build whose
+                // reading is about what the ENEMY can do - "enemy heroes in radius cannot repeat
+                // actions" - and a restriction is only honest if the player who is stopped can see
+                // they are stopped, which means the enemy must be holding a card that prints a repeat.
+                // Milestone 8.35z34 measured every staged arm and found that no card of Wasp's Red set
+                // repeats at any Tier, so this arm seats her on Red and deals her the set that does:
+                // Thunder Boomerang, Center of Mass and Mass Telekinesis all print p.10's keyword.
+                //
+                // The first branch takes the ordinary Red set, because nothing on it asks the question.
+                CreateProgressedWaspHand(
+                    TeamSide.Red,
+                    tierThree: true,
+                    cardSetSide: branch == Cards.Verified.DodgerUpgradeBranch.SecondSibling
+                        ? TeamSide.Blue
+                        : (TeamSide?)null),
+                CreateProgressedDodgerHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.DodgerCardContent.TideOfDarkness)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
         /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
         /// Arien and Brogan matches are on.
         ///
@@ -803,13 +903,29 @@ namespace GuardsDigital.Core.Participants
             return configuration;
         }
 
+        /// <summary>
+        /// One seat's progressed Wasp hand.
+        ///
+        /// <para><b><paramref name="cardSetSide"/> is separate from <paramref name="side"/>, and
+        /// milestone 8.35z34 is why.</b> The side did two jobs at once - it named the seat's instance
+        /// prefix AND chose which of p.15's two upgrade sets that seat took - which was invisible while
+        /// every caller wanted both answers to be the same. Dodger's Enfeeblement is the first verified
+        /// face whose READING is about what the enemy holds: "enemy heroes in radius cannot repeat
+        /// actions" is only observable as a greyed control if the enemy is holding a card that prints a
+        /// repeat, and milestone 8.35z34 measured that no card in Wasp's Red set at any Tier does.
+        /// Splitting the parameter lets one staged arm seat Wasp on Red and deal her the set that can
+        /// repeat, without moving any other caller by a byte.</para>
+        /// </summary>
         private static Func<HeroId, ConfiguredHand> CreateProgressedWaspHand(
-            TeamSide side, bool tierThree) =>
-            ownerId => tierThree
+            TeamSide side, bool tierThree, TeamSide? cardSetSide = null)
+        {
+            var cards = cardSetSide ?? side;
+            return ownerId => tierThree
                 ? GuardsDigital.Core.Cards.Verified.WaspProgressedHands.CreateTierThreeHand(
-                    ownerId, side == TeamSide.Red ? "red" : "blue", side)
+                    ownerId, side == TeamSide.Red ? "red" : "blue", cards)
                 : GuardsDigital.Core.Cards.Verified.WaspProgressedHands.CreateTierTwoHand(
-                    ownerId, side == TeamSide.Red ? "red" : "blue", side);
+                    ownerId, side == TeamSide.Red ? "red" : "blue", cards);
+        }
 
         /// <summary>
         /// The mechanics-showcase hands with p.5's coin flip, which is what
@@ -923,6 +1039,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.XargathaProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.XargathaProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.35z34. One seat's verified Dodger hand, prefixed by the seat's team side for the
+        /// reason the six earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedDodgerHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.DodgerCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedDodgerHand(
+            bool tierThree, Cards.Verified.DodgerUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.DodgerProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.DodgerProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

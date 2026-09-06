@@ -35,6 +35,20 @@ namespace GuardsDigital.Tests.EditMode
                 "leastDistance",
                 "length",
                 "maximum",
+                // Milestone 8.35z34. The ceiling Whisper's Sanguine Path and Blood Pilgrimage print
+                // on the shared empty-Spawn-point count - "up to a maximum of 2 / 3 spaces". It is an
+                // ordinary quantity and it is named the way this list's own precedent names a
+                // qualified one, beside `maximumDistance` and `maximumTargets`: what is capped is said
+                // in the name, because the handler's other bound, `minimum`, caps something else
+                // entirely (how many points must be PRESENT, against how many are COUNTED).
+                //
+                // It reaches this rule now because rules apply to REGISTERED parameters, and Dodger's
+                // dealing registered the handler that declares it. Nothing was wrong with the
+                // parameter; it was simply unreachable by this check while its handler was deferred -
+                // which is worth recording as a class: a conformance rule scoped to the registered set
+                // is silent about every deferred hero's declarations until somebody deals a hero who
+                // shares one.
+                "maximumCounted",
                 "maximumDistance",
                 "maximumTargets",
                 "minimum",

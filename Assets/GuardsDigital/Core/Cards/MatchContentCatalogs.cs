@@ -131,6 +131,13 @@ namespace GuardsDigital.Core.Cards
                 .Concat(Enumerable.Empty<IEffectCapabilityHandler>())
                 .Concat(TigerclawActiveEffectContent.Handlers())
                 .Concat(TigerclawComponentContent.Handlers())
-                .Concat(XargathaActiveEffectContent.Handlers());
+                .Concat(XargathaActiveEffectContent.Handlers())
+                // Milestone 8.35z34. Dodger's Weakness and Enfeeblement, joining at her dealing
+                // milestone and not at the one that composed them - milestone 7.9's gate refuses a
+                // registration no dealt card can start, and until this milestone no configured match
+                // dealt her. They are the one group of hers that owed no showcase consumer: both run on
+                // ActiveEffectCreationHandler, the type Arien's five persistent texts already proved,
+                // and the gate's second half is asked of the handler type.
+                .Concat(DodgerActiveEffectContent.Handlers());
     }
 }

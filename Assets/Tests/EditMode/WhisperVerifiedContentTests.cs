@@ -1033,6 +1033,20 @@ namespace GuardsDigital.Tests.EditMode
         /// without dealing her. Milestone 7.9's gate has two halves and this phase can satisfy neither:
         /// a registered capability must be reachable from a card a match DEALS, and a new handler type
         /// must additionally be reachable from a showcase card.
+        ///
+        /// <para><b>NARROWED at milestone 8.35z34, which is the first time this list was wrong.</b> It
+        /// named <c>empty-minion-spawn-points-in-radius@1</c>, and that contract is not hers alone: it
+        /// is the ONE declaration the content wave unified out of two branches minting the same id, and
+        /// Dodger's three Blue Defense primaries and three Green rituals name it too. Her dealing
+        /// milestone registers it because SHE is dealt, which is the gate working rather than failing -
+        /// so an assertion that it is unregistered while Whisper is undealt is an assertion about
+        /// Dodger, not about Whisper.
+        ///
+        /// <para>This is the same correction the wave made twice for exhaustive deferred-list
+        /// assertions, arriving from a third direction: there the claim was about the other five
+        /// heroes' entries in one shared LIST, and here it is about one shared CONTRACT. The rule that
+        /// covers both: a hero's fixture may claim only what that hero alone owns. What remains below
+        /// is exactly the set no other hero's content names.</para>
         /// </summary>
         [Test]
         public void HerNewContracts_AreNotRegisteredWhileSheIsUndealt()
@@ -1041,7 +1055,6 @@ namespace GuardsDigital.Tests.EditMode
 
             foreach (var reference in new[]
             {
-                SyntheticRosterCapabilities.EmptyMinionSpawnPointsInRadiusV1,
                 SyntheticRosterCapabilities.ChooseTargetTrioV1,
                 SyntheticRosterCapabilities.DefendedCardForcedMoveV1,
                 SyntheticRosterCapabilities.EnemyHeroWithDiscardPresentV1,

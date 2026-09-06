@@ -190,7 +190,25 @@ namespace GuardsDigital.Tests.EditMode
             // Red ranged pair's two tenses. The other two - `synthetic-place-at-maximum-range` and
             // `synthetic-place-in-radius-beside-two-or-more-enemies` - are further declarations over
             // the placement handler that already exists, so they will move it by nothing.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(53),
+            // MILESTONE 8.35z34 IS THE FIRST OF THOSE DEALING MILESTONES, and it moves this count by
+            // FOUR - from 53 to 57 - which is the prediction above proved on the first hero to reach
+            // it. Dodger the Warlock's dealing registers SIX capability ids across exactly four new
+            // handler types, and the gap between those two numbers is the whole point of counting
+            // types: `empty-minion-spawn-points-in-radius@1` and `-adjacent@1` are two declarations
+            // over one EmptyMinionSpawnPointCountHandler, and her two Respawns are two declarations
+            // over one RespawnFriendlyMinionHandler. The four are therefore that count handler, that
+            // Respawn handler, UltimateUnlockedHandler and GainItemFromTheBoxHandler.
+            //
+            // Her two Active-effect creations move it by NOTHING, and that is the same sentence
+            // milestone 8.24 wrote about Xargatha's five: they are further registrations over
+            // ActiveEffectCreationHandler, a type this build has had since milestone 6.8.
+            //
+            // Each of the four joins these rules like any other - each performs its own work, each
+            // Anticipate mirrors its Execute against the same live state, and none of them refuses a
+            // question it was not asked. The Respawn is the one worth naming: RULING 48 gives it a
+            // SECOND question, and it is still one handler under these rules because the second
+            // question is asked of the same context the first was answered against.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(57),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

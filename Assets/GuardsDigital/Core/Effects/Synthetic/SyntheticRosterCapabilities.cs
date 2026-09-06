@@ -813,12 +813,6 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers()
         {
             yield return new PlayedAttackThisTurnHandler();
-            yield return new EmptyMinionSpawnPointCountHandler(
-                EmptyMinionSpawnPointsInRadiusV1, readsPrintedRadius: true);
-            yield return new EmptyMinionSpawnPointCountHandler(
-                EmptyMinionSpawnPointsAdjacentV1, readsPrintedRadius: false);
-            yield return new UltimateUnlockedHandler();
-            yield return new GainItemFromTheBoxHandler();
             yield return new EnclosingTargetDistanceHandler(
                 TargetWasAtMaximumRangeV1, "wasAtMaximumRange", atTargetingTime: true);
             yield return new EnclosingTargetDistanceHandler(
@@ -903,12 +897,32 @@ namespace GuardsDigital.Core.Effects.Synthetic
             yield return new AdjacentTerrainPresenceHandler();
             yield return new TransferResourceHandler();
 
-            // THE SIX-HERO CONTENT WAVE ADDS NOTHING HERE. None of milestones 8.35z28 through
+            // THE SIX-HERO CONTENT WAVE ADDED NOTHING HERE. None of milestones 8.35z28 through
             // 8.35z33 deals its hero, and milestone 7.9's deferral gate refuses a registration no
             // printed card can start - so every contract those six mint is declared beside
             // `target-played-attack-this-turn@1` in `DeferredHandlers` above, and each hero's own
             // dealing milestone moves its lines across in one edit.
             yield return new ActorMovedThisActionHandler();
+
+            // Milestone 8.35z34 is the first of those dealing milestones, and this is the edit it
+            // makes. Dodger the Warlock's four roster contracts move across because that milestone
+            // deals her: her Dread Razor and Death Trap start the adjacent count, her three Blue
+            // Defense primaries and three Green rituals start the printed-Radius one, and her Darkest
+            // Ritual starts both progression contracts. Both halves of the gate are satisfied
+            // together - the first by dealing her, and the second by the two showcase Skills milestone
+            // 8.35z34 added, because each of these is a handler TYPE this build had never registered.
+            //
+            // `empty-minion-spawn-points-in-radius@1` is the wave's shared declaration and Whisper's
+            // Red line names it too. Registering it here is not a registration on her behalf: the
+            // gate asks whether a DEALT card starts the contract, and Dodger's rituals do. Whisper's
+            // faces reaching the same registered contract when she is dealt is the ordinary case of
+            // two heroes sharing one rule.
+            yield return new EmptyMinionSpawnPointCountHandler(
+                EmptyMinionSpawnPointsInRadiusV1, readsPrintedRadius: true);
+            yield return new EmptyMinionSpawnPointCountHandler(
+                EmptyMinionSpawnPointsAdjacentV1, readsPrintedRadius: false);
+            yield return new UltimateUnlockedHandler();
+            yield return new GainItemFromTheBoxHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>

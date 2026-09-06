@@ -270,13 +270,53 @@ namespace GuardsDigital.Tests.EditMode
                 "is exactly p.19's 'a minion must first be removed, before it can be respawned'.");
         }
 
+        // -----------------------------------------------------------------------------------------
+        // RULING 48 - "Respawn anywhere in reach", which OVERRULES the reading 8.35z28 shipped
+        // -----------------------------------------------------------------------------------------
+
         /// <summary>
-        /// A Respawn destination is a printed friendly point of an eligible type in reach, and a point
-        /// the Ultimate granted is not one - it names no type, so p.19's count has nothing to compare
-        /// and the card's own "the chosen point decides what comes back" has nothing to read.
+        /// Without the Ultimate, a Respawn destination is a printed friendly point of an eligible type
+        /// in reach and nothing else. This is the half RULING 48 did not touch, kept as its own case so
+        /// that the ruling's change is measured against a fixed baseline rather than inferred.
         /// </summary>
         [Test]
-        public void AGrantedSpawnPoint_CountsButHostsNoRespawn()
+        public void WithoutTheUltimate_OnlyPrintedFriendlyPointsAreDestinations()
+        {
+            var board = DodgerSpawnPointBoard.CreateBoard(Dodger, DodgerSpawnPointBoard.Origin);
+
+            var destinations = MinionRespawnEligibilityQuery.FindRespawnDestinationsWithin(
+                board, board, TeamSide.Red, DodgerSpawnPointBoard.Origin, 2, SpawnPointOverlay.None);
+
+            Assert.That(destinations, Is.Not.Empty, "Her printed Red points are destinations.");
+            Assert.That(
+                destinations.All(fact => fact.IsPrinted), Is.True,
+                "With no overlay there is nothing but the map's own points to reach.");
+            Assert.That(
+                destinations.All(fact => fact.MinionType != StandardMinionType.None), Is.True,
+                "A printed destination always knows what comes back - RULING 12's shape, untouched.");
+            Assert.That(
+                destinations.All(fact => fact.TeamSide == TeamSide.Red), Is.True,
+                "'friendly' is p.19's word about sides.");
+            Assert.That(
+                destinations.Select(fact => fact.At),
+                Has.No.Member(DodgerSpawnPointBoard.ThroneMinionSpawn),
+                "The Throne-Zone melee point is Red and in reach, and is still outside the Battle " +
+                "Zone - which is the clause the overlay, and only the overlay, switches off.");
+        }
+
+        /// <summary>
+        /// RULING 48: "Respawn anywhere in reach." With the Ultimate up, every empty space in reach is
+        /// a destination, and a space the card granted rather than the map printed carries no type -
+        /// which is the state the second question exists for.
+        ///
+        /// <para>The two halves are asserted together on purpose. The superseded reading agreed that a
+        /// granted point is typeless and concluded that it therefore hosts nothing; this ruling agrees
+        /// about the type and disagrees about the conclusion, so a case proving only that granted
+        /// points appear would pass under a build that had lost the typelessness, and one proving only
+        /// the typelessness would have passed under the reading being replaced.</para>
+        /// </summary>
+        [Test]
+        public void WithTheUltimate_EveryEmptySpaceInReachIsADestination()
         {
             var board = DodgerSpawnPointBoard.CreateBoard(Dodger, DodgerSpawnPointBoard.Origin);
             var overlay = SpawnPointOverlay.AllSpacesFriendlyTo(TeamSide.Red);
@@ -284,17 +324,81 @@ namespace GuardsDigital.Tests.EditMode
             var destinations = MinionRespawnEligibilityQuery.FindRespawnDestinationsWithin(
                 board, board, TeamSide.Red, DodgerSpawnPointBoard.Origin, 2, overlay);
 
-            Assert.That(destinations, Is.Not.Empty, "Her printed Red points are still destinations.");
             Assert.That(
-                destinations.All(fact => fact.IsPrinted), Is.True,
-                "Every destination is a point the map prints; the Ultimate's typeless grants are not " +
-                "destinations, which is the printed silence recorded rather than a chosen type.");
+                destinations.Any(fact => !fact.IsPrinted), Is.True,
+                "RULING 48: the Ultimate's granted points DO host respawns. This is the assertion the " +
+                "superseded reading had inverted.");
             Assert.That(
-                destinations.All(fact => fact.MinionType != StandardMinionType.None), Is.True,
-                "A destination always knows what comes back, which is RULING 12's whole shape.");
+                destinations.Where(fact => !fact.IsPrinted)
+                    .All(fact => fact.MinionType == StandardMinionType.None),
+                Is.True,
+                "A granted point still names no type - the ruling changes what that absence MEANS, " +
+                "not whether it is there. The type comes from p.19's count instead.");
             Assert.That(
                 destinations.All(fact => fact.TeamSide == TeamSide.Red), Is.True,
-                "'friendly' is p.19's word about sides.");
+                "The grant is explicitly of a FRIENDLY point, so every destination is on her side " +
+                "however the point arrived.");
+
+            var reached = destinations.Select(fact => fact.At).ToArray();
+            Assert.That(
+                reached, Has.Member(DodgerSpawnPointBoard.HeroSpawn),
+                "The Battle-Zone hero spawn point is not a minion spawn point - RULING 4 - so the map " +
+                "prints her nothing there and the Ultimate grants her a point on the empty space.");
+            Assert.That(
+                reached, Has.Member(DodgerSpawnPointBoard.MeleeSpawnFar),
+                "A space printing an ENEMY point is still an empty space in reach, and the card grants " +
+                "a friendly point on ALL spaces. Excluding it would be an unprinted restriction.");
+            Assert.That(
+                reached, Has.Member(DodgerSpawnPointBoard.ThroneStandingSpace),
+                "A Throne-Zone space with no point at all: the overlay puts it in the Battle Zone and " +
+                "grants it a point, which is 'anywhere in reach' meaning what it says.");
+            Assert.That(
+                reached, Has.No.Member(DodgerSpawnPointBoard.Origin),
+                "She is standing there, and p.19's 'empty space' is the one thing the Ultimate never " +
+                "touches.");
+        }
+
+        /// <summary>
+        /// RULING 48's type rule, which is p.19's own count asked of every type instead of one. The
+        /// Heavy's absence is the derived exclusion RULING 12 recorded, measured here on the list a
+        /// granted destination actually reads.
+        /// </summary>
+        [Test]
+        public void AtAGrantedPoint_TheTypeComesFromPageNineteensEligibilityCount()
+        {
+            var board = DodgerSpawnPointBoard.CreateBoard(Dodger, DodgerSpawnPointBoard.Origin);
+            var overlay = SpawnPointOverlay.AllSpacesFriendlyTo(TeamSide.Red);
+
+            Assert.That(
+                MinionRespawnEligibilityQuery.EligibleTypesFor(board, TeamSide.Red, overlay),
+                Is.EqualTo(new[] { StandardMinionType.Melee, StandardMinionType.Ranged }),
+                "Red prints two melee points and one ranged point and has no miniature standing, so " +
+                "p.19 admits both types - and admits no Heavy, because Red prints no Heavy point at " +
+                "all. That is RULING 12's derivation arriving through the arithmetic rather than " +
+                "through a written exclusion, which is what makes it evidence.");
+
+            var wholeWaveStanding = DodgerSpawnPointBoard.CreateBoardWithTypedOccupiers(
+                Dodger,
+                DodgerSpawnPointBoard.Origin,
+                (DodgerSpawnPointBoard.MeleeSpawnNear, TeamSide.Red, StandardMinionType.Melee),
+                (DodgerSpawnPointBoard.ThroneMinionSpawn, TeamSide.Red, StandardMinionType.Melee),
+                (DodgerSpawnPointBoard.RangedSpawnNear, TeamSide.Red, StandardMinionType.Ranged));
+
+            Assert.That(
+                MinionRespawnEligibilityQuery.EligibleTypesFor(
+                    wholeWaveStanding, TeamSide.Red, overlay),
+                Is.Empty,
+                "p.19 in one sentence: 'a minion must first be removed, before it can be respawned'. " +
+                "With every Red miniature standing nothing comes back, so the Ultimate's granted " +
+                "points host nothing either - the grant supplies a place and never a permission.");
+
+            Assert.That(
+                MinionRespawnEligibilityQuery.FindRespawnDestinationsWithin(
+                    wholeWaveStanding, wholeWaveStanding, TeamSide.Red,
+                    DodgerSpawnPointBoard.Origin, 2, overlay),
+                Is.Empty,
+                "And with no type eligible there is no destination at all, granted or printed, which " +
+                "is what makes the mandatory step withdraw its offer rather than accept and refuse.");
         }
 
         // -----------------------------------------------------------------------------------------

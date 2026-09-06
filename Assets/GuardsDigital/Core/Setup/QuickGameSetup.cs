@@ -435,6 +435,28 @@ namespace GuardsDigital.Core.Setup
             CreateOneVsOne(new HeroContentId("xargatha"), "Xargatha the Changed");
 
         /// <summary>
+        /// Milestone 8.35z34. Wasp on Red against Dodger the Warlock on Blue, the seventh hero this
+        /// build deals and the first from outside the mapped pitch roster.
+        ///
+        /// <para>She needs no ally seat: every clause of hers that names another hero names an
+        /// <em>enemy</em> one - "an enemy hero in radius", "enemy heroes in radius", "a hero in range
+        /// who has one or more cards in the discard" - so a friendly hero would widen no candidate set
+        /// she has. The one thing her kit names on her own side is a friendly MINION, which p.8's waves
+        /// supply in every configuration.</para>
+        ///
+        /// <para><b>What this staging needs is minion SPAWN POINTS, which is a demand no earlier hero
+        /// made of it.</b> Nine of her nineteen faces read empty minion Spawn points in the Battle
+        /// Zone, and two respawn into one. The official map declares those points and the ordinary
+        /// Quick Game setup stands a minion on each, so nothing here is staged specially - but the
+        /// consequence is worth recording, because it is content rather than a fixture problem: at
+        /// setup her count reads ZERO and p.19 admits nothing back. Her kit switches on as the wave
+        /// dies, and a journey that wants a Respawn has to remove a miniature first, exactly as p.19
+        /// says a player must.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusDodgerOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("dodger"), "Dodger the Warlock");
+
+        /// <summary>
         /// Milestone 8.21. Wasp on Red against Arien and Brogan on Blue, which is the smallest board
         /// on which "a friendly hero in range" is true of anybody - the clause War Drummer and Master
         /// Skald print and the reason two of Brogan's nineteen faces would otherwise be unreachable.

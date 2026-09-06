@@ -629,17 +629,31 @@ namespace GuardsDigital.Tests.EditMode
         // still shares another, and undo-truncated still differs from both. The diagnostic digests move
         // with the authoritative ones because the diagnostic envelope wraps the authoritative payload;
         // they are not an independent measurement, which this file has recorded since 6.1f.
+        // MILESTONE 8.35z34 RE-PINNED ALL NINE, and the cause is registration rather than behaviour:
+        // dealing Dodger the Warlock moved six capability contracts into the registered list, and every
+        // snapshot records that list. The schema is unmoved at v38 and no field was added or reordered.
+        //
+        // The evidence that it is registration and not a behaviour change is IN the pinned values,
+        // which is why the three invariants below are worth having. All three survived the move
+        // exactly: the five refusal-and-round-trip scenarios still share one digest pair, the three
+        // defense-discard scenarios still share another, and undo-truncated is still its own. A change
+        // that had altered what a command DOES could not have moved all nine uniformly and left those
+        // groupings intact.
+        //
+        // The diagnostic digests moved with their authoritative siblings and mean nothing extra on
+        // their own: the diagnostic snapshot is the authoritative snapshot PLUS the ordered rule-event
+        // log, so it necessarily moves whenever the authoritative one does. No event moved.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "02ad5aa818177e9a483a26ed3a6b44b5450974fc4d095ce5dee00fc0f6323d15", "107ab36eb55bcc5256777fa3fd03ca5e6a466f65a2f9ae105c1e92ed1b8afe4e"),
-            new ScenarioDigest("rejected", "02ad5aa818177e9a483a26ed3a6b44b5450974fc4d095ce5dee00fc0f6323d15", "107ab36eb55bcc5256777fa3fd03ca5e6a466f65a2f9ae105c1e92ed1b8afe4e"),
-            new ScenarioDigest("stale", "02ad5aa818177e9a483a26ed3a6b44b5450974fc4d095ce5dee00fc0f6323d15", "107ab36eb55bcc5256777fa3fd03ca5e6a466f65a2f9ae105c1e92ed1b8afe4e"),
-            new ScenarioDigest("restored", "02ad5aa818177e9a483a26ed3a6b44b5450974fc4d095ce5dee00fc0f6323d15", "107ab36eb55bcc5256777fa3fd03ca5e6a466f65a2f9ae105c1e92ed1b8afe4e"),
-            new ScenarioDigest("replayed", "02ad5aa818177e9a483a26ed3a6b44b5450974fc4d095ce5dee00fc0f6323d15", "107ab36eb55bcc5256777fa3fd03ca5e6a466f65a2f9ae105c1e92ed1b8afe4e"),
-            new ScenarioDigest("undo-truncated", "3417c119106cd12ecc46b4b1aa04c85536c919217dd5af039dc2ad3fbc78b95f", "c877d015c35da650b20cffd73f0e43e44339c2050a0dd27379d1fe7ff88f6b77"),
-            new ScenarioDigest("defense-discarded", "ff2f5ff8b7152f1fb636483f3d642db81ee5a53f6d9fb2e0a3ed6aebdb8189a7", "826a2f75b7184089f4b1b52fdea92eacee87f85b66649c40aefc387ff5ba9013"),
-            new ScenarioDigest("defense-discarded-restored", "ff2f5ff8b7152f1fb636483f3d642db81ee5a53f6d9fb2e0a3ed6aebdb8189a7", "826a2f75b7184089f4b1b52fdea92eacee87f85b66649c40aefc387ff5ba9013"),
-            new ScenarioDigest("defense-discarded-replayed", "ff2f5ff8b7152f1fb636483f3d642db81ee5a53f6d9fb2e0a3ed6aebdb8189a7", "826a2f75b7184089f4b1b52fdea92eacee87f85b66649c40aefc387ff5ba9013"),
+            new ScenarioDigest("accepted", "79985c9c4f033c7c7fbe396be07ebf5998946c51d388624afe2ca45a5f6d024b", "be4ca7bdfe653e8dd6b0238227bce026957d7ba00625f0bfe3f2e31bd899db41"),
+            new ScenarioDigest("rejected", "79985c9c4f033c7c7fbe396be07ebf5998946c51d388624afe2ca45a5f6d024b", "be4ca7bdfe653e8dd6b0238227bce026957d7ba00625f0bfe3f2e31bd899db41"),
+            new ScenarioDigest("stale", "79985c9c4f033c7c7fbe396be07ebf5998946c51d388624afe2ca45a5f6d024b", "be4ca7bdfe653e8dd6b0238227bce026957d7ba00625f0bfe3f2e31bd899db41"),
+            new ScenarioDigest("restored", "79985c9c4f033c7c7fbe396be07ebf5998946c51d388624afe2ca45a5f6d024b", "be4ca7bdfe653e8dd6b0238227bce026957d7ba00625f0bfe3f2e31bd899db41"),
+            new ScenarioDigest("replayed", "79985c9c4f033c7c7fbe396be07ebf5998946c51d388624afe2ca45a5f6d024b", "be4ca7bdfe653e8dd6b0238227bce026957d7ba00625f0bfe3f2e31bd899db41"),
+            new ScenarioDigest("undo-truncated", "f7b5da8017dd32f77a1ef230e146d096573eb1dd5cf914f1b4d7506a2ff3285d", "40b12ff9e1d069d9905b3aa14b77afc7c4ee788b390100f61fc12b447340f6be"),
+            new ScenarioDigest("defense-discarded", "07320dc130615bcf8b0db4f66050bdf6894e6eacfcdbc7e31e95adf008a5af8c", "796de58a82087e481ef168a55e57ee2141a2e258d1aa3c2ded6e3f117d4653e1"),
+            new ScenarioDigest("defense-discarded-restored", "07320dc130615bcf8b0db4f66050bdf6894e6eacfcdbc7e31e95adf008a5af8c", "796de58a82087e481ef168a55e57ee2141a2e258d1aa3c2ded6e3f117d4653e1"),
+            new ScenarioDigest("defense-discarded-replayed", "07320dc130615bcf8b0db4f66050bdf6894e6eacfcdbc7e31e95adf008a5af8c", "796de58a82087e481ef168a55e57ee2141a2e258d1aa3c2ded6e3f117d4653e1"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:
@@ -661,16 +675,42 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(ExpectedDigests.Select(value => value.Name)),
                 "The scenario set itself changed; the pinned digests no longer describe the same six cases.");
 
+            // Milestone 8.35z34 made this report EVERY mismatch at once, and the measurements beside
+            // them, instead of throwing on the first. The old shape cost one whole run per moved
+            // scenario to discover a set of values that a single run already held - and worse, it let a
+            // re-pin be done one line at a time, which is exactly how a re-pin stops being a
+            // measurement and becomes nine separate guesses. Its sibling
+            // `SnapshotCompatibilityCorpusTests` has reported its whole measured set this way for
+            // precisely this reason; this one now matches it.
+            var mismatches = new List<string>();
             foreach (var expected in ExpectedDigests)
             {
                 var actual = measured.Single(value => value.Name == expected.Name);
-                Assert.That(actual.AuthoritativeSha256, Is.EqualTo(expected.AuthoritativeSha256),
-                    $"Scenario '{expected.Name}': the authoritative snapshot changed. A refactor that " +
-                    "must preserve behaviour changed authoritative state.");
-                Assert.That(actual.DiagnosticSha256, Is.EqualTo(expected.DiagnosticSha256),
-                    $"Scenario '{expected.Name}': the ordered rule-event log changed. Events must be " +
-                    "emitted in the same order, with the same content, as before the refactor.");
+                if (actual.AuthoritativeSha256 != expected.AuthoritativeSha256)
+                {
+                    mismatches.Add(
+                        $"'{expected.Name}' authoritative snapshot: expected " +
+                        $"{expected.AuthoritativeSha256}, measured {actual.AuthoritativeSha256}");
+                }
+
+                if (actual.DiagnosticSha256 != expected.DiagnosticSha256)
+                {
+                    // The diagnostic snapshot is the authoritative snapshot PLUS the ordered
+                    // rule-event log, so it moving is not by itself evidence that any event moved.
+                    // Read the pair: this one alone means the log changed; this one beside its
+                    // authoritative sibling means the log did not.
+                    mismatches.Add(
+                        $"'{expected.Name}' diagnostic snapshot (authoritative state + the ordered " +
+                        $"rule-event log): expected {expected.DiagnosticSha256}, measured " +
+                        actual.DiagnosticSha256);
+                }
             }
+
+            Assert.That(mismatches, Is.Empty,
+                "Authoritative state or the ordered rule-event log changed. A refactor that must " +
+                "preserve behaviour changed one of them; a milestone that legitimately moves them " +
+                "records WHY beside the pins before re-pinning. Measured values:" +
+                Environment.NewLine + string.Join(Environment.NewLine, mismatches));
         }
 
         private static IReadOnlyList<ScenarioDigest> MeasureAllScenarios()
