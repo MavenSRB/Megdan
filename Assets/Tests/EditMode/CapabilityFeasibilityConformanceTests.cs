@@ -174,6 +174,22 @@ namespace GuardsDigital.Tests.EditMode
             // registration, so unlike 8.24's five it moves this count - and it joins these rules like
             // any other: it performs nothing, its Anticipate mirrors its Execute, and both read the
             // same declared inputs.
+            // THE SIX-HERO CONTENT WAVE (milestones 8.35z28 through 8.35z33) adds NOTHING here, and
+            // for the reason milestone 8.24 added nothing: the count is of what the build REGISTERS.
+            // Every contract the six new heroes declare is DEFERRED until the milestone that deals its
+            // hero - which is milestone 7.9's gate working, not an omission - so the wave moves no
+            // registration, no corpus digest and no pinned snapshot byte. Each hero's dealing milestone
+            // moves this number by its own new handler TYPES, and by nothing for the declarations that
+            // are further references over a handler that already exists.
+            // Milestone 8.35z29 is the worked example: Misa contributes eight capability declarations
+            // and six Active-effect creations, and every one of them is deferred until the milestone
+            // that deals her. Four of the
+            // eight are new handler types and will move this number by four when she is dealt:
+            // `choose-line-destination` and `choose-traversed-unit` for her five Blue Skills, one
+            // shared handler behind her two unit-pair selections, and one shared handler behind her
+            // Red ranged pair's two tenses. The other two - `synthetic-place-at-maximum-range` and
+            // `synthetic-place-in-radius-beside-two-or-more-enemies` - are further declarations over
+            // the placement handler that already exists, so they will move it by nothing.
             Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(53),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");

@@ -42,6 +42,35 @@ namespace GuardsDigital.Core.Timing
         /// that hero discards a card, or is defeated" - and the page's "if you push" is the applied
         /// displacement rather than the attempt, so a Push that moved nothing reaches no trigger.
         /// </summary>
-        ObjectPushApplied = 17
+        ObjectPushApplied = 17,
+
+        /// <summary>
+        /// Milestone 8.35z29. The moment a hero's primary action is about to start, before it has
+        /// started - Misa's Focus, Discipline and Mastery, "<b>Next turn:</b> Before you perform a
+        /// primary action, you may move 1 / up to 2 / up to 3 spaces."
+        ///
+        /// <para><b>It is the same moment <c>before-action-trigger@1</c> already owns, named so that an
+        /// Active effect can declare it.</b> Milestone 8.19a built the window for Arien's Living
+        /// Tsunami, whose sentence is nearly Misa's - "Once per turn, before performing an Attack
+        /// action, you may move 1 space" - but declared it on an Ultimate, where a
+        /// <see cref="GuardsDigital.Core.Cards.BeforeActionTrigger"/> could sit. Misa prints hers on
+        /// three ordinary Green cards as p.17 <c>Next turn:</c> effects, so the declaration has to live
+        /// where an Active effect can carry it, and an Active effect's own vocabulary for "when does my
+        /// triggered effect run" is its trigger checkpoints.</para>
+        ///
+        /// <para><b>Why "primary" is in the name.</b> Arien's clause names one action kind and Misa's
+        /// names none - it says "a primary action", which p.9 makes the action printed in the card's
+        /// band, whichever kind that is. So this window opens once before whichever primary the hero
+        /// performs, and never before a secondary: p.9's Movement, Defense, Hold, Fast Travel and Clear
+        /// are not what the sentence says.</para>
+        ///
+        /// <para><b>It is not raised as an ordinary lifecycle checkpoint.</b> Nothing calls
+        /// <c>ApplyCheckpoint</c> with it; it is read as a declaration by
+        /// <see cref="GuardsDigital.Core.Rules.Progression.BeforeActionTriggerQuery"/>, which turns a
+        /// standing Active effect that names it into a source on the very machinery Arien's Ultimate
+        /// already runs on - including that machinery's spent latch, which is what makes the clause
+        /// fire once.</para>
+        /// </summary>
+        BeforePrimaryAction = 18
     }
 }

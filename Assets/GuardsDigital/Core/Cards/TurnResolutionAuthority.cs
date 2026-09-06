@@ -2533,7 +2533,11 @@ namespace GuardsDigital.Core.Cards
 
             var triggers = GuardsDigital.Core.Rules.Progression.BeforeActionTriggerQuery.Derive(
                 CurrentUltimates(), cardActions.Board, participants, offer, actionKind,
-                consumedBeforeActionTriggers);
+                consumedBeforeActionTriggers,
+                // Milestone 8.35z29. Misa's three Green `Next turn:` cards open the same window
+                // from an Active effect rather than from a p.16 permanent ability, so the standing
+                // effects are asked here beside the unlocked Ultimates.
+                timing);
             if (triggers.Count == 0)
             {
                 return null;
@@ -3113,7 +3117,8 @@ namespace GuardsDigital.Core.Cards
                             step.CompletedActorId,
                             step.CompletedActionKind,
                             step.CompletedInvocationContext,
-                            step.CompletedAttackTarget);
+                            step.CompletedAttackTarget,
+                            step.CompletedPlacedSelf);
                         continue;
                     }
 
@@ -3192,11 +3197,13 @@ namespace GuardsDigital.Core.Cards
             HeroId actorId,
             ActionKind kind,
             ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary,
-            GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default)
+            GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default,
+            bool placedSelf = false)
         {
             var basicAction = BasicActionQuery.ForCompletedAction(
                 actorId, sourceCardInstanceId, actionDefinitionId, kind, definitions, instances,
-                invocationContext == ActionInvocationContext.Repeated);
+                invocationContext == ActionInvocationContext.Repeated,
+                placedSelf);
             if (basicAction.IsDefined)
             {
                 events.Add(TurnResolutionEvent.BasicActionPerformed(basicAction));

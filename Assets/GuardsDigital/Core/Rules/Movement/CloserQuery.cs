@@ -56,5 +56,32 @@ namespace GuardsDigital.Core.Rules.Movement
                 .ThenBy(candidate => candidate.R)
                 .ToArray());
         }
+
+        /// <summary>
+        /// Milestone 8.35z29. The candidates a `farther away` policy admits: those strictly farther
+        /// from <paramref name="source"/> than the moving object's own starting space - Misa's Power
+        /// Shot and Thunder Shot, "to a space farther away from you".
+        ///
+        /// <para>It is <see cref="FilterCloserTo"/> with the comparison reversed, and it lives here
+        /// beside it so that the two sentences cannot come to disagree about what "equal separation"
+        /// means. Equal is neither closer nor farther, so a sideways step is refused by both - which is
+        /// the reading printed p.18 already gives its own Farther entry.</para>
+        /// </summary>
+        public static IReadOnlyList<HexCoordinate> FilterFartherFrom(
+            HexCoordinate source,
+            HexCoordinate origin,
+            IEnumerable<HexCoordinate> candidates)
+        {
+            if (candidates == null)
+            {
+                throw new ArgumentNullException(nameof(candidates));
+            }
+
+            return Array.AsReadOnly(candidates
+                .Where(candidate => IsCloserTo(source, origin, candidate))
+                .OrderBy(candidate => candidate.Q)
+                .ThenBy(candidate => candidate.R)
+                .ToArray());
+        }
     }
 }

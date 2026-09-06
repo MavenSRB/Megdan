@@ -35,13 +35,15 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
             ActionKind kind,
-            bool wasRepeatedInstance)
+            bool wasRepeatedInstance,
+            bool placedSelf)
         {
             ActorId = actorId;
             SourceCardInstanceId = sourceCardInstanceId;
             ActionDefinitionId = actionDefinitionId;
             Kind = kind;
             WasRepeatedInstance = wasRepeatedInstance;
+            PlacedSelf = placedSelf;
         }
 
         /// <summary>
@@ -56,7 +58,8 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
             ActionKind kind,
-            bool wasRepeatedInstance = false)
+            bool wasRepeatedInstance = false,
+            bool placedSelf = false)
         {
             if (!actorId.IsDefined || !sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined)
             {
@@ -75,7 +78,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             return new PerformedBasicAction(
-                actorId, sourceCardInstanceId, actionDefinitionId, kind, wasRepeatedInstance);
+                actorId, sourceCardInstanceId, actionDefinitionId, kind, wasRepeatedInstance,
+                placedSelf);
         }
 
         public HeroId ActorId { get; }
@@ -98,6 +102,26 @@ namespace GuardsDigital.Core.Cards
         /// repeat, not the second trigger.</para>
         /// </summary>
         public bool WasRepeatedInstance { get; }
+
+        /// <summary>
+        /// Milestone 8.35z29. Whether this action's own card text placed the hero performing it -
+        /// Misa's Watch How I Soar, Swoop In and Leaf on the Wind, and the whole of what her Power
+        /// Overwhelming's second paragraph watches: "Each time after you place yourself, an enemy hero
+        /// adjacent to you discards a card, if able."
+        ///
+        /// <para>It travels beside the kind rather than being re-derived, for the reason
+        /// <see cref="Kind"/> travels: by the time a trigger reads this fact the resolution whose
+        /// outcomes prove it has been cleared, and the card may have left the turn area.</para>
+        ///
+        /// <para><b>The two bounds this build's shape puts on it, stated rather than left to be
+        /// discovered.</b> It is recorded once per completed action rather than once per placement -
+        /// no verified face places its own actor twice in one action, so "each time" and "at the end of
+        /// an action in which it happened" name the same moments today. And it reaches a trigger only
+        /// through p.9's basic-action supertype, which is where every self-placing face Misa prints
+        /// lives: all three are Basic Skills. A face that self-placed from a non-basic card, or twice,
+        /// would need the immediate interrupt <c>after-push-trigger@1</c> already has.</para>
+        /// </summary>
+        public bool PlacedSelf { get; }
 
         public bool IsDefined => Kind != ActionKind.None;
 
@@ -186,7 +210,8 @@ namespace GuardsDigital.Core.Cards
             ActionKind kind,
             System.Collections.Generic.IEnumerable<CardDefinition> definitions,
             System.Collections.Generic.IEnumerable<CardInstance> instances,
-            bool wasRepeatedInstance = false)
+            bool wasRepeatedInstance = false,
+            bool placedSelf = false)
         {
             if (!actorId.IsDefined || !sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined ||
                 kind == ActionKind.None || definitions == null || instances == null)
@@ -216,7 +241,7 @@ namespace GuardsDigital.Core.Cards
                     return definition.Progression.Classification == CardClassification.Basic
                         ? PerformedBasicAction.Of(
                             actorId, sourceCardInstanceId, actionDefinitionId, kind,
-                            wasRepeatedInstance)
+                            wasRepeatedInstance, placedSelf)
                         : PerformedBasicAction.None;
                 }
             }

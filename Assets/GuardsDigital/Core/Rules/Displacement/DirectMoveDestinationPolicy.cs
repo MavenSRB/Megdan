@@ -106,7 +106,24 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// hero is standing on it and the reachability walk beneath has already refused an occupied
         /// destination.</para>
         /// </summary>
-        NotAdjacentToActor = 6
+        NotAdjacentToActor = 6,
+
+        /// <summary>
+        /// Milestone 8.35z29. Strictly farther from the acting hero than the subject's own starting
+        /// space - Misa's Power Shot and Thunder Shot, "you may move it 1 space, <b>to a space farther
+        /// away from you</b>".
+        ///
+        /// <para><b>It is <see cref="TowardActor"/> read the other way, and it is written as the mirror
+        /// on purpose.</b> Equal separation is not farther, exactly as it is not closer, so a sideways
+        /// step around the actor is refused by both policies. Writing it as its own member rather than
+        /// as a direction flag keeps the two sentences that print it - "toward you" and "farther away
+        /// from you" - two declarations a reader can tell apart in a definition.</para>
+        ///
+        /// <para>Whether a space that satisfies it exists is an ordinary question with an ordinary
+        /// negative answer: a unit pinned against the map's edge or ringed by obstacles has nowhere
+        /// farther to go, and both cards print "you may", so the step is simply not taken.</para>
+        /// </summary>
+        AwayFromActor = 7
     }
 
     /// <summary>
@@ -129,7 +146,8 @@ namespace GuardsDigital.Core.Rules.Displacement
             policy == DirectMoveDestinationPolicy.TowardActor ||
             policy == DirectMoveDestinationPolicy.EquidistantFromActor ||
             policy == DirectMoveDestinationPolicy.WithinActorRadius ||
-            policy == DirectMoveDestinationPolicy.NotAdjacentToActor;
+            policy == DirectMoveDestinationPolicy.NotAdjacentToActor ||
+            policy == DirectMoveDestinationPolicy.AwayFromActor;
 
         /// <param name="actorAt">Where the acting hero stands, for a policy that measures from them.</param>
         /// <param name="moverAt">The subject's own starting space, which every comparison is against.</param>
@@ -166,6 +184,9 @@ namespace GuardsDigital.Core.Rules.Displacement
 
                 case DirectMoveDestinationPolicy.TowardActor:
                     return CloserQuery.FilterCloserTo(actorAt, moverAt, reachable);
+
+                case DirectMoveDestinationPolicy.AwayFromActor:
+                    return CloserQuery.FilterFartherFrom(actorAt, moverAt, reachable);
 
                 case DirectMoveDestinationPolicy.EquidistantFromActor:
                     return EquidistantQuery.FilterEquidistantTo(actorAt, moverAt, reachable);

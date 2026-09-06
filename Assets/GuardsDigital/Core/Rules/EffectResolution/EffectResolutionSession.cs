@@ -93,13 +93,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided,
             IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> appliedPushes = null,
             GuardsDigital.Core.Rules.CardResolution.AttackSequencePlan requestedAttackSequences =
-                null)
+                null,
+            bool placedActingHero = false)
         {
             AppliedPushes =
                 new ReadOnlyCollection<GuardsDigital.Core.Rules.Modifications.RuleObject>(
                     (appliedPushes ??
                         Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>()).ToArray());
             RequestedAttackSequences = requestedAttackSequences;
+            PlacedActingHero = placedActingHero;
             BoundAttackTarget = boundAttackTarget;
             AroundActionPlacement = aroundActionPlacement;
             Accepted = accepted;
@@ -217,6 +219,19 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             get;
         }
 
+        /// <summary>
+        /// Milestone 8.35z29. Whether this step's completed outcomes include a Place that put the
+        /// acting hero somewhere - Misa's Watch How I Soar, Swoop In and Leaf on the Wind, and the
+        /// trigger her Power Overwhelming hangs on.
+        ///
+        /// <para>It is reported here rather than read off the frame for the reason
+        /// <see cref="AroundActionPlacement"/> is: the completing frame is the last thing that carries
+        /// the outcomes the answer is derived from, and by the time the caller sees the result that
+        /// frame is gone. What it says nothing about is who, if anyone, the trigger then concerns -
+        /// that needs the board, and the authority that runs the trigger asks it.</para>
+        /// </summary>
+        public bool PlacedActingHero { get; }
+
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
             bool isComplete,
@@ -231,11 +246,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided,
             IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> appliedPushes = null,
             GuardsDigital.Core.Rules.CardResolution.AttackSequencePlan requestedAttackSequences =
-                null) =>
+                null,
+            bool placedActingHero = false) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
                 repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats,
-                boundAttackTarget, aroundActionPlacement, appliedPushes, requestedAttackSequences);
+                boundAttackTarget, aroundActionPlacement, appliedPushes, requestedAttackSequences,
+                placedActingHero);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -691,7 +708,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
-                            context.Definition, outcomes));
+                            context.Definition, outcomes),
+                        placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult Resume(
@@ -725,11 +743,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                 case EffectNodeKind.Choose:
                     AdvanceTop(continuation);
-                    // Pushed in reverse so the selected options execute in the definition's own order.
-                    foreach (var candidate in node.ChildNodeIds
-                        .Where(child => choice.SelectedCandidates.Any(selected =>
-                            selected.Kind == EffectChoiceCandidateKind.Option &&
-                            selected.OptionNodeId.Equals(child)))
+                    // Pushed in reverse so the selected options execute in the order they were chosen.
+                    //
+                    // Milestone 8.35z29 reads the chooser's order rather than the definition's,
+                    // because Misa's Power Overwhelming prints "in any order" and p.10 states the same
+                    // rule generally: "Unless the card text says otherwise you can choose the bullet
+                    // points in any order." The two orders are the same list for every modal this build
+                    // shipped before her - each admits exactly one option, and one option has one order
+                    // - so this is a widening of what a multi-option answer means and not a change to
+                    // any existing card. `SelectedCandidates` is appended to as each Select command
+                    // arrives, so it already is the chooser's order; nothing new is recorded and a
+                    // replayed answer reproduces the same sequence.
+                    foreach (var candidate in choice.SelectedCandidates
+                        .Where(selected => selected.Kind == EffectChoiceCandidateKind.Option &&
+                            node.ChildNodeIds.Contains(selected.OptionNodeId))
+                        .Select(selected => selected.OptionNodeId)
                         .Reverse())
                     {
                         continuation.Add(new EffectContinuationFrame(candidate, 0));
@@ -846,7 +874,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
-                            context.Definition, outcomes));
+                            context.Definition, outcomes),
+                        placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes));
                 }
 
                 var top = continuation[continuation.Count - 1];
@@ -933,10 +962,25 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             // Milestone 6.5ac stopped here without asking, because a mandatory Choose
                             // has no decline and every other control is withheld while a choice
                             // stands; the stop is the command that position was missing.
+                            // Milestone 8.35z29. The floor is the definition's; the ceiling is the
+                            // definition's unless a standing p.16 permanent ability widens it for this
+                            // chooser on her own card - Misa's Power Overwhelming, "Whenever you choose
+                            // one, you may choose two different options instead". The question is asked
+                            // here, where the offer is built, so a modal offers one bullet before her
+                            // Ultimate is unlocked and two after it with nothing about the card having
+                            // changed. Every declaration in the build before hers leaves it alone,
+                            // because a set holding no such modification answers the printed number.
                             return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
                                 frame, node, context, EffectChoiceKind.SelectOption,
                                 node.ChildNodeIds.Select(EffectChoiceCandidate.Option).ToArray(),
-                                node.MinimumSelections, node.MaximumSelections,
+                                node.MinimumSelections,
+                                GuardsDigital.Core.Rules.Modifications.ChoiceCardinalityQuery
+                                    .MaximumOptions(
+                                        node.MaximumSelections,
+                                        node.ChildNodeIds.Count,
+                                        frame.ControllerId,
+                                        ResolveChooser(node.Chooser, frame, context),
+                                        context.Modifications),
                                 unavailableCandidates: unavailable,
                                 canStop: everyOptionRefused));
                         }
@@ -1217,7 +1261,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
-                            context.Definition, outcomes));
+                            context.Definition, outcomes),
+                        placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult PauseOn(

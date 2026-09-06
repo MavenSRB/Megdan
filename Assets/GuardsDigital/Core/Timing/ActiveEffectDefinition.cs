@@ -158,11 +158,20 @@ namespace GuardsDigital.Core.Timing
         /// Ended window for Wasp's High Voltage; 8.19c adds the end-of-round moment before the Minion
         /// Battle for Xargatha's Constrict, whose reminder text prints exactly that position. A window
         /// declared here with nothing visiting it would be a card that silently never fires.
+        ///
+        /// <para>Milestone 8.35z29 adds the third, and it has a producer for the same reason the
+        /// other two do: Misa's Focus, Discipline and Mastery print "<b>Next turn:</b> Before you
+        /// perform a primary action, you may move up to N spaces", and
+        /// <see cref="GuardsDigital.Core.Rules.Progression.BeforeActionTriggerQuery"/> visits it -
+        /// through the pre-action machinery milestone 8.19a built for Arien's Living Tsunami rather
+        /// than through the lifecycle's own checkpoint pass, which is why nothing raises it as an
+        /// ordinary checkpoint and why the window is still one an effect can be executed at.</para>
         /// </summary>
         private static readonly TimingCheckpoint[] SupportedTriggerWindows =
         {
             TimingCheckpoint.ActionEnded,
-            TimingCheckpoint.EndOfRoundBeforeMinionBattle
+            TimingCheckpoint.EndOfRoundBeforeMinionBattle,
+            TimingCheckpoint.BeforePrimaryAction
         };
 
         public ActiveEffectDefinition(

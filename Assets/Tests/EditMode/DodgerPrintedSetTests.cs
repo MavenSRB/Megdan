@@ -59,7 +59,7 @@ namespace GuardsDigital.Tests.EditMode
         private static EffectCapabilityCatalog Catalog() =>
             SyntheticEffectCapabilities.CreateCatalog(
                 SyntheticRosterCapabilities.DeferredHandlers()
-                    .Concat(SyntheticPlacementCapabilities.RespawnHandlers())
+                    .Concat(SyntheticPlacementCapabilities.DeferredHandlers())
                     .Concat(DodgerActiveEffectContent.Handlers()));
 
         /// <summary>
@@ -199,24 +199,28 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 registered, Has.No.Member("dodger-enfeeble-enemy-heroes-in-radius@1"));
 
+            // Stated as "these are among the deferred" rather than as the whole deferred list, and
+            // deliberately: the six-hero content wave puts five other undealt heroes' contracts into
+            // the same two lists, so an exhaustive assertion here would be an assertion about them.
+            // What this milestone claims is its own four - built, reachable by a fixture, and refused
+            // registration - and the Has.No.Member checks above are the other half of the claim.
             Assert.That(
                 SyntheticRosterCapabilities.DeferredHandlers()
                     .Select(handler => handler.Reference.ToString()),
-                Is.EquivalentTo(new[]
+                Is.SupersetOf(new[]
                 {
-                    "target-played-attack-this-turn@1",
                     "empty-minion-spawn-points-in-radius@1",
                     "empty-minion-spawn-points-adjacent@1",
                     "ultimate-unlocked@1",
                     "gain-item-from-the-box@1"
                 }),
-                "Five roster contracts are built and unregistered: milestone 8.19b's, which Sabina " +
-                "reaches through the value pipeline instead, and Dodger's four.");
+                "Dodger's four roster contracts are built and unregistered, beside milestone " +
+                "8.19b's, which Sabina reaches through the value pipeline instead.");
 
             Assert.That(
-                SyntheticPlacementCapabilities.RespawnHandlers()
+                SyntheticPlacementCapabilities.DeferredHandlers()
                     .Select(handler => handler.Reference.ToString()),
-                Is.EquivalentTo(new[]
+                Is.SupersetOf(new[]
                 {
                     "synthetic-respawn-friendly-minion-adjacent@1",
                     "synthetic-respawn-friendly-minion-in-radius@1"

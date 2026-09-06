@@ -79,6 +79,30 @@ namespace GuardsDigital.Core.Rules.Placement
                         spaces,
                         spawnPoints);
 
+                case PlaceDestinationScope.EmptySpacesAtExactlyRadius:
+                    return ExcludingSpawnPoints(
+                        AtExactlyRadius(policy.DestinationRadius, spaces, origin, modifications),
+                        policy.SpawnPointExclusion,
+                        spaces,
+                        spawnPoints);
+
+                case PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope:
+                    if (scopedCoordinates == null)
+                    {
+                        throw new ArgumentNullException(
+                            nameof(scopedCoordinates),
+                            "A qualified Place is intersected with the coordinate set its caller " +
+                            "derived; an absent set is a missing question rather than an empty one.");
+                    }
+
+                    return ExcludingSpawnPoints(
+                        WithinRadius(policy.DestinationRadius, spaces, origin, modifications)
+                            .Where(candidate => scopedCoordinates.Contains(candidate))
+                            .ToArray(),
+                        policy.SpawnPointExclusion,
+                        spaces,
+                        spawnPoints);
+
                 case PlaceDestinationScope.NearestEmptySpacesInScope:
                     if (scopedCoordinates == null)
                     {
@@ -115,6 +139,44 @@ namespace GuardsDigital.Core.Rules.Placement
                 {
                     var coordinate = new HexCoordinate(origin.Q + dq, origin.R + dr);
                     if (coordinate.Equals(origin) ||
+                        ObstacleQuery.BlocksPlacement(spaces, coordinate, modifications))
+                    {
+                        continue;
+                    }
+
+                    found.Add(coordinate);
+                }
+            }
+
+            return found
+                .OrderBy(coordinate => coordinate.Q)
+                .ThenBy(coordinate => coordinate.R)
+                .ToArray();
+        }
+
+        /// <summary>
+        /// Milestone 8.35z29. Every empty playable space at <em>exactly</em> the declared distance -
+        /// the ring the disk above draws the interior of.
+        ///
+        /// <para>It is written as the same enumeration with one predicate changed rather than as a
+        /// walk around the ring, so that the two scopes cannot come to disagree about what p.18's
+        /// distance is or about which spaces an obstacle overlay closes. The origin is excluded by
+        /// arithmetic here rather than by a test: a radius of zero is refused by
+        /// <see cref="PlacePolicy"/>, so the origin is never at the declared distance.</para>
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> AtExactlyRadius(
+            int radius,
+            ITokenPlacementAuthority spaces,
+            HexCoordinate origin,
+            RuleModificationSet modifications)
+        {
+            var found = new List<HexCoordinate>();
+            for (var dq = -radius; dq <= radius; dq++)
+            {
+                for (var dr = Math.Max(-radius, -dq - radius); dr <= Math.Min(radius, -dq + radius); dr++)
+                {
+                    var coordinate = new HexCoordinate(origin.Q + dq, origin.R + dr);
+                    if (HexDistanceQuery.Calculate(origin, coordinate) != radius ||
                         ObstacleQuery.BlocksPlacement(spaces, coordinate, modifications))
                     {
                         continue;

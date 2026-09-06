@@ -53,6 +53,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionKind completedActionKind = ActionKind.None,
             ActionInvocationContext completedInvocationContext = ActionInvocationContext.None,
             AttackTarget completedAttackTarget = default,
+            bool completedPlacedSelf = false,
             PendingAttackResolution cardTextRemainderResolution = null,
             AttackResolutionOutcome cardTextRemainderOutcome = AttackResolutionOutcome.None)
         {
@@ -71,6 +72,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CompletedActionKind = completedActionKind;
             CompletedInvocationContext = completedInvocationContext;
             CompletedAttackTarget = completedAttackTarget;
+            CompletedPlacedSelf = completedPlacedSelf;
         }
 
         public ResolutionStepKind Kind { get; }
@@ -139,7 +141,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroId actorId,
             ActionKind kind,
             ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary,
-            AttackTarget completedAttackTarget = default)
+            AttackTarget completedAttackTarget = default,
+            bool placedSelf = false)
         {
             if (!sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined || !actorId.IsDefined)
             {
@@ -164,7 +167,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 completedActorId: actorId,
                 completedActionKind: kind,
                 completedInvocationContext: invocationContext,
-                completedAttackTarget: completedAttackTarget);
+                completedAttackTarget: completedAttackTarget,
+                completedPlacedSelf: placedSelf);
         }
 
         /// <summary>
@@ -265,5 +269,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// by the time it is answered the resolution that knew the target has been cleared.
         /// </summary>
         public AttackTarget CompletedAttackTarget { get; }
+
+        /// <summary>
+        /// Milestone 8.35z29. Whether the action that ended placed the hero performing it - Misa's
+        /// three self-placing basics, and the trigger her Power Overwhelming hangs on.
+        ///
+        /// <para>False on every other completion step, which is every completion step in this build
+        /// before hers: no verified face outside her set places its own actor, and the resolvers that
+        /// end Attacks, Movements, Fast Travels and Clears therefore state nothing here rather than
+        /// deriving an answer they have no card to derive it for. Carried on the step for the reason
+        /// <see cref="CompletedAttackTarget"/> is - by the time the action has ended, the resolution
+        /// whose outcomes prove it is gone.</para>
+        /// </summary>
+        public bool CompletedPlacedSelf { get; }
     }
 }

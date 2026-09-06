@@ -24,7 +24,28 @@ namespace GuardsDigital.Core.Cards
         /// says "basic skill" and means it; widening the member it reads would have made her Ultimate
         /// fire after her Movements.
         /// </summary>
-        AfterControllerPerformsBasicAction = 2
+        AfterControllerPerformsBasicAction = 2,
+
+        /// <summary>
+        /// Milestone 8.35z29's `after-self-place-trigger@1`: the controller's own card text put
+        /// her somewhere - Misa's Power Overwhelming, "Each time after you place yourself, an enemy
+        /// hero adjacent to you discards a card, if able."
+        ///
+        /// <para><b>It is a third condition rather than a qualifier on the two above, because the two
+        /// above are about what KIND of action ended and this one is about what the action DID.</b>
+        /// A hero can perform a basic Skill without placing herself, and the sentence fires on the
+        /// placement rather than on the Skill: Misa's Sudden Breeze is a Skill of hers that moves her
+        /// five spaces and must not reach this trigger, because moving is not placing. That is p.18's
+        /// own distinction, and it is the reason the fact this reads is derived from the Place node in
+        /// the definition rather than from the action's kind.</para>
+        ///
+        /// <para><b>What it excludes, by the user's 2026-09-06 ruling.</b> A placement performed by
+        /// another hero's card is not her placing herself - "you place yourself" names her as the
+        /// actor - and a Swap is never a placement at all, which p.18 states outright. Neither reaches
+        /// this condition: the fact behind it is derived from the definition the acting hero is
+        /// resolving, and no Swap capability contributes to it.</para>
+        /// </summary>
+        AfterControllerPlacesSelf = 3
     }
 
     /// <summary>
@@ -268,9 +289,10 @@ namespace GuardsDigital.Core.Cards
             EffectDefinitionReference triggeredEffect,
             UltimateTriggerCondition triggerCondition,
             IEnumerable<TimingCheckpoint> triggerCheckpoints,
-            IEnumerable<PrintedValueDefinition> printedValues) =>
+            IEnumerable<PrintedValueDefinition> printedValues,
+            IEnumerable<RuleModification> standingRules = null) =>
             new UltimateRuleDefinition(
-                ruleId, ruleKind, null, PrintedTextComposition.None, printedValues,
+                ruleId, ruleKind, standingRules, PrintedTextComposition.None, printedValues,
                 triggeredEffect, triggerCheckpoints, triggerCondition);
 
         /// <summary>

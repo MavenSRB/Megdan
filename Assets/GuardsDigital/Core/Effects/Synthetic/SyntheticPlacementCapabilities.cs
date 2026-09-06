@@ -92,6 +92,53 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference PlaceInRadiusV1 =>
             new EffectCapabilityReference(PlaceInRadius, 1);
 
+        /// <summary>
+        /// Milestone 8.35z29. The printed-Range arm measured as a <em>ring</em> rather than a disk -
+        /// Misa's Watch How I Soar and Leaf on the Wind, "Place yourself into a space at maximum
+        /// range", on faces printing a Range 4 icon.
+        ///
+        /// <para><b>A fourth capability ID rather than a parameter, by the rule
+        /// <see cref="PlaceInRange"/> states.</b> p.9 gives "in range" a settled meaning - up to the
+        /// printed value - and the user's 2026-09-06 ruling gives "at maximum range" the other one, so
+        /// the two are different reaches and not two settings of one. Naming them apart is also what
+        /// keeps the difference auditable from a definition alone: a reader who sees this reference
+        /// knows the candidate set is a ring without opening the handler.</para>
+        ///
+        /// <para><b>What it is the first Place in this build to admit: nowhere to go.</b> A disk drawn
+        /// around a hero standing anywhere on a playable board has empty members almost always; a ring
+        /// of radius four need not. So a mandatory node carrying this reference reports itself
+        /// impossible as an ordinary outcome, which milestone 8.35l's offer machinery must show as a
+        /// greyed control rather than accept and then refuse.</para>
+        /// </summary>
+        public static EffectCapabilityId PlaceAtMaximumRange { get; } =
+            new EffectCapabilityId("synthetic-place-at-maximum-range");
+
+        public static EffectCapabilityReference PlaceAtMaximumRangeV1 =>
+            new EffectCapabilityReference(PlaceAtMaximumRange, 1);
+
+        /// <summary>
+        /// Milestone 8.35z29. The printed-Radius arm whose destinations must themselves stand
+        /// beside two or more enemy units - Misa's Swoop In, "Place yourself into a space in radius
+        /// adjacent to two or more enemy units", on a face printing a Radius 3 icon.
+        ///
+        /// <para><b>The threshold is in the name, and that is deliberate.</b> Milestone 8.35z28's Dodger
+        /// work established the rule for this catalog: a printed number that qualifies a predicate
+        /// belongs in the identity of the thing declared, not in a field beside it, because a shared
+        /// declaration carrying a new field moves every hero who already referenced it. Every verified
+        /// face printing this clause prints "two or more"; a face printing a different number would be
+        /// a different capability here.</para>
+        ///
+        /// <para><b>Why the count is not <see cref="SyntheticRosterCapabilities.PresenceCountV1"/>.</b>
+        /// That one asks the question once, around the actor. This one asks it of every candidate
+        /// space, because the sentence qualifies where Misa is going rather than where she is - and a
+        /// hero beside nobody may still have a destination beside two.</para>
+        /// </summary>
+        public static EffectCapabilityId PlaceInRadiusBesideTwoOrMoreEnemies { get; } =
+            new EffectCapabilityId("synthetic-place-in-radius-beside-two-or-more-enemies");
+
+        public static EffectCapabilityReference PlaceInRadiusBesideTwoOrMoreEnemiesV1 =>
+            new EffectCapabilityReference(PlaceInRadiusBesideTwoOrMoreEnemies, 1);
+
         /// <summary>The eligible-piece parameter's name, spelled once for the reason the Push's is.</summary>
         public const string EligiblePieceParameterName = "eligiblePiece";
 
@@ -154,7 +201,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>The Spawn point it went onto, as a coordinate.</summary>
         public const string RespawnedAtOutputName = "respawnedAt";
 
+        /// <summary>
+        /// The whole vocabulary, for a bounded fixture catalog that exercises every declaration this
+        /// file makes. It is deliberately not what the build registers - see
+        /// <see cref="DeferredHandlers"/>.
+        /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
+            RegisteredHandlers().Concat(DeferredHandlers());
+
+        /// <summary>
+        /// The part a printed card in this build actually reaches, which is what
+        /// <see cref="SyntheticEffectCapabilities.CreateCatalog"/> registers.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new ActorSpaceHandler(),
@@ -165,19 +224,62 @@ namespace GuardsDigital.Core.Effects.Synthetic
             };
 
         /// <summary>
-        /// The two Respawn declarations, held apart from <see cref="Handlers"/> exactly as the
-        /// empty-spawn-point pair is held apart in <c>SyntheticRosterCapabilities</c>: milestone 7.9's
-        /// deferral gate refuses a registered capability no dealt card can reach, and these two are
-        /// reachable only from Dodger's Necromancy and Necromastery.
+        /// Every declaration in this file that no dealt card names yet, held out of the registered set
+        /// by milestone 7.9's deferral gate - which refuses a registration no printed card can start,
+        /// and which is also what keeps the pinned capability list, and therefore every snapshot's
+        /// bytes, from moving for a hero who is not in a match. It is ONE list per file, under the one
+        /// name the content wave settled on, so that what is deferred can be read and counted without a
+        /// caller having to know which hero deferred it.
+        ///
+        /// <para>Milestone 8.35z29's two are further declarations over <see cref="PlaceHandler"/>
+        /// rather than new implementations, exactly as the printed-Range and printed-Radius arms were:
+        /// Misa's Watch How I Soar and Leaf on the Wind measure the printed Range as a ring, and her
+        /// Swoop In measures the printed Radius and then asks each candidate space who is standing
+        /// beside it.</para>
+        ///
+        /// <para>Milestone 8.35z28's two are p.19's Respawn, held apart from the <see cref="Spawn"/>
+        /// they are not: that capability puts a miniature back on the Spawn point it belongs to and
+        /// asks p.19's eligibility nothing. They are reachable only from Dodger's Necromancy and
+        /// Necromastery.</para>
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> RespawnHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             new IEffectCapabilityHandler[]
             {
+                new PlaceHandler(
+                    PlaceAtMaximumRangeV1, PrintedValueChannel.Range,
+                    PlaceDestinationScope.EmptySpacesAtExactlyRadius),
+                new PlaceHandler(
+                    PlaceInRadiusBesideTwoOrMoreEnemiesV1, PrintedValueChannel.Radius,
+                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
+                    PlaceDestinationQualifier.AdjacentToTwoOrMoreEnemyUnits),
                 new RespawnFriendlyMinionHandler(
                     RespawnFriendlyMinionAdjacentV1, readsPrintedRadius: false),
                 new RespawnFriendlyMinionHandler(
                     RespawnFriendlyMinionInRadiusV1, readsPrintedRadius: true)
             };
+
+        /// <summary>
+        /// Milestone 8.35z29. What a Place's destinations must themselves satisfy, beyond being
+        /// empty and in reach - or <see cref="None"/> for every declaration written before Misa's, none
+        /// of which qualifies its destinations at all.
+        ///
+        /// <para>It is the handler's own vocabulary rather than <see cref="PlacePolicy"/>'s because
+        /// answering it needs the unit roster and the acting hero's side, which
+        /// <see cref="PlaceDestinationQuery"/> deliberately does not take: every other clause that
+        /// query answers is a question about the map. The handler answers this one, hands the
+        /// qualifying spaces down as the policy's scope, and hands the same set to the commit.</para>
+        /// </summary>
+        private enum PlaceDestinationQualifier
+        {
+            None = 0,
+
+            /// <summary>
+            /// Swoop In's clause. "Enemy" is measured against the acting hero's side and "units" is
+            /// p.19's word - heroes and minions both - so an immune Heavy minion counts, p.18 making
+            /// immunity irrelevant to a presence question.
+            /// </summary>
+            AdjacentToTwoOrMoreEnemyUnits = 1
+        }
 
         /// <summary>
         /// Publishes the acting hero's own space as a typed coordinate, deciding nothing.
@@ -292,10 +394,32 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             private readonly PrintedValueChannel boundChannel;
 
-            public PlaceHandler(EffectCapabilityReference reference, PrintedValueChannel boundChannel)
+            /// <summary>
+            /// Milestone 8.35z29. Which destination question this declaration asks - the disk every
+            /// arm before Misa's asked, or her ring, or her qualified disk. It is a constructor
+            /// argument rather than a parameter for the reason <see cref="boundChannel"/> is one: the
+            /// capability's identity is what a definition names, and a reader auditing a node should
+            /// not have to open a parameter to learn whether the reach is a ring.
+            /// </summary>
+            private readonly PlaceDestinationScope destinationScope;
+
+            /// <summary>
+            /// Milestone 8.35z29. What this declaration's destinations must satisfy in their own
+            /// right, or <see cref="PlaceDestinationQualifier.None"/> on every arm that qualifies none.
+            /// </summary>
+            private readonly PlaceDestinationQualifier qualifier;
+
+            public PlaceHandler(
+                EffectCapabilityReference reference,
+                PrintedValueChannel boundChannel,
+                PlaceDestinationScope destinationScope =
+                    PlaceDestinationScope.EmptySpacesWithinRadius,
+                PlaceDestinationQualifier qualifier = PlaceDestinationQualifier.None)
             {
                 Reference = reference;
                 this.boundChannel = boundChannel;
+                this.destinationScope = destinationScope;
+                this.qualifier = qualifier;
 
                 var parameters = new List<EffectCapabilityParameter>
                 {
@@ -347,7 +471,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var destinations = PlaceDestinationQuery.FindDestinations(
-                    policy, context.Components.Tokens, origin, Array.Empty<HexCoordinate>(),
+                    policy, context.Components.Tokens, origin, QualifyingSpaces(context, policy, origin),
                     context.Modifications, context.Components.Units);
                 if (destinations.Count == 0)
                 {
@@ -382,7 +506,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     subject,
                     measuredFrom,
                     selected[0].Coordinate,
-                    Array.Empty<HexCoordinate>(),
+                    QualifyingSpaces(context, policy, measuredFrom),
                     context.Modifications,
                     context.Components.Units);
                 return outcome.Accepted
@@ -407,7 +531,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var destinations = PlaceDestinationQuery.FindDestinations(
-                    policy, context.Components.Tokens, origin, Array.Empty<HexCoordinate>(),
+                    policy, context.Components.Tokens, origin, QualifyingSpaces(context, policy, origin),
                     context.Modifications, context.Components.Units);
                 if (destinations.Count > 0)
                 {
@@ -417,6 +541,72 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return policy.NoDestinationPolicy == PlaceNoDestinationPolicy.Decline
                     ? EffectExecutionResultKind.DeclinedOptional
                     : EffectExecutionResultKind.ImpossibleMandatory;
+            }
+
+            /// <summary>
+            /// Milestone 8.35z29. The spaces this declaration's qualifier admits, or an empty set
+            /// where it qualifies nothing - which the scopes that ignore the argument never read.
+            ///
+            /// <para><b>Derived on every ask, and never captured.</b> The offer, the answer and a
+            /// restored pause each call this, for the reason every selection in this catalog re-derives
+            /// its own candidates: a set remembered from the moment the question opened could name a
+            /// space a unit has since walked away from, and Swoop In's whole clause is about who is
+            /// standing where.</para>
+            /// </summary>
+            private IReadOnlyList<HexCoordinate> QualifyingSpaces(
+                EffectCapabilityContext context, PlacePolicy policy, HexCoordinate origin)
+            {
+                if (qualifier != PlaceDestinationQualifier.AdjacentToTwoOrMoreEnemyUnits)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var components = context.Components;
+                if (components == null || !components.IsLive || components.Board == null ||
+                    context.Participants == null)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                // p.19's units - heroes and minions both - on the side opposing the acting hero's, read
+                // off the live board. Immunity is not asked: p.18 makes it a rule about what may be
+                // done to a unit, and standing somewhere is not something done to it.
+                //
+                // The disk is the policy's own reach plus one, which is exactly as far as an enemy can
+                // stand and still be adjacent to a space this Place could reach. It is a bound rather
+                // than a filter, so nothing that could qualify is dropped and nothing that could not is
+                // measured.
+                var enemies = RosterPresenceQuery.FindUnitsWithin(
+                        origin, policy.DestinationRadius + 1, RosterUnitKind.Unit,
+                        SourceTeamRelation.OpposingSource, context.ActorId, components.Board,
+                        context.Participants, context.Modifications)
+                    .Select(unit => components.Board.TryGetObjectCoordinate(unit, out var at)
+                        ? (Found: true, At: at)
+                        : (Found: false, At: default(HexCoordinate)))
+                    .Where(value => value.Found)
+                    .Select(value => value.At)
+                    .ToArray();
+                if (enemies.Length < 2)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var qualifying = new List<HexCoordinate>();
+                for (var dq = -policy.DestinationRadius; dq <= policy.DestinationRadius; dq++)
+                {
+                    for (var dr = Math.Max(-policy.DestinationRadius, -dq - policy.DestinationRadius);
+                        dr <= Math.Min(policy.DestinationRadius, -dq + policy.DestinationRadius);
+                        dr++)
+                    {
+                        var space = new HexCoordinate(origin.Q + dq, origin.R + dr);
+                        if (enemies.Count(enemy => HexDistanceQuery.Calculate(enemy, space) == 1) >= 2)
+                        {
+                            qualifying.Add(space);
+                        }
+                    }
+                }
+
+                return qualifying;
             }
 
             /// <summary>
@@ -560,7 +750,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 policy = new PlacePolicy(
                     PlaceSourceContainer.Board,
                     eligiblePiece,
-                    PlaceDestinationScope.EmptySpacesWithinRadius,
+                    destinationScope,
                     radius,
                     PlaceChooserKind.ActingHero,
                     context.FailurePolicy == EffectFailurePolicy.Mandatory

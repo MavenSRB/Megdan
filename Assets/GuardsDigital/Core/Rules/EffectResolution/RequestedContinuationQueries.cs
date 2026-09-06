@@ -78,6 +78,85 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     /// its text on. Same transport, same confirmation against the trusted definition, and the same
     /// reason: the answer has to survive whatever the action does between the question and the work.
     /// </summary>
+    /// <summary>
+    /// Milestone 8.35z29. Whether a completed effect placed the hero performing it - the trigger
+    /// Misa's Power Overwhelming watches: "Each time after you place yourself, an enemy hero adjacent
+    /// to you discards a card, if able."
+    ///
+    /// <para><b>The question is answered from the definition, not from a name or a fact anybody had to
+    /// remember to publish.</b> A Place node states which piece it moves through its <c>subject</c>
+    /// input, and the one way a definition can name the acting hero as that subject is
+    /// <c>synthetic-actor-space@1</c> - the bridge milestone 6.5a built precisely because no role can
+    /// supply a coordinate. So "she placed herself" is exactly "an applied Place whose subject came
+    /// from the actor-space bridge", which is a structural fact about the trusted definition rather
+    /// than an assertion a card could make about itself. It is the same discriminator the 2026-09-06
+    /// defense-offer corrective settled on when it had to tell a card's own self-move from a move it
+    /// performs on somebody else.</para>
+    ///
+    /// <para><b>What it deliberately does not answer.</b> p.18 makes a Swap "not movement or
+    /// placement", and no Swap capability is named here, so neither of Misa's Swap cards can reach the
+    /// trigger - which is the user's 2026-09-06 ruling. Nor can a placement performed by another
+    /// hero's card: this walks the definition the acting hero is resolving, and a placement made by
+    /// somebody else's card is that hero's effect, not hers. That is the same ruling's other half -
+    /// "you place yourself" names her as the actor.</para>
+    /// </summary>
+    public static class SelfPlacementQuery
+    {
+        public static bool Placed(
+            EffectDefinition definition,
+            IReadOnlyList<EffectNodeOutcome> outcomes)
+        {
+            if (definition == null) throw new ArgumentNullException(nameof(definition));
+            if (outcomes == null)
+            {
+                return false;
+            }
+
+            foreach (var outcome in outcomes)
+            {
+                if (outcome.ResultKind != EffectExecutionResultKind.Applied ||
+                    !definition.TryGetNode(outcome.NodeId, out var node) ||
+                    node.Kind != EffectNodeKind.Capability ||
+                    !IsPlace(node.Capability) ||
+                    !SubjectIsTheActor(definition, node))
+                {
+                    continue;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsPlace(EffectCapabilityReference capability) =>
+            capability.Equals(SyntheticPlacementCapabilities.PlaceV2) ||
+            capability.Equals(SyntheticPlacementCapabilities.PlaceInRangeV1) ||
+            capability.Equals(SyntheticPlacementCapabilities.PlaceInRadiusV1) ||
+            capability.Equals(SyntheticPlacementCapabilities.PlaceAtMaximumRangeV1) ||
+            capability.Equals(SyntheticPlacementCapabilities.PlaceInRadiusBesideTwoOrMoreEnemiesV1);
+
+        private static bool SubjectIsTheActor(
+            EffectDefinition definition,
+            EffectNodeDefinition place)
+        {
+            foreach (var input in place.Inputs)
+            {
+                if (!string.Equals(input.ParameterName, "subject", StringComparison.Ordinal) ||
+                    !input.SourceNodeId.IsDefined ||
+                    !definition.TryGetNode(input.SourceNodeId, out var source))
+                {
+                    continue;
+                }
+
+                return source.Kind == EffectNodeKind.Capability &&
+                    source.Capability.Equals(SyntheticPlacementCapabilities.ActorSpaceV1);
+            }
+
+            return false;
+        }
+    }
+
     public static class AroundActionPlacementQuery
     {
         public static PreActionPlacement Placed(

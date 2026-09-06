@@ -100,7 +100,48 @@ namespace GuardsDigital.Core.Rules.Placement
         /// The equally-nearest empty spaces of a declared coordinate set - p.18's correction fallback,
         /// "place that minion in the nearest empty space of the Battle Zone".
         /// </summary>
-        NearestEmptySpacesInScope = 2
+        NearestEmptySpacesInScope = 2,
+
+        /// <summary>
+        /// Milestone 8.35z29. Every empty playable space at <em>exactly</em> the declared distance
+        /// from the origin - the ring rather than the disk. Misa's Watch How I Soar and Leaf on the
+        /// Wind, "Place yourself into a space <b>at maximum range</b>".
+        ///
+        /// <para><b>It is a separate scope rather than a flag, because the two answer different
+        /// questions and one of the answers can legally be empty.</b> p.9 already makes a printed icon
+        /// a maximum - "your primary action can affect targets <em>up to</em> 3 spaces away" - which is
+        /// what <see cref="EmptySpacesWithinRadius"/> draws, and it is nonempty whenever any neighbour
+        /// is free. A ring is not: a hero whose board has no empty space at exactly four can have
+        /// plenty at three, so this is the first destination question in the build whose emptiness is
+        /// an ordinary outcome rather than a cornered one. The user's 2026-09-06 ruling settles the
+        /// reading - "A is the number, it says AT MAXIMUM RANGE" - and the rulebook's own worked
+        /// example on p.11 uses the other phrase for the other meaning, captioning Arien's "in range"
+        /// Place as "any of the empty spaces in Range 2".</para>
+        ///
+        /// <para>Distance is p.18's, counted across spaces with obstacles exactly as
+        /// <see cref="EmptySpacesWithinRadius"/> counts it, so the ring is a ring of the same measure
+        /// Range and Radius use and not a walk.</para>
+        /// </summary>
+        EmptySpacesAtExactlyRadius = 3,
+
+        /// <summary>
+        /// Milestone 8.35z29. <see cref="EmptySpacesWithinRadius"/> intersected with a coordinate
+        /// set the caller derives - Misa's Swoop In, "Place yourself into a space in radius
+        /// <b>adjacent to two or more enemy units</b>".
+        ///
+        /// <para><b>Why the qualification arrives as a set rather than as a predicate here.</b> The
+        /// clause qualifies the space being considered, not the space the actor stands in, and
+        /// answering it needs the unit roster and the acting hero's own side - collaborators this query
+        /// has never taken and should not start taking, since every other clause it answers is a map
+        /// question. The capability handler has both, derives the qualifying spaces, and hands them
+        /// down; <see cref="PlaceOperation"/> is handed the same set when it re-derives, so the offer
+        /// and the commit still ask one question.</para>
+        ///
+        /// <para>It is not <see cref="NearestEmptySpacesInScope"/> with a different filter: that one
+        /// keeps only the equally-nearest members of its set and discards the rest, which is p.18's
+        /// correction rule and would silently narrow a card that names no such preference.</para>
+        /// </summary>
+        EmptySpacesWithinRadiusAndInScope = 4
     }
 
     /// <summary>

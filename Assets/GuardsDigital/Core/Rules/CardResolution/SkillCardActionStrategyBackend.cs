@@ -605,7 +605,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.SkillActionCompleted(
                     resolutionId, card, action, actor)));
                 steps.Add(ResolutionStep.AtActionEnded(
-                    card, action, actor, ActionKind.Skill, invocationContext));
+                    card, action, actor, ActionKind.Skill, invocationContext,
+                    // Milestone 8.35z29. Whether this Skill's own effect placed the hero
+                    // performing it, which is what Misa's Power Overwhelming watches. The resolution
+                    // answered it from its trusted definition; nothing is inferred here.
+                    placedSelf: step.PlacedActingHero));
             }
             else if (step.Frame.PendingChoice != null)
             {

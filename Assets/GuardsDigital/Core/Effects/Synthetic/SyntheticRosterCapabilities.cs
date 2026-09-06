@@ -27,6 +27,138 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference ChooseChargeLineV1 => Reference("choose-charge-line", 1);
         public static EffectCapabilityReference ChooseThroughTargetLineV1 =>
             Reference("choose-through-target-line", 1);
+        /// <summary>
+        /// Milestone 8.35z29. `choose-line-destination@1` - where a straight-line movement that
+        /// crosses obstacles ends. Misa's five Blue Skills, "Move up to 3 / 4 / 5 spaces in a straight
+        /// line, ignoring obstacles".
+        ///
+        /// <para><b>It is not <see cref="ChooseChargeLineV1"/> with a flag.</b> Brogan's charge offers
+        /// only destinations with a legal victim beside them, because his card cannot be played to walk
+        /// somewhere; Misa's cards are movements whose second clause is optional, so every reachable
+        /// end of a straight line is a destination whether anyone was crossed or not. And it is not
+        /// <see cref="ChooseThroughTargetLineV1"/>, which fixes the length at two and requires a
+        /// qualifying unit to be the middle space.</para>
+        ///
+        /// <para><b>Everything about obstacles is the movement rule's, asked once.</b> The walk is
+        /// <c>MovementReachabilityQuery</c>'s with p.18's crossing permission set, so terrain, units,
+        /// tokens and declared overlays are all "obstacles a permitted mover may cross", and the
+        /// endpoint predicate - which is offered no permission at all, by p.18's own second sentence -
+        /// keeps the destination on an empty playable space. The user's 2026-09-06 ruling is that
+        /// reading exactly: the line passes through any obstacle including the map's water ring, "but
+        /// as long as hero ends up on a playable space". Nothing here re-implements either half.</para>
+        ///
+        /// <para>Off the map is not an obstacle to cross but the absence of a space, which is why a
+        /// line aimed across the ring at open water simply has no destination there.</para>
+        /// </summary>
+        public static EffectCapabilityReference ChooseLineDestinationV1 =>
+            Reference("choose-line-destination", 1);
+
+        /// <summary>
+        /// Milestone 8.35z29. `choose-traversed-unit@1` - one of the units a straight-line movement
+        /// passed through. Misa's five Blue Skills: "you may place an enemy unit you moved through into
+        /// a space adjacent to you", and "an enemy hero you moved through discards a card, if able".
+        ///
+        /// <para><b>The set is re-derived from the two ends, not captured during the walk.</b> A
+        /// straight line between two spaces has exactly one interior, so the spaces Misa passed through
+        /// are arithmetic rather than history - and asking the board who is standing on them is the
+        /// same re-derivation every selection in this catalog performs at offer, at answer and at a
+        /// restored pause. The forecast for this hero predicted a captured traversal record on the
+        /// grounds that a later node might displace someone; the measurement is that nothing between
+        /// the movement and this selection moves anybody, and a captured set would have been a second
+        /// source of truth that a restored pause could disagree with.</para>
+        ///
+        /// <para><b>Both ends are bound rather than read off the actor.</b> By the time this is asked
+        /// Misa is standing on the destination, so her current space answers only half the question;
+        /// the origin is published by the actor-space bridge before the movement, which is the same
+        /// ordering Tigerclaw's crossing line uses.</para>
+        ///
+        /// <para>The unit kind is the declaration's, because the two clauses differ in exactly that
+        /// word - "an enemy unit" against "an enemy hero" - and in nothing else.</para>
+        /// </summary>
+        public static EffectCapabilityReference ChooseTraversedUnitV1 =>
+            Reference("choose-traversed-unit", 1);
+
+        /// <summary>
+        /// Milestone 8.35z29. `choose-unit-pair-at-maximum-radius@1` - Misa's Living Tornado, "Swap
+        /// two units at maximum radius".
+        ///
+        /// <para><b>The threshold is the printed icon read as a ring, and the ring is in the name.</b>
+        /// The user's 2026-09-06 ruling settles "at maximum" as exactly the printed number, so both
+        /// members must stand at exactly the card's Radius - p.9's icon with p.16's matching item
+        /// composed onto it, which is why a +1 Radius item moves the whole ring outward rather than
+        /// widening it into a disk.</para>
+        ///
+        /// <para><b>Why it is not <see cref="ChooseTargetPairV1"/> with a distance.</b> That pair takes
+        /// minions only, measures a disk, and is handed a written-down number; this one takes p.19's
+        /// units - "two units", either side, Misa excluded by p.10's Picking Targets - and measures a
+        /// printed ring. Four differences is a different question.</para>
+        /// </summary>
+        public static EffectCapabilityReference ChooseUnitPairAtMaximumRadiusV1 =>
+            Reference("choose-unit-pair-at-maximum-radius", 1);
+
+        /// <summary>
+        /// Milestone 8.35z29. `choose-unit-pair-at-equal-distance-in-radius@1` - Misa's Storm
+        /// Spirit, "Swap two units in radius and at equal distance from you".
+        ///
+        /// <para><b>This is the build's first <em>relational</em> pair constraint.</b> Every selection
+        /// before it filters each candidate on its own: a member is admitted or it is not, and the set
+        /// is the same whichever member you look at first. Here the second member's admissible set
+        /// depends on the first - only units at the same distance as whoever was chosen - so the
+        /// question is about the pair rather than about its members.</para>
+        ///
+        /// <para><b>It is nevertheless answered as one bounded pair rather than as two questions.</b>
+        /// The candidates offered are every unit standing at a distance <em>some other admissible unit
+        /// also stands at</em>, and the answer is checked against the same derivation: a pair whose
+        /// members disagree is refused rather than never offered, because offering only the first
+        /// member's partners would mean deriving the offer from an answer that has not been given. That
+        /// keeps the offer honest under milestone 8.35l's rule - every unit shown can be half of a
+        /// legal pair - while leaving the pairing itself to the answer.</para>
+        ///
+        /// <para>Under the ruling on "at maximum radius" this card is a genuine widening of Living
+        /// Tornado rather than a narrowing: the Tier II swaps only on the outermost ring, and this
+        /// Tier III swaps on any ring at all, which is the upgrade direction p.15 expects.</para>
+        /// </summary>
+        public static EffectCapabilityReference ChooseUnitPairAtEqualDistanceInRadiusV1 =>
+            Reference("choose-unit-pair-at-equal-distance-in-radius", 1);
+
+        /// <summary>
+        /// Milestone 8.35z29. `target-was-at-maximum-range@1` - Misa's Power Shot, "After the
+        /// attack: If the target <b>was</b> at maximum range, you may move it 1 space".
+        ///
+        /// <para><b>The tense is the whole capability.</b> The user's 2026-09-06 ruling settles that
+        /// Power Shot's past tense is deliberate and judged at targeting time, so this reads the two
+        /// spaces p.14 captured when the Attack bound its target - where the target stood and where the
+        /// attacker stood when the action began - and never the live board. Between step 2 and step 7
+        /// a Defense card's text can move either of them, and that movement is exactly what the past
+        /// tense excludes.</para>
+        ///
+        /// <para>"Maximum range" is the printed Range icon with p.16's items composed on, read exactly
+        /// as every other printed-icon consumer reads it, and "at" is the same equality the user's
+        /// ruling gives the phrase everywhere else in her set.</para>
+        /// </summary>
+        public static EffectCapabilityReference TargetWasAtMaximumRangeV1 =>
+            Reference("target-was-at-maximum-range", 1);
+
+        /// <summary>
+        /// Milestone 8.35z29. `target-is-not-adjacent@1` - Misa's Thunder Shot, "After the attack:
+        /// If the target <b>is</b> not adjacent to you, you may move it 1 space".
+        ///
+        /// <para><b>It is the live mirror of <see cref="TargetIsAdjacentV1"/> and not that capability
+        /// negated by a branch, because a definition should read like the sentence it composes.</b> The
+        /// present tense puts the question at p.14's step 7, by which time step 6 may have removed the
+        /// target entirely - and a piece standing nowhere is not adjacent to anything, so a removed
+        /// target answers true here and the optional push that follows finds nothing to move.</para>
+        ///
+        /// <para><b>Why the pair of cards needs two capabilities at all.</b> At base Range 2 and under
+        /// the ruling on "at maximum range", Power Shot's condition (exactly 2) and Thunder Shot's
+        /// (2, since 2 is the maximum) describe the same set - so the two cards look identical until a
+        /// p.16 +1 Range item makes them Range 3, at which point Thunder Shot covers 2 and 3 while
+        /// Power Shot covers only 3. That divergence is the Tier III card's whole purchase, and it
+        /// exists only because the two questions are asked separately.</para>
+        /// </summary>
+        public static EffectCapabilityReference TargetIsNotAdjacentV1 =>
+            Reference("target-is-not-adjacent", 1);
+
         public static EffectCapabilityReference FormerTargetSpaceV1 =>
             Reference("attacked-target-space", 1);
         public static EffectCapabilityReference PlayedAttackThisTurnV1 =>
@@ -437,12 +569,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// value pipeline, so no card starts this contract.</para>
         ///
         /// <para>Milestone 8.35z28 adds Dodger the Warlock's empty-minion-Spawn-point question in its two
-        /// reaches. They are here rather than registered because this phase composes her printed set and
-        /// does not deal her: no card a configured match deals starts either declaration, and milestone
-        /// 7.9's deferral gate refuses a registration no card can reach. Her completion milestone is
-        /// what moves these two lines into the registration list - together with the showcase consumer
-        /// that gate's second half requires, which is what keeps a new handler from arriving for the
-        /// first time inside a verified hero's slice.</para>
+        /// reaches, plus her Ultimate's unlocked test and her item grant. They are here rather than
+        /// registered because that milestone composes her printed set and does not deal her: no card a
+        /// configured match deals starts any of them, and milestone 7.9's deferral gate refuses a
+        /// registration no card can reach. Her dealing milestone is what moves these lines into the
+        /// registration list - together with the showcase consumer that gate's second half requires,
+        /// which is what keeps a new handler from arriving for the first time inside a verified hero's
+        /// slice.</para>
+        ///
+        /// <para>Milestone 8.35z29 adds six on the same terms, all of them named by Misa's composed
+        /// faces and by nothing else in the build: the straight-line destination and its traversal
+        /// selection for her five Blue Skills, the two unit-pair selections her Swap cards need, and the
+        /// two tenses her Red ranged pair reads. They register the moment she is dealt, which is the
+        /// same moment her Active-effect creations join the catalog - and until then this list is what a
+        /// fixture composes onto a bounded one.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers()
         {
@@ -453,6 +593,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EmptyMinionSpawnPointsAdjacentV1, readsPrintedRadius: false);
             yield return new UltimateUnlockedHandler();
             yield return new GainItemFromTheBoxHandler();
+            yield return new EnclosingTargetDistanceHandler(
+                TargetWasAtMaximumRangeV1, "wasAtMaximumRange", atTargetingTime: true);
+            yield return new EnclosingTargetDistanceHandler(
+                TargetIsNotAdjacentV1, "notAdjacent", atTargetingTime: false);
+            yield return new LineDestinationHandler();
+            yield return new TraversedUnitHandler();
+            yield return new UnitPairHandler(
+                ChooseUnitPairAtMaximumRadiusV1, onTheMaximumRingOnly: true);
+            yield return new UnitPairHandler(
+                ChooseUnitPairAtEqualDistanceInRadiusV1, onTheMaximumRingOnly: false);
         }
 
         /// <summary>
@@ -521,6 +671,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
             yield return new ThroughTargetLineHandler();
             yield return new AdjacentTerrainPresenceHandler();
             yield return new TransferResourceHandler();
+
+            // Milestone 8.35z29 adds Misa's four. Her five Blue Skills name
+            // `choose-line-destination` and `choose-traversed-unit` - the first straight-line movement
+            // in this build whose own text crosses obstacles, and the first selection derived from the
+            // interior of a line rather than from a disk. Living Tornado names
+            // `choose-unit-pair-at-maximum-radius` and Storm Spirit
+            // `choose-unit-pair-at-equal-distance-in-radius`, which is the catalog's first relational
+            // pair constraint.
+            // Milestone 8.35z29's six contracts are NOT here. Misa is not dealt yet, and milestone
+            // 7.9's deferral gate refuses a registration no printed card can start - so they are
+            // declared beside `target-played-attack-this-turn@1` in the deferred list below, and the
+            // milestone that deals her moves them across in one edit.
             yield return new ActorMovedThisActionHandler();
         }
 
@@ -2517,6 +2679,567 @@ namespace GuardsDigital.Core.Effects.Synthetic
         private static bool IsKnownHero(EffectCapabilityContext context, HeroId heroId) =>
             heroId.IsDefined && context.Participants != null &&
             context.Participants.Heroes.Any(hero => hero.Id.Equals(heroId));
+
+        /// <summary>
+        /// Milestone 8.35z29. The two questions Misa's Red ranged pair asks about its own target,
+        /// sharing one handler because both are "how far is the target from me" and differing only in
+        /// which moment they measure - which is the entire printed difference between the two cards.
+        /// </summary>
+        private sealed class EnclosingTargetDistanceHandler : IEffectCapabilityHandler
+        {
+            /// <summary>
+            /// Whether this arm reads the spaces p.14 captured when the Attack bound its target (Power
+            /// Shot's "was") or the live board (Thunder Shot's "is").
+            /// </summary>
+            private readonly bool atTargetingTime;
+
+            public EnclosingTargetDistanceHandler(
+                EffectCapabilityReference reference, string output, bool atTargetingTime)
+            {
+                Reference = reference;
+                this.atTargetingTime = atTargetingTime;
+                Schema = new EffectCapabilityParameterSchema(
+                    outputs: new[] { new EffectOutputBinding(output, EffectValueKind.Boolean) });
+                OutputName = output;
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; }
+
+            private string OutputName { get; }
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var value = Read(context);
+                return value.HasValue
+                    ? EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(OutputName, EffectValue.Boolean(value.Value))
+                    })
+                    : EffectExecutionResult.ImpossibleMandatory();
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Read(context).HasValue
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+
+            private bool? Read(EffectCapabilityContext context)
+            {
+                var attack = context.EnclosingAttack;
+                if (!attack.IsDefined || !attack.HasTarget)
+                {
+                    return null;
+                }
+
+                return atTargetingTime ? WasAtMaximumRange(context, attack) : IsNotAdjacent(context, attack);
+            }
+
+            /// <summary>
+            /// Power Shot's question, asked of the two spaces p.14 captured at step 2 rather than of
+            /// the board. An Attack with no captured target space has not bound one, which is a
+            /// question with no answer rather than a false one.
+            /// </summary>
+            private static bool? WasAtMaximumRange(
+                EffectCapabilityContext context,
+                GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts attack)
+            {
+                if (!attack.TargetSpaceBeforeConsequences.HasValue ||
+                    !attack.ActorSpaceAtActionStart.HasValue ||
+                    !context.CardState.IsAvailable)
+                {
+                    return null;
+                }
+
+                var range = RangeValueQuery.Calculate(
+                    context.SourceCardInstanceId,
+                    context.SourceDefinitionReference,
+                    context.ActionDefinitionId,
+                    context.CardState.Definitions,
+                    context.ActorId,
+                    context.HeroItems,
+                    context.Modifications,
+                    ActionValueApplicabilityQuery.For(
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions)).Total;
+                return range >= 1 && HexDistanceQuery.Calculate(
+                    attack.ActorSpaceAtActionStart.Value,
+                    attack.TargetSpaceBeforeConsequences.Value) == range;
+            }
+
+            /// <summary>
+            /// Thunder Shot's question, asked of the live board at p.14's step 7. A target step 6
+            /// removed stands nowhere and is therefore not adjacent, which is the sentence read
+            /// literally rather than an exception made for it.
+            /// </summary>
+            private static bool IsNotAdjacent(
+                EffectCapabilityContext context,
+                GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts attack)
+            {
+                var board = context.Components?.Board;
+                if (board == null)
+                {
+                    return true;
+                }
+
+                var target = attack.HeroTargetId.IsDefined
+                    ? BoardObjectReference.ForHero(attack.HeroTargetId)
+                    : BoardObjectReference.ForMinion(attack.MinionTargetId);
+                return !board.TryGetObjectCoordinate(target, out var targetAt) ||
+                    !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt) ||
+                    HexDistanceQuery.Calculate(actorAt, targetAt) != 1;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z29. Where a straight-line movement that crosses obstacles may end -
+        /// Misa's five Blue Skills.
+        ///
+        /// <para>Both halves of p.18's obstacle rule are the movement query's and neither is restated
+        /// here: the crossing permission is handed to the transit predicate, and the endpoint predicate
+        /// is offered no permission at all, which is what keeps the ruling's "as long as hero ends up
+        /// on a playable space" true without this handler knowing what terrain is.</para>
+        ///
+        /// <para>Straightness is asserted twice - the destination lies on a hex direction from the
+        /// origin at the route's own cost, and the route itself steps along that direction - for the
+        /// reason <see cref="ChargeLineHandler"/> asserts it twice: a reachability walk finds the
+        /// cheapest way to a space, and the cheapest way to a space that also lies on a line need not
+        /// itself be that line.</para>
+        /// </summary>
+        private sealed class LineDestinationHandler : TargetingHandler, IEffectCapabilityHandler
+        {
+            public override IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
+                Array.Empty<RuleActivity>();
+
+            public EffectCapabilityReference Reference => ChooseLineDestinationV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter("maximumDistance", EffectValueKind.Integer)
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding("destination", EffectValueKind.Coordinate)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var destinations = Destinations(context);
+                return destinations.Count == 0
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor, destinations.Select(EffectValue.Space), 1, 1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Coordinate ||
+                    !Destinations(context).Any(value => value.Equals(selected[0].Coordinate)))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact("destination", EffectValue.Space(selected[0].Coordinate))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Destinations(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// Derived on every ask - the offer, the answer and a restored pause - because the board is
+            /// state and a route remembered from the moment the question opened could name a space
+            /// something has since stepped into.
+            /// </summary>
+            private static IReadOnlyList<HexCoordinate> Destinations(EffectCapabilityContext context)
+            {
+                var board = context.Components?.Board;
+                var maximum = context.Input("maximumDistance").IntegerValue;
+                if (board == null || maximum < 1 || !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var actor = BoardObjectReference.ForHero(context.ActorId);
+                var found = new List<HexCoordinate>();
+                foreach (var route in board.FindDirectMoveDestinations(
+                    actor, maximum, context.Modifications, moveIgnoresObstacles: true))
+                {
+                    if (route.Cost < 1 || route.Cost > maximum ||
+                        !StraightLineQuery.TryGetDirection(
+                            actorAt, route.Destination, out var direction, out var distance) ||
+                        distance != route.Cost || !IsStraightRoute(actorAt, direction, route.Route))
+                    {
+                        continue;
+                    }
+
+                    found.Add(route.Destination);
+                }
+
+                return found
+                    .Distinct()
+                    .OrderBy(value => value.Q)
+                    .ThenBy(value => value.R)
+                    .ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z29. One of the units a straight-line movement passed through - Misa's
+        /// five Blue Skills' second clause.
+        ///
+        /// <para>The interior of a straight line between two named spaces is arithmetic, so this asks
+        /// the board who is standing on those spaces rather than reading a record of who was. Both ends
+        /// are bound inputs: by the time this runs the actor is standing on the destination, so her own
+        /// space answers only half the question.</para>
+        ///
+        /// <para>A line with an empty interior - a one-space move, or a move through nobody - offers
+        /// nothing, which the declaring node's own <c>may</c> or <c>if able</c> policy turns into a
+        /// step simply not taken. That is the same silence p.10 gives every optional step nobody can
+        /// perform, and it is why neither clause needs a condition in front of it.</para>
+        /// </summary>
+        private sealed class TraversedUnitHandler : TargetingHandler, IEffectCapabilityHandler
+        {
+            public override IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
+                Array.Empty<RuleActivity>();
+
+            public EffectCapabilityReference Reference => ChooseTraversedUnitV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter("origin", EffectValueKind.Coordinate),
+                        new EffectCapabilityParameter("destination", EffectValueKind.Coordinate),
+                        new EffectCapabilityParameter(
+                            UnitKindParameter,
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.AllExcept(RosterUnitKind.None)),
+                        new EffectCapabilityParameter(
+                            RelationParameter,
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.AllExcept(SourceTeamRelation.None))
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding(ChosenHeroOutput, EffectValueKind.Hero),
+                        new EffectOutputBinding(ChosenMinionOutput, EffectValueKind.Minion),
+                        new EffectOutputBinding(ChosenSpaceOutput, EffectValueKind.Coordinate)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var candidates = Candidates(context);
+                return candidates.Count == 0
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor, candidates.Select(AsValue), 1, 1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var chosen = FromValue(selected[0]);
+                if (!chosen.IsDefined || !Candidates(context).Contains(chosen))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var facts = new List<EffectOutcomeFact> { AsOutcome(chosen) };
+                AddSpaceIfPublished(context, facts, chosen, ChosenSpaceOutput);
+                return EffectExecutionResult.Applied(facts);
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Candidates(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            private static IReadOnlyList<BoardObjectReference> Candidates(
+                EffectCapabilityContext context)
+            {
+                var board = context.Components?.Board;
+                var origin = context.Input("origin");
+                var destination = context.Input("destination");
+                var kind = (RosterUnitKind)context.Input(UnitKindParameter).IntegerValue;
+                var relation = (SourceTeamRelation)context.Input(RelationParameter).IntegerValue;
+                if (board == null || context.Participants == null ||
+                    origin.Kind != EffectValueKind.Coordinate ||
+                    destination.Kind != EffectValueKind.Coordinate ||
+                    kind == RosterUnitKind.None || !Enum.IsDefined(typeof(RosterUnitKind), kind) ||
+                    relation == SourceTeamRelation.None ||
+                    !Enum.IsDefined(typeof(SourceTeamRelation), relation) ||
+                    !StraightLineQuery.TryGetDirection(
+                        origin.Coordinate, destination.Coordinate, out var direction, out var distance) ||
+                    distance < 2)
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                // The interior only: p.17 lets a crossing mover enter and leave an obstacle space, and
+                // "moved through" is exactly those spaces - not the one she left and not the one she
+                // is standing on.
+                var interior = new List<HexCoordinate>();
+                for (var step = 1; step < distance; step++)
+                {
+                    interior.Add(StraightLineQuery.Step(origin.Coordinate, direction, step));
+                }
+
+                return interior
+                    .SelectMany(space => RosterPresenceQuery.FindUnitsWithin(
+                        space, 0, kind, relation, context.ActorId, board,
+                        context.Participants, context.Modifications))
+                    .Distinct()
+                    .OrderBy(value => value.Kind)
+                    .ThenBy(RosterPresenceQuery.Identity, StringComparer.Ordinal)
+                    .ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z29. The two pair selections Misa's Swap cards need, sharing one handler
+        /// because the two sentences differ in exactly one clause and nothing else: both take p.19's
+        /// units of either side inside her printed Radius disk, both exclude her by p.10's Picking
+        /// Targets, and both hand a canonical ordered pair to p.19's Swap.
+        /// </summary>
+        private sealed class UnitPairHandler
+            : TargetingHandler, IEffectCapabilityHandler, IEffectSelectionCapabilityHandler,
+                IEffectAnticipatedOutcomeCapabilityHandler
+        {
+            /// <summary>
+            /// Whether the pair must stand on the printed ring (Living Tornado) or merely on one ring
+            /// each, the same one (Storm Spirit). It is a constructor argument rather than a parameter
+            /// for the reason the capability names are two: a reader auditing a node should learn which
+            /// question is asked from the reference the node carries.
+            /// </summary>
+            private readonly bool onTheMaximumRingOnly;
+
+            public UnitPairHandler(EffectCapabilityReference reference, bool onTheMaximumRingOnly)
+            {
+                Reference = reference;
+                this.onTheMaximumRingOnly = onTheMaximumRingOnly;
+            }
+
+            public override IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
+                SwapActivity;
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        // Milestone 8.35l's optionality, declared exactly as every other selection
+                        // declares it: a pair whose result no single later node consumes still has a
+                        // legal shape.
+                        new EffectCapabilityParameter(
+                            EffectSelectionDeclaration.ConsumerParameterName,
+                            EffectValueKind.Node,
+                            isRequired: false)
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding("firstHero", EffectValueKind.Hero),
+                        new EffectOutputBinding("firstMinion", EffectValueKind.Minion),
+                        new EffectOutputBinding("secondHero", EffectValueKind.Hero),
+                        new EffectOutputBinding("secondMinion", EffectValueKind.Minion),
+                        new EffectOutputBinding("firstSpace", EffectValueKind.Coordinate),
+                        new EffectOutputBinding("secondSpace", EffectValueKind.Coordinate)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var candidates = Candidates(context);
+                return candidates.Count < 2
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor, candidates.Select(AsValue), 2, 2));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                var facts = Publish(context, selected);
+                return facts == null
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.Applied(facts);
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Candidates(context).Count < 2
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
+                Candidates(context).Select(AsValue).ToArray();
+
+            /// <summary>Naming the pair mutates nothing; the Swap after it does. Milestone 8.35l.</summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>
+            /// Two, always: "swap two units" and p.19's Swap moves both, so an answer naming one is not
+            /// a smaller version of this question but no answer at all.
+            /// </summary>
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 2;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen) =>
+                Publish(context, chosen) ?? Array.Empty<EffectOutcomeFact>();
+
+            /// <summary>
+            /// What answering publishes, or nothing where the answer is not one this selection would
+            /// take. The equal-distance clause is checked HERE rather than only in the candidate set,
+            /// because it is a fact about the pair: two units this offer legitimately showed can still
+            /// be an illegal pair, and refusing that answer is what makes the relational constraint
+            /// real without deriving the offer from an answer nobody has given yet.
+            /// </summary>
+            private IReadOnlyList<EffectOutcomeFact> Publish(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                var candidates = Candidates(context);
+                var chosen = (selected ?? Array.Empty<EffectValue>()).Select(FromValue).ToArray();
+                if (chosen.Length != 2 || chosen.Distinct().Count() != 2 ||
+                    chosen.Any(value => !value.IsDefined || !candidates.Contains(value)) ||
+                    !StandAtOneDistance(context, chosen[0], chosen[1]))
+                {
+                    return null;
+                }
+
+                var canonical = Canonical(chosen);
+                var facts = new List<EffectOutcomeFact>
+                {
+                    AsOutcome(canonical[0], "firstHero", "firstMinion"),
+                    AsOutcome(canonical[1], "secondHero", "secondMinion")
+                };
+                AddSpaceIfPublished(context, facts, canonical[0], "firstSpace");
+                AddSpaceIfPublished(context, facts, canonical[1], "secondSpace");
+                return facts;
+            }
+
+            /// <summary>
+            /// "at equal distance from you" for the Tier III card, and nothing at all for the Tier II -
+            /// whose members are already all on one ring, so a second test would restate the candidate
+            /// filter rather than add to it.
+            /// </summary>
+            private bool StandAtOneDistance(
+                EffectCapabilityContext context,
+                BoardObjectReference first,
+                BoardObjectReference second)
+            {
+                if (onTheMaximumRingOnly)
+                {
+                    return true;
+                }
+
+                var board = context.Components?.Board;
+                return board != null &&
+                    board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt) &&
+                    board.TryGetObjectCoordinate(first, out var firstAt) &&
+                    board.TryGetObjectCoordinate(second, out var secondAt) &&
+                    HexDistanceQuery.Calculate(actorAt, firstAt) ==
+                        HexDistanceQuery.Calculate(actorAt, secondAt);
+            }
+
+            /// <summary>
+            /// Every unit this card could swap, re-derived on every ask. For the Tier III card the set
+            /// is narrowed to units that have a partner at their own distance, so that milestone
+            /// 8.35l's rule holds: nothing is offered that cannot be half of a legal pair.
+            /// </summary>
+            private IReadOnlyList<BoardObjectReference> Candidates(EffectCapabilityContext context)
+            {
+                var board = context.Components?.Board;
+                if (board == null || context.Participants == null ||
+                    !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                var reach = PrintedRadius(context);
+                if (reach < 1)
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                var inRadius = RosterPresenceQuery.FindUnitsWithin(
+                        actorAt, reach, RosterUnitKind.Unit, SourceTeamRelation.AnyTeam,
+                        context.ActorId, board, context.Participants, context.Modifications,
+                        BoardObjectReference.ForHero(context.ActorId))
+                    .Where(target => !ImmunityQuery.IsImmuneTo(
+                        target.AsRuleObject(), RuleActivity.Swap,
+                        RuleObject.ForHero(context.ActorId), board, context.Participants,
+                        context.Modifications, context.ImmunityOverrides))
+                    .Select(target => board.TryGetObjectCoordinate(target, out var at)
+                        ? (Unit: target, Distance: HexDistanceQuery.Calculate(actorAt, at), Found: true)
+                        : (Unit: target, Distance: 0, Found: false))
+                    .Where(value => value.Found)
+                    .ToArray();
+
+                if (onTheMaximumRingOnly)
+                {
+                    return inRadius
+                        .Where(value => value.Distance == reach)
+                        .Select(value => value.Unit)
+                        .ToArray();
+                }
+
+                return inRadius
+                    .Where(value => inRadius.Count(other =>
+                        !other.Unit.Equals(value.Unit) && other.Distance == value.Distance) > 0)
+                    .Select(value => value.Unit)
+                    .ToArray();
+            }
+
+            /// <summary>
+            /// p.9's printed Radius icon with p.16's matching item composed onto it, read through the
+            /// same query every other printed-icon consumer in this catalog reads, so a card's
+            /// selection and a card's Place cannot come to measure different disks.
+            /// </summary>
+            private static int PrintedRadius(EffectCapabilityContext context) =>
+                !context.CardState.IsAvailable
+                    ? 0
+                    : RadiusValueQuery.Calculate(
+                        context.SourceCardInstanceId,
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions,
+                        context.ActorId,
+                        context.HeroItems).Total;
+        }
 
         private static bool TryOrigin(
             EffectCapabilityContext context,

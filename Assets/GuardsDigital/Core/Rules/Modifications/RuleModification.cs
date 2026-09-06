@@ -113,7 +113,35 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// "perform a Defense action"), so the reading is the plain one and the scope falls out of
         /// where the query is consulted rather than being restated as a condition.</para>
         /// </summary>
-        AllSpacesCountAsFriendlyMinionSpawnPointsInBattleZone = 9
+        AllSpacesCountAsFriendlyMinionSpawnPointsInBattleZone = 9,
+
+        /// <summary>
+        /// Milestone 8.35z29. How many options the affected hero may take from a modal on a card
+        /// she is resolving - Misa's Power Overwhelming, "Whenever you choose one, you may choose two
+        /// different options instead, in any order".
+        ///
+        /// <para><b>It is a tenth family because it is the first modification of a control-flow node
+        /// rather than of an object's values, permissions or characteristics.</b> The kinds above
+        /// are all answers to "what is true of this piece": what its Attack Total is, what it may do,
+        /// what may be done to it, what it counts as. This one answers "how many bullets does this
+        /// decision admit", which is a property of a question the rules are about to ask and of nothing
+        /// standing on the board. Folding it into <see cref="ValueModifier"/> would have made it a
+        /// contribution to a printed channel, and a modal's cardinality is not printed anywhere -
+        /// p.17's glossary states it in words ("Choose a bullet point (or bullet points) and apply that
+        /// text, ignoring the rest") and p.10 adds the ordering.</para>
+        ///
+        /// <para><b>The number is <see cref="RuleModification.Amount"/> and there is no new field.</b>
+        /// A declaration that carried its own property would move every hero already referencing this
+        /// type through the content-identity oracle, which walks public properties - the trap milestone
+        /// 8.35z28 recorded on Dodger. The amount is what the sentence prints: two.</para>
+        ///
+        /// <para><b>What it does not do.</b> It raises the ceiling and never the floor, because the
+        /// card says "you <em>may</em>" - so one bullet stays a legal answer - and it never reaches a
+        /// modal offering fewer bullets than it admits, because "two <em>different</em> options" cannot
+        /// be satisfied from a list of one. On the two-bullet modal Misa actually prints, admitting two
+        /// means admitting both, which is the user's 2026-09-06 ruling in as many words.</para>
+        /// </summary>
+        ChoiceCardinality = 10
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -463,6 +491,37 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RulePermissionKind.None,
                 PrintedValueChannel.None,
                 maximum,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z29. "you may choose two different options instead" - the ceiling a modal
+        /// on this hero's own card admits.
+        ///
+        /// <para>Two or more, because one is the rule already: a declaration of one would say nothing
+        /// and a declaration of zero would be a restriction wearing this kind's name. The sentence
+        /// Misa prints says two, and a card printing a different number would declare that number
+        /// here rather than need a different kind.</para>
+        /// </summary>
+        public static RuleModification ForChoiceCardinality(int options)
+        {
+            if (options < 2)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(options),
+                    options,
+                    "A choice-cardinality modification raises how many options a modal admits; " +
+                    "p.17's own reading already admits one, so a declaration of one or fewer is " +
+                    "either nothing or a restriction, and a restriction is declared as one.");
+            }
+
+            return new RuleModification(
+                RuleModificationKind.ChoiceCardinality,
+                RuleActivity.None,
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                options,
                 EffectiveUnitKind.None,
                 RestrictedActorScope.AnyActor);
         }

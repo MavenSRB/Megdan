@@ -29,7 +29,7 @@ namespace GuardsDigital.Core.Rules.Progression
 
             return ultimates.Ultimates
                 .Where(ultimate =>
-                    Matches(ultimate.Rule.TriggerCondition, basicAction.Kind) &&
+                    Matches(ultimate.Rule.TriggerCondition, basicAction) &&
                     ultimate.OwnerId.Equals(basicAction.ActorId) &&
                     board.TryGetHeroCoordinate(ultimate.OwnerId, out _))
                 .Select((ultimate, index) => ultimate.TriggeredSource(participants, index, basicAction))
@@ -47,14 +47,22 @@ namespace GuardsDigital.Core.Rules.Progression
         /// a card that says "basic action" arrives, and the only way to guarantee it is to state both
         /// answers rather than to test one and let the other fall through.
         /// </summary>
-        private static bool Matches(UltimateTriggerCondition condition, ActionKind performedKind)
+        private static bool Matches(
+            UltimateTriggerCondition condition, PerformedBasicAction performed)
         {
             switch (condition)
             {
                 case UltimateTriggerCondition.AfterControllerPerformsBasicSkill:
-                    return performedKind == ActionKind.Skill;
+                    return performed.Kind == ActionKind.Skill;
                 case UltimateTriggerCondition.AfterControllerPerformsBasicAction:
                     return true;
+
+                // Milestone 8.35z29. The one condition here that reads what the action did rather
+                // than which kind it was: a basic Skill of Misa's that moved her five spaces is not a
+                // basic Skill of Misa's that placed her, and only the second is what her Ultimate's
+                // second paragraph watches.
+                case UltimateTriggerCondition.AfterControllerPlacesSelf:
+                    return performed.PlacedSelf;
                 default:
                     return false;
             }

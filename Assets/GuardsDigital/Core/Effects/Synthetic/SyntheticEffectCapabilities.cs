@@ -97,7 +97,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticModificationCapabilities.Handlers())
                 .Concat(SyntheticDisplacementCapabilities.Handlers())
                 .Concat(SyntheticTargetingCapabilities.Handlers())
-                .Concat(SyntheticPlacementCapabilities.Handlers())
+                .Concat(SyntheticPlacementCapabilities.RegisteredHandlers())
                 .Concat(SyntheticExchangeCapabilities.Handlers())
                 .Concat(SyntheticCardStateCapabilities.Handlers())
                 .Concat(SyntheticConsequenceCapabilities.Handlers())
