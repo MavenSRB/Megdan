@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
@@ -244,8 +245,10 @@ namespace GuardsDigital.Core.Effects
             EffectRosterState rosterState = null,
             IReadOnlyList<ImmunityOverrideDeclaration> immunityOverrides = null,
             IReadOnlyList<EffectOutputBinding> declaredOutputs = null,
-            EffectCapabilityCatalog capabilities = null)
+            EffectCapabilityCatalog capabilities = null,
+            HexCoordinate? prospectiveActorSpace = null)
         {
+            ProspectiveActorSpace = prospectiveActorSpace;
             Capabilities = capabilities;
             EnclosingAttack = enclosingAttack;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
@@ -450,6 +453,65 @@ namespace GuardsDigital.Core.Effects
         /// definition validator admits any.
         /// </summary>
         public IReadOnlyList<ImmunityOverrideDeclaration> ImmunityOverrides { get; }
+
+        /// <summary>
+        /// Milestone 8.35x-moveprover: the space the acting hero would be standing on, for a question
+        /// asked about a board he has not reached yet - and the named absence everywhere else, which is
+        /// every live resolution.
+        ///
+        /// <para><b>Why it exists.</b> A card that prints "You may move 1 space. Target a unit adjacent
+        /// to you." composes the move and the selection as two ordered steps, and the offer question
+        /// stands before either. Judging "adjacent to you" from the square he is about to leave answers
+        /// about the wrong space, so milestone 8.35p suppressed the reading entirely and the Attack was
+        /// offered wherever it could not be read. Suppression is the right default and the wrong
+        /// answer when the destinations are enumerable: the walk can ask the same question once per
+        /// space he could reach, and refuse only when every one of them is empty. This is the one seam
+        /// that carries the hypothetical space, so a selection declaring
+        /// <c>origin = Actor</c> reads it in exactly the place it reads the real one.</para>
+        ///
+        /// <para><b>It never reaches a live resolution.</b> Only the feasibility walk sets it, and only
+        /// around <see cref="IEffectCapabilityHandler.Anticipate"/>, which may mutate nothing;
+        /// <see cref="IEffectCapabilityHandler.Execute"/> and
+        /// <see cref="IEffectCapabilityHandler.Resume"/> are never called on a context carrying one.
+        /// The resolver builds its contexts without it and nothing on the answering path passes it
+        /// on.</para>
+        /// </summary>
+        public HexCoordinate? ProspectiveActorSpace { get; }
+
+        /// <summary>
+        /// This same context, asked as if the acting hero already stood on <paramref name="space"/>.
+        ///
+        /// <para>Everything else is carried across unchanged, because nothing else about the question
+        /// moves with him: the node, the inputs, the answers already given, the modifications and the
+        /// board are all the ones this walk is judging. Only where he is standing is hypothetical, and
+        /// only a reader that asks for the actor's own origin can tell.</para>
+        /// </summary>
+        internal EffectCapabilityContext AsIfTheActorStoodAt(HexCoordinate space) =>
+            new EffectCapabilityContext(
+                NodeId,
+                FailurePolicy,
+                ActorId,
+                ControllerId,
+                SourceCardInstanceId,
+                SourceDefinitionReference,
+                ActionDefinitionId,
+                Inputs,
+                RoundIndex,
+                TurnIndex,
+                Participants,
+                Timing,
+                Modifications,
+                CardState,
+                EnclosingActionKind,
+                Components,
+                HeroItems,
+                AnswersAlreadyGiven,
+                EnclosingAttack,
+                RosterState,
+                ImmunityOverrides,
+                DeclaredOutputs,
+                Capabilities,
+                space);
 
         public EffectValue Input(string parameterName) =>
             Inputs.TryGetValue(parameterName, out var value) ? value : default;
@@ -778,6 +840,41 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         bool TryExplainRefusal(
             EffectCapabilityContext context, out AppliedRuleModification blocking);
+    }
+
+    /// <summary>
+    /// Milestone 8.35x-moveprover: a capability that puts the ACTING HERO somewhere, and can say where
+    /// he could end up without moving him.
+    ///
+    /// <para>It exists for one shape, and the shape is roster-wide: a card that prints a bounded move
+    /// and then asks a question measured from the space he is in. "You may move 1 space. Target a unit
+    /// adjacent to you." is two ordered steps and one offer question, and the offer question stands
+    /// before either of them - so the second step reads a board the first has not produced. Milestone
+    /// 8.35p answered that by refusing to read it at all, which is right whenever the destinations are
+    /// unknowable and wrong whenever they are not: this board is hexes, every printed budget is one or
+    /// two spaces, and the set he could be standing on is small enough to enumerate and ask the same
+    /// question of, once each.</para>
+    ///
+    /// <para>Implementing it is a claim, exactly as
+    /// <see cref="IEffectAnticipatedOutcomeCapabilityHandler"/> is: deriving these spaces must move
+    /// nothing and mint nothing, and the list must be the destinations this node would really offer,
+    /// because a walk that trusted a wider list would grey an action that has an answer. A handler that
+    /// cannot answer under that rule does not implement this, and the walk keeps milestone 8.35p's
+    /// position - unreadable is offered.</para>
+    /// </summary>
+    public interface IEffectActorRelocationCapabilityHandler
+    {
+        /// <summary>
+        /// Every space the acting hero could be standing on once this node has been answered - his
+        /// current space included wherever the step can be declined, because declining is an answer.
+        ///
+        /// <para><c>false</c> where this node does not move the actor at all, or where the walk cannot
+        /// yet tell: an unresolved subject, a destination bound to a decision nobody has made, a
+        /// board this context cannot read. Both are the same instruction to the caller - do not judge
+        /// what stands after this - and neither is a fault.</para>
+        /// </summary>
+        bool TryAnticipateActorSpaces(
+            EffectCapabilityContext context, out IReadOnlyList<HexCoordinate> spaces);
     }
 
     /// <summary>

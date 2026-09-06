@@ -285,6 +285,33 @@ Non-goals: no hero is dealt here and no content moves; no change to the printed 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z41-offer-every-hero-this-build-deals-not-only-the-six-the-printed-line-up-seats-completion-evidence).
 
+### [x] 8.35z42 Grey a card-text Attack whose own move cannot bring anything into reach
+
+A corrective extending milestone 8.35p's move-then-target feasibility to the row milestone 8.35z25 recorded as deliberate under Ruling 45 but explicitly NOT decided.
+
+Observable outcome: an Attack whose card text moves the acting hero before it chooses a victim is offered exactly where some destination of that move - or standing still, where the step is optional - puts a legal target in reach, and is greyed, naming the rule that blocks it, where no destination does.
+
+**One seam, one reading site, one opt-in.** `EffectCapabilityContext` gains an optional prospective actor space and an internal copy that sets it. Nothing on any live path sets it; only the feasibility walk does, and only around anticipation, which may mutate nothing. `SyntheticRosterCapabilities.TryOrigin` is the single place a declared actor origin becomes a square, so reading it there is why no capability had to be taught anything - every roster selection resolves its origin through that one method.
+
+**Standing still is two rulebook sentences living in two places, and both are honoured.** Page 11's optional distance is already inside the move's candidate list through its admitted distances; page 10's optional step - "you may", "if able" - is the node's failure policy, a decision about whether the node runs at all. For an optional step at distance exactly 1 the admitted distances are [1,1], so the actor's own space is NOT a candidate and the walk must add it. The anticipation answers false unless the mover resolves to the acting hero himself, so a card moving another unit or a token is never mistaken for one moving him.
+
+**The empty list is not the null, and that is the whole three-state design.** The walk carries prospective spaces rather than milestone 8.35p's single boolean: null judges from the board as before, a non-empty list judges once per space, and an EMPTY list keeps 8.35p's blanket suppression for every case still unenumerable - a move whose subject or destination will not resolve, and a second move standing after a first, whose own start square is already a hypothesis. A node is judged per space only when it declares an actor origin; everything else after an untaken move keeps the suppression, because a node whose reading of the board the walk cannot redirect would otherwise be judged from the square the hero is about to leave, which is the exact defect 8.35p fixed. Refused only when EVERY space refuses, which is Ruling 45 written as a walk.
+
+**The Attack clause can finally explain itself.** Until now only the Skill clause carried a blocker out and the Attack clause greyed with nothing said. The mandatory-binding check gains a blocking-rule overload that both resolution authorities carry out to availability stamping. The evaluation ORDER is unchanged - the attack-start clause was already the first clause after the Skill one - so no verdict moves; only the reason on a refusal can now exist.
+
+Acceptance checks:
+
+- An Attack that moves before it targets is offered when some destination of its own move brings a legal target into reach, and greyed when none does, with standing still admitted wherever the printed step is optional.
+- A greyed Attack of this family names the standing rule that blocks it, through the same channel the Skill clause already used; a refusal with no standing rule behind it still says nothing.
+- Only nodes declaring an actor origin are judged per prospective space; every other node after an untaken move keeps milestone 8.35p's suppression.
+- The offer surface moves on exactly the rows the family sweep predicts and on no others, measured as a diff over every hand card printing a primary action across the board variants swept.
+- No content, schema, wire, capability id, content revision or capability parameter moves.
+- The complete unfiltered dotnet harness passes at the final revision.
+
+Non-goals: no content edit and no new capability; no change to the bound-target resolve path, which remains as milestone 8.35z27 wrote it; and no fix for the mandatory-Conditional binding that greys Whisper's Crimson Trail on every board, which is recorded for her dealing milestone rather than taken here.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z42-grey-a-card-text-attack-whose-own-move-cannot-bring-anything-into-reach-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

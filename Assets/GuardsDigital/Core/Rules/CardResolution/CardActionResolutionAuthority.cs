@@ -929,8 +929,32 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             int roundIndex,
-            int turnIndex)
+            int turnIndex) =>
+            CanAttackFindTarget(
+                offer, definitions, instances, participants, timing, modifications,
+                roundIndex, turnIndex, out _);
+
+        /// <summary>
+        /// Milestone 8.35x-moveprover: the same answer, plus the standing modification behind a refusal
+        /// where the walk met one.
+        ///
+        /// <para>The channel milestone 8.35l opened for a Skill, on the other kind of offer that greys.
+        /// It is <c>null</c> for every Attack refused by the ordinary target backend and for every
+        /// card-text Attack whose text is empty for a reason no standing rule explains - a board with
+        /// nobody in reach greys exactly as it did and says nothing new.</para>
+        /// </summary>
+        public bool CanAttackFindTarget(
+            ActionOffer offer,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex,
+            out AppliedRuleModification blocking)
         {
+            blocking = null;
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
             if (!ActionOfferQuery.TryFindActionDefinition(
@@ -987,7 +1011,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     offer.ActorId,
                     offer.InvocationContext,
                     context),
-                context);
+                context,
+                out blocking);
         }
 
         public CardActionResolutionResult AnswerEffectChoice(

@@ -268,8 +268,24 @@ namespace GuardsDigital.Tests.EditMode
             // commands: five rounds of margin above the floor and 85% of budget, which is the same
             // shape as every re-pin above and slightly more command headroom than the last one. The
             // seed moves rather than the floor, for the reason recorded in 8.35u's entry.
+            //
+            // Milestone 8.35x-moveprover re-derived it again, 48 -> 1, and this one is the
+            // mirror image of 8.35z25's. That milestone made Combat Reflexes and Leaping Strike
+            // OFFERABLE with nothing inside move-and-reach - a position their text cannot act on -
+            // and rerouted this walk onto seed 48. This one proves those positions empty and takes
+            // the offer away again, so the walk reroutes back and seed 48 now ends at 37 completed
+            // rounds, below the floor. An offline scan of seeds 1-60 under the current rules found
+            // fourteen that end past forty; seed 1 ends at 47 completed rounds and 3,753 commands -
+            // seven rounds of margin and 89% of budget, the same shape every re-pin above records.
+            //
+            // AND IT IS THE SAME PAIR OF NUMBERS 8.35z20 PINNED FOR SEED 1, exactly: 47 rounds,
+            // 3,753 commands. Seed 1 was rerouted to 30 rounds by 8.35z25's offer widening and
+            // returns to its earlier trajectory now that the widening is undone in precisely the
+            // positions that were wrong. That is not a coincidence worth ignoring - it is the
+            // corroboration that this milestone removes offers 8.35z25 added and touches no others,
+            // measured on a walk nobody designed to prove it.
             var submitted = OwnerScopedProjectionTests.DriveThroughSeats(
-                host, 4200, projection => { Measure(); return false; }, seed: 48);
+                host, 4200, projection => { Measure(); return false; }, seed: 1);
             Measure();
 
             var playedRounds = host.Projection.RoundIndex - 1;

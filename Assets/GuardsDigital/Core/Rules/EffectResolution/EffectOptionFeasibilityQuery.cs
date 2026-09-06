@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Rules.Modifications;
 
@@ -228,41 +229,71 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public static bool CanCompleteMandatoryAttackTargetBinding(
             PendingResolution prospectiveFrame,
-            EffectResolutionContext context)
+            EffectResolutionContext context) =>
+            CanCompleteMandatoryAttackTargetBinding(prospectiveFrame, context, out _);
+
+        /// <summary>
+        /// Milestone 8.35x-moveprover: the same answer, plus the standing modification behind a refusal
+        /// where the walk met one - the channel milestone 8.35l already opened for a Skill, on the other
+        /// kind of offer it always applied to.
+        ///
+        /// <para><c>null</c> wherever the text is empty for any other reason, which is most of them: a
+        /// board with nobody in reach is greyed exactly as before and says nothing new.</para>
+        /// </summary>
+        public static bool CanCompleteMandatoryAttackTargetBinding(
+            PendingResolution prospectiveFrame,
+            EffectResolutionContext context,
+            out AppliedRuleModification blocking)
         {
             if (prospectiveFrame == null) throw new ArgumentNullException(nameof(prospectiveFrame));
             if (context == null) throw new ArgumentNullException(nameof(context));
 
             var budget = MaximumNodesPerOption;
-            return WalkToAttackTargetBinding(
+            var explanation = new RefusalExplanation();
+            var verdict = WalkToAttackTargetBinding(
                 context.Definition.RootNodeId,
                 prospectiveFrame,
                 Array.Empty<EffectNodeOutcome>(),
                 context,
                 ref budget,
-                afterAnUntakenMove: false) == BindingVerdict.Bound;
+                prospectiveActorSpaces: null,
+                explanation);
+            blocking = verdict == BindingVerdict.Bound ? null : explanation.Blocking;
+            return verdict == BindingVerdict.Bound;
         }
 
-        /// <param name="afterAnUntakenMove">
-        /// Milestone 8.35p. Whether an earlier step of this same path is a Move that has not been
-        /// taken, which makes every board reading after it a reading of a board that will not exist.
+        /// <param name="prospectiveActorSpaces">
+        /// Milestone 8.35p, extended at milestone 8.35x-moveprover. Where the acting hero could be
+        /// standing by the time this node is reached, or <c>null</c> while he is still standing where
+        /// the board says he is.
         ///
-        /// <para>Brogan's charges are why it is here. "Move N spaces in a straight line to a space
-        /// adjacent to an enemy unit, then target that unit" now asks its two halves in printed
-        /// order - where he lands, the Move, then whom he takes - and the second question is an
-        /// ordinary adjacency selection measured from where the hero is standing. This walk stands
-        /// before any of it: the destination has not been chosen, so the hero is still on his
-        /// starting space, and judging that selection there answers about the wrong square. It
-        /// answered "nothing is adjacent" and the whole Attack was greyed in exactly the position
-        /// the card exists for - measured, and the reason the reorder could not be content alone.
-        /// </para>
+        /// <para><b>Why the question exists at all.</b> Brogan's charges are the original case. "Move N
+        /// spaces in a straight line to a space adjacent to an enemy unit, then target that unit" asks
+        /// its halves in printed order - where he lands, the Move, then whom he takes - and the second
+        /// question is an ordinary adjacency selection measured from where the hero is standing. This
+        /// walk stands before all of it, so judging that selection from his starting square answers
+        /// about the wrong space. It answered "nothing is adjacent" and the whole Attack was greyed in
+        /// exactly the position the card exists for.</para>
         ///
-        /// <para>So the reading is suppressed rather than believed, which is this query's own
-        /// standing direction: it refuses an option it can prove does nothing and never disables one
-        /// it merely cannot read. Nothing is offered that could not bind - what a charge can reach is
-        /// decided by <c>choose-charge-line@1</c>, which stands <em>before</em> the Move and is
-        /// judged normally: a board with no straight destination beside an enemy still refuses there,
-        /// and the Attack is still greyed.</para>
+        /// <para><b>Milestone 8.35p suppressed the reading; this milestone proves it instead.</b>
+        /// Suppression is right whenever the destinations cannot be known, and it left a hole the
+        /// reading-order corrective measured: Combat Reflexes and Leaping Strike became offerable with
+        /// nothing at all within move-and-reach, because "a unit adjacent to you" was asked from his
+        /// current space alone and then ignored. Rule 14 and milestone 8.35l say an action PROVEN empty
+        /// is refused before it is offered, and RULING 45 says every destination of an unconstrained
+        /// move stays offered while ANY completion exists - the player's rope covers choosing badly,
+        /// not being offered the impossible. Both are satisfied by asking the selection's own sentence
+        /// once per space he could reach: offered where some space keeps a candidate, greyed only where
+        /// every one of them is empty.</para>
+        ///
+        /// <para><b>Three states, and the empty list is not the null.</b> <c>null</c> means no untaken
+        /// Move stands behind this node, so it is judged from the board exactly as it always was. A
+        /// non-empty list is the spaces to judge it from, one at a time. An EMPTY list is milestone
+        /// 8.35p's suppression, kept for every case this walk still cannot enumerate - a Move whose
+        /// subject it cannot resolve, and a second Move standing after a first, whose start square is
+        /// itself a hypothesis. There, nothing after it is judged and nothing after it is refused,
+        /// which is this query's own standing direction: it refuses what it can prove does nothing and
+        /// never disables what it merely cannot read.</para>
         /// </param>
         private static BindingVerdict WalkToAttackTargetBinding(
             EffectNodeId nodeId,
@@ -270,7 +301,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IReadOnlyList<EffectNodeOutcome> outcomes,
             EffectResolutionContext context,
             ref int budget,
-            bool afterAnUntakenMove)
+            IReadOnlyList<HexCoordinate> prospectiveActorSpaces,
+            RefusalExplanation explanation)
         {
             if (--budget < 0)
             {
@@ -308,23 +340,40 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             : BindingVerdict.Continue;
                     }
 
-                    return !afterAnUntakenMove &&
-                        Judge(node, frame, outcomes, context) == Verdict.Blocked
-                        ? BindingVerdict.Blocked
-                        : BindingVerdict.Continue;
+                    if (prospectiveActorSpaces == null)
+                    {
+                        return Judge(node, frame, outcomes, context, explanation) == Verdict.Blocked
+                            ? BindingVerdict.Blocked
+                            : BindingVerdict.Continue;
+                    }
+
+                    return JudgeFromEverySpaceHeCouldReach(
+                        node, frame, outcomes, context, prospectiveActorSpaces, explanation);
 
                 case EffectNodeKind.Sequence:
-                    var hidden = afterAnUntakenMove;
+                    // The outcomes handed to each child are the ones this walk was given, unchanged:
+                    // what a step would publish is carried alongside rather than into the judging, so
+                    // no node's verdict moves because a neighbour became readable. The carried copy
+                    // exists for one question - which spaces a Move could leave the actor on - and a
+                    // Move's subject is exactly the kind of input that arrives from an earlier node
+                    // (`actor-space@1` publishes the square he starts from).
+                    var spaces = prospectiveActorSpaces;
+                    var carried = outcomes;
                     foreach (var child in node.ChildNodeIds)
                     {
                         var verdict = WalkToAttackTargetBinding(
-                            child, frame, outcomes, context, ref budget, hidden);
+                            child, frame, outcomes, context, ref budget, spaces, explanation);
                         if (verdict != BindingVerdict.Continue)
                         {
                             return verdict;
                         }
 
-                        hidden = hidden || MovesSomebodyThisWalkCannotFollow(child, context);
+                        if (MovesSomebodyThisWalkCannotFollow(child, context))
+                        {
+                            spaces = WhereHeCouldStandAfter(child, frame, carried, context, spaces);
+                        }
+
+                        carried = WithAnticipatedOutputs(child, frame, carried, context);
                     }
 
                     return BindingVerdict.Continue;
@@ -339,7 +388,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     foreach (var child in node.ChildNodeIds)
                     {
                         if (WalkToAttackTargetBinding(
-                                child, frame, outcomes, context, ref budget, afterAnUntakenMove) ==
+                                child, frame, outcomes, context, ref budget,
+                                prospectiveActorSpaces, explanation) ==
                             BindingVerdict.Bound)
                         {
                             return BindingVerdict.Bound;
@@ -353,6 +403,121 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 default:
                     return BindingVerdict.Continue;
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.35x-moveprover: one node's verdict when the acting hero has not moved yet, asked
+        /// once from each space he could be standing on.
+        ///
+        /// <para><b>Refused only where every space refuses.</b> That is RULING 45 stated as a walk: an
+        /// unconstrained move offers every destination while ANY of them completes the sentence
+        /// standing after it, so one space with a candidate is the whole of what makes the Attack
+        /// offerable, and the player choosing a different one is the rope RULING 3 already gives him -
+        /// he moves, the mandatory step stops the action, and the card is spent. What this refuses is
+        /// the other case, and rule 14 has always refused it: text that can bind nothing from anywhere
+        /// he can reach is proven empty before it is offered.</para>
+        ///
+        /// <para><b>Only a node that says it reads his space is asked.</b> A selection declaring
+        /// <c>origin = Actor</c> resolves that origin in one place, and that place reads the
+        /// hypothetical square. Every other node after an untaken Move keeps milestone 8.35p's
+        /// suppression, because a node whose reading of the board this walk cannot redirect would be
+        /// judged from the square he is about to leave - the exact defect 8.35p was written for.</para>
+        ///
+        /// <para><b>The explanation is local until the refusal is real.</b> A blocker met while
+        /// probing a space that turns out to have an answer explains nothing, so it is discarded; only
+        /// where every space refuses does the first named one reach the caller's explanation.</para>
+        /// </summary>
+        private static BindingVerdict JudgeFromEverySpaceHeCouldReach(
+            EffectNodeDefinition node,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            IReadOnlyList<HexCoordinate> spaces,
+            RefusalExplanation explanation)
+        {
+            if (spaces.Count == 0 || !ReadsTheActorSpace(node))
+            {
+                return BindingVerdict.Continue;
+            }
+
+            var whileProbing = new RefusalExplanation();
+            foreach (var space in spaces)
+            {
+                if (Judge(node, frame, outcomes, context, whileProbing, space) != Verdict.Blocked)
+                {
+                    return BindingVerdict.Continue;
+                }
+            }
+
+            explanation?.RecordFirst(whileProbing.Blocking);
+            return BindingVerdict.Blocked;
+        }
+
+        /// <summary>
+        /// Milestone 8.35x-moveprover: whether this node's answer is measured from the acting hero's own
+        /// space, read off the node's declaration rather than guessed from its capability.
+        ///
+        /// <para>A roster selection states where it measures from as a declared origin, and
+        /// <c>RosterQueryOrigin.Actor</c> is resolved to a square in exactly one place - which is the
+        /// place that reads a hypothetical one. So the declaration is the honest test: a node that says
+        /// it measures from the actor can be asked about a space he does not stand on, and a node that
+        /// says anything else cannot, whatever else it may read.</para>
+        /// </summary>
+        private static bool ReadsTheActorSpace(EffectNodeDefinition node)
+        {
+            foreach (var input in node.Inputs)
+            {
+                if (string.Equals(
+                        input.ParameterName,
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities
+                            .OriginParameter,
+                        StringComparison.Ordinal) &&
+                    input.Literal.Kind == EffectValueKind.Integer &&
+                    input.Literal.IntegerValue ==
+                        (int)GuardsDigital.Core.Rules.CardResolution.RosterQueryOrigin.Actor)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Milestone 8.35x-moveprover: where the acting hero could be standing once this Move has been
+        /// answered, or the suppressing empty set where this walk cannot say.
+        ///
+        /// <para>The handler answers, because the destinations are its own - the same list the prompt
+        /// would carry - and because standing still is a reading of two rulebook sentences it already
+        /// owns. Nothing here re-derives reachability, so the spaces this walk judges from and the
+        /// spaces the player would be offered cannot part company.</para>
+        ///
+        /// <para>A Move standing after another Move suppresses rather than compounds: its own start
+        /// square is already a hypothesis, and enumerating a move from each of several starts would be
+        /// answering a question no printed card in this build asks. It is the conservative arm, and it
+        /// is the arm every case outside the declared shape lands in.</para>
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> WhereHeCouldStandAfter(
+            EffectNodeId nodeId,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> carried,
+            EffectResolutionContext context,
+            IReadOnlyList<HexCoordinate> alreadyHypothetical)
+        {
+            if (alreadyHypothetical != null ||
+                !context.Definition.TryGetNode(nodeId, out var node) ||
+                !context.Catalog.TryLoad(node.Capability, out var handler) ||
+                !(handler is IEffectActorRelocationCapabilityHandler relocating))
+            {
+                return Array.Empty<HexCoordinate>();
+            }
+
+            var capabilityContext =
+                EffectResolutionSession.BuildCapabilityContext(frame, node, carried, context);
+            return relocating.TryAnticipateActorSpaces(capabilityContext, out var spaces) &&
+                spaces != null
+                ? spaces
+                : Array.Empty<HexCoordinate>();
         }
 
         /// <summary>
@@ -486,12 +651,18 @@ RefusalExplanation explanation = null)
         /// node's own failure policy, which is where p.10's mandatory-versus-optional distinction
         /// already lives.
         /// </summary>
+        /// <param name="prospectiveActorSpace">
+        /// Milestone 8.35x-moveprover: the square to answer as if the acting hero were standing on,
+        /// and nothing on every path but the per-space proof above. It reaches the handler through the
+        /// context alone, so a node that never asks where the actor is cannot tell it was asked twice.
+        /// </param>
         private static Verdict Judge(
             EffectNodeDefinition node,
             PendingResolution frame,
             IReadOnlyList<EffectNodeOutcome> outcomes,
             EffectResolutionContext context,
-            RefusalExplanation explanation = null)
+            RefusalExplanation explanation = null,
+            HexCoordinate? prospectiveActorSpace = null)
         {
             if (!context.Catalog.TryLoad(node.Capability, out var handler))
             {
@@ -501,6 +672,12 @@ RefusalExplanation explanation = null)
 
             var capabilityContext =
                 EffectResolutionSession.BuildCapabilityContext(frame, node, outcomes, context);
+            if (prospectiveActorSpace.HasValue)
+            {
+                capabilityContext =
+                    capabilityContext.AsIfTheActorStoodAt(prospectiveActorSpace.Value);
+            }
+
             if (!IsDecidable(handler, capabilityContext))
             {
                 return Verdict.Performable;

@@ -1843,7 +1843,20 @@ namespace GuardsDigital.Core.Cards
                         : ActionUnavailability.FromRestriction(blocking));
             }
 
-            return CanStartAttack(offer) && CardTextIsComposed(offer) &&
+            // Milestone 8.35x-moveprover. The Attack clause explains itself now, on exactly the terms
+            // the Skill clause does: the reason is asked for in the call that produces the verdict, and
+            // an Attack refused with no standing rule behind it greys with nothing said, as it always
+            // did. The three clauses after it still cannot explain themselves.
+            if (!CanStartAttack(offer, out var attackBlocking))
+            {
+                return offer.WithAvailability(
+                    false,
+                    attackBlocking == null
+                        ? ActionUnavailability.None
+                        : ActionUnavailability.FromRestriction(attackBlocking));
+            }
+
+            return CardTextIsComposed(offer) &&
                 ActorMayPerform(offer) && !TheTurnsActionIsUnderWay()
                 ? offer
                 : offer.WithAvailability(false);
@@ -1954,11 +1967,21 @@ namespace GuardsDigital.Core.Cards
         /// two readings that could drift. Answered <c>true</c> wherever it cannot be asked, for the
         /// reason the Skill one is.
         /// </summary>
-        private bool CanStartAttack(ActionOffer offer) =>
-            cardActions == null ||
-            cardActions.CanAttackFindTarget(
-                offer, definitions, instances, participants, timing, CurrentModifications(),
-                roundIndex, turnIndex);
+        private bool CanStartAttack(ActionOffer offer) => CanStartAttack(offer, out _);
+
+        /// <summary>
+        /// Milestone 8.35x-moveprover: the same statement, keeping the standing modification behind a
+        /// refusal so the offer can name it - the shape <see cref="CanStartSkill"/> has had since
+        /// milestone 8.35l.
+        /// </summary>
+        private bool CanStartAttack(ActionOffer offer, out AppliedRuleModification blocking)
+        {
+            blocking = null;
+            return cardActions == null ||
+                cardActions.CanAttackFindTarget(
+                    offer, definitions, instances, participants, timing, CurrentModifications(),
+                    roundIndex, turnIndex, out blocking);
+        }
 
         public TurnResolutionResult TryAnswerEffectChoice(EffectChoiceCommand command)
         {

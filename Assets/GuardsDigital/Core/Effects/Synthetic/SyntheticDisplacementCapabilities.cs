@@ -247,7 +247,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// validator refuses one that tries at content load.
         /// </summary>
         private sealed class DirectMoveHandler :
-            IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler
+            IEffectCapabilityHandler,
+            IEffectImmunityOverrideCapabilityHandler,
+            IEffectActorRelocationCapabilityHandler
         {
             private readonly bool supportsImmunityOverrides;
 
@@ -390,6 +392,57 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         .IntegerValue == DirectMoveDestinationPolicy.NamedSpace
                         ? EffectExecutionResultKind.Applied
                         : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// Milestone 8.35x-moveprover. Where this node could leave the ACTING HERO, for a walk
+            /// standing before it - the destinations <see cref="Execute"/> would offer, plus his own
+            /// space wherever the step can be declined.
+            ///
+            /// <para><b>Both halves are the node's own wording, not a guess.</b> The destinations are
+            /// <see cref="Candidates"/> exactly - the same list the prompt would carry, so a walk that
+            /// judges from them judges from spaces the player can really pick. Standing still is the
+            /// other answer, and which declarations admit it is already stated twice: p.11's optional
+            /// <em>distance</em> puts the mover's own space in <see cref="Candidates"/> through
+            /// <see cref="AdmittedDistances.AdmitsStandingStill"/>, and p.10's optional <em>step</em>
+            /// - `you may`, `if able` - is the node's failure policy, which is a decision about
+            /// whether the node runs at all and therefore lives here rather than in the candidate
+            /// walk. A mandatory exact distance admits neither, so a hero who must move is judged only
+            /// from the spaces he must move to.</para>
+            ///
+            /// <para><b>Only the actor.</b> p.11 lets card text move another unit or a token, and where
+            /// this node moves one of those the acting hero has not moved at all - so the question is
+            /// answered <c>false</c> and the caller keeps reading the board it already has. The subject
+            /// is compared by space, which is the identity milestone 6.4 chose for displacement.</para>
+            /// </summary>
+            public bool TryAnticipateActorSpaces(
+                EffectCapabilityContext context, out IReadOnlyList<HexCoordinate> spaces)
+            {
+                spaces = Array.Empty<HexCoordinate>();
+                var components = context?.Components;
+                if (components == null || !components.CanDisplace ||
+                    !TryResolveMover(context, out _, out var moverAt) ||
+                    !components.Board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt) ||
+                    !actorAt.Equals(moverAt))
+                {
+                    return false;
+                }
+
+                var destinations = Candidates(context);
+                var declinable = context.FailurePolicy != EffectFailurePolicy.Mandatory;
+                if (destinations.Count == 0 && !declinable)
+                {
+                    // A mandatory step with nowhere to go stops the resolution at itself, which the
+                    // caller learns from Anticipate rather than from here. Answering with an empty set
+                    // would read as "he could be standing nowhere".
+                    return false;
+                }
+
+                spaces = declinable && !destinations.Contains(actorAt)
+                    ? destinations.Concat(new[] { actorAt }).ToArray()
+                    : destinations;
+                return true;
+            }
 
             /// <summary>
             /// The destinations this move may use, from the Movement action's own reachability plus the
