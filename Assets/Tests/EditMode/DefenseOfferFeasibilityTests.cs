@@ -38,14 +38,21 @@ namespace GuardsDigital.Tests.EditMode
     /// step-3 answer path and the snapshot restore cross-check. That is milestone 8.35z15's unwired
     /// probe exactly: a rule recorded once and implemented by one of its callers.</para>
     ///
-    /// <para><b>Why this needs no defender card text at all.</b> The step-6 case needed one. This one
-    /// is reached by the ATTACKER's own printed body: p.14 applies "Before the attack:" text AFTER
-    /// the target is named (see <c>ContinueAfterBeforeAttackText</c>, which revalidates a target the
-    /// text BOUND and leaves an ordinarily-chosen one alone), so a face printing "Before the attack:
-    /// You may move 1 space. Target a unit adjacent to you." can legally step out of contact between
-    /// naming its target and the defender answering.
-    /// <see cref="EveryFaceThatCanLeaveContactMidAttack_IsAccountedFor"/> is the roster table of the
-    /// faces that reach it.</para>
+    /// <para><b>How it was reached, and why nothing reaches it now.</b> The step-6 case needed a
+    /// defender's card text. This one was reached by the ATTACKER's own printed body: p.14 applied
+    /// "Before the attack:" text AFTER the target was named, so a face printing "Before the attack:
+    /// You may move 1 space. Target a unit adjacent to you." could legally step out of contact
+    /// between naming its target and the defender answering.</para>
+    ///
+    /// <para><b>Milestone 8.35z25 closed that.</b> The user's 2026-09-06 ruling is that a
+    /// card's PRINTED READING ORDER governs, and both faces print the move before the targeting -
+    /// so the target is now named last, from the space the move left him in, and the interval the
+    /// attacker used to out-run his own target no longer exists. The guards below are still right
+    /// and are still driven; what changed is that their out-of-contact variant is no longer
+    /// reachable from dealt content, which
+    /// <see cref="NoDealtFaceCanOpenTheDefenseResponseOutOfContact"/> asserts and
+    /// <see cref="EveryFaceThatCanLeaveContactMidAttack_IsAccountedFor"/> keeps true face by
+    /// face.</para>
     ///
     /// <para><b>Nothing is greyed, deliberately.</b> <c>PLAN.md</c> RULING 17 greys only an option
     /// that CANNOT be performed. Under the rule above every one of these answers can be performed, so
@@ -57,16 +64,33 @@ namespace GuardsDigital.Tests.EditMode
     public class DefenseOfferFeasibilityTests
     {
         /// <summary>
-        /// The staged position, which is p.14 stopped at its Defense response with the attacker no
-        /// longer beside his target.
+        /// The staged position: p.14 stopped at its Defense response, reached through the whole of
+        /// one of these two printed bodies.
         ///
-        /// <para>Nothing here is hand-placed into an engine state: Tigerclaw commits Combat Reflexes
-        /// and plays it, p.14 opens its target question, he names the one enemy hero adjacent to him,
-        /// and his own printed "Before the attack:" body then offers him the move that breaks the
-        /// contact. <see cref="AwayFromTheTarget"/> is the only destination the case chooses, and it
-        /// is chosen out of the candidates the node itself published.</para>
+        /// <para><b>Milestone 8.35z25 restaged this, and the reason is the point of that
+        /// milestone.</b> It used to drive the attacker OUT OF CONTACT with a target he had already
+        /// named - p.14 opened its target question first, the printed "Before the attack:" move was
+        /// applied after it, and the attacker stepped away inside his own Attack. That ordering was
+        /// against the card's own print and the user's 2026-09-06 ruling reversed it: the move is
+        /// offered first and "a unit adjacent to you" is named from the space it left him in, so
+        /// there is no longer any interval in which an attacker can out-run his own target.
+        /// <see cref="NoDealtFaceCanOpenTheDefenseResponseOutOfContact"/> is that closure, asserted
+        /// over the content rather than described here.</para>
+        ///
+        /// <para><b>What the cases below still drive, and what they no longer can.</b> They still
+        /// drive the whole pause through the two guards this fixture is about - every scored answer
+        /// and the Decline beside them, the outcome the rules then produce, and the snapshot restore
+        /// cross-check. What no dealt content can put them in any more is the OUT-OF-CONTACT variant,
+        /// which is the narrowed predicate's own case; re-establishing driven coverage of that
+        /// predicate needs a face with the retired shape and is recorded as integration-owed rather
+        /// than minted here, because the only place to mint one is the showcase hand the configured
+        /// card matrix pins.</para>
+        ///
+        /// <para>Nothing here is hand-placed into an engine state: Tigerclaw commits the face and
+        /// plays it, answers the printed move, and names the one enemy hero beside him out of the
+        /// candidates the node itself published.</para>
         /// </summary>
-        private static StagedHeroBoard AnAttackerWhoSteppedOutOfContact(
+        private static StagedHeroBoard AnAttackerAtThePauseHisPrintedBodyOpens(
             CardDefinitionId face, int tier)
         {
             var board = TigerclawBoard.Create(
@@ -78,26 +102,31 @@ namespace GuardsDigital.Tests.EditMode
                 "The Attack is non-Ranged, so the case starts with the two heroes in contact.");
 
             board.StartPrimary(face);
-            var target = board.Session.Projection.PendingAttackTargetChoice;
-            Assert.That(target, Is.Not.Null, "An Attack opens p.14's target question first.");
-            Assert.That(target.LegalTargetHeroIds, Has.Member(board.Enemy));
-            board.Accept(DirectorCommand.ChooseAttackTarget(
-                target.ResolutionId, target.ChoiceId, board.Enemy));
+            Assert.That(
+                board.Session.Projection.PendingAttackTargetChoice, Is.Null,
+                "The printed order asks the move before anything is targeted, so p.14's ordinary " +
+                "target question is not what opens this Attack.");
 
             var move = board.Session.Projection.PendingEffectChoice;
-            Assert.That(move, Is.Not.Null,
-                "\"Before the attack: You may move 1 space\" is applied after the target is named, " +
-                "which is the whole reason the attacker can leave contact inside his own Attack.");
+            Assert.That(move?.NodeId.Value, Is.EqualTo("before-move"),
+                "\"Before the attack: You may move 1 space.\" is the first thing the face prints " +
+                "and the first thing it asks.");
             Assert.That(
                 board.CandidateSpaces(move), Has.Member(AwayFromTheTarget),
-                "The node has to be offering the space that breaks contact, or the case proves " +
-                "something about reachability instead.");
-            board.Select(AwayFromTheTarget);
+                "The move is unconstrained, so the space that would strand him is offered too - " +
+                "this case simply does not take it.");
+            board.Decline();
+
+            var victim = board.Session.Projection.PendingEffectChoice;
+            Assert.That(victim?.NodeId.Value, Is.EqualTo("before-target"),
+                "\"Target a unit adjacent to you.\" - the second printed sentence.");
+            Assert.That(board.CandidateHeroes(victim), Has.Member(board.Enemy));
+            board.Select(board.Enemy);
             board.Confirm();
 
             Assert.That(
-                Distance(board.HeroSpace(board.Hero), board.HeroSpace(board.Enemy)), Is.EqualTo(2),
-                "The attacker has legally stepped out of contact with the target he already named.");
+                Distance(board.HeroSpace(board.Hero), board.HeroSpace(board.Enemy)), Is.EqualTo(1),
+                "He declined the move, so he names his neighbour from where he already stood.");
             Assert.That(board.Session.Projection.PendingDefensePreview, Is.Not.Null,
                 "and p.14 is standing at its Defense response.");
             return board;
@@ -116,7 +145,7 @@ namespace GuardsDigital.Tests.EditMode
         public void EveryAnswerTheDeadEndPauseRefused_IsNowAccepted()
         {
             var answers = new List<string>();
-            var probe = AnAttackerWhoSteppedOutOfContact(TigerclawCardContent.CombatReflexes, 2);
+            var probe = AnAttackerAtThePauseHisPrintedBodyOpens(TigerclawCardContent.CombatReflexes, 2);
             var offered = probe.Session.Projection.PendingDefensePreview.Choices
                 .Select(choice => choice.IsDecline ? null : (CardInstanceId?)choice.CardInstanceId.Value)
                 .ToArray();
@@ -141,7 +170,7 @@ namespace GuardsDigital.Tests.EditMode
 
             foreach (var card in offered)
             {
-                var board = AnAttackerWhoSteppedOutOfContact(TigerclawCardContent.CombatReflexes, 2);
+                var board = AnAttackerAtThePauseHisPrintedBodyOpens(TigerclawCardContent.CombatReflexes, 2);
                 var result = board.Session.Execute(card.HasValue
                     ? DirectorCommand.ChooseDefenseCard(card.Value)
                     : DirectorCommand.DeclineDefense());
@@ -163,7 +192,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ThePreviewsScoredOutcome_IsTheOutcomeTheRulesProduce()
         {
-            var board = AnAttackerWhoSteppedOutOfContact(TigerclawCardContent.CombatReflexes, 2);
+            var board = AnAttackerAtThePauseHisPrintedBodyOpens(TigerclawCardContent.CombatReflexes, 2);
             var survives = board.Session.Projection.PendingDefensePreview.Choices.First(choice =>
                 !choice.IsDecline &&
                 choice.Outcome == AttackResolutionOutcome.SuccessfullyDefended);
@@ -185,7 +214,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void DecliningTheSamePause_IsAccepted_AndDefeatsTheDefender()
         {
-            var board = AnAttackerWhoSteppedOutOfContact(TigerclawCardContent.CombatReflexes, 2);
+            var board = AnAttackerAtThePauseHisPrintedBodyOpens(TigerclawCardContent.CombatReflexes, 2);
             board.Accept(DirectorCommand.DeclineDefense());
             board.AnswerEveryStandingChoice();
 
@@ -204,7 +233,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ThePauseSurvivesASnapshotRoundTrip()
         {
-            var board = AnAttackerWhoSteppedOutOfContact(TigerclawCardContent.CombatReflexes, 2);
+            var board = AnAttackerAtThePauseHisPrintedBodyOpens(TigerclawCardContent.CombatReflexes, 2);
             board.RoundTripThroughASnapshot();
 
             var survives = board.Session.Projection.PendingDefensePreview.Choices.First(choice =>
@@ -225,7 +254,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void LeapingStrikeReachesTheSamePause_AndItIsAnswerableToo()
         {
-            var board = AnAttackerWhoSteppedOutOfContact(TigerclawCardContent.LeapingStrike, 3);
+            var board = AnAttackerAtThePauseHisPrintedBodyOpens(TigerclawCardContent.LeapingStrike, 3);
             var survives = board.Session.Projection.PendingDefensePreview.Choices.First(choice =>
                 !choice.IsDecline &&
                 choice.Outcome == AttackResolutionOutcome.SuccessfullyDefended);
@@ -292,15 +321,64 @@ namespace GuardsDigital.Tests.EditMode
                 "brogan-mad-dash|moves|rebinds",
                 "tigerclaw-blink-strike|moves|rebinds",
 
-                // `moves|keeps`: THE EXPOSED FAMILY. p.14 names the target the ordinary way at step
-                // 2 and the printed body then moves the attacker away from it, so step 3 opens with
-                // the two out of contact. Both are driven above.
-                "tigerclaw-combat-reflexes|moves|keeps",
-                "tigerclaw-leaping-strike|moves|keeps"
+                // Milestone 8.35z25 moved these two out of the exposed family, and moving
+                // them is the whole milestone. They print "You may move 1 space." BEFORE "Target a
+                // unit adjacent to you.", and 8.23 composed only the first sentence - leaving the
+                // second to p.14's ordinary target question, which is asked when the action starts.
+                // The user's 2026-09-06 ruling put the two sentences back in printed order, so the
+                // move is answered first and the target is named from the space it left him in.
+                // A revert would flip these rows back to `|keeps` and fail this case, which is what
+                // makes the table the structural guard for the reordering itself.
+                "tigerclaw-combat-reflexes|moves|rebinds",
+                "tigerclaw-leaping-strike|moves|rebinds"
+
+                // `moves|keeps`: THE EXPOSED FAMILY, and it is now EMPTY - see
+                // NoDealtFaceCanOpenTheDefenseResponseOutOfContact, which says so as an assertion
+                // rather than as the absence of rows here.
             }),
                 "A face printing \"Before the attack:\" text that this table does not name has never " +
                 "been driven through p.14's step 3 after its body ran. Add the row; and if it is a " +
                 "`moves|keeps` row, drive its out-of-contact Defense pause before shipping the face.");
+        }
+
+        /// <summary>
+        /// THE CLOSURE, asserted rather than described. Milestone 8.35z25.
+        ///
+        /// <para>An attacker can only be out of contact with his own target at p.14's step 3 if the
+        /// text that moved him ran AFTER the target was named. Every dealt Attack that moves its
+        /// attacker at step 1 now names its target inside that same text, from the space the move
+        /// produced - so the naming is last and there is no interval left to move in.</para>
+        ///
+        /// <para><b>Why this is a case and not a comment.</b> The narrowed "still standing" predicate
+        /// this fixture is about stays correct and stays driven, but its out-of-contact variant is no
+        /// longer reachable from content - so a future face that re-opens the class would silently
+        /// restore an unguarded path. This fails the moment one does, and names what to do about it.
+        /// It is deliberately derived from the same two columns as the table above rather than from a
+        /// hand-kept list.</para>
+        /// </summary>
+        [Test]
+        public void NoDealtFaceCanOpenTheDefenseResponseOutOfContact()
+        {
+            var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
+            var exposed = configuration.CardDefinitions
+                .SelectMany(definition => definition.ActionDefinitions
+                    .Where(action =>
+                        action.Kind == ActionKind.Attack &&
+                        action.CardTextTiming == CardTextTiming.BeforeTheAttack &&
+                        MovesTheAttacker(action) &&
+                        !(action.AttackTargetPolicy?.TargetIsBoundByCardText ?? false))
+                    .Select(_ => definition.Reference.DefinitionId.Value))
+                .Distinct()
+                .OrderBy(id => id, System.StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.That(exposed, Is.Empty,
+                "This face moves its attacker at p.14's step 1 and lets the page name the target " +
+                "before that move, so it can open step 3 with the two out of contact - the class " +
+                "the 2026-09-06 reading-order ruling closed. Either compose its targeting inside " +
+                "its own text (the move-then-target seam Brogan's charges established), or drive " +
+                "its out-of-contact Defense pause and restore the coverage this closure retired: " +
+                string.Join(", ", exposed));
         }
 
         /// <summary>

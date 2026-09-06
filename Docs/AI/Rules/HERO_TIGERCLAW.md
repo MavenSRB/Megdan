@@ -31,7 +31,7 @@ The pitch uses Tigerclaw's complete progression. Its implementation-grade invent
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces and the Poison marker are transcribed and capability-mapped; eighteen playable definitions plus the marker are composed, dealt, and pass Tigerclaw's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5b corrected Blink Strike, Backstab, and Blend Into Shadows at `tigerclaw-8-25e5b-rev-1` and applied 8.25e5a's authority answer without changing typed behavior: Nimble Strike remains a Gold Basic Handicap whose printed `G` is recorded as a source error. Milestone 8.25e5c freshly reconciled all four affected Tigerclaw faces, while the other fifteen clean results carry forward on unchanged hashes. Milestone 8.25e5g confirmed the 114-front manifest byte-identical, so all Tigerclaw results remain current and F-SOURCE-01 is closed. Milestone 8.35z20 (2026-09-06) corrected a fourth field 8.25e5b's own pass had not touched: Blend Into Shadows' secondary ribbon icon was transposed (recorded as `Sec Mov 2`, actually `Sec Def 2`) at `tigerclaw-8-35z20-rev-1` - see the settled-corrections block under "Tigerclaw printed values" for the full evidence; that block is the closing word on this field.
+Current status: **all nineteen faces and the Poison marker are transcribed and capability-mapped; eighteen playable definitions plus the marker are composed, dealt, and pass Tigerclaw's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5b corrected Blink Strike, Backstab, and Blend Into Shadows at `tigerclaw-8-25e5b-rev-1` and applied 8.25e5a's authority answer without changing typed behavior: Nimble Strike remains a Gold Basic Handicap whose printed `G` is recorded as a source error. Milestone 8.25e5c freshly reconciled all four affected Tigerclaw faces, while the other fifteen clean results carry forward on unchanged hashes. Milestone 8.25e5g confirmed the 114-front manifest byte-identical, so all Tigerclaw results remain current and F-SOURCE-01 is closed. Milestone 8.35z20 (2026-09-06) corrected a fourth field 8.25e5b's own pass had not touched: Blend Into Shadows' secondary ribbon icon was transposed (recorded as `Sec Mov 2`, actually `Sec Def 2`) at `tigerclaw-8-35z20-rev-1` - see the settled-corrections block under "Tigerclaw printed values" for the full evidence; that block is the closing word on this field. Milestone 8.35z25 (2026-09-06) then took the reading-order ruling milestone 8.35z24 had recorded and left open, moving the current content revision to `tigerclaw-8-35z25-rev-1` without changing a printed value: Combat Reflexes and Leaping Strike now play their two printed sentences in the order the cards print them - see that same block's reading-order entry, which is the closing word on this sequence. The `tigerclaw-8-35z20-rev-1` and earlier revision strings above are milestone-qualified history and remain accurate as such.
 
 ## Tigerclaw source faces
 
@@ -167,6 +167,42 @@ Nimble Strike is boxed. Every card also offers p.12's iconless Hold.
 Tigerclaw's five Blue cards are all p.14 Blocks. They print no Defense number and no Defense secondary icon:
 their text applies only when each is discarded from hand as its primary Defense reaction. Every Gold, Red and
 Green card instead carries an ordinary secondary Defense value whose text is ignored when it defends.
+
+### SETTLED (2026-09-06, milestone 8.35z25): Combat Reflexes and Leaping Strike play in their
+### own printed reading order - do not re-litigate this sequence
+
+Both faces print *"Before the attack: You may move 1 space. Target a unit adjacent to you."* Milestone 8.23
+composed only the first sentence and left the second to rulebook p.14's ordinary target question, which is
+asked when the action starts - so the played order was target-then-move, the reverse of the print. Milestone
+8.35z24 measured that deviation while fixing an unanswerable Defense pause it caused, and deliberately
+recorded it for a ruling instead of taking it, because 8.23 had shipped and verified the current ordering.
+
+**The user's 2026-09-06 ruling is that the printed reading order governs.** The optional move is offered
+first, and "a unit adjacent to you" is judged from the space that move left him in. Both faces therefore now
+declare their attack-target binding by card text - the seam milestone 8.19a minted for Brogan's charges - and
+their step-1 body is `[actor-space, optional move (May), choose-target@2 (origin Actor, reach 1, Unit,
+OpposingSource), set-attack-target@1]`, the same shape Tigerclaw's own Light Fingered already uses.
+
+**Three consequences, all deliberate.** A destination that leaves no adjacent unit is still offered and
+stops the action at the mandatory targeting step - p.10's stop, the player's rope under RULING 45, not an
+illegal offer. The face can no longer name a neighbour and then step out of contact with him inside its own
+Attack, which is the state 8.35z24 measured and which is now closed by construction rather than by a guard.
+And the move is `synthetic-direct-move`, p.18's direct Move reached from inside an Attack: under RULING 47
+it spends no Movement value, is not the card's Movement icon, and no movement-action restriction has a path
+to it, because restrictions match on the ACTION's kind and that kind is Attack.
+
+Combat Reflexes' step-7 "did not move" clause is unchanged and is read positionally. The two candidate
+readings provably coincide on this card: the step is exactly one space rather than "up to" one, so his own
+space is never among the destinations and taking the offer always changes it.
+
+**What changed as a result:** `TigerclawCardContent.cs` (`bindsTargetInCardText: true` on both profiles),
+`TigerclawEffectContent.cs` (the composed body, with a `BindAttackTargetNode` helper shared with Blink
+Strike, whose emitted definition stays byte-identical), the content revision to
+`tigerclaw-8-35z25-rev-1` with `ConfiguredCardArtworkCatalog.json`'s eighteen Tigerclaw entries and
+`VerifiedContentIdentityTests`' pinned digest re-pinned to match (re-measured after the milestone-id rename,
+never hand-edited), and the permanent player-path gate's two rows gaining `BoardUnitSelection`, because both
+faces now present a card-text unit selection where they used p.14's ordinary target question. No strategy
+backend was touched and no schema moved.
 
 ## Tigerclaw exact rules text
 

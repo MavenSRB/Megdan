@@ -49,6 +49,12 @@ namespace GuardsDigital.Tests.PlayMode
         /// attack resolved in between. Declining the first is what opens the second - and a player
         /// gives that decline by name, on its own control, which is the answer milestone 8.20a made
         /// something a printed `may` has to offer.</para>
+        ///
+        /// <para><b>Milestone 8.35z25 re-drove this in the printed order.</b> It used to
+        /// answer p.14's ordinary target question first and then the move, which is the ordering that
+        /// milestone corrected: the face prints the move before the targeting, so the move is now the
+        /// first thing a player is asked and the target is named afterwards, by a board click on the
+        /// unit - the same card-text unit selection Light Fingered's journey drives.</para>
         /// </summary>
         [UnityTest]
         public IEnumerator CombatReflexes_DeclinesItsFirstMoveAndTakesTheSecondAfterTheAttack()
@@ -67,17 +73,11 @@ namespace GuardsDigital.Tests.PlayMode
             yield return PointTrayAt(root, tigerclawId);
             yield return StartActionThroughControl(root, ActionKind.Attack);
 
-            Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null,
-                "p.14 names the target before the page's own step 1 asks anything. " +
-                Remaining(runtime));
-            var targets = runtime.PendingAttackTargetChoice.LegalTargetMinionIds;
-            Assert.That(targets, Is.Not.Empty);
-            var targetView = MinionView(targets[0]);
-            Assert.That(UiPlayer.ClickBoard(pointerInput, hud, targetView.transform.position), Is.True);
-            yield return null;
-            yield return null;
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
+                "The face prints its move before its targeting, so p.14's ordinary target question " +
+                "is not what opens this Attack. " + Remaining(runtime));
 
-            // Step 1: the printed `you may`, declined by name.
+            // Step 1, first sentence: the printed `you may`, declined by name.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "\"Before the attack: You may move 1 space.\" " + Remaining(runtime));
             var decline = DeclineControl(runtime);
@@ -91,6 +91,26 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(tigerclawId)).Coordinate,
                 Is.EqualTo(startedAt),
                 "The declined step moves nobody.");
+
+            // Step 1, second sentence: "Target a unit adjacent to you.", named by a board click on
+            // the unit itself - the card-text unit selection rather than p.14's own question.
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "\"Target a unit adjacent to you.\" follows the move. " + Remaining(runtime));
+            var beside = runtime.BoardView.Model.Minions
+                .Where(minion => HexDistanceQuery.Calculate(minion.Coordinate, startedAt) == 1)
+                .ToArray();
+            Assert.That(beside, Is.Not.Empty,
+                "The staged board has to leave a unit beside him for the printed targeting to have " +
+                "anything to name. " + Remaining(runtime));
+            var victim = StandingNode(runtime);
+            Assert.That(
+                UiPlayer.ClickBoard(
+                    pointerInput, hud, MinionView(beside[0].MinionId).transform.position),
+                Is.True,
+                "The unit this Attack takes is named by clicking it.");
+            yield return null;
+            yield return ConfirmIfStillStanding(root, victim);
+            yield return null;
 
             // Step 7: the second move, open because the first was declined.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,

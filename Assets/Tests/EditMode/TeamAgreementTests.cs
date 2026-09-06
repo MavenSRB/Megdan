@@ -164,10 +164,18 @@ namespace GuardsDigital.Tests.EditMode
             // bisecting Unity runs. The release consumes a draw of its own even when it is the only
             // legal command, so every trajectory is a different match rather than the old one plus a
             // command per turn: seed 3 reaches no Minion Battle at all inside 3,000 steps now.
-            // Seed 6 reaches the tied Initiative at step 80 and the Minion Battle at 400 - chosen
+            // Seed 6 reached the tied Initiative at step 80 and the Minion Battle at 400 - chosen
             // because it reaches BOTH kinds this helper is asked for, comfortably inside the budget,
             // rather than because it is the lowest number that reaches one.
-            var random = new MatchLoopRandom(6);
+            //
+            // Milestone 8.35z25 re-derived it again, 6 -> 29, on the same selection rule.
+            // Combat Reflexes and Leaping Strike now ask their printed move before their targeting,
+            // which changes what this walk is offered and therefore where it goes: seed 6 still
+            // reaches the tied Initiative (step 80, unchanged) but reaches NO Minion Battle at all
+            // inside 2,400 steps. An offline scan of seeds 1-30 against BOTH kinds found seed 29
+            // reaches the Initiative at step 67 and the Minion Battle at 323 - the closest match in
+            // shape to what seed 6 used to give, and comfortably inside the budget for both.
+            var random = new MatchLoopRandom(29);
             for (var step = 0; step < 2400; step++)
             {
                 var agreement = host.Seats.Seats.Select(seat => host.ProjectionForSeat(seat.Id).TeamAgreement)

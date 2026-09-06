@@ -67,7 +67,7 @@ namespace GuardsDigital.Core.Cards.Verified
             if (cardId.Equals(TigerclawCardContent.CombatReflexes) ||
                 cardId.Equals(TigerclawCardContent.LeapingStrike))
             {
-                return CreateOptionalStep(cardId, contentRevision, "before", 1);
+                return CreateOptionalStepThenTarget(cardId, contentRevision, 1);
             }
 
             if (cardId.Equals(TigerclawCardContent.HitAndRun))
@@ -375,35 +375,19 @@ namespace GuardsDigital.Core.Cards.Verified
                         {
                             new EffectOutputBinding(MovedOutput, EffectValueKind.Coordinate)
                         }),
-                    new EffectNodeDefinition(
-                        retarget, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticContinuationCapabilities.SetAttackTargetV1,
-                        inputs: new[]
-                        {
-                            EffectInputBinding.FromNodeOutput(
-                                SyntheticContinuationCapabilities.HeroParameter,
-                                line, SyntheticRosterCapabilities.ChosenHeroOutput,
-                                EffectValueKind.Hero),
-                            EffectInputBinding.FromNodeOutput(
-                                SyntheticContinuationCapabilities.MinionParameter,
-                                line, SyntheticRosterCapabilities.ChosenMinionOutput,
-                                EffectValueKind.Minion)
-                        },
-                        outputs: new[]
-                        {
-                            new EffectOutputBinding(
-                                SyntheticContinuationCapabilities.BoundHeroTargetOutput,
-                                EffectValueKind.Hero),
-                            new EffectOutputBinding(
-                                SyntheticContinuationCapabilities.BoundMinionTargetOutput,
-                                EffectValueKind.Minion)
-                        })
+                    BindAttackTargetNode(retarget, line)
                 });
         }
 
         /// <summary>
-        /// "You may move 1 space." - Hit and Run's step 7, Combat Reflexes' and Leaping Strike's step
-        /// 1, Leaping Strike's step 7, and Sidestep's Defense rider. One sentence, five faces.
+        /// "You may move 1 space." - Hit and Run's step 7, Leaping Strike's step 7, and Sidestep's
+        /// Defense rider: the faces whose whole body at that moment is the one sentence.
+        ///
+        /// <para>Combat Reflexes' and Leaping Strike's step 1 print the same sentence and no longer
+        /// come here, because the sentence is not the whole of what they print at that moment -
+        /// <see cref="CreateOptionalStepThenTarget"/> carries the move and the targeting the face
+        /// prints after it. The move node itself is the same one, through
+        /// <see cref="OptionalStepNode"/>.</para>
         ///
         /// <para>p.17's <c>you may</c> makes the step declinable, and one space is exactly one: the
         /// distance is not "up to", so a hero who takes it moves and a hero who does not declines. That
@@ -431,6 +415,106 @@ namespace GuardsDigital.Core.Cards.Verified
                         childNodeIds: new[] { actorSpace, move }),
                     ActorSpaceNode(actorSpace),
                     OptionalStepNode(move, actorSpace, distance)
+                });
+        }
+
+        /// <summary>
+        /// "Before the attack: You may move 1 space. Target a unit adjacent to you." - Combat Reflexes'
+        /// step 1 and Leaping Strike's, composed in the order the face prints its two sentences.
+        /// Milestone 8.35z25, correcting milestone 8.23.
+        ///
+        /// <para><b>What was wrong.</b> 8.23 composed only the first sentence here and left the second
+        /// to p.14's ordinary target question, which the engine asks when the action starts - so the
+        /// played order was target, then move, and the printed order is move, then target. The user's
+        /// 2026-09-06 ruling is that the PRINTED READING ORDER governs: the move is offered first and
+        /// "a unit adjacent to you" is judged from the space he is standing in when it is asked. The
+        /// deviation was not cosmetic - it let the Attack name a neighbour and then legally step out of
+        /// contact with him inside its own resolution, which is the state the defense-offer corrective
+        /// measured. Naming the target last is what ends it: there is no interval left between the
+        /// naming and p.14's step 3 for the attacker to move in.</para>
+        ///
+        /// <para><b>The whole shape already ships twice in this engine.</b> Brogan's charges are the
+        /// seam - move first, then an actor-origin adjacency selection, then
+        /// <c>set-attack-target@1</c> - and Light Fingered, three methods below, already pairs this
+        /// file's own optional move with that same selection. Nothing new is minted: the correction is
+        /// which nodes this face declares and in which order.</para>
+        ///
+        /// <para><b>The move offers every space and the charges' do not, and the difference is
+        /// printed.</b> A charge's own text demands a destination "adjacent to an enemy unit", so
+        /// <c>choose-charge-line@1</c> filters destinations and refuses when none qualifies. This
+        /// sentence demands nothing of the space at all, so it stays
+        /// <see cref="DirectMoveDestinationPolicy.Unrestricted"/> through
+        /// <see cref="OptionalStepNode"/> - every space one step away is a legal move, and so is
+        /// declining. A destination that strands him beside nobody is therefore offered and taken, and
+        /// the mandatory targeting below then has nothing to name: p.10 stops the action there, the
+        /// card is spent and the move stands. That is the player's rope and it is the ruling's own
+        /// answer to the stranding case, not an oversight.</para>
+        ///
+        /// <para><b>The Move is not a Movement action</b> (the 2026-09-06 rider). It is p.18's direct
+        /// Move through <c>synthetic-direct-move</c>, the same contract every other card-text step of
+        /// his uses: it spends no Movement value, it is not the card's Movement icon, and it is reached
+        /// from inside an Attack. Nothing on its path consults the movement-action seam, so a standing
+        /// restriction on Movement actions does not block it and a buff scoped to Movement actions does
+        /// not widen it.</para>
+        ///
+        /// <para><b>The activity is left undeclared</b>, exactly as the charges leave it, so the
+        /// enclosing Attack answers immunity - the selection must ask the same question p.14 asked
+        /// before this correction split the node, or the reorder would quietly re-scope who may be
+        /// targeted.</para>
+        /// </summary>
+        private static EffectDefinition CreateOptionalStepThenTarget(
+            CardDefinitionId cardId, string contentRevision, int distance)
+        {
+            var root = new EffectNodeId("before-root");
+            var actorSpace = new EffectNodeId("before-actor-space");
+            var move = new EffectNodeId("before-move");
+            var victim = new EffectNodeId("before-target");
+            var retarget = new EffectNodeId("before-retarget");
+
+            return new EffectDefinition(
+                AttackTextEffectId(cardId),
+                contentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { actorSpace, move, victim, retarget }),
+                    ActorSpaceNode(actorSpace),
+                    OptionalStepNode(move, actorSpace, distance),
+
+                    // "Target a unit adjacent to you." - p.13's own reach for a non-Ranged Attack,
+                    // measured from the actor rather than from a remembered space, which is what makes
+                    // the question read the board the move just produced.
+                    new EffectNodeDefinition(
+                        victim, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.ChooseTargetV2,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.OriginParameter,
+                                RosterQueryOrigin.Actor),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.DistanceParameter,
+                                EffectValue.Integer(1)),
+                            // "a unit", which p.19 defines as a hero or a minion - both faces print
+                            // the same noun and neither narrows it to heroes.
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.UnitKindParameter,
+                                RosterUnitKind.Unit),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                SourceTeamRelation.OpposingSource)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenMinionOutput,
+                                EffectValueKind.Minion)
+                        }),
+                    BindAttackTargetNode(retarget, victim)
                 });
         }
 
@@ -964,6 +1048,42 @@ namespace GuardsDigital.Core.Cards.Verified
                 outputs: new[]
                 {
                     new EffectOutputBinding(MovedOutput, EffectValueKind.Coordinate)
+                });
+
+        /// <summary>
+        /// <c>set-attack-target@1</c> reading a selection's two published units, which is how an Attack
+        /// declaring <see cref="AttackTargetBinding.ByCardText"/> acquires the target it resolves
+        /// against. Blink Strike names the unit its line crossed; Combat Reflexes and Leaping Strike
+        /// name the one the actor is beside once the optional move has been answered.
+        ///
+        /// <para>Binding a target is not resolving an Attack: the capability publishes a typed fact and
+        /// the Attack's own authority reads it. Text that binds none leaves the action targetless and
+        /// p.10 stops it there, keeping everything the text already did.</para>
+        /// </summary>
+        private static EffectNodeDefinition BindAttackTargetNode(
+            EffectNodeId nodeId, EffectNodeId source) =>
+            new EffectNodeDefinition(
+                nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                SyntheticContinuationCapabilities.SetAttackTargetV1,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromNodeOutput(
+                        SyntheticContinuationCapabilities.HeroParameter,
+                        source, SyntheticRosterCapabilities.ChosenHeroOutput,
+                        EffectValueKind.Hero),
+                    EffectInputBinding.FromNodeOutput(
+                        SyntheticContinuationCapabilities.MinionParameter,
+                        source, SyntheticRosterCapabilities.ChosenMinionOutput,
+                        EffectValueKind.Minion)
+                },
+                outputs: new[]
+                {
+                    new EffectOutputBinding(
+                        SyntheticContinuationCapabilities.BoundHeroTargetOutput,
+                        EffectValueKind.Hero),
+                    new EffectOutputBinding(
+                        SyntheticContinuationCapabilities.BoundMinionTargetOutput,
+                        EffectValueKind.Minion)
                 });
 
         private static EffectDefinitionId AttackTextEffectId(CardDefinitionId cardId) =>

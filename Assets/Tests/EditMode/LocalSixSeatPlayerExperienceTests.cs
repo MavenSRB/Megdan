@@ -497,14 +497,34 @@ namespace GuardsDigital.Tests.EditMode
             // counters in 600 commands (25% of the 2,400 budget) while still reaching the Minion
             // Battle, the Defense and the respawn - far more headroom than seed 51 ever had.
             yield return new RecordedScenario(
-                "life", 7, MatchVictoryCause.LifeCountersExhausted,
+                // Milestone 8.35z25 re-derived it again, 7 -> 12. Combat Reflexes and
+                // Leaping Strike now ask their printed move before their targeting, so this walk
+                // reroutes and seed 7 ends on FinalWaveFlipped instead of the Life counters. An
+                // offline scan of seeds 1-80 on this scenario's OWN fixture found seed 12 exhausts
+                // them after 15 rounds and 1,281 commands - 53% of the budget, and the closest match
+                // in length to what seed 7 used to give (14 rounds), so the Minion Battle, the
+                // Defense and the respawn this scenario owes all stay well inside the walk.
+                "life", 12, MatchVictoryCause.LifeCountersExhausted,
                 () => ConfiguredMatchFixtures.CreateEngagedOfficialSixPlayerSession(2));
             yield return new RecordedScenario(
                 // Same re-derivation, same requirement as before: this is the scenario that owes the
                 // displaced-minion correction family. Seed 50 no longer ends inside the budget;
                 // seed 60 is the shortest of the twelve endings in seeds 1-60 that still reaches a
                 // correction - 1,348 commands over fifteen rounds.
-                "wave", 60, MatchVictoryCause.FinalWaveFlipped,
+                // Milestone 8.35z25 re-derived it again, 60 -> 2, and NOT because the
+                // outcome moved: seed 60 still ends on the final Wave. It moved because the reorder
+                // shortened this walk from 1,348 commands to 1,144, and its new halfway command is a
+                // ChooseTiedActor - a team agreement, which this fixture's walk-through hands to
+                // `SubmitFinalAgreementCommand` and `continue`s past before ever reaching the
+                // session-replacement check, so `replacedSession` never latched. That is the same
+                // trap 8.35z20 recorded on the "throne" scenario, in a different command kind, and
+                // it fails as a bare `Expected: True / But was: False` twelve lines below the
+                // scenario that caused it - the summary line for the PREVIOUS scenario still prints,
+                // which makes it read like the wrong scenario's failure. An offline scan of seeds
+                // 1-60 on this fixture found seed 2 ends on the final Wave after 16 rounds and 1,384
+                // commands with a plain CommitCard at its halfway index - the closest match in shape
+                // to what seed 60 used to give (15 rounds, 1,348).
+                "wave", 2, MatchVictoryCause.FinalWaveFlipped,
                 ConfiguredMatchFixtures.CreateOfficialSixPlayerSession);
             yield return new RecordedScenario(
                 // Milestone 8.35z20: correcting Blend Into Shadows' secondary rerouted even this

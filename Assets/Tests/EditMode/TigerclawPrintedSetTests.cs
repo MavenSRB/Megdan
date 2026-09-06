@@ -105,6 +105,12 @@ namespace GuardsDigital.Tests.EditMode
         /// <para>p.14 runs the two six numbered steps apart - the target named, the Defense answered
         /// and the attack itself all stand between them - so this is one face asking twice, from two
         /// separate applications of its own printed text.</para>
+        ///
+        /// <para><b>Milestone 8.35z25 moved where the first of those questions sits.</b>
+        /// The face prints "You may move 1 space." before "Target a unit adjacent to you.", so the
+        /// move is now offered first and the target is named after it. What this case is about is
+        /// unchanged - one printed `you may` asked at two of p.14's moments - and the order it is
+        /// driven in is the order the card prints.</para>
         /// </summary>
         [Test]
         public void CombatReflexes_DecliningTheFirstMove_OpensTheSecond()
@@ -114,12 +120,17 @@ namespace GuardsDigital.Tests.EditMode
                 branch: TigerclawUpgradeBranch.FirstSibling,
                 minionPlacements: At("red-melee-01", FirstAdjacent));
 
-            fixture.PlayAttackAt(
-                TigerclawCardContent.CombatReflexes, fixture.MinionAt(FirstAdjacent));
+            fixture.StartPrimary(TigerclawCardContent.CombatReflexes);
             Assert.That(fixture.Choice?.NodeId.Value, Is.EqualTo("before-move"),
-                "\"Before the attack: You may move 1 space.\" - p.14 asks it once the target has been " +
-                "named, because naming one is what its step 2 is.");
+                "\"Before the attack: You may move 1 space.\" - the first thing the face prints, and " +
+                "now the first thing it asks: no target has been named yet.");
             fixture.Decline();
+
+            Assert.That(fixture.Choice?.NodeId.Value, Is.EqualTo("before-target"),
+                "\"Target a unit adjacent to you.\" - the second sentence, asked from the space he " +
+                "is standing in after the move was answered.");
+            fixture.Select(fixture.MinionAt(FirstAdjacent));
+            fixture.Confirm();
 
             Assert.That(fixture.Choice?.NodeId.Value, Is.EqualTo("reflexes-move"),
                 "\"If you did not move before the attack, you may move 1 space.\" - he did not, so " +
@@ -137,6 +148,13 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// Taking the step-1 move closes the step-7 one, which is the whole of what its second clause
         /// says and the only place in verified content where one of p.14's moments reads the other.
+        ///
+        /// <para><b>The destination is <see cref="StagedHeroBoard.FourthAdjacent"/> rather than
+        /// <see cref="StagedHeroBoard.SecondAdjacent"/>, and the difference is the milestone.</b> Under
+        /// the printed order the target is named from wherever the move left him, so the destination
+        /// has to keep the minion beside him or the mandatory targeting below has nothing to name.
+        /// Second is two spaces from the minion and Fourth is one; the stranding destination is a case
+        /// of its own in <c>TigerclawReadingOrderTests</c>.</para>
         /// </summary>
         [Test]
         public void CombatReflexes_TakingTheFirstMove_ClosesTheSecond()
@@ -146,14 +164,18 @@ namespace GuardsDigital.Tests.EditMode
                 branch: TigerclawUpgradeBranch.FirstSibling,
                 minionPlacements: At("red-melee-01", FirstAdjacent));
 
-            fixture.PlayAttackAt(
-                TigerclawCardContent.CombatReflexes, fixture.MinionAt(FirstAdjacent));
+            fixture.StartPrimary(TigerclawCardContent.CombatReflexes);
             Assert.That(fixture.Choice, Is.Not.Null, "\"Before the attack: You may move 1 space.\"");
-            fixture.Select(SecondAdjacent);
+            fixture.Select(FourthAdjacent);
             fixture.Confirm();
 
-            Assert.That(fixture.HeroSpace(fixture.Hero), Is.EqualTo(SecondAdjacent),
+            Assert.That(fixture.HeroSpace(fixture.Hero), Is.EqualTo(FourthAdjacent),
                 "He took the step-1 move.");
+            Assert.That(fixture.Choice?.NodeId.Value, Is.EqualTo("before-target"),
+                "and the target question follows the move rather than preceding it.");
+            fixture.Select(fixture.MinionAt(FirstAdjacent));
+            fixture.Confirm();
+
             Assert.That(fixture.Choice, Is.Null,
                 "\"If you did not move before the attack\" is false, so the step-7 move never runs - " +
                 "the condition is a branch nobody is asked about rather than a second decision.");

@@ -236,12 +236,18 @@ namespace GuardsDigital.Tests.PlayMode
 
                 // The first of the two faces printing both attacker moments. One pause shape covers
                 // both: the same printed `you may` move, offered at step 1 and again at step 7.
+                //
+                // Milestone 8.35z25 added BoardUnitSelection. The face prints its move
+                // before its targeting, so the target is named by the card's own text - a board
+                // click on the unit - rather than by p.14's ordinary question, which is exactly the
+                // pair of shapes the Theft cards already declare together.
                 Face(TigerclawCardContent.CombatReflexes, "Combat Reflexes", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(AdjacentAttackTarget, CombatReflexesJourney),
                         Prove(BeforeAttackTextPause, CombatReflexesJourney),
                         Prove(ConfirmOrDecline, CombatReflexesJourney),
+                        Prove(BoardUnitSelection, CombatReflexesJourney),
                         Prove(BoardSpaceSelection, CombatReflexesJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)
@@ -280,6 +286,9 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(AdjacentAttackTarget, CombatReflexesJourney),
                         Prove(BeforeAttackTextPause, CombatReflexesJourney),
                         Prove(ConfirmOrDecline, CombatReflexesJourney),
+                        // Milestone 8.35z25, for Combat Reflexes' reason exactly: it
+                        // prints the identical step-1 body and now names its target through it.
+                        Prove(BoardUnitSelection, CombatReflexesJourney),
                         Prove(BoardSpaceSelection, CombatReflexesJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)

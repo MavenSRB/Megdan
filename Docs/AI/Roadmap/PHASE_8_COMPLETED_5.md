@@ -2,7 +2,7 @@
 
 Canonical active roadmap shard holding additional Phase 8 milestone definitions that are complete and self-contained. Return to [ROADMAP.md](../ROADMAP.md) or the active shard [PHASE_8.md](PHASE_8.md). Historical completion evidence: [PHASE_8 handoffs](../Archive/Phase-Handoffs/PHASE_8.md).
 
-Created 2026-09-06 during milestone 8.35z23's required warning-threshold ownership review, and it is the first review since the fourth shard opened at which **no existing completed shard could absorb a move at all**. The active shard stood at 12,360 words against its own 12,750 warning line, with two milestone definitions due in a single integration pass; `PHASE_8_COMPLETED_3.md` sat at 12,216 and `PHASE_8_COMPLETED_4.md` at 12,262, each within roughly 500 words of the same line, and `PHASE_8_COMPLETED.md` and `PHASE_8_COMPLETED_2.md` have been within a few hundred words of theirs since 8.35j's review. Cascading into any of them would have made this review the next one. Milestones **8.35z8** through **8.35z12** moved here verbatim, the oldest definitions the active shard still held in full and one contiguous run: the shared treatment every named control now carries with its did-nothing report (8.35z8), the awaited shine sweep reaching its hosts (8.35z9), the match-log z-order and the HUD geometry corrected around it (8.35z10), the motion language the whole match reads against (8.35z11), and the attack spotlight built on that one conductor (8.35z12). The run is kept whole deliberately: 8.35z12 composes 8.35z11's conductor and reads it by id, and the wave-one integration that landed them reconciled the two against each other, so splitting them across shards would leave each half pointing at the other. The move is sized for both definitions this integration lands rather than for one, because the previous review sized for two, came up 86 words short, and had to be carried twice. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
+Created 2026-09-06 during milestone 8.35z23's required warning-threshold ownership review, and it is the first review since the fourth shard opened at which **no existing completed shard could absorb a move at all**. The active shard stood at 12,360 words against its own 12,750 warning line, with two milestone definitions due in a single integration pass; `PHASE_8_COMPLETED_3.md` sat at 12,216 and `PHASE_8_COMPLETED_4.md` at 12,262, each within roughly 500 words of the same line, and `PHASE_8_COMPLETED.md` and `PHASE_8_COMPLETED_2.md` have been within a few hundred words of theirs since 8.35j's review. Cascading into any of them would have made this review the next one. Milestones **8.35z8** through **8.35z12** moved here verbatim, the oldest definitions the active shard still held in full and one contiguous run: the shared treatment every named control now carries with its did-nothing report (8.35z8), the awaited shine sweep reaching its hosts (8.35z9), the match-log z-order and the HUD geometry corrected around it (8.35z10), the motion language the whole match reads against (8.35z11), and the attack spotlight built on that one conductor (8.35z12). The run is kept whole deliberately: 8.35z12 composes 8.35z11's conductor and reads it by id, and the wave-one integration that landed them reconciled the two against each other, so splitting them across shards would leave each half pointing at the other. The move is sized for both definitions this integration lands rather than for one, because the previous review sized for two, came up 86 words short, and had to be carried twice. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive. Milestones **8.35z13** through **8.35z18** followed on 2026-09-06 during milestone 8.35z25's required ownership review, the same contiguous run carried one step further: the greedy-legal seat drivers that made the practice bots fight (8.35z13), the named blocker in a mid-resolution fizzle that took the wire to `/8` (8.35z14), the card-text repeat withheld when it has no legal subject (8.35z15), rulebook pp.5-6's printed 2v2 setup and both game lengths that took the wire to `/9` (8.35z16), the Director sandbox (8.35z17), and the launch flag that reaches it (8.35z18). That review was **proactive**: the active shard sat at 11,775 words with three milestone definitions due in one integration pass, and this move was sized for all three rather than for the one that triggered it.
 ### [x] 8.35z8 Give every named control one shared treatment, and say when a step applied nothing
 
 User-directed, the EIGHTEENTH amendment: "make these buttons nicer... they need clicking animations, they need to sit nicer in the trays... they look pasted over".
@@ -122,3 +122,142 @@ Acceptance checks:
 Non-goals: no Core, Application or wire change; minion pieces gain no depth (the amendment names the flat token discs); a ranged Play Mode journey needs a staged ranged scene arm that does not exist and stays owed.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z12-frame-every-attack-in-a-spotlight-ranged-pairs-included-under-one-conductor-completion-evidence).
+### [x] 8.35z13 Make the practice bots fight: greedy-legal seat drivers instead of random-legal
+
+Third of the four wave-one integration milestones, on milestone 8.35q's spawned test drivers.
+
+Observable outcome: a bot-filled seat attacks when an Attack is offered, prefers the target it is closest to killing, walks toward the fight rather than at random, and spends a Defense card when declining would kill it - so a solo playtest shows a match that progresses instead of six seats milling about.
+
+Design: three deterministic preferences layer over the random picker in `PrivateSeatDriver`, each reading only facts already published on the seat's own `IMatchReadModel` and each falling back to random-legal the instant its own facts are absent. Preferring to START an Attack is safe unconditionally because `TurnResolutionAuthority.CanStartAttack` already refuses to offer one with no legal target. Movement prefers the lowest hex distance to the nearest enemy hero or minion, minion position standing in for the lane battle because the live Battle Zone id is Director-only board state a seat never receives. Every preference is a filter computed BEFORE the random tiebreak, so per-seed determinism is preserved.
+
+**A finding recorded as content, not as a rule (user, design-side).** In the current content a Decline is unconditionally `AttackSuccessful`. That is CONTENT-DEPENDENT and must never be promoted to an invariant: unimplemented heroes may carry decline-triggered saves, and removal prevention already exists today as a post-hit save. No code change was owed because the bot reads the per-state preview rather than baking the assumption in, and that guard is the load-bearing line.
+
+Acceptance checks:
+
+- Each preference has a positive case and a fallback case, and a same-seed-twice case proves seeded determinism survives.
+- Commitments, leveling picks and team-agreement convergence stay random/untouched, as durable non-goals rather than oversights.
+- A measured offline comparison records the change in attackable turns converted into an Attack.
+- The SixClient Solo rehearsal completes with bot-filled seats at the wave's closing revision.
+
+Non-goals: no search, no evaluation function, no difficulty setting, no rules or wire change; commitment quality stays out of scope by design.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z13-make-the-practice-bots-fight-greedy-legal-seat-drivers-instead-of-random-legal-completion-evidence).
+
+### [x] 8.35z14 Name the blocker in a mid-resolution fizzle, and advance the wire to /8
+
+The SIXTH amendment's remaining known-problems entry. Last of the four wave-one integration milestones.
+
+Observable outcome: when a mandatory effect step cannot be performed and the action fizzles mid-resolution, the notice names WHO blocked it and with WHAT - the same "blocked by HERO's CARD" vocabulary milestone 8.35l's offer-time tooltip already uses - instead of naming only the acting hero and card.
+
+Design: `EffectOptionFeasibilityQuery`'s two-step refusal question (the refusing node's own explaining handler, else the consumer that narrowed a selection to nothing) is extracted and reused by `EffectResolutionSession` at both sites that produce `ImpossibleMandatory`. The answer rides the existing `EffectResolutionEvent` as a new `Blocking` property and deliberately NOT `EffectNodeOutcome`/`PendingResolution`: that record persists into a snapshot only while a resolution is genuinely paused, and `ImpossibleMandatory` always completes the whole resolution - so **no snapshot payload and no schema is touched, and the schema stays v36**. The blocking source is always a standing PUBLIC Active effect (rulebook p.17), so naming it reveals nothing a viewer's projection does not already carry. `NetworkMatchLogRow` gained two optional fields appended after `amount`, which is a wire-format change: `guards-private-online` 7 -> 8, riding the existing BlockedAction row rather than a new message kind, on the same reasoning 8.35r and 8.35z3 record.
+
+Acceptance checks:
+
+- The engine seam attaches the blocker exactly where the refusing party could explain itself and nowhere else, proven against a handler that refuses-and-explains, one that refuses silently, and one that applies.
+- The log projection carries both halves only when defined, and the notice falls back to its generic line wherever either half is absent - never a guessed blocker.
+- The wire round-trips a row with and without a blocker, bare and through the full seat-projection frame, and the seeded six-seat walk's frame-size guard still holds with the new fields present.
+- Both hard-coded protocol-version pins read 8 and an older peer is refused before payload interpretation.
+- A real-fixture pair proves the composed notice prints the blocking hero and card for a currently-standing restriction, and the plain line for the unpinned control.
+- Complete unfiltered Edit Mode and Play Mode pass at the wave's closing revision.
+
+Non-goals: no schema move, no new message kind, no change to the match log's seat-filter identity property, and no attempt to re-open the offer-time window milestone 8.35l correctly closes ahead of this stop.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z14-name-the-blocker-in-a-mid-resolution-fizzle-and-advance-the-wire-to-8-completion-evidence).
+
+### [x] 8.35z15 Stop offering a card-text repeat that has no legal subject
+
+From a live user report: Xargatha resolved Cleave - "Target a unit adjacent to you. After the attack: May repeat once on a different enemy hero" - against the only enemy hero adjacent to her, who defended, and rulebook p.10's confirm-or-decline opened anyway for a repeat whose subject set was empty. The fourth instance of the class milestones 8.29d, 8.29e and 8.35z5 closed elsewhere.
+
+Observable outcome: a repeat printed inside rulebook p.14 whose second instance has nobody legal to take is not offered at all, and one that has a legal subject is offered exactly as before.
+
+Design: the judgement already existed and was already recorded. Milestone 8.25e extracted `AttackDefenseCardActionStrategyBackend.CanStartRepeatedAttack` and `Rules/RULE_SYSTEMS.md` row 48 has since stated the ruling for every path - "whether the second instance can start is asked of the board as it then stands, under the target binding the asking node declares, rather than of the action that ended". Only the after-action-ability path asked it; the card-text path supplied no `repeatCanBePerformed` probe at either of its two `EffectResolutionContext` sites, so `RepeatIsUnavailableFor` fell through and the `May` node paused unconditionally. Both sites now supply one. The exclusion the offer is judged against is extracted as `CardTextRepeatExclusionFor`, so the offer and the answer read one statement. **No schema move, no wire move, no content revision**: the probe is a question asked of existing state.
+
+The gate is whether the enclosing Attack's target is known, deliberately not which of p.14's moments the text prints at. Arien's Violent Torrent prints its repeat at "Before the attack:" and a moment-shaped gate excused it - but driven, its node is reached with the target already chosen, and it opened the offer, took the confirmation and started nothing. Judging it also required telling `PlanRepeatedAttack` that the Attack occupying `pendingAttackResolution` is the subject of the question rather than an obstacle to it; without that, every Violent Torrent repeat would have been suppressed instead.
+
+Suppression rather than milestone 8.35s's grey-with-reason vocabulary, because that grammar attaches a cause to an `ActionOffer` a player can hover, and a repeat node publishes none - its only states are a pause that stands and a pause that does not. Drawing a greyed ACCEPT nobody can answer is the "ask, then do nothing" outcome the node's own rule has forbidden since milestone 8.23.
+
+Acceptance checks:
+
+- Every `RepeatAction` node the dealt roster's action definitions print is named by one content-derived table, classified by the kind of action it repeats, so a seventh hero's repeat arrives as a new row rather than as a new unjudged prompt.
+- Every repeat in that table that repeats an Attack has an empty-subject case driven on a real board - all four of them, each failing at the pre-fix revision.
+- The reported shape is reproduced exactly: one adjacent enemy hero, targeted, successfully defending, no confirm opened, and the action reaching its own natural end with the card resolved.
+- A defended Attack whose repeat still has a legal subject is offered unchanged, so the outcome is never what the suppression keys on.
+- Complete unfiltered Edit Mode and Play Mode pass.
+
+Non-goals: no schema move, no wire move, no content revision, no change to what a repeat that legitimately starts may then do, and no attempt to decide whether an instance that starts will finish - a board that changes between the offer and the instance stays rulebook p.10's own residual, as `CanStartRepeatedAttack` already documents.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z15-stop-offering-a-card-text-repeat-that-has-no-legal-subject-completion-evidence).
+
+### [x] 8.35z16 Add rulebook pp.5-6's printed 2v2 setup and both game lengths, and advance the wire to /9
+
+The ELEVENTH amendment's first half. The user asked to choose the format when hosting; 1v1 was dropped the same day, leaving the two printed setups and the two game lengths.
+
+Observable outcome: a build launched with `-guardsMatchFormat 2v2-quick|2v2-long|3v3-quick|3v3-long` composes exactly that printed setup, and a peer running a different one is refused by name instead of being admitted and desynchronised.
+
+Design: the printed reading came first. p.5's setup chapter is titled "GAME SETUP (4 or 6 players)" and p.20 covers what falls outside "the recommended 4 or 6 player count described on pages 5-6", so a 2v2 is one of the two printed setups rather than a variant. Step 4 makes the Wave count a function of the game length alone (Quick 3, Long 5); step 5's table crosses length with count for Life counters (4 players 4/6, 6 players 5/8); step 7 names the four-player dashboards and builds the six-player line-up by adding a third a side. `MatchFormat` is that menu as four rows, with the Wave count derived from the length and the team shape from the count so the stored numbers cannot disagree with the derived ones; `Default` is `3v3-quick`, so every existing caller composes exactly the match it did before.
+
+The format is its own element of the admission tuple rather than folded into the content digest, and the reason is measured: a 2v2 and a 3v3 register different printed sets so their digests already differed, but Quick and Long of the same count change no card, capability, token or marker at all - their digests were byte-identical and the two were admitted to one another's sessions before this change. Folding the length in would have falsified the digest's own stated contract, which stays true of a Quick/Long pair, and `RISK-COMPAT-001` refuses a second coarser content identity. The element is DERIVED from the composed setup rather than passed beside it, because a caller that composed one setup and declared another is exactly the failure it exists to catch. The Hello payload therefore carries one more string: `guards-private-online/8` -> `/9`. **Schema v36 does not move**, measured rather than assumed - a 2v2 payload is a v36 payload of different values, not of a different shape.
+
+Acceptance checks:
+
+- The printed table is transcribed as checks: four rows, both Wave counts, all four Life counts, and the four-player dashboards step 7 names.
+- A composed 2v2 deals four seats, 72 definitions and 72 instances, plays out under the ordinary rules, and leaves the six-player configuration byte-identical to its pre-change measurement.
+- Two peers on different game lengths are refused with `MatchFormatMismatch` - a fact a player can act on - where before they were admitted; a 2v2-vs-3v3 pair reports the same rather than a content-digest mismatch.
+- `DescribeComposition` is total, so every staged mirror, one-hero and ally fixture has a defined format element and no path exists on which the check silently does not happen.
+- Both protocol-version pins read 9 and a version 8 peer is refused from the bounded header.
+- Complete unfiltered Edit Mode and Play Mode pass, including a look at a live 2v2 board.
+
+Non-goals: no schema move, no lobby format control (that is the amendment's own second milestone and needs the scene composed when the lobby says so rather than at scene load), and no claim on p.20's odd-count Handicap games, its two-player variant or its 8-10-player double-lane map.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z16-add-rulebook-pp5-6s-printed-2v2-setup-and-both-game-lengths-and-advance-the-wire-to-9-completion-evidence).
+
+### [x] 8.35z17 Stage a situation by hand and play it with the real rules: the Director sandbox
+
+The TWELFTH amendment's first half - the user's "I want a test environment where I can spawn stuff and test it". "Sandbox" here is this staged-board test environment throughout, and is unrelated to the agent process-isolation sandbox `Testing/POLICY.md` names by the same word.
+
+Observable outcome: an arbitrary situation - heroes placed, minions spawned, removed or relocated, a chosen hand, a Level and a purse, Wave and Life counters - is composed and then played with the ordinary authoritative rules, with Undo, restart, the event log, snapshots and replay working exactly as they already do, and a restart returning to the STAGED board rather than to a dealt one.
+
+Design: the amendment left an open choice between staging-as-recorded-commands and a load-a-staged-description entry point, and this build closes it by measurement rather than preference. A recorded staging operation would have to be a `DirectorCommandKind` member, which `NetworkSubmissionCodecTests` and `SeatAuthorizedSubmissionTests` both quantify over - so it would either break two governed ratchets or be carried on the wire and offered to seats, which the amendment forbids outright. The description option is also strictly better: `MatchSession.RestoreSnapshot` clears history and stops recording, so a snapshot-shaped sandbox would have had no Undo at all, while composing the staging into `MatchSessionInitialState` makes every downstream mechanism the ordinary one and costs no new code, because `RebuildInitialState` is already what restart and a retained-prefix Undo re-run.
+
+One new composition seam. Coins and Level had no composition-time route: `RoundResolutionAuthority` built both itself, always Level 1 and always zero. The seam follows the precedent whose own doc comment makes the argument verbatim - `RoundResolutionComposition.TeamLives` travels in the composition because a starting count is a setup decision - and everything added is optional and defaults to today's behaviour, reusing the two EXISTING restore-state types so there is no new persisted vocabulary and **no schema move**. No rule changed.
+
+Two capability items are refused with measured reasons rather than worked around. **Placed tokens and markers**: `AdjacentMoveAuthority`'s token-carrying arm is private and says why - a token reaches the board when an effect places it - and `ComponentLifetimeOwnershipConformanceTests` pins component lifetime to the capability handlers, so a staged token would be a second origin for a board object no rule authored. **The mid-round cursor**: a round index is not a setup decision but where the rules have got to, so staging one asserts a history that did not happen. The Wave and Life counters, which the composed setup already records as setup decisions, ARE staged.
+
+Acceptance checks:
+
+- An empty staging composes the dealt match byte for byte, which is what says the seam is inert.
+- A thoroughly staged board no dealt setup would produce - heroes relocated, a minion removed, a minion spawned, a hero at Level 4 with coins, a hand of two - is driven by a seeded walk through the seats under the ordinary rules.
+- An Undo over a staged board rewinds to the staged situation, and a restart returns to the staged board rather than to a dealt one.
+- A staged spawn takes a spawn point no other minion holds.
+- Staging is reachable by no command kind, no message kind and no wire change, so no seat can be offered it.
+- Complete unfiltered Edit Mode and Play Mode pass.
+
+Non-goals: no staged tokens or markers, no staged round cursor, no rules change, no schema move, no wire move, and no HUD surface - that is milestone 8.35z18.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z17-stage-a-situation-by-hand-and-play-it-with-the-real-rules-the-director-sandbox-completion-evidence).
+
+### [x] 8.35z18 Reach the sandbox from a launch flag, and say on screen which board it staged
+
+The TWELFTH amendment's second half, the HUD affordances milestone 8.35z17 deliberately left owed because they are Presentation and a worktree can neither compile-probe them cheaply nor run Play Mode.
+
+Observable outcome: `-guardsSandbox <path>` loads a `guards-sandbox-staging/1` file and plays that board; a Director-only banner names it as a sandbox, states that it is not available in online seats, and lists what the staging actually changed. Every existing launch line composes exactly the dealt match it always did.
+
+Design: the composition slots in beside `EngagedMirrorStaging.Restage`, because both answer the same question - what board does this scene begin from - and both answer it before any view is generated or any authority exists. From there the staged setup IS the setup, so the generated views, the board rebuild and the runtime read it without knowing a staged board from a dealt one. The composed initial state is carried to `ConfiguredMatchSceneRuntime` rather than recomposed there, because staging mutates the configuration in place and composing it twice would deal the hands twice.
+
+**`DEV-004` is enforced in the parser rather than asserted in a comment.** That ledger row requires the affordance never be exposed in a real online match, and a staged board reaches one by exactly one route - a host composing it before its seats join - so `-guardsSandbox` is refused beside the host, client and lobby roles, where no later surface can reopen it. This is the deliberate opposite of `-guardsMatchFormat`, which is accepted beside every role: a format is the match a whole table agrees to play and is checked into the admission tuple, while a staging is one machine's private experiment that no admission tuple describes. The banner is Director-only a second, independent way, hidden with the rest of the Director tools when the lobby hands the HUD an online seat.
+
+The banner's summary is DERIVED from the composed staging rather than recorded beside it, so it cannot describe a board other than the one on screen, and it lives engine-free in Application beside the composition - following `PrivateLobbyModel` - so the Unity-free harness covers it while the view holds nothing but strings.
+
+Acceptance checks:
+
+- The flag names a staging file and marks the process a sandbox; an absent flag reads as the ordinary dealt match; a flag with no path is refused.
+- The flag is refused beside the host, lobby and client roles, each naming "Director-only", so no seat can be dealt a staged board.
+- The sandbox and format flags still compose on the one line where both are legal.
+- An empty staging is named as the dealt board rather than drawn as a blank panel a tester would read as a bug.
+- A staging that round-trips through its own file format summarises identically, which is the join between the flag and the banner.
+- A staged board names every kind of thing it changed, and counts agree with their nouns.
+- A live Play Mode check confirms the banner actually renders, and that a staged board composed through the flag path plays, undoes and restarts to the staged origin.
+
+Non-goals: no staging EDITOR - this milestone reaches and reports a staging, it does not author one; no change to what 8.35z17 stages or refuses; no schema move, no wire move, and no lobby surface.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z18-reach-the-sandbox-from-a-launch-flag-and-say-on-screen-which-board-it-staged-completion-evidence).

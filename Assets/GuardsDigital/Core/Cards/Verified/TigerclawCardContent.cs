@@ -46,8 +46,11 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <see cref="SabinaCardContent.ContentRevision"/> has: it moves when Tigerclaw's content does.
         /// Milestone 8.35z20 moved it again to correct Blend Into Shadows' secondary icon (Defense 2,
         /// not Movement 2 - see <c>Docs/AI/Rules/HERO_TIGERCLAW.md</c>'s settled-corrections block).
+        /// Milestone 8.35z25 moves it once more: Combat Reflexes and Leaping Strike now
+        /// compose their step-1 sentences in the order the faces print them, which changes the nodes
+        /// those two cards declare and the moment their target is bound.
         /// </summary>
-        public const string ContentRevision = "tigerclaw-8-35z20-rev-1";
+        public const string ContentRevision = "tigerclaw-8-35z25-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat
@@ -274,7 +277,8 @@ namespace GuardsDigital.Core.Cards.Verified
                     LeapingStrike, BackstabWithABallista),
                 "Before the attack: You may move 1 space. Target a unit adjacent to you. After the " +
                 "attack: If you did not move before the attack, you may move 1 space.",
-                PrintedTextComposition.None),
+                PrintedTextComposition.None,
+                bindsTargetInCardText: true),
 
             // The two faces printing p.14's `+` convention on the Attack value: a number the card's own
             // text raises, which composes to a declared value contribution rather than to an effect
@@ -297,7 +301,8 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Red, CardTier.III, PrintedValueChannel.Radius),
                 "Before the attack: You may move 1 space. Target a unit adjacent to you. After the " +
                 "attack: You may move 1 space.",
-                PrintedTextComposition.None),
+                PrintedTextComposition.None,
+                bindsTargetInCardText: true),
 
             // His only Ranged Attack, his only Attack printing a Range icon, and the verified roster's
             // first restriction on the ORIGIN of a Defense action: the target cannot use a primary
@@ -652,6 +657,12 @@ namespace GuardsDigital.Core.Cards.Verified
             // unit", the one their step-1 line crossed - so p.14 does not ask the ordinary target
             // question first. That is `attack-target`, which milestone 8.19a minted for Brogan's
             // charges and which these two reach for the same printed reason.
+            //
+            // Milestone 8.35z25 adds Combat Reflexes and Leaping Strike to that set, and
+            // the printed reason is the same one read one sentence later: both print "You may move 1
+            // space." BEFORE "Target a unit adjacent to you.", so the target is named by the card's
+            // own text from the space the move left him in, and p.14's ordinary question - which is
+            // asked when the action starts, before any of that text runs - is not what can ask it.
             // Nimble Strike prints the same clause and is excluded, because p.6 returns it to the box
             // and a deferred face composes no step-1 text for the binding to be about. Its target
             // binding ships with its composition, exactly as its nodes do.

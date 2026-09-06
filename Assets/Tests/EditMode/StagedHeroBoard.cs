@@ -504,6 +504,24 @@ namespace GuardsDigital.Tests.EditMode
             Accept(DirectorCommand.AnswerEffectChoice(invocation));
         }
 
+        /// <summary>
+        /// The hero arm of the selection above. Milestone 8.35z25 added it: a card text
+        /// that names its own Attack target - "Target a unit adjacent to you." - offers heroes and
+        /// minions in one selection, and until then no shared case had had to name the hero arm.
+        /// </summary>
+        internal void Select(HeroId hero)
+        {
+            var choice = Choice;
+            Assert.That(choice, Is.Not.Null,
+                $"The selection closed before '{hero.Value}' could be named.");
+            var invocation = choice.SelectInvocations.SingleOrDefault(candidate =>
+                candidate.Candidate.Value.Kind == EffectValueKind.Hero &&
+                candidate.Candidate.Value.HeroId.Equals(hero));
+            Assert.That(invocation, Is.Not.Null,
+                $"'{hero.Value}' is not among the candidates this selection is offering.");
+            Accept(DirectorCommand.AnswerEffectChoice(invocation));
+        }
+
         internal void Select(HexCoordinate space)
         {
             var choice = Choice;

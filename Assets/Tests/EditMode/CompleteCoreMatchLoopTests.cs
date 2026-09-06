@@ -75,8 +75,18 @@ namespace GuardsDigital.Tests.EditMode
         /// scanning 1-60 offline found no lower seed with comparable headroom (52 is the only seed
         /// smaller in absolute footprint, at 13%, but 25 is the lower of the two and both are far inside
         /// the ceiling).</para>
+        ///
+        /// <para>Milestone 8.35z25 re-derived it again, 25 -> 75, for the same cause every
+        /// entry above records. Combat Reflexes and Leaping Strike now offer their printed move BEFORE
+        /// their targeting, which both adds an offer where the walk used to be handed a target
+        /// question and widens the boards those two Attacks are offered on at all - so a seeded walk,
+        /// being a pure function of what it is offered, reroutes wholesale. Seed 25 no longer ends
+        /// inside the 2,400-command budget (29 rounds and still going). An offline scan of seeds 1-80
+        /// found seed 75 ends on the Life counters after 5 rounds and 389 commands - 16% of budget,
+        /// which is the same shape seed 25 itself was chosen for (5 rounds, 17%), so the selection
+        /// rule this block has followed since 8.35z5 is unchanged rather than relaxed.</para>
         /// </summary>
-        private const int LifeCounterMatchSeed = 25;
+        private const int LifeCounterMatchSeed = 75;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the unmodified official six-player setup
