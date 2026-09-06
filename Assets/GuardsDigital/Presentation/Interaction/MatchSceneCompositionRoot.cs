@@ -1076,6 +1076,35 @@ namespace GuardsDigital.Presentation.Interaction
             AttachSmokeDriverWhenRequested();
             AttachPrivateOnlineDriverWhenRequested();
             AttachBoardVisualCaptureDriverWhenRequested();
+            AttachPracticeBotDriverWhenRequested();
+        }
+
+        /// <summary>
+        /// Milestone 8.35z26. Host-owned practice bots, attached only when the launch asked
+        /// for them - the same rule the smoke, capture and private-online hooks all follow, so a
+        /// normally launched build carries no bot at all and a malformed request fails loudly instead
+        /// of quietly playing nobody's seats.
+        /// </summary>
+        private void AttachPracticeBotDriverWhenRequested()
+        {
+            if (!UnityEngine.Application.isPlaying)
+            {
+                return;
+            }
+
+            if (!PracticeBotSeatDriver.TryParseRequested(
+                    System.Environment.GetCommandLineArgs(), out var parsed, out var error))
+            {
+                return;
+            }
+
+            if (parsed == null)
+            {
+                UnityEngine.Debug.LogError("GUARDS_PRACTICEBOT: FAIL " + error);
+                return;
+            }
+
+            gameObject.AddComponent<PracticeBotSeatDriver>().Configure(this, parsed);
         }
 
         /// <summary>

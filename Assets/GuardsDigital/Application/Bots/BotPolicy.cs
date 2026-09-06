@@ -72,52 +72,11 @@ namespace GuardsDigital.Application.Bots
     public static class BotPolicy
     {
         /// <summary>
-        /// What a landed attack on this hero is treated as costing. Deliberately large and
-        /// deliberately NOT <see cref="BotEvaluation.TeamLifeWeight"/>.
+        /// The policy weights moved to <see cref="BotPolicyWeights"/> at tier-2, where a tuner can
+        /// construct a vector instead of rebuilding - and where the finding that they, not the
+        /// evaluation's nine, are what actually rank candidates is recorded.
         /// </summary>
-        /// <remarks>
-        /// A successful attack is not the same event as a Defeat, and a Defeat is not always one Life
-        /// counter (p.13 prices it by the defeated hero's lowest card Tier). Pricing a hit as "one
-        /// Life" would be asserting a rule the game does not have. This is an ordering statement -
-        /// taking a hit is worse than spending any card and better than losing the match - and it is
-        /// applied only where the authority's own preview says a hit is what would happen.
-        /// </remarks>
-        public const int HitTakenCost = 600;
-
-        /// <summary>What spending a Defense card costs beyond the hand-size term: the card is gone.</summary>
-        public const int DefenseCardSpendCost = 20;
-
-        public const int AttackActionBonus = 120;
-        public const int MovementActionBonus = 40;
-        public const int EndTurnPenalty = 200;
-
-        /// <summary>
-        /// <b>NEGATIVE ON PURPOSE. Do not "fix" the sign.</b> A lower printed Initiative is preferred,
-        /// which means this bot deliberately tries to act LATER in the round.
-        /// </summary>
-        /// <remarks>
-        /// <para>This started at <c>+10</c>, from a fact that is true and an inference from it that
-        /// was not. The fact: <c>InitiativeResolutionAuthority</c> takes the MAXIMUM Initiative total,
-        /// so a higher printed Initiative genuinely does act first. The inference - that acting first
-        /// is therefore worth having - is what self-play falsified.</para>
-        /// <para>Measured, on the symmetric six-player bench, tier-1 against the tier-0.5 pass over
-        /// twenty seeds played from both sides: at <c>+10</c> the win rate was <b>51.3%</b> and tier-1
-        /// won only 3 of 20 matches from the side that moves first; at <c>-10</c> it was <b>82.5%</b>
-        /// and 13 of 20 from that same side. Nothing else changed. Held-out seeds the weight was NOT
-        /// chosen on give <b>80.0%</b>, so this is not twenty matches' worth of luck.</para>
-        /// <para>Why it should be so is a game-design observation this milestone does not claim to
-        /// have proven: committing later means committing against a revealed board, and in a race
-        /// decided by Life counters the second attacker in an exchange appears to keep the initiative
-        /// that matters. Recorded as a measurement, not as a rule - it is a property of the current
-        /// content and match length, exactly the kind of thing the roster expansion could move, which
-        /// is why the self-play gate is a test and not a note.</para>
-        /// </remarks>
-        public const int CommitInitiativeWeight = -10;
-        public const int CommitReachableAttackBonus = 90;
-        public const int CommitMovementBonus = 45;
-        public const int CommitPrintedValueWeight = 6;
-        public const int PassPenalty = 400;
-        public const int RespawnBonus = 500;
+        public static BotPolicyWeights DefaultPolicyWeights => BotPolicyWeights.Default;
 
         /// <summary>
         /// The tier-0.5 greedy-nudge selection, moved here unchanged from
@@ -152,7 +111,107 @@ namespace GuardsDigital.Application.Bots
             HeroId ownHeroId,
             IBotRandom random,
             IBotLookahead lookahead = null,
-            BotPolicyFamilies families = BotPolicyFamilies.All)
+            BotPolicyFamilies families = BotPolicyFamilies.All) =>
+            Select(
+                commands, readModel, ownHeroId, random, lookahead, families,
+                BotEvaluationWeights.PhaseA, BotPolicyWeights.PhaseA, ExactTiesOnly);
+
+        /// <summary>
+        /// FOURTEENTH amendment, tier-2. Tier-1's judgment plus a REAL ply where one is available,
+        /// under the tuned weights, with the seeded near-equal pick Ruling 41 asked for.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>The ply ADDS to the static judgment; it does not replace it, and phase A's
+        /// version replacing it was the bug.</b> One ply on this engine is one COMMAND, not one turn.
+        /// Starting an Attack does not resolve it, choosing a target does not land the hit, and
+        /// committing a card does not play it - so for most candidate families the position that
+        /// immediately results is worth almost exactly what the position before it was worth, and a
+        /// score taken from the ply alone would call them all equal. Tier-1's static deltas are
+        /// PREDICTIONS about a consequence one command has not reached yet; the ply is a MEASUREMENT
+        /// of the consequence a command actually did reach. Both are worth having, and adding them
+        /// keeps every ablation-proven family that tier-1 measured at 8-45 points each.</para>
+        /// <para><b>Geometry is the one family the ply supersedes, and it is suppressed rather than
+        /// added to.</b> Milestone 8.35p made a move happen the instant the destination is chosen, so
+        /// the ply after a movement command measures the same proximity and adjacency terms
+        /// <see cref="GeometryDelta"/> predicts - exactly, on the same board, with the same weights.
+        /// Counting both would double the one family that is already only a tiebreak-scale nudge.
+        /// <c>BotTierTwoTests.TheMeasuredPlyReproducesTheGeometryPrediction</c> is the proof that they
+        /// are the same number rather than the claim that they are.</para>
+        /// <para><b>Where no ply is available this is tier-1 under tuned weights</b>, which is the
+        /// honest degradation: a poisoned or absent lookahead costs cleverness, never correctness.</para>
+        /// </remarks>
+        public static DirectorCommand SelectTierTwo(
+            IReadOnlyList<DirectorCommand> commands,
+            IMatchReadModel readModel,
+            HeroId ownHeroId,
+            IBotRandom random,
+            IBotLookahead lookahead = null,
+            BotPolicyFamilies families = BotPolicyFamilies.All,
+            BotEvaluationWeights weights = null,
+            int nearEqualBand = NearEqualBand,
+            int lookaheadCandidateCap = LookaheadCandidateCap,
+            BotPolicyWeights policy = null) =>
+            Select(
+                commands, readModel, ownHeroId, random, lookahead, families,
+                weights ?? BotEvaluationWeights.Default, policy ?? BotPolicyWeights.Default,
+                nearEqualBand, lookaheadCandidateCap);
+
+        /// <summary>Tier-1's tiebreak rule: only an EXACT tie goes to the die.</summary>
+        public const int ExactTiesOnly = 0;
+
+        /// <summary>
+        /// RULING 41. How far below the best score a candidate may sit and still be drawn from.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>SIZED BY MEASUREMENT, AND THE MEASUREMENT SAYS THIS BAND IS A COST, NOT A FREE
+        /// LUNCH.</b> <c>BotTierTwoTuning.TheNearEqualBandSweep</c> plays the band against the
+        /// shipped tier-1 brain over the twenty tuning seeds, both sides - forty matches each:</para>
+        /// <code>
+        /// band    0     50.0%   (19W 19L 2U)   <- the control: at band 0 this selection IS tier-1
+        /// band    8     43.6%   (17W 22L 1U)
+        /// band   16     35.0%   (14W 26L 0U)
+        /// band   24     37.5%   (15W 25L 0U)
+        /// band   32     25.6%   (10W 29L 1U)
+        /// band   64     37.5%   (15W 25L 0U)
+        /// band  128      7.7%   ( 3W 36L 1U)
+        /// </code>
+        /// <para>Forty matches carry roughly +/-8 points of noise, so 8 is the largest band whose
+        /// result is not measurably below the control, and everything from 16 up is a real and
+        /// growing handicap. <b>The first draft of this constant was 24, chosen by taste, and it cost
+        /// 12.5 points</b> - which is why the number now comes from the table above.</para>
+        /// <para><b>What it means in the evaluation's own units.</b> It sits below every weight that
+        /// names a MATERIAL change of position - <see cref="BotEvaluationWeights.TeamLife"/> at 1000,
+        /// <see cref="BotEvaluationWeights.LevelAdvantage"/> at 40,
+        /// <see cref="BotEvaluationWeights.BoardPresence"/> at 30 - so it can never swallow a Life
+        /// counter, a level, or a hero standing on the board. What it swallows is the tiebreak-scale
+        /// terms: a hex of engagement proximity, a coin, a card in hand. What it must NOT be allowed
+        /// to swallow is the commitment family's own spread, which runs about 6-10 points per printed
+        /// Initiative - that family is worth 33.8 points in tier-1's ablation, and a band that
+        /// randomises it is how the 24 above lost 12.5.</para>
+        /// <para><b>WHAT THE BAND DOES NOT BUY, recorded because it corrects a prediction rather than
+        /// confirming one.</b> Phase A's fourth recommendation expected tier-1 to be so deterministic
+        /// that the seed decided nothing - "with the same brain on both sides the symmetric bench
+        /// gives Blue 20/20". On the current build that does not reproduce.
+        /// <c>BotTierTwoTuning.TheMirrorVarietyDiagnostic</c>, twelve seeds, same brain both sides:
+        /// band 0 already gives red 4 / blue 8, and no band from 2 to 16 widens it (1/11, 5/7, 5/7,
+        /// 4/8 - noise, not a trend). So the repetitiveness the ruling exists to prevent is not
+        /// currently present, and the band is implemented as the ruling directs, sized to be as close
+        /// to free as measurement can establish, rather than sold as a fix for a problem this
+        /// milestone could not find.</para>
+        /// </remarks>
+        public const int NearEqualBand = 8;
+
+        private static DirectorCommand Select(
+            IReadOnlyList<DirectorCommand> commands,
+            IMatchReadModel readModel,
+            HeroId ownHeroId,
+            IBotRandom random,
+            IBotLookahead lookahead,
+            BotPolicyFamilies families,
+            BotEvaluationWeights weights,
+            BotPolicyWeights policy,
+            int nearEqualBand,
+            int lookaheadCandidateCap = LookaheadCandidateCap)
         {
             if (commands == null || commands.Count == 0 || random == null)
             {
@@ -164,26 +223,35 @@ namespace GuardsDigital.Application.Bots
                 return commands[random.Next(commands.Count)];
             }
 
-            var standing = BotEvaluation.Evaluate(readModel, ownHeroId);
+            var standing = BotEvaluation.Evaluate(readModel, ownHeroId, weights);
             var scores = new int[commands.Count];
-
-            if (lookahead is SessionBotLookahead session)
-            {
-                session.BeginDecision();
-            }
-
             for (var index = 0; index < commands.Count; index++)
             {
-                var candidate = commands[index];
-                if (lookahead != null &&
-                    lookahead.TryEvaluateAfter(candidate, ownHeroId, out var simulated))
-                {
-                    scores[index] = simulated;
-                    continue;
-                }
-
                 scores[index] = standing +
-                    StaticDelta(candidate, readModel, ownHeroId, standing, families);
+                    StaticDelta(commands[index], readModel, ownHeroId, families, weights, policy);
+            }
+
+            // The ply must be measured in the SAME units the standing position is, or the gain below
+            // is a difference of vectors rather than of positions. A lookahead built with a different
+            // vector is refused the ply rather than quietly mis-scored.
+            var comparable = lookahead != null && SameVector(lookahead.Weights, weights);
+            if (comparable)
+            {
+                lookahead.BeginDecision();
+                foreach (var index in Shortlist(scores, lookaheadCandidateCap))
+                {
+                    if (!lookahead.TryEvaluateAfter(commands[index], ownHeroId, out var simulated))
+                    {
+                        continue;
+                    }
+
+                    // Geometry is re-derived WITHOUT its prediction, because the ply just measured
+                    // the same terms exactly. Every other family keeps its prediction and gains the
+                    // measurement beside it - see this method's remarks.
+                    scores[index] = standing + (simulated - standing) + StaticDelta(
+                        commands[index], readModel, ownHeroId,
+                        families & ~BotPolicyFamilies.Geometry, weights, policy);
+                }
             }
 
             var best = scores[0];
@@ -195,16 +263,86 @@ namespace GuardsDigital.Application.Bots
                 }
             }
 
-            var tied = new List<DirectorCommand>();
+            var floor = best - Math.Max(0, nearEqualBand);
+            var pool = new List<DirectorCommand>();
             for (var index = 0; index < commands.Count; index++)
             {
-                if (scores[index] == best)
+                if (scores[index] >= floor)
                 {
-                    tied.Add(commands[index]);
+                    pool.Add(commands[index]);
                 }
             }
 
-            return tied.Count == 1 ? tied[0] : tied[random.Next(tied.Count)];
+            return pool.Count == 1 ? pool[0] : pool[random.Next(pool.Count)];
+        }
+
+        /// <summary>
+        /// How many candidates of one decision the ply is actually spent on.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>A live bot's worst case is what this bounds, and the worst case is not the
+        /// average.</b> Measured on the symmetric bench: a decision offers 10.4 candidates on
+        /// average and one ply costs about 8.6 ms, so an uncapped tier-2 averages ~90 ms - fine
+        /// against the 2.0 s pace a solo player watches. But a commitment decision with six heroes'
+        /// worth of offers, or a movement decision over a wide open board, is not the average, and an
+        /// uncapped probe there would spend seconds inside one decision and stall the very pace this
+        /// bot exists to be watchable at. Capping the probe makes the cost of a decision a bounded
+        /// number rather than a property of the position.</para>
+        /// <para><b>What it costs in strength is small, because the shortlist is not arbitrary.</b>
+        /// The static judgment scores every candidate first and the ply is spent on the best ones -
+        /// so the ply refines the shortlist rather than replacing the search. A candidate the static
+        /// judgment ranks below the shortlist keeps its static score and can still win if the plies
+        /// above it measure worse than they predicted, which is exactly the correction the ply exists
+        /// to make.</para>
+        /// <para>Six, measured: <c>BotTierTwoTests.TheLookaheadCapDiagnostic</c> plays the cap at 2,
+        /// 4, 6 and unbounded. It is the smallest cap whose win rate against tier-1 is not measurably
+        /// below the uncapped one.</para>
+        /// </remarks>
+        public const int LookaheadCandidateCap = 6;
+
+        /// <summary>
+        /// The indices of the best <see cref="LookaheadCandidateCap"/> static scores, best first.
+        /// </summary>
+        /// <remarks>
+        /// Ties are broken by index, which keeps the shortlist a deterministic function of the
+        /// candidate order - the seeded die decides among near-equals AFTER the plies land, not
+        /// before, or the same seed would probe different candidates on two runs of one match.
+        /// </remarks>
+        private static IEnumerable<int> Shortlist(int[] scores, int cap)
+        {
+            if (cap <= 0 || scores.Length <= cap)
+            {
+                return Enumerable.Range(0, scores.Length);
+            }
+
+            return Enumerable.Range(0, scores.Length)
+                .OrderByDescending(index => scores[index])
+                .ThenBy(index => index)
+                .Take(cap)
+                .ToArray();
+        }
+
+        private static bool SameVector(BotEvaluationWeights left, BotEvaluationWeights right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < BotEvaluationWeights.TermCount; index++)
+            {
+                if (left[index] != right[index])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -215,29 +353,30 @@ namespace GuardsDigital.Application.Bots
             DirectorCommand candidate,
             IMatchReadModel readModel,
             HeroId ownHeroId,
-            int standing,
-            BotPolicyFamilies families)
+            BotPolicyFamilies families,
+            BotEvaluationWeights weights,
+            BotPolicyWeights policy)
         {
             switch (candidate.Kind)
             {
                 case DirectorCommandKind.ChooseDefenseCard:
                 case DirectorCommandKind.DeclineDefense:
                     return Enabled(families, BotPolicyFamilies.Defense)
-                        ? DefenseDelta(candidate, readModel) : 0;
+                        ? DefenseDelta(candidate, readModel, weights, policy) : 0;
                 case DirectorCommandKind.ChooseAttackTarget:
                     return Enabled(families, BotPolicyFamilies.AttackTarget)
-                        ? AttackTargetDelta(candidate, readModel) : 0;
+                        ? AttackTargetDelta(candidate, readModel, weights, policy) : 0;
                 case DirectorCommandKind.ChooseMovementDestination:
                 case DirectorCommandKind.PerformFastTravel:
                 case DirectorCommandKind.ChooseCorrectionDestination:
                     return Enabled(families, BotPolicyFamilies.Geometry)
-                        ? GeometryDelta(candidate.Coordinate, readModel, ownHeroId, standing) : 0;
+                        ? GeometryDelta(candidate.Coordinate, readModel, ownHeroId, weights, policy) : 0;
                 case DirectorCommandKind.StartAction:
                     return Enabled(families, BotPolicyFamilies.ActionStart)
-                        ? ActionStartDelta(candidate, readModel) : 0;
+                        ? ActionStartDelta(candidate, readModel, policy) : 0;
                 case DirectorCommandKind.CommitCard:
                     return Enabled(families, BotPolicyFamilies.Commitment)
-                        ? CommitDelta(candidate, readModel, ownHeroId) : 0;
+                        ? CommitDelta(candidate, readModel, ownHeroId, policy) : 0;
                 case DirectorCommandKind.Pass when !Enabled(families, BotPolicyFamilies.TurnEconomy):
                 case DirectorCommandKind.PerformHold when !Enabled(families, BotPolicyFamilies.TurnEconomy):
                     return 0;
@@ -247,11 +386,11 @@ namespace GuardsDigital.Application.Bots
                     // Passing forfeits the turn. It stays legal and stays reachable - a hand with
                     // nothing committable leaves it as the only candidate, where a penalty changes
                     // nothing because everything ties.
-                    return -PassPenalty;
+                    return -policy.Pass;
                 case DirectorCommandKind.PerformHold:
-                    return -EndTurnPenalty;
+                    return -policy.EndTurn;
                 case DirectorCommandKind.RespawnHero:
-                    return RespawnBonus;
+                    return policy.Respawn;
                 case DirectorCommandKind.ResolveCardWithoutRespawn:
                     return 0;
                 default:
@@ -279,7 +418,9 @@ namespace GuardsDigital.Application.Bots
         /// cheapest sufficient card when it is not, and - unlike the greedy pass - never burn a card
         /// that would not have saved anything.</para>
         /// </remarks>
-        private static int DefenseDelta(DirectorCommand candidate, IMatchReadModel readModel)
+        private static int DefenseDelta(
+            DirectorCommand candidate, IMatchReadModel readModel, BotEvaluationWeights weights,
+            BotPolicyWeights policy)
         {
             var preview = readModel.PendingDefensePreview;
             if (preview?.Choices == null)
@@ -298,12 +439,12 @@ namespace GuardsDigital.Application.Bots
             }
 
             // Read per state, every time. Never assume which way a Decline resolves.
-            var delta = choice.Outcome == AttackResolutionOutcome.AttackSuccessful ? -HitTakenCost : 0;
+            var delta = choice.Outcome == AttackResolutionOutcome.AttackSuccessful ? -policy.HitTaken : 0;
             if (!choice.IsDecline)
             {
                 // A spent card is a card gone from the hand, and a bigger Defense Total is a bigger
                 // card to have spent: among answers that do the same thing, keep the cheapest.
-                delta -= DefenseCardSpendCost + BotEvaluation.OwnHandSizeWeight;
+                delta -= policy.DefenseCardSpend + weights.OwnHandSize;
                 delta -= choice.DefenseTotal ?? 0;
             }
 
@@ -323,7 +464,9 @@ namespace GuardsDigital.Application.Bots
         /// losing is still preferred, and the Defense its neighbouring minions would lend it is still
         /// subtracted, both from the authority's own published preview.
         /// </remarks>
-        private static int AttackTargetDelta(DirectorCommand candidate, IMatchReadModel readModel)
+        private static int AttackTargetDelta(
+            DirectorCommand candidate, IMatchReadModel readModel, BotEvaluationWeights weights,
+            BotPolicyWeights policy)
         {
             if (!candidate.HeroId.IsDefined)
             {
@@ -335,8 +478,8 @@ namespace GuardsDigital.Application.Bots
             var progression = (readModel.HeroProgression ?? Array.Empty<HeroProgressionProjection>())
                 .FirstOrDefault(row => row != null && row.HeroId.Equals(candidate.HeroId));
             var level = progression?.Level ?? 1;
-            var delta = BotEvaluation.PublicDefeatLifeCost(level) * BotEvaluation.TeamLifeWeight;
-            delta += level * BotEvaluation.OwnCoinWeight;
+            var delta = BotEvaluation.PublicDefeatLifeCost(level) * weights.TeamLife;
+            delta += level * weights.OwnCoin;
 
             TeamId targetTeam;
             try
@@ -356,7 +499,7 @@ namespace GuardsDigital.Application.Bots
             if (lives != int.MaxValue)
             {
                 // Nearer to zero is worth more. Bounded so a large counter cannot swamp the rest.
-                delta += Math.Max(0, BotEvaluation.ProximityCap - lives) * BotEvaluation.TeamLifeWeight / 4;
+                delta += Math.Max(0, BotEvaluation.ProximityCap - lives) * weights.TeamLife / 4;
             }
 
             var bonus = (readModel.PendingAttackTargetDefensePreviews ??
@@ -364,7 +507,7 @@ namespace GuardsDigital.Application.Bots
                 .FirstOrDefault(value => value.HeroId.Equals(candidate.HeroId));
             if (bonus?.MinionContributions != null)
             {
-                delta -= bonus.MinionContributions.Sum(value => value.Amount) * BotEvaluation.MinionPressureWeight;
+                delta -= bonus.MinionContributions.Sum(value => value.Amount) * weights.MinionPressure;
             }
 
             return delta;
@@ -377,7 +520,9 @@ namespace GuardsDigital.Application.Bots
         /// the difference of the geometry.
         /// </summary>
         private static int GeometryDelta(
-            HexCoordinate destination, IMatchReadModel readModel, HeroId ownHeroId, int standing)
+            HexCoordinate destination, IMatchReadModel readModel, HeroId ownHeroId,
+            BotEvaluationWeights weights,
+            BotPolicyWeights policy)
         {
             var current = BotEvaluation.Explain(readModel, ownHeroId);
             var enemies = EnemyPositions(readModel, ownHeroId);
@@ -390,10 +535,10 @@ namespace GuardsDigital.Application.Bots
             var proximity = BotEvaluation.ProximityCap - Math.Min(nearest, BotEvaluation.ProximityCap);
             var adjacent = enemies.Count(position => HexDistanceQuery.Calculate(destination, position) <= 1);
 
-            var before = (current.EngagementProximity * BotEvaluation.EngagementProximityWeight) -
-                (current.AdjacentThreats * current.OwnDefeatLifeCost * BotEvaluation.ThreatAdjacencyWeight);
-            var after = (proximity * BotEvaluation.EngagementProximityWeight) -
-                (adjacent * current.OwnDefeatLifeCost * BotEvaluation.ThreatAdjacencyWeight);
+            var before = (current.EngagementProximity * weights.EngagementProximity) -
+                (current.AdjacentThreats * current.OwnDefeatLifeCost * weights.ThreatAdjacency);
+            var after = (proximity * weights.EngagementProximity) -
+                (adjacent * current.OwnDefeatLifeCost * weights.ThreatAdjacency);
             return after - before;
         }
 
@@ -404,17 +549,18 @@ namespace GuardsDigital.Application.Bots
         /// pass established that and it still holds. Movement is next, because closing on the fight
         /// is what makes the next Attack possible. Everything else is left alone.
         /// </summary>
-        private static int ActionStartDelta(DirectorCommand candidate, IMatchReadModel readModel)
+        private static int ActionStartDelta(
+            DirectorCommand candidate, IMatchReadModel readModel, BotPolicyWeights policy)
         {
             switch (ActionKindOf(readModel, candidate.CardInstanceId, candidate.ActionDefinitionId))
             {
                 case ActionKind.Attack:
-                    return AttackActionBonus;
+                    return policy.AttackAction;
                 case ActionKind.Movement:
                 case ActionKind.FastTravel:
-                    return MovementActionBonus;
+                    return policy.MovementAction;
                 case ActionKind.Hold:
-                    return -EndTurnPenalty;
+                    return -policy.EndTurn;
                 default:
                     return 0;
             }
@@ -429,10 +575,12 @@ namespace GuardsDigital.Application.Bots
         /// actually reach something from where this hero stands (using the card's OWN printed Range,
         /// not an invented threshold), whether it offers Movement when there is ground to cover, its
         /// printed Initiative - weighted NEGATIVELY, for the measured reason
-        /// <see cref="CommitInitiativeWeight"/> records at length - and the size of its printed
+        /// <see cref="BotPolicyWeights.CommitInitiative"/> records at length - and the size of its printed
         /// values. No card is named and no card's text is read.
         /// </remarks>
-        private static int CommitDelta(DirectorCommand candidate, IMatchReadModel readModel, HeroId ownHeroId)
+        private static int CommitDelta(
+            DirectorCommand candidate, IMatchReadModel readModel, HeroId ownHeroId,
+            BotPolicyWeights policy)
         {
             var definition = DefinitionOf(readModel, candidate.CardInstanceId);
             if (definition == null)
@@ -440,7 +588,7 @@ namespace GuardsDigital.Application.Bots
                 return 0;
             }
 
-            var delta = definition.Initiative.Value * CommitInitiativeWeight;
+            var delta = definition.Initiative.Value * policy.CommitInitiative;
 
             var enemies = EnemyPositions(readModel, ownHeroId);
             var own = (readModel.Heroes ?? Array.Empty<HeroOccupancy>())
@@ -469,11 +617,11 @@ namespace GuardsDigital.Application.Bots
                             .Select(value => value.Amount).DefaultIfEmpty(0).Max());
                         if (nearest <= reach)
                         {
-                            delta += CommitReachableAttackBonus;
+                            delta += policy.CommitReachableAttack;
                         }
 
                         delta += printed.Where(value => value.Channel == PrintedValueChannel.Attack)
-                            .Select(value => value.Amount).DefaultIfEmpty(0).Max() * CommitPrintedValueWeight;
+                            .Select(value => value.Amount).DefaultIfEmpty(0).Max() * policy.CommitPrintedValue;
                         break;
                     case ActionKind.Movement:
                     case ActionKind.FastTravel:
@@ -481,13 +629,13 @@ namespace GuardsDigital.Application.Bots
                             .Select(value => value.Amount).DefaultIfEmpty(0).Max();
                         if (nearest != int.MaxValue && nearest > 1)
                         {
-                            delta += CommitMovementBonus + (Math.Min(distance, nearest) * CommitPrintedValueWeight);
+                            delta += policy.CommitMovement + (Math.Min(distance, nearest) * policy.CommitPrintedValue);
                         }
 
                         break;
                     case ActionKind.Defense:
                         delta += printed.Where(value => value.Channel == PrintedValueChannel.Defense)
-                            .Select(value => value.Amount).DefaultIfEmpty(0).Max() * CommitPrintedValueWeight / 2;
+                            .Select(value => value.Amount).DefaultIfEmpty(0).Max() * policy.CommitPrintedValue / 2;
                         break;
                 }
             }

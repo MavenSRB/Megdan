@@ -92,13 +92,18 @@ namespace GuardsDigital.Presentation.Match
             // staged hands, Levels and coins, and rebuilding would deal them a second time. Every
             // line below this one is identical for a staged and a dealt match, which is the whole
             // design: from here there is nothing sandbox-shaped left.
-            host = MatchHost.Compose(
-                stagedInitialState ??
+            // Milestone 8.35z26. Retained, not just passed: a host-owned practice bot's one-ply
+            // probe needs a SECOND session of the same match to try candidates on, so that a probe can
+            // never damage the match being played (see ShadowSessionBotLookahead). This is the only
+            // description of "the same match" the composition has, and rebuilding it from the scene a
+            // second time would be a second deal.
+            InitialState = stagedInitialState ??
                 new MatchSessionInitialState(
                     scenario,
                     setup,
                     maps,
-                    configuration));
+                    configuration);
+            host = MatchHost.Compose(InitialState);
             session = new LocalDirectorMatchClient(host);
             IsSandbox = stagedInitialState != null;
 
@@ -409,6 +414,18 @@ namespace GuardsDigital.Presentation.Match
         /// consumer that needs the ordered result stream reads it here.
         /// </summary>
         public IMatchHost Host => host;
+
+        /// <summary>
+        /// Milestone 8.35z26. The description this match was composed from, kept so a
+        /// full-information composition can build a throwaway twin of it for a one-ply probe.
+        /// </summary>
+        /// <remarks>
+        /// Two sessions built from one of these are independent, which is a tested property rather
+        /// than an assumption - see
+        /// <c>BotTierTwoTests.TwoSessionsFromOneInitialStateDoNotShareState</c>. If it were ever
+        /// false, a probe would be corrupting the live match through the back door.
+        /// </remarks>
+        public MatchSessionInitialState InitialState { get; }
 
         /// <summary>
         /// Milestone 8.31. The immutable admission tuple of this composition - protocol, build,

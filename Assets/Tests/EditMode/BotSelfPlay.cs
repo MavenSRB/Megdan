@@ -24,7 +24,13 @@ namespace GuardsDigital.Tests.EditMode
         Greedy = 1,
 
         /// <summary>The FOURTEENTH amendment's tier-1 evaluation and policies.</summary>
-        TierOne = 2
+        TierOne = 2,
+
+        /// <summary>
+        /// Tier-2: tier-1's judgment plus a real ply, under the tuned weights, with Ruling 41's
+        /// seeded near-equal pick. Host-owned seats only - see <see cref="BotSeatConductor"/>.
+        /// </summary>
+        TierTwo = 3
     }
 
     /// <summary>
@@ -151,7 +157,14 @@ namespace GuardsDigital.Tests.EditMode
         /// <para>This bench changes one thing: the heroes stay on their own spawns. Both sides get
         /// the same board, and what is left to differ is the play.</para>
         /// </remarks>
-        public static MatchSession CreateSymmetricBench(int lifeCountersPerTeam)
+        public static MatchSession CreateSymmetricBench(int lifeCountersPerTeam) =>
+            new MatchSession(CreateSymmetricBenchInitialState(lifeCountersPerTeam));
+
+        /// <summary>
+        /// The bench's initial state on its own, so that a caller can compose a <c>MatchHost</c> over
+        /// it instead of a bare session - which is what the host-owned conductor plays through.
+        /// </summary>
+        public static MatchSessionInitialState CreateSymmetricBenchInitialState(int lifeCountersPerTeam)
         {
             var configuration = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
             var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
@@ -177,7 +190,7 @@ namespace GuardsDigital.Tests.EditMode
                 map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
                 Array.Empty<Core.Obstacles.ObstacleOccupancy>());
-            return new MatchSession(new MatchSessionInitialState(scenario, setup, new[] { map }));
+            return new MatchSessionInitialState(scenario, setup, new[] { map });
         }
 
         public static BotSelfPlayResult Play(
@@ -186,7 +199,12 @@ namespace GuardsDigital.Tests.EditMode
             int maximumCommands,
             Func<HeroId, BotTier> tierForHero,
             bool useLookahead = false,
-            BotPolicyFamilies families = BotPolicyFamilies.All)
+            BotPolicyFamilies families = BotPolicyFamilies.All,
+            Func<IMatchSession> shadowFactory = null,
+            BotEvaluationWeights weights = null,
+            int nearEqualBand = BotPolicy.NearEqualBand,
+            int lookaheadCandidateCap = BotPolicy.LookaheadCandidateCap,
+            BotPolicyWeights policy = null)
         {
             if (session == null) throw new ArgumentNullException(nameof(session));
             if (tierForHero == null) throw new ArgumentNullException(nameof(tierForHero));
@@ -197,7 +215,17 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             var random = new DeterministicBotRandom(seed);
-            var lookahead = useLookahead ? new SessionBotLookahead(session) : null;
+            var vector = weights ?? BotEvaluationWeights.Default;
+
+            // The SHADOW probe is what tier-2 ships (see ShadowSessionBotLookahead's remarks: a probe
+            // must never be able to damage the match it is advising on). Measuring the live-session
+            // probe and shipping the shadow would be the probe-fidelity mistake the 8.35u and 8.35g
+            // notes both record, so when a factory is supplied the measurement uses the shipped one.
+            var lookahead = !useLookahead
+                ? null
+                : shadowFactory != null
+                    ? (IBotLookahead)new ShadowSessionBotLookahead(session, shadowFactory, vector)
+                    : new SessionBotLookahead(session, vector);
             var ticks = new Dictionary<BotTier, long>();
             var counts = new Dictionary<BotTier, int>();
             foreach (BotTier tier in Enum.GetValues(typeof(BotTier)))
@@ -229,7 +257,9 @@ namespace GuardsDigital.Tests.EditMode
                 var tier = decidingHero.IsDefined ? tierForHero(decidingHero) : BotTier.RandomLegal;
 
                 stopwatch.Restart();
-                var chosen = Choose(tier, candidates, session.Projection, decidingHero, random, lookahead, families);
+                var chosen = Choose(
+                    tier, candidates, session.Projection, decidingHero, random, lookahead, families,
+                    vector, nearEqualBand, lookaheadCandidateCap, policy);
                 stopwatch.Stop();
                 ticks[tier] += stopwatch.ElapsedTicks;
                 counts[tier]++;
@@ -255,7 +285,9 @@ namespace GuardsDigital.Tests.EditMode
                     }
 
                     candidates = remaining;
-                    chosen = Choose(tier, candidates, session.Projection, decidingHero, random, lookahead, families);
+                    chosen = Choose(
+                        tier, candidates, session.Projection, decidingHero, random, lookahead, families,
+                        vector, nearEqualBand, lookaheadCandidateCap, policy);
                     if (!session.Execute(chosen).Accepted)
                     {
                         stalled = true;
@@ -294,12 +326,25 @@ namespace GuardsDigital.Tests.EditMode
             HeroId decidingHero,
             IBotRandom random,
             IBotLookahead lookahead,
-            BotPolicyFamilies families)
+            BotPolicyFamilies families,
+            BotEvaluationWeights weights,
+            int nearEqualBand,
+            int lookaheadCandidateCap,
+            BotPolicyWeights policy)
         {
             switch (tier)
             {
+                case BotTier.TierTwo:
+                    return BotPolicy.SelectTierTwo(
+                        candidates, readModel, decidingHero, random, lookahead, families,
+                        weights, nearEqualBand, lookaheadCandidateCap, policy) ??
+                        candidates[random.Next(candidates.Count)];
                 case BotTier.TierOne:
-                    return BotPolicy.SelectTierOne(candidates, readModel, decidingHero, random, lookahead, families) ??
+                    // THE CONTROL, and it is handed no lookahead ON PURPOSE. Tier-1 is the brain that
+                    // ships to a network seat, where no ply is available at all; a control measured
+                    // with one would be a comparison against a bot nobody runs, and the margin it
+                    // produced would be a fiction.
+                    return BotPolicy.SelectTierOne(candidates, readModel, decidingHero, random, null, families) ??
                         candidates[random.Next(candidates.Count)];
                 case BotTier.Greedy:
                     return BotPolicy.SelectGreedy(candidates, readModel, decidingHero, random) ??
@@ -347,15 +392,23 @@ namespace GuardsDigital.Tests.EditMode
         /// a statement about the brains rather than about which hero drew which card.
         /// </summary>
         public static Func<HeroId, BotTier> ByTeam(
-            MatchParticipants participants, TeamId tierOneTeam, BotTier opponent)
+            MatchParticipants participants, TeamId tierOneTeam, BotTier opponent) =>
+            ByTeam(participants, tierOneTeam, BotTier.TierOne, opponent);
+
+        /// <summary>
+        /// The general form: <paramref name="subject"/> plays <paramref name="subjectTeam"/> and
+        /// <paramref name="opponent"/> plays everyone else.
+        /// </summary>
+        public static Func<HeroId, BotTier> ByTeam(
+            MatchParticipants participants, TeamId subjectTeam, BotTier subject, BotTier opponent)
         {
             if (participants == null) throw new ArgumentNullException(nameof(participants));
             return heroId =>
             {
                 try
                 {
-                    return participants.GetTeamForHero(heroId).Id.Equals(tierOneTeam)
-                        ? BotTier.TierOne
+                    return participants.GetTeamForHero(heroId).Id.Equals(subjectTeam)
+                        ? subject
                         : opponent;
                 }
                 catch (Exception)
@@ -373,7 +426,7 @@ namespace GuardsDigital.Tests.EditMode
             bool stalled,
             Dictionary<BotTier, long> ticks,
             Dictionary<BotTier, int> counts,
-            SessionBotLookahead lookahead,
+            IBotLookahead lookahead,
             List<BotSelfPlayRefusal> refusals) =>
             new BotSelfPlayResult(
                 seed,
@@ -384,7 +437,21 @@ namespace GuardsDigital.Tests.EditMode
                 stalled,
                 ticks,
                 counts,
-                lookahead?.SimulatedPlies ?? 0,
+                SimulatedPliesOf(lookahead),
                 refusals);
+
+        /// <summary>
+        /// The ply count off whichever probe was used. Not on <see cref="IBotLookahead"/>, because a
+        /// count of simulations is measurement scaffolding and the interface is a capability.
+        /// </summary>
+        public static int SimulatedPliesOf(IBotLookahead lookahead)
+        {
+            if (lookahead is ShadowSessionBotLookahead shadow)
+            {
+                return shadow.SimulatedPlies;
+            }
+
+            return lookahead is SessionBotLookahead live ? live.SimulatedPlies : 0;
+        }
     }
 }

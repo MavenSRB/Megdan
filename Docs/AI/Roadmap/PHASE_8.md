@@ -239,6 +239,36 @@ Non-goals: no strategy-backend change and no new seam - the 8.19a binding alread
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z25-play-combat-reflexes-and-leaping-strike-in-their-own-printed-reading-order-completion-evidence).
 
+### [x] 8.35z26 Give the practice bots a one-ply lookahead, in the one place full information already exists
+
+Phase B of the FOURTEENTH amendment's line of work, authorized separately by the user on 2026-09-06 ("Yes, go with option 2"), scoped to "host-owned seats where the process holds full information" and gated on milestone 8.35z23's snapshot round-trip corrective, because the lookahead's whole mechanism is capture-and-restore. Milestone 8.35z22 established that the commissioned lookahead **cannot** ship to a network seat without letting a bot see six hands; this milestone builds the one vehicle where that objection does not apply.
+
+Observable outcome: a solo player can fill seats with practice bots that weigh the position and, at a host-owned seat, try a candidate on a throwaway copy of the match before choosing. The bots still submit only commands their own seat was already offered, and a network-seated driver is untouched.
+
+**THE VEHICLE HAD TO BE BUILT, because no seat was host-owned.** Both shipped practice-bot milestones seat bots by spawning another copy of the executable that dials the host and holds an ordinary keyed network seat. What holds full information is the host process itself, and the local seat-less practice composition where every seat is host-owned. `BotSeatConductor` plays seats from inside that process. It takes no new authority: it chooses only among its own seat's `AuthorizedCommands` and submits through the same envelope a remote seat's submission arrives in. **The boundary for ACTIONS is untouched; only the boundary for THINKING moved, and it moved to a place already inside it.**
+
+**The probe is a SHADOW, and that is a measured hazard rather than caution.** The obvious implementation mutates the live session and puts it back. Milestone 8.35z23 recorded that `RestoreSnapshot`'s own rollback re-deserializes the pre-image, so an unreadable payload throws again, uncaught, and leaves the session damaged rather than refusing. On a bench that costs a run; in a solo player's live practice match it costs the match. `ShadowSessionBotLookahead` captures the live position, restores a THROWAWAY session to it, executes the candidate there and discards it. The live match is never executed against.
+
+**THE PLY IS WORTH EXACTLY NOTHING HERE, AND THAT IS THE MILESTONE'S MOST USEFUL RESULT.** Two independent instruments say so: ply-on and ply-off head-to-heads returned byte-identical results over sixteen matches, and a direct count found the ply changed the chosen command in **0 of 301 decisions** on a walk where 237 executed commands did move the evaluation. The cause is the authority's own published previews: they already ARE one-ply results computed by the rules, so where a command has a visible consequence the preview prices it and the ply agrees, and where it has none (`StartAction`, `CommitCard`, `ChooseAttackTarget`) the ply measures nothing. It ships wired, capped and ON because the amendment commissioned it and it costs about 1% of the pace it runs at - **with no claim that it helps**, and a standing diagnostic that will say when it starts to. If the ply is wanted to earn its latency, the lever is a deeper ply that runs to the end of the acting hero's turn, not a better evaluation.
+
+**EIGHT OF THE NINE EVALUATION WEIGHTS CANNOT CHANGE WHAT THE BOT DOES.** A candidate scores `standing + delta`, and `standing` is the same number for every candidate of one decision, so it cancels. Scaling three of them to 0, 0.5x, 2x and 4x returned exactly 50.0% every time - the same command chosen every time, not noise cancelling. The whole shipped margin comes from ONE policy weight, `CommitPrintedValue` 6 to 0, and the reading is narrow: at a commitment, whether the action can REACH something decides the turn and the size of the printed number does not. Two rival vectors looked better on tuning seeds and failed out of sample, including the pair assembled together, so the held-out discipline is what stopped the wrong vector shipping.
+
+**Ruling 41's near-equal band was sized BY PLAY, and the variety it was meant to buy was already there.** A first constant chosen by taste cost 12.5 points and was briefly corrupting the instrument that sized everything else. The shipped band is the largest value not measurably below the control. The mirror bench already varies by seed at band 0, so the band is implemented as directed and sized to be as close to free as measurement allows, and it is not sold as a fix for a problem this milestone could not reproduce.
+
+Acceptance checks:
+
+- Tier-2, in the shipped configuration, is not worse than the tier-1 brain it improves on, measured on held-out seeds no sweep ever read, from both sides.
+- Two sessions built from one initial state do not share state, so the shadow probe cannot corrupt the live match through the back door.
+- A movement ply moves the geometry terms and no others, asserted over the evaluation's own explanation rather than claimed.
+- The ply's contribution is counted rather than assumed, and the count is reported whatever it says.
+- Evaluation terms outside a delta cannot change the chosen command, pinned as a test so a later reader is told rather than made to rediscover it.
+- The host-owned conductor refuses a seat-scoped composition outright, so the network privacy boundary cannot be reached by misconfiguration.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass, the harness moving 2,163 to 2,175 for this milestone's twelve new cases and nothing else.
+
+Non-goals: no networked-bot lookahead, which is an authority-model change the amendment explicitly excludes; no change to the spawned network seat driver, which stays pinned to its phase-A vectors; no difficulty setting, no shipped single-player mode, and no product-AI claim; no deeper ply, recorded as the follow-up if the mechanism is ever wanted to pay; and no claim that the one-ply lookahead currently improves play, because it is measured not to.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z26-give-the-practice-bots-a-one-ply-lookahead-in-the-one-place-full-information-already-exists-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

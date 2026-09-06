@@ -43,25 +43,20 @@ namespace GuardsDigital.Application.Bots
         public const int ProximityCap = 10;
 
         /// <summary>
-        /// The weights, named rather than sprinkled through the arithmetic so that tuning is one
-        /// edit in one place and a phase-B tuner has something to search over.
+        /// The weights used when a caller names none. Tier-2 moved them out of this file into
+        /// <see cref="BotEvaluationWeights"/> so that a tuner can construct a vector instead of
+        /// rebuilding, which is phase A's own third recommendation.
         /// </summary>
         /// <remarks>
         /// The ordering of magnitudes is the design, not the exact values: Life counters are the win
         /// condition and dominate everything (a single Life is worth more than any board position);
         /// a hero standing on the board rather than awaiting respawn is next; progression and minion
         /// pressure sit in the middle; geometry and hand size are tiebreak-scale nudges that only
-        /// decide between positions the bigger terms already call equal.
+        /// decide between positions the bigger terms already call equal. <b>A sweep is free to move
+        /// the numbers and is not free to move that ordering into nonsense</b> - see the bounds
+        /// <c>BotTierTwoTuning</c> searches within, which exist to keep the tuner inside it.
         /// </remarks>
-        public const int TeamLifeWeight = 1000;
-        public const int BoardPresenceWeight = 30;
-        public const int LevelAdvantageWeight = 40;
-        public const int OwnLevelWeight = 25;
-        public const int OwnCoinWeight = 6;
-        public const int MinionPressureWeight = 12;
-        public const int EngagementProximityWeight = 4;
-        public const int ThreatAdjacencyWeight = 15;
-        public const int OwnHandSizeWeight = 5;
+        public static BotEvaluationWeights DefaultWeights => BotEvaluationWeights.Default;
 
         /// <summary>
         /// Rulebook p.13's Life-counter price of a hero Defeat, read from the only input a seat can
@@ -99,7 +94,16 @@ namespace GuardsDigital.Application.Bots
         /// build to complain about its own inputs is worse than a bot that shrugs and plays on.
         /// </summary>
         public static int Evaluate(IMatchReadModel readModel, HeroId perspectiveHeroId) =>
-            Explain(readModel, perspectiveHeroId).Total;
+            Evaluate(readModel, perspectiveHeroId, null);
+
+        /// <summary>
+        /// The same score under a named weight vector. <c>null</c> means
+        /// <see cref="BotEvaluationWeights.Default"/>, so a caller that does not care about tuning
+        /// reads exactly what the shipped bot reads.
+        /// </summary>
+        public static int Evaluate(
+            IMatchReadModel readModel, HeroId perspectiveHeroId, BotEvaluationWeights weights) =>
+            Explain(readModel, perspectiveHeroId).TotalUnder(weights ?? BotEvaluationWeights.Default);
 
         /// <summary>
         /// The same score with its terms itemised. This is what the tests assert against and what a
@@ -310,15 +314,25 @@ namespace GuardsDigital.Application.Bots
 
         public int OwnHandSize { get; }
 
-        public int Total =>
-            (TeamLifeAdvantage * BotEvaluation.TeamLifeWeight) +
-            (BoardPresence * BotEvaluation.BoardPresenceWeight) +
-            (LevelAdvantage * BotEvaluation.LevelAdvantageWeight) +
-            (OwnLevel * BotEvaluation.OwnLevelWeight) +
-            (OwnCoins * BotEvaluation.OwnCoinWeight) +
-            (MinionPressure * BotEvaluation.MinionPressureWeight) +
-            (EngagementProximity * BotEvaluation.EngagementProximityWeight) -
-            (AdjacentThreats * OwnDefeatLifeCost * BotEvaluation.ThreatAdjacencyWeight) +
-            (OwnHandSize * BotEvaluation.OwnHandSizeWeight);
+        /// <summary>The score under the shipped weights.</summary>
+        public int Total => TotalUnder(BotEvaluationWeights.Default);
+
+        /// <summary>
+        /// The score under <paramref name="weights"/>; <c>null</c> means the shipped vector. Kept as
+        /// a method rather than folded into <see cref="Total"/> because a tuner varies the weights
+        /// over ONE breakdown - the terms are what the position is, the weights are what they are
+        /// worth, and re-deriving the terms per candidate vector would make a sweep quadratic for
+        /// nothing.
+        /// </summary>
+        public int TotalUnder(BotEvaluationWeights weights) =>
+            (TeamLifeAdvantage * weights.TeamLife) +
+            (BoardPresence * weights.BoardPresence) +
+            (LevelAdvantage * weights.LevelAdvantage) +
+            (OwnLevel * weights.OwnLevel) +
+            (OwnCoins * weights.OwnCoin) +
+            (MinionPressure * weights.MinionPressure) +
+            (EngagementProximity * weights.EngagementProximity) -
+            (AdjacentThreats * OwnDefeatLifeCost * weights.ThreatAdjacency) +
+            (OwnHandSize * weights.OwnHandSize);
     }
 }
