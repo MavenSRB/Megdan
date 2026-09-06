@@ -138,7 +138,11 @@ namespace GuardsDigital.Tests.EditMode
                 "Watch How I Soar's first bullet places at exactly the printed Range.");
             Assert.That(
                 CapabilitiesOf(MisaCardContent.WatchHowISoar),
-                Does.Not.Contain(SyntheticPlacementCapabilities.PlaceInRangeV1),
+                // Has.No.Member and not Does.Not.Contain: over a collection of a value type, the
+                // latter binds to NUnit's STRING overload under Unity's compiler and fails the Edit
+                // Mode build while the single-assembly dotnet harness compiles it happily. Recorded
+                // at milestone 8.35z31 and hit again here - the harness is structurally blind to it.
+                Has.No.Member(SyntheticPlacementCapabilities.PlaceInRangeV1),
                 "The disk-shaped Place is the reading RULING 1 rejected.");
 
             Assert.That(
