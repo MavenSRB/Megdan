@@ -6,8 +6,7 @@ using UnityEngine.UIElements;
 namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
-    /// Milestone 8.35z19 (a PLACEHOLDER id - the real milestone number is assigned at
-    /// integration; it is deliberately NOT bare "8.35x", which the button-system pass already owns).
+    /// Milestone 8.35z19.
     ///
     /// <para><b>Why this exists.</b> Dozens of call sites across this HUD set <c>VisualElement.tooltip</c>
     /// - the greyed-control reasons in <see cref="ActionUnavailabilityLabels"/>, the TIEBREAKER rail

@@ -142,7 +142,7 @@ namespace GuardsDigital.Presentation.Match
             DiagnosticView = new DiagnosticLogUnityView();
             MinionChoiceView = new MinionChoiceUnityView();
             HeroOverviewsView = new HeroOverviewsUnityView();
-            // Milestone 8.35x (the TENTH amendment's drop-down). Composed for both the Director and a
+            // Milestone 8.35z7 (the TENTH amendment's drop-down). Composed for both the Director and a
             // seat, unlike the Director-only diagnostics beside it: the match log's own contract is
             // "the same log for everyone", so there is no scoped-out composition for it to skip.
             MatchLogView = new MatchLogUnityView();
@@ -153,7 +153,7 @@ namespace GuardsDigital.Presentation.Match
                 client, HeroOverviewsView, () => HandsPresenter.ViewedHeroId);
             RoundPresenter = new RoundActionPresenter(client, RoundView, Seat?.HeroId ?? default);
 
-            // Milestone 8.35x (SIXTH amendment part b, "old M7"). Composed independently of
+            // Milestone 8.35z8 (SIXTH amendment part b, "old M7"). Composed independently of
             // MatchFeatureCoordinator/RoundActionPresenter, deliberately: the fizzle notice reads
             // the seat-public match log directly rather than through RoundActionViewModel, which
             // keeps this milestone's edits out of the file a parallel milestone is reworking.
@@ -475,7 +475,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35x. Every presenter whose output depends on WHICH SEAT is looking, in one
+        /// Milestone 8.35z4. Every presenter whose output depends on WHICH SEAT is looking, in one
         /// list, so that "who must be told the admitted seat's hero" has exactly one answer.
         ///
         /// <para>The composition order this exists for is unavoidable: a networked client's seat is
@@ -493,7 +493,7 @@ namespace GuardsDigital.Presentation.Match
             };
 
         /// <summary>
-        /// Milestone 8.35x. Binds one hero as the viewer identity of EVERY seat-scoped presenter at
+        /// Milestone 8.35z4. Binds one hero as the viewer identity of EVERY seat-scoped presenter at
         /// once. It refuses loudly rather than partially: a hero absent from this build's setup is
         /// the same condition <c>DirectorHandsPresenter.SetHomeHero</c> has always refused, and a
         /// half-bound HUD - some panels reading as the seat, others as the Director - is precisely
@@ -715,7 +715,7 @@ namespace GuardsDigital.Presentation.Match
         public AttackSpotlightPresenter SpotlightPresenter { get; }
 
         /// <summary>
-        /// Milestone 8.35x (the TENTH amendment's drop-down). The narration bar's match log and its
+        /// Milestone 8.35z7 (the TENTH amendment's drop-down). The narration bar's match log and its
         /// presenter - composed for every viewer, Director included, since the contract's own log is
         /// the same for everyone.
         /// </summary>
@@ -725,7 +725,7 @@ namespace GuardsDigital.Presentation.Match
         public DirectorHandsPresenter HandsPresenter { get; }
         public RoundActionPresenter RoundPresenter { get; }
 
-        /// <summary>Milestone 8.35x. The fizzle notice's own presenter; see its own doc for why.</summary>
+        /// <summary>Milestone 8.35z8. The fizzle notice's own presenter; see its own doc for why.</summary>
         public FizzleNoticePresenter FizzleNoticePresenter { get; }
         public UndoRestartPresenter UndoRestartPresenter { get; }
         public DiagnosticLogPresenter DiagnosticPresenter { get; }

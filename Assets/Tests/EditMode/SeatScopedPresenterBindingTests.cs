@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 8.35x. The seat-scoped presenters' viewer identity, and the fan-out that binds it.
+    /// Milestone 8.35z4. The seat-scoped presenters' viewer identity, and the fan-out that binds it.
     ///
     /// <para><b>What actually broke, and why nothing caught it.</b> A networked client cannot know
     /// its hero when the scene composes: the lobby grants the seat afterwards. So

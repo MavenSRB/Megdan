@@ -82,9 +82,14 @@ namespace GuardsDigital.Tests.EditMode
                     // Repeats an Attack: the family this milestone judges.
                     "arien-violent-torrent|primary-attack|Attack|DifferentTarget",
 
-                    "sabina-marching-orders|primary-skill|Skill|DifferentTarget",
-                    "sabina-path-to-victory|primary-skill|Skill|DifferentTarget",
-                    "sabina-troop-movement|primary-skill|Skill|DifferentTarget",
+                    // Unbound since the phantom-declaration removal. All three printed faces read
+                    // "May repeat once / up to two times" and stop, so nothing in the text asks for a
+                    // different minion; the binding they used to declare described no printed clause
+                    // and derived no exclusion (only Attacks derive one). Free choice - the same
+                    // minion again included - is what these cards say.
+                    "sabina-marching-orders|primary-skill|Skill|Unbound",
+                    "sabina-path-to-victory|primary-skill|Skill|Unbound",
+                    "sabina-troop-movement|primary-skill|Skill|Unbound",
                     "wasp-center-of-mass|primary-skill|Skill|SameTarget",
                     "wasp-control-gravity|primary-skill|Skill|SameTarget",
                     "wasp-lift-up|primary-skill|Skill|SameTarget",

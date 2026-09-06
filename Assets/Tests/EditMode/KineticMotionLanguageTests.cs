@@ -462,7 +462,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 HudAmbientLife.Qualifies(new Button { name = "gd-end-turn" }), Is.False,
-                "Milestone 8.35x's button pass already animates every control; easing one in would " +
+                "Milestone 8.35z8's button pass already animates every control; easing one in would " +
                 "overwrite its hover with a fade.");
 
             Assert.That(

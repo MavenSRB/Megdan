@@ -169,7 +169,7 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchClient session;
         private readonly IKineticCueView view;
-        // Milestone 8.35x: NOT readonly, for the reason `ISeatScopedPresenter` states - a networked
+        // Milestone 8.35z4: NOT readonly, for the reason `ISeatScopedPresenter` states - a networked
         // client is composed before its seat exists, so this is bound a second time at admission.
         private HeroId viewerHeroId;
         private readonly KineticCueStream stream = new KineticCueStream();
@@ -194,7 +194,7 @@ namespace GuardsDigital.Presentation.Match
         public HeroId HomeHeroId => viewerHeroId;
 
         /// <summary>
-        /// Milestone 8.35x. Binds the viewer identity the board-mark pulse is branched on once the
+        /// Milestone 8.35z4. Binds the viewer identity the board-mark pulse is branched on once the
         /// lobby admits the seat. Until this existed a networked client pulsed its board marks on
         /// the Director's "everything is mine" branch for the whole session.
         /// </summary>

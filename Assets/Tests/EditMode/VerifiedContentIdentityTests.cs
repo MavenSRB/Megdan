@@ -28,7 +28,13 @@ namespace GuardsDigital.Tests.EditMode
             // only then ask whom he takes. The other five pins are byte-identical, which is the
             // measurement that says the reorder reached his content and nobody else's.
             new IdentityPin("brogan", "brogan-8-35p-rev-1", "d546a8e4744ea2b400e638ad29e626d1fc64f089fbe850e92524730830a152f9"),
-            new IdentityPin("sabina", "sabina-8-35l-rev-1", "2518211c8e851b8ad65ba538560c50772033f341a995a597a714727eb2517449"),
+            // The phantom-declaration removal moved Sabina alone: Troop Movement, Marching Orders and
+            // Path to Victory each dropped a RepeatTargetBinding.DifferentTarget that no printed face
+            // supports and that no code path could enforce on a Skill. The other seven pins are
+            // byte-identical, which is the measurement that says the removal reached her content and
+            // nobody else's - and the digest moving at all is what says a declaration is part of the
+            // content's identity even when it changes no behaviour.
+            new IdentityPin("sabina", "sabina-8-35z44-rev-1", "cde457981c27b328481dda578e6eef9d06ee818983ad44e369ce8b130d2129d1"),
             // Milestone 8.35z20 corrected Blend Into Shadows' secondary icon (Defense 2, not Movement
             // 2 - the one-icon slot-position trap; see Docs/AI/Rules/HERO_TIGERCLAW.md's
             // settled-corrections block), which is the whole reason this digest moved.

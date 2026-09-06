@@ -782,7 +782,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------
-        // Milestone 8.35x (the event-channel follow-up). The FOUR arms 8.35m deferred, now
+        // Milestone 8.35z7 (the event-channel follow-up). The FOUR arms 8.35m deferred, now
         // derivable through IMatchReadModel.DecisionOwner (milestone 8.35r) - the same non-goal
         // proved above FLIPS to these positive assertions deliberately, per the milestone's own
         // instruction: the gap that test proved is exactly what closes here.
@@ -940,7 +940,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 8.35x. Overrides the standing decision's public owner directly - the synthetic
+        /// Milestone 8.35z7. Overrides the standing decision's public owner directly - the synthetic
         /// composition every hero-scope case above the four new arms uses, the same way
         /// <see cref="ContractReadModel"/> overrides the owner's private half.
         /// </summary>
@@ -955,7 +955,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 8.35x. Overrides the acting hero directly, for the acting-hero arm's cases - the
+        /// Milestone 8.35z7. Overrides the acting hero directly, for the acting-hero arm's cases - the
         /// same public, unscoped fact <see cref="IMatchReadModel.SelectedActor"/> the board's own
         /// acting-hero marker already reads.
         /// </summary>
@@ -971,7 +971,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------
-        // Milestone 8.35x (the TENTH amendment's drop-down). MatchLogFormatter, MatchLogPresenter,
+        // Milestone 8.35z7 (the TENTH amendment's drop-down). MatchLogFormatter, MatchLogPresenter,
         // and MatchLogUnityView - the log the narration bar unrolls.
         // -------------------------------------------------------------------------------------
 
@@ -1920,7 +1920,7 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// THE SECOND DEFECT THE FIRST LIVE INTERNET PLAYTEST FOUND: "first end turn clears the
-        /// card, second ends the turn". Milestone 8.35x.
+        /// card, second ends the turn". Milestone 8.35z4.
         ///
         /// <para><b>The dimension this whole matrix was missing.</b> Every case above - and every
         /// other <c>SubmitEndTurn</c> assertion in the repository - drives a SYNCHRONOUS client,
@@ -4780,7 +4780,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------
-        // Milestone 8.35x - THE EMPTY WAITING-SET MATRIX.
+        // Milestone 8.35z4 - THE EMPTY WAITING-SET MATRIX.
         //
         // The first live internet playtest crashed the round panel within minutes, on every
         // refresh, for the rest of the match:

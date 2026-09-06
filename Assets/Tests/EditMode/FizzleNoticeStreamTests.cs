@@ -12,7 +12,7 @@ using NUnit.Framework;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 8.35x (the SIXTH amendment's deferred part b, "old M7"): the acknowledge-to-
+    /// Milestone 8.35z8 (the SIXTH amendment's deferred part b, "old M7"): the acknowledge-to-
     /// continue fizzle notice. <see cref="FizzleNoticeStream"/> is exercised directly, the way
     /// <c>KineticCueTests</c> exercises <c>KineticCueStream</c> - a stubbed message composer and
     /// hand-built <see cref="MatchLogEntry"/> rows, no session and no view, so each rule (emit

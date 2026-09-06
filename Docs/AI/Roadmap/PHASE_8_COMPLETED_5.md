@@ -261,3 +261,88 @@ Acceptance checks:
 Non-goals: no staging EDITOR - this milestone reaches and reports a staging, it does not author one; no change to what 8.35z17 stages or refuses; no schema move, no wire move, and no lobby surface.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z18-reach-the-sandbox-from-a-launch-flag-and-say-on-screen-which-board-it-staged-completion-evidence).
+
+### [x] 8.35z35 Offer a modal option that would do nothing, and grey only one that cannot be taken
+
+The corrective [rules-ledger row 23](../RULES_LEDGER.md#open-source-and-rules-questions) recorded as open and roster-wide at milestone 8.35z33, and deliberately kept out of a hero's content diff because it reaches every `Choose one` face in the build.
+
+Observable outcome: on a modal whose bullet would achieve nothing, a player may take that bullet - the card is not spent on a stop, the node completes, and the rest of the printed text resolves. A bullet that genuinely cannot be performed is still greyed and still names its blocker.
+
+**The whole change is which verdict refuses an option.** The feasibility walk has answered three ways since milestone 6.5ac - empty, performable, blocked - and the search for unperformable options collapsed two of them by refusing everything that was not performable. It now refuses the blocked verdict alone. The walk itself is untouched, so every verdict is derived exactly as before, and so are its other two callers: one asks whether an action is worth offering at all and the other whether a confirm-or-decline is worth opening. **Those ask whether a prompt should exist; this asks which answers an existing prompt may carry**, and conflating the two questions is the whole defect.
+
+**The split lands on the printed word, which is what says it is a transcription rather than a preference.** The refusing node's own failure policy decides the tier, and that policy is p.10's mandatory-versus-optional distinction. Every arm that changes prints `may` or `if able`; every arm that stays greyed prints a mandatory step. Measured over all eleven modal families in the build rather than argued: four arms move - Ursafar's optional retrieve, Whisper's optional retrieve, Whisper's Lesser Evil price bullet and the showcase Blue Feint's return-marker mode - and six families do not move at all, because each terminates in a mandatory step.
+
+**Red Bombard, the card the ledger row was measured on, does not move - and that was verified from the composition rather than from the wording.** Both of its modes terminate in mandatory steps, so both are blocked rather than empty. Row 11's scope is amended; its verdict on that card stands exactly as recorded.
+
+**The teeth are in the all-empty mandatory case.** Milestone 6.5ae's stop ends the whole action, so a later ordered step of the same card never ran. Under this ruling the bullet is taken, applies nothing, and the sequence carries on - the difference between a card that did nothing here and a card that stopped here. The one position that could have stranded a player is a node needing more selections than it offers, and that is closed by the content rather than by an assumption: no `Choose` in the build declares a minimum above one, and the split only ever adds selectable options.
+
+**A latent persistence bug closes for free.** A legitimately selected empty option can now round-trip a snapshot; the restore used to refuse as malformed a state the live session had just produced.
+
+**The Sabina half of row 23 was answered by reading the face, and its implied fix was backwards.** Path to Victory prints no different-target clause of any kind, so the shipped declaration is unsupported by the card and inert at runtime, the live behaviour already matches the text, and routing the exclusion into Skill repeats would have introduced a rules defect. Nothing changed; the cleanup is queued onto her next content revision, where it costs a revision bump, an identity-digest move and the artwork catalog.
+
+Acceptance checks:
+
+- An option that can be taken and applies nothing is offered and selectable beside a performable one; an option a mandatory step blocks is still greyed with its blocker named; a mixed node greys only the blocked arm and offers no stop.
+- Choosing an empty option completes the resolution, records the node applied, and lets an ordered step after the modal run - the step 6.5ae's stop would have skipped.
+- The declaration that puts the canonical opponent-chosen modal on the empty side of the line is pinned, so a later content edit cannot silently delete the escape hatch.
+- Rules-ledger row 23 is answered and row 11's scope amended without disturbing its Red Bombard verdict.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision.
+
+Non-goals: no schema and no wire movement, no content edited and no identity digest moved, and no "this would do nothing" hint on the offered bullet - the blocker channel exists for blocked arms, and whether an empty one should say anything is a design question this corrective deliberately did not answer.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z35-offer-a-modal-option-that-would-do-nothing-and-grey-only-one-that-cannot-be-taken-completion-evidence).
+
+### [x] 8.35z36 Build the hero selection stage and resolve a token's team at runtime
+
+Rulebook p.22's Advanced Hero Selection as session vocabulary, the printed line-up generalised into a seat-indexed composition, and the one team-baked surface in the build made runtime. It ships the vocabulary, the composition and the proof; the seam that carries a pick to a host is the milestone after it.
+
+Observable outcome: nothing a player can see yet, deliberately. A lobby in which you pick a hero and the match ignores it is worse than no lobby control at all, so this milestone lands what makes the wiring safe and 8.35z37 lands the wiring.
+
+**p.22 was transcribed before anything was designed, and it changed the design.** The page prints six methods, and printed All Pick is SEQUENTIAL rather than simultaneous - players pick "starting with the team showing on the Tie Breaker coin and alternating between teams". The order itself is load-bearing, and it is implemented as printed. Only the order *within* a team is unprinted, and that half is stated once as lobby seat order, on exactly the ruling 8.25 made about which dashboard goes to which player. The other five methods are declared members that refuse construction rather than silently behaving like All Pick, and p.22's complexity filter is recorded as an absence: the rating is printed on the hero Profile cards, which this build has never modelled.
+
+**The duplicate rule is printed, not inferred.** All Pick picks "out of all available heroes" from one Profile deck holding one card per hero, so a hero somebody has taken is not available to anybody. It is refused at both doors - the stage, so a player is told at pick time, and the line-up itself, so no other path into a composed board can produce what the stage refuses.
+
+**The load-bearing structural change is that a spawn slot became a seat fact.** Each hero row used to carry its own spawn point, because six heroes sat on six marked points; a selectable roster breaks that, since twelve registered heroes still play on three marked points a side. Which point a hero stands on is now a function of which seat of its team it was selected into, never of which hero it is. p.6 step 9 says only to place the miniatures on the marked spaces of their own Throne Zone - the same gap 8.35z16 answered for a short team, answered one step more generally.
+
+**The team-colour audit found exactly one baked surface, and the rest needed proving rather than fixing.** Board piece, token rim, generated prism, HUD team face and rails, lobby rows and minion art all already read the authoritative team side and none keys off hero identity. The exception is the token artwork, two prepared per-team files. A team-neutral face now states its team entirely in a widened ring at an unchanged outer radius, and the ring rather than a tint because the ring is existing vocabulary and already the only derived part of a token, while a tint would dim the white background the directive asks for.
+
+Acceptance checks:
+
+- Composing the printed line-up reproduces the shipped official composition element for element - hero id, content id, display name, spawn point, space, waves, lives, minions - on all four printed formats, and reproduces the official participants' teams, players and hero-to-player ownership.
+- The pick order alternates between teams from the Tie Breaker coin's team, and a duplicate hero is refused both at the stage and at the line-up.
+- Every shipped content id on both teams resolves to its team-baked face at the transcribed radii, and a baked face wins even where a neutral face is also prepared.
+- The registered roster is derived from the printed line-up table rather than counted, so no fixture must be edited by a later dealing milestone.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision.
+
+Non-goals: no wire movement and no schema movement; no selection surface and no pick reaching a host, which 8.35z37 owns; the other five p.22 methods declared rather than built; and no official six-player line-up change, which 8.25 owns.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z36-build-the-hero-selection-stage-and-resolve-a-tokens-team-at-runtime-completion-evidence).
+
+### [x] 8.35z37 Let the lobby decide what the match composes, and carry a hero pick to the host
+
+The recomposition seam both deferred lobby controls were waiting on. Milestone 8.35z16 deferred the format picker because the scene composes at load, and 8.35z36 deferred the hero picker for the same reason. One seam unblocks both.
+
+Observable outcome: a host picks the printed setup on the entry form and the board recomposes under it; the six seats pick heroes in p.22's order during the lobby; and the match that starts is the one that was chosen, on every client's screen as well as the host's.
+
+**The wall was deeper than the scene's own composition, and that decided the milestone's shape.** A private session derives its entire admission tuple - format, map and a content digest hashing the dealt configuration - from a composed match, so a host with no composed match has nothing to admit anybody *with*. "Boot with no match, compose when the lobby says to" is therefore unreachable in one step. What ships instead: compose a provisional match at load exactly as today so the lobby can admit, then recompose from the lobby's decisions at the one-way transition out of it. That is only honest because the provisional match is not a guess - with nothing chosen the plan's line-up is setup step 7's printed one, so the provisional match IS the shipped match.
+
+**The proof is byte-identical snapshots rather than a field walk.** A match composed late and a match composed at load produce the same snapshot payload character for character, on all four formats and under both coins, with the coin and the recorded setup seed held equal so the comparison is about timing rather than about the draw. A field-by-field walk was rejected deliberately: it would have to be extended by every later milestone that adds state, which is how such a claim rots. The negative half carries the weight - every equality would also pass if the composer quietly dealt the printed sets and threw the line-up away, so a reversed line-up must move the snapshot, and the seat invariant is asserted against a deliberately shuffled line-up because the printed one would pass even if the seats followed the heroes.
+
+**The format is a pre-hosting decision and the line-up is not, and that asymmetry was forced by existing code.** A session's seats are counted from the format and every live connection, epoch and reconnect capability is keyed by seat, so a format changed after anybody is seated moves the seats out from under them - and the wire already refuses it. A line-up changes no seat at all: same ids, same sides, same order, only the hero column moves.
+
+**The identity tuple is frozen deliberately, and that prevented a defect rather than deferring one.** A client returning under 8.34's reserved-seat reconnect recomputes its own tuple from its own local composition, which knows nothing of anybody's picks. A host republishing an identity derived from a chosen line-up would refuse every reconnect with a content-digest mismatch at a 2v2, where a chosen line-up genuinely deals a different four heroes - and at a 3v3 with today's registered roster every line-up is a permutation of the same set, so the bug would have hidden until either a 2v2 or an eighth dealt hero.
+
+**A shipped defect was found next door and fixed.** The frame codec bounds two wire enums by naming their last member, and the refusal bound still named the member before the one the eleventh amendment appended - so a peer refused for composing a different printed setup had its reject frame discarded as malformed by its own decoder, and was told the host had sent something unreadable instead of which setup mismatched. Both bounds moved, and the guard now enumerates both enums rather than spot-checking, so the next member cannot repeat it.
+
+Acceptance checks:
+
+- A match composed at the lobby's transition is byte-identical to one composed at load on every printed format and under both coins, and a chosen line-up composes a demonstrably different match.
+- A chosen line-up seats exactly the seats the printed one does, asserted against a shuffled line-up, and the Nth hero of a team takes the Nth marked point.
+- The wire is `guards-private-online/10`: one new client-to-host pick message carrying no seat, one refusal code, and two roster facts a client cannot infer. The snapshot schema does not move.
+- Every declared message kind and refusal survives a decode, enumerated rather than sampled.
+- A client recomposes from the roster before its HUD attaches, so no player is left looking at heroes the host is not playing.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision, the lobby journeys included.
+
+Non-goals: the other five p.22 methods; a seeded random filler for empty seats, which belongs with 8.28b's recorded setup seed rather than being improvised; the host-side call that names a bot seat's hero; and white-background token art with a neutral mode for the token preparation tool, which is presentation-scale work owed to the packaging milestone.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z37-let-the-lobby-decide-what-the-match-composes-and-carry-a-hero-pick-to-the-host-completion-evidence).

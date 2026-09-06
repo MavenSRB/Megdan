@@ -651,39 +651,46 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// A SHIPPED-CONTENT OBSERVATION, found while measuring the above and recorded here rather
-        /// than fixed, because it is not Whisper's and not this milestone's to change.
+        /// THE OBSERVATION ABOVE, NOW RESOLVED - and this case is inverted rather than deleted,
+        /// exactly as its own failure message instructed ("update the note above rather than deleting
+        /// the case").
         ///
-        /// <para><b>Sabina's Path to Victory declares <c>DifferentTarget</c> on a Skill with a maximum
-        /// of two, and the engine derives no exclusion for it at all.</b>
-        /// <c>CardActionResolutionAuthority.ExclusionFor</c> yields the completed target only when
-        /// <c>subject.Kind == ActionKind.Attack</c>; for every other action kind it returns the
-        /// undefined target, and that exclusion is the only route a non-<c>SameTarget</c> binding has
-        /// into the repeated instance. So the card's declared "different" appears to be inert, where
-        /// Whisper's two Reds - both Attacks - are enforced but only against the previous
-        /// instance.</para>
+        /// <para><b>What was recorded.</b> Sabina's Troop Movement, Marching Orders and Path to
+        /// Victory declared <c>DifferentTarget</c> on Skills, and the engine derived no exclusion for
+        /// them at all: <c>CardActionResolutionAuthority.ExclusionFor</c> and its card-text twin
+        /// <c>CardTextRepeatExclusionFor</c> both yield the completed target only for
+        /// <see cref="ActionKind.Attack"/>, and that exclusion is the only route a
+        /// non-<c>SameTarget</c> binding has into a repeated instance. The declaration was therefore
+        /// inert.</para>
         ///
-        /// <para>This test pins the measurement, not a verdict: it asserts the shape that produces
-        /// the question. Whoever routes it should read Path to Victory's printed text first - if the
-        /// face prints no "different" at all, the content declaration is what is wrong rather than the
-        /// engine.</para>
+        /// <para><b>How it was resolved, and which way round.</b> The note above said to read the
+        /// printed text first, and the printed text decided it. All three faces read "Move a friendly
+        /// minion in radius 1 space, to a space in radius. May repeat once / up to two times." - no
+        /// "different target" clause on any of them. So the CONTENT was wrong, not the engine: routing
+        /// the exclusion to Skill repeats would have INTRODUCED a rules defect, barring a re-move of
+        /// the same minion that no face bars. The declaration was removed instead, and this case now
+        /// guards the resolved state.</para>
+        ///
+        /// <para><b>Why the guard is worth keeping.</b> A non-Attack repeat declaring a distinct-target
+        /// binding is, on today's engine, a declaration that does nothing - it reads as a rule and is
+        /// not one. If a later hero composes such a node, this fails and forces the question: either
+        /// the face prints the clause and the engine owes it a route, or it does not and the
+        /// declaration is another phantom.</para>
         /// </summary>
         [Test]
-        public void ASkillsDistinctTargetRepeat_HasNoExclusionRoute_Recorded()
+        public void NoSkillRepeat_DeclaresADistinctTargetBindingNothingCanEnforce()
         {
             var skillRepeats = ShippedSets()
                 .SelectMany(EveryRepeatNode)
                 .Where(repeat => repeat.Item1 != ActionKind.Attack && IsDistinctTarget(repeat.Item2))
                 .ToArray();
 
-            Assert.That(skillRepeats, Is.Not.Empty,
-                "If this is now empty the observation has been resolved - update the note above " +
-                "rather than deleting the case.");
             Assert.That(
-                skillRepeats.Any(repeat => repeat.Item2.MaximumRepeats > 1),
-                Is.True,
-                "Sabina's Path to Victory is the instance: a Skill repeat reaching two instances " +
-                "under a binding whose exclusion only Attacks derive.");
+                skillRepeats, Is.Empty,
+                "A repeat of a non-Attack action declares a distinct-target binding, which no code " +
+                "path can enforce - only Attacks derive an exclusion from it. Read the card's " +
+                "printed face: if it prints no 'different target' clause the declaration is a " +
+                "phantom and belongs off the content, which is how Sabina's three were resolved.");
         }
 
         private static IEnumerable<CardDefinition> ShippedSets() =>

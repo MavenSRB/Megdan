@@ -116,7 +116,7 @@ namespace GuardsDigital.Presentation.Match
         public static readonly Color EmptySlot = new Color(0.188f, 0.212f, 0.227f, 1f);
 
         /// <summary>
-        /// Milestone 8.35x (the EIGHTEENTH amendment: "make these buttons nicer... they look
+        /// Milestone 8.35z8 (the EIGHTEENTH amendment: "make these buttons nicer... they look
         /// pasted over"). The one push-button chrome and press/hover feel every HUD and lobby
         /// control shares - <see cref="Presentation.Match.HudElements.ApplyButtonMotion"/> reads
         /// these rather than each control inventing its own dip and lift, and a flat control's

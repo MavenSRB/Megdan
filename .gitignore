@@ -60,3 +60,11 @@ Desktop.ini
 # The harness project file is a tracked deliverable (milestone 6.1t); it must
 # override the Unity-generated *.csproj exclusion above
 !/Tools/DotnetTests/GuardsDigital.DotnetTests.csproj
+
+# Shared presentation compile probe build outputs
+/Tools/PresentationProbe/bin/
+/Tools/PresentationProbe/obj/
+
+# The probe project file is a tracked deliverable too, for the same reason: it is
+# the ONE shared copy, so a worker never resurrects a stale one out of tmp/
+!/Tools/PresentationProbe/PresentationProbe.csproj

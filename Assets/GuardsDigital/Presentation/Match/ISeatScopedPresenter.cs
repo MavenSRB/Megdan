@@ -3,7 +3,7 @@ using GuardsDigital.Core.Units.Heroes;
 namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
-    /// Milestone 8.35x. A presenter whose output depends on WHICH SEAT is looking - the one question
+    /// Milestone 8.35z4. A presenter whose output depends on WHICH SEAT is looking - the one question
     /// "is this decision mine?" that every seat-scoped surface has to ask, and that only a viewer
     /// identity can answer.
     ///

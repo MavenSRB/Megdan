@@ -216,7 +216,7 @@ namespace GuardsDigital.Presentation.Match
         private const float EventLogPreferredHeight = 360f;
 
         /// <summary>
-        /// Milestone 8.35x. The match-log drop-down's own size, in reference units. It is deliberately
+        /// Milestone 8.35z7. The match-log drop-down's own size, in reference units. It is deliberately
         /// bounded well short of the hero rails' own vertical reach, per the TENTH amendment's revised
         /// placement: a temporary overlay beneath the top strip that "never blocks an owed input" -
         /// which this satisfies structurally, by never covering the rails or the tray it would
@@ -505,7 +505,7 @@ namespace GuardsDigital.Presentation.Match
             DiagnosticLogUnityView diagnosticView,
             MinionChoiceUnityView minionChoiceView,
             HeroOverviewsUnityView heroOverviewsView = null,
-            // Milestone 8.35x. Optional, and appended, so every existing composition and fixture keeps
+            // Milestone 8.35z7. Optional, and appended, so every existing composition and fixture keeps
             // its exact call - the same reason milestone 8.20a's heroOverviews and 8.35y's kinetics
             // were appended rather than inserted.
             MatchLogUnityView matchLogView = null)
@@ -933,7 +933,7 @@ namespace GuardsDigital.Presentation.Match
                 // rails now, so the log always paints above both columns; its geometry (clear of both
                 // rails by construction) is unchanged, this is z-order alone.
                 root.Add(matchLog.PanelRoot);
-                // Milestone 8.35x. Click-away: a pointer-down anywhere that is not the drop-down's own
+                // Milestone 8.35z7. Click-away: a pointer-down anywhere that is not the drop-down's own
                 // toggle or panel asks it closed. Registered in the capture phase on the whole HUD root
                 // so it sees every click before whatever it lands on consumes it - `root` itself picks
                 // no pointer (see above), but a trickled event still walks every ancestor of its real
@@ -1980,7 +1980,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35x, re-anchored by item 2 of the post-8.35z9 top-strip redesign: where the
+        /// Milestone 8.35z7, re-anchored by item 2 of the post-8.35z9 top-strip redesign: where the
         /// match-log drop-down unrolls, CENTRED beneath the narration bar it hangs from - the
         /// TENTH amendment's "opens up as a drop down of a naration bar" read literally now that
         /// the bar itself is centred rather than full-width. Clamped to the viewport's own margins

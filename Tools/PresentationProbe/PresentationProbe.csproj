@@ -1,0 +1,117 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    THE SHARED PRESENTATION COMPILE PROBE.
+
+    WHAT IT IS FOR. `Tools/DotnetTests` compiles Core + Application + Network only, so every
+    Presentation source and every Unity-facing Edit/Play Mode fixture is INVISIBLE to it. A fully
+    green harness is therefore no evidence that the Unity assemblies compile - milestone 8.35g lost
+    a run to five `CS0139` errors in harness-excluded fixtures, and a failed Edit Mode compile
+    writes no results XML at all rather than a red case. This project compiles those trees against
+    the installed Unity DLLs in a few seconds, which is the question the harness cannot answer and
+    a Unity launch answers in about nine minutes.
+
+    HOW TO RUN IT - the whole recipe:
+
+        dotnet build Tools/PresentationProbe/PresentationProbe.csproj -t:Rebuild -v m
+
+    Run it from the ROOT OF THE TREE YOU ARE EDITING. No `-p:Repo=` is needed: `$(Repo)` below
+    defaults to this file's OWN directory, so a worktree's copy compiles the worktree's sources and
+    the main checkout's copy compiles the main checkout's. That default is the fix for a measured
+    trap - the earlier shared copy defaulted `$(Repo)` to the relative `../../../..`, which silently
+    resolved to the MAIN tree, so a worktree worker compiled someone else's sources and believed the
+    answer. Override deliberately with `-p:Repo=<path>` if you ever want the other tree.
+
+    ALWAYS PASS `-t:Rebuild` WHEN THE ANSWER MATTERS. MSBuild's incremental build goes stale on a
+    newly added file and reports a false green; that cost a ten-minute Unity launch once already.
+
+    THE REFERENCES, AND WHY EACH TRAP EXISTS (consolidated from four workers, 2026-09-05..07):
+
+      * `Unity.Scripting.dll` - REQUIRED since 8.35z10. `Presentation/Match/BuildIdentityStamp.cs`
+        uses `[Preserve]`, which lives in that assembly. Without it: `CS0012` on `PreserveAttribute`.
+      * `UnityEngine.dll` - the FACADE beside the modules, not a module itself. Without it every
+        Editor-facing fixture reports a bogus `CS0012 The type 'Object' is defined in an assembly
+        that is not referenced`. With it the probe also covers the Play Mode fixtures.
+      * `UnityEditor.CoreModule.dll` lives under `Editor/Data/Managed/UnityEngine/` - the SAME
+        directory as the UnityEngine modules, NOT under `.../Managed/UnityEditor/`. Pointing at the
+        latter resolves to nothing (`MSB3245`) and then produces a cascade of unrelated-looking
+        errors. Reference `UnityEditor.CoreModule` but NOT `UnityEditor.dll`: the two overlap and
+        referencing both gives `CS0433` duplicate types.
+      * `Library/ScriptAssemblies` is taken from the MAIN tree, because a git worktree has never
+        been opened in the Editor and so has no `Library/` of its own. Only Unity-package DLLs are
+        taken from there; every `GuardsDigital.*` type is compiled from `$(Repo)`'s own sources.
+      * `netstandard2.1`, not `net472`: on net472 `TakeLast` and friends are missing and the probe
+        invents errors that do not exist.
+
+    WHAT IT DOES NOT CATCH. It compiles Core, Application, Network, Presentation and the fixtures as
+    ONE assembly, so it cannot see `internal` visibility across the real Unity assembly boundary (a
+    test touching a Core `internal` compiles here and fails in Unity). It checks COMPILATION only -
+    run tests through `Tools/Invoke-UnityValidation.ps1` as always.
+
+    SIX FIXTURES ARE EXCLUDED, and that is a probe limit rather than a code error: three need
+    `AssetDatabase`/`SerializedObject`/`MonoScript`/`UnityEditor.SceneManagement` from
+    `UnityEditor.dll`, which must stay unreferenced (see `CS0433` above); `UrpMigrationTests` needs
+    the URP runtime; and `ConfiguredSceneSerializationTests` + `ConfiguredMatchCutoverArchitectureTests`
+    call a type that `SceneAssetInspection.cs`'s own exclusion removes.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <NoWarn>CS0436;CS0618;CS0649;CS0169;CS0414;NU1701</NoWarn>
+    <AssemblyName>PresentationProbe</AssemblyName>
+
+    <!-- ABSOLUTE, and derived from THIS FILE's location, so the probe follows its own tree. -->
+    <Repo Condition="'$(Repo)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../..'))</Repo>
+
+    <!-- This project's Editor, per ProjectSettings/ProjectVersion.txt. Override if it moves. -->
+    <UnityEditorData Condition="'$(UnityEditorData)' == ''">C:/Program Files/Unity/Hub/Editor/6000.5.9f1/Editor/Data</UnityEditorData>
+    <UnityManaged>$(UnityEditorData)/Managed/UnityEngine</UnityManaged>
+
+    <!-- Prefer this tree's own ScriptAssemblies; fall back to the main checkout, three levels up
+         from a worktree at <main>/.claude/worktrees/<agent>, which is where worktrees live here. -->
+    <ScriptAssemblies Condition="'$(ScriptAssemblies)' == ''">$(Repo)/Library/ScriptAssemblies</ScriptAssemblies>
+    <ScriptAssemblies Condition="!Exists('$(ScriptAssemblies)')">$([System.IO.Path]::GetFullPath('$(Repo)/../../../Library/ScriptAssemblies'))</ScriptAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(Repo)/Assets/GuardsDigital/Core/**/*.cs" />
+    <Compile Include="$(Repo)/Assets/GuardsDigital/Application/**/*.cs" />
+    <Compile Include="$(Repo)/Assets/GuardsDigital/Network/**/*.cs" />
+    <Compile Include="$(Repo)/Assets/GuardsDigital/Presentation/**/*.cs" />
+    <Compile Include="$(Repo)/Assets/Tests/EditMode/**/*.cs"
+             Exclude="$(Repo)/Assets/Tests/EditMode/MinimalHexGridSceneTests.cs;$(Repo)/Assets/Tests/EditMode/RuntimeShaderResolutionTests.cs;$(Repo)/Assets/Tests/EditMode/SceneAssetInspection.cs;$(Repo)/Assets/Tests/EditMode/ConfiguredSceneSerializationTests.cs;$(Repo)/Assets/Tests/EditMode/ConfiguredMatchCutoverArchitectureTests.cs;$(Repo)/Assets/Tests/EditMode/UrpMigrationTests.cs" />
+    <Compile Include="$(Repo)/Assets/Tests/PlayMode/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine"><HintPath>$(UnityManaged)/UnityEngine.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(UnityManaged)/UnityEngine.CoreModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.UIElementsModule"><HintPath>$(UnityManaged)/UnityEngine.UIElementsModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(UnityManaged)/UnityEngine.IMGUIModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(UnityManaged)/UnityEngine.TextRenderingModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.TextCoreTextEngineModule"><HintPath>$(UnityManaged)/UnityEngine.TextCoreTextEngineModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(UnityManaged)/UnityEngine.PhysicsModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.InputLegacyModule"><HintPath>$(UnityManaged)/UnityEngine.InputLegacyModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.JSONSerializeModule"><HintPath>$(UnityManaged)/UnityEngine.JSONSerializeModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.UIModule"><HintPath>$(UnityManaged)/UnityEngine.UIModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(UnityManaged)/UnityEngine.ImageConversionModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.SpriteShapeModule"><HintPath>$(UnityManaged)/UnityEngine.SpriteShapeModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.ScreenCaptureModule"><HintPath>$(UnityManaged)/UnityEngine.ScreenCaptureModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.AnimationModule"><HintPath>$(UnityManaged)/UnityEngine.AnimationModule.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule"><HintPath>$(UnityManaged)/UnityEngine.ParticleSystemModule.dll</HintPath></Reference>
+    <Reference Include="Unity.Scripting"><HintPath>$(UnityManaged)/Unity.Scripting.dll</HintPath></Reference>
+    <Reference Include="UnityEditor.CoreModule"><HintPath>$(UnityManaged)/UnityEditor.CoreModule.dll</HintPath></Reference>
+
+    <Reference Include="Unity.InputSystem"><HintPath>$(ScriptAssemblies)/Unity.InputSystem.dll</HintPath></Reference>
+    <Reference Include="UnityEngine.TestRunner"><HintPath>$(ScriptAssemblies)/UnityEngine.TestRunner.dll</HintPath></Reference>
+    <Reference Include="UnityEditor.TestRunner"><HintPath>$(ScriptAssemblies)/UnityEditor.TestRunner.dll</HintPath></Reference>
+
+    <Reference Include="nunit.framework"><HintPath>$(UnityEditorData)/Resources/PackageManager/BuiltInPackages/com.unity.ext.nunit/net472/unity-custom/nunit.framework.dll</HintPath></Reference>
+  </ItemGroup>
+
+</Project>

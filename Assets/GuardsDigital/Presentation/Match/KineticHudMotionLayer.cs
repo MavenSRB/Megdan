@@ -596,7 +596,7 @@ namespace GuardsDigital.Presentation.Match
         /// <para>It must be named (an unnamed element cannot be recognised across a rebuild, which is
         /// this design's whole identity mechanism), big enough to read as a panel, actually laid out,
         /// not opted out, and NOT already carrying a transition of its own - the last of which keeps
-        /// this off every control milestone 8.35x's button pass already animates, rather than
+        /// this off every control milestone 8.35z8's button pass already animates, rather than
         /// overwriting its hover with a fade.</para>
         /// </summary>
         public static bool Qualifies(VisualElement element)

@@ -126,7 +126,7 @@ namespace GuardsDigital.Presentation.Match
         /// asks of the viewer, asked instead of one named hero, so every hero's tray can read one shine
         /// answer rather than each surface guessing at "whose turn is it" a second way.
         ///
-        /// <para><b>The event-channel follow-up (milestone 8.35x) completes the four arms 8.35m
+        /// <para><b>The event-channel follow-up (milestone 8.35z7) completes the four arms 8.35m
         /// deferred.</b> The gap that milestone recorded - <see cref="OwnsAStandingDecision"/> and
         /// <see cref="MayTakeATurnAction"/> both read facts <see cref="IMatchReadModel"/> scoped to the
         /// seat that owns them, so nothing on the interface named WHICH hero a non-viewer's decision or
@@ -172,18 +172,18 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35x. Rulebook p.15's leveling, simultaneous since 8.35u: every hero the standing
+        /// Milestone 8.35z7. Rulebook p.15's leveling, simultaneous since 8.35u: every hero the standing
         /// decision's owner names, not only the first, per <see cref="PendingDecisionOwner.HeroIds"/>'s
         /// own doc comment - "true for each of them at once".
         /// </summary>
         private static bool OwesALevelingAnswer(IMatchReadModel projection, HeroId heroId) =>
             IsHeroOwnedFamily(projection, PendingDecisionFamilies.SystemTransition, heroId);
 
-        /// <summary>Milestone 8.35x. Whether <paramref name="heroId"/> is the awaited defense answer.</summary>
+        /// <summary>Milestone 8.35z7. Whether <paramref name="heroId"/> is the awaited defense answer.</summary>
         private static bool OwesADefenseAnswer(IMatchReadModel projection, HeroId heroId) =>
             IsHeroOwnedFamily(projection, PendingDecisionFamilies.Defense, heroId);
 
-        /// <summary>Milestone 8.35x. Whether <paramref name="heroId"/> is the awaited respawn chooser.</summary>
+        /// <summary>Milestone 8.35z7. Whether <paramref name="heroId"/> is the awaited respawn chooser.</summary>
         private static bool OwesARespawnAnswer(IMatchReadModel projection, HeroId heroId) =>
             IsHeroOwnedFamily(projection, PendingDecisionFamilies.HeroRespawn, heroId);
 
@@ -203,7 +203,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35x. The acting hero's own turn - <see cref="IMatchReadModel.SelectedActor"/> and
+        /// Milestone 8.35z7. The acting hero's own turn - <see cref="IMatchReadModel.SelectedActor"/> and
         /// <see cref="IMatchReadModel.IsTurnActive"/> are both public and unscoped, the same pair
         /// <c>MatchFeaturePresenters.IsViewerTheActingHero</c>'s own remarks note reaching every viewer
         /// - corrected for the bug this method's own doc comment names: a defender's standing Defense

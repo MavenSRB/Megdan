@@ -3392,7 +3392,7 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchClient session;
         private readonly IRoundActionView view;
-        // Milestone 8.35x: NOT readonly. A networked client is composed before its seat is granted,
+        // Milestone 8.35z4: NOT readonly. A networked client is composed before its seat is granted,
         // so this identity is bound a second time by `ConfiguredMatchSceneRuntime.BindHomeHero`
         // once the lobby admits the player. See `ISeatScopedPresenter` for what an unrepaired
         // identity does to every predicate below that asks "is this decision mine?".
@@ -3436,7 +3436,7 @@ namespace GuardsDigital.Presentation.Match
         public HeroId HomeHeroId => homeHeroId;
 
         /// <summary>
-        /// Milestone 8.35x. Binds this panel's viewer identity once the interactive lobby admits the
+        /// Milestone 8.35z4. Binds this panel's viewer identity once the interactive lobby admits the
         /// seat, exactly as <see cref="DirectorHandsPresenter.SetHomeHero"/> has always done for the
         /// tray. Until this existed the field was <c>readonly</c> and a networked client's round
         /// panel kept the undefined hero for the whole session, reading every seat's turn release,
@@ -3471,7 +3471,7 @@ namespace GuardsDigital.Presentation.Match
 
         public void Refresh()
         {
-            // Milestone 8.35x: an END TURN press that ran out of things it could submit while the
+            // Milestone 8.35z4: an END TURN press that ran out of things it could submit while the
             // client was waiting on the host picks up here, on the projection that answered it.
             ResumeEndTurnComposition();
             view.Render(GetOrCreateViewModel(session.Projection));
@@ -3591,7 +3591,7 @@ namespace GuardsDigital.Presentation.Match
             // second half, performed in the same press rather than left for a separate one. Release
             // itself needs no further chaining - reaching this branch already IS the whole press.
             var isEndTurnPress = ReferenceEquals(invocation, current.EndTurnInvocation);
-            // Milestone 8.35x: read BEFORE the submission, because a network client hands back a
+            // Milestone 8.35z4: read BEFORE the submission, because a network client hands back a
             // projection that has not yet been decided and may already be stripped of the actor.
             var pressActorId = isEndTurnPress ? PressActorOf(session.Projection) : default;
             if (!Execute(invocation.Command))
@@ -3720,7 +3720,7 @@ namespace GuardsDigital.Presentation.Match
         private const int MaxEndTurnComposedSteps = 8;
 
         /// <summary>
-        /// Milestone 8.35x, and the SECOND defect the first live internet playtest found: "first end
+        /// Milestone 8.35z4, and the SECOND defect the first live internet playtest found: "first end
         /// turn clears the card, second ends the turn".
         ///
         /// <para><b>What 8.35v's one-press rule assumed, and why only the network broke it.</b>
@@ -5631,7 +5631,7 @@ namespace GuardsDigital.Presentation.Match
         /// <c>TeamAgreementHudPresentation.Create</c> both already use.
         /// </summary>
         /// <summary>
-        /// Milestone 8.35x, and the defect the first live internet playtest found within minutes.
+        /// Milestone 8.35z4, and the defect the first live internet playtest found within minutes.
         ///
         /// <para>A standing team agreement whose participants have ALL answered is an ordinary,
         /// legal, transient state - the moment between the last statement landing and the authority
@@ -6546,7 +6546,7 @@ namespace GuardsDigital.Presentation.Match
             // fixture keeps its exact call. A surface with no kinetics is the surface this project had
             // before the milestone, which is also the state a failed driver falls back to.
             KineticCuePresenter kinetics = null,
-            // Milestone 8.35x. Same reason, same shape: the narration bar's log drop-down joins the
+            // Milestone 8.35z7. Same reason, same shape: the narration bar's log drop-down joins the
             // isolated fan-out rather than the unisolated header callback beside it, so one broken
             // log line degrades that one panel and nothing else - the EIGHTH amendment's own rule,
             // applied to the panel it did not yet cover.

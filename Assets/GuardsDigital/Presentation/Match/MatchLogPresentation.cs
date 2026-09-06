@@ -12,7 +12,7 @@ using GuardsDigital.Core.Units.Minions;
 namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
-    /// Milestone 8.35x (the TENTH amendment's drop-down). One rendered line of the seat-public match
+    /// Milestone 8.35z7 (the TENTH amendment's drop-down). One rendered line of the seat-public match
     /// log, or a ROUND/TURN boundary header among them.
     /// </summary>
     /// <remarks>
@@ -65,7 +65,7 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// Milestone 8.35x. What the narration bar's drop-down draws: the log's rendered lines, NEWEST
+    /// Milestone 8.35z7. What the narration bar's drop-down draws: the log's rendered lines, NEWEST
     /// first (milestone 8.35z40, item 2 of the 2026-09-06 refinements), and whether the drop-down is
     /// currently open.
     /// </summary>
@@ -105,7 +105,7 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// Milestone 8.35x. Drives the narration bar's drop-down from <see cref="IMatchReadModel.MatchLog"/>
+    /// Milestone 8.35z7. Drives the narration bar's drop-down from <see cref="IMatchReadModel.MatchLog"/>
     /// and <see cref="IMatchReadModel.UndoMarker"/>, exactly as <c>DiagnosticLogPresenter</c> drives the
     /// Director-only event log from its own source - open/closed is this presenter's own remembered
     /// state, toggled by the narration bar's click or chevron and by nothing the match itself does.
@@ -166,7 +166,7 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// Milestone 8.35x. Turns <see cref="IMatchReadModel.MatchLog"/>'s typed entries and
+    /// Milestone 8.35z7. Turns <see cref="IMatchReadModel.MatchLog"/>'s typed entries and
     /// <see cref="IMatchReadModel.UndoMarker"/> into the lines the drop-down draws.
     /// </summary>
     /// <remarks>

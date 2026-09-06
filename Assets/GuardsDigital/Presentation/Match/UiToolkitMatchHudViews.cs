@@ -195,7 +195,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35x (the EIGHTEENTH amendment, the button-system pass). One shared press/
+        /// Milestone 8.35z8 (the EIGHTEENTH amendment, the button-system pass). One shared press/
         /// hover feel for every clickable HUD or lobby control - idle, a slight hover lift, a
         /// quick ~80ms press dip, and disabled (left untouched here: <see cref="MarkUnavailable"/>
         /// already states that state through opacity and <c>SetEnabled(false)</c>, and this method
@@ -448,7 +448,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35x. Whether <paramref name="candidate"/> is <paramref name="ancestor"/> itself
+        /// Milestone 8.35z7. Whether <paramref name="candidate"/> is <paramref name="ancestor"/> itself
         /// or is nested inside it - the match-log drop-down's click-away test, so a click on the
         /// drop-down or its own toggle is never also read as "outside" it.
         /// </summary>
@@ -755,7 +755,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35x (the TENTH amendment's revised placement). Hosts the match-log drop-down's
+        /// Milestone 8.35z7 (the TENTH amendment's revised placement). Hosts the match-log drop-down's
         /// own chevron toggle in the same lane the narration text lives in, beside it - so the whole
         /// narration bar reads as the log's own newest-entry-plus-toggle, per the amendment's words.
         /// </summary>
@@ -4294,7 +4294,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly VisualElement seatUndoHost;
 
         /// <summary>
-        /// Milestone 8.35x (SIXTH amendment part b, "old M7"). The acknowledge-to-continue notice
+        /// Milestone 8.35z8 (SIXTH amendment part b, "old M7"). The acknowledge-to-continue notice
         /// for a resolution the recorded <c>ImpossibleMandatory</c> fact says applied nothing mid-
         /// resolution - hosted on the contextual region itself, an absolute overlay so it can stand
         /// over whatever the region is otherwise drawing without displacing it, exactly as the
@@ -4431,7 +4431,7 @@ namespace GuardsDigital.Presentation.Match
         public VisualElement OptionalStepActionsRoot => optionalStepActionsHost;
 
         /// <summary>
-        /// Milestone 8.35x. The fizzle notice's own element, hosted on the contextual region so it
+        /// Milestone 8.35z8. The fizzle notice's own element, hosted on the contextual region so it
         /// reads as belonging to it - the same idiom the game already uses to pause for a decision.
         /// </summary>
         public VisualElement FizzleNoticeRoot => fizzleNoticeHost;
@@ -4443,7 +4443,7 @@ namespace GuardsDigital.Presentation.Match
         public bool HasFizzleNotice => fizzleNoticeHost.style.display == DisplayStyle.Flex;
 
         /// <summary>
-        /// Milestone 8.35x. Drawn independently of <see cref="Render"/>: the recorded
+        /// Milestone 8.35z8. Drawn independently of <see cref="Render"/>: the recorded
         /// <c>ImpossibleMandatory</c> fact this notice answers is not one of
         /// <see cref="RoundActionViewModel"/>'s own pending-decision families (Core does not pause
         /// on it - the resolution has already stopped by the time the match log names it), so this
@@ -5952,7 +5952,7 @@ namespace GuardsDigital.Presentation.Match
                 Add(visibleLabel);
                 RegisterCallback<PointerEnterEvent>(_ => SetHovered(true));
                 RegisterCallback<PointerLeaveEvent>(_ => SetHovered(false));
-                // Milestone 8.35x: the banner already lifts its own glow on hover; the shared
+                // Milestone 8.35z8: the banner already lifts its own glow on hover; the shared
                 // scale motion adds the same quick press dip every other control now gets, on top
                 // of - never instead of - that cloth.
                 HudElements.ApplyButtonMotion(this);
@@ -6695,7 +6695,7 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// Milestone 8.35x (the TENTH amendment's revised placement). The seat-facing match log: no
+    /// Milestone 8.35z7 (the TENTH amendment's revised placement). The seat-facing match log: no
     /// standing panel, a chevron toggle riding beside the narration text, and a scrollable overlay
     /// that unrolls beneath the top strip when open.
     /// </summary>

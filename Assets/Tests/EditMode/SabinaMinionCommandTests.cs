@@ -240,6 +240,79 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(declined.Choice, Is.Null, "and the card is finished.");
         }
 
+        /// <summary>
+        /// THE REGRESSION GUARD FOR THE PHANTOM DECLARATION. These three faces declared
+        /// <c>RepeatTargetBinding.DifferentTarget</c> until it was removed, and not one of them prints
+        /// a clause supporting it: "Move a friendly minion in radius 1 space, to a space in radius. May
+        /// repeat once / up to two times." names no subject for the repetition at all.
+        ///
+        /// <para><b>Why this case exists and the one above it does not cover the question.</b>
+        /// <see cref="TheDirectMove_RepeatsAsOftenAsItsFacePrints_AndTheRepeatCanBeDeclined"/> counts
+        /// repetitions on a board deliberately holding ONE friendly minion in the disk - its own
+        /// comment says so, because a repetition that moved somebody else would read as this one
+        /// standing still. A one-minion board cannot tell a free repeat from a constrained one: with
+        /// nobody else to name, both offer the same single answer. So it is blind to exactly the claim
+        /// the removed declaration made. This board holds TWO, which is the smallest board on which the
+        /// question has a visible answer.</para>
+        ///
+        /// <para><b>What it pins.</b> The repeated instance chooses from scratch, so the minion the
+        /// printed instance just moved is offered AGAIN and can be moved a second time. That is the
+        /// plain reading of a sentence that names no subject, and it is p.10's default
+        /// (<c>RepeatTargetBinding.Unbound</c>) rather than anything these cards declare. Had
+        /// the phantom ever been given a route into Skill repeats - the change the original finding
+        /// invited - this case would fail, which is the whole point of writing it down.</para>
+        /// </summary>
+        [Test]
+        public void TheRepeat_OffersEveryLegalMinionAgain_IncludingTheOneItJustMoved()
+        {
+            var fixture = Create(
+                tier: 3,
+                minionPlacements: new Dictionary<string, HexCoordinate>
+                {
+                    ["blue-melee-01"] = FirstAdjacent,
+                    ["blue-ranged-01"] = SecondAdjacent
+                },
+                banishedMinions: new[] { "blue-heavy-01" });
+
+            var moved = fixture.MinionAt(FirstAdjacent);
+            var other = fixture.MinionAt(SecondAdjacent);
+
+            fixture.StartPrimary(SabinaCardContent.PathToVictory);
+            Assert.That(
+                fixture.CandidateMinions(fixture.Choice),
+                Is.EquivalentTo(new[] { moved, other }),
+                "Both friendly minions stand inside the printed Radius 3.");
+
+            fixture.SelectAndConfirm(moved);
+            var firstStep = fixture.CandidateSpaces(fixture.Choice).First();
+            fixture.Select(firstStep);
+            fixture.Confirm();
+
+            Assert.That(fixture.Choice, Is.Not.Null, "The repeat asks before it happens.");
+            fixture.Confirm();
+
+            Assert.That(
+                fixture.CandidateMinions(fixture.Choice),
+                Is.EquivalentTo(new[] { moved, other }),
+                "THE POINT: the repetition chooses from scratch, so the minion the printed instance " +
+                "just moved is offered again beside the one it did not touch. A different-target " +
+                "binding would have removed it, and no word on any of these three faces asks for " +
+                "that.");
+
+            fixture.SelectAndConfirm(moved);
+            var secondStep = fixture.CandidateSpaces(fixture.Choice).First();
+            fixture.Select(secondStep);
+            fixture.Confirm();
+
+            Assert.That(
+                fixture.SpaceOf(moved), Is.EqualTo(secondStep),
+                "and naming it again really moves it a second time.");
+            Assert.That(
+                fixture.SpaceOf(other), Is.EqualTo(SecondAdjacent),
+                "The minion that was never named never moved - the repetition is a free choice " +
+                "rather than a forced rotation.");
+        }
+
         // -----------------------------------------------------------------------------------------
         // "If there are two or more friendly minions in radius..."
         // -----------------------------------------------------------------------------------------

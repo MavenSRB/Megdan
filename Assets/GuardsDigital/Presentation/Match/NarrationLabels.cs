@@ -50,7 +50,7 @@ namespace GuardsDigital.Presentation.Match
         /// acting, never whether a decision (a defender's answer, say) is standing on top of that
         /// turn.
         ///
-        /// <para><b>Milestone 8.35x note.</b> <see cref="IMatchReadModel.DecisionOwner"/> now
+        /// <para><b>Milestone 8.35z7 note.</b> <see cref="IMatchReadModel.DecisionOwner"/> now
         /// publishes exactly the fact that would tell a non-owning viewer whether such a decision
         /// stands, and <see cref="AwaitedInputQuery.IsHeroAwaited"/> reads it for the hero-scope tray
         /// shine - but composing a richer STATUS SENTENCE from it (naming the family, not only that
@@ -87,7 +87,7 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35x. The honest alternative to a <see cref="WaitingOn"/> line once every hero
+        /// Milestone 8.35z4. The honest alternative to a <see cref="WaitingOn"/> line once every hero
         /// it would have named has already answered - the legal transient state between the last
         /// answer landing and the authority resolving what it unblocked.
         ///

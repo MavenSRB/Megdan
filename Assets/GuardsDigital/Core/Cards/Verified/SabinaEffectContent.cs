@@ -837,10 +837,23 @@ namespace GuardsDigital.Core.Cards.Verified
         /// which matters here, because a minion cornered inside the disk with nowhere legal to go stops
         /// the text at that step rather than being shuffled nowhere.</para>
         ///
-        /// <para><b>The repeat is a repeat of the action, and it may name a different minion.</b> p.10
-        /// gives an unassigned decision to the card's controller, so Sabina is the one asked; the card
-        /// says only "May repeat", naming no subject, so the repeated instance chooses again from
-        /// scratch - and the disk it measures against is wherever she is standing then.</para>
+        /// <para><b>The repeat is a repeat of the action, and it declares NOTHING about its subject.</b>
+        /// p.10 gives an unassigned decision to the card's controller, so Sabina is the one asked; the
+        /// card says only "May repeat", naming no subject, so the repeated instance chooses again from
+        /// scratch - and the disk it measures against is wherever she is standing then. The choice is
+        /// free: the same minion again is one of the answers, exactly as a different one is.</para>
+        ///
+        /// <para><b>These three faces declared <see cref="RepeatTargetBinding.DifferentTarget"/> until
+        /// the phantom was removed, and none of them prints a word that supports it.</b> All three read
+        /// "May repeat once / up to two times" and stop; no "different target" clause exists on any of
+        /// them, so the declaration described nothing the cards say. It was also INERT, which is why it
+        /// survived so long: the only route a non-<c>SameTarget</c> binding has into a repeated instance
+        /// is <c>CardActionResolutionAuthority.ExclusionFor</c> and its card-text twin
+        /// <c>CardTextRepeatExclusionFor</c>, and both yield an exclusion for
+        /// <see cref="ActionKind.Attack"/> alone - these are Skills. So the live offer was always the
+        /// free one the faces print, and removing the declaration moves no behaviour; it stops the
+        /// content claiming a clause the printed text does not carry. Per the standing "cards are the
+        /// definition" ruling, an absence in the text is an absence in the content.</para>
         /// </summary>
         private static EffectDefinition CreateCommandedMove(
             CardDefinitionId cardId, string contentRevision, int radius, int maximumRepeats)
@@ -884,8 +897,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     new EffectNodeDefinition(
                         repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.May,
                         chooser: EffectChooserRole.Actor,
-                        maximumRepeats: maximumRepeats,
-                        repeatTargetBinding: RepeatTargetBinding.DifferentTarget)
+                        maximumRepeats: maximumRepeats)
                 });
         }
 

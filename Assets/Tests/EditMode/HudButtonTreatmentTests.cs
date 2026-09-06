@@ -15,7 +15,7 @@ using UnityEngine.UIElements;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 8.35x (the EIGHTEENTH amendment): one shared button treatment - four states,
+    /// Milestone 8.35z8 (the EIGHTEENTH amendment): one shared button treatment - four states,
     /// a quick press dip, a smooth hover lift, and chrome that matches the host panel - proven per
     /// control kind the amendment names: END TURN, the seat's own UNDO, the lobby's HOST/JOIN,
     /// agreement choices, a Defense option, and the DIRECTOR drawer's UNDO/RESET/EVENT LOG.

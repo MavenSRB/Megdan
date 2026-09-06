@@ -46,8 +46,16 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="BroganCardContent.ContentRevision"/> has: it moves when Sabina's content changes.
+        ///
+        /// <para>It moved for the phantom-declaration removal: Troop Movement, Marching Orders and
+        /// Path to Victory declared <c>RepeatTargetBinding.DifferentTarget</c> and not one of the three
+        /// faces prints a clause supporting it (see
+        /// <c>SabinaEffectContent.CreateCommandedMove</c>'s own doc). The declaration was inert, so no
+        /// behaviour moved - but a content revision is a claim about the CONTENT, and the content
+        /// changed, so the string moves and the pin, the artwork catalog and the digest move with it.
+        /// </para>
         /// </summary>
-        public const string ContentRevision = "sabina-8-35l-rev-1";
+        public const string ContentRevision = "sabina-8-35z44-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

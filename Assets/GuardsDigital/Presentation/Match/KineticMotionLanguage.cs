@@ -42,7 +42,7 @@ namespace GuardsDigital.Presentation.Match
         /// <para><b>The one documented exception to "ease-in-out only", and it is the user's own
         /// rule.</b> Principle 5 asks that "every hover answers IMMEDIATELY". An ease-in on a hover
         /// spends its first frames barely moving, which is precisely the lag the principle forbids, so
-        /// interaction feedback - the hover lift and the press dip milestone 8.35x already ships - eases
+        /// interaction feedback - the hover lift and the press dip milestone 8.35z8 already ships - eases
         /// OUT. Travel and appearance, where the rule was aimed, stay ease-in-out. The audit holds this
         /// curve to the same non-linearity bar as the rest.</para>
         /// </summary>
@@ -216,7 +216,7 @@ namespace GuardsDigital.Presentation.Match
     /// under 200ms by rule, and the audit asserts THAT bound on these rather than pretending they
     /// belong to the other band.</para>
     ///
-    /// <para>The two values are milestone 8.35x's shipped button-system constants
+    /// <para>The two values are milestone 8.35z8's shipped button-system constants
     /// (<c>MatchHudTheme.ButtonHoverTransitionMs</c>, <c>ButtonPressTransitionMs</c>) restated in
     /// seconds. They are restated rather than redefined so the audit covers the buttons that already
     /// ship, and the audit asserts the two sources agree.</para>

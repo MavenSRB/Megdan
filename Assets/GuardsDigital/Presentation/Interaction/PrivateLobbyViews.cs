@@ -358,7 +358,7 @@ namespace GuardsDigital.Presentation.Interaction
         }
 
         /// <summary>
-        /// Milestone 8.35x (the EIGHTEENTH amendment). The lobby's own controls drew Unity's stock
+        /// Milestone 8.35z8 (the EIGHTEENTH amendment). The lobby's own controls drew Unity's stock
         /// button skin - the one place in this HUD family that had never adopted
         /// <see cref="MatchHudTheme"/>'s dark chip language at all, which is exactly what read as
         /// "pasted over" a hand-styled dark panel. This gives HOST/JOIN/FILL/LEAVE and a seat's PICK
