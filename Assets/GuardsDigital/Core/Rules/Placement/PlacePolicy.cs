@@ -179,7 +179,47 @@ namespace GuardsDigital.Core.Rules.Placement
         /// Magical Current. It is a strict narrowing of <see cref="SpacesWithASpawnPoint"/>, which is
         /// what makes Stranger Tide the upgrade: the same reach, one clause fewer.
         /// </summary>
-        SpacesWithASpawnPointOrAdjacentToAnEmptyOne = 2
+        SpacesWithASpawnPointOrAdjacentToAnEmptyOne = 2,
+
+        /// <summary>
+        /// Milestone 8.35z33, and the first member that carves the board the other way round: everything
+        /// <em>except</em> an empty minion Spawn point of the current Battle Zone - Whisper's Shadow
+        /// Step and Shadow Walk, "Place yourself into an empty minion spawn point in range in the
+        /// battle zone."
+        ///
+        /// <para><b>It is still an exclusion and not a new kind of clause.</b> The two members above
+        /// name spaces a Place refuses and so does this one; what differs is that their sentences
+        /// carve a few spaces out of the disk and hers leaves only a few in. Expressing it as a third
+        /// exclusion rather than as an "admission" vocabulary keeps one filter over one derived
+        /// candidate set, which is what stops a Place's offer and its commit from being able to
+        /// disagree.</para>
+        ///
+        /// <para>The three conditions - a <em>minion</em> Spawn point, in the <em>current</em> Battle
+        /// Zone, <em>empty</em> - are not restated here. They are
+        /// <see cref="GuardsDigital.Core.Rules.Modifications.EmptyMinionSpawnPointQuery"/>'s, which is
+        /// the same derivation the counting clauses on her Red line read, because it is the same
+        /// printed phrase.</para>
+        /// </summary>
+        SpacesThatAreNotAnEmptyMinionSpawnPointInTheBattleZone = 3,
+
+        /// <summary>
+        /// Milestone 8.35z33. The same carve-out dilated by one ring - Whisper's Creeping Shadow,
+        /// "...or into a space in range adjacent to such spawn point."
+        ///
+        /// <para>It is a strict widening of
+        /// <see cref="SpacesThatAreNotAnEmptyMinionSpawnPointInTheBattleZone"/>, which is what makes
+        /// Creeping Shadow the Tier III upgrade of the two places below it: the same reach, one clause
+        /// more. Note which way the pair runs compared with Arien's - his Tier III buys a
+        /// <em>narrower</em> exclusion, hers buys a <em>wider</em> admission - and both are the same
+        /// relation between a card and its upgrade read off what each face prints.</para>
+        ///
+        /// <para>The word "such" is load-bearing and is read as the whole of the preceding phrase: the
+        /// neighbouring space qualifies by being beside a point that is itself an empty minion Spawn
+        /// point of the Battle Zone, and needs no property of its own beyond being a legal Place
+        /// destination. So Creeping Shadow can put her outside the Battle Zone, one step from a point
+        /// inside it, which is what the sentence says.</para>
+        /// </summary>
+        SpacesThatAreNeitherSuchAPointNorAdjacentToOne = 4
     }
 
     /// <summary>

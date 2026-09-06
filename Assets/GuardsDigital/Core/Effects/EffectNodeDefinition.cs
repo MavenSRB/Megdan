@@ -159,6 +159,13 @@ namespace GuardsDigital.Core.Effects
             ValidateNodeShape();
         }
 
+        /// <summary>
+        /// Milestone 8.35z33. The input a <see cref="EffectChooserRole.BoundHero"/> node names its
+        /// chooser through, spelled once so a definition cannot mistype it and so the validator and
+        /// the resolver read the same string.
+        /// </summary>
+        public const string ChooserParameterName = "chooser";
+
         public EffectNodeId Id { get; }
         public EffectNodeKind Kind { get; }
         public EffectFailurePolicy FailurePolicy { get; }
@@ -271,6 +278,17 @@ namespace GuardsDigital.Core.Effects
                         throw new ArgumentException("A Choose node requires at least two options.");
                     if (Chooser == EffectChooserRole.None)
                         throw new ArgumentException("A Choose node requires a chooser.");
+
+                    // Milestone 8.35z33. A modal whose chooser is a hero this text named has to say
+                    // which node named them, or it is claiming a decision belongs to somebody it
+                    // cannot identify - and the resolver would have nowhere to send the question.
+                    if (Chooser == EffectChooserRole.BoundHero &&
+                        !Inputs.Any(input =>
+                            string.Equals(input.ParameterName, ChooserParameterName, StringComparison.Ordinal) &&
+                            input.ValueKind == EffectValueKind.Hero))
+                        throw new ArgumentException(
+                            $"A Choose node whose chooser is a bound hero binds them as a Hero input " +
+                            $"named '{ChooserParameterName}'.");
                     if (MinimumSelections < 0 || MaximumSelections < MinimumSelections)
                         throw new ArgumentException("Choose selection bounds must be a non-negative range.");
                     if (MaximumSelections > ChildNodeIds.Count)

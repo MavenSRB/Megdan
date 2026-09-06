@@ -316,16 +316,34 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference TransferResourceV1 => Reference("transfer-resource", 1);
 
         /// <summary>
-        /// Milestone 8.35z28. `empty-minion-spawn-points-in-radius@1` - how many empty minion Spawn
-        /// points of the current Battle Zone stand inside the acting card's own printed Radius disk,
-        /// and whether that count reaches the number the card asks for.
+        /// Milestones 8.35z28 and 8.35z33. `empty-minion-spawn-points-in-radius@1` - how many empty
+        /// minion Spawn points of the current Battle Zone stand inside the acting card's own printed
+        /// Radius disk, and whether that count reaches the number the card asks for.
         ///
-        /// <para>Dodger's Dark Ritual and Darker Ritual are the faces that name it: "If there are 2 or
-        /// more empty spawn points in radius in the battle zone, gain N coins." The quantity itself is
-        /// <see cref="GuardsDigital.Core.Rules.Modifications.EmptyMinionSpawnPointQuery"/>'s, which her
-        /// three Blue Defense primaries also read through the value pipeline - one printed phrase, one
-        /// derivation, reached two ways because a Defense value is a number and a ritual is a
-        /// step.</para>
+        /// <para><b>ONE declaration, settled at the six-hero content wave.</b> Both milestones minted
+        /// this id against the same output; this is 8.35z33's, the strict superset, whose one extra
+        /// optional parameter 8.35z28's faces simply do not set.</para>
+        ///
+        /// <para>Dodger's Dark Ritual and Darker Ritual name it: "If there are 2 or more empty spawn
+        /// points in radius in the battle zone, gain N coins." Her three Blue Defense primaries read
+        /// the same quantity through the value pipeline instead - one printed phrase, one derivation,
+        /// reached two ways because a Defense value is a number and a ritual is a step.</para>
+        ///
+        /// <para>Whisper's Red line names it three times and reads the answer two different ways.
+        /// Crimson Trail asks whether there is one at all - "You may move up to 1 space <em>if there
+        /// is</em> an empty minion spawn point in radius in the battle zone" - which is the boolean.
+        /// Sanguine Path and Blood Pilgrimage ask how many - "up to 1 space <em>for every</em> empty
+        /// minion spawn point in radius in the battle zone up to a maximum of 2 / 3 spaces" - which is
+        /// the count, and the maximum the same sentence prints is
+        /// <see cref="MaximumCountedParameter"/>.</para>
+        ///
+        /// <para>The quantity itself is
+        /// <see cref="GuardsDigital.Core.Rules.Modifications.EmptyMinionSpawnPointQuery"/>'s: one
+        /// printed phrase, one derivation, which is the defect milestone 6.5ad was written to correct.
+        /// Rulebook p.19's Spawn Point entry is broader than the phrase - "Spaces on the board used to
+        /// spawn minions <em>and heroes</em>" - and the 2026-09-06 ruling reads the printed word
+        /// "minion" as narrowing it, which printed p.14's own worked example of Dodger's Vampiric
+        /// Shield II counts the same way.</para>
         ///
         /// <para><b>Why it is not <c>presence-count@1</c> with a different unit kind.</b> That
         /// capability counts <em>units</em> - pieces standing on the board, filtered by effective kind
@@ -412,6 +430,136 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// spelled the same as <c>presence-count@1</c>'s because it is the same kind of answer.
         /// </summary>
         public const string CountOutput = "count";
+
+        /// <summary>
+        /// Milestone 8.35z33. `choose-target-trio@1` - up to three subjects named by one printed
+        /// sentence, published as three slots the consumers read one apiece.
+        ///
+        /// <para>Whisper's Greater Good is the face: "You defeat up to 3 minions adjacent to you." It
+        /// is <c>choose-target-set@1</c>'s shape with one more slot, and it is a third capability id
+        /// rather than a revision of that one because a revision retires what it replaces - which
+        /// would move Sabina's Shootout and Bullet Hell declarations, and with them a shipped hero's
+        /// content identity, for a card that is not hers.</para>
+        ///
+        /// <para><b>Three slots rather than a list, for the reason
+        /// <c>choose-target-set@1</c> has two.</b> An <see cref="EffectExecutionResult"/> publishes
+        /// each output name once, so a selection that named three subjects under one name could not
+        /// state which was which; and the consumers are three separate nodes, each carrying its own
+        /// failure policy, so a slot nobody filled is skipped by that node rather than by a count
+        /// somebody has to read first.</para>
+        /// </summary>
+        public static EffectCapabilityReference ChooseTargetTrioV1 =>
+            Reference("choose-target-trio", 1);
+
+        /// <summary>
+        /// Milestone 8.35z33. <c>defended-card-forced-move@1</c> - Whisper's Swift Justice and Vile
+        /// Accusation at rulebook p.14's step 7: "If able, that hero performs a movement action on the
+        /// card they defended with, moving full distance in a straight line."
+        ///
+        /// <para><b>It is the first contract in this build where a hero who is not the actor performs
+        /// something.</b> Every other card-text step belongs to whoever is taking the action; this one
+        /// is done <em>by</em> the hero who was just attacked, on <em>their</em> card, and the
+        /// 2026-08-19 designer answer settles who steers it - "There's no functional distinction
+        /// between 'Player' and 'Hero' in Guards of Atlantis II as far as the rules text is
+        /// concerned" - so the decision belongs to the target's seat. That is
+        /// <see cref="EffectChoiceRequest.ChooserHeroId"/>, the same seam milestone 7.1a built so that
+        /// "another hero discards a card" could put the card choice to that hero, and the same seam
+        /// milestone 8.35r's decision-owner projection already routes to the right seat.</para>
+        ///
+        /// <para><b>Four printed clauses, and each is a decision this handler does not take.</b>
+        /// <list type="bullet">
+        /// <item><description>"<b>on the card they defended with</b>" - the card the Defense window
+        /// accepted, read off the enclosing Attack rather than guessed from the discard pile. Its
+        /// printed Movement value is what the move spends, through the ordinary
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.MovementValueQuery"/>, so rulebook
+        /// p.16's matching item raises it exactly as it raises any other printed Movement.</description></item>
+        /// <item><description>"<b>moving full distance</b>" - p.11's "up to" is overridden, so the
+        /// only destinations offered are the furthest each direction reaches. The 2026-09-06 ruling
+        /// adds "as far as possible when blocked", which is why a direction that runs out early still
+        /// offers its last space rather than dropping out.</description></item>
+        /// <item><description>"<b>in a straight line</b>" - p.19's file, checked on the route and not
+        /// only on the endpoint, so a walk that curves around an obstacle and happens to end in line
+        /// is not one of these.</description></item>
+        /// <item><description>"<b>If able</b>" - a defender who was removed at step 6, declined to
+        /// defend, defended with a card printing no Movement value, or stands with every direction
+        /// blocked, simply does nothing. The handler reports the step impossible and the enclosing
+        /// <see cref="EffectFailurePolicy.IfAble"/> makes that a silent skip.</description></item>
+        /// </list></para>
+        ///
+        /// <para><b>It is a direct Move and not a Movement action</b>, under the 2026-09-06 rider: it
+        /// is reached from inside an Attack, so movement-action restrictions do not block it and
+        /// movement-action buffs do not widen it, and there is no Fast Travel to substitute because
+        /// there is no action being offered to anybody. The card's own Movement <em>value</em> is what
+        /// the sentence borrows; its Movement <em>action</em> is not performed.</para>
+        /// </summary>
+        public static EffectCapabilityReference DefendedCardForcedMoveV1 =>
+            Reference("defended-card-forced-move", 1);
+
+        /// <summary>
+        /// Milestone 8.35z33. <c>enemy-hero-with-discard-present@1</c> - whether any enemy hero inside
+        /// the acting card's own printed Radius disk has a card in their discard pile.
+        ///
+        /// <para>Three of Whisper's faces gate on it and all three print the same clause: Death
+        /// Seeker's "If an enemy hero in radius has a card in the discard", and Blood Fury's and Blood
+        /// Frenzy's identical condition on their repeats. One phrase, one derivation.</para>
+        ///
+        /// <para><b>Nothing in the shipped build reads another hero's discard pile as a question.</b>
+        /// <c>owned-card-present@1</c> asks about a <em>named</em> hero's own cards and is how "if you
+        /// have a card in hand" is composed; this one asks about a <em>class</em> of heroes picked out
+        /// by the disk, and its answer is a single boolean rather than a hero, because the sentence
+        /// selects nobody - it is a condition, and the card's other clauses choose their own
+        /// subjects.</para>
+        ///
+        /// <para><b>It is asked live, every time.</b> Blood Frenzy re-checks it before each repeat, and
+        /// the 2026-09-06 ruling makes that consequential rather than incidental: a hero who discards
+        /// <em>to defend</em> one instance of the chain makes the condition true for the instances
+        /// after it. Deriving on each ask is what makes that fall out rather than needing to be
+        /// arranged.</para>
+        /// </summary>
+        public static EffectCapabilityReference EnemyHeroWithDiscardPresentV1 =>
+            Reference("enemy-hero-with-discard-present", 1);
+
+        /// <summary>
+        /// Milestone 8.35z33. <c>choose-swap-subject@1</c> - one selection over a union of two differently
+        /// reached sets, for Whisper's Cruel Twist and Sealed Fate: "Swap with a unit adjacent to you,
+        /// <b>or</b> with an enemy hero in range with a card in the discard."
+        ///
+        /// <para><b>Why the union cannot be two nodes.</b> The face offers one choice, not a choice of
+        /// which kind of choice to make. Composing it as a <see cref="EffectNodeKind.Choose"/> over two
+        /// selections would put a question to the player that the card never asks - and would let one
+        /// arm be greyed for emptiness while the other still had subjects, which is a shape the printed
+        /// sentence has no room for.</para>
+        ///
+        /// <para><b>Both arms are optional and each is absent when its parameter is.</b> That is what
+        /// keeps this a general statement of "a selection over a union" rather than one card's sentence
+        /// spelled into a handler: a face printing only the adjacency half declares only that half, and
+        /// gets exactly the candidates it prints.</para>
+        ///
+        /// <para><b>The two reaches are different kinds of number and stay apart.</b> Adjacency is
+        /// p.19's innermost ring, written into the sentence, which p.16's items never raise; the hero
+        /// arm's reach is the card's printed Range icon, which a +1 Range item does raise. That is the
+        /// same doctrine the Range/Radius selection split records, applied inside one sentence.</para>
+        /// </summary>
+        public static EffectCapabilityReference ChooseSwapSubjectV1 =>
+            Reference("choose-swap-subject", 1);
+
+        /// <summary>
+        /// Which units the adjacency arm of <see cref="ChooseSwapSubjectV1"/> admits, as a
+        /// <see cref="RosterUnitKind"/>, or absent where the sentence prints no such arm.
+        /// </summary>
+        public const string AdjacentUnitKindParameter = "adjacentUnitKind";
+
+        /// <summary>
+        /// Which side the printed-Range hero arm of <see cref="ChooseSwapSubjectV1"/> admits, as a
+        /// <see cref="SourceTeamRelation"/>, or absent where the sentence prints no such arm.
+        /// </summary>
+        public const string RangedHeroRelationParameter = "rangedHeroRelation";
+
+        /// <summary>
+        /// Whether the printed-Range hero arm of <see cref="ChooseSwapSubjectV1"/> requires the hero to
+        /// have a card in their discard - "with a card in the discard", which both faces print.
+        /// </summary>
+        public const string RangedHeroRequiresDiscardParameter = "rangedHeroRequiresDiscard";
 
         public const string OriginParameter = "origin";
 
@@ -533,6 +681,30 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string MinimumPresentParameter = "minimum";
 
+        /// <summary>
+        /// Milestone 8.35z33. The ceiling a counting sentence prints on its own answer - Whisper's
+        /// Sanguine Path and Blood Pilgrimage, "up to 1 space for every empty minion spawn point in
+        /// radius in the battle zone <em>up to a maximum of 2 / 3 spaces</em>".
+        ///
+        /// <para>It caps the published <see cref="CountOutput"/> rather than being applied by whoever
+        /// reads it, because the sentence's arithmetic is one sentence: the number the card yields IS
+        /// the lesser of the board's count and the printed maximum, and a consumer that had to
+        /// remember to clamp is a second place the same reading could be wrong. The count of Spawn
+        /// points on the board is not itself changed by this - what is published is what the sentence
+        /// yields.</para>
+        ///
+        /// <para>Optional, and defaulting to no ceiling at all, so a face that prints a bare "for
+        /// every" reads the whole count.</para>
+        /// </summary>
+        public const string MaximumCountedParameter = "maximumCounted";
+
+
+        /// <summary>
+        /// Where a move this vocabulary performs put its subject. Milestone 8.35z33, spelled the same as
+        /// the direct Move's because it is the same kind of answer.
+        /// </summary>
+        public const string MovedOutput = "moved";
+
         /// <summary>The hero whose own cards a card-state capability reads. Milestone 8.21.</summary>
         public const string HeroParameter = "hero";
 
@@ -627,6 +799,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// supplies the ONE <c>choose-line-destination@1</c> the line above names: both milestones minted
         /// that id against the same output, and the wave kept this - the superset, whose optional
         /// <see cref="IgnoresObstaclesParameter"/> is what Misa's five Blue Skills bind.</para>
+        ///
+        /// <para>Milestone 8.35z33 adds Whisper the Outcast's four, and supplies the ONE
+        /// <c>empty-minion-spawn-points-in-radius@1</c> her Red line and Dodger's rituals both name -
+        /// the superset again, whose optional <see cref="MaximumCountedParameter"/> is the ceiling
+        /// Sanguine Path and Blood Pilgrimage print and Dodger's faces do not. THE GATE HAS TWO HALVES
+        /// and no milestone in this wave can satisfy either: a registered capability must be reachable
+        /// from a card a match <em>deals</em>, and a new handler type must additionally be reachable
+        /// from a <c>SyntheticShowcaseHand</c> card. Each hero's dealing milestone is what moves her
+        /// lines into the registration list, together with the showcase consumers that second half
+        /// requires.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers()
         {
@@ -648,6 +830,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             yield return new UnitPairHandler(
                 ChooseUnitPairAtEqualDistanceInRadiusV1, onTheMaximumRingOnly: false);
             yield return new CardTextFastTravelHandler();
+            yield return new ChooseTargetTrioHandler();
+            yield return new DefendedCardForcedMoveHandler();
+            yield return new EnemyHeroWithDiscardPresentHandler();
+            yield return new ChooseSwapSubjectHandler();
         }
 
         /// <summary>
@@ -1406,6 +1592,140 @@ namespace GuardsDigital.Core.Effects.Synthetic
         }
 
         /// <summary>
+        /// Milestone 8.35z33. <c>choose-target-trio@1</c> - <see cref="ChooseTargetSetHandler"/>'s
+        /// question with a third slot, for Whisper's Greater Good: "You defeat up to 3 minions
+        /// adjacent to you."
+        ///
+        /// <para><b>Zero is a legal answer and that is the whole of "up to".</b> The minimum the
+        /// definition declares is what a bare "up to N" means at its floor, and Ruling 18 is why it
+        /// matters here rather than being a formality: "a minion" includes a friendly one, so an
+        /// opponent who chose this bullet may be handing Whisper nothing but her own minions, and
+        /// naming none of them is the answer she is entitled to give. Nothing in the count is
+        /// forced.</para>
+        ///
+        /// <para>Everything else is the two-slot handler's: the same candidate derivation, the same
+        /// p.18 immunity question, the same canonical ordering of the answer, so the two selections
+        /// cannot come to disagree about who is standing where.</para>
+        /// </summary>
+        private sealed class ChooseTargetTrioHandler : TargetingHandler, IEffectCapabilityHandler
+        {
+            /// <summary>The most slots this selection publishes, and therefore its ceiling.</summary>
+            private const int Slots = 3;
+
+            public override IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
+                Array.Empty<RuleActivity>();
+
+            public EffectCapabilityReference Reference => ChooseTargetTrioV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = TargetSchema(
+                new[]
+                {
+                    new EffectCapabilityParameter("minimum", EffectValueKind.Integer),
+                    new EffectCapabilityParameter("maximum", EffectValueKind.Integer)
+                },
+                new[]
+                {
+                    new EffectOutputBinding("selectedCount", EffectValueKind.Integer),
+                    new EffectOutputBinding("firstHero", EffectValueKind.Hero),
+                    new EffectOutputBinding("firstMinion", EffectValueKind.Minion),
+                    new EffectOutputBinding("secondHero", EffectValueKind.Hero),
+                    new EffectOutputBinding("secondMinion", EffectValueKind.Minion),
+                    new EffectOutputBinding("thirdHero", EffectValueKind.Hero),
+                    new EffectOutputBinding("thirdMinion", EffectValueKind.Minion)
+                });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var candidates = DeclaredTargets(context);
+                if (!Bounds(context, candidates.Count, out var minimum, out var maximum))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return maximum == 0
+                    ? SetOutcome(Array.Empty<BoardObjectReference>())
+                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor, candidates.Select(AsValue), minimum, maximum));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                var candidates = DeclaredTargets(context);
+                if (!Bounds(context, candidates.Count, out var minimum, out var maximum))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var chosen = (selected ?? Array.Empty<EffectValue>()).Select(FromValue).ToArray();
+                if (chosen.Any(value => !value.IsDefined || !candidates.Contains(value)) ||
+                    chosen.Distinct().Count() != chosen.Length ||
+                    chosen.Length < minimum || chosen.Length > maximum)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return SetOutcome(Canonical(chosen));
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                var candidates = DeclaredTargets(context);
+                if (!Bounds(context, candidates.Count, out _, out var maximum))
+                {
+                    return EffectExecutionResultKind.ImpossibleMandatory;
+                }
+
+                return maximum == 0
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.NeedsChoice;
+            }
+
+            private static bool Bounds(
+                EffectCapabilityContext context, int candidates, out int minimum, out int maximum)
+            {
+                minimum = context.Input("minimum").IntegerValue;
+                maximum = context.Input("maximum").IntegerValue;
+                if (minimum < 0 || maximum < minimum || maximum > Slots)
+                {
+                    return false;
+                }
+
+                maximum = Math.Min(maximum, candidates);
+                return minimum <= maximum;
+            }
+
+            private static EffectExecutionResult SetOutcome(
+                IReadOnlyList<BoardObjectReference> selected)
+            {
+                var facts = new List<EffectOutcomeFact>
+                {
+                    new EffectOutcomeFact("selectedCount", EffectValue.Integer(selected.Count))
+                };
+
+                if (selected.Count > 0)
+                {
+                    facts.Add(AsOutcome(selected[0], "firstHero", "firstMinion"));
+                }
+
+                if (selected.Count > 1)
+                {
+                    facts.Add(AsOutcome(selected[1], "secondHero", "secondMinion"));
+                }
+
+                if (selected.Count > 2)
+                {
+                    facts.Add(AsOutcome(selected[2], "thirdHero", "thirdMinion"));
+                }
+
+                return EffectExecutionResult.Applied(facts);
+            }
+        }
+
+        /// <summary>
         /// Milestone 8.35l gave this selection the two members that let it be narrowed, and the reason
         /// it had none is worth stating rather than inferring. Milestone 6.8l's contract is opt-in: a
         /// selection accepts a consumer by declaring the parameter, and this one declared none, so
@@ -2128,7 +2448,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // one knows both. Optional and defaulting to one, which is what a bare
                         // "adjacent to an empty spawn point" asks.
                         new EffectCapabilityParameter(
-                            MinimumPresentParameter, EffectValueKind.Integer, isRequired: false)
+                            MinimumPresentParameter, EffectValueKind.Integer, isRequired: false),
+
+                        // Milestone 8.35z33's half of the shared declaration: the ceiling Sanguine
+                        // Path and Blood Pilgrimage print - "up to a maximum of 2 / 3 spaces" - which
+                        // Dodger's own faces do not print and therefore do not set. Optional, so
+                        // every node written against this contract before the wave is unchanged
+                        // without naming it.
+                        new EffectCapabilityParameter(
+                            MaximumCountedParameter, EffectValueKind.Integer, isRequired: false)
                     },
                     new[]
                     {
@@ -2202,6 +2530,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     : 1;
             }
 
+            /// <summary>
+            /// The count under the ceiling the sentence prints, or the count where it prints none.
+            /// Milestone 8.35z33.
+            /// </summary>
+            private static int Capped(EffectCapabilityContext context, int count)
+            {
+                var declared = context.Input(MaximumCountedParameter);
+                return declared.Kind == EffectValueKind.Integer && declared.IntegerValue >= 0
+                    ? Math.Min(count, declared.IntegerValue)
+                    : count;
+            }
+
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var count = Count(context);
@@ -2209,7 +2549,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     ? EffectExecutionResult.ImpossibleMandatory()
                     : EffectExecutionResult.Applied(new[]
                     {
-                        new EffectOutcomeFact(CountOutput, EffectValue.Integer(count)),
+                        new EffectOutcomeFact(CountOutput, EffectValue.Integer(Capped(context, count))),
+
+                        // The presence question is asked of the board's own count and never of the
+                        // capped one: "if there is an empty minion spawn point" is about the board,
+                        // and a printed ceiling on how far a hero may walk says nothing about what is
+                        // standing there. No face prints both, but the two clauses are different
+                        // questions and reading one through the other would be a coincidence rather
+                        // than a rule.
                         new EffectOutcomeFact(
                             PresentOutput, EffectValue.Boolean(count >= Minimum(context)))
                     });
@@ -3468,6 +3815,465 @@ namespace GuardsDigital.Core.Effects.Synthetic
             values.OrderBy(value => value.Kind)
                 .ThenBy(value => RosterPresenceQuery.Identity(value), StringComparer.Ordinal)
                 .ToArray();
+
+        /// <summary>
+        /// Milestone 8.35z33. The handler behind <see cref="DefendedCardForcedMoveV1"/>: the forced
+        /// straight-line move Whisper's Gold cards make their target perform at p.14's step 7. The
+        /// printed reading of each of its four clauses is on the declaration.
+        /// </summary>
+        private sealed class DefendedCardForcedMoveHandler : IEffectCapabilityHandler
+        {
+            private static readonly HexDirection[] Directions =
+            {
+                HexDirection.East, HexDirection.NorthEast, HexDirection.NorthWest,
+                HexDirection.West, HexDirection.SouthWest, HexDirection.SouthEast
+            };
+
+            public EffectCapabilityReference Reference => DefendedCardForcedMoveV1;
+
+            /// <summary>
+            /// It takes nothing and publishes where the defender ended up. Every fact it needs is a
+            /// property of the Attack it is printed inside - who was targeted and what they defended
+            /// with - so a parameter naming any of them would be a second place the same fact could be
+            /// wrong, which is the reading <c>attacked-target-space@1</c> already takes of the space.
+            /// </summary>
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(MovedOutput, EffectValueKind.Coordinate)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var destinations = Destinations(context, out var moverId);
+                if (destinations.Count == 0)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // The decision is the defender's, named exactly rather than through a role: with
+                // several opponents there is no single "the" opposing hero, and this one is picked
+                // out by the Attack rather than by the frame.
+                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.None,
+                    destinations.Select(EffectValue.Space),
+                    1,
+                    1,
+                    chooserHeroId: moverId));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Coordinate)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Re-derived rather than trusted from the paused offer, exactly as the direct Move
+                // does: a space that was the furthest this direction reached when the question opened
+                // may not be reachable at all by the time the answer arrives.
+                var destinations = Destinations(context, out var moverId);
+                if (!destinations.Any(value => value.Equals(selected[0].Coordinate)))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var committed = context.Components.Board.CommitValidatedDisplacement(
+                    BoardObjectReference.ForHero(moverId), selected[0].Coordinate);
+                return committed.Accepted
+                    ? EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(MovedOutput, EffectValue.Space(committed.Destination))
+                    })
+                    : EffectExecutionResult.ImpossibleMandatory();
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Destinations(context, out _).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// The furthest space each of p.19's six directions reaches at the defended card's printed
+            /// Movement value, or nothing at all where any clause of the sentence cannot be satisfied.
+            ///
+            /// <para><b>One destination per direction, and it is the furthest one.</b> "Moving full
+            /// distance" removes p.11's "up to", so the intermediate spaces of a line are not offers;
+            /// "as far as possible" is what keeps a blocked direction in the set at the last space it
+            /// reaches rather than dropping it. A direction that cannot be entered at all contributes
+            /// nothing, which is how a hero hemmed in on every side ends up doing nothing at all.</para>
+            /// </summary>
+            private static IReadOnlyList<HexCoordinate> Destinations(
+                EffectCapabilityContext context, out HeroId moverId)
+            {
+                moverId = default;
+
+                var attack = context.EnclosingAttack;
+                var components = context.Components;
+                if (!attack.IsDefined || !attack.HeroTargetId.IsDefined ||
+                    !attack.DefenseCardInstanceId.IsDefined ||
+                    components?.Board == null || !components.CanDisplace ||
+                    !context.CardState.IsAvailable)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                // "If able" covers the hero the page removed at step 6: a defeated defender is not
+                // standing anywhere, so there is nothing to move.
+                var mover = BoardObjectReference.ForHero(attack.HeroTargetId);
+                if (!components.Board.TryGetObjectCoordinate(mover, out var moverAt))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var distance = DefendedCardMovement(context, attack.HeroTargetId);
+                if (distance < 1)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var routes = components.Board
+                    .FindDirectMoveDestinations(
+                        mover, distance, context.Modifications, moveIgnoresObstacles: false)
+                    .ToArray();
+
+                var furthest = new List<HexCoordinate>();
+                foreach (var direction in Directions)
+                {
+                    var best = default(HexCoordinate);
+                    var bestCost = 0;
+                    foreach (var route in routes)
+                    {
+                        if (route.Cost < 1 || route.Cost > distance ||
+                            !StraightLineQuery.TryGetDirection(
+                                moverAt, route.Destination, out var walked, out var walkedDistance) ||
+                            walked != direction || walkedDistance != route.Cost ||
+                            !IsStraightRoute(moverAt, direction, route.Route))
+                        {
+                            continue;
+                        }
+
+                        if (route.Cost > bestCost)
+                        {
+                            bestCost = route.Cost;
+                            best = route.Destination;
+                        }
+                    }
+
+                    if (bestCost > 0)
+                    {
+                        furthest.Add(best);
+                    }
+                }
+
+                moverId = attack.HeroTargetId;
+                return furthest
+                    .Distinct()
+                    .OrderBy(value => value.Q)
+                    .ThenBy(value => value.R)
+                    .ToArray();
+            }
+
+            /// <summary>
+            /// The printed Movement value of the card the defender defended with, composed with
+            /// rulebook p.16's matching item, or zero where that card prints no Movement action at
+            /// all - which is the "if able" this sentence fails silently on.
+            /// </summary>
+            private static int DefendedCardMovement(EffectCapabilityContext context, HeroId defenderId)
+            {
+                var instance = context.CardState.Instances
+                    .FirstOrDefault(card =>
+                        card.Id.Equals(context.EnclosingAttack.DefenseCardInstanceId));
+                if (instance == null)
+                {
+                    return 0;
+                }
+
+                var definition = context.CardState.Definitions
+                    .FirstOrDefault(candidate =>
+                        candidate.Reference.Equals(instance.DefinitionReference));
+
+                // p.9 prints one Movement icon per card, wherever it sits: on the left ribbon for a
+                // face whose primary is something else, and in the primary band for a face whose
+                // primary IS the Movement. "a movement action on the card" names whichever one that
+                // card has, so the action is looked up by kind rather than by origin.
+                var movement = definition?.ActionDefinitions
+                    .FirstOrDefault(action => action.Kind == ActionKind.Movement);
+                if (movement == null)
+                {
+                    return 0;
+                }
+
+                var offer = new ActionOffer(
+                    instance.Id,
+                    instance.DefinitionReference,
+                    movement.Id,
+                    defenderId,
+                    movement.Origin == ActionDefinitionOrigin.PrintedPrimary
+                        ? ActionInvocationContext.PrintedPrimary
+                        : ActionInvocationContext.PrintedSecondary,
+                    true);
+
+                return MovementValueQuery
+                    .Calculate(offer, context.CardState.Definitions, context.HeroItems, context.Modifications)
+                    .Total;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z33. The handler behind <see cref="EnemyHeroWithDiscardPresentV1"/>.
+        /// </summary>
+        private sealed class EnemyHeroWithDiscardPresentHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => EnemyHeroWithDiscardPresentV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(PresentOutput, EffectValueKind.Boolean)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
+                EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(PresentOutput, EffectValue.Boolean(Present(context)))
+                });
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
+
+            /// <summary>
+            /// Whether any enemy hero in the printed disk holds a discarded card right now.
+            ///
+            /// <para>An unanswerable board - no components, no card state, an actor standing nowhere -
+            /// reports false rather than impossible. The clause is a condition, and rulebook p.10 lets
+            /// a condition that is not satisfied leave the rest of the card alone; reporting the step
+            /// impossible would stop an action over a question that simply had no answer.</para>
+            /// </summary>
+            private static bool Present(EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                if (components?.Board == null || context.Participants == null ||
+                    !context.CardState.IsAvailable ||
+                    !components.Board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return false;
+                }
+
+                var radius = RadiusValueQuery.Calculate(
+                    context.SourceCardInstanceId,
+                    context.SourceDefinitionReference,
+                    context.ActionDefinitionId,
+                    context.CardState.Definitions,
+                    context.ActorId,
+                    context.HeroItems);
+                if (radius.Total <= 0)
+                {
+                    return false;
+                }
+
+                // p.18 makes immunity irrelevant to a presence question - "Effects that check for unit
+                // presence will count immune units" - so no immunity filter is applied here, and none
+                // would be right: this asks whether somebody is standing there holding something, not
+                // whether anything may be done to them.
+                return RosterPresenceQuery.FindUnitsWithin(
+                        actorAt, radius.Total, RosterUnitKind.Hero, SourceTeamRelation.OpposingSource,
+                        context.ActorId, components.Board, context.Participants, context.Modifications)
+                    .Where(unit => unit.Kind == BoardObjectKind.Hero)
+                    .Any(unit => context.CardState.Instances.Any(card =>
+                        card.OwnerId.Equals(unit.HeroId) &&
+                        card.State.Location == CardLocation.DiscardPile));
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z33. The handler behind <see cref="ChooseSwapSubjectV1"/>: one selection over
+        /// the union of an adjacency arm and a printed-Range hero arm.
+        /// </summary>
+        private sealed class ChooseSwapSubjectHandler : TargetingHandler, IEffectCapabilityHandler
+        {
+            public override IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
+                SwapActivity;
+
+            public EffectCapabilityReference Reference => ChooseSwapSubjectV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter(
+                            AdjacentUnitKindParameter,
+                            EffectValueKind.Integer,
+                            isRequired: false,
+                            integerDomain: EffectIntegerDomain.All<RosterUnitKind>()),
+                        new EffectCapabilityParameter(
+                            RangedHeroRelationParameter,
+                            EffectValueKind.Integer,
+                            isRequired: false,
+                            integerDomain: EffectIntegerDomain.All<SourceTeamRelation>()),
+                        new EffectCapabilityParameter(
+                            RangedHeroRequiresDiscardParameter,
+                            EffectValueKind.Boolean,
+                            isRequired: false)
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding(ChosenSpaceOutput, EffectValueKind.Coordinate),
+                        new EffectOutputBinding(ChosenHeroOutput, EffectValueKind.Hero),
+                        new EffectOutputBinding(ChosenMinionOutput, EffectValueKind.Minion)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var candidates = Subjects(context);
+                return candidates.Count == 0
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor, candidates.Select(AsValue), 1, 1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var chosen = FromValue(selected[0]);
+                if (!chosen.IsDefined || !Subjects(context).Contains(chosen) ||
+                    !context.Components.Board.TryGetObjectCoordinate(chosen, out var at))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    AsOutcome(chosen, ChosenHeroOutput, ChosenMinionOutput),
+                    new EffectOutcomeFact(ChosenSpaceOutput, EffectValue.Space(at))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Subjects(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// The union the sentence names, in canonical order and without duplicates - an enemy hero
+            /// standing adjacent with a card in their discard satisfies both arms and is one candidate,
+            /// which is what "or" means about a set.
+            /// </summary>
+            private static IReadOnlyList<BoardObjectReference> Subjects(
+                EffectCapabilityContext context)
+            {
+                var board = context.Components?.Board;
+                if (board == null || context.Participants == null ||
+                    !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                var found = new List<BoardObjectReference>();
+
+                var adjacentKind = (RosterUnitKind)context.Input(AdjacentUnitKindParameter).IntegerValue;
+                if (adjacentKind != RosterUnitKind.None &&
+                    Enum.IsDefined(typeof(RosterUnitKind), adjacentKind))
+                {
+                    // p.19's innermost ring, written into the sentence, and every side of the board:
+                    // "a unit adjacent to you" names neither team, so neither is excluded.
+                    found.AddRange(Admitted(
+                        context, board,
+                        RosterPresenceQuery.FindUnitsWithin(
+                            actorAt, 1, adjacentKind, SourceTeamRelation.AnyTeam,
+                            context.ActorId, board, context.Participants, context.Modifications)));
+                }
+
+                var heroRelation = (SourceTeamRelation)context
+                    .Input(RangedHeroRelationParameter).IntegerValue;
+                if (heroRelation != SourceTeamRelation.None &&
+                    Enum.IsDefined(typeof(SourceTeamRelation), heroRelation) &&
+                    context.CardState.IsAvailable)
+                {
+                    var range = RangeValueQuery.Calculate(
+                        context.SourceCardInstanceId,
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions,
+                        context.ActorId,
+                        context.HeroItems,
+                        context.Modifications,
+                        // Card text resolving inside an action asks for the same Range total that
+                        // action's own targeting asked for, so the class is read from the card and
+                        // action this node is inside rather than assumed from the node.
+                        ActionValueApplicabilityQuery.For(
+                            context.SourceDefinitionReference,
+                            context.ActionDefinitionId,
+                            context.CardState.Definitions));
+                    if (range.Total > 0)
+                    {
+                        var requiresDiscard =
+                            context.Input(RangedHeroRequiresDiscardParameter).BooleanValue;
+                        found.AddRange(Admitted(
+                            context, board,
+                            RosterPresenceQuery.FindUnitsWithin(
+                                    actorAt, range.Total, RosterUnitKind.Hero, heroRelation,
+                                    context.ActorId, board, context.Participants, context.Modifications)
+                                .Where(unit => unit.Kind == BoardObjectKind.Hero)
+                                .Where(unit => !requiresDiscard || HoldsADiscard(context, unit.HeroId))
+                                .ToArray()));
+                    }
+                }
+
+                return found
+                    .Distinct()
+                    .OrderBy(value => value.Kind)
+                    .ThenBy(value => value.HeroId.Value ?? value.MinionId.Value, StringComparer.Ordinal)
+                    .ToArray();
+            }
+
+            /// <summary>
+            /// p.18's immunity question, asked once for both arms: a unit immune to being swapped by
+            /// this actor is not a legal subject of either half of the sentence.
+            /// </summary>
+            private static IReadOnlyList<BoardObjectReference> Admitted(
+                EffectCapabilityContext context,
+                IBoardDisplacementAuthority board,
+                IReadOnlyList<BoardObjectReference> candidates) =>
+                candidates
+                    .Where(candidate => !ImmunityQuery.IsImmuneTo(
+                        candidate.AsRuleObject(),
+                        RuleActivity.Swap,
+                        BoardObjectReference.ForHero(context.ActorId).AsRuleObject(),
+                        board,
+                        context.Participants,
+                        context.Modifications,
+                        context.ImmunityOverrides))
+                    .ToArray();
+
+            private static bool HoldsADiscard(EffectCapabilityContext context, HeroId heroId) =>
+                context.CardState.Instances.Any(card =>
+                    card.OwnerId.Equals(heroId) && card.State.Location == CardLocation.DiscardPile);
+        }
 
         private static bool IsStraightRoute(
             HexCoordinate origin,

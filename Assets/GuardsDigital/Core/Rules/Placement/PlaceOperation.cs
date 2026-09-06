@@ -178,7 +178,7 @@ namespace GuardsDigital.Core.Rules.Placement
             }
 
             var admitted = PlaceDestinationQuery.FindDestinations(
-                policy, spaces, measuredFrom, scopedCoordinates, modifications, spawnPoints);
+                policy, spaces, measuredFrom, scopedCoordinates, modifications, spawnPoints, board);
             if (!admitted.Contains(destination))
             {
                 return PlaceOutcome.Reject(

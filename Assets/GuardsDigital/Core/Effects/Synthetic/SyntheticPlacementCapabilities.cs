@@ -472,7 +472,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var destinations = PlaceDestinationQuery.FindDestinations(
                     policy, context.Components.Tokens, origin, QualifyingSpaces(context, policy, origin),
-                    context.Modifications, context.Components.Units);
+                    context.Modifications, context.Components.Units, context.Components.Board);
                 if (destinations.Count == 0)
                 {
                     return policy.NoDestinationPolicy == PlaceNoDestinationPolicy.Decline
@@ -532,7 +532,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var destinations = PlaceDestinationQuery.FindDestinations(
                     policy, context.Components.Tokens, origin, QualifyingSpaces(context, policy, origin),
-                    context.Modifications, context.Components.Units);
+                    context.Modifications, context.Components.Units, context.Components.Board);
                 if (destinations.Count > 0)
                 {
                     return EffectExecutionResultKind.NeedsChoice;

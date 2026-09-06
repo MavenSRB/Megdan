@@ -2256,13 +2256,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // before p.14's consequences. Both come off the resolution rather than off the board: a
             // step-7 rider asks about a hero the page has already removed, and a text that binds its
             // own target has to be able to see which unit it bound.
+            // Milestone 8.35z33 adds the card the defender answered p.14's step 3 with, for Whisper's
+            // Swift Justice - "that hero performs a movement action on the card they defended with".
+            // It is the offer the Defense window accepted, so it is a projection of state this
+            // resolution already holds rather than anything new to persist; where the attack was not
+            // defended, or has not reached that step, there is no offer and the field is undefined,
+            // which is the "if able" the face prints.
             return new GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts(
                 attack.ActorId,
                 attack.TargetHeroId,
                 attack.TargetMinionId,
                 action?.AttackRange ?? AttackRangeKind.None,
                 attack.TargetSpaceBeforeConsequences,
-                attack.ActorSpaceAtActionStart);
+                attack.ActorSpaceAtActionStart,
+                attack.DefenseOffer?.SourceCardInstanceId ?? default);
         }
 
         private void RecordOwedAttackRepeat(

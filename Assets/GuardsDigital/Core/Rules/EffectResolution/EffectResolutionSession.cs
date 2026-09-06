@@ -957,6 +957,34 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                                 continue;
                             }
 
+                            // Milestone 8.35z33. A modal whose chooser is a hero this text named -
+                            // Whisper's "An enemy hero in range chooses one" - resolves that hero
+                            // from the node's own binding, which is the same precedence milestone
+                            // 7.1a gave a handler that already knows: a named hero beats a role.
+                            // A binding that resolved to nobody is a decision with no owner, so the
+                            // node reports itself impossible rather than quietly asking the actor -
+                            // which would hand the opponent's choice to the card's own controller.
+                            var boundChooser = BoundChooser(node, frame, outcomes, context);
+                            if (node.Chooser == EffectChooserRole.BoundHero && !boundChooser.IsDefined)
+                            {
+                                Pop(continuation);
+                                Record(
+                                    outcomes, events, node.Id,
+                                    node.FailurePolicy == EffectFailurePolicy.Mandatory
+                                        ? EffectExecutionResultKind.ImpossibleMandatory
+                                        : EffectExecutionResultKind.DeclinedOptional);
+                                if (node.FailurePolicy == EffectFailurePolicy.Mandatory)
+                                {
+                                    // The action stops here, exactly as a mandatory capability that
+                                    // cannot be taken stops it: the next pass reads an empty
+                                    // continuation and completes, leaving everything already applied
+                                    // applied.
+                                    continuation.Clear();
+                                }
+
+                                continue;
+                            }
+
                             // Milestone 6.5ae: a mandatory node whose every option is refused pauses
                             // with all of them greyed and offers p.10's stop, which the player takes.
                             // Milestone 6.5ac stopped here without asking, because a mandatory Choose
@@ -982,7 +1010,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                                         ResolveChooser(node.Chooser, frame, context),
                                         context.Modifications),
                                 unavailableCandidates: unavailable,
-                                canStop: everyOptionRefused));
+                                canStop: everyOptionRefused,
+                                chooserHeroOverride: boundChooser));
                         }
 
                         Pop(continuation);
@@ -1308,6 +1337,59 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 unavailableCandidates,
                 canStop,
                 declinableRegardlessOfMinimum);
+
+        /// <summary>
+        /// Milestone 8.35z33. The hero a <see cref="EffectChooserRole.BoundHero"/> node names, or the
+        /// undefined hero for every other node - which is what
+        /// <see cref="BuildChoice"/>'s override means by absent, so nothing about the four earlier
+        /// roles changes.
+        ///
+        /// <para>It is resolved through the ordinary input pipeline rather than by reaching into the
+        /// outcomes directly, so a bound chooser sees exactly what a bound subject would: the same
+        /// last-outcome rule, the same undefined-for-unresolvable answer, and the same behaviour
+        /// after a snapshot restore, because the outcomes are what the snapshot carries.</para>
+        /// </summary>
+        private static HeroId BoundChooser(
+            EffectNodeDefinition node,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context)
+        {
+            if (node.Chooser != EffectChooserRole.BoundHero)
+            {
+                return default;
+            }
+
+            var inputs = ResolveInputBindings(node, frame, outcomes, context.OpposingHeroId);
+            return inputs.TryGetValue(EffectNodeDefinition.ChooserParameterName, out var value) &&
+                value.Kind == EffectValueKind.Hero
+                    ? value.HeroId
+                    : default;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z33. Rulebook p.9's supertype of the card this text is printed on, or
+        /// <see cref="CardClassification.None"/> where the frame cannot say.
+        ///
+        /// <para>It is read from the definitions the frame is already carrying rather than from a
+        /// field on the context, so a restored pause answers it exactly as the live one did. A source
+        /// the definitions do not name is reported as unknown and not as non-basic: a scoped
+        /// declaration is then simply not applied, which is the reading that cannot widen a modal by
+        /// accident.</para>
+        /// </summary>
+        private static CardClassification SourceCardClassification(
+            PendingResolution frame, EffectResolutionContext context)
+        {
+            if (frame == null || context?.CardState == null || !context.CardState.IsAvailable)
+            {
+                return CardClassification.None;
+            }
+
+            var definition = context.CardState.Definitions
+                .FirstOrDefault(candidate =>
+                    candidate.Reference.Equals(frame.SourceDefinitionReference));
+            return definition?.Progression.Classification ?? CardClassification.None;
+        }
 
         private static HeroId ResolveChooser(
             EffectChooserRole role,

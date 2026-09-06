@@ -43,8 +43,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             MinionId minionTargetId,
             AttackRangeKind range,
             HexCoordinate? targetSpaceBeforeConsequences,
-            HexCoordinate? actorSpaceAtActionStart = null)
+            HexCoordinate? actorSpaceAtActionStart = null,
+            CardInstanceId defenseCardInstanceId = default)
         {
+            DefenseCardInstanceId = defenseCardInstanceId;
             if (!Enum.IsDefined(typeof(AttackRangeKind), range))
             {
                 throw new ArgumentException(
@@ -120,6 +122,25 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// <see cref="GuardsDigital.Core.Rules.CardResolution.PendingAttackResolution.ActorSpaceAtActionStart"/>.
         /// </summary>
         public HexCoordinate? ActorSpaceAtActionStart { get; }
+
+        /// <summary>
+        /// Milestone 8.35z33. The card the defender revealed and discarded at rulebook p.14's step 3, or
+        /// the undefined card where this Attack has not reached that step or was never defended.
+        ///
+        /// <para>It is what Whisper's Swift Justice names at step 7 - "that hero performs a movement
+        /// action on <em>the card they defended with</em>" - and it is the only fact about a defence
+        /// that the board stops being able to answer: by the time the rider runs, that card is one of
+        /// several in a discard pile with nothing distinguishing it.</para>
+        ///
+        /// <para><b>It is read from the Attack's own defence offer rather than stored anywhere new.</b>
+        /// The pending Attack has carried the offer the defender answered with since the Defense window
+        /// was built, so this field is a projection of state the resolution already holds - which is
+        /// why it costs no snapshot bytes and no schema movement. The face's "empty discard"
+        /// precondition would make the card identifiable a second way, by being the only one in the
+        /// pile; reading the offer instead means the rider does not depend on that precondition having
+        /// been enforced.</para>
+        /// </summary>
+        public CardInstanceId DefenseCardInstanceId { get; }
 
         /// <summary>Whether there is an enclosing Attack to ask about at all.</summary>
         public bool IsDefined => ActorId.IsDefined;

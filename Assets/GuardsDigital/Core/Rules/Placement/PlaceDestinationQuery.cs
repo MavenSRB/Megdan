@@ -51,23 +51,39 @@ namespace GuardsDigital.Core.Rules.Placement
         /// carved out Spawn points and was asked without them would admit the very spaces Arien's
         /// three Green cards refuse, and nothing downstream could tell.
         /// </param>
+        /// <param name="board">
+        /// The board, required exactly when the policy declares one of the two Battle-Zone clauses
+        /// milestone 8.35z33 added and ignored otherwise. It is required for the same reason
+        /// <paramref name="spawnPoints"/> is: those clauses ask which Spawn points are <em>minion</em>
+        /// points and which lie in the <em>current</em> Battle Zone, and both questions are the map's
+        /// and the Lane's rather than the token port's.
+        /// </param>
         public static IReadOnlyList<HexCoordinate> FindDestinations(
             PlacePolicy policy,
             ITokenPlacementAuthority spaces,
             HexCoordinate origin,
             IReadOnlyList<HexCoordinate> scopedCoordinates,
             RuleModificationSet modifications,
-            IUnitSpawnAuthority spawnPoints = null)
+            IUnitSpawnAuthority spawnPoints = null,
+            IBoardDisplacementAuthority board = null)
         {
             if (policy == null) throw new ArgumentNullException(nameof(policy));
             if (spaces == null) throw new ArgumentNullException(nameof(spaces));
             if (modifications == null) throw new ArgumentNullException(nameof(modifications));
-            if (policy.SpawnPointExclusion != PlaceSpawnPointExclusion.None && spawnPoints == null)
+            if (NamesTheSpawnPort(policy.SpawnPointExclusion) && spawnPoints == null)
             {
                 throw new ArgumentNullException(
                     nameof(spawnPoints),
                     "A Place that excludes Spawn-point spaces is asked with the port that knows " +
                     "where they are.");
+            }
+
+            if (NamesTheBattleZone(policy.SpawnPointExclusion) && board == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(board),
+                    "A Place that admits only the Battle Zone's empty minion Spawn points is asked " +
+                    "with the board that knows which points those are.");
             }
 
             switch (policy.DestinationScope)
@@ -77,14 +93,16 @@ namespace GuardsDigital.Core.Rules.Placement
                         WithinRadius(policy.DestinationRadius, spaces, origin, modifications),
                         policy.SpawnPointExclusion,
                         spaces,
-                        spawnPoints);
+                        spawnPoints,
+                        board);
 
                 case PlaceDestinationScope.EmptySpacesAtExactlyRadius:
                     return ExcludingSpawnPoints(
                         AtExactlyRadius(policy.DestinationRadius, spaces, origin, modifications),
                         policy.SpawnPointExclusion,
                         spaces,
-                        spawnPoints);
+                        spawnPoints,
+                        board);
 
                 case PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope:
                     if (scopedCoordinates == null)
@@ -101,7 +119,8 @@ namespace GuardsDigital.Core.Rules.Placement
                             .ToArray(),
                         policy.SpawnPointExclusion,
                         spaces,
-                        spawnPoints);
+                        spawnPoints,
+                        board);
 
                 case PlaceDestinationScope.NearestEmptySpacesInScope:
                     if (scopedCoordinates == null)
@@ -207,11 +226,17 @@ namespace GuardsDigital.Core.Rules.Placement
             IReadOnlyList<HexCoordinate> candidates,
             PlaceSpawnPointExclusion exclusion,
             ITokenPlacementAuthority spaces,
-            IUnitSpawnAuthority spawnPoints)
+            IUnitSpawnAuthority spawnPoints,
+            IBoardDisplacementAuthority board)
         {
             if (exclusion == PlaceSpawnPointExclusion.None)
             {
                 return candidates;
+            }
+
+            if (NamesTheBattleZone(exclusion))
+            {
+                return AdmittingOnlyBattleZoneMinionSpawnPoints(candidates, exclusion, spaces, board);
             }
 
             var points = spawnPoints.FindSpawnPointSpaces();
@@ -223,6 +248,62 @@ namespace GuardsDigital.Core.Rules.Placement
                 .Where(candidate => !points.Any(point => point.Equals(candidate)))
                 .Where(candidate => empty.Length == 0 ||
                     !empty.Any(point => HexDistanceQuery.Calculate(point, candidate) == 1))
+                .ToArray();
+        }
+
+        /// <summary>
+        /// Whether an exclusion needs the Spawn port to be answered. Milestone 8.35z33's two clauses do
+        /// not: they ask about <em>minion</em> Spawn points in the current Battle Zone, which is a
+        /// narrower question than the port's whole-board list and is derived from the map and the Lane
+        /// instead.
+        /// </summary>
+        private static bool NamesTheSpawnPort(PlaceSpawnPointExclusion exclusion) =>
+            exclusion == PlaceSpawnPointExclusion.SpacesWithASpawnPoint ||
+            exclusion == PlaceSpawnPointExclusion.SpacesWithASpawnPointOrAdjacentToAnEmptyOne;
+
+        /// <summary>Whether an exclusion is one of milestone 8.35z33's Battle-Zone clauses.</summary>
+        private static bool NamesTheBattleZone(PlaceSpawnPointExclusion exclusion) =>
+            exclusion == PlaceSpawnPointExclusion
+                .SpacesThatAreNotAnEmptyMinionSpawnPointInTheBattleZone ||
+            exclusion == PlaceSpawnPointExclusion.SpacesThatAreNeitherSuchAPointNorAdjacentToOne;
+
+        /// <summary>
+        /// Milestone 8.35z33. The disk narrowed to the Battle Zone's empty minion Spawn points -
+        /// Whisper's Shadow Step and Shadow Walk - and, one clause further, to those points and their
+        /// neighbours, which is Creeping Shadow.
+        ///
+        /// <para><b>The qualifying set is asked of the whole board and then intersected with the
+        /// disk</b>, rather than the disk being tested point by point, because that is the order the
+        /// sentence reads: the points exist independently of where Whisper is standing, and the Range
+        /// icon says which of them she can reach. It is also why a hero outside the Battle Zone still
+        /// sees the points inside it - the zone is asked of the point and never of her, which is the
+        /// designer's own 2026-07-25 answer built in rather than restated.</para>
+        ///
+        /// <para><b>A dilated candidate need not itself be a Spawn point, and need not be in the
+        /// Battle Zone.</b> Creeping Shadow's second arm says "a space in range adjacent to such spawn
+        /// point" and asks nothing else of that space beyond what every Place asks - that it be empty,
+        /// which <see cref="WithinRadius"/> has already decided. The first arm's own points stay
+        /// admitted, because "or" adds to a set rather than replacing it.</para>
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> AdmittingOnlyBattleZoneMinionSpawnPoints(
+            IReadOnlyList<HexCoordinate> candidates,
+            PlaceSpawnPointExclusion exclusion,
+            ITokenPlacementAuthority spaces,
+            IBoardDisplacementAuthority board)
+        {
+            var qualifying = EmptyMinionSpawnPointQuery.FindInCurrentBattleZone(board, spaces);
+            if (qualifying.Count == 0)
+            {
+                return Array.Empty<HexCoordinate>();
+            }
+
+            var dilates = exclusion ==
+                PlaceSpawnPointExclusion.SpacesThatAreNeitherSuchAPointNorAdjacentToOne;
+
+            return candidates
+                .Where(candidate => qualifying.Any(point =>
+                    point.Equals(candidate) ||
+                    (dilates && HexDistanceQuery.Calculate(point, candidate) == 1)))
                 .ToArray();
         }
 

@@ -96,7 +96,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticComponentCapabilities.Handlers())
                 .Concat(SyntheticModificationCapabilities.Handlers())
                 .Concat(SyntheticDisplacementCapabilities.Handlers())
-                .Concat(SyntheticTargetingCapabilities.Handlers())
+                // Milestone 8.35z33 splits the targeting list the way the roster one has been split
+                // since 8.20, and the placement one has been split since milestone 8.35z28: what a
+                // hero composes but no dealt card starts waits in that file's `DeferredHandlers`
+                // rather than entering the registration list a snapshot compares. EVERY line here is
+                // therefore `RegisteredHandlers`, and a `Handlers()` on any of them would register the
+                // whole six-hero wave by accident.
+                .Concat(SyntheticTargetingCapabilities.RegisteredHandlers())
                 .Concat(SyntheticPlacementCapabilities.RegisteredHandlers())
                 .Concat(SyntheticExchangeCapabilities.Handlers())
                 .Concat(SyntheticCardStateCapabilities.Handlers())

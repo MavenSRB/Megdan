@@ -88,7 +88,38 @@ namespace GuardsDigital.Core.Effects
         None = 0,
         Actor = 1,
         Controller = 2,
-        OpposingHero = 3
+        OpposingHero = 3,
+
+        /// <summary>
+        /// Milestone 8.35z33. The hero an earlier node of this same text named - Whisper's Lesser Evil
+        /// and Greater Good, "An enemy hero in range <b>chooses one</b> — ".
+        ///
+        /// <para><b>Why none of the three above says it.</b> <see cref="Actor"/> and
+        /// <see cref="Controller"/> are Whisper. <see cref="OpposingHero"/> is a property of the
+        /// moment the frame is running in, and it is supplied at exactly one moment in this build -
+        /// rulebook p.14's step 4, where the defender's own text may name its attacker. These two
+        /// faces are Skills: there is no enclosing Attack, and with three opponents on a side there
+        /// is no single "the" opposing hero to name. The hero who chooses is the one <em>Whisper
+        /// picked</em> a node earlier, so the answer exists only as a published fact.</para>
+        ///
+        /// <para><b>The mechanism is not new, only its reach.</b> Milestone 7.1a already let a
+        /// capability handler name the exact chooser - that is how "another hero discards a card"
+        /// puts the card choice to that hero - through
+        /// <see cref="EffectChoiceRequest.ChooserHeroId"/>, which the same milestone documented as
+        /// taking precedence over the role. What had no way to say it was a <em>control</em> node:
+        /// a <see cref="EffectNodeKind.Choose"/> opens its decision itself rather than through a
+        /// handler, so there was no handler to name the hero. This member is that sentence at the
+        /// node.</para>
+        ///
+        /// <para>A node declaring it names the hero through an input binding called
+        /// <see cref="EffectNodeDefinition.ChooserParameterName"/>; the definition validator refuses
+        /// one that does not, so a modal cannot claim a chooser it never identifies. Rulebook p.10
+        /// sanctions the whole arrangement in as many words - "You make all the choices in your
+        /// card's text, unless the card text instructs the other hero to make a choice" - and what
+        /// these two faces instruct the other hero to choose is a bullet rather than a card, which
+        /// the 2026-09-06 ruling reads as the same permission.</para>
+        /// </summary>
+        BoundHero = 4
     }
 
     /// <summary>

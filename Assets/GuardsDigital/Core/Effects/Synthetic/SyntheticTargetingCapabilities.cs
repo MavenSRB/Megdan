@@ -211,6 +211,46 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new EffectCapabilityReference(HeroAdjacentToMinion, 1);
 
         /// <summary>
+        /// Milestone 8.35z33. The printed-Radius twin of <see cref="RangeUnitTarget"/>, for card text
+        /// naming p.19's units inside p.9's Radius disk - Whisper's Seeds of Fear, Sprouts of Panic
+        /// and Blooming Nightmare, "Target an enemy unit in radius occupying a spawn point."
+        ///
+        /// <para>A seventh declaration over the one printed-icon handler, and a separate id rather
+        /// than a parameter, by exactly the rule <see cref="RangeUnitTarget"/> records: p.9 gives the
+        /// two icons two meanings and p.16 two items, so a declaration that could name either would
+        /// let a Radius card be widened by a Range item. Brogan minted the Range arm at 8.21 for the
+        /// same reason and it is the same handler underneath, so the disk, p.18's immunity and the
+        /// published pair are written once.</para>
+        /// </summary>
+        public static EffectCapabilityId RadiusUnitTarget { get; } =
+            new EffectCapabilityId("synthetic-radius-unit-target");
+
+        public static EffectCapabilityReference RadiusUnitTargetV1 =>
+            new EffectCapabilityReference(RadiusUnitTarget, 1);
+
+        /// <summary>
+        /// Milestone 8.35z33. "occupying a spawn point" - Whisper's three Blue displacement Skills, as a
+        /// narrowing on which units the disk offers.
+        ///
+        /// <para><b>It is deliberately not the empty-minion-spawn-point question her Red and Green
+        /// lines ask.</b> Those faces print "empty <em>minion</em> spawn point in radius <em>in the
+        /// battle zone</em>", which is three conditions; these three print "occupying a spawn point"
+        /// and print none of them. p.19's own definition is the broader one - "Spaces on the board used
+        /// to spawn minions and heroes" - so a hero standing on a hero Spawn point outside the Battle
+        /// Zone is a legal target of Seeds of Fear and is not one of the points Sanguine Path counts.
+        /// Reading one phrase through the other would be inventing a qualifier the face does not
+        /// print.</para>
+        ///
+        /// <para><b>Emptiness cannot be part of it, by construction.</b> The unit this selection names
+        /// is standing on the space, so the space is occupied - which is why the word "empty" appears
+        /// in the other phrase and not in this one.</para>
+        ///
+        /// <para>Optional and defaulting to false, so Brogan's and Xargatha's unit selections keep
+        /// their exact candidate sets.</para>
+        /// </summary>
+        public const string OccupiesSpawnPointParameterName = "occupiesSpawnPoint";
+
+        /// <summary>
         /// The straight-line filter parameter's name, spelled once so a definition cannot mistype it.
         /// </summary>
         public const string ExcludeStraightLineParameterName = "excludeStraightLine";
@@ -312,6 +352,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Where(value => value != RuleActivity.None).ToArray());
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
+            RegisteredHandlers().Concat(DeferredHandlers());
+
+        /// <summary>
+        /// Milestone 8.35z33. The declarations this build does <em>not</em> register, stated as its own
+        /// list for the reason <see cref="SyntheticRosterCapabilities.DeferredHandlers"/> is: the
+        /// registration list is what a snapshot compares, so a capability registered before a dealt
+        /// card can start it moves pinned bytes and fails milestone 7.9's reachability gate.
+        ///
+        /// <para>Whisper's Blue displacement Skills name <c>synthetic-radius-unit-target@1</c> and
+        /// this phase does not deal her, so it waits here for her completion milestone. It is a
+        /// declaration over a handler this build already registers six times, not a new handler type,
+        /// so the gate's second half - a new handler must be reachable from a showcase card - has
+        /// nothing to ask of it.</para>
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            new IEffectCapabilityHandler[]
+            {
+                new PrintedIconTargetHandler(
+                    RadiusUnitTargetV1, PrintedValueChannel.Radius,
+                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Unit)
+            };
+
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new ChooseTargetHandler(ChooseTargetV3, declaresActivity: false),
@@ -585,6 +648,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     {
                         parameters.Add(new EffectCapabilityParameter(
                             ExcludeAdjacentParameterName,
+                            EffectValueKind.Boolean,
+                            isRequired: false));
+
+                        // Milestone 8.35z33. "occupying a spawn point", which Whisper's three Blue
+                        // displacement Skills pair with the unit arm and no earlier face prints. It
+                        // is declared here by the same rule the line above follows - declare the
+                        // narrowing a verified face pairs with this selection - and it is optional,
+                        // so Brogan's and Xargatha's unit selections keep their exact candidate sets.
+                        parameters.Add(new EffectCapabilityParameter(
+                            OccupiesSpawnPointParameterName,
                             EffectValueKind.Boolean,
                             isRequired: false));
                     }
@@ -868,6 +941,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // to you" says. The hero half applies the identical rule.
                 var excludeAdjacent = subject == PrintedIconSelectionSubject.Unit &&
                     context.Input(ExcludeAdjacentParameterName).BooleanValue;
+                var onSpawnPoint = RequiresSpawnPoint(context);
 
                 return targets
                     .Where(target => target.Kind == BoardObjectKind.Minion &&
@@ -876,7 +950,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         AdmitsClass(admittedClass, target.MinionId, board) &&
                         !(excludeAdjacent &&
                             board.TryGetObjectCoordinate(target, out var at) &&
-                            HexDistanceQuery.Calculate(origin, at) == 1))
+                            HexDistanceQuery.Calculate(origin, at) == 1) &&
+                        (!onSpawnPoint || StandsOnASpawnPoint(board, target)))
                     .Select(target => target.MinionId)
                     .ToArray();
             }
@@ -1040,10 +1115,52 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         continue;
                     }
 
+                    // Milestone 8.35z33. "occupying a spawn point" reaches heroes as well as minions,
+                    // because the sentence it comes from names p.19's units: Seeds of Fear moves
+                    // "an enemy unit in radius occupying a spawn point", and an enemy hero standing
+                    // on one is exactly that.
+                    if (RequiresSpawnPoint(context) && !StandsOnASpawnPoint(board, target))
+                    {
+                        continue;
+                    }
+
                     heroes.Add(target.HeroId);
                 }
 
                 return heroes;
+            }
+
+            /// <summary>
+            /// Whether this selection's own sentence prints "occupying a spawn point". Only the unit
+            /// arm declares the parameter, so every other arm reads it as absent and narrows nothing.
+            /// </summary>
+            private bool RequiresSpawnPoint(EffectCapabilityContext context) =>
+                subject == PrintedIconSelectionSubject.Unit &&
+                context.Input(OccupiesSpawnPointParameterName).BooleanValue;
+
+            /// <summary>
+            /// Whether the space one unit is standing on carries a Spawn point.
+            ///
+            /// <para><b>Any Spawn point, of either type and either team, anywhere on the board.</b>
+            /// That is p.19's own definition - "Spaces on the board used to spawn minions and heroes"
+            /// - and it is the whole of what these three faces print. The narrower
+            /// empty-minion-spawn-point-in-the-battle-zone question the Red and Green lines ask is a
+            /// different phrase with three more conditions, derived in
+            /// <see cref="GuardsDigital.Core.Rules.Modifications.EmptyMinionSpawnPointQuery"/>; the
+            /// two are deliberately not shared, because reading one through the other would put
+            /// qualifiers on these faces that they do not print.</para>
+            /// </summary>
+            private static bool StandsOnASpawnPoint(
+                IBoardDisplacementAuthority board, BoardObjectReference target)
+            {
+                if (!board.TryGetObjectCoordinate(target, out var at))
+                {
+                    return false;
+                }
+
+                return board.MapDefinition.SpawnPoints.Any(point =>
+                    board.MapDefinition.Spaces.Any(space =>
+                        space.Id.Equals(point.SpaceId) && space.Coordinate.Equals(at)));
             }
 
             /// <summary>

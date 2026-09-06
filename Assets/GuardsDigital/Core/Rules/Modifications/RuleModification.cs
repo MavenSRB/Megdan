@@ -261,7 +261,21 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// Only an action that is both p.9's Basic supertype and an Attack, performed by the affected
         /// hero. Two conditions rather than one because the page prints two words.
         /// </summary>
-        ControllerBasicAttackAction = 1
+        ControllerBasicAttackAction = 1,
+
+        /// <summary>
+        /// Milestone 8.35z33. Any action that is p.9's Basic supertype, performed by the affected hero -
+        /// one condition where <see cref="ControllerBasicAttackAction"/> has two, because Whisper's
+        /// Grim Reaper prints one word where Wasp's face prints two: "When performing basic
+        /// <em>actions</em>", with no action type named.
+        ///
+        /// <para>p.9 settles what that covers: "All actions on a basic card are basic actions." So it
+        /// reaches Swift Justice's Attack and Death Seeker's Skill alike, and it reaches neither
+        /// through anything about their types - which is why widening the member above by dropping its
+        /// Attack condition would have been the wrong shape. Both members exist because two cards
+        /// print two different sentences.</para>
+        /// </summary>
+        ControllerBasicAction = 2
     }
 
     /// <summary>
@@ -545,15 +559,26 @@ namespace GuardsDigital.Core.Rules.Modifications
         }
 
         /// <summary>
-        /// Milestone 8.35z29. "you may choose two different options instead" - the ceiling a modal
-        /// on this hero's own card admits.
+        /// Milestones 8.35z29 and 8.35z33. How many options a modal admits while this source stands -
+        /// Misa's Power Overwhelming, "Whenever you choose one, you may choose two different options
+        /// instead", and Whisper's Grim Reaper, "When performing basic actions you may choose one, or
+        /// both."
         ///
         /// <para>Two or more, because one is the rule already: a declaration of one would say nothing
-        /// and a declaration of zero would be a restriction wearing this kind's name. The sentence
-        /// Misa prints says two, and a card printing a different number would declare that number
+        /// and a declaration of zero would be a restriction wearing this kind's name. "or both" on a
+        /// two-bullet modal is two, and a card printing a different number would declare that number
         /// here rather than need a different kind.</para>
         /// </summary>
-        public static RuleModification ForChoiceCardinality(int options)
+        /// <param name="applicability">
+        /// Which of the affected hero's actions the widening reaches.
+        /// <see cref="RuleValueApplicability.Always"/> is an unqualified declaration - a source whose
+        /// sentence names no class of action - and Grim Reaper's own is
+        /// <see cref="RuleValueApplicability.ControllerBasicAction"/>, because the face prints "when
+        /// performing basic actions" and p.9 makes every action on a basic card one of those.
+        /// </param>
+        public static RuleModification ForChoiceCardinality(
+            int options,
+            RuleValueApplicability applicability = RuleValueApplicability.Always)
         {
             if (options < 2)
             {
@@ -561,18 +586,20 @@ namespace GuardsDigital.Core.Rules.Modifications
                     nameof(options),
                     options,
                     "A choice-cardinality modification raises how many options a modal admits; " +
-                    "p.17's own reading already admits one, so a declaration of one or fewer is " +
+                    "p.10's own reading already admits one, so a declaration of one or fewer is " +
                     "either nothing or a restriction, and a restriction is declared as one.");
             }
 
             return new RuleModification(
                 RuleModificationKind.ChoiceCardinality,
-                RuleActivity.None,
+                Array.Empty<RuleActivity>(),
                 RulePermissionKind.None,
                 PrintedValueChannel.None,
                 options,
                 EffectiveUnitKind.None,
-                RestrictedActorScope.AnyActor);
+                RestrictedActorScope.AnyActor,
+                applicability,
+                SourceValueQueryKind.None);
         }
 
         /// <param name="whilePerforming">
