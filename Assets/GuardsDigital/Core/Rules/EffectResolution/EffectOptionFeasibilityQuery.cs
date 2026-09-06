@@ -233,7 +233,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             CanCompleteMandatoryAttackTargetBinding(prospectiveFrame, context, out _);
 
         /// <summary>
-        /// Milestone 8.35x-moveprover: the same answer, plus the standing modification behind a refusal
+        /// Milestone 8.35z42: the same answer, plus the standing modification behind a refusal
         /// where the walk met one - the channel milestone 8.35l already opened for a Skill, on the other
         /// kind of offer it always applied to.
         ///
@@ -263,7 +263,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         }
 
         /// <param name="prospectiveActorSpaces">
-        /// Milestone 8.35p, extended at milestone 8.35x-moveprover. Where the acting hero could be
+        /// Milestone 8.35p, extended at milestone 8.35z42. Where the acting hero could be
         /// standing by the time this node is reached, or <c>null</c> while he is still standing where
         /// the board says he is.
         ///
@@ -406,7 +406,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         }
 
         /// <summary>
-        /// Milestone 8.35x-moveprover: one node's verdict when the acting hero has not moved yet, asked
+        /// Milestone 8.35z42: one node's verdict when the acting hero has not moved yet, asked
         /// once from each space he could be standing on.
         ///
         /// <para><b>Refused only where every space refuses.</b> That is RULING 45 stated as a walk: an
@@ -454,7 +454,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         }
 
         /// <summary>
-        /// Milestone 8.35x-moveprover: whether this node's answer is measured from the acting hero's own
+        /// Milestone 8.35z42: whether this node's answer is measured from the acting hero's own
         /// space, read off the node's declaration rather than guessed from its capability.
         ///
         /// <para>A roster selection states where it measures from as a declared origin, and
@@ -484,7 +484,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         }
 
         /// <summary>
-        /// Milestone 8.35x-moveprover: where the acting hero could be standing once this Move has been
+        /// Milestone 8.35z42: where the acting hero could be standing once this Move has been
         /// answered, or the suppressing empty set where this walk cannot say.
         ///
         /// <para>The handler answers, because the destinations are its own - the same list the prompt
@@ -652,7 +652,7 @@ RefusalExplanation explanation = null)
         /// already lives.
         /// </summary>
         /// <param name="prospectiveActorSpace">
-        /// Milestone 8.35x-moveprover: the square to answer as if the acting hero were standing on,
+        /// Milestone 8.35z42: the square to answer as if the acting hero were standing on,
         /// and nothing on every path but the per-space proof above. It reaches the handler through the
         /// context alone, so a node that never asks where the actor is cannot tell it was asked twice.
         /// </param>

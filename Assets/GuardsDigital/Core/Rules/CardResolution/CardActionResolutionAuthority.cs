@@ -935,7 +935,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 roundIndex, turnIndex, out _);
 
         /// <summary>
-        /// Milestone 8.35x-moveprover: the same answer, plus the standing modification behind a refusal
+        /// Milestone 8.35z42: the same answer, plus the standing modification behind a refusal
         /// where the walk met one.
         ///
         /// <para>The channel milestone 8.35l opened for a Skill, on the other kind of offer that greys.

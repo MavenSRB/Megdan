@@ -455,7 +455,7 @@ namespace GuardsDigital.Core.Effects
         public IReadOnlyList<ImmunityOverrideDeclaration> ImmunityOverrides { get; }
 
         /// <summary>
-        /// Milestone 8.35x-moveprover: the space the acting hero would be standing on, for a question
+        /// Milestone 8.35z42: the space the acting hero would be standing on, for a question
         /// asked about a board he has not reached yet - and the named absence everywhere else, which is
         /// every live resolution.
         ///
@@ -843,7 +843,7 @@ namespace GuardsDigital.Core.Effects
     }
 
     /// <summary>
-    /// Milestone 8.35x-moveprover: a capability that puts the ACTING HERO somewhere, and can say where
+    /// Milestone 8.35z42: a capability that puts the ACTING HERO somewhere, and can say where
     /// he could end up without moving him.
     ///
     /// <para>It exists for one shape, and the shape is roster-wide: a card that prints a bounded move

@@ -3817,7 +3817,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             if (board == null) return false;
             if (origin == RosterQueryOrigin.Actor)
             {
-                // Milestone 8.35x-moveprover. The one place a declared `origin = Actor` becomes a
+                // Milestone 8.35z42. The one place a declared `origin = Actor` becomes a
                 // square, so it is the one place a walk standing before an untaken Move can say which
                 // square it means. A live resolution never carries one and reads the board exactly as
                 // it always did.

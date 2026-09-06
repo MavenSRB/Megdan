@@ -269,7 +269,7 @@ namespace GuardsDigital.Tests.EditMode
             // shape as every re-pin above and slightly more command headroom than the last one. The
             // seed moves rather than the floor, for the reason recorded in 8.35u's entry.
             //
-            // Milestone 8.35x-moveprover re-derived it again, 48 -> 1, and this one is the
+            // Milestone 8.35z42 re-derived it again, 48 -> 1, and this one is the
             // mirror image of 8.35z25's. That milestone made Combat Reflexes and Leaping Strike
             // OFFERABLE with nothing inside move-and-reach - a position their text cannot act on -
             // and rerouted this walk onto seed 48. This one proves those positions empty and takes

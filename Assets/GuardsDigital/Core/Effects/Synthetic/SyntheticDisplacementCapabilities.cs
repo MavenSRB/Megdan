@@ -394,7 +394,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         : EffectExecutionResultKind.NeedsChoice;
 
             /// <summary>
-            /// Milestone 8.35x-moveprover. Where this node could leave the ACTING HERO, for a walk
+            /// Milestone 8.35z42. Where this node could leave the ACTING HERO, for a walk
             /// standing before it - the destinations <see cref="Execute"/> would offer, plus his own
             /// space wherever the step can be declined.
             ///

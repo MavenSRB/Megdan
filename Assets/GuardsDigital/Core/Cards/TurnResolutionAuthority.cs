@@ -1843,7 +1843,7 @@ namespace GuardsDigital.Core.Cards
                         : ActionUnavailability.FromRestriction(blocking));
             }
 
-            // Milestone 8.35x-moveprover. The Attack clause explains itself now, on exactly the terms
+            // Milestone 8.35z42. The Attack clause explains itself now, on exactly the terms
             // the Skill clause does: the reason is asked for in the call that produces the verdict, and
             // an Attack refused with no standing rule behind it greys with nothing said, as it always
             // did. The three clauses after it still cannot explain themselves.
@@ -1970,7 +1970,7 @@ namespace GuardsDigital.Core.Cards
         private bool CanStartAttack(ActionOffer offer) => CanStartAttack(offer, out _);
 
         /// <summary>
-        /// Milestone 8.35x-moveprover: the same statement, keeping the standing modification behind a
+        /// Milestone 8.35z42: the same statement, keeping the standing modification behind a
         /// refusal so the offer can name it - the shape <see cref="CanStartSkill"/> has had since
         /// milestone 8.35l.
         /// </summary>

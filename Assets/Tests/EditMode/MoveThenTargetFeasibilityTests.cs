@@ -9,7 +9,7 @@ using NUnit.Framework;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 8.35x-moveprover: an Attack that moves before it targets is offered exactly where
+    /// Milestone 8.35z42: an Attack that moves before it targets is offered exactly where
     /// some space it can reach keeps a target, and greyed where none of them does.
     ///
     /// <para><b>The hole this closes was measured, not suspected.</b> Milestone 8.35z25 put Combat
