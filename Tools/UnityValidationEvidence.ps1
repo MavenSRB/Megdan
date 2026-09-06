@@ -89,11 +89,17 @@ function Assert-UnityValidationResults {
     if ($total -le 0) {
         throw "Unity results '$ResultsPath' discovered zero tests."
     }
-    if ($passed -ne $total -or $failed -ne 0 -or $skipped -ne 0 -or $inconclusive -ne 0) {
-        throw "Unity results '$ResultsPath' are contradictory or non-green: total=$total passed=$passed failed=$failed skipped=$skipped inconclusive=$inconclusive."
+    # [Explicit] diagnostics (in the suite since 8.35z22) report as Skipped with label="Explicit";
+    # they are the only skip a green run may carry, and every one must be accounted for by name.
+    $explicitSkipNodes = @($root.SelectNodes('.//test-case[@result="Skipped"]') | Where-Object { $_.GetAttribute('label') -eq 'Explicit' })
+    if (($passed + $skipped) -ne $total -or $failed -ne 0 -or $inconclusive -ne 0 -or $skipped -ne $explicitSkipNodes.Count) {
+        throw "Unity results '$ResultsPath' are contradictory or non-green: total=$total passed=$passed failed=$failed skipped=$skipped (explicit-skipped=$($explicitSkipNodes.Count)) inconclusive=$inconclusive."
     }
 
-    $nonGreen = $root.SelectNodes('.//*[@result]') | Where-Object { $_.GetAttribute('result') -ne 'Passed' }
+    $nonGreen = $root.SelectNodes('.//*[@result]') | Where-Object {
+        $_.GetAttribute('result') -ne 'Passed' -and
+        -not ($_.GetAttribute('result') -eq 'Skipped' -and $_.GetAttribute('label') -eq 'Explicit')
+    }
     if ($nonGreen) {
         $first = $nonGreen | Select-Object -First 1
         throw "Unity results '$ResultsPath' contain non-green child result='$($first.GetAttribute('result'))'."
