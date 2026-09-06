@@ -75,9 +75,15 @@ namespace GuardsDigital.Tests.EditMode
                 // (`tmp/8-35d-8-35e-multiplayer-corrections/seed-scan-results.txt`) put every
                 // walked family on SEED 6, the last of them - Minion Battle - at step 408, which is
                 // a third of what seed 1 used to need and leaves the budget below generous.
+                //
+                // Milestone 8.35z20 re-derived it again: correcting Blend Into Shadows' secondary
+                // rerouted this trajectory and seed 6 no longer reaches Minion Battle at all inside
+                // 2,600 steps ("minion-battle: the composition stopped on another family after
+                // 1800 steps" was the observed pre-fix red). A fresh offline scan of seeds 1-30 put
+                // every walked family on SEED 22, the last of them (minion-battle) at step 319.
                 reached = harness.DriveThroughWire(WalkBudget, projection =>
                     projection.DecisionContract != null &&
-                    projection.DecisionContract.FamilyId.Value == family, seed: 6);
+                    projection.DecisionContract.FamilyId.Value == family, seed: 22);
             }
 
             Assert.That(harness.MatchHost.Projection.DecisionContract, Is.Not.Null,

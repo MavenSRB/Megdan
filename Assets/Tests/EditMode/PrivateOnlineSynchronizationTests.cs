@@ -45,6 +45,12 @@ namespace GuardsDigital.Tests.EditMode
         /// floor that measures the budget rather than the play. 900 is more than twice what this
         /// sweep's own family floor needs, and every step of it is a live match rather than a walk
         /// standing on a finished one.</para>
+        ///
+        /// <para>Milestone 8.35z20 re-derived the seed again, 6 -> 22, after correcting Blend Into
+        /// Shadows' secondary rerouted the trajectory (seed 6 stopped reaching the Minion Battle
+        /// family). Seed 22 reaches every family by step 319 and its match does not end inside a
+        /// 2,600-step scan, so the 900-step budget is exercised live throughout, the same shape this
+        /// constant has always recorded.</para>
         /// </summary>
         private const int WireSweepBudget = 900;
 
@@ -57,6 +63,12 @@ namespace GuardsDigital.Tests.EditMode
 
             var families = new HashSet<string>();
             var maxPayloadBytes = 0;
+            // Milestone 8.35z20 re-derived this from 6: correcting Blend Into Shadows' secondary
+            // rerouted this trajectory and seed 6 no longer reaches the Minion Battle family inside
+            // this sweep (Reached: attack-target, correction, defense, effect, hero-respawn,
+            // initiative, movement, system-transition, turn-release - minion-battle missing, was
+            // the observed pre-fix red). A fresh offline scan of seeds 1-30 put every family on
+            // SEED 22, the last of them (minion-battle) at step 319, well inside this budget.
             var submitted = harness.DriveThroughWire(WireSweepBudget, afterAcceptedStep: () =>
             {
                 harness.AssertConverged();
@@ -71,7 +83,7 @@ namespace GuardsDigital.Tests.EditMode
                     maxPayloadBytes = Math.Max(
                         maxPayloadBytes, harness.LastProjectionPayload(ordinal).Length);
                 }
-            }, seed: 6);
+            }, seed: 22);
 
             Assert.That(submitted, Is.EqualTo(WireSweepBudget),
                 "The seeded walk ended early; the sweep saw less of the match than it must.");
@@ -800,9 +812,15 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 8.35g re-derived the seed offline over seeds 1-16: seed 3 reaches no
             // confirmable Minion Battle inside 2,400 steps once the release moves the trajectory.
             // Seed 6 reaches one at step 401 - the earliest of the nine that reach one at all.
+            //
+            // Milestone 8.35z20 re-derived it again: correcting Blend Into Shadows' secondary
+            // rerouted this trajectory and seed 6 no longer reaches a confirmable Minion Battle
+            // inside 1,200 steps. A fresh offline scan put every walked family on SEED 22
+            // (entering minion-battle at step 319), confirmed here to also reach CanConfirm well
+            // inside this budget.
             harness.DriveThroughWire(1200, projection =>
                 projection.PendingMinionBattleChoice != null &&
-                projection.PendingMinionBattleChoice.CanConfirm, seed: 6);
+                projection.PendingMinionBattleChoice.CanConfirm, seed: 22);
             var choice = harness.MatchHost.Projection.PendingMinionBattleChoice;
             Assert.That(choice, Is.Not.Null,
                 "The deterministic walk must reach a confirmable Minion Battle selection.");

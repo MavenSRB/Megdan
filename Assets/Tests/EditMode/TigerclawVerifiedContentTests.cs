@@ -39,7 +39,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             "tigerclaw-blink-strike|Blink Strike|Init 13|SecDef 1|SecMov 1|primary-attack Attack NonRanged [Attack 3]|Gold Basic|item -",
             "tigerclaw-nimble-strike|Nimble Strike|Init 12|SecDef 1|SecMov 1|primary-attack Attack NonRanged [Attack 2]|Gold Basic|item -",
-            "tigerclaw-blend-into-shadows|Blend Into Shadows|Init 6|SecDef -|SecMov 2|primary-skill Skill None [Radius 2]|Silver Basic|item -",
+            "tigerclaw-blend-into-shadows|Blend Into Shadows|Init 6|SecDef 2|SecMov -|primary-skill Skill None [Radius 2]|Silver Basic|item -",
             "tigerclaw-hit-and-run|Hit and Run|Init 9|SecDef 3|SecMov 4|primary-attack Attack NonRanged [Attack 3]|Red I|item -",
             "tigerclaw-combat-reflexes|Combat Reflexes|Init 9|SecDef 3|SecMov 4|primary-attack Attack NonRanged [Attack 4]|Red II|item Initiative",
             "tigerclaw-backstab|Backstab|Init 9|SecDef 5|SecMov 5|primary-attack Attack NonRanged [Attack 5]|Red II|item Defense",
@@ -124,7 +124,11 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// The supertype split the shard records without exception, and the two things that make his
         /// set different from the four before it: every Blue card is a p.14 Block printed as a Defense
-        /// primary, and every non-Ultimate face prints a Movement icon.
+        /// primary, and every non-Ultimate face but one prints a Movement icon. Blend Into Shadows is
+        /// that one exception: milestone 8.35z20 corrected its secondary ribbon icon from a phantom
+        /// Movement 2 to the Defense 2 the face actually prints (the one-icon slot-position trap - see
+        /// <c>Docs/AI/Rules/HERO_TIGERCLAW.md</c>'s settled-corrections block), so it now joins the
+        /// numeric-secondary-Defense group instead of the secondary-Movement group.
         /// </summary>
         [Test]
         public void EveryBlueCardIsABlock_AndEveryNonUltimateFacePrintsMovement()
@@ -138,13 +142,25 @@ namespace GuardsDigital.Tests.EditMode
                     continue;
                 }
 
+                var isBlendIntoShadows = definition.Id.Equals(TigerclawCardContent.BlendIntoShadows);
                 Assert.That(
                     definition.ActionDefinitions.Any(action =>
                         action.Kind == ActionKind.Movement &&
                         action.Origin == ActionDefinitionOrigin.PrintedSecondary),
-                    Is.True,
-                    definition.Id.Value + " prints a secondary Movement icon; every non-Ultimate face " +
-                    "of his does, which is the widest Fast Travel reach in the verified roster.");
+                    Is.EqualTo(!isBlendIntoShadows),
+                    isBlendIntoShadows
+                        ? definition.Id.Value + " prints no secondary Movement icon; it is the one " +
+                          "exception in the set, corrected at milestone 8.35z20."
+                        : definition.Id.Value + " prints a secondary Movement icon; every non-Ultimate " +
+                          "face but Blend Into Shadows does.");
+
+                Assert.That(
+                    definition.ActionDefinitions.Any(action =>
+                        action.Kind == ActionKind.Defense &&
+                        action.Origin == ActionDefinitionOrigin.Reaction),
+                    Is.EqualTo(isBlendIntoShadows || definition.Progression.Color != CardColor.Blue),
+                    definition.Id.Value + " must print a numeric secondary Defense unless it is a " +
+                    "Blue Block, and Blend Into Shadows now does too.");
 
                 var expected =
                     definition.Progression.Color == CardColor.Blue ? ActionKind.Defense
@@ -264,9 +280,12 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// p.16's item icons, and the one fact about his set the shard singles out: every card the
-        /// normal six-player deck can put into hand carries Movement, which is the roster's widest
-        /// Movement-item reach.
+        /// p.16's item icons, and the fact about his set the shard singles out: every non-Ultimate card
+        /// but the Silver basic carries Movement. Milestone 8.35z20 corrected Blend Into Shadows'
+        /// secondary from a phantom Movement 2 to the Defense 2 it actually prints (see
+        /// <c>Docs/AI/Rules/HERO_TIGERCLAW.md</c>'s settled-corrections block), which puts his Silver
+        /// basic in the same shape every other verified hero's Silver basic already has - a Defense-only
+        /// secondary, no Movement - rather than the unique full reach the pre-correction record claimed.
         /// </summary>
         [Test]
         public void HisTwelveItemIconsReachAllFourDashboardSlots_WithTheWidestMovementReach()
@@ -290,9 +309,10 @@ namespace GuardsDigital.Tests.EditMode
                     definition.ActionDefinitions.Any(action =>
                         action.BaseValues.Any(value =>
                             value.Channel == PrintedValueChannel.Movement))),
-                Is.EqualTo(17),
-                "A +1 Movement item reaches every dealt card but the Ultimate - seventeen of the " +
-                "eighteen - which is the widest such reach in the verified roster.");
+                Is.EqualTo(16),
+                "Sixteen of the seventeen non-Ultimate dealt cards print Movement; Blend Into Shadows " +
+                "(the Silver basic) is the one exception, corrected at milestone 8.35z20 - the same " +
+                "shape every other verified hero's Silver basic already has.");
 
             Assert.That(
                 TigerclawCardContent.Definition(TigerclawCardContent.CloakAndDaggers)

@@ -486,7 +486,13 @@ namespace GuardsDigital.Tests.EditMode
         public void ARewind_DropsItsLines_AndTheMarkerNamesWhoTookThemBack()
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
-            OwnerScopedProjectionTests.DriveThroughSeats(host, 120);
+            // Milestone 8.35z20 raised this from 120: correcting Blend Into Shadows' secondary
+            // rerouted this walk and the default seed no longer reaches a seat with
+            // IsSeatUndoAvailable by step 120, which made the case's own Assume.That vacuous rather
+            // than failing outright. Undo availability toggles as the walk crosses each seat's own
+            // resolution window rather than rising monotonically, so a nearby budget was tried
+            // directly against this fixture: 150 reaches it with the default seed.
+            OwnerScopedProjectionTests.DriveThroughSeats(host, 150);
 
             var undoing = host.Seats.Seats.FirstOrDefault(seat =>
                 host.ProjectionForSeat(seat.Id).IsSeatUndoAvailable);

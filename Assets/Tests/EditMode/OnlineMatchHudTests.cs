@@ -28,8 +28,13 @@ namespace GuardsDigital.Tests.EditMode
             // (`tmp/8-35d-8-35e-multiplayer-corrections/seed-scan-results.txt`) put all seven
             // families on SEED 6, the last of them (the Minion Battle) at step 408 - so the budget
             // comes down from 1,200 to 600 and the case gets faster as well as correct.
+            //
+            // Milestone 8.35z20 re-derived it again: correcting Blend Into Shadows' secondary
+            // rerouted this trajectory too and seed 6 no longer reaches the Minion Battle inside
+            // 2,600 steps. A fresh offline scan of seeds 1-30 put all seven families on SEED 22, the
+            // last of them (minion-battle) at step 319, so the 600-step budget still holds.
             var submitted = harness.DriveThroughWire(600, afterAcceptedStep: () =>
-                AssertAllSeats(harness, seen), seed: 6);
+                AssertAllSeats(harness, seen), seed: 22);
 
             Assert.That(submitted, Is.EqualTo(600));
             Assert.That(seen, Is.SupersetOf(new[]

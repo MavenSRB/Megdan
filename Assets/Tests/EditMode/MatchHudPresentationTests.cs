@@ -4246,7 +4246,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(resolved, Is.EqualTo(386),
                 "The typed inventory is the 386 slots the generator traces - the badge and " +
                 "rail overlays plus one printed-lines ring per non-Ultimate card.");
-            Assert.That(movementMasks, Has.Count.EqualTo(92));
+            // Milestone 8.35z20 lowered this from 92: correcting Blend Into Shadows' secondary
+            // from a phantom Movement 2 to its printed Defense 2 moves its one rail mask from
+            // this set to the Defense one, so the total slot count (386) is unchanged but the
+            // Movement-mask count drops by exactly one.
+            Assert.That(movementMasks, Has.Count.EqualTo(91));
             var canonicalBoot = System.IO.File.ReadAllBytes(movementMasks.Single(path =>
                 path.Replace('\\', '/').EndsWith(
                     "/sabina/_shine/point-blank-shot--secondary-movement.png",

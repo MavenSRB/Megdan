@@ -29,7 +29,10 @@ namespace GuardsDigital.Tests.EditMode
             // measurement that says the reorder reached his content and nobody else's.
             new IdentityPin("brogan", "brogan-8-35p-rev-1", "d546a8e4744ea2b400e638ad29e626d1fc64f089fbe850e92524730830a152f9"),
             new IdentityPin("sabina", "sabina-8-35l-rev-1", "2518211c8e851b8ad65ba538560c50772033f341a995a597a714727eb2517449"),
-            new IdentityPin("tigerclaw", "tigerclaw-8-25e5b-rev-1", "2cb7cb62007a6ccf58c6881421d3a2822a8b818437a147dbd60e7bf94ff64849"),
+            // Milestone 8.35z20 corrected Blend Into Shadows' secondary icon (Defense 2, not Movement
+            // 2 - the one-icon slot-position trap; see Docs/AI/Rules/HERO_TIGERCLAW.md's
+            // settled-corrections block), which is the whole reason this digest moved.
+            new IdentityPin("tigerclaw", "tigerclaw-8-35z20-rev-1", "606cdb0c675f6c50bbbafd0d1a106038e27ec3c5e54b42d849d8163cac20991e"),
             new IdentityPin("wasp", "wasp-8-25e7-rev-1", "eb7cf4f63a247c31b2f94faa93125fbd4ee977ebe260b91b803b0c92296db927"),
             new IdentityPin("xargatha", "xargatha-8-25e5f1-rev-1", "15ed75b47588e0ef758fd9cf0b3e06fb1458bb1113da26b6e019eba7dee08b77")
         };

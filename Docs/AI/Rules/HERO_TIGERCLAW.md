@@ -31,7 +31,7 @@ The pitch uses Tigerclaw's complete progression. Its implementation-grade invent
 - Source verification status and reviewer/date.
 - Any official correction or clarification.
 
-Current status: **all nineteen faces and the Poison marker are transcribed and capability-mapped; eighteen playable definitions plus the marker are composed, dealt, and pass Tigerclaw's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5b corrected Blink Strike, Backstab, and Blend Into Shadows at `tigerclaw-8-25e5b-rev-1` and applied 8.25e5a's authority answer without changing typed behavior: Nimble Strike remains a Gold Basic Handicap whose printed `G` is recorded as a source error. Milestone 8.25e5c freshly reconciled all four affected Tigerclaw faces, while the other fifteen clean results carry forward on unchanged hashes. Milestone 8.25e5g confirmed the 114-front manifest byte-identical, so all Tigerclaw results remain current and F-SOURCE-01 is closed.
+Current status: **all nineteen faces and the Poison marker are transcribed and capability-mapped; eighteen playable definitions plus the marker are composed, dealt, and pass Tigerclaw's permanent player-path gate**. Production definitions and tests exist and the Handicap remains setup-excluded. Milestone 8.25e5b corrected Blink Strike, Backstab, and Blend Into Shadows at `tigerclaw-8-25e5b-rev-1` and applied 8.25e5a's authority answer without changing typed behavior: Nimble Strike remains a Gold Basic Handicap whose printed `G` is recorded as a source error. Milestone 8.25e5c freshly reconciled all four affected Tigerclaw faces, while the other fifteen clean results carry forward on unchanged hashes. Milestone 8.25e5g confirmed the 114-front manifest byte-identical, so all Tigerclaw results remain current and F-SOURCE-01 is closed. Milestone 8.35z20 (2026-09-06) corrected a fourth field 8.25e5b's own pass had not touched: Blend Into Shadows' secondary ribbon icon was transposed (recorded as `Sec Mov 2`, actually `Sec Def 2`) at `tigerclaw-8-35z20-rev-1` - see the settled-corrections block under "Tigerclaw printed values" for the full evidence; that block is the closing word on this field.
 
 ## Tigerclaw source faces
 
@@ -66,13 +66,75 @@ Nineteen printed faces make up p.6's eighteen-card deck plus the Handicap card t
 `Sec Def` and `Sec Mov` are the secondary action icons on the left ribbon; a dash means the card prints no
 such icon. Card text applies only when the primary action is performed (p.9). A `+` after an Attack value is
 p.14's convention marking a value the card's own text can increase. A Block prints `!` instead of a Defense
-number and produces no numeric Defense value.
+number and produces no numeric Defense value. **Blend Into Shadows' row is `Sec Def 2` / `Sec Mov -`; see the
+settled-corrections block immediately below the table before ever proposing otherwise.**
+
+### SETTLED (2026-09-06, milestone 8.35z20): Blend Into Shadows' secondary is Defense 2, not Movement 2 -
+### do not re-litigate this field
+
+**This is the fourth round of scrutiny this exact field has drawn, and it is now closed by three
+independent, cross-verified readings. Any future pass that wants to challenge it owes new photographic
+evidence at least as strong as what is recorded here, not a re-read of the same face.**
+
+**The ruling.** `tigerclaw2` (Blend Into Shadows, element `7379736`) prints exactly ONE secondary ribbon
+icon: a riveted heraldic Defense shield carrying the number 2, sitting in the ribbon's lower slot. It
+prints no Movement boot anywhere on the face. The row is `Sec Def 2` / `Sec Mov -`. Every prior recording
+of this row as `Sec Def -` / `Sec Mov 2` (this shard through milestone 8.35z19, `TigerclawCardContent.cs`'s
+profile through the same point, and every fixture/test that read from them) had the two columns
+transposed.
+
+**The mechanism: the one-icon slot-position trap.** On a card printing BOTH secondary icons, the upper
+ribbon slot is always the Defense shield and the lower slot is always the Movement boot - a reader can
+safely use position as a shortcut there. But on a card printing only ONE secondary icon, that lone icon
+sits in the ribbon's LOWER slot *regardless of which type it is*. A reader who trusts slot position on a
+one-icon card will misread a lone Defense shield as Movement, because it occupies the position Movement
+normally holds. **The only reliable method is classifying the icon by GLYPH SHAPE, never by position**: a
+riveted heraldic shield with a pointed base is Defense; a side-view boot with a visible sole is Movement.
+Blend Into Shadows is exactly this trap's worked example - a lone shield sitting where a boot usually sits.
+
+**Three independent verifications, none of which relied on position:**
+
+1. **The Misa inventory worker's glyph montage** (found while calibrating Misa's own Silver card, Watch
+   How I Soar/Leaf on the Wind, against the roster's other Silver basics). Blend Into Shadows' single
+   secondary glyph was cropped and compared at 8x against two governed Defense shields (`wasp2` Def 2,
+   `brogan2` Def 4) and two governed Movement boots (`wasp13` Mov 2, `misa` Mov 1) in one image, and is
+   unambiguously the shield shape. All seven verified Silver basics in the extraction (the six shipped
+   heroes' plus Misa's) were checked together in the same pass, and not one of the seven prints a boot.
+2. **The Whisper inventory worker's six-hero Silver control montage** (found while double-scrutinising
+   Whisper's own Silver card, Death Seeker). Every one of the six shipped heroes' Silver basics - Wasp's
+   Static Barrier, Arien's Spell Break, Brogan's Bulwark, Sabina's Back to Back, Tigerclaw's Blend Into
+   Shadows, and Xargatha's Siren's Call - was montaged together at 7x. All six print a single low-slot
+   shield in the identical ribbon position; five of the six owning shards already recorded that correctly
+   as `Sec Def N` / `Sec Mov -`, and Tigerclaw's was the one row transposed.
+3. **The coordinator's own direct reads**, independent of both workers. A 5x crop of Blend Into Shadows'
+   secondary ribbon slot (preserved at
+   `tmp/8-35d-8-35e-multiplayer-corrections/tigerclaw-blend-secondary-corrective/blend-into-shadows-secondary-5x.png`)
+   shows the riveted shield and the 2 with no boot anywhere in frame; a direct read of the complete
+   372x520 face (`Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Tigerclaw/tigerclaw2__7379736__front.png`)
+   confirms the same single shield-and-2 in the lower ribbon slot; and the user reviewed this same 5x crop
+   directly before the correction was made. A follow-on sweep then re-checked, by the same glyph-shape
+   method, every OTHER one-icon secondary printed anywhere in the six shipped heroes' full card sets (21
+   cards across Wasp, Arien, Brogan, Sabina, Tigerclaw and Xargatha - every Silver basic plus Tigerclaw's
+   five Blue Blocks, Arien's four Movement-primary Blue cards, and Xargatha's three Movement-primary Green
+   cards): all 21 were already correct. Blend Into Shadows was the sole defect in the entire shipped
+   roster's one-icon secondaries.
+
+**What changed as a result**, recorded in full in the milestone's own roadmap entry: `TigerclawCardContent.cs`'s
+`BlendIntoShadows` profile row (`SecondaryDefense`/`SecondaryMovement` swapped from `0, 2` to `2, 0`), a new
+content revision (`tigerclaw-8-35z20-rev-1`) with `ConfiguredCardArtworkCatalog.json`'s eighteen Tigerclaw
+entries and `VerifiedContentIdentityTests`' pinned digest re-pinned to match, this shard's table row and the
+three prose sentences above, and the gameplay fallout the field's row change forced: the permanent
+player-path gate's `SecondaryMovementDestination` shape claim on this card's row became
+`SecondaryDefenseOffer`, and two `TigerclawVerifiedContentTests` assertions that hardcoded "every
+non-Ultimate face prints Movement" and a movement-reach count of 17 were corrected to state Blend Into
+Shadows as the one exception (16), which is the same shape every other verified hero's Silver basic
+already has.
 
 | Internal | Element | Card | Colour | Tier | Init | Sec Def | Sec Mov | Primary action | Primary value | Range/Radius | Item icon |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `tigerclaw` | 7379728 | Blink Strike | Gold `D` | basic | 13 | 1 | 1 | Basic Attack | Attack 3 | - | - |
 | `tigerclaw19` | 7379735 | Nimble Strike | Gold; face misprints `G` instead of `D` | `H` | 12 | 1 | 1 | Basic Attack | Attack 2 | - | - |
-| `tigerclaw2` | 7379736 | Blend Into Shadows | Silver `S` | basic | 6 | - | 2 | Basic Skill | - | Radius 2 | - |
+| `tigerclaw2` | 7379736 | Blend Into Shadows | Silver `S` | basic | 6 | 2 | - | Basic Skill | - | Radius 2 | - |
 | `tigerclaw3` | 7379734 | Hit and Run | Red `R` | I | 9 | 3 | 4 | Attack | Attack 3 | - | - |
 | `tigerclaw4` | 7379720 | Combat Reflexes | Red `R` | II | 9 | 3 | 4 | Attack | Attack 4 | - | Initiative |
 | `tigerclaw5` | 7379732 | Backstab | Red `R` | II | 9 | 5 | 5 | Attack | Attack 5+ | - | Defense |
@@ -95,10 +157,12 @@ is non-basic. Tigerclaw's only basic Skill primary is Blend Into Shadows and his
 Blink Strike, or Nimble Strike when handicapped. p.9 goes further than the primary bands: **every action on
 a basic card is a basic action**, which is the exact set Cloak and Daggers can repeat.
 
-Every non-Ultimate face prints a Movement icon, so all eighteen can offer p.11's Fast Travel replacement;
-Tigerclaw is the first verified hero with no basic/tiered exception to that reach. p.13's Clear replacement is
-available on the seven cards with an Attack primary, six once Nimble Strike is boxed. Every card also offers
-p.12's iconless Hold.
+Every non-Ultimate face but one prints a Movement icon, so seventeen of the eighteen can offer p.11's Fast
+Travel replacement. Blend Into Shadows is the one exception - its secondary is Defense, not Movement (see
+the settled-corrections block below) - which puts his Silver basic in the same shape every other verified
+hero's Silver basic already has, rather than the unique full reach an earlier, incorrect reading of this
+table claimed. p.13's Clear replacement is available on the seven cards with an Attack primary, six once
+Nimble Strike is boxed. Every card also offers p.12's iconless Hold.
 
 Tigerclaw's five Blue cards are all p.14 Blocks. They print no Defense number and no Defense secondary icon:
 their text applies only when each is discarded from hand as its primary Defense reaction. Every Gold, Red and
@@ -201,7 +265,7 @@ can repeat a basic action. p.21 calls these bars selection metadata; no rule con
 - The action backs divide into two hashes: Combat Reflexes, Sidestep, Parry and Cloak and Daggers share one decoded raster, while the other fifteen share another. Pixel comparison finds low-level colour differences across the raster, but direct inspection finds the same geometry and crossed-blades emblem, and p.5 asks only for the matching hero symbol. The affected Ultimate itself exactly matches p.16, so this is a non-blocking extraction/atlas variance and not evidence for different rules text or a different hero. No printing history is inferred from it.
 - Tigerclaw is the first verified hero with a readable hero-owned marker component in the extraction. The manifest names element `1421887` `PoisonMarker`, and its atlas face is a poison bottle and skull labeled `POISON`. Poisoned Dagger and Poisoned Dart both print the same marker icon and define the attached modifier at -1 and -2 respectively. Because Level Up happens after p.8 returns all markers, the two Tier values cannot coexist from Tigerclaw's own deck across an upgrade.
 - A Poison marker is a marker, not p.19's token obstacle. Tigerclaw correctly lacks p.22's `Tokens` role even though his two Green alternatives attach this marker. Ledger question 14 makes these faces the component's rule definition; the blank dashboard back hides no additional rule.
-- **Every non-Ultimate card prints Movement.** The normal six-player deck therefore always has a Movement action and Fast Travel route on every card that can reach hand, while three Red cards and two Blue cards also put optional movement in their primary text.
+- **Every non-Ultimate card but the Silver basic prints Movement.** The normal six-player deck therefore has a Movement action and Fast Travel route on every card that can reach hand except Blend Into Shadows, while three Red cards and two Blue cards also put optional movement in their primary text. See the settled-corrections block below for the Silver basic's own secondary.
 - **Every Blue card is a Block**, split cleanly by attack subtype: Dodge, Sidestep and Evade block Ranged attacks; Parry and Riposte block non-Ranged attacks. The Tier II/III pairings also scale the rider: move 1 becomes move-and-retrieve on the Ranged branch, and `if able` becomes ledger question 13's defeat escalation on the non-Ranged branch.
 - Backstab with a Ballista is the verified roster's first restriction on the **origin** of a Defense action: the target cannot use a primary action to defend, but secondary Defense remains. It is also Tigerclaw's only Ranged Attack and his only Attack with a Range icon.
 - Blink Strike and Nimble Strike share one move-through-then-target shape but differ in target class: the ordinary Gold takes an enemy unit, the Handicap only an enemy hero. Blink alone prints the reminder that failure to make the mandatory move means the attack cannot continue; p.10 applies the same mandatory-step rule to both.

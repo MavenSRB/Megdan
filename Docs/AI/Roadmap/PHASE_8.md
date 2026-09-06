@@ -431,6 +431,32 @@ Non-goals: no change to any of the 29 existing tooltip strings or the sites that
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z19-make-a-tooltip-render-in-a-player-build-at-all-completion-evidence).
 
+### [x] 8.35z20 Correct Blend Into Shadows' transposed secondary icon and sweep the roster for the same trap
+
+From the Misa inventory worker's Silver-cohort calibration montage: Tigerclaw's Blend Into Shadows has always been recorded `Sec Mov 2`, but its face prints a single riveted Defense shield reading 2 in the ribbon's lower slot, no boot anywhere. Confirmed three times independently - the Misa worker's 8x glyph-shape montage against known shields and boots, the Whisper worker's 7x six-hero Silver control montage (five of six shards already read `Sec Def N`/`Sec Mov -`; Tigerclaw's was the one transposed), and the coordinator's own 5x crop and direct full-face read, reviewed by the user - the fourth round of scrutiny this field has drawn.
+
+Observable outcome: Blend Into Shadows offers a numeric secondary Defense of 2 and no secondary Movement, matching every other verified hero's Silver basic; the shard, content, artwork catalog and identity pin all read `Sec Def 2` / `Sec Mov -`; every other shipped one-icon secondary is independently re-verified by the same glyph-shape method; every fixture and prepared asset the phantom Movement 2 touched is re-derived.
+
+Design: the mechanism is the one-icon slot-position trap - a two-icon card always shows shield above boot, but a one-icon card shows its lone icon in the LOWER slot regardless of type, so reading by position rather than shape misreads a shield as a boot. `TigerclawCardContent.cs`'s `BlendIntoShadows` profile swaps `SecondaryDefense`/`SecondaryMovement` from `(0, 2)` to `(2, 0)` through the same generic profile-driven path every other secondary already uses - data only, no new production code. A content-revision bump (`tigerclaw-8-35z20-rev-1`) follows per the 8.35l trap, re-pinning all eighteen `ConfiguredCardArtworkCatalog.json` entries and `VerifiedContentIdentityTests`' digest (measured: `606cdb0c675f6c50bbbafd0d1a106038e27ec3c5e54b42d849d8163cac20991e`).
+
+**The roster-wide sweep.** All twenty-one other one-icon secondaries across the six shipped heroes - the five other Silver basics, Tigerclaw's five Blue Blocks, Arien's Blue Defense/Movement pairs, and Xargatha's Green Movement trio - were re-cropped and classified by glyph shape against a two-icon reference in one montage. **All twenty-one were already correct.** Blend Into Shadows was the sole defect in the shipped roster.
+
+**Gameplay fallout, all traced to this one cause and re-derived.** The player-path gate's Blend Into Shadows row moves from `SecondaryMovementDestination` to `SecondaryDefenseOffer`. Two `TigerclawVerifiedContentTests` assertions hardcoded the old reading (the source-inventory row; a movement-reach floor of 17 -> 16, Blend Into Shadows now the one exception every other Silver basic already has). `MatchHudPresentationTests`' typed-overlay cross-check moved its Movement-mask floor 92 -> 91, and the prepared shine sprite regenerated (`Tools/Prepare-ShineSprites.ps1`, a git-ignored private asset). What one card offers changing reroutes any seeded walk that chooses from offers, reaching twenty test cases across ten files: `CompleteCoreMatchLoopTests.FinalWaveMatchSeed`/`CompleteMatchRuntimeCaptureTests.CaptureSeed` (5 -> 6); `LocalSixSeatPlayerExperienceTests`' "life" seed (51 -> 7) AND its "throne" seed (1 -> 5 - even an uncontested push that "ends before the trajectory has room to diverge" shortened its stream enough to land an `AdvanceEndOfRound` on the fixture's own halfway session-replacement check); the shared official-board seat-walk seed five files reuse (6 -> 22, every family by step 319, verified identical across both the seat and wire mechanisms); `PrivateOnlineRehearsalContractTests`' end-of-round seed (6 -> 22); `PrivateOnlineEventChannelTests`' forty-round frame seed (5 -> 1); `SeatBoundedUndoTests`' undo-wall seed (11 -> 3, re-derived against its own undo-interleaved walk, not a plain forward probe); and `MatchLogChannelTests`' rewind-marker budget (120 -> 150, default seed, since undo-availability toggles rather than rising monotonically). Each re-derivation is recorded at its site with the offline scan that produced it.
+
+Acceptance checks:
+
+- `TigerclawCardContent.BlendIntoShadows` declares `SecondaryDefense = 2, SecondaryMovement = 0`; both `TigerclawVerifiedContentTests` printed-value assertions pass; `MatchHudPresentationTests`' typed-overlay cross-check passes against the regenerated shine sprite.
+- `ConfiguredCardArtworkCatalogTests` and `VerifiedContentIdentityTests` pass against the re-pinned revision and digest.
+- `HERO_TIGERCLAW.md` reads `Sec Def 2` / `Sec Mov -` and carries a settled-corrections block recording the ruling, method, evidence path and all three verifications, dated.
+- All twenty-one other one-icon secondaries carry a recorded per-card verdict; none changes.
+- `TigerclawPlayerPathGateTests`' row declares `SecondaryDefenseOffer`; the permanent player-path gate re-run for Tigerclaw passes complete in Play Mode.
+- Every re-derived seed/budget is driven against its actual fixture (not a plain forward-walk stand-in where that fixture's own history warns it disagrees), with the offline scan recorded at its site.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode all pass at baseline counts (2,128 / 2,858 / 284 - no case added or removed).
+
+Non-goals: no schema move, no wire move, no rules change to any other card, no change to Blend Into Shadows' primary Skill/Place/Active-effect behavior, no re-litigation of this field beyond the settled-corrections block.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z20-correct-blend-into-shadows-transposed-secondary-icon-and-sweep-the-roster-for-the-same-trap-completion-evidence).
+
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

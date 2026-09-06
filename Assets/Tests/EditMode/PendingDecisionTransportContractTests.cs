@@ -93,7 +93,13 @@ namespace GuardsDigital.Tests.EditMode
             // seed 1 stopped reaching Minion Battle at all inside 2,600 steps. An offline scan of
             // twenty-four seeds (`tmp/8-35d-8-35e-multiplayer-corrections/seed-scan-results.txt`)
             // put every walked family on SEED 6, the last of them at step 408.
-            var random = new MatchLoopRandom(6);
+            //
+            // Milestone 8.35z20 re-derived it again: correcting Blend Into Shadows' secondary
+            // rerouted this trajectory and seed 6 no longer reaches Minion Battle at all inside
+            // 2,600 steps. A fresh offline scan of seeds 1-30 put every walked family on SEED 22,
+            // the last of them (minion-battle) at step 319 - well inside this method's 1,900-step
+            // walk.
+            var random = new MatchLoopRandom(22);
             var observed = new List<string>();
             var target = new[]
             {
@@ -131,7 +137,7 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(observed, Is.SupersetOf(target),
-                "Seed 6 of the official six-player board reaches these seven families; a change " +
+                "Seed 22 of the official six-player board reaches these seven families; a change " +
                 "that reroutes it must be understood before this list is edited.");
             return observed;
         }

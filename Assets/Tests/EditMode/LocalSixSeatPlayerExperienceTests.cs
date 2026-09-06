@@ -490,8 +490,14 @@ namespace GuardsDigital.Tests.EditMode
             // commands over eleven rounds and is the shortest such ending that also reaches the
             // Minion Battle, the Defense and the respawn - chosen for the shape it walks through
             // rather than for being the lowest number that ends.
+            //
+            // Milestone 8.35z20 re-derived it again: correcting Blend Into Shadows' secondary
+            // rerouted this trajectory and seed 51 now ends on FinalWaveFlipped instead of
+            // LifeCountersExhausted. An offline scan of seeds 1-80 found seed 7 exhausts the Life
+            // counters in 600 commands (25% of the 2,400 budget) while still reaching the Minion
+            // Battle, the Defense and the respawn - far more headroom than seed 51 ever had.
             yield return new RecordedScenario(
-                "life", 51, MatchVictoryCause.LifeCountersExhausted,
+                "life", 7, MatchVictoryCause.LifeCountersExhausted,
                 () => ConfiguredMatchFixtures.CreateEngagedOfficialSixPlayerSession(2));
             yield return new RecordedScenario(
                 // Same re-derivation, same requirement as before: this is the scenario that owes the
@@ -501,7 +507,16 @@ namespace GuardsDigital.Tests.EditMode
                 "wave", 60, MatchVictoryCause.FinalWaveFlipped,
                 ConfiguredMatchFixtures.CreateOfficialSixPlayerSession);
             yield return new RecordedScenario(
-                "throne", 1, MatchVictoryCause.ThroneCaptured,
+                // Milestone 8.35z20: correcting Blend Into Shadows' secondary rerouted even this
+                // uncontested push (proof that "ends before the trajectory has room to diverge" is
+                // about WHICH outcome it reaches, not about the exact command stream) - seed 1's
+                // stream shortened from 172 to 169 commands and its new halfway command is an
+                // AdvanceEndOfRound, which this fixture's own walk-through skips via `continue`
+                // before ever reaching the session-replacement check, so `replacedSession` never
+                // latches. Every one of seeds 1-40 still reaches ThroneCaptured (the outcome truly
+                // is that stable), so the fix is picking one whose halfway command is not skipped:
+                // seed 5 is the lowest such seed, at 170 commands.
+                "throne", 5, MatchVictoryCause.ThroneCaptured,
                 ConfiguredMatchFixtures.CreateUncontestedOfficialSixPlayerPushSession);
         }
 

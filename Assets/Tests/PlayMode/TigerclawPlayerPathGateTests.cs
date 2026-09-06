@@ -189,10 +189,15 @@ namespace GuardsDigital.Tests.PlayMode
                     "p.20 brings it back only for an odd player count, which no configuration of " +
                     "this build composes - and its text composition carries a named deferral besides"),
 
-                // The Blue basic, and his only face printing no Defense value. Its Place is a space
-                // inside the printed radius, and what it raises is an Active effect standing into the
-                // next turn - two readings rather than one, because a player meets the second where
-                // nothing on screen has just happened.
+                // The Silver basic. Its Place is a space inside the printed radius, and what it raises
+                // is an Active effect standing into the next turn - two readings rather than one,
+                // because a player meets the second where nothing on screen has just happened. Its one
+                // secondary ribbon icon is a Defense value (2), not a Movement icon: milestone 8.35z20
+                // corrected the one-icon slot-position trap this face's row previously read wrong (a
+                // lone secondary icon sits in the ribbon's lower slot whatever its type - see
+                // Docs/AI/Rules/HERO_TIGERCLAW.md's settled-corrections block), so he is the one
+                // non-Ultimate face with no secondary Movement - the same shape every other verified
+                // hero's Silver basic already has.
                 Face(TigerclawCardContent.BlendIntoShadows, "Blend Into Shadows", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
@@ -200,7 +205,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(BoardSpaceSelection, BlendJourney),
                         Prove(ActiveEffectReading, BlendJourney),
                         Prove(RoundLongActiveEffectReading, BlendJourney),
-                        Prove(SecondaryMovementDestination, TrayCommitAndWalk)
+                        Prove(SecondaryDefenseOffer, NumericDefense)
                     },
                     new[]
                     {

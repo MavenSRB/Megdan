@@ -216,7 +216,15 @@ namespace GuardsDigital.Tests.EditMode
                 // targets on a seed that reaches none. Candidates were therefore tried against the
                 // real fixture; five of twelve pass (11, 12, 17, 21, 28), so 11 is the lowest of a
                 // healthy set rather than a lucky singleton.
-            }, 11);
+                //
+                // Milestone 8.35z20 re-derived it again, 11 -> 3: correcting Blend Into Shadows'
+                // secondary rerouted this trajectory and seed 11 reached no Attack at all in 1,600
+                // commands. Candidates were again tried against the REAL undo-interleaved fixture,
+                // not a plain forward-walk probe (the same 8.35u lesson still holds): of the seeds
+                // scanned, 3 is the lowest that presses at least one rewind and resolves at least one
+                // Attack (two, in fact), so 3 is the lowest of a healthy set rather than a lucky
+                // singleton.
+            }, 3);
 
             Assert.That(rewinds, Is.GreaterThan(0),
                 "The walk pressed no rewind in " + walked + " commands, so the property is vacuous.");

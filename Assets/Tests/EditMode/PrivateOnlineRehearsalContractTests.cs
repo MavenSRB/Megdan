@@ -236,7 +236,12 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.35g re-derived the seed offline over seeds 1-16: seed 3 reaches no
                 // team-owned end-of-round pause inside 3,500 steps once the release moves every
                 // trajectory. Seed 6 reaches one at step 400.
-                6);
+                //
+                // Milestone 8.35z20 re-derived it again: correcting Blend Into Shadows' secondary
+                // rerouted this trajectory and seed 6 no longer reaches a team-owned end-of-round
+                // pause inside 2,000 steps. An offline scan of seeds 1-30 found seed 22 reaches one
+                // at step 318, tied for the lowest of the thirty and far inside this budget.
+                22);
             var source = host.Projection;
 
             Assert.That(source.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound),

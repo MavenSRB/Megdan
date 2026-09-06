@@ -94,8 +94,15 @@ namespace GuardsDigital.Tests.EditMode
         /// to its own ceiling is one the next milestone to reroute a trajectory will break again.
         /// Seed 5 uses 40%. Headroom is worth more here than ordinal minimality, and saying so is
         /// cheaper than the re-derivation it avoids.</para>
+        ///
+        /// <para>Milestone 8.35z20 re-derived it again: correcting Blend Into Shadows' secondary from
+        /// a phantom Movement 2 to its printed Defense 2 rerouted this trajectory exactly as every
+        /// earlier reroute here has - seed 5 no longer ends inside the 2,400-command budget at all (29
+        /// rounds and still going). An offline scan of seeds 1-60 found seed 6 ends after 953 commands
+        /// (40% of budget, matching the headroom this constant has always preferred), and no seed
+        /// below it does better: seeds 1-4 either miss FinalWaveFlipped or run 58-77% of budget.</para>
         /// </summary>
-        private const int FinalWaveMatchSeed = 5;
+        private const int FinalWaveMatchSeed = 6;
 
         /// <summary>
         /// Milestone 8.27: the lowest scanned seed that takes the official-roster uncontested-push

@@ -552,7 +552,12 @@ namespace GuardsDigital.Tests.EditMode
         // longer reaches an ending at all inside the budget: simultaneous levelling asks p.15's
         // questions in a different order, so every trajectory diverges after the first level-up. The
         // run still has to be longer than the longest fixed sample (128), and 971 is comfortably so.
-        private const int CaptureSeed = 5;
+        //
+        // Milestone 8.35z20 re-derived it again, 5 -> 6, for the same reason CompleteCoreMatchLoopTests'
+        // FinalWaveMatchSeed moved (same session, same seed history): correcting Blend Into Shadows'
+        // secondary rerouted this trajectory and seed 5 no longer ends inside budget. Seed 6 ends after
+        // 953 commands, comfortably above the 128-command floor this constant needs.
+        private const int CaptureSeed = 6;
         private const int CaptureBudget = 2400;
 
         /// <summary>Twelve samples of one command kind: six at the start of the match and six at the end.</summary>

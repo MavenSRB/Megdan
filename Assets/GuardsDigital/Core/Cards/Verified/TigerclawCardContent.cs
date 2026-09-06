@@ -28,10 +28,12 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Defense action rather than its value. And Cloak and Daggers is the first Ultimate whose ability
     /// repeats an action from outside it.</para>
     ///
-    /// <para><b>Every non-Ultimate face prints Movement.</b> Eighteen of the nineteen carry a secondary
-    /// Movement icon, so p.11's Fast Travel replacement is reachable from every card that can enter his
-    /// hand - the widest such reach in the verified roster, and a fact about his set rather than a rule
-    /// this file states.</para>
+    /// <para><b>Every non-Ultimate face but one prints Movement.</b> Seventeen of the eighteen
+    /// non-Ultimate faces carry a secondary Movement icon, so p.11's Fast Travel replacement is
+    /// reachable from every card that can enter his hand except Blend Into Shadows - a fact about his
+    /// set rather than a rule this file states. Blend Into Shadows prints a Defense secondary instead;
+    /// milestone 8.35z20 corrected this file's earlier transposition of the two (recorded in
+    /// <c>Docs/AI/Rules/HERO_TIGERCLAW.md</c>'s settled-corrections block).</para>
     ///
     /// <para><b>No image, anywhere.</b> The extracted faces are audit and presentation assets and stay
     /// that way: nothing in this file, and no member of the content model it builds, names an image, an
@@ -42,8 +44,10 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="SabinaCardContent.ContentRevision"/> has: it moves when Tigerclaw's content does.
+        /// Milestone 8.35z20 moved it again to correct Blend Into Shadows' secondary icon (Defense 2,
+        /// not Movement 2 - see <c>Docs/AI/Rules/HERO_TIGERCLAW.md</c>'s settled-corrections block).
         /// </summary>
-        public const string ContentRevision = "tigerclaw-8-25e5b-rev-1";
+        public const string ContentRevision = "tigerclaw-8-35z20-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat
@@ -236,9 +240,13 @@ namespace GuardsDigital.Core.Cards.Verified
 
             // His only basic Skill, and his only p.17 Active effect. The immunity starts the moment the
             // Place applies and applies on his next turn; p.8 cancels it at end-of-round card retrieval
-            // if that turn never comes.
+            // if that turn never comes. The face's single secondary ribbon icon is a riveted Defense
+            // shield printing 2, in the ribbon's lower slot - not a Movement boot. Milestone 8.35z20
+            // corrected the transposition the one-icon slot-position trap caused (a lone secondary icon
+            // sits in the lower slot whatever its type; the upper-slot convention only holds for a
+            // two-icon card). Full evidence: Docs/AI/Rules/HERO_TIGERCLAW.md's settled-corrections block.
             new TigerclawCardProfile(
-                BlendIntoShadows, "Blend Into Shadows", 6, 0, 2,
+                BlendIntoShadows, "Blend Into Shadows", 6, 2, 0,
                 TigerclawPrimaryKind.Skill, 0, PrintedValueChannel.Radius, 2,
                 CardProgressionProfile.BasicCard(CardColor.Silver),
                 "If you are adjacent to terrain, place yourself into a space in radius; if you do, " +
