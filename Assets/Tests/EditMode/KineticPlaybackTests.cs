@@ -73,8 +73,17 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheStandingHighlights_BreatheWithinTheirRecordedBounds()
         {
-            Assert.That(KineticTiming.ShineSweepLoopSeconds, Is.InRange(2f, 3f),
-                "The circling light was asked for at a slow 2-3s loop.");
+            Assert.That(KineticTiming.ShineBreatheLoopSeconds, Is.InRange(2f, 3f),
+                "The breathing light kept the slow 2-3s cadence the circling one was asked for.");
+            Assert.That(KineticTiming.ShineBreatheFloor, Is.InRange(0.2f, 0.8f),
+                "The breath dims to a real floor and returns to the gold the HUD paints. Too high " +
+                "and nothing visibly moves; too low and an awaited outline goes dark enough to stop " +
+                "saying 'this is yours to answer' for part of every breath.");
+            Assert.That(
+                KineticTiming.ShineBreatheAmplitude,
+                Is.EqualTo(1f - KineticTiming.ShineBreatheFloor).Within(0.0001f),
+                "The amplitude IS the travel, derived from the floor rather than declared beside it, " +
+                "so the two cannot disagree.");
             Assert.That(KineticTiming.MarkPulseLoopSeconds, Is.InRange(1f, 1.5f),
                 "The board marks were asked to breathe at 1-1.5s.");
             Assert.That(KineticTiming.MarkPulseAmplitude, Is.LessThanOrEqualTo(0.10f),
@@ -218,14 +227,27 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 8.35z39. The board marks still breathe gently, and the awaited shine
+        /// now BREATHES rather than travelling.
+        ///
+        /// <para>The retired half of this case asserted that the shine's phase was seen both near 0
+        /// and near 1 - "the sweep travels the whole border". That claim is gone with the treatment:
+        /// a breath has no position, so what is asserted instead is the shape of the light itself -
+        /// it reaches both ends of its range, it stays inside 0 to 1, and it STARTS DARK, which is
+        /// the one property that separates a light coming up from a light going out.</para>
+        /// </summary>
         [Test]
-        public void TheBoardMarksBreatheGently_AndTheShineSweepWraps()
+        public void TheBoardMarksBreatheGently_AndTheAwaitedShineBreathesFromDark()
         {
             var playback = new KineticPlayback();
             var lowest = float.MaxValue;
             var highest = float.MinValue;
-            var sawEarlyPhase = false;
-            var sawLatePhase = false;
+            var dimmest = float.MaxValue;
+            var brightest = float.MinValue;
+
+            Assert.That(playback.ShineBreathIntensity, Is.EqualTo(0f).Within(0.0001f),
+                "A light that appears half-lit and falls first reads as something being taken away.");
 
             for (var step = 0; step < 400; step++)
             {
@@ -234,16 +256,46 @@ namespace GuardsDigital.Tests.EditMode
                 lowest = Math.Min(lowest, scale);
                 highest = Math.Max(highest, scale);
 
-                var phase = playback.ShineSweepPhase;
-                Assert.That(phase, Is.InRange(0f, 1f), "A loop phase is always a fraction of its loop.");
-                sawEarlyPhase |= phase < 0.2f;
-                sawLatePhase |= phase > 0.8f;
+                var breath = playback.ShineBreathIntensity;
+                Assert.That(breath, Is.InRange(0f, 1f), "A breath is always a fraction of full light.");
+                dimmest = Math.Min(dimmest, breath);
+                brightest = Math.Max(brightest, breath);
             }
 
             Assert.That(highest, Is.LessThanOrEqualTo(1f + KineticTiming.MarkPulseAmplitude + 0.0001f));
             Assert.That(lowest, Is.GreaterThanOrEqualTo(1f - KineticTiming.MarkPulseAmplitude - 0.0001f));
             Assert.That(highest - lowest, Is.GreaterThan(0.01f), "It does have to visibly breathe.");
-            Assert.That(sawEarlyPhase && sawLatePhase, Is.True, "The sweep travels the whole border.");
+            Assert.That(brightest, Is.GreaterThan(0.95f), "The breath reaches full light.");
+            Assert.That(dimmest, Is.LessThan(0.05f), "The breath returns to its resting gold.");
+        }
+
+        /// <summary>
+        /// Milestone 8.35z39. The breath curve eases at BOTH turns, which is what makes it
+        /// breathing rather than blinking - and it is the property a hand-written sine can lose by a
+        /// quarter turn without any other assertion noticing.
+        /// </summary>
+        [Test]
+        public void TheBreathEasesAtBothTurns_AndIsSymmetricAboutItsPeak()
+        {
+            Assert.That(KineticPlayback.Breath(0f), Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(KineticPlayback.Breath(0.5f), Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(KineticPlayback.Breath(1f), Is.EqualTo(0f).Within(0.0001f));
+
+            for (var step = 0; step <= 50; step++)
+            {
+                var phase = step / 100f;
+                Assert.That(
+                    KineticPlayback.Breath(0.5f + phase),
+                    Is.EqualTo(KineticPlayback.Breath(0.5f - phase)).Within(0.0001f),
+                    "The rise and the fall are the same curve.");
+            }
+
+            // Eased at the turns: the first and last hundredth of the breath move far less than the
+            // hundredth either side of the midpoint, where it is travelling fastest.
+            var atStart = KineticPlayback.Breath(0.01f) - KineticPlayback.Breath(0f);
+            var atMiddle = KineticPlayback.Breath(0.26f) - KineticPlayback.Breath(0.25f);
+            Assert.That(atStart, Is.LessThan(atMiddle * 0.25f),
+                "A light that leaves rest at full speed reads as a switch, not as a breath.");
         }
 
         [Test]

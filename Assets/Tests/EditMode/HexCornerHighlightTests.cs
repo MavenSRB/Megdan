@@ -34,6 +34,78 @@ namespace GuardsDigital.Tests.EditMode
             owned.Clear();
         }
 
+        /// <summary>
+        /// Milestone 8.35z39. THE MARKS DID NOT MOVE.
+        ///
+        /// <para>The user's tightening of the light direction was that the marking shapes are already
+        /// right: keep every one of them, keep what each colour means, and change ONLY how the pixels
+        /// inside them are drawn. This is that promise made checkable. It pins the two meshes and the
+        /// eight declared colours against transcribed values - written out here rather than read back
+        /// from the type under test, so an edit to the builder cannot move the mesh and the expectation
+        /// together - and then asserts the one thing that did change.</para>
+        ///
+        /// <para>The numbers come from <c>BuildSixCornerMesh</c>'s own arithmetic: six corners, two
+        /// bars each, four vertices and six indices per bar. Nothing here is a magic constant that a
+        /// future reader cannot re-derive.</para>
+        /// </summary>
+        [Test]
+        public void TheSixCornerMarks_KeepTheirExactGeometryAndColoursAndOnlyTheHaloBecomesLight()
+        {
+            template = new HexCornerHighlightTemplate(1f);
+
+            foreach (var mesh in new[] { template.HaloMesh, template.CoreMesh })
+            {
+                Assert.That(mesh.vertexCount, Is.EqualTo(6 * 2 * 4),
+                    "Six corners, two bars each, four vertices a bar - the footprint is unchanged.");
+                Assert.That(mesh.triangles.Length, Is.EqualTo(6 * 2 * 6),
+                    "and two triangles a bar.");
+            }
+
+            // The halo is the WIDE layer and the core the narrow one, which is the falloff profile the
+            // light is drawn on. If these ever swapped, the treatment would light the filament and
+            // leave the skirt flat - the exact inversion that looks correct on dark ground and
+            // dissolves on sand.
+            Assert.That(
+                template.HaloMesh.bounds.size.x,
+                Is.GreaterThan(template.CoreMesh.bounds.size.x),
+                "The halo is the wider of the two, which is what makes it the spill.");
+
+            var declared = new Dictionary<HexCornerHighlightKind, Color>
+            {
+                { HexCornerHighlightKind.Movement, new Color(0.22f, 1f, 0.48f, 1f) },
+                { HexCornerHighlightKind.Attack, new Color(0.72f, 0.025f, 0.035f, 1f) },
+                { HexCornerHighlightKind.Respawn, new Color(0.05f, 0.78f, 1f, 1f) },
+                { HexCornerHighlightKind.Ally, new Color(0.92f, 0.90f, 0.80f, 1f) },
+                { HexCornerHighlightKind.Effect, new Color(0.62f, 0.68f, 0.72f, 1f) },
+                { HexCornerHighlightKind.EffectResult, new Color(0.42f, 0.48f, 0.55f, 1f) },
+                { HexCornerHighlightKind.DefensePositive, new Color(0.02f, 0.70f, 0.18f, 1f) },
+                { HexCornerHighlightKind.DefenseNegative, new Color(1f, 0.16f, 0.05f, 1f) }
+            };
+
+            foreach (var pair in declared)
+            {
+                var halo = template.Halo(pair.Key);
+                var core = template.Core(pair.Key);
+                Assert.That(halo, Is.Not.Null, pair.Key + " must still have a halo.");
+                Assert.That(core, Is.Not.Null, pair.Key + " must still have a core.");
+
+                // COLOUR SEMANTICS UNCHANGED: which spaces are marked and what each mark means are
+                // untouched by a rendering change, and the hue is the whole of what carries the
+                // meaning.
+                Assert.That(halo.color.r, Is.EqualTo(pair.Value.r).Within(0.0001f), pair.Key + " red");
+                Assert.That(halo.color.g, Is.EqualTo(pair.Value.g).Within(0.0001f), pair.Key + " green");
+                Assert.That(halo.color.b, Is.EqualTo(pair.Value.b).Within(0.0001f), pair.Key + " blue");
+
+                // AND THE ONE CHANGE: the skirt is light, the filament is still paint.
+                Assert.That(BoardOverlayMaterial.IsAdditive(halo), Is.True,
+                    pair.Key + "'s halo must be ADDED to the board - that is the whole milestone.");
+                Assert.That(BoardOverlayMaterial.IsAdditive(core), Is.False,
+                    pair.Key + "'s core still carries the mark's shape at full strength over painted " +
+                    "sand, where added light saturates toward white. Lighting it too is the version " +
+                    "that dissolves on the bright half of the board.");
+            }
+        }
+
         [Test]
         public void EveryLegalBoardChoice_LightsSixFixedHexCornerMarksFromProjectedGeometry()
         {

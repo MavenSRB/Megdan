@@ -1958,12 +1958,14 @@ namespace GuardsDigital.Tests.EditMode
 
             foreach (var rail in rails)
             {
-                // Milestone 8.35z9 made this count its ROWS rather than its children. An awaited rail
-                // now carries `gd-rail-awaited-shine`, the inset path the circling sweep travels; it
-                // is absolutely positioned and picking-ignored, so it takes part in no layout and is
-                // not a row by any reading - but it is a child, and counting children called it one.
-                // The card faces' own awaited ring has had exactly this shape since 8.35m. What this
-                // case is about is which rows the rail draws, so it now asks that question directly.
+                // Milestone 8.35z9 made this count its ROWS rather than its children, because an
+                // awaited rail then carried `gd-rail-awaited-shine` - the inset path the circling
+                // sweep travelled - which took part in no layout but was still a child, and counting
+                // children called it a row. Milestone 8.35z39 retired that element with the
+                // sweep: an awaited rail now carries only a CLASS, and the breath writes the rail's
+                // own border colour. The rows reading is kept all the same, because it is the honest
+                // question - what this case is about is which rows the rail draws, and a future
+                // absolutely-positioned overlay must not be able to break it again.
                 var rows = rail.Children()
                     .Where(child => child.style.position.value != Position.Absolute)
                     .ToArray();
@@ -5708,8 +5710,16 @@ namespace GuardsDigital.Tests.EditMode
         /// card AND a lit tray yields a NON-EMPTY host set. A zero-host silent failure cannot be
         /// reshipped past this.</para>
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.35z39 kept this case wholesale and changed only the names it types.
+        /// The treatment it guards moved from a travelling mark to a breath on each host's own
+        /// outline, but the failure it exists to prevent is identical and is not about either: a
+        /// composed HUD that yields NO hosts animates nothing, silently, and looks exactly like a
+        /// HUD whose lights are simply at rest. Everything downstream of the host set - what is
+        /// lit, and how - changed; that a non-empty host set is found did not.
+        /// </remarks>
         [Test]
-        public void TheShineSweep_FindsItsHostsOnAComposedHudWithALitTrayAndAShiningCard()
+        public void TheAwaitedShine_FindsItsHostsOnAComposedHudWithALitTrayAndAShiningCard()
         {
             var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
             var actingId = session.Projection.SelectedActor.ActorId;
@@ -5725,15 +5735,15 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(railView.Model.Heroes.Any(hero => hero.IsAwaited), Is.True,
                 "and a lit tray, which is the host with no child element of its own.");
 
-            // Both surfaces under one root, exactly as the HUD composes them - the sweep walks the
+            // Both surfaces under one root, exactly as the HUD composes them - the breath walks the
             // whole HUD tree rather than one panel.
             var root = new VisualElement();
             root.Add(handView.Root);
             root.Add(railView.Root);
 
-            var hosts = KineticCueUnityView.FindShineSweepHosts(root);
+            var hosts = KineticCueUnityView.FindAwaitedShineHosts(root);
             Assert.That(hosts, Is.Not.Empty,
-                "The circling sweep must find the elements wearing the awaited gold. An empty host " +
+                "The breath must find the elements wearing the awaited gold. An empty host " +
                 "set is the exact silent failure this case exists to make impossible.");
             Assert.That(
                 hosts.Any(host => HudElements.IsSelfOrDescendant(handView.Root, host)), Is.True,
@@ -5741,8 +5751,119 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 hosts.Any(host => HudElements.IsSelfOrDescendant(railView.Root, host)), Is.True,
                 "and so is the lit tray, which is why the marker is a class and not an element name.");
-            Assert.That(hosts.Count, Is.LessThanOrEqualTo(KineticCueUnityView.MaxSweptShineElements),
+            Assert.That(hosts.Count, Is.LessThanOrEqualTo(KineticCueUnityView.MaxBreathingShineElements),
                 "The recorded 'few animated elements at once' bound still holds.");
+
+            // Milestone 8.35z39. THE HOST MUST HAVE AN OUTLINE TO LIGHT, which is the new
+            // way this treatment can silently animate nothing: the previous one parented a mark into
+            // its host and needed only a box, so a host with no border of its own was perfectly
+            // serviceable - and the rail's host was exactly that, a transparent inset element that
+            // drew nothing. A breath writes border colours, so such a host would be found, written
+            // to, and invisible. Every host is therefore asserted to be wearing the awaited gold on
+            // at least one edge that is actually drawn.
+            foreach (var host in hosts)
+            {
+                var style = host.style;
+                var lit =
+                    (style.borderTopWidth.value > 0f &&
+                        KineticCueUnityView.IsAwaitedGold(style.borderTopColor.value)) ||
+                    (style.borderBottomWidth.value > 0f &&
+                        KineticCueUnityView.IsAwaitedGold(style.borderBottomColor.value)) ||
+                    (style.borderLeftWidth.value > 0f &&
+                        KineticCueUnityView.IsAwaitedGold(style.borderLeftColor.value)) ||
+                    (style.borderRightWidth.value > 0f &&
+                        KineticCueUnityView.IsAwaitedGold(style.borderRightColor.value));
+                Assert.That(lit, Is.True,
+                    "'" + host.name + "' wears the awaited-shine marker but draws no gold edge, so " +
+                    "the breath would light nothing on it. The marker belongs on the element whose " +
+                    "own outline IS the awaited gold.");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z39. The breath recognises the gold it owns and NOTHING else,
+        /// which is what keeps a hero's team accent, a selection outline and a reserved transparent
+        /// edge out of a treatment that runs every frame on a rail carrying all four.
+        /// </summary>
+        [Test]
+        public void TheBreath_OwnsTheAwaitedGoldAndNoOtherColourTheHudPaintsOnABorder()
+        {
+            Assert.That(KineticCueUnityView.IsAwaitedGold(MatchHudTheme.ShineGlow), Is.True,
+                "The top of the breath is the colour the HUD ITSELF paints on an awaited outline. " +
+                "If this is ever false the breath recognises nothing on a freshly rebuilt element - " +
+                "which is every element, several times a second - and animates nothing at all.");
+            Assert.That(KineticCueUnityView.IsAwaitedGold(KineticCueUnityView.DimmedOutline()), Is.True,
+                "and the dimmed amber is the bottom of it.");
+
+            // THE RATCHET GUARD. Every value the treatment writes must still be recognised on the
+            // next frame, or the light stalls wherever recognition stopped.
+            for (var step = 0; step <= 20; step++)
+            {
+                var written = KineticCueUnityView.LitOutline(step / 20f);
+                Assert.That(KineticCueUnityView.IsAwaitedGold(written), Is.True,
+                    "A value this same treatment wrote on the previous frame must still be " +
+                    "recognised: " + written);
+            }
+
+            foreach (var foreign in new[]
+            {
+                MatchHudTheme.TeamFace(TeamSide.Red),
+                MatchHudTheme.TeamFace(TeamSide.Blue),
+                MatchHudTheme.SelectedOutline,
+                MatchHudTheme.ActiveEffectAccent,
+                MatchHudTheme.ConfirmAccent,
+                MatchHudTheme.PanelBorder,
+                MatchHudTheme.FocusOutline,
+                // The 8.30d PRINTED-ARTWORK rim, which is a different family with a confusingly
+                // similar name and colour - the exact pair milestone 8.35z9 already got wrong once,
+                // when the sweep spent four milestones querying for the wrong one.
+                MatchHudTheme.ShineRim,
+                new Color(0f, 0f, 0f, 0f)
+            })
+            {
+                Assert.That(KineticCueUnityView.IsAwaitedGold(foreign), Is.False,
+                    "The breath must never claim " + foreign + ": it is painted on the same borders " +
+                    "and says something the light does not get to overwrite.");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z39. THE BREATH HAS TO BE VISIBLE, and this is the case that
+        /// would have caught the first version of it.
+        ///
+        /// <para>That version ran the outline from its resting gold UP toward
+        /// <see cref="MatchHudTheme.ShineRim"/>. It read correctly in source - right hue family, right
+        /// cadence, eased curve - and moved the outline's luminance by 3.44%, because the resting gold
+        /// is ALREADY a 0.92-luminance near-white and the gap to the rim is almost all blue channel.
+        /// It would have shipped indistinguishable from the static gold the user asked to replace, and
+        /// nothing in the suite would have said a word.</para>
+        /// </summary>
+        [Test]
+        public void TheBreath_MovesTheOutlineInBrightnessFarEnoughToSee_AndNeverInHue()
+        {
+            var dim = KineticCueUnityView.LitOutline(0f);
+            var lit = KineticCueUnityView.LitOutline(1f);
+
+            float Luma(Color c) => (0.2126f * c.r) + (0.7152f * c.g) + (0.0722f * c.b);
+
+            Assert.That(Luma(lit) - Luma(dim), Is.GreaterThan(0.25f),
+                "A swing under about a quarter of full white does not read as breathing on a 1-3px " +
+                "outline. Measured here: " + Luma(dim).ToString("0.0000") + " to " +
+                Luma(lit).ToString("0.0000") + ".");
+
+            // ... and ONLY in brightness. Multiplying the channels leaves their ratios alone, so the
+            // outline is the hero's own gold at every point of every breath rather than drifting
+            // toward white in the middle of one.
+            Assert.That(dim.g / dim.r, Is.EqualTo(lit.g / lit.r).Within(0.001f),
+                "green:red must not move - that is hue, and hue is not what a light does.");
+            Assert.That(dim.b / dim.r, Is.EqualTo(lit.b / lit.r).Within(0.001f),
+                "nor blue:red.");
+
+            Assert.That(lit.r, Is.EqualTo(MatchHudTheme.ShineGlow.r).Within(0.0001f));
+            Assert.That(lit.g, Is.EqualTo(MatchHudTheme.ShineGlow.g).Within(0.0001f));
+            Assert.That(lit.b, Is.EqualTo(MatchHudTheme.ShineGlow.b).Within(0.0001f),
+                "The top of the breath is the HUD's own painted gold, so a rebuilt element is " +
+                "already at a point on the breath and an untouched one is indistinguishable.");
         }
 
         /// <summary>

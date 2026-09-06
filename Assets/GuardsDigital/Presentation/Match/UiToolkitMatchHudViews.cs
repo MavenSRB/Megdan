@@ -830,13 +830,12 @@ namespace GuardsDigital.Presentation.Match
     {
         public const float HeroIdentityEdgeWidth = 2f;
 
-        /// <summary>
-        /// Milestone 8.35z9. How far inside the rail the awaited sweep's path host sits. It must
-        /// exceed half the travelling mark's own size, because the mark is centred on its host's
-        /// border: at zero inset half of it hangs outside the rail's column, which
-        /// `MinimalHexGridPlayModeTests` refuses by measurement rather than by eye.
-        /// </summary>
-        public const float AwaitedRailShineInset = 6f;
+        // Milestone 8.35z39 retired `AwaitedRailShineInset = 6f` with the travelling mark
+        // whose overhang it existed to prevent. Milestone 8.35z9 sized it to exceed half a 10px
+        // mark centred on its host's border, because at zero inset half that mark hung outside the
+        // rail's own column and `MinimalHexGridPlayModeTests` refused it by measurement. The breath
+        // that replaced the mark writes the rail's own border colour and draws no element at all, so
+        // there is nothing left that can hang outside a column and no inset left to size.
 
         private readonly VisualElement redColumn;
         private readonly VisualElement blueColumn;
@@ -1208,29 +1207,28 @@ namespace GuardsDigital.Presentation.Match
             body.a = 0.97f;
             if (hero.IsAwaited)
             {
-                // Milestone 8.35z9. The rail wears its gold as its own border and background, with no
-                // child element to find, so the circling sweep needs something here to travel. It
-                // rides a dedicated INSET path host rather than the rail itself, and the inset is not
-                // cosmetic: the sweep's mark is centred on its host's border, so marking the rail put
-                // half of a 10px mark outside the rail's own column and the complete Play Mode run
-                // caught it immediately - `Scene_DrawsAllSixOfficialRailsInsideTheirOwnColumnsWithTheTrayBetweenThem`
-                // measured 280.0 against a 276.5 bound. Inset by more than the mark's half-width, the
-                // whole path stays inside the column that guard protects. Rails are rebuilt by
-                // BuildOverview on every render, so this never needs clearing.
-                var railShinePath = new VisualElement
-                {
-                    name = "gd-rail-awaited-shine",
-                    pickingMode = PickingMode.Ignore,
-                    focusable = false
-                };
-                railShinePath.AddToClassList(MatchHudTheme.AwaitedShineClass);
-                railShinePath.style.position = Position.Absolute;
-                railShinePath.style.left = AwaitedRailShineInset;
-                railShinePath.style.top = AwaitedRailShineInset;
-                railShinePath.style.right = AwaitedRailShineInset;
-                railShinePath.style.bottom = AwaitedRailShineInset;
-                railShinePath.style.backgroundColor = Color.clear;
-                rail.Add(railShinePath);
+                // Milestone 8.35z39. THE RAIL ITSELF wears the marker now, and the inset
+                // child element that used to wear it is gone with the treatment that needed it.
+                //
+                // Milestone 8.35z9 added `gd-rail-awaited-shine` for one reason it stated plainly:
+                // the rail wears its gold as its own border, with no child element to find, so the
+                // CIRCLING SWEEP needed something here to travel - and it needed that something inset,
+                // because a 10px mark centred on the rail's own border put half of itself outside the
+                // rail's column and the complete Play Mode run caught it at 280.0 against a 276.5
+                // bound. Both the element and its inset existed to carry a travelling dot.
+                //
+                // The user retired the travelling dot ("i dont like the little light that goes
+                // around"), and the breath that replaced it lights an element's OWN outline in place.
+                // The rail's own outline is exactly the gold `frame` written just above, so the marker
+                // belongs on the rail; a child that draws nothing would be a host with no outline to
+                // light. Nothing overflows any column any more either, because nothing is centred on a
+                // border - which is why the guard that caught the sweep has nothing left to catch.
+                //
+                // Only the edges actually painted with the awaited gold breathe. The reserved top edge
+                // and the team accent on the screen-edge side are written after this and are never
+                // gold, so the hero's own identity keeps its colour while the frame breathes - the
+                // same division of labour milestone 8.35m set up here.
+                rail.AddToClassList(MatchHudTheme.AwaitedShineClass);
             }
 
             rail.style.backgroundColor = body;

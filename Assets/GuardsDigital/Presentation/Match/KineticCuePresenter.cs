@@ -29,7 +29,7 @@ namespace GuardsDigital.Presentation.Match
         public KineticCueViewModel(
             IEnumerable<KineticCue> cues,
             bool pulseBoardMarks,
-            IEnumerable<HeroId> sweepingShineHeroes,
+            IEnumerable<HeroId> breathingShineHeroes,
             bool snapToAuthoritative = false)
         {
             SnapToAuthoritative = snapToAuthoritative;
@@ -37,9 +37,9 @@ namespace GuardsDigital.Presentation.Match
                 System.Linq.Enumerable.ToArray(cues ?? throw new ArgumentNullException(nameof(cues))));
             Scenes = Array.Empty<KineticScene>();
             PulseBoardMarks = pulseBoardMarks;
-            SweepingShineHeroes = new ReadOnlyCollection<HeroId>(
+            BreathingShineHeroes = new ReadOnlyCollection<HeroId>(
                 System.Linq.Enumerable.ToArray(
-                    sweepingShineHeroes ?? throw new ArgumentNullException(nameof(sweepingShineHeroes))));
+                    breathingShineHeroes ?? throw new ArgumentNullException(nameof(breathingShineHeroes))));
         }
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace GuardsDigital.Presentation.Match
         public KineticCueViewModel(
             IReadOnlyList<KineticScene> scenes,
             bool pulseBoardMarks,
-            IEnumerable<HeroId> sweepingShineHeroes,
+            IEnumerable<HeroId> breathingShineHeroes,
             bool snapToAuthoritative = false,
             HeroId viewerHeroId = default)
         {
@@ -66,9 +66,9 @@ namespace GuardsDigital.Presentation.Match
                 : new ReadOnlyCollection<KineticScene>(System.Linq.Enumerable.ToArray(staged));
             Cues = KineticScene.Flatten(Scenes);
             PulseBoardMarks = pulseBoardMarks;
-            SweepingShineHeroes = new ReadOnlyCollection<HeroId>(
+            BreathingShineHeroes = new ReadOnlyCollection<HeroId>(
                 System.Linq.Enumerable.ToArray(
-                    sweepingShineHeroes ?? throw new ArgumentNullException(nameof(sweepingShineHeroes))));
+                    breathingShineHeroes ?? throw new ArgumentNullException(nameof(breathingShineHeroes))));
         }
 
         /// <summary>The kinetics that arrived with this projection, oldest first. Never replayed.</summary>
@@ -103,14 +103,20 @@ namespace GuardsDigital.Presentation.Match
         public bool PulseBoardMarks { get; }
 
         /// <summary>
-        /// The heroes whose gold tray and card shine should carry the slow circling light.
+        /// The heroes whose gold tray and card shine should be breathing with light.
         ///
         /// <para>Read per hero from <see cref="AwaitedInputQuery.IsHeroAwaited"/> - the same predicate
-        /// milestone 8.35m's tray shine already lights a tray with, so the sweep travels exactly the
-        /// shine that is already there rather than lighting a second, differently-chosen set. Bounded
-        /// by the roster: at most six trays, and in practice one or two.</para>
+        /// milestone 8.35m's tray shine already lights a tray with, so the breath lights exactly the
+        /// shine that is already there rather than a second, differently-chosen set. Bounded by the
+        /// roster: at most six trays, and in practice one or two.</para>
         /// </summary>
-        public IReadOnlyList<HeroId> SweepingShineHeroes { get; }
+        /// <remarks>
+        /// Milestone 8.35z39 renamed this from <c>SweepingShineHeroes</c>. The set it names
+        /// is unchanged and the predicate behind it is unchanged; what moved is what a view does with
+        /// it, and the old name asserted the answer - a sweep is a thing that TRAVELS, and nothing
+        /// travels any more. See <see cref="KineticPlayback.ShineBreathIntensity"/>.
+        /// </remarks>
+        public IReadOnlyList<HeroId> BreathingShineHeroes { get; }
 
         /// <summary>
         /// Whether the surface must drop every kinetic it is playing and show authoritative state
@@ -126,7 +132,7 @@ namespace GuardsDigital.Presentation.Match
         public bool SnapToAuthoritative { get; }
 
         public bool HasAnimation =>
-            Cues.Count > 0 || PulseBoardMarks || SweepingShineHeroes.Count > 0;
+            Cues.Count > 0 || PulseBoardMarks || BreathingShineHeroes.Count > 0;
     }
 
     public interface IKineticCueView
@@ -270,7 +276,7 @@ namespace GuardsDigital.Presentation.Match
                 lastViewModel = new KineticCueViewModel(
                     Array.Empty<KineticCue>(),
                     lastViewModel.PulseBoardMarks,
-                    lastViewModel.SweepingShineHeroes);
+                    lastViewModel.BreathingShineHeroes);
                 view.Render(lastViewModel);
                 return;
             }
@@ -283,7 +289,7 @@ namespace GuardsDigital.Presentation.Match
                 lastViewModel = new KineticCueViewModel(
                     Array.Empty<KineticCue>(),
                     lastViewModel.PulseBoardMarks,
-                    lastViewModel.SweepingShineHeroes);
+                    lastViewModel.BreathingShineHeroes);
                 view.Render(lastViewModel);
                 return;
             }

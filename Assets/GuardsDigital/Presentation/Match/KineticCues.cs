@@ -377,8 +377,51 @@ namespace GuardsDigital.Presentation.Match
         public const float RespawnSeconds = 0.30f;
 
 
-        /// <summary>The circling light's loop on a gold tray or card shine. The amendment's ~2-3s.</summary>
-        public const float ShineSweepLoopSeconds = 2.4f;
+        /// <summary>
+        /// Milestone 8.35z39. One full breath of an awaited card's or tray's own outline -
+        /// dark, bright, dark. The user asked for "a breathing light around the whole thing", at the
+        /// slow 2-3s the original circling light was specified at and this inherits unchanged.
+        /// </summary>
+        /// <remarks>
+        /// It is the same 2.4 the retired <c>ShineSweepLoopSeconds</c> named, kept deliberately: the
+        /// cadence was never what the user objected to - "the little light that goes around" was - so
+        /// changing the number as well would have made a rejected treatment and an accepted tempo
+        /// indistinguishable if this ever needs re-tuning.
+        /// </remarks>
+        public const float ShineBreatheLoopSeconds = 2.4f;
+
+        /// <summary>
+        /// Milestone 8.35z39. How far DOWN an awaited outline dims at the bottom of its
+        /// breath, as a multiplier on the resting gold's brightness.
+        ///
+        /// <para><b>The breath had to travel downward, and an offline measurement is what said so.</b>
+        /// The first version of this ran from the resting gold UP toward
+        /// <see cref="MatchHudTheme.ShineRim"/> and looked right in source: same hue family, eased
+        /// curve, correct cadence. Measured, it moved the outline's luminance by 3.44% - because
+        /// <see cref="MatchHudTheme.ShineGlow"/> is ALREADY a near-white at 0.92 luminance, so the gap
+        /// to the rim is almost entirely blue channel, which is saturation and not brightness. A 3%
+        /// swing on a 1-3px border is not a breathing light; it is nothing, and it would have shipped
+        /// looking exactly like the static gold it replaced.</para>
+        ///
+        /// <para>So the light kindles rather than merely warms: at the bottom of the breath the
+        /// outline is a deeper amber at this fraction of the resting gold's brightness, and at the top
+        /// it is full light. Multiplying the channels scales brightness while leaving their ratios -
+        /// the hue - alone, which is what keeps this "light, not just yellow color" in the direction
+        /// the user meant.</para>
+        /// </summary>
+        public const float ShineBreatheFloor = 0.45f;
+
+        /// <summary>
+        /// Milestone 8.35z39. How far the breath actually travels, derived rather than
+        /// declared: the outline runs from <see cref="ShineBreatheFloor"/> of its resting brightness
+        /// up to all of it, so this IS the amplitude and there is no second number that could
+        /// disagree with the first.
+        ///
+        /// <para>The amendment's bound on this family is "low amplitude ... subtle enough to read as
+        /// alive, not alarming", which is about how much the light MOVES; the floor is about how far
+        /// down it goes. They are the same fact stated twice, so it is stated once.</para>
+        /// </summary>
+        public const float ShineBreatheAmplitude = 1f - ShineBreatheFloor;
 
         /// <summary>The board marks' breathe. The amendment's ~1-1.5s.</summary>
         public const float MarkPulseLoopSeconds = 1.2f;

@@ -274,12 +274,29 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Where the circling light stands on its loop, 0 to 1. A view sweeps a highlight's border by
-        /// this fraction. Free-running rather than started by an event, because the shine it travels is
-        /// standing state and a sweep that restarted on every refresh would stutter.
+        /// Milestone 8.35z39. How brightly an awaited element's own outline is lit right
+        /// now: 0 at the bottom of the breath, 1 at the top, and eased at both ends.
+        ///
+        /// <para><b>This replaced a travelling phase, on the user's own words</b> - "i dont like the
+        /// little light that goes around, i want a breathing light around the whole thing (Card(s),
+        /// hero tray). But light, not just yellow color." A phase says WHERE one bright dot is on a
+        /// perimeter; an intensity says HOW LIT the whole outline is. Nothing consumes a position any
+        /// more, which is why the number itself changed shape rather than being reinterpreted: there
+        /// is no way to travel something with this.</para>
+        ///
+        /// <para>Free-running from the same accumulated clock the board marks breathe on, and for the
+        /// same reason: what it lights is STANDING state - an element that is awaited stays awaited
+        /// across many refreshes - and a breath restarted on every projection change would stutter
+        /// every time anything on the HUD moved. Two elements lit in the same frame are therefore at
+        /// the same point of the same breath, which is what makes a hand of cards and the tray above
+        /// it read as one light rather than as several.</para>
+        ///
+        /// <para>Cosine-shaped rather than <see cref="Sine"/>-shaped so the breath STARTS dark and
+        /// rises: a light that appears at half brightness and falls first reads as something being
+        /// taken away.</para>
         /// </summary>
-        public float ShineSweepPhase =>
-            Repeat(elapsedTotal / KineticTiming.ShineSweepLoopSeconds);
+        public float ShineBreathIntensity =>
+            Breath(Repeat(elapsedTotal / KineticTiming.ShineBreatheLoopSeconds));
 
         /// <summary>
         /// The board marks' current scale: 1 at the middle of the breathe, and never further from it
@@ -350,5 +367,18 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>A full sine over a 0-to-1 phase, so the breathe is symmetric about 0.</summary>
         internal static float Sine(float phase) => (float)Math.Sin(phase * 2d * Math.PI);
+
+        /// <summary>
+        /// Milestone 8.35z39. A breath over a 0-to-1 phase: 0 at both ends, 1 at the middle,
+        /// and flat at the turn rather than pointed.
+        ///
+        /// <para>A raised cosine, which is the same curve as a sine offset by a quarter turn and is
+        /// written that way because what matters here is the VALUE at phase 0, not the symmetry about
+        /// it: this starts dark, brightens, and returns. It eases at both ends by construction - the
+        /// derivative is zero at 0, at 0.5 and at 1 - so a light on this curve never appears to switch
+        /// direction, which is the difference between breathing and blinking.</para>
+        /// </summary>
+        internal static float Breath(float phase) =>
+            (float)((1d - Math.Cos(Repeat(phase) * 2d * Math.PI)) / 2d);
     }
 }

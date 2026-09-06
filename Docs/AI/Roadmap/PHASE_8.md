@@ -336,6 +336,33 @@ Non-goals: Leaf on the Wind stays parked on the standing p.20 Handicap deferral;
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z38-deal-register-and-player-path-gate-misa-the-samurai-as-the-eighth-hero-completion-evidence).
 
+### [x] 8.35z39 Breathe the awaited outlines and draw the board's marks as light
+
+The user's own direction, quoted in the amendment: "i dont like the little light that goes around, i want a breathing light around the whole thing (Card(s), hero tray). But light, not just yellow color", and "if you can use light for stuff marked on the map, that would be much cooler as well".
+
+Observable outcome: an awaited card or hero tray no longer has a dot crawling round its edge - its own outline kindles and swells on a slow breath; and a marked space stops being a coloured patch painted over the board and becomes the board lit up in that shape, with the artwork underneath still readable.
+
+**The travelling light was a 10x10 pixel dot, and knowing that decided the shape of its replacement.** It was parented into every awaited element and walked round the perimeter in percent coordinates, which is why the rail needed a child element invented for it to travel on. Retiring the dot retires that host too, so this milestone REMOVES up to eight elements from the HUD and adds none.
+
+**The breath had to be able to go DOWN, and only a measurement said so.** The first version ran the outline from its resting gold up toward the brighter rim; it read correctly in source and the offline probe measured the swing at **3.44% of full white**, because the resting colour is already a 0.92-luminance near-white and its gap to the target is almost entirely blue channel - saturation, not brightness. It would have shipped looking identical to the static gold the user asked to replace and no test would have said a word. The breath now kindles from the gold DIMMED by a channel multiplier up to the full painted gold: a **x2.22 luminance swing with hue exactly constant**, and its top is the colour the HUD already paints, so a freshly rebuilt element is already on the breath and an element the treatment lets go of is left indistinguishable from one it never touched.
+
+**Every mark keeps its exact geometry, footprint and colour, and only the rendering changes** - the user's own tightening. The halo becomes additive, so a mark can only ever brighten the space it names and the board's printed artwork survives underneath at full strength; the near-white core stays painted, because it is what carries the shape on the bright half of the board. Bloom was rejected on measurement rather than taste: this project's renderer carries no post-process data at all and the volume profile's Bloom sits at intensity 0, so a glow from post-processing is a render-pipeline change with a per-frame cost to justify, not a material choice.
+
+**One core in the type is not white-biased, and the first complete Edit Mode run of this work caught it.** A tile that is both an Attack target and a Defense contributor draws a saturated core inside a blood-red halo, and it had always obtained that saturation by BORROWING the halo material. Once halos became light the borrow silently handed that core the luminous alpha - expected alpha 1.000, measured 0.620 - so the borrow becomes a declared saturated-core family of its own, and a new case pins the distinction so the next change to the light family cannot re-borrow it.
+
+Acceptance checks:
+
+- The awaited breath is a pure function of the existing kinetic clock read inside the one conductor's tick, adds no second driver, and hands every lit element the same intensity on the same frame.
+- The breath's brightness swing and its constant hue are asserted as measurements, and the colour it recognises is stated as distance to its own segment rather than a bounding box, with the margin to every other colour the HUD paints on a border recorded.
+- Every six-corner mesh, ratio, radius and declared colour is unchanged, asserted against transcribed expectations rather than values read back from the type under test.
+- A luminous mark is the shipped blended template with only its blend factor changed, so no shader variant is added.
+- The composite mark's core is saturated paint at full alpha while its halo is light, and the two are not the same material.
+- The token preparation tool gains a team-neutral mode whose check is INVERTED - a prepared neutral face must classify as neither team - and all sixteen shipped team-baked faces regenerate byte-identically.
+
+Non-goals: no Bloom or post-processing; no new mark, colour or footprint; no change to which spaces are marked; no HUD element added; and no tuning of the luminous strength against the painted board, which is one number and wants the user's eye on a rendered frame.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z39-breathe-the-awaited-outlines-and-draw-the-boards-marks-as-light-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

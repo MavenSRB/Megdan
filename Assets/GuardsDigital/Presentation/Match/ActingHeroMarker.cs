@@ -150,7 +150,17 @@ namespace GuardsDigital.Presentation.Match
 
             if (ownedMaterial == null)
             {
-                ownedMaterial = BoardOverlayMaterial.CreateRim(
+                // Milestone 8.35z39. The same ring, drawn as LIGHT rather than as an opaque
+                // painted line. Nothing about the mark's shape moves: `BuildRing` is untouched, so
+                // the annulus keeps `RingWidthRatio` 0.22 inside `RadiusMargin` 1.18 of the piece it
+                // circles, and the colour is still `MatchHudTheme.ActingHeroMarkerColor` - the
+                // FOURTH amendment's "a distinct gold ring" means the same gold it always did. What
+                // changes is that the ring now ADDS its gold to the board instead of covering the
+                // board with it, so the artwork the actor is standing on stays visible through the
+                // mark and the space reads as lit. See BoardOverlayMaterial.CreateLuminous for why
+                // this is a blend factor rather than the Bloom the volume profile declares and the
+                // renderer does not run.
+                ownedMaterial = BoardOverlayMaterial.CreateLuminous(
                     MarkerObjectName + " Ring", MatchHudTheme.ActingHeroMarkerColor);
             }
 

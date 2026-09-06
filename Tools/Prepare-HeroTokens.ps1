@@ -50,6 +50,29 @@
     declaration stays a table rather than becoming a rule - two of the three names agree with the
     project's and the third does not.
 
+    Milestone 8.35z39 adds -Neutral, which writes ONE team-neutral file instead of two:
+
+        Assets/Resources/Private/Heroes/<content-id>.png
+
+    That path is `RuntimeTeamIdentity.NeutralResourcePath`, and it takes no team because the runtime
+    decision it feeds takes none: a neutral face states its team entirely in the ring this project
+    draws around it, widened for exactly this case (NeutralFaceRadius 0.66 against the team-baked
+    0.72, so a 0.15 band inside an unchanged 0.81 outer radius). The resolution order there is
+    team-baked first, then neutral, then the generated prism - so preparing a neutral face for a hero
+    that already has baked ones changes nothing about how that hero is drawn, and this route can
+    therefore be run over the whole roster without restyling a shipped piece.
+
+    The neutral preparation is the team-baked one plus one step. The baked route already replaces the
+    flat team-coloured interior field with opaque white (milestone 8.30i1); this additionally replaces
+    the official team RING - everything outside the protected radius the baked route preserves - with
+    opaque white, because that ring is the last place a team colour is baked into the artwork. What
+    survives is the portrait, pixel-faithful, on the white background the directive asks for. The
+    check is correspondingly INVERTED: a prepared neutral face must fail to classify as either team by
+    its own ring, where a prepared baked face must still classify as its own.
+
+.PARAMETER Neutral
+    Prepare the single team-neutral white face instead of the two team-baked ones.
+
 .PARAMETER Check
     Verify only. Rebuilds the expected prepared pixels from the declared source face in memory and
     compares them with the resources, including size, transparent exterior, opaque white field,
@@ -60,8 +83,11 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha', 'dodger', 'misa')]
+    [ValidateSet(
+        'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
+        'dodger', 'misa', 'silverarrow', 'ursafar')]
     [string] $Hero = 'wasp',
+    [switch] $Neutral,
     [switch] $Check,
     [switch] $Force
 )
@@ -99,6 +125,25 @@ $declaredHeroes = @{
     # 85962xx/85973xx band the rest occupy, which is exactly why this table declares ids rather than
     # searching for them by name.
     misa = @{ ElementId = 8629811; ElementName = 'Misa'; DisplayName = 'Misa' }
+
+    # Milestone 8.35z39. Two more the manifest names outright, added here so the neutral
+    # route can cover them the moment their dealing milestones land. Both were read from the bundled
+    # manifest's own `VerticalTokens` list rather than guessed, and the identity check below still
+    # refuses to crop anything if either name or type has moved.
+    silverarrow = @{ ElementId = 8629809; ElementName = 'Silverarrow'; DisplayName = 'Silverarrow' }
+    # The corpus spells his element with the epithet the box art uses; the project's own content id
+    # is the bare `ursafar`, which is exactly why this stays a declared table and never a rule.
+    ursafar = @{ ElementId = 8629816; ElementName = 'Ursafar_The_Savage'; DisplayName = 'Ursafar' }
+
+    # RECORDED ABSENCE - Tali and Whisper. Both are heroes this project is dealing, and the corpus
+    # holds their dashboards (the shared Tabletopia placeholder names Arien, Brogan, Dodger, Min,
+    # Sabina, Tali, Trinkets, Ursafar, Wasp, Whisper and Xargatha). Neither name appears on any
+    # `VerticalTokens` element in the bundled manifest, so which element carries their standee is
+    # not something this file can state, and the whole design of this table is that it is stated
+    # rather than searched for - a name-matching rule would already have found nothing for Arien,
+    # whose element is `Arien2`. Their dealing worker read the corpus and can declare the mapping in
+    # one line each; guessing it here would crop whatever happens to sit at those coordinates, which
+    # is the failure the identity check below exists to make impossible.
 }
 
 $declared = $declaredHeroes[$Hero]
@@ -112,10 +157,23 @@ $corpusRoot = [System.IO.Path]::Combine(
     $projectRoot, 'Docs', 'Guards of Atlantis II - Tabletopia Cards', 'extracted', 'text-assets')
 $resourceDirectory = [System.IO.Path]::Combine(
     $projectRoot, 'Assets', 'Resources', 'Private', 'Heroes')
-$resources = [ordered]@{
-    Red  = [System.IO.Path]::Combine($resourceDirectory, "$Hero-red.png")
-    Blue = [System.IO.Path]::Combine($resourceDirectory, "$Hero-blue.png")
+$resources = if ($Neutral) {
+    # `RuntimeTeamIdentity.NeutralResourcePath` - the content identity alone, with no team in it.
+    [ordered]@{
+        Neutral = [System.IO.Path]::Combine($resourceDirectory, "$Hero.png")
+    }
+} else {
+    [ordered]@{
+        Red  = [System.IO.Path]::Combine($resourceDirectory, "$Hero-red.png")
+        Blue = [System.IO.Path]::Combine($resourceDirectory, "$Hero-blue.png")
+    }
 }
+
+# Which measured source face the neutral preparation is cut from. It has to be ONE of the two and it
+# has to be the same one every time, or two runs of this script would produce two different files
+# from the same corpus - the atlas stores the portrait once per team and JPEG leaves them differing
+# in the last bit or two. Red is the choice; nothing about it is special beyond being written down.
+$neutralSourceTeam = 'Red'
 
 function Get-ColourDistanceSquared($left, $right) {
     return [Math]::Pow([int] $left.R - [int] $right.R, 2) +
@@ -251,6 +309,62 @@ function Get-PreparedFace([System.Drawing.Bitmap] $square, [int] $faceSize, [str
     }
 }
 
+function Get-NeutralFace([System.Drawing.Bitmap] $square, [int] $faceSize, [string] $team) {
+    # Milestone 8.35z39. The team-baked preparation plus one step: the official team RING is
+    # whitened too, so nothing team-coloured is left baked into the artwork and the piece states its
+    # team entirely through the ring this project draws around it at runtime.
+    $prepared = Get-PreparedFace $square $faceSize $team
+    $token = $prepared.Bitmap
+    $centre = ($faceSize - 1) / 2.0
+    $radius = $faceSize / 2.0
+    $protectedRingStart = $radius * 0.90
+    $ringPixels = 0
+
+    for ($pixelY = 0; $pixelY -lt $faceSize; $pixelY++) {
+        for ($pixelX = 0; $pixelX -lt $faceSize; $pixelX++) {
+            $distance = [Math]::Sqrt(
+                [Math]::Pow($pixelX - $centre, 2) + [Math]::Pow($pixelY - $centre, 2))
+            if ($distance -lt $protectedRingStart) { continue }
+
+            # The alpha the baked route computed for this pixel is the inscribed disc, antialiased
+            # across one pixel, and it is preserved exactly: only the COLOUR under it becomes white,
+            # so the token keeps the identical silhouette its team-baked siblings have.
+            $existing = $token.GetPixel($pixelX, $pixelY)
+            if ($existing.A -eq 0) { continue }
+            $token.SetPixel(
+                $pixelX, $pixelY,
+                [System.Drawing.Color]::FromArgb($existing.A, 255, 255, 255))
+            $ringPixels++
+        }
+    }
+
+    if ($ringPixels -le 0) {
+        $token.Dispose()
+        throw 'The neutral face whitened no ring pixels at all. Nothing was written.'
+    }
+
+    # THE INVERTED CHECK. A prepared team-baked face must still classify as its own team by its ring;
+    # a prepared NEUTRAL face must classify as neither, which is the only direct evidence that no
+    # team colour survived the preparation.
+    $preparedRing = Get-TeamFromRing $token $faceSize
+    if ($null -ne $preparedRing.Team) {
+        $token.Dispose()
+        throw ("The prepared neutral face still reads as $($preparedRing.Team) from its ring " +
+            "(R$($preparedRing.Average.R) G$($preparedRing.Average.G) B$($preparedRing.Average.B)). " +
+            'Nothing was written.')
+    }
+
+    return [pscustomobject]@{
+        Bitmap = $token
+        FieldColour = $prepared.FieldColour
+        FieldPixels = $prepared.FieldPixels
+        PortraitPixels = $prepared.PortraitPixels
+        FieldRatio = $prepared.FieldRatio
+        PortraitRatio = $prepared.PortraitRatio
+        RingPixels = $ringPixels
+    }
+}
+
 function Assert-BitmapMatches([System.Drawing.Bitmap] $actual, [System.Drawing.Bitmap] $expected, [string] $label) {
     if ($actual.Width -ne $expected.Width -or $actual.Height -ne $expected.Height) {
         throw "$label has the wrong dimensions."
@@ -378,12 +492,41 @@ try {
                 "differ by only $([int]$cornerToEdge). Nothing was written.")
         }
 
-        $facePreparation = Get-PreparedFace $square $declaredFaceSize $team
+        if ($Neutral -and $team -ne $neutralSourceTeam) {
+            # The other team's face is still MEASURED - the two-faces-of-two-teams identity check
+            # above has already run on it, which is what proves this element is the one declared -
+            # and then discarded, because a neutral face is cut from one declared source.
+            $square.Dispose()
+            Write-Output ("Measured: the face at ($x,$y) is project $team; it is not the declared " +
+                "neutral source ($neutralSourceTeam) and is read only for the identity check.")
+            continue
+        }
+
+        $facePreparation = if ($Neutral) {
+            Get-NeutralFace $square $declaredFaceSize $team
+        } else {
+            Get-PreparedFace $square $declaredFaceSize $team
+        }
+
         $square.Dispose()
         $prepared[$team] = $facePreparation.Bitmap
         Write-Output ("Measured: the face at ($x,$y) has an average ring colour of R$($ring.Average.R) G$($ring.Average.G) B$($ring.Average.B), " +
             "which is project $team; its source-derived flat field is R$($facePreparation.FieldColour.R) G$($facePreparation.FieldColour.G) B$($facePreparation.FieldColour.B) " +
             "across $($facePreparation.FieldPixels) pixels ($([Math]::Round($facePreparation.FieldRatio * 100, 1))%), while $($facePreparation.PortraitPixels) protected interior pixels remain source-faithful.")
+        if ($Neutral) {
+            Write-Output ("Neutralised: $($facePreparation.RingPixels) official ring pixels became " +
+                'opaque white, and the prepared face no longer classifies as either team by its ring.')
+        }
+    }
+
+    if ($Neutral) {
+        # Collapse the by-team map to the single neutral resource this mode writes. Both declared
+        # faces have already been measured and identified by then; this is the one that was kept.
+        if (-not $prepared.ContainsKey($neutralSourceTeam)) {
+            throw "No declared face measured as $neutralSourceTeam. Nothing was written."
+        }
+
+        $prepared = @{ Neutral = $prepared[$neutralSourceTeam] }
     }
 
     if ($Check -or -not $Force) {
@@ -397,14 +540,25 @@ try {
                 finally { $actual.Dispose() }
             }
             if ($Check) {
-                Write-Output "PASS: PreparedHeroTokens_UseWhiteInteriorFieldsWhilePreservingPortraitsTeamRingsAndSharedRuntimeAddressing ($heroLabel Red/Blue)."
+                if ($Neutral) {
+                    Write-Output "PASS: PreparedHeroTokens_UseWhiteBackgroundsCarryingNoTeamColourAtAll ($heroLabel neutral)."
+                } else {
+                    Write-Output "PASS: PreparedHeroTokens_UseWhiteInteriorFieldsWhilePreservingPortraitsTeamRingsAndSharedRuntimeAddressing ($heroLabel Red/Blue)."
+                }
                 exit 0
             }
-            Write-Output "SKIP: both prepared $heroLabel hero tokens already match the deterministic white-field preparation. Pass -Force to rewrite them."
+            if ($Neutral) {
+                Write-Output "SKIP: the prepared neutral $heroLabel hero token already matches the deterministic white-background preparation. Pass -Force to rewrite it."
+            } else {
+                Write-Output "SKIP: both prepared $heroLabel hero tokens already match the deterministic white-field preparation. Pass -Force to rewrite them."
+            }
             exit 0
         }
         if ($Check) {
-            throw "Prepared $heroLabel hero tokens are absent: $($missing -join ', '). Run Tools/Prepare-HeroTokens.ps1 -Hero $Hero to write them."
+            # Not `$switch`: that is a PowerShell automatic variable and assigning it inside a script
+            # is a trap this file does not need to step in.
+            $neutralSwitch = if ($Neutral) { ' -Neutral' } else { '' }
+            throw "Prepared $heroLabel hero tokens are absent: $($missing -join ', '). Run Tools/Prepare-HeroTokens.ps1 -Hero $Hero$neutralSwitch to write them."
         }
     }
 
@@ -423,7 +577,7 @@ try {
     }
 }
 finally {
-    foreach ($token in $prepared.Values) { $token.Dispose() }
+    foreach ($token in $prepared.Values) { if ($null -ne $token) { $token.Dispose() } }
     $source.Dispose()
 }
 

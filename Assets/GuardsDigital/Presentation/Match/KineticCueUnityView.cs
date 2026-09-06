@@ -36,25 +36,27 @@ namespace GuardsDigital.Presentation.Match
         public const float FlashScalePunch = 0.14f;
 
         /// <summary>
-        /// The most shine overlays the circling light travels at once. The amendment gates this pass on
-        /// the recorded perf thresholds and asks for "few animated elements at once"; a hand of five
-        /// cards plus a tray is the realistic worst case, and this is the hard stop above it.
+        /// The most awaited outlines lit at once. The amendment gates this pass on the recorded perf
+        /// thresholds and asks for "few animated elements at once"; a hand of five cards plus a tray
+        /// is the realistic worst case, and this is the hard stop above it.
         /// </summary>
-        public const int MaxSweptShineElements = 8;
+        public const int MaxBreathingShineElements = 8;
 
         private const string OverlayName = "gd-kinetic-overlay";
-        private const string SweepName = "gd-kinetic-sweep";
         // Milestone 8.35z9 retired `ShineElementName = "gd-card-shine"` from here: that name belongs
         // to milestone 8.30d's prepared printed-artwork overlay, which this file mistook for the
-        // awaited-answer shine for four milestones. The sweep now asks for
+        // awaited-answer shine for four milestones. The breath asks for
         // MatchHudTheme.AwaitedShineClass, which is the marker the awaited treatments actually wear.
+        //
+        // Milestone 8.35z39 retired `SweepName = "gd-kinetic-sweep"` with the travelling
+        // light it named. Nothing is parented into a shine host any more; the breath writes the
+        // host's own border colour, so there is no element to name, create, find or clear.
 
         private readonly BoardInteractionUnityView board;
         private readonly ConfiguredMatchHudRenderer hud;
         private readonly Func<Camera> cameraSource;
         private readonly KineticPlayback playback = new KineticPlayback();
         private readonly List<PieceRestore> restorations = new List<PieceRestore>();
-        private readonly List<VisualElement> sweeps = new List<VisualElement>();
         private VisualElement overlay;
         private KineticCueViewModel model = KineticCueViewModel.Empty;
 
@@ -140,7 +142,7 @@ namespace GuardsDigital.Presentation.Match
             flights.Advance(deltaSeconds);
             ApplyPieceMotions();
             ApplyBoardMarkPulse();
-            ApplyShineSweep();
+            ApplyShineBreath();
         }
 
         // ---- Pieces.
@@ -557,18 +559,45 @@ namespace GuardsDigital.Presentation.Match
             return overlay;
         }
 
-        // ---- The circling light on the gold shine.
+        // ---- The breathing light on the gold shine.
 
         /// <summary>
-        /// Travels a small bright mark around the border of each shine overlay that belongs to a hero
-        /// the match is currently waiting on.
+        /// Milestone 8.35z39. Breathes the OWN OUTLINE of every element wearing the awaited
+        /// gold, for each hero the match is currently waiting on.
         ///
-        /// <para>It attaches its own marks to elements it finds by name and owns nothing else, so a HUD
-        /// that rebuilt its card faces this frame simply gets fresh marks, and a HUD with no prepared
-        /// shine overlays at all gets none - the clean-checkout case, where this is silently
-        /// nothing.</para>
+        /// <para><b>What this replaced.</b> Until now a 10-pixel gold dot was parented into each of
+        /// those elements and walked around its perimeter on a 2.4s loop - the treatment the user
+        /// rejected in as many words: "i dont like the little light that goes around, i want a
+        /// breathing light around the whole thing (Card(s), hero tray). But light, not just yellow
+        /// color." Nothing here travels any more and no element is added to the HUD at all: the ring
+        /// the card already wore and the frame the rail already wore simply get brighter and dimmer,
+        /// so the light is around the whole element by construction rather than by an object moving
+        /// fast enough to suggest it.</para>
+        ///
+        /// <para><b>"Light, not just yellow color" is the BRIGHTNESS axis, and only that</b> - and it
+        /// travels DOWNWARD from the gold, which an offline measurement settled. The first version of
+        /// this ran from the resting <see cref="MatchHudTheme.ShineGlow"/> UP toward
+        /// <see cref="MatchHudTheme.ShineRim"/> and read correctly in every respect except the one
+        /// that mattered: measured, it moved the outline's luminance by 3.44%, because ShineGlow is
+        /// already a 0.92-luminance near-white and its gap to the rim is almost all blue channel -
+        /// saturation, not brightness. On a 1-3px border that is nothing, and it would have shipped
+        /// looking exactly like the static gold the user asked to replace. So the light KINDLES
+        /// instead: the outline dims to <see cref="KineticTiming.ShineBreatheFloor"/> of its
+        /// brightness and returns to the full painted gold - a 2.2x luminance swing - with the channel
+        /// ratios, and therefore the hue, held exactly constant, because the floor is applied as a
+        /// multiplier rather than as a lerp toward black.</para>
+        ///
+        /// <para><b>It owns nothing and remembers nothing</b>, which is what lets it run against a HUD
+        /// that rebuilds its elements wholesale several times a second. It writes only colours on its
+        /// own breath and recognises only colours on that same breath, so a freshly rebuilt element -
+        /// painted at the breath's brightest point by definition - is picked up on its first frame, an
+        /// element it lit last frame is still recognised, and a border painted any other colour is
+        /// never touched however often this runs. A rail carries FOUR meanings on its four edges - the
+        /// awaited frame, the team accent, the reserved identity edge and the selection outline - and
+        /// only the first is the light's to move. That is also why there is no ratchet: the source of
+        /// every lerp is the constant, never the value this wrote last time.</para>
         /// </summary>
-        private void ApplyShineSweep()
+        private void ApplyShineBreath()
         {
             var root = hud?.RootElement;
             if (root == null)
@@ -576,63 +605,148 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            var wanted = model.SweepingShineHeroes.Count > 0;
-            if (!wanted)
+            if (model.BreathingShineHeroes.Count == 0)
             {
-                ClearSweeps();
+                // Nothing is awaited. The HUD already rebuilds an unawaited element at its resting
+                // colour, so there is nothing to put back - and a rebuild is not guaranteed to have
+                // happened yet, which is why the hosts still on screen are returned to rest here.
+                Rest(root);
                 return;
             }
 
-            CollectSweepHosts(root);
-            if (sweeps.Count == 0)
+            var hosts = FindAwaitedShineHosts(root);
+            if (hosts.Count == 0)
             {
                 return;
             }
 
-            var phase = playback.ShineSweepPhase;
-            for (var index = 0; index < sweeps.Count; index++)
+            // 0 is the dimmed amber, 1 is the resting gold the HUD paints. The breath is the whole
+            // travel, so there is no amplitude factor here to get out of step with the floor.
+            var lit = playback.ShineBreathIntensity;
+            for (var index = 0; index < hosts.Count; index++)
             {
-                var mark = sweeps[index];
-                if (mark?.parent == null)
-                {
-                    continue;
-                }
-
-                // Each mark is offset around the loop so the lights do not march in lockstep, which
-                // reads as a machine rather than as a shine.
-                Place(mark, KineticPlayback.Repeat(phase + (index * 0.13f)));
+                Light(hosts[index], lit);
             }
         }
 
-        /// <summary>Places one mark at a fraction of the way around its parent's border.</summary>
-        private static void Place(VisualElement mark, float phase)
+        /// <summary>
+        /// Lights one element's own outline to a point on its breath: <c>0</c> the dimmed amber,
+        /// <c>1</c> the full painted gold. Every awaited element on screen is handed the SAME point on
+        /// the SAME frame, so a hand of cards and the tray above them breathe as one light rather than
+        /// as several.
+        /// </summary>
+        private static void Light(VisualElement host, float lit)
         {
-            var side = phase * 4f;
-            float left;
-            float top;
-            if (side < 1f)
+            if (host?.panel == null)
             {
-                left = side * 100f;
-                top = 0f;
-            }
-            else if (side < 2f)
-            {
-                left = 100f;
-                top = (side - 1f) * 100f;
-            }
-            else if (side < 3f)
-            {
-                left = (3f - side) * 100f;
-                top = 100f;
-            }
-            else
-            {
-                left = 0f;
-                top = (4f - side) * 100f;
+                return;
             }
 
-            mark.style.left = Length.Percent(left);
-            mark.style.top = Length.Percent(top);
+            var toward = LitOutline(lit);
+            var style = host.style;
+            if (IsAwaitedGold(host.resolvedStyle.borderTopColor)) style.borderTopColor = toward;
+            if (IsAwaitedGold(host.resolvedStyle.borderBottomColor)) style.borderBottomColor = toward;
+            if (IsAwaitedGold(host.resolvedStyle.borderLeftColor)) style.borderLeftColor = toward;
+            if (IsAwaitedGold(host.resolvedStyle.borderRightColor)) style.borderRightColor = toward;
+        }
+
+        /// <summary>
+        /// Puts every lit outline still on screen back to the full resting gold - the top of the
+        /// breath, which is exactly the colour the HUD paints for itself. So an element this stops
+        /// touching is left indistinguishable from one it never touched.
+        /// </summary>
+        private static void Rest(VisualElement root)
+        {
+            var hosts = FindAwaitedShineHosts(root);
+            for (var index = 0; index < hosts.Count; index++)
+            {
+                Light(hosts[index], 1f);
+            }
+        }
+
+        /// <summary>
+        /// The bottom of the breath: the resting awaited gold, dimmed. Multiplied rather than lerped
+        /// toward black so the channel RATIOS - the hue - are untouched and only the brightness moves.
+        /// </summary>
+        internal static Color DimmedOutline()
+        {
+            var glow = MatchHudTheme.ShineGlow;
+            var floor = KineticTiming.ShineBreatheFloor;
+            return new Color(glow.r * floor, glow.g * floor, glow.b * floor, glow.a);
+        }
+
+        /// <summary>
+        /// What an awaited outline is at a given point of its breath: <c>0</c> is the dimmed amber at
+        /// the bottom, <c>1</c> is the full resting gold the HUD itself paints.
+        ///
+        /// <para><b>The top of the breath is the HUD's own colour, and that is load-bearing rather
+        /// than tidy.</b> It means the outline the HUD paints on a rebuild is already a point on this
+        /// breath - its brightest one - so a freshly rebuilt element is recognised on its first frame
+        /// with no special case, and an element this treatment stops touching is left at exactly the
+        /// colour the HUD would have given it. It also means the light cannot climb past the gold into
+        /// a colour nobody chose: <see cref="MatchHudTheme.ShineGlow"/> already has a saturated red
+        /// channel, so brightening past it would only wash the hue out toward white, which is the
+        /// "just yellow color" failure from the other direction.</para>
+        /// </summary>
+        internal static Color LitOutline(float lit) =>
+            Color.Lerp(DimmedOutline(), MatchHudTheme.ShineGlow, lit);
+
+        /// <summary>
+        /// Whether a border colour is one this breath owns: any point on the segment from the dimmed
+        /// amber to full light.
+        ///
+        /// <para><b>Distance to the SEGMENT, not a bounding box around it.</b> A box around two colours
+        /// this far apart admits a large volume of colour space that the light never actually
+        /// occupies, and the HUD paints real borders inside that volume - the Active violet and the
+        /// confirm orange both land in a box drawn round this segment, and both mean something a light
+        /// does not get to overwrite. The segment itself is a line, and every foreign colour on this
+        /// HUD is far off it.</para>
+        ///
+        /// <para>The tolerance has to clear one genuine source of drift: a colour written into a
+        /// <c>style</c> and read back from <c>resolvedStyle</c> makes a round trip through Unity's own
+        /// colour handling. It is small enough that the nearest foreign colour is still many times
+        /// further away, which the offline probe measures rather than assumes.</para>
+        /// </summary>
+        internal static bool IsAwaitedGold(Color color)
+        {
+            if (color.a < 0.5f)
+            {
+                return false;
+            }
+
+            return DistanceToBreathSegment(color) <= AwaitedGoldTolerance;
+        }
+
+        /// <summary>How far off the breath's own segment a colour may sit and still be claimed.</summary>
+        internal const float AwaitedGoldTolerance = 0.04f;
+
+        /// <summary>
+        /// The distance from a colour to the nearest point of the dimmed-to-lit segment, in RGB.
+        /// Exposed for the probe that measures the margin against every other colour this HUD paints
+        /// on a border.
+        /// </summary>
+        internal static float DistanceToBreathSegment(Color color)
+        {
+            var from = DimmedOutline();
+            var to = MatchHudTheme.ShineGlow;
+            var dr = to.r - from.r;
+            var dg = to.g - from.g;
+            var db = to.b - from.b;
+            var lengthSquared = (dr * dr) + (dg * dg) + (db * db);
+
+            var t = lengthSquared <= 0f
+                ? 0f
+                : (((color.r - from.r) * dr) + ((color.g - from.g) * dg) + ((color.b - from.b) * db)) /
+                    lengthSquared;
+            t = t < 0f ? 0f : t > 1f ? 1f : t;
+
+            var nearestR = from.r + (dr * t);
+            var nearestG = from.g + (dg * t);
+            var nearestB = from.b + (db * t);
+            return Mathf.Sqrt(
+                ((color.r - nearestR) * (color.r - nearestR)) +
+                ((color.g - nearestG) * (color.g - nearestG)) +
+                ((color.b - nearestB) * (color.b - nearestB)));
         }
 
         /// <summary>
@@ -653,7 +767,7 @@ namespace GuardsDigital.Presentation.Match
         /// on THIS code rather than on a copy of it: "a composed HUD with a lit tray and a shining
         /// card yields a non-empty host set" is the claim that had no test.</para>
         /// </summary>
-        internal static List<VisualElement> FindShineSweepHosts(VisualElement root)
+        internal static List<VisualElement> FindAwaitedShineHosts(VisualElement root)
         {
             var found = new List<VisualElement>();
             if (root == null)
@@ -662,7 +776,7 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var hosts = root.Query<VisualElement>(className: MatchHudTheme.AwaitedShineClass).ToList();
-            for (var index = 0; index < hosts.Count && found.Count < MaxSweptShineElements; index++)
+            for (var index = 0; index < hosts.Count && found.Count < MaxBreathingShineElements; index++)
             {
                 var host = hosts[index];
                 if (host == null)
@@ -674,55 +788,6 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return found;
-        }
-
-        private void CollectSweepHosts(VisualElement root)
-        {
-            sweeps.Clear();
-            var hosts = FindShineSweepHosts(root);
-            for (var index = 0; index < hosts.Count; index++)
-            {
-                // The mark rides INSIDE the element that carries the gold, so its path traces that
-                // element's own border - the card's ring, the rail's frame - rather than a parent's.
-                sweeps.Add(EnsureSweepMark(hosts[index]));
-            }
-        }
-
-        private static VisualElement EnsureSweepMark(VisualElement host)
-        {
-            var existing = host.Q<VisualElement>(SweepName);
-            if (existing != null)
-            {
-                return existing;
-            }
-
-            var mark = new VisualElement
-            {
-                name = SweepName,
-                pickingMode = PickingMode.Ignore
-            };
-            mark.style.position = Position.Absolute;
-            mark.style.width = 10f;
-            mark.style.height = 10f;
-            mark.style.backgroundColor = MatchHudTheme.ShineRim;
-            mark.style.opacity = 0.75f;
-            mark.style.borderTopLeftRadius = 5f;
-            mark.style.borderTopRightRadius = 5f;
-            mark.style.borderBottomLeftRadius = 5f;
-            mark.style.borderBottomRightRadius = 5f;
-            mark.style.translate = new Translate(Length.Percent(-50f), Length.Percent(-50f));
-            host.Add(mark);
-            return mark;
-        }
-
-        private void ClearSweeps()
-        {
-            for (var index = 0; index < sweeps.Count; index++)
-            {
-                sweeps[index]?.RemoveFromHierarchy();
-            }
-
-            sweeps.Clear();
         }
     }
 

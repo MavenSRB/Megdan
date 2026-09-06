@@ -41,6 +41,10 @@ namespace GuardsDigital.Presentation.Board
         public const string DefensePositiveCoreMaterialName = "Positive Defense Corner Shine Core";
         public const string DefenseNegativeHaloMaterialName = "Negative Defense Corner Shine Halo";
         public const string DefenseNegativeCoreMaterialName = "Negative Defense Corner Shine Core";
+        public const string DefensePositiveSaturatedCoreMaterialName =
+            "Positive Defense Corner Shine Saturated Core";
+        public const string DefenseNegativeSaturatedCoreMaterialName =
+            "Negative Defense Corner Shine Saturated Core";
 
         // The whole board now speaks one six-corner language. Green is travel, cyan is return to the
         // board, blood red is an Attack or removal, warm ivory is a teammate, and cool neutral grey
@@ -73,6 +77,12 @@ namespace GuardsDigital.Presentation.Board
         private readonly Material defenseNegativeHalo;
         private readonly Material defenseNegativeCore;
 
+        // Milestone 8.35z39. See SaturatedCore: the composite mark's core is the one core in this
+        // type that is NOT white-biased, and before the light pass it borrowed the halo material to
+        // get that. Halos are light now, so it needs saturated paint of its own.
+        private readonly Material defensePositiveSaturatedCore;
+        private readonly Material defenseNegativeSaturatedCore;
+
         public HexCornerHighlightTemplate(float outerRadius)
         {
             if (outerRadius <= 0f || float.IsNaN(outerRadius) || float.IsInfinity(outerRadius))
@@ -84,35 +94,64 @@ namespace GuardsDigital.Presentation.Board
             haloMesh.name = MeshName + " Halo";
             coreMesh = BuildSixCornerMesh(outerRadius, 0.034f);
             coreMesh.name = MeshName + " Core";
-            movementHalo = CreateMaterial(MovementHaloMaterialName, MovementColor);
+            movementHalo = CreateHaloMaterial(MovementHaloMaterialName, MovementColor);
             movementCore = CreateMaterial(MovementCoreMaterialName, Color.Lerp(MovementColor, Color.white, 0.82f));
-            attackHalo = CreateMaterial(AttackHaloMaterialName, AttackColor);
+            attackHalo = CreateHaloMaterial(AttackHaloMaterialName, AttackColor);
             attackCore = CreateMaterial(AttackCoreMaterialName, Color.Lerp(AttackColor, Color.white, 0.82f));
-            respawnHalo = CreateMaterial(RespawnHaloMaterialName, RespawnColor);
+            respawnHalo = CreateHaloMaterial(RespawnHaloMaterialName, RespawnColor);
             respawnCore = CreateMaterial(RespawnCoreMaterialName, Color.Lerp(RespawnColor, Color.white, 0.82f));
-            effectHalo = CreateMaterial(EffectHaloMaterialName, EffectColor);
+            effectHalo = CreateHaloMaterial(EffectHaloMaterialName, EffectColor);
             effectCore = CreateMaterial(EffectCoreMaterialName, Color.Lerp(EffectColor, Color.white, 0.82f));
-            effectResultHalo = CreateMaterial(EffectResultHaloMaterialName, EffectResultColor);
+            effectResultHalo = CreateHaloMaterial(EffectResultHaloMaterialName, EffectResultColor);
             effectResultCore = CreateMaterial(EffectResultCoreMaterialName,
                 Color.Lerp(EffectResultColor, Color.white, 0.82f));
-            allyHalo = CreateMaterial(AllyHaloMaterialName, AllyColor);
+            allyHalo = CreateHaloMaterial(AllyHaloMaterialName, AllyColor);
             allyCore = CreateMaterial(AllyCoreMaterialName, Color.Lerp(AllyColor, Color.white, 0.82f));
-            defensePositiveHalo = CreateMaterial(
+            defensePositiveHalo = CreateHaloMaterial(
                 DefensePositiveHaloMaterialName, DefensePositiveColor);
             defensePositiveCore = CreateMaterial(
                 DefensePositiveCoreMaterialName,
                 Color.Lerp(DefensePositiveColor, Color.white, 0.78f));
-            defenseNegativeHalo = CreateMaterial(
+            defenseNegativeHalo = CreateHaloMaterial(
                 DefenseNegativeHaloMaterialName, DefenseNegativeColor);
             defenseNegativeCore = CreateMaterial(
                 DefenseNegativeCoreMaterialName,
                 Color.Lerp(DefenseNegativeColor, Color.white, 0.78f));
+            defensePositiveSaturatedCore = CreateMaterial(
+                DefensePositiveSaturatedCoreMaterialName, DefensePositiveColor);
+            defenseNegativeSaturatedCore = CreateMaterial(
+                DefenseNegativeSaturatedCoreMaterialName, DefenseNegativeColor);
         }
 
         public Mesh HaloMesh => haloMesh;
         public Mesh CoreMesh => coreMesh;
         public int MarkCount => CornerCount;
-        public int OwnedNativeResourceCount => 18;
+        public int OwnedNativeResourceCount => 20;
+
+        /// <summary>
+        /// Milestone 8.35z39. The composite mark's core: the contributing kind's own colour at FULL
+        /// strength, painted rather than added.
+        ///
+        /// <para><b>Why this family exists at all.</b> A tile that is both an Attack target and a
+        /// Defense contributor draws the attack's halo around the contribution's core, and that one
+        /// core must be SATURATED - the white-biased cores every other mark uses vanish at gameplay
+        /// scale inside a blood-red halo, which is a requirement this type has carried since the
+        /// Defense-preview work and which its fixture states in those words. Before the light pass it
+        /// was met by borrowing the HALO material, whose colour was exactly right. Halos are light
+        /// now, so borrowing one hands this core the luminous alpha and it stops being saturated
+        /// paint: the first complete Edit Mode run of the light pass caught precisely that, expecting
+        /// alpha 1.000 and measuring 0.620.</para>
+        ///
+        /// <para>So the borrow becomes a declaration. Only the two Defense kinds can ever be asked
+        /// for - <c>Set</c> admits no other contribution kind - and both are blended paint at full
+        /// alpha, which is what the composite core has always been.</para>
+        /// </summary>
+        public Material SaturatedCore(HexCornerHighlightKind kind) =>
+            kind == HexCornerHighlightKind.DefensePositive
+                ? defensePositiveSaturatedCore
+                : kind == HexCornerHighlightKind.DefenseNegative
+                    ? defenseNegativeSaturatedCore
+                    : null;
 
         public Material Halo(HexCornerHighlightKind kind) => kind == HexCornerHighlightKind.Movement
             ? movementHalo
@@ -201,6 +240,29 @@ namespace GuardsDigital.Presentation.Board
         private static Material CreateMaterial(string name, Color color) =>
             BoardOverlayMaterial.CreateUnlitBlended(name, color);
 
+        /// <summary>
+        /// Milestone 8.35z39. The halo, drawn as LIGHT.
+        ///
+        /// <para><b>The mark's shape does not move, and that is the point.</b> The user's tightening
+        /// of the light direction is that the marking shapes are already right - keep every one of
+        /// them, keep what each colour means, and change only what the pixels inside them do. So
+        /// <see cref="BuildSixCornerMesh"/> is untouched, both meshes are built from the same two
+        /// ratios they always were, every declared colour above is the colour it was, and the
+        /// halo/core pairing is the pairing this type has had since it was written.</para>
+        ///
+        /// <para><b>Why the halo alone.</b> The pair is already shaped like a light and was only ever
+        /// rendered like paint: a wide soft-edged skirt at <c>0.075</c> under a narrow filament at
+        /// <c>0.034</c> that is lerped 78-82% of the way to white. Additive on the WIDE layer turns
+        /// that skirt into the spill a light throws onto the surface around it - the board's sand,
+        /// its printed icons and its painted detail all still visible inside the mark, brightened in
+        /// the mark's own hue - while the narrow near-white filament keeps carrying the shape at full
+        /// strength on the bright half of the board, where added light saturates toward white and
+        /// would otherwise cost the mark its outline. Lighting BOTH layers is the version that looks
+        /// correct on dark ground and dissolves on sand; this is the one that holds on both.</para>
+        /// </summary>
+        private static Material CreateHaloMaterial(string name, Color color) =>
+            BoardOverlayMaterial.CreateLuminous(name, color);
+
         public void Dispose()
         {
             DestroyOwned(haloMesh);
@@ -221,6 +283,8 @@ namespace GuardsDigital.Presentation.Board
             DestroyOwned(defensePositiveCore);
             DestroyOwned(defenseNegativeHalo);
             DestroyOwned(defenseNegativeCore);
+            DestroyOwned(defensePositiveSaturatedCore);
+            DestroyOwned(defenseNegativeSaturatedCore);
         }
 
         private static void DestroyOwned(UnityEngine.Object value)
@@ -289,8 +353,10 @@ namespace GuardsDigital.Presentation.Board
             var coreKind = contributionKind != HexCornerHighlightKind.None ? contributionKind : kind;
             var composite = kind != HexCornerHighlightKind.None &&
                 contributionKind != HexCornerHighlightKind.None;
+            // Milestone 8.35z39: the composite core takes saturated PAINT of its own rather than
+            // borrowing the halo, which is light now. Same colour as before, alpha 1 as before.
             var coreMaterial = composite
-                ? template.Halo(coreKind)
+                ? template.SaturatedCore(coreKind)
                 : template.Core(coreKind);
             halo.sharedMaterial = template.Halo(haloKind);
             core.sharedMaterial = coreMaterial;
