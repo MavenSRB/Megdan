@@ -157,12 +157,13 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSnapshotSchema_DidNotMoveBecauseAFormatIsValuesAndNotShape()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(37),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(38),
                 "The Wave total, each team's Life counters and the participant list have all been " +
-                "counted values in the payload for many versions, so a 2v2 payload is a v37 payload " +
+                "counted values in the payload for many versions, so a 2v2 payload is a v38 payload " +
                 "of different numbers rather than of a different shape. The version itself has moved " +
-                "since - milestone 8.35z21 added the decided-and-unstarted repeat instances - which is " +
-                "a shape change belonging to that milestone and not to this format.");
+                "since - milestone 8.35z21 added the decided-and-unstarted repeat instances, and " +
+                "milestone 8.35z27 added the modal Attack part-way through its plan - " +
+                "both shape changes belonging to those milestones and not to this format.");
         }
 
         [Test]

@@ -335,7 +335,7 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<QuickGameMinionSetupState>());
             var restoredChoice = restored.Round.CurrentTurnAuthority.PendingEffectChoice;
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(37));
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(38));
             Assert.That(restoredChoice.ChooserId, Is.EqualTo(Blue));
             Assert.That(restoredChoice.Candidates.Select(value => value.Value.IntegerValue),
                 Is.EqualTo(new[] { 1, 2 }),

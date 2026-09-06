@@ -22,6 +22,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingAttackResolution pendingAttackResolution;
         private PendingAttackTargetChoice pendingAttackTargetChoice;
         private PendingDefenseResponseChoice pendingDefenseChoice;
+
+        /// <summary>
+        /// Milestone 8.35z27. The modal Attack action now running more than one complete
+        /// rulebook p.14 sequence, or <c>null</c> - which is every Attack in this build outside a card
+        /// printing "choose one, or both".
+        ///
+        /// <para>It is held beside <see cref="pendingAttackResolution"/> rather than above it because
+        /// the two answer different questions and outlive each other in both directions: a sequence's
+        /// resolution is null between the outcome of one and the target choice of the next, and the
+        /// chain is null for every ordinary Attack. What the chain adds to the resolution is the two
+        /// facts p.14 cannot re-derive - which bullet's sentence this sequence targets by, and which
+        /// units the earlier sequences bound.</para>
+        /// </summary>
+        private PendingAttackSequenceChain pendingSequenceChain;
+
         private HeroCoinLedger coinLedger;
         private EffectRosterState rosterState = EffectRosterState.Absent;
 
@@ -108,6 +123,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal PendingDefenseResponseChoice PendingDefenseChoice => pendingDefenseChoice;
 
         internal bool HasPendingResolution => pendingAttackResolution != null;
+
+        /// <summary>
+        /// Milestone 8.35z27. The modal Attack chain this backend is part-way through, or
+        /// <c>null</c>.
+        /// </summary>
+        internal PendingAttackSequenceChain PendingSequenceChain => pendingSequenceChain;
+
+        /// <summary>
+        /// Whether a modal Attack still owes rulebook p.14 for a bullet its actor chose.
+        ///
+        /// <para>This is the whole of what makes the contract one action. Everything the end of an
+        /// action owes - p.8's mid-turn Lane Push, the card's resolution, Initiative's advance,
+        /// p.10's repeat offers - waits on this reading false, and nothing between two sequences may
+        /// read the action as over.</para>
+        /// </summary>
+        internal bool HasOwedAttackSequence => pendingSequenceChain?.HasNextSequence == true;
 
         internal HeroCoinLedger CoinLedger => coinLedger;
 
@@ -699,20 +730,44 @@ namespace GuardsDigital.Core.Rules.CardResolution
             pendingAttackTargetChoice = null;
             pendingDefenseChoice = null;
 
+            // Milestone 8.35z27. A sequence of a modal Attack records the unit it bound on
+            // the chain: Ruling 19's "(on different targets)" asks a later sequence a question the
+            // board stops being able to answer the moment this one is over, because a target that
+            // successfully defended is still standing and looks like a unit nobody has taken.
+            var isASequenceOfAModalAttack =
+                pendingSequenceChain != null && pendingSequenceChain.Owns(applying.ResolutionId);
+            if (isASequenceOfAModalAttack)
+            {
+                pendingSequenceChain = pendingSequenceChain.Binding(command.Target);
+            }
+
             var openingSteps = new List<ResolutionStep>
             {
-                ResolutionStep.FromFact(CardActionResolutionEvent.AttackTargetValidated(applying)),
-                ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionStarted),
-                ResolutionStep.AtCheckpoint(TimingCheckpoint.BeforeAttack)
+                ResolutionStep.FromFact(CardActionResolutionEvent.AttackTargetValidated(applying))
             };
+
+            // Milestone 8.35z27. The two checkpoints below and the text under them belong
+            // to the ACTION, and Ruling 5 makes a whole choose-both modal one action: they were raised
+            // once when the modal opened, and a sequence re-raising them would give a before-action
+            // trigger a second open, "you performed an Attack action" a second subject, and the card's
+            // own step-1 text - which for a modal card IS the modal - a second run. What is per
+            // sequence is everything p.14 does from the Attack Total down, which is below this.
+            if (!isASequenceOfAModalAttack)
+            {
+                openingSteps.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.ActionStarted));
+                openingSteps.Add(ResolutionStep.AtCheckpoint(TimingCheckpoint.BeforeAttack));
+            }
 
             // p.14 step 1: "Attacker applies 'Before the attack' text, if any." p.13 puts it "at the
             // very beginning", which is before the Attack Total is announced and therefore before the
             // defender has anything to answer - and p.17's own note keeps it applied whether or not the
             // attack later succeeds.
-            var beforeText = CardTextAt(
-                CardTextTiming.BeforeTheAttack, applying, applying.ActorId, materializedDefinitions)
-                .ToArray();
+            var beforeText = isASequenceOfAModalAttack
+                ? Array.Empty<ResolutionStep>()
+                : CardTextAt(
+                    CardTextTiming.BeforeTheAttack, applying, applying.ActorId,
+                    materializedDefinitions)
+                    .ToArray();
             if (beforeText.Length > 0)
             {
                 // The page stops here and the authority applies the text. Whether it asks anything is
@@ -870,6 +925,169 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 8.35z27. Opens the modal Attack contract on the action standing at
+        /// rulebook p.14's step 1, and starts the first of its sequences.
+        ///
+        /// <para><b>Where it is called from.</b> The card-action authority calls it instead of
+        /// <see cref="ContinueAfterBeforeAttackText"/> when the step-1 frame named a plan rather than a
+        /// target. That is the whole of the entry: an Attack declaring
+        /// <see cref="Cards.AttackTargetBinding.ByCardText"/> reaches step 1 with no target, its text
+        /// is the modal, and the modal answers with bullets rather than a unit.</para>
+        ///
+        /// <para><b>What it deliberately does not emit.</b> Any checkpoint belonging to the action
+        /// rather than to a sequence. <c>ActionStarted</c> was raised when the action started and is
+        /// raised once, because Ruling 5 makes the whole modal one action and every reader of that
+        /// checkpoint - a before-action trigger's open/close pair, "you performed an Attack action",
+        /// p.10's repeat identity - would otherwise see two.</para>
+        /// </summary>
+        internal AttackActionResolutionResult OpenAttackSequences(
+            IReadOnlyList<ResolutionStep> precedingSteps,
+            AttackSequencePlan plan,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+            if (participants == null) throw new ArgumentNullException(nameof(participants));
+            if (pendingAttackResolution == null ||
+                pendingAttackResolution.Phase != AttackResolutionPhase.ApplyBeforeAttackText)
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.NoPendingResolution);
+            }
+
+            if (pendingSequenceChain != null)
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.ResolutionAlreadyPending);
+            }
+
+            // The modal's own entry resolution stops being the pending one here: it never had a target,
+            // never announces an Attack Total, and never reaches p.14's step 2. What it is from now on
+            // is the chain's record of whose action this is, which is where it is kept.
+            pendingSequenceChain = new PendingAttackSequenceChain(
+                pendingAttackResolution, plan, 0, Array.Empty<AttackTarget>());
+            pendingAttackResolution = null;
+            pendingAttackTargetChoice = null;
+            pendingDefenseChoice = null;
+            return StartNextAttackSequence(
+                precedingSteps, definitions, instances, participants, modifications);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z27. Starts the next complete rulebook p.14 sequence a modal
+        /// Attack owes, binding its target against the board <em>as it now stands</em>.
+        ///
+        /// <para><b>The board is re-read, and that is the contract's central claim.</b> Ruling 19 puts
+        /// each bullet's targeting at its own sequence's start, so a unit the first sequence defeated
+        /// is not a candidate for the second, a unit the first sequence pushed may have left the
+        /// second's reach, and - with no printed "(on different targets)" - a unit the first sequence
+        /// merely failed to defeat is a legal target again.</para>
+        ///
+        /// <para><b>A sequence with nothing to take does not happen.</b> p.10 stops a mandatory step
+        /// that cannot be carried out and keeps everything already done, which Ruling 45 restates for
+        /// the targeting step. So this records the stop and moves the chain on rather than refusing
+        /// the command: the earlier sequences stand, and the action ends when the plan is spent.</para>
+        /// </summary>
+        internal AttackActionResolutionResult StartNextAttackSequence(
+            IReadOnlyList<ResolutionStep> precedingSteps,
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (participants == null) throw new ArgumentNullException(nameof(participants));
+            if (pendingSequenceChain == null || !pendingSequenceChain.HasNextSequence)
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.NoPendingResolution);
+            }
+
+            if (pendingAttackResolution != null)
+            {
+                return RejectAttack(CardActionResolutionRejectionReason.ResolutionAlreadyPending);
+            }
+
+            var actionIdentity = pendingSequenceChain.ActionIdentity;
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ??
+                throw new ArgumentNullException(nameof(instances));
+            var steps = new List<ResolutionStep>(
+                precedingSteps ?? Array.Empty<ResolutionStep>());
+
+            while (pendingSequenceChain.HasNextSequence)
+            {
+                var sequence = new PendingAttackResolution(
+                    pendingSequenceChain.NextSequenceResolutionId,
+                    actionIdentity.SourceCardInstanceId,
+                    actionIdentity.SourceDefinitionReference,
+                    actionIdentity.ActionDefinitionId,
+                    actionIdentity.ActorId,
+                    actionIdentity.InvocationContext,
+                    new ActionResolutionStepId("attack-target"),
+                    AttackResolutionPhase.ChooseTarget,
+                    default(AttackTarget),
+                    null,
+                    actorSpaceAtActionStart: actionIdentity.ActorSpaceAtActionStart);
+                pendingSequenceChain = pendingSequenceChain.Starting();
+
+                var offer = FindPendingAttackOffer(
+                    sequence, materializedDefinitions, materializedInstances);
+                if (!offer.HasValue)
+                {
+                    pendingAttackResolution = null;
+                    pendingAttackTargetChoice = null;
+                    pendingDefenseChoice = null;
+                    pendingSequenceChain = null;
+                    return RejectAttack(CardActionResolutionRejectionReason.UnavailableOffer);
+                }
+
+                pendingAttackResolution = sequence;
+                pendingAttackTargetChoice = CreateAttackTargetChoice(
+                    sequence, offer.Value, materializedDefinitions, participants, modifications);
+                pendingDefenseChoice = null;
+                if (pendingAttackTargetChoice.LegalTargets.Count > 0)
+                {
+                    steps.Add(ResolutionStep.FromFact(
+                        CardActionResolutionEvent.AttackTargetChoiceRequested(sequence)));
+                    return AttackActionResolutionResult.Accept(
+                        sequence, pendingAttackTargetChoice, null, steps);
+                }
+
+                // Nothing this bullet's own sentence admits is left. The sequence stops where p.10
+                // stops a mandatory step, the chain moves on, and the next bullet - if the plan names
+                // one - is asked against this same board.
+                steps.Add(ResolutionStep.FromFact(
+                    CardActionResolutionEvent.AttackResolutionCompleted(
+                        sequence, AttackResolutionOutcome.None)));
+                pendingAttackResolution = null;
+                pendingAttackTargetChoice = null;
+            }
+
+            steps.AddRange(EndOfModalAttackSteps(actionIdentity));
+            pendingSequenceChain = null;
+            return AttackActionResolutionResult.Accept(
+                null, null, null, steps, AttackResolutionOutcome.None);
+        }
+
+        /// <summary>
+        /// The one <c>ActionEnded</c> a modal Attack raises: the action's own, once its whole plan is
+        /// spent. Ruling 5 - "you performed an Attack action" is one fact about one action, recorded
+        /// with the action's printed identity.
+        /// </summary>
+        private static IReadOnlyList<ResolutionStep> EndOfModalAttackSteps(
+            PendingAttackResolution actionIdentity) =>
+            new[]
+            {
+                ResolutionStep.AtActionEnded(
+                    actionIdentity.SourceCardInstanceId,
+                    actionIdentity.ActionDefinitionId,
+                    actionIdentity.ActorId,
+                    ActionKind.Attack,
+                    actionIdentity.InvocationContext,
+                    default(AttackTarget))
+            };
+
+        /// <summary>
         /// An Attack whose "Before the attack:" text named no unit this Attack may take. p.10 stops the
         /// remainder of the action and keeps everything the text already did, so the action ends with
         /// no outcome rather than being rolled back or refused.
@@ -881,16 +1099,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
             steps.Add(ResolutionStep.FromFact(
                 CardActionResolutionEvent.AttackResolutionCompleted(
                     resolution, AttackResolutionOutcome.None)));
-            steps.Add(ResolutionStep.AtActionEnded(
-                resolution.SourceCardInstanceId,
-                resolution.ActionDefinitionId,
-                resolution.ActorId,
-                ActionKind.Attack,
-                resolution.InvocationContext,
-                resolution.Target));
+
+            // Milestone 8.35z27. A sequence of a modal Attack that reached no target ends
+            // that sequence and not the action: Ruling 5's single action is over when its plan is,
+            // and the bullets still owed are asked against this same board.
+            if (!SequenceIsOwedAfter(resolution))
+            {
+                steps.Add(ResolutionStep.AtActionEnded(
+                    resolution.SourceCardInstanceId,
+                    resolution.ActionDefinitionId,
+                    resolution.ActorId,
+                    ActionKind.Attack,
+                    resolution.InvocationContext,
+                    resolution.Target));
+            }
+
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;
             pendingDefenseChoice = null;
+            ClearSpentSequenceChain();
             return AttackActionResolutionResult.Accept(
                 null, null, null, steps, AttackResolutionOutcome.None);
         }
@@ -1022,10 +1249,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// at configuration by <see cref="GuardsDigital.Core.Effects.EffectDefinitionValidator"/>, and
         /// that refusal now names the moment rather than the whole Attack.</para>
         /// </summary>
+        /// <param name="theActionEndsHere">
+        /// Milestone 8.35z27. Whether p.14 finishing here also finishes the action that
+        /// carried it. False for every sequence of a modal Attack but the last: Ruling 5 makes
+        /// "choose one, or both" a single action, so <c>ActionEnded</c> - the checkpoint "you performed
+        /// an Attack action" is read from, and the one a before-action trigger closes on - is raised
+        /// once, when the plan is spent. The sequence's own outcome is still recorded either way,
+        /// because each sequence really does reach one.
+        /// </param>
         internal static IReadOnlyList<ResolutionStep> StepsAfterCardText(
             CardTextTiming moment,
             PendingAttackResolution resolution,
-            AttackResolutionOutcome outcome)
+            AttackResolutionOutcome outcome,
+            bool theActionEndsHere = true)
         {
             if (resolution == null) throw new ArgumentNullException(nameof(resolution));
 
@@ -1034,18 +1270,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // p.14 step 7 is the last thing the page does, so what stands after it is the outcome
                 // this attack reached and the end of the action that carried it.
                 case CardTextTiming.AfterTheAttack:
-                    return Array.AsReadOnly(new[]
-                    {
-                        ResolutionStep.FromFact(
-                            CardActionResolutionEvent.AttackResolutionCompleted(resolution, outcome)),
-                        ResolutionStep.AtActionEnded(
-                            resolution.SourceCardInstanceId,
-                            resolution.ActionDefinitionId,
-                            resolution.ActorId,
-                            ActionKind.Attack,
-                            resolution.InvocationContext,
-                            resolution.Target)
-                    });
+                    var completed = ResolutionStep.FromFact(
+                        CardActionResolutionEvent.AttackResolutionCompleted(resolution, outcome));
+                    return theActionEndsHere
+                        ? Array.AsReadOnly(new[]
+                        {
+                            completed,
+                            ResolutionStep.AtActionEnded(
+                                resolution.SourceCardInstanceId,
+                                resolution.ActionDefinitionId,
+                                resolution.ActorId,
+                                ActionKind.Attack,
+                                resolution.InvocationContext,
+                                resolution.Target)
+                        })
+                        : Array.AsReadOnly(new[] { completed });
 
                 // p.14 step 4 sits inside the defender's response, so what stands after it is step 5's
                 // total, the end of the response, and the comparison step 6 opens.
@@ -1183,6 +1422,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;
             pendingDefenseChoice = null;
+            ClearSpentSequenceChain();
             return AttackActionResolutionResult.Accept(
                 null, null, null, events,
                 AttackResolutionOutcome.AttackSuccessful, defeat);
@@ -1268,6 +1508,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal PendingRemovalPreventionDecision PendingRemovalPrevention => pendingRemovalPrevention;
 
         /// <summary>Milestone 8.19c1: restores a decision that was standing when the match was saved.</summary>
+        /// <summary>
+        /// Milestone 8.35z27. Puts a persisted modal Attack plan back, for every
+        /// continuation kind. A <c>null</c> chain is the ordinary case and clears nothing that was not
+        /// already clear, because a restored backend starts with none.
+        /// </summary>
+        internal void RestoreSequenceChain(PendingAttackSequenceChain chain)
+        {
+            if (chain != null)
+            {
+                pendingSequenceChain = chain;
+            }
+        }
+
         internal void RestorePendingRemovalPrevention(PendingRemovalPreventionDecision decision)
         {
             pendingRemovalPrevention = decision;
@@ -1380,8 +1633,33 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CardTextTiming.AfterTheAttack, resolution, resolution.ActorId, definitions,
                 AttackResolutionOutcome.AttackSuccessful));
             steps.AddRange(StepsAfterCardText(
-                CardTextTiming.AfterTheAttack, resolution, AttackResolutionOutcome.AttackSuccessful));
+                CardTextTiming.AfterTheAttack, resolution, AttackResolutionOutcome.AttackSuccessful,
+                theActionEndsHere: !SequenceIsOwedAfter(resolution)));
             return steps;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z27. Whether this resolution is a sequence of a modal Attack whose
+        /// plan still names another. It is the one question every p.14 completion point asks before
+        /// raising <c>ActionEnded</c>, so the six of them cannot disagree about when the action ends.
+        /// </summary>
+        internal bool SequenceIsOwedAfter(PendingAttackResolution resolution) =>
+            pendingSequenceChain != null &&
+            resolution != null &&
+            pendingSequenceChain.Owns(resolution.ResolutionId) &&
+            pendingSequenceChain.HasNextSequence;
+
+        /// <summary>
+        /// Forgets a modal Attack's plan once its last sequence has finished. A spent chain is not
+        /// wrong to hold, but it would cross the wire and be written into every snapshot for the rest
+        /// of the match, which is a fact about an action that is over.
+        /// </summary>
+        private void ClearSpentSequenceChain()
+        {
+            if (pendingSequenceChain != null && !pendingSequenceChain.HasNextSequence)
+            {
+                pendingSequenceChain = null;
+            }
         }
 
         /// <summary>
@@ -1803,11 +2081,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 outcome));
             events.AddRange(StepsAfterCardText(
-                CardTextTiming.AfterTheAttack, completedResolution, outcome));
+                CardTextTiming.AfterTheAttack, completedResolution, outcome,
+                theActionEndsHere: !SequenceIsOwedAfter(completedResolution)));
 
             pendingAttackResolution = null;
             pendingAttackTargetChoice = null;
             pendingDefenseChoice = null;
+            ClearSpentSequenceChain();
             return AttackActionResolutionResult.Accept(
                 null,
                 null,
@@ -2040,7 +2320,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 events);
 
         internal AttackDefenseBackendRestoreState CaptureRestoreState() =>
-            new AttackDefenseBackendRestoreState(pendingAttackResolution);
+            new AttackDefenseBackendRestoreState(pendingAttackResolution, pendingSequenceChain);
 
         /// <param name="verifiedTargetChoice">
         /// An independently supplied Attack target choice to cross-check against the
@@ -2089,6 +2369,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 backend.BindRosterState(rosterState);
             }
+
+            // Milestone 8.35z27, and it has to be bound before the derivations below run:
+            // a sequence of a modal Attack derives its target set from its own bullet's sentence and
+            // subtracts the units earlier sequences took, and both of those live here. A restore that
+            // rebuilt the choice without the chain would offer the action's printed set instead of the
+            // bullet's, which is the same class of defect milestone 8.35z21 fixed one level up - a
+            // restored decision offering what the live one had already excluded.
+            backend.pendingSequenceChain = state.SequenceChain;
             var offer = FindPendingAttackOffer(pendingResolution, materializedDefinitions, materializedInstances);
             if (!offer.HasValue)
             {
@@ -2130,7 +2418,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 if (pendingResolution.Target.IsDefined &&
                     !backend.FindLegalAttackTargets(
                         pendingResolution.ActorId, offer.Value, materializedDefinitions, participants,
-                        modifications)
+                        modifications, backend.SequencePolicyFor(pendingResolution))
                         .Contains(pendingResolution.Target))
                 {
                     throw new ArgumentException(
@@ -2308,10 +2596,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // query, so everything else the page decides about a target - reach, the printed policy,
             // p.18's immunity - is decided once and the exclusion is the only difference.
             var legal = FindLegalAttackTargets(
-                resolution.ActorId, offer, definitions, participants, modifications);
+                resolution.ActorId, offer, definitions, participants, modifications,
+                SequencePolicyFor(resolution));
             if (resolution.ExcludedTarget.IsDefined)
             {
                 legal = legal.Where(target => !target.Equals(resolution.ExcludedTarget)).ToArray();
+            }
+
+            // Milestone 8.35z27. Ruling 19's "(on different targets)" is the card's own
+            // narrowing across the bullets of one modal action, and it is taken out of the same legal
+            // set every other sequence chooses from - the discipline milestone 8.10 set for the
+            // repeat's exclusion, restated for a wider one. An unconstrained card excludes nothing,
+            // which is the rider: the same unit may be both targets while it still satisfies each
+            // bullet's own sentence.
+            if (pendingSequenceChain != null && pendingSequenceChain.Owns(resolution.ResolutionId))
+            {
+                var alreadyTaken = pendingSequenceChain.ExcludedTargets;
+                if (alreadyTaken.Count > 0)
+                {
+                    legal = legal.Where(target => !alreadyTaken.Contains(target)).ToArray();
+                }
             }
 
             // Milestone 8.24. "on a different enemy hero" is the same repeat clause narrowing what is
@@ -2519,12 +2823,73 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer.ActorId, offer, materializedDefinitions, participants, modifications).Count > 0;
         }
 
+        /// <summary>
+        /// Milestone 8.35z27. The bullet sentence this resolution targets by, or
+        /// <c>null</c> where the action's own printed policy is the answer - which is every Attack in
+        /// this build outside a modal one.
+        ///
+        /// <para>It is asked of the chain rather than carried on the resolution because the chain is
+        /// what a snapshot persists for exactly this reason: the sentence belongs to the bullet, and
+        /// the bullet is what the modal chose. A copy on the resolution would be a second place the
+        /// same fact could be wrong, which is the rule every other printed reading here follows.</para>
+        /// </summary>
+        private PrintedAttackTargetPolicy? SequencePolicyFor(PendingAttackResolution resolution)
+        {
+            if (resolution == null || pendingSequenceChain == null ||
+                !pendingSequenceChain.Owns(resolution.ResolutionId))
+            {
+                return null;
+            }
+
+            var bullet = pendingSequenceChain.RunningBullet;
+            return bullet.IsDefined ? bullet.TargetPolicy : (PrintedAttackTargetPolicy?)null;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z27. Whether any bullet of a modal Attack has a unit its own
+        /// printed sentence admits, on the board as it stands right now.
+        ///
+        /// <para>It is the offer-feasibility half of the contract, and it is asked of the same query
+        /// that will build each sequence's target set - which is milestone 8.35z15's rule restated:
+        /// judge the offer against what the answer would actually be able to perform. An Attack whose
+        /// every bullet reaches nobody is greyed exactly as an ordinary Attack with no target is,
+        /// rather than being offered, taken, and spent on nothing.</para>
+        ///
+        /// <para>What it deliberately does not ask is whether the SECOND sequence will find anything.
+        /// That board does not exist yet - the first sequence has not run - and refusing a mode on a
+        /// reading of a board nobody has reached is milestone 8.35p's measured mistake inverted.</para>
+        /// </summary>
+        internal bool CanAnyDeclaredBulletFindATarget(
+            ActionOffer offer,
+            IReadOnlyList<AttackSequenceBullet> bullets,
+            IReadOnlyList<CardDefinition> definitions,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            if (bullets == null || bullets.Count == 0)
+            {
+                return false;
+            }
+
+            if (!offer.ActorId.IsDefined ||
+                !adjacentMoveAuthority.Occupancies.Any(occupancy =>
+                    occupancy.HeroId.Equals(offer.ActorId)))
+            {
+                return true;
+            }
+
+            return bullets.Any(bullet => FindLegalAttackTargets(
+                offer.ActorId, offer, definitions, participants, modifications,
+                bullet.TargetPolicy).Count > 0);
+        }
+
         private IReadOnlyList<AttackTarget> FindLegalAttackTargets(
             HeroId attackerId,
             ActionOffer offer,
             IReadOnlyList<CardDefinition> definitions,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            PrintedAttackTargetPolicy? sequencePolicy = null)
         {
             // Milestone 7.2a. A Ranged Attack's Range Total decides which enemies it may target, so a
             // +1 Range item reaches one space further - the page's own example of an item that matters
@@ -2533,6 +2898,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var rangeTotal = offer.AttackRange == AttackRangeKind.Ranged
                 ? RangeValue(offer, definitions, participants, modifications).Total
                 : 1;
+
+            // Milestone 8.35z27. A modal Attack's bullets each print their own targeting
+            // sentence - Middlefinger of Death's are "a unit adjacent to you" and "a hero in range
+            // who has one or more cards in the discard" - so the sequence running this bullet reaches
+            // what that bullet says and not what the action's own icons would say. Everything else
+            // about the set is unchanged: the same Range Total, the same p.18 immunities, the same
+            // query. Only the printed sentence differs, which is exactly the division milestone 8.5
+            // drew between the classification and the card's own words.
+            if (sequencePolicy.HasValue)
+            {
+                return AttackTargetQuery.FindLegalEnemyTargets(
+                    attackerId,
+                    sequencePolicy.Value,
+                    rangeTotal,
+                    participants,
+                    adjacentMoveAuthority,
+                    modifications);
+            }
 
             // Milestone 8.5. The policy is the card's own, not the classification's: p.13 states what
             // an Attack may target as a rule about the card, and a card that narrows it - a hero-only

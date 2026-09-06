@@ -91,12 +91,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             GuardsDigital.Core.Rules.CardResolution.AttackTarget boundAttackTarget = default,
             GuardsDigital.Core.Rules.CardResolution.PreActionPlacement aroundActionPlacement =
                 GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided,
-            IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> appliedPushes = null)
+            IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> appliedPushes = null,
+            GuardsDigital.Core.Rules.CardResolution.AttackSequencePlan requestedAttackSequences =
+                null)
         {
             AppliedPushes =
                 new ReadOnlyCollection<GuardsDigital.Core.Rules.Modifications.RuleObject>(
                     (appliedPushes ??
                         Array.Empty<GuardsDigital.Core.Rules.Modifications.RuleObject>()).ToArray());
+            RequestedAttackSequences = requestedAttackSequences;
             BoundAttackTarget = boundAttackTarget;
             AroundActionPlacement = aroundActionPlacement;
             Accepted = accepted;
@@ -197,6 +200,23 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> AppliedPushes { get; }
 
+        /// <summary>
+        /// Milestone 8.35z27. The plan a completed modal Attack's step-1 frame named -
+        /// which bullets of "choose one, or both" the actor chose and whether the card forbids
+        /// pointing two of them at one unit - or <c>null</c> on every frame that named none, which is
+        /// every frame in this build outside a modal Attack.
+        ///
+        /// <para>Reported here rather than read off the frame for the reason
+        /// <see cref="BoundAttackTarget"/> is: the completing frame is the last thing that carries the
+        /// outcomes the plan lives on, and by the time the caller sees the result that frame is gone.
+        /// What it says nothing about is what any sequence may target - that set is the Attack
+        /// resolver's, re-derived per sequence against the board that sequence starts on.</para>
+        /// </summary>
+        public GuardsDigital.Core.Rules.CardResolution.AttackSequencePlan RequestedAttackSequences
+        {
+            get;
+        }
+
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
             bool isComplete,
@@ -209,11 +229,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             GuardsDigital.Core.Rules.CardResolution.AttackTarget boundAttackTarget = default,
             GuardsDigital.Core.Rules.CardResolution.PreActionPlacement aroundActionPlacement =
                 GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided,
-            IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> appliedPushes = null) =>
+            IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> appliedPushes = null,
+            GuardsDigital.Core.Rules.CardResolution.AttackSequencePlan requestedAttackSequences =
+                null) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
                 repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats,
-                boundAttackTarget, aroundActionPlacement, appliedPushes);
+                boundAttackTarget, aroundActionPlacement, appliedPushes, requestedAttackSequences);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -667,7 +689,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
                 RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
                         RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
-                        AroundActionPlacementQuery.Placed(context.Definition, outcomes));
+                        AroundActionPlacementQuery.Placed(context.Definition, outcomes),
+                        requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
+                            context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult Resume(
@@ -820,7 +844,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
                         RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
                         RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
-                        AroundActionPlacementQuery.Placed(context.Definition, outcomes));
+                        AroundActionPlacementQuery.Placed(context.Definition, outcomes),
+                        requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
+                            context.Definition, outcomes));
                 }
 
                 var top = continuation[continuation.Count - 1];
@@ -1189,7 +1215,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
                 RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
                         RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
-                        AroundActionPlacementQuery.Placed(context.Definition, outcomes));
+                        AroundActionPlacementQuery.Placed(context.Definition, outcomes),
+                        requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
+                            context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult PauseOn(

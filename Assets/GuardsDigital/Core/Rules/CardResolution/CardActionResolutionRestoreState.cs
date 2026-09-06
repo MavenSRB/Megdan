@@ -69,8 +69,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackResolution owedAttackRepeat = null,
             AttackTarget owedAttackRepeatExclusion = default,
             PendingAfterActionRepeat owedAfterActionRepeat = null,
-            AttackTarget owedAfterActionRepeatExclusion = default)
+            AttackTarget owedAfterActionRepeatExclusion = default,
+            PendingAttackSequenceChain attackSequenceChain = null)
         {
+            AttackSequenceChain = attackSequenceChain;
             OwedAttackRepeat = owedAttackRepeat;
             OwedAttackRepeatExclusion = owedAttackRepeatExclusion;
             OwedAfterActionRepeat = owedAfterActionRepeat;
@@ -135,6 +137,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>The unit p.10's owed after-action repeat may not take. Milestone 8.35z21.</summary>
         public AttackTarget OwedAfterActionRepeatExclusion { get; }
+
+        /// <summary>
+        /// Milestone 8.35z27. The modal Attack part-way through its plan, or <c>null</c>.
+        ///
+        /// <para><b>Why it has to be persisted.</b> Nothing else can say it. A restore that read only
+        /// the pending resolution would know an Attack is standing at a target choice and know nothing
+        /// about which bullet's sentence that choice was derived from, which bullets are still owed, or
+        /// which units the earlier sequences took - and a target that successfully defended is still
+        /// standing, so the board cannot be asked. The paused states are real and reachable: between
+        /// two sequences, and inside the second sequence's own Defense window.</para>
+        ///
+        /// <para>It rides every continuation kind for the reason milestone 6.9's Lane-Push request and
+        /// 8.35z21's owed repeats do: it is a fact about the action the pause is standing inside rather
+        /// than a kind of pause. An Attack whose sequence is standing in its own card text is the
+        /// <see cref="CardActionContinuationKind.AttackCardText"/> case, and it carries a chain too.</para>
+        /// </summary>
+        public PendingAttackSequenceChain AttackSequenceChain { get; }
 
         public CardActionContinuationKind ContinuationKind { get; }
 
@@ -375,7 +394,36 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 owedAttackRepeat,
                 owedAttackRepeatExclusion,
                 owedAfterActionRepeat,
-                owedAfterActionRepeatExclusion);
+                owedAfterActionRepeatExclusion,
+                AttackSequenceChain);
+
+        /// <summary>
+        /// The same state carrying milestone 8.35z27's modal Attack plan. It is applied
+        /// last in <c>CaptureRestoreState</c>'s chain, so it forwards every field the builders before
+        /// it set.
+        /// </summary>
+        public CardActionResolutionRestoreState WithAttackSequenceChain(
+            PendingAttackSequenceChain attackSequenceChain) =>
+            new CardActionResolutionRestoreState(
+                ContinuationKind,
+                PendingMovementResolution,
+                PendingAttackResolution,
+                PendingSkillResolution,
+                CoinLedger,
+                PendingCorrection,
+                PendingRepeat,
+                PendingImmediateLanePush,
+                PendingCardText,
+                PendingPreAction,
+                PendingEffectInterrupt,
+                PendingRemovalPrevention,
+                PendingCardTextRemainder,
+                AfterActionRepeatSubject,
+                OwedAttackRepeat,
+                OwedAttackRepeatExclusion,
+                OwedAfterActionRepeat,
+                OwedAfterActionRepeatExclusion,
+                attackSequenceChain);
 
         public static CardActionResolutionRestoreState WithPendingCardText(
             PendingAttackCardTextResolution pendingCardText,

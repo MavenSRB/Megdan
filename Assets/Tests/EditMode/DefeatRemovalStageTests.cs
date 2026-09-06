@@ -467,9 +467,9 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(37),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(38),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
-                "own. The version has since moved twenty-five times, none of them for it: milestone 6.7 for " +
+                "own. The version has since moved twenty-six times, none of them for it: milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +
                 "mid-turn Lane-Push request a completed action can leave behind, milestone 6.10 for " +
                 "p.8's Battle Zone itself, milestone 6.10a for a paused system transition, " +
@@ -509,7 +509,10 @@ namespace GuardsDigital.Tests.EditMode
                 "started, which no v36 payload records because in a v36 build one was always started " +
                 "inside the command that decided it - p.8's mid-turn push now drains at the end of " +
                 "each action instance, and a push stopped on the sidebar's Place holds a decided " +
-                "repeat across a player's answer. " +
+                "repeat across a player's answer, and milestone 8.35z27 for the modal " +
+                "Attack a \"choose one, or both\" opened and has not finished, which no v37 payload " +
+                "records because no v37 build could run more than one complete p.14 order inside one " +
+                "action. " +
                 "The decision is still re-derived from the state as it then stands.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),

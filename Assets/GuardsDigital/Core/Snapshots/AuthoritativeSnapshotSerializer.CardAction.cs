@@ -43,6 +43,7 @@ namespace GuardsDigital.Core.Snapshots
             WriteCardTextRemainder(writer, state.PendingCardTextRemainder);
             WriteAfterActionRepeatSubject(writer, state.AfterActionRepeatSubject);
             WriteOwedRepeats(writer, state);
+            WriteAttackSequenceChain(writer, state.AttackSequenceChain);
             if (continuationKind == CardActionContinuationKind.Movement)
             {
                 WriteMovementResolution(writer, pendingMovement);
@@ -197,6 +198,106 @@ namespace GuardsDigital.Core.Snapshots
             WriteAttackTarget(writer, state.OwedAttackRepeatExclusion);
             WriteAfterActionRepeatSubject(writer, state.OwedAfterActionRepeat);
             WriteAttackTarget(writer, state.OwedAfterActionRepeatExclusion);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z27, schema v38. A modal Attack part-way through its plan.
+        ///
+        /// <para><b>Why it crosses at all.</b> Nothing else can say it. The pending resolution says an
+        /// Attack is standing at a target choice; it does not say which bullet's printed sentence that
+        /// choice was derived from, which of "choose one, or both" are still owed, or which units the
+        /// earlier sequences bound - and the board cannot be asked, because a target that successfully
+        /// defended is still standing and looks exactly like a unit nobody has taken. The states are
+        /// reachable: between two sequences (p.14's minion arm can end a command with a Defeat at its
+        /// removal stage), and inside the second sequence's own Defense window.</para>
+        ///
+        /// <para><b>What crosses is identity.</b> The action that opened the modal is written with the
+        /// same writer every other pending Attack uses; each bullet writes its printed id and the three
+        /// enums of its targeting sentence, which is content this payload names rather than semantics
+        /// it carries; and the taken targets are the units, because Ruling 19's "(on different
+        /// targets)" is the one fact the board stops being able to answer.</para>
+        /// </summary>
+        private static void WriteAttackSequenceChain(
+            BinaryWriter writer, PendingAttackSequenceChain chain)
+        {
+            writer.Write(chain != null);
+            if (chain == null)
+            {
+                return;
+            }
+
+            WriteAttackResolution(writer, chain.ActionIdentity);
+            writer.Write(chain.Plan.RequireDistinctTargets);
+            writer.Write(chain.Plan.Bullets.Count);
+            foreach (var bullet in chain.Plan.Bullets)
+            {
+                writer.Write(bullet.BulletId);
+                writer.Write((int)bullet.TargetPolicy.TargetableUnits);
+                writer.Write((int)bullet.TargetPolicy.Reach);
+                writer.Write((int)bullet.TargetPolicy.Line);
+                writer.Write((int)bullet.TargetPolicy.Binding);
+            }
+
+            writer.Write(chain.StartedSequences);
+            writer.Write(chain.TargetsTaken.Count);
+            foreach (var taken in chain.TargetsTaken)
+            {
+                WriteAttackTarget(writer, taken);
+            }
+        }
+
+        private static PendingAttackSequenceChain ReadAttackSequenceChain(BinaryReader reader)
+        {
+            if (!reader.ReadBoolean())
+            {
+                return null;
+            }
+
+            var actionIdentity = ReadAttackResolution(reader);
+            var requireDistinctTargets = reader.ReadBoolean();
+            var bulletCount = reader.ReadInt32();
+            if (bulletCount < 1 || bulletCount > 16)
+            {
+                throw Malformed(
+                    $"Snapshot modal Attack plan names {bulletCount} bullets; a printed modal names " +
+                    "at least one and this build admits no card with more than sixteen.");
+            }
+
+            var bullets = new List<AttackSequenceBullet>(bulletCount);
+            for (var index = 0; index < bulletCount; index++)
+            {
+                var bulletId = reader.ReadString();
+                var units = SnapshotEnumReader.Read<AttackTargetableUnits>(
+                    reader, "modal Attack bullet targetable units");
+                var reach = SnapshotEnumReader.Read<AttackTargetReach>(
+                    reader, "modal Attack bullet reach");
+                var line = SnapshotEnumReader.Read<AttackTargetLine>(
+                    reader, "modal Attack bullet line");
+                var binding = SnapshotEnumReader.Read<AttackTargetBinding>(
+                    reader, "modal Attack bullet binding");
+                bullets.Add(new AttackSequenceBullet(
+                    bulletId, new PrintedAttackTargetPolicy(units, reach, line, binding)));
+            }
+
+            var startedSequences = reader.ReadInt32();
+            var takenCount = reader.ReadInt32();
+            if (takenCount < 0 || takenCount > bulletCount)
+            {
+                throw Malformed(
+                    "Snapshot modal Attack chain records more bound targets than its plan has bullets.");
+            }
+
+            var taken = new List<AttackTarget>(takenCount);
+            for (var index = 0; index < takenCount; index++)
+            {
+                taken.Add(ReadAttackTarget(reader, "modal Attack bound target kind"));
+            }
+
+            return new PendingAttackSequenceChain(
+                actionIdentity,
+                new AttackSequencePlan(bullets, requireDistinctTargets),
+                startedSequences,
+                taken);
         }
 
         private static void WriteAttackTarget(BinaryWriter writer, AttackTarget target)
@@ -743,6 +844,7 @@ namespace GuardsDigital.Core.Snapshots
             var owedAfterActionRepeat = ReadAfterActionRepeatSubject(reader);
             var owedAfterActionRepeatExclusion = ReadAttackTarget(
                 reader, "owed after-action repeat exclusion kind");
+            var attackSequenceChain = ReadAttackSequenceChain(reader);
 
             CardActionResolutionRestoreState state;
             switch ((CardActionContinuationKind)kind)
@@ -823,7 +925,8 @@ namespace GuardsDigital.Core.Snapshots
                         owedAttackRepeat,
                         owedAttackRepeatExclusion,
                         owedAfterActionRepeat,
-                        owedAfterActionRepeatExclusion),
+                        owedAfterActionRepeatExclusion)
+                    .WithAttackSequenceChain(attackSequenceChain),
                 null, null, null, definitions, cards,
                 participants, markers, modifications, heroItems,
                 rosterState: rosterState);

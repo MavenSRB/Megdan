@@ -523,7 +523,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaVersionMovesForThreeDecisionsV26CannotHold()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(37),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(38),
                 "Milestone 8.19c1 adds a trigger frame standing inside the effect it interrupted, a " +
                 "Defeat waiting at its removal stage with the coin operations that paid it, and a " +
                 "round-scoped record that p.8's pre-battle moment has already run. None of the three " +
@@ -561,7 +561,15 @@ namespace GuardsDigital.Tests.EditMode
                 "instance p.10 owes and has not started. It could not be observed before, because a " +
                 "v36 build always started one inside the command that decided it; 8.35z21 drains p.8's " +
                 "mid-turn Lane Push at the end of each action instance, and a push stopped on the " +
-                "sidebar's Place stands between the decision and the instance. This " +
+                "sidebar's Place stands between the decision and the instance - and once more at " +
+                "milestone 8.35z27, which is the first move for an ACTION THAT IS ONLY " +
+                "PART DONE: a modal Attack's \"choose one, or both\" runs a complete p.14 order per " +
+                "chosen bullet and all of them are one action, so a capture taken between two of them " +
+                "has to carry which bullets are still owed and which units the earlier sequences " +
+                "bound. No v37 payload records it, because no v37 build could run a second complete " +
+                "p.14 order inside one action at all - and the board cannot be asked instead, because " +
+                "a target that successfully DEFENDED is still standing and looks exactly like a unit " +
+                "nobody has taken. This " +
                 "case pins the current version rather than its own, so a later move has to be " +
                 "accounted for here rather than passing unread.");
         }

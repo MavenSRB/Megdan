@@ -783,6 +783,58 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 attackTextProfiles: new[] { RedChargeLineProfile, RedVacatedSpaceProfile });
 
         // -------------------------------------------------------------------------------------------
+        // Milestone 8.35z27: the modal Attack contract, on cards that are nobody's
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// "Choose one, or both" with no printed target constraint - Grim Reaper's Swift Justice
+        /// shape, under Ruling 19's rider that the same unit may satisfy both bullets.
+        /// </summary>
+        /// <remarks>
+        /// The printed Attack value is 1 on purpose. Both bullets can point at the same hero, so a
+        /// fixture watching the second sequence needs a first sequence the defender can survive -
+        /// an Attack that always defeats its target would take the second bullet's subject off the
+        /// board every time and the contract's ordinary shape would never be reachable. A defence
+        /// that beats 1 is any card in the fixture's Blue hand, and declining still succeeds against
+        /// a Defense total of nothing, so both outcomes stay drivable from one card.
+        /// </remarks>
+        private static SyntheticAttackTextProfile RedModalSequenceProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-twinstrike", "Red Twinstrike", 7, 1, 2, 2, CardTextTiming.BeforeTheAttack,
+                false, false,
+                continuation: SyntheticContinuationShape.BeforeAttackModalSequences,
+                basicCard: true);
+
+        /// <summary>
+        /// "Choose one, or both (on different targets)" - Middlefinger of Death's and Spirit Bear's
+        /// shape, where the card itself takes p.10's "unless the card text says otherwise" escape.
+        /// </summary>
+        private static SyntheticAttackTextProfile RedModalSequenceDistinctProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-forkstrike", "Red Forkstrike", 6, 1, 2, 2, CardTextTiming.BeforeTheAttack,
+                false, false,
+                continuation:
+                    SyntheticContinuationShape.BeforeAttackModalSequencesOnDifferentTargets,
+                basicCard: true);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.35z27's two modal Attacks, which is
+        /// how <c>attack-sequence@1</c> becomes reachable from showcase content rather than waiting
+        /// for Middlefinger of Death, Grim Reaper or Spirit Bear.
+        ///
+        /// <para>Both faces are on one hand deliberately: Ruling 19's rider is a difference between
+        /// two printed cards, and a fixture that dealt them separately could show each behaviour but
+        /// not that the constraint is what separates them.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithModalSequenceAttackText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[]
+                {
+                    RedModalSequenceProfile, RedModalSequenceDistinctProfile
+                });
+
+        // -------------------------------------------------------------------------------------------
         // Milestone 8.22: the roster vocabulary Sabina's set is the first printed content to name,
         // proved here on cards that are nobody's
         // -------------------------------------------------------------------------------------------
@@ -2971,7 +3023,39 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// of card text on one action, which is why the profile that carries it names a second
             /// moment. `actor-moved-this-action@1` is proved here on nobody's card.</para>
             /// </summary>
-            AfterAttackUnmovedStep = 10
+            AfterAttackUnmovedStep = 10,
+
+            /// <summary>
+            /// Milestone 8.35z27. The modal Attack shape: "Choose one, or both" over two
+            /// bullets, each of which contributes one complete rulebook p.14 sequence with its own
+            /// targeting, Defense window, Attack Total and consequences.
+            ///
+            /// <para>It is showcase content because none of its three real consumers exists yet -
+            /// Middlefinger of Death is on an un-landed hero branch, and Grim Reaper and Spirit Bear
+            /// are future heroes - and because what needs proving is the CONTRACT rather than any
+            /// card: that the sequences are one action for every external purpose, that each binds its
+            /// own target against the board it starts on, and that the whole thing is invisible to
+            /// every reader of p.10's Repeat label.</para>
+            ///
+            /// <para>Its two bullets print different sentences on purpose: the first takes any unit
+            /// adjacent to the attacker, the second any enemy hero within the printed Range. That is
+            /// what makes "each sequence targets by its own bullet" a measurable claim rather than a
+            /// restatement of the action's own policy.</para>
+            /// </summary>
+            BeforeAttackModalSequences = 11,
+
+            /// <summary>
+            /// Milestone 8.35z27. The same modal Attack with "(on different targets)"
+            /// printed - Middlefinger of Death's and Spirit Bear's shape.
+            ///
+            /// <para>It is a member of its own rather than a flag on the shape above, because the
+            /// constraint is a difference in what the CARD says and the identity oracle's rule is that
+            /// such a difference lives in the member name. Ruling 19's rider is exactly why both
+            /// members have to exist: without the parenthetical the same unit may be both targets, and
+            /// a fixture that only ever ran the constrained arm could not show the difference is
+            /// real.</para>
+            /// </summary>
+            BeforeAttackModalSequencesOnDifferentTargets = 12
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -2989,8 +3073,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 bool readsTheAttacksTarget = false,
                 SyntheticContinuationShape continuation = SyntheticContinuationShape.None,
                 SyntheticContinuationShape secondContinuation = SyntheticContinuationShape.None,
-                CardTextTiming secondTiming = CardTextTiming.None)
+                CardTextTiming secondTiming = CardTextTiming.None,
+                bool basicCard = false)
             {
+                BasicCard = basicCard;
                 Continuation = continuation;
                 SecondContinuation = secondContinuation;
                 SecondTiming = secondTiming;
@@ -3030,6 +3116,18 @@ namespace GuardsDigital.Core.Cards.Synthetic
             public CardTextTiming SecondTiming { get; }
             public bool DefenseCarriesText { get; }
             public bool NarrowedToHeroes { get; }
+
+            /// <summary>
+            /// Milestone 8.35z27. Whether this fixture card is one of rulebook p.15's
+            /// Gold-and-Silver pair, which is what makes an action performed on it a BASIC action.
+            ///
+            /// <para>It exists because that is where this build records "you performed an Attack
+            /// action" - <see cref="PerformedBasicAction"/>, and its <c>WasRepeatedInstance</c> flag
+            /// is the surface every repeat restriction and every after-action ability reads. A modal
+            /// Attack's whole external claim is about what that surface records, so the fixture has
+            /// to be a card the surface has something to say about.</para>
+            /// </summary>
+            public bool BasicCard { get; }
         }
 
         /// <summary>
@@ -3272,12 +3370,99 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 .ToArray());
         }
 
+        /// <summary>
+        /// Milestone 8.35z27. "Choose one, or both - * Target a unit adjacent to you.
+        /// * Target a hero adjacent to you."
+        ///
+        /// <para><b>Every leaf performs nothing.</b> A chosen bullet publishes its printed targeting
+        /// sentence through <c>attack-sequence@1</c> and stops; the Attack resolver runs a complete
+        /// p.14 per published bullet, binding each sequence's target against the board that sequence
+        /// starts on. That is the whole difference from <c>set-attack-target@1</c>, which names a unit
+        /// at the modal - one whole Attack too early for the second sequence.</para>
+        ///
+        /// <para><b>The two sentences differ on purpose.</b> Both reach adjacent units, and only the
+        /// second is narrowed to heroes. So a board holding one adjacent minion and one adjacent enemy
+        /// hero offers the first bullet two candidates and the second one, which is what makes "each
+        /// sequence targets by its own bullet" measurable rather than a restatement of the action's own
+        /// policy. Middlefinger of Death's real second bullet adds a predicate a printed policy cannot
+        /// state - "a hero in range who has one or more cards in the discard" - and that half is the
+        /// consumer milestone's, named in the notes rather than invented here.</para>
+        /// </summary>
+        private static EffectDefinition ModalAttackSequenceEffect(
+            string id, bool requireDistinctTargets)
+        {
+            var modal = new EffectNodeId("modal-sequences");
+            var adjacentUnit = new EffectNodeId("modal-bullet-adjacent-unit");
+            var adjacentHero = new EffectNodeId("modal-bullet-adjacent-hero");
+
+            return new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{id}-text"),
+                "phase-8-35z27-rev-1",
+                modal,
+                new[]
+                {
+                    // p.10: "Based on the card text, you may be able to choose multiple options...
+                    // Treat this as a single action." One selection minimum, both options maximum,
+                    // and mandatory because a modal Attack that chose nothing would be an Attack that
+                    // never targeted anything.
+                    new EffectNodeDefinition(
+                        modal, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { adjacentUnit, adjacentHero },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 2),
+                    ModalBulletNode(
+                        adjacentUnit, AttackTargetableUnits.HeroesAndMinions,
+                        requireDistinctTargets),
+                    ModalBulletNode(
+                        adjacentHero, AttackTargetableUnits.HeroesOnly, requireDistinctTargets)
+                });
+        }
+
+        private static EffectNodeDefinition ModalBulletNode(
+            EffectNodeId nodeId,
+            AttackTargetableUnits targetableUnits,
+            bool requireDistinctTargets) =>
+            new EffectNodeDefinition(
+                nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                SyntheticSequenceCapabilities.AttackSequenceV1,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromClosedVocabulary(
+                        SyntheticSequenceCapabilities.TargetableUnitsParameter, targetableUnits),
+                    EffectInputBinding.FromClosedVocabulary(
+                        SyntheticSequenceCapabilities.ReachParameter,
+                        AttackTargetReach.AdjacentOnly),
+                    EffectInputBinding.FromClosedVocabulary(
+                        SyntheticSequenceCapabilities.LineParameter, AttackTargetLine.AnyLine),
+                    EffectInputBinding.FromLiteral(
+                        SyntheticSequenceCapabilities.DistinctTargetsParameter,
+                        EffectValue.Boolean(requireDistinctTargets))
+                },
+                outputs: new[]
+                {
+                    new EffectOutputBinding(
+                        SyntheticSequenceCapabilities.TargetableUnitsOutput, EffectValueKind.Integer),
+                    new EffectOutputBinding(
+                        SyntheticSequenceCapabilities.ReachOutput, EffectValueKind.Integer),
+                    new EffectOutputBinding(
+                        SyntheticSequenceCapabilities.LineOutput, EffectValueKind.Integer),
+                    new EffectOutputBinding(
+                        SyntheticSequenceCapabilities.DistinctTargetsOutput, EffectValueKind.Boolean)
+                });
+
         private static EffectDefinition ContinuationEffect(
             string id,
             SyntheticContinuationShape shape)
         {
             switch (shape)
             {
+                case SyntheticContinuationShape.BeforeAttackModalSequences:
+                    return ModalAttackSequenceEffect(id, requireDistinctTargets: false);
+
+                case SyntheticContinuationShape.BeforeAttackModalSequencesOnDifferentTargets:
+                    return ModalAttackSequenceEffect(id, requireDistinctTargets: true);
+
                 case SyntheticContinuationShape.BeforeAttackMoveThrough:
                     return MoveThroughEffect(id);
 
@@ -3910,7 +4095,15 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     profile.PrimaryTiming,
                     // Milestone 8.19a. `attack-target@2`: the Attack whose step-1 text charges and only
                     // then names what it attacks declares that its target is bound by that text.
-                    profile.Continuation == SyntheticContinuationShape.BeforeAttackBindTarget
+                    // Milestone 8.35z27. A modal Attack declares `attack-target@2` for the
+                    // same reason a charge does - it reaches p.14's step 1 with no target, because
+                    // what its text names is not a unit but a plan. What differs is what the text
+                    // hands back: a charge hands back one unit and the page runs once, a modal hands
+                    // back its chosen bullets and the page runs once per bullet.
+                    profile.Continuation == SyntheticContinuationShape.BeforeAttackBindTarget ||
+                    profile.Continuation == SyntheticContinuationShape.BeforeAttackModalSequences ||
+                    profile.Continuation ==
+                        SyntheticContinuationShape.BeforeAttackModalSequencesOnDifferentTargets
                         ? PrintedAttackTargetPolicy
                             .ForClassification(AttackRangeKind.NonRanged).BoundByCardText()
                         : profile.NarrowedToHeroes
@@ -3959,7 +4152,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 $"TEST - {profile.DisplayName}",
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.SyntheticTestFixture,
-                CardProgressionProfile.NotStated,
+                profile.BasicCard
+                    ? CardProgressionProfile.BasicCard(CardColor.Silver)
+                    : CardProgressionProfile.NotStated,
                 actions);
         }
         private static CardDefinition CreateDefinition(SyntheticCardProfile profile)

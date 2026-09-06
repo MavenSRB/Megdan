@@ -162,6 +162,138 @@ namespace GuardsDigital.Tests.EditMode
                 configuration, map, WithAMeleeMinionBesideTheRedHero(map, setup, out target));
         }
 
+        /// <summary>
+        /// Milestone 8.35z27. The two heroes standing beside each other with a Blue melee
+        /// minion beside the Red one as well, and the two modal Attacks dealt.
+        ///
+        /// <para>Both neighbours are what make the contract measurable. The modal's first bullet takes
+        /// any unit adjacent to the attacker and its second takes an adjacent hero, so a board holding
+        /// one of each offers the two bullets different candidate sets - which is the difference
+        /// between "each sequence targets by its own bullet's sentence" and "both sequences reuse the
+        /// action's own policy". It is also what lets Ruling 19's rider be shown as a contrast rather
+        /// than asserted: on this board the unconstrained card may point both bullets at the hero, and
+        /// the card printing "(on different targets)" may not.</para>
+        /// </summary>
+        public static MatchSession CreateModalSequenceSession(out MinionId adjacentMinionId)
+        {
+            var configuration = MatchConfiguration.CreateForModalSequenceFixture(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var withMinion = WithAMeleeMinionBesideTheRedHero(map, setup, out adjacentMinionId);
+
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                withMinion.SelectedMap,
+                withMinion.WaveCount,
+                withMinion.TieBreakerState,
+                withMinion.Teams,
+                WithBlueHeroBesideTheRedOne(map, withMinion),
+                withMinion.Minions));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z27. The same modal-Attack content with the two heroes adjacent
+        /// and no minion moved beside them, so the first bullet's only candidate is the Blue hero.
+        ///
+        /// <para>That is the board the mid-chain defeat needs: the first sequence's target is also the
+        /// second sequence's only candidate, so a successful attack really does take the second
+        /// bullet's subject off the board between the two sequences.</para>
+        /// </summary>
+        public static MatchSession CreateModalSequenceSessionWithoutAnAdjacentMinion() =>
+            CreateEngagedFixtureSession(
+                MatchConfiguration.CreateForModalSequenceFixture(TeamSide.Red));
+
+        /// <summary>
+        /// Milestone 8.35z27. The modal-Attack content on the board p.8's mid-turn Lane
+        /// Push needs: Blue holds exactly one minion, it is standing in the starting Battle Zone, and
+        /// both heroes are standing beside it.
+        ///
+        /// <para>Defeating that minion in the FIRST sequence empties Blue's side of the zone, which is
+        /// p.8's cause - and the whole point of the case is that the push it owes does not resolve
+        /// until the second sequence has finished, because Ruling 5 makes both of them one action.
+        /// The Blue hero standing beside the Red one is what gives the second bullet a subject, so
+        /// the action really does continue rather than merely happening to end there.</para>
+        /// </summary>
+        public static MatchSession CreateModalSequenceSessionOnAnEmptiableBattleZone(
+            out MinionId lastBlueMinionId)
+        {
+            var configuration = MatchConfiguration.CreateForModalSequenceFixture(TeamSide.Red);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var survivor = setup.Minions.First(minion =>
+                minion.TeamSide == TeamSide.Blue &&
+                minion.MinionType != StandardMinionType.Heavy &&
+                GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInStartingBattleZone(
+                    map, minion.Coordinate));
+            lastBlueMinionId = survivor.MinionId;
+
+            var minions = setup.Minions
+                .Where(minion => minion.TeamSide != TeamSide.Blue ||
+                    minion.MinionId.Equals(survivor.MinionId))
+                .ToArray();
+            var withOneBlueMinion = new QuickGameSetupState(
+                setup.SelectedMap, setup.WaveCount, setup.TieBreakerState, setup.Teams,
+                setup.Heroes, minions);
+
+            var heroes = WithBothHeroesBeside(map, withOneBlueMinion, survivor.Coordinate);
+            return CreateSession(configuration, map, new QuickGameSetupState(
+                withOneBlueMinion.SelectedMap,
+                withOneBlueMinion.WaveCount,
+                withOneBlueMinion.TieBreakerState,
+                withOneBlueMinion.Teams,
+                heroes,
+                minions));
+        }
+
+        /// <summary>
+        /// Both heroes standing on free playable spaces beside the named one, the Blue hero placed so
+        /// it is also beside the Red one.
+        /// </summary>
+        private static IReadOnlyList<QuickGameHeroSetupState> WithBothHeroesBeside(
+            BoardMapDefinition map, QuickGameSetupState setup, HexCoordinate anchor)
+        {
+            var occupied = new HashSet<HexCoordinate>(
+                setup.Minions.Select(minion => minion.Coordinate)) { anchor };
+            var redSpace = anchor.GetNeighbors().First(coordinate =>
+                !occupied.Contains(coordinate) && IsPlayable(map, coordinate));
+            occupied.Add(redSpace);
+            var blueSpace = anchor.GetNeighbors()
+                .Concat(redSpace.GetNeighbors())
+                .First(coordinate =>
+                    !occupied.Contains(coordinate) &&
+                    IsPlayable(map, coordinate) &&
+                    redSpace.GetNeighbors().Any(neighbor => neighbor.Equals(coordinate)));
+
+            return setup.Heroes
+                .Select(hero => hero.TeamSide == TeamSide.Red
+                    ? PlacedAt(map, hero, redSpace)
+                    : PlacedAt(map, hero, blueSpace))
+                .ToArray();
+        }
+
+        private static bool IsPlayable(BoardMapDefinition map, HexCoordinate coordinate) =>
+            map.Spaces.Any(space =>
+                space.Kind == BoardMapSpaceKind.Playable && space.Coordinate.Equals(coordinate));
+
+        private static QuickGameHeroSetupState PlacedAt(
+            BoardMapDefinition map, QuickGameHeroSetupState hero, HexCoordinate coordinate)
+        {
+            var spaceId = map.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable &&
+                space.Coordinate.Equals(coordinate)).Id;
+            return new QuickGameHeroSetupState(
+                hero.HeroId, hero.ContentId, hero.DisplayName, hero.TeamId, hero.TeamSide,
+                hero.SpawnPoint, new ConfiguredSpaceReference(map.Id, spaceId), coordinate);
+        }
+
         /// <summary>One Blue melee minion moved to a free space beside the Red hero.</summary>
         private static QuickGameSetupState WithAMeleeMinionBesideTheRedHero(
             BoardMapDefinition map, QuickGameSetupState setup, out MinionId target)

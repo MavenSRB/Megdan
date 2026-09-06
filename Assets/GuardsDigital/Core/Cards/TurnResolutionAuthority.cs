@@ -2687,6 +2687,19 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private TurnResolutionResult CompleteAttackOrStartItsRepeat(List<TurnResolutionEvent> events)
         {
+            // Milestone 8.35z27, and it is FIRST for the reason 8.35z21's drain is second.
+            // A modal Attack's "choose one, or both" runs a complete p.14 per chosen bullet and Ruling
+            // 5 makes all of them ONE action, so nothing the end of an action owes may happen between
+            // two sequences - p.8's mid-turn Lane Push included. That is the exact opposite of the
+            // repeat, where the designer's 2026-06-18 ruling makes each instance a separate action and
+            // the push therefore resolves in between, and it is why the two are different contracts
+            // rather than one with a flag. The push a sequence records is drained below, once the plan
+            // is spent and this really is the end of the action.
+            if (cardActions.HasOwedAttackSequence)
+            {
+                return StartTheOwedAttackSequence(events);
+            }
+
             // Milestone 8.35z21. This instance has ended, so p.8's push it owes resolves before the next
             // instance exists - the designer's "repeat instances are separate actions", stated as an
             // ordering. The repeat below then chooses on the pushed board.
@@ -2702,6 +2715,24 @@ namespace GuardsDigital.Core.Cards
             }
 
             return StartTheOwedAttackRepeat(events);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z27. Starts the next complete p.14 sequence a modal Attack owes.
+        ///
+        /// <para>A sequence that opens a target choice leaves the turn waiting, exactly as the action's
+        /// first one did. A sequence that finds nothing its bullet admits does not happen at all - p.10
+        /// stops a mandatory step that cannot be carried out - and the backend runs straight on to the
+        /// next bullet, so what comes back complete is the whole rest of the plan.</para>
+        /// </summary>
+        private TurnResolutionResult StartTheOwedAttackSequence(List<TurnResolutionEvent> events)
+        {
+            var sequence = cardActions.StartOwedAttackSequence(
+                definitions, instances, participants, CurrentModifications());
+            events.AddRange(MaterializeSteps(sequence.Steps, TurnResolutionEvent.FromAttackAction));
+            return sequence.IsComplete
+                ? CompleteAttackAndAdvance(events)
+                : TurnResolutionResult.Accept(events);
         }
 
         private TurnResolutionResult StartTheOwedAttackRepeat(List<TurnResolutionEvent> events)
@@ -2891,7 +2922,12 @@ namespace GuardsDigital.Core.Cards
             // "the action is over" means. The case it defers is real: an after-action ability standing
             // on its own question keeps the action open, and the drain for it is the one in
             // <see cref="FinishTriggerAnswer"/>, which is still on the near side of the repeat.
-            if (TheTurnsActionIsUnderWay())
+            // Milestone 8.35z27. The second half of the same sentence, and it has to be
+            // said here as well as at the call site: a modal Attack between two of its sequences has
+            // no pending resolution for a moment, so the question above reads "over" while Ruling 5
+            // says the action is not. Every drain site funnels through this method, which is what
+            // makes one line enough.
+            if (TheTurnsActionIsUnderWay() || cardActions?.HasOwedAttackSequence == true)
             {
                 return null;
             }
@@ -2946,6 +2982,14 @@ namespace GuardsDigital.Core.Cards
         private TurnResolutionResult ResumeTheActionTheLanePushInterrupted(
             List<TurnResolutionEvent> events)
         {
+            // Milestone 8.35z27, first for the reason it is first in
+            // CompleteAttackOrStartItsRepeat: a modal Attack's own action is not over while its plan
+            // names another sequence, so what a finished push hands back is that sequence.
+            if (cardActions.HasOwedAttackSequence)
+            {
+                return StartTheOwedAttackSequence(events);
+            }
+
             // p.14's own repeat first, in the order CompleteAttackOrStartItsRepeat runs it.
             if (cardActions.HasOwedAttackRepeat)
             {

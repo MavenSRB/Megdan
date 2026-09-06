@@ -102,6 +102,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticCardStateCapabilities.Handlers())
                 .Concat(SyntheticConsequenceCapabilities.Handlers())
                 .Concat(SyntheticContinuationCapabilities.Handlers())
+                // Milestone 8.35z27. `attack-sequence@1` joins the list on the same half
+                // of the rule the comment below states: the showcase hand's two-bullet Attack names
+                // it, so it is reachable from a printed card the moment it is registered, and no
+                // hero's slice is the first place its handler arrives.
+                .Concat(SyntheticSequenceCapabilities.Handlers())
                 .Concat(SyntheticValueCapabilities.Handlers())
                 .Concat(SyntheticPersistentSourceCapabilities.Handlers())
                 .Concat(SyntheticPausingSourceCapabilities.Handlers())

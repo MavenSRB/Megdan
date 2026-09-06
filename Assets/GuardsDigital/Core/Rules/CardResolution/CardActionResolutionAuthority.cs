@@ -936,6 +936,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return false;
             }
 
+            // Milestone 8.35z27. A modal Attack's text binds through a plan rather than a
+            // unit, so the walk below can say only that a binding is reachable. What it may reach is
+            // this: every bullet's printed sentence is literal content on its own node, so the same
+            // target query each sequence will use can be asked of each sentence now. An Attack whose
+            // every bullet reaches nobody is greyed here, which is 8.35z15's rule - judge the offer
+            // against what the answer could perform - applied to the modal shape.
+            var declaredBullets = RequestedAttackSequenceQuery.Declared(cardText);
+            if (declaredBullets.Count > 0 &&
+                !attackDefenseBackend.CanAnyDeclaredBulletFindATarget(
+                    offer, declaredBullets, materializedDefinitions, participants, modifications))
+            {
+                return false;
+            }
+
             var context = new EffectResolutionContext(
                 cardText,
                 ContentCatalogs.Capabilities,
@@ -1402,7 +1416,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     owedAttackRepeat,
                     owedAttackRepeatExclusion,
                     owedAfterActionRepeat,
-                    owedAfterActionRepeatExclusion);
+                    owedAfterActionRepeatExclusion)
+                // Milestone 8.35z27. A modal Attack part-way through its plan. It rides
+                // whatever continuation the capture found, for the reason the owed repeats above do -
+                // it is a fact about the action the pause is inside rather than a kind of pause - and
+                // it is applied last so it forwards everything the builders before it set.
+                .WithAttackSequenceChain(attackDefenseBackend.PendingSequenceChain);
 
         private CardActionResolutionRestoreState CaptureContinuation()
         {
@@ -1506,6 +1525,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             restoredAuthority.attackDefenseBackend.RestorePendingRemovalPrevention(
                 state.PendingRemovalPrevention);
 
+            // Milestone 8.35z27, and it has to be here rather than only inside the Attack
+            // arm of the switch: p.14's minion arm can end a sequence's command with a Defeat standing
+            // at its removal stage, which leaves a modal Attack holding a live plan and NO pending
+            // resolution at all - the continuation kind is then None and the Attack arm is never
+            // reached. Restoring it twice on the Attack arm is harmless; restoring it nowhere for that
+            // state would lose the whole rest of the action.
+            restoredAuthority.attackDefenseBackend.RestoreSequenceChain(state.AttackSequenceChain);
+
             // Milestone 8.22, same line of reasoning again: the rest of p.14 owed while a card-text
             // Push has set off a trigger is not a continuation either, and the continuation it stands
             // beside is usually none at all.
@@ -1576,7 +1603,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         new MovementCardActionStrategyBackend(adjacentMoveAuthority),
                         AttackDefenseCardActionStrategyBackend.RestoreAttack(
                             adjacentMoveAuthority,
-                            new AttackDefenseBackendRestoreState(state.PendingAttackResolution),
+                            new AttackDefenseBackendRestoreState(
+                                state.PendingAttackResolution, state.AttackSequenceChain),
                             verifiedTargetChoice,
                             verifiedDefenseChoice,
                             definitions,
@@ -1649,7 +1677,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                                 adjacentMoveAuthority, coinLedger, markers)
                             : AttackDefenseCardActionStrategyBackend.RestoreAttack(
                                 adjacentMoveAuthority,
-                                new AttackDefenseBackendRestoreState(attackUnderTheText),
+                                new AttackDefenseBackendRestoreState(
+                                    attackUnderTheText, state.AttackSequenceChain),
                                 null,
                                 null,
                                 definitions,
@@ -2078,8 +2107,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (step.CardTextTiming == CardTextTiming.BeforeTheAttack && pendingCardText == null)
             {
                 steps.AddRange(ResumeAttackAfterBeforeText(
-                    result.BoundAttackTarget, materializedDefinitions, instances, participants,
-                    modifications));
+                    result.BoundAttackTarget, result.RequestedAttackSequences,
+                    materializedDefinitions, instances, participants, modifications));
             }
 
             return Array.AsReadOnly(steps.ToArray());
@@ -2106,12 +2135,35 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private IReadOnlyList<ResolutionStep> ResumeAttackAfterBeforeText(
             AttackTarget boundTarget,
+            AttackSequencePlan requestedSequences,
             IReadOnlyList<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             RuleModificationSet modifications)
         {
             var resolutionId = attackDefenseBackend.PendingResolution?.ResolutionId ?? default;
+
+            // Milestone 8.35z27. A step-1 text that named a PLAN rather than a unit is a
+            // modal Attack, and what follows it is not one p.14 but one per chosen bullet. It is
+            // decided here, at the one place step 1's remainder is produced, so the two shapes cannot
+            // be reached by different routes: an ordinary card-text Attack binds a target and runs the
+            // page once, a modal one opens the chain and runs the page per bullet.
+            if (requestedSequences != null)
+            {
+                var opened = attackDefenseBackend.OpenAttackSequences(
+                    Array.Empty<ResolutionStep>(), requestedSequences, definitions, instances,
+                    participants, modifications);
+                if (!opened.Accepted)
+                {
+                    throw new InvalidOperationException(
+                        "A modal Attack's step-1 text named a plan the Attack it is printed inside " +
+                        $"could not open ({opened.RejectionReason}).");
+                }
+
+                RecordAttackLanePush(opened, resolutionId, participants, modifications);
+                return opened.Steps;
+            }
+
             var continued = attackDefenseBackend.ContinueAfterBeforeAttackText(
                 Array.Empty<ResolutionStep>(), definitions, instances, participants, modifications,
                 boundTarget);
@@ -2331,6 +2383,57 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// repeat that simply does not happen, because p.10 offers a repeat rather than owing one - and
         /// that is reported as a completed action rather than as a rejected command.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z27. Whether a modal Attack still owes rulebook p.14 for a bullet
+        /// its actor chose.
+        ///
+        /// <para>It is asked <em>before</em> everything the end of an action owes, and that ordering is
+        /// the contract: Ruling 5 makes "choose one, or both" a single action, so p.8's mid-turn Lane
+        /// Push, the card's resolution and Initiative's advance all wait for the plan to be spent. It
+        /// is deliberately NOT an owed repeat and is not asked beside one - see
+        /// <see cref="AttackSequencePlan"/> for why sharing the label would hand a modal card every
+        /// rule that reads it.</para>
+        /// </summary>
+        public bool HasOwedAttackSequence => attackDefenseBackend.HasOwedAttackSequence;
+
+        /// <summary>
+        /// Milestone 8.35z27. Starts the next complete p.14 sequence a modal Attack owes,
+        /// against the board as it now stands.
+        ///
+        /// <para>Nothing about the action is reconstructed: the sequences share the action's card, its
+        /// actor, its printed invocation context and its <c>ActionStarted</c>, and what each brings of
+        /// its own is a resolution identity - p.13's Defeat outcome pays once per identity - and its
+        /// bullet's targeting sentence.</para>
+        /// </summary>
+        public CardActionResolutionResult StartOwedAttackSequence(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var chain = attackDefenseBackend.PendingSequenceChain;
+            if (chain == null || !chain.HasNextSequence)
+            {
+                return CardActionResolutionResult.Accept(
+                    true, null, null, Array.Empty<ResolutionStep>());
+            }
+
+            var nextResolutionId = chain.NextSequenceResolutionId;
+            var started = attackDefenseBackend.StartNextAttackSequence(
+                Array.Empty<ResolutionStep>(), definitions, instances, participants, modifications);
+            if (!started.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A modal Attack could not start the sequence its own plan named " +
+                    $"({started.RejectionReason}); the plan is settled when the modal is answered and " +
+                    "nothing between the sequences may unsettle it.");
+            }
+
+            RecordAttackLanePush(started, nextResolutionId, participants, modifications);
+            return CardActionResolutionResult.Accept(
+                started.PendingResolution == null, null, null, started.Steps);
+        }
+
         public CardActionResolutionResult StartOwedAttackRepeat(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
@@ -2739,10 +2842,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // named one. Steps 4 and 7 keep the static generator they have had since 8.10.
             facts.AddRange(paused.Moment == CardTextTiming.BeforeTheAttack
                 ? ResumeAttackAfterBeforeText(
-                    step.BoundAttackTarget, materializedDefinitions, instances, participants,
-                    modifications)
+                    step.BoundAttackTarget, step.RequestedAttackSequences, materializedDefinitions,
+                    instances, participants, modifications)
                 : AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
-                    paused.Moment, paused.Attack, paused.Outcome));
+                    paused.Moment, paused.Attack, paused.Outcome,
+                    theActionEndsHere: !attackDefenseBackend.SequenceIsOwedAfter(paused.Attack)));
             return CardActionResolutionResult.Accept(true, null, null, facts);
         }
 
@@ -3475,10 +3579,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 steps.AddRange(
                     owedRemainder.Moment == CardTextTiming.BeforeTheAttack
                         ? ResumeAttackAfterBeforeText(
-                            default, boundary.Definitions, boundary.Instances, boundary.Participants,
+                            default, null, boundary.Definitions, boundary.Instances,
+                            boundary.Participants,
                             CurrentModificationsFor(boundary, owedRemainder.Attack.ActorId))
                         : AttackDefenseCardActionStrategyBackend.StepsAfterCardText(
-                            owedRemainder.Moment, owedRemainder.Attack, owedRemainder.Outcome));
+                            owedRemainder.Moment, owedRemainder.Attack, owedRemainder.Outcome,
+                            theActionEndsHere: !attackDefenseBackend.SequenceIsOwedAfter(
+                                owedRemainder.Attack)));
                 return CardActionResolutionResult.Accept(true, null, null, steps);
             }
 

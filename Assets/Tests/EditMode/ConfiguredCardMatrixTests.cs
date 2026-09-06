@@ -359,7 +359,14 @@ namespace GuardsDigital.Tests.EditMode
                     // text at both of p.14's attacker moments.
                     SyntheticShowcaseHand.CreateRedWithRosterTheftSkill(owner),
                     SyntheticShowcaseHand.CreateBlueWithRosterTheftSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithTwoMomentAttackText(owner)
+                    SyntheticShowcaseHand.CreateRedWithTwoMomentAttackText(owner),
+                    // Milestone 8.35z27's one: `attack-sequence@1`, the leaf a modal
+                    // Attack's "choose one, or both" publishes its chosen bullets through. It reaches
+                    // the catalog on showcase content and on nothing else, because all three of its
+                    // real consumers are unlanded - Middlefinger of Death is on a hero branch, and
+                    // Grim Reaper and Spirit Bear are future heroes - which is exactly the case this
+                    // gate's synthetic half exists for.
+                    SyntheticShowcaseHand.CreateRedWithModalSequenceAttackText(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)

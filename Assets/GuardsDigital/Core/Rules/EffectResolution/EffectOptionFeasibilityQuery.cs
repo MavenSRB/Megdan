@@ -261,7 +261,19 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 case EffectNodeKind.Capability:
                     if (node.Capability.Equals(
                             GuardsDigital.Core.Effects.Synthetic.SyntheticContinuationCapabilities
-                                .SetAttackTargetV1))
+                                .SetAttackTargetV1) ||
+                        // Milestone 8.35z27. The second way a card text binds this
+                        // Attack's target, and it is a binding for the same reason the first is: a
+                        // mandatory bullet of "choose one, or both" contributes a complete rulebook
+                        // p.14 sequence, and that sequence's first act is to bind a target. What it
+                        // does not do is name a unit here - it names its own printed targeting
+                        // SENTENCE, and each sequence derives candidates from it against the board
+                        // that sequence starts on. Whether those candidates exist is asked separately
+                        // by CanAttackFindTarget's modal arm, which can read the sentences off this
+                        // same definition; this walk answers only "is a binding reachable".
+                        node.Capability.Equals(
+                            GuardsDigital.Core.Effects.Synthetic.SyntheticSequenceCapabilities
+                                .AttackSequenceV1))
                     {
                         return node.FailurePolicy == EffectFailurePolicy.Mandatory
                             ? BindingVerdict.Bound

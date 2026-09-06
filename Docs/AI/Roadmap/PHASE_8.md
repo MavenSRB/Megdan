@@ -269,6 +269,38 @@ Non-goals: no networked-bot lookahead, which is an authority-model change the am
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z26-give-the-practice-bots-a-one-ply-lookahead-in-the-one-place-full-information-already-exists-completion-evidence).
 
+### [x] 8.35z27 Run one complete attack per chosen bullet of a modal Attack, as one action
+
+The contract three unlanded cards need and none of them can be composed without: rulebook p.10's *Modal Actions* applied to an Attack whose printed text is "Choose one, or both". Grim Reaper's Swift Justice, Spirit Bear and Dodger's Middlefinger of Death all print it. Built and proved on synthetic content ahead of all three, because the shape is the same for each and getting it wrong once is getting it wrong three times.
+
+Observable outcome: a printed Attack whose step-1 text offers a choice of targeting sentences runs one complete rulebook p.14 order per chosen bullet - each with its own target, its own Defense window, its own Attack Total and its own consequences - while every external reader of the game still sees exactly one Attack action.
+
+**IT IS DELIBERATELY NOT p.10's REPEAT, and that is the whole point of the milestone.** The only existing shape producing a second complete p.14 order is `RepeatAction`, and `PLAN.md` Ruling 14 scopes Enfeeblement's "cannot repeat actions" to p.10's Repeat keyword. Composing choose-both as an internal repeat would hand Middlefinger of Death a restriction its own card never prints, and would fire the mid-turn Lane Push BETWEEN the two hits, where Ruling 5 puts it at the end of the whole action. The whole p.14 implementation is shared; the LABEL is not, and both halves are proved by test in both directions.
+
+**Each bullet performs nothing, which is what makes the plan survive a pause.** A chosen leaf publishes a typed fact - its printed targeting sentence, plus whether the card printed "(on different targets)" - and the card-action authority reads the ordered facts off the completed frame. That is the transport milestone 6.9's Lane-Push cause and milestone 8.19a's `around-primary-action@1` already use, which is why the plan survives the pause the modal itself opens, a snapshot restore taken while it stands, and a replay.
+
+**Targets are bound per sequence, against the board as it then stands (Ruling 19).** A unit an earlier sequence defeated is not a candidate; one it pushed may have left reach; and one it merely failed to defeat is a legal target again. "(on different targets)" is the CARD's statement rather than the contract's, so the exclusion set is empty unless the card prints it - milestone 8.10's single excluded target was deliberately not reused, because it covers exactly two bullets and this contract is written for N.
+
+**One action for every external purpose (Ruling 5).** `ActionStarted` and `BeforeAttack` are raised once, when the modal opens; sequences after the first suppress both. The step-1 text is never re-run, because for a modal card the step-1 text IS the modal. "You performed an Attack action" is recorded once and never as a repeated instance. p.8's mid-turn Lane Push is asked before milestone 8.35z21's drain and refused while a sequence is owed, so a push an early sequence earns fires at the end of the whole action. Each sequence still gets its own resolution identity, because p.13's Defeat outcome pays once per identity.
+
+**Schema v37 to v38, rejected rather than migrated.** A pending resolution says an Attack is standing at a target choice; it does not say which bullet's sentence produced that choice, which bullets are still owed, or which units earlier sequences bound - and the board cannot be asked, because a target that successfully DEFENDED is still standing and looks exactly like a unit nobody has taken. "Absent" would have to mean "no modal Attack is running", which a v37 payload taken between two sequences cannot promise, and a migrated payload would resume a half-finished action as a finished one and silently drop a whole p.14. No wire bump: a sequence's pause is an ordinary attack-target or defense contract.
+
+Acceptance checks:
+
+- Choosing both bullets runs one complete p.14 sequence per bullet under two distinct resolution identities, and choosing one runs exactly one and ends the action.
+- Each sequence's candidate set comes from its own bullet's printed sentence rather than the action's own policy, asserted as a contrast on one board.
+- With no printed constraint the same unit may be both sequences' target; with the printed constraint the unit the first took is gone from the second's set - the two arms differing by one printed clause and nothing else.
+- A sequence that defeats the next bullet's only candidate leaves that sequence nothing to take, and p.10 stops a mandatory targeting step that cannot be carried out.
+- The whole modal is invisible to every repeat reader in this build: one recorded basic action, not a repeated instance.
+- A push owed by the first sequence resolves only once the whole action is over - zero requests while a sequence stands, exactly one after.
+- A pause between sequences, and a pause inside the second sequence's own Defense window, both restore byte-identically and the restored sequence is offered its own bullet's set.
+- A refused command mid-chain rolls back to the same chain, plan included.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass, the harness moving 2,175 to 2,189 for this milestone's fourteen new cases and nothing else.
+
+Non-goals: no printed consumer composed - Grim Reaper, Spirit Bear and Middlefinger of Death all stay unlanded, and Middlefinger additionally needs the one named extension point below; no actor-chosen bullet ORDER, which p.10 grants and which belongs to the shared `Choose` node roster-wide rather than to this contract; no wire change; no reimplementation of any part of p.14; and no shipped hero content identity movement.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z27-run-one-complete-attack-per-chosen-bullet-of-a-modal-attack-as-one-action-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

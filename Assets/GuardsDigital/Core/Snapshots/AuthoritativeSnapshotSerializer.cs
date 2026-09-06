@@ -295,7 +295,21 @@ namespace GuardsDigital.Core.Snapshots
         // taken at a paused mid-turn push cannot promise - it is exactly the state whose owed instance
         // the old build did not record - so a migrated payload would silently drop p.10's second
         // instance and finish an action the rules say is not over.
-        public const int CurrentSchemaVersion = 37;
+        // Milestone 8.35z27 moves it to 38: the card-action section now writes the modal
+        // Attack a "choose one, or both" opened, part-way through its plan - the action that opened it,
+        // the chosen bullets with the printed targeting sentence of each, whether the card forbids two
+        // of them pointing at one unit, how many sequences have started, and the units the earlier ones
+        // bound. It is written because nothing else can say it: the pending resolution knows an Attack
+        // is standing at a target choice and knows neither which bullet's sentence produced that
+        // choice nor which units are already spoken for, and the board cannot be asked because a target
+        // that successfully defended is still standing.
+        //
+        // v37 is rejected rather than migrated, on the reasoning v25, v32 and v36 were: absent would
+        // have to mean "no modal Attack is running", which a v37 payload taken between two sequences
+        // cannot promise - it is exactly the state the old build could not record. A migrated payload
+        // would resume a half-finished action as a finished one, dropping the sequence Ruling 5 says is
+        // still owed and, with it, a whole p.14.
+        public const int CurrentSchemaVersion = 38;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

@@ -982,6 +982,23 @@ namespace GuardsDigital.Core.Participants
         /// p.8's battle counts and removes, and a fixture asserting over the ordinary hand would be
         /// asserting about a battle nothing had entered.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z27. Red holds the two modal Attacks - "choose one, or both",
+        /// once without a printed target constraint and once with "(on different targets)".
+        ///
+        /// <para>Its own configuration for the reason the continuation fixture has one: the contract
+        /// runs a complete rulebook p.14 per chosen bullet inside one action, and a fixture asserting
+        /// over the ordinary hand would be asserting about an action nothing had entered.</para>
+        /// </summary>
+        public static MatchConfiguration CreateForModalSequenceFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticShowcaseHand.CreateRedWithModalSequenceAttackText,
+                SyntheticShowcaseHand.CreateBlueWithContinuationText);
+        }
+
         public static MatchConfiguration CreateForMinionBattleRuleFixture(
             TeamSide initialTieBreakerSide)
         {

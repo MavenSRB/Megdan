@@ -168,7 +168,13 @@ namespace GuardsDigital.Tests.EditMode
             // `excludeAdjacent` and its space output, and the Ultimate's list of standing rules. So the
             // last hero of the roster lands with no new implementation to review, which is what the
             // dependency slices 8.19a-8.19c1 were for.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(52),
+            // Milestone 8.35z27 adds exactly one: `attack-sequence@1`, the leaf a modal
+            // Attack's "choose one, or both" publishes each chosen bullet's printed targeting sentence
+            // through. It is a new handler TYPE rather than another ActiveEffectCreationHandler
+            // registration, so unlike 8.24's five it moves this count - and it joins these rules like
+            // any other: it performs nothing, its Anticipate mirrors its Execute, and both read the
+            // same declared inputs.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(53),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }
