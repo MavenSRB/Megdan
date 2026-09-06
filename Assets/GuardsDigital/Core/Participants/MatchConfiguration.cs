@@ -281,6 +281,117 @@ namespace GuardsDigital.Core.Participants
                 SetupRandomnessSeed.Unrecorded);
 
         /// <summary>
+        /// Milestone 8.35z37. The official match for a chosen line-up rather than the
+        /// printed one, with p.6's own coin flip.
+        /// </summary>
+        /// <remarks>
+        /// <para>The player path for a match a lobby decided. It draws its seed exactly as
+        /// <see cref="Create(Setup.MatchFormat)"/> does - milestone 8.28b's rule that the draw
+        /// happens once and is recorded before anything derives from it - so a selected match is as
+        /// reproducible from its record as a printed one.</para>
+        /// <para>Composing this with <see cref="Setup.RegisteredHeroRoster.PrintedLineup"/> produces
+        /// the same match <see cref="Create(Setup.MatchFormat)"/> does, which is asserted by
+        /// comparing two composed sessions' snapshots byte for byte rather than argued here.</para>
+        /// </remarks>
+        public static MatchConfiguration CreateForLineup(
+            Setup.MatchFormat format, Setup.HeroLineup lineup)
+        {
+            var setupSeed = SetupRandomnessAuthority.DrawSeed();
+            return CreateForLineup(
+                format, lineup, TieBreakerSetupAuthority.CreateNormalSetupState(setupSeed), setupSeed);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z37. A chosen line-up with p.6's coin flip replaced by an explicitly
+        /// selected side, so a fixture can compose one without a draw deciding who acts first.
+        /// `DEV-005`, exactly as <see cref="CreateOfficialForInternalTest"/> is.
+        /// </summary>
+        public static MatchConfiguration CreateForLineupForInternalTest(
+            Setup.MatchFormat format, Setup.HeroLineup lineup, TeamSide initialTieBreakerSide) =>
+            CreateForLineup(
+                format,
+                lineup,
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded);
+
+        /// <summary>
+        /// Milestone 8.35z37. The official printed match composed again from a RECORDED coin
+        /// and a RECORDED seed rather than from a fresh draw.
+        /// </summary>
+        /// <remarks>
+        /// Public so that the recomposition seam's central claim can be measured rather than
+        /// asserted: composing the printed line-up late must produce, byte for byte, the match
+        /// composing it at scene load produces - and the two can only be compared if the randomness
+        /// both of them derive from can be held equal. Milestone 8.28b already made every setup draw
+        /// reproducible from its record; this is the door that record goes back in through.
+        /// </remarks>
+        public static MatchConfiguration CreateOfficialFromRecord(
+            Setup.MatchFormat format, TieBreakerState tieBreakerState, SetupRandomnessSeed setupSeed) =>
+            CreateOfficial(format, tieBreakerState, setupSeed);
+
+        /// <summary>
+        /// Milestone 8.35z37. A chosen line-up composed from a recorded coin and seed - the
+        /// selected-match twin of <see cref="CreateOfficialFromRecord"/>, and the other half of the
+        /// byte-identical comparison.
+        /// </summary>
+        public static MatchConfiguration CreateForLineupFromRecord(
+            Setup.MatchFormat format,
+            Setup.HeroLineup lineup,
+            TieBreakerState tieBreakerState,
+            SetupRandomnessSeed setupSeed) =>
+            CreateForLineup(format, lineup, tieBreakerState, setupSeed);
+
+        /// <summary>
+        /// The seats a chosen line-up fills, and the printed set each one holds.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>The seat is the constant and the hero is the variable</b>, which is the whole
+        /// shape of the recomposition seam. A team's Nth seat carries the Nth player identity and
+        /// the Nth instance-id prefix whichever hero was selected into it, so
+        /// <c>red-01-tigerclaw-...</c> and <c>red-01-wasp-...</c> are the same chair holding
+        /// different cards. That is what lets a match be recomposed with new heroes without a seat,
+        /// a connection or a reconnect capability changing underneath anybody.</para>
+        /// <para>The order is Red's seats then Blue's, which is the order
+        /// <see cref="OfficialSixPlayerParticipants.Seats"/> and
+        /// <see cref="OfficialFourPlayerParticipants.Seats"/> are both written in, so the printed
+        /// line-up composes the hands in exactly the order the printed path composes them.</para>
+        /// </remarks>
+        private static MatchConfiguration CreateForLineup(
+            Setup.MatchFormat format,
+            Setup.HeroLineup lineup,
+            TieBreakerState tieBreakerState,
+            SetupRandomnessSeed setupSeed)
+        {
+            if (format == null) throw new ArgumentNullException(nameof(format));
+            if (lineup == null) throw new ArgumentNullException(nameof(lineup));
+            if (lineup.HeroesPerTeam != format.HeroesPerTeam)
+            {
+                throw new ArgumentException(
+                    $"A {format.Id} match fields {format.HeroesPerTeam} heroes a side and this " +
+                    $"line-up names {lineup.HeroesPerTeam}.",
+                    nameof(lineup));
+            }
+
+            var participants = Setup.HeroLineupComposition.ComposeParticipants(lineup);
+
+            var hands = new List<ConfiguredHand>();
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var selected = lineup.ForTeam(side);
+                var stem = side == TeamSide.Red ? "red-0" : "blue-0";
+                for (var index = 0; index < selected.Count; index++)
+                {
+                    hands.Add(CreateVerifiedHand(
+                        selected[index].HeroIdValue,
+                        stem + (index + 1).ToString(CultureInfo.InvariantCulture)));
+                }
+            }
+
+            return new MatchConfiguration(
+                participants, hands.ToArray(), tieBreakerState, setupSeed, true);
+        }
+
+        /// <summary>
         /// The six official seats and the printed set each one holds, in p.6 setup step 7's order.
         ///
         /// <para>The hand a seat is dealt follows the hero that seat holds, which

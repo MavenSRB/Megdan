@@ -63,6 +63,12 @@ namespace GuardsDigital.Presentation.Interaction
         private PrivateSessionClient client;
         private PrivateSessionHost host;
         private string feedback = string.Empty;
+
+        /// <summary>
+        /// Milestone 8.35z37. The entry form's printed setup, as words. Held rather than
+        /// passed to <see cref="Refresh"/> so a redraw triggered by anything else keeps showing it.
+        /// </summary>
+        private string entryMatchFormatLabel;
         private System.Collections.Generic.ISet<SeatId> testDriverSeats =
             new System.Collections.Generic.HashSet<SeatId>();
 
@@ -92,6 +98,22 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         public event Action FillWithTestDriversRequested;
 
+        /// <summary>
+        /// Milestone 8.35z37. Raised on the entry form when the host asked for a different
+        /// printed setup. The driver answers by RECOMPOSING the scene, which is the one thing a
+        /// presenter must not do: composing a match is scene work, and the format has to be settled
+        /// before a listener exists so the admission tuple a client checks describes the match that
+        /// will actually be played.
+        /// </summary>
+        public event Action MatchFormatChangeRequested;
+
+        /// <summary>
+        /// Milestone 8.35z37. The hero the surface offers on the next
+        /// <see cref="PrivateLobbyControl.ChooseHero"/> press. A view sets it from whichever option
+        /// the player clicked; the presenter never chooses one.
+        /// </summary>
+        public string SelectedHeroIdValue { get; set; } = string.Empty;
+
         /// <summary>The model the view was last handed, for a fixture that reads what was drawn.</summary>
         public PrivateLobbyModel Model { get; private set; }
 
@@ -99,13 +121,19 @@ namespace GuardsDigital.Presentation.Interaction
         /// Returns to the entry form, saying why where there is something to say. Any session this
         /// presenter was reading is dropped - the driver owns closing it.
         /// </summary>
+        /// <param name="matchFormatLabel">
+        /// Milestone 8.35z37. The printed setup this process would host, as words. Given, it
+        /// puts the format control on the entry form; omitted, the form is exactly what it was.
+        /// </param>
         public void ShowEntry(
-            System.Collections.Generic.IReadOnlyList<SeatRosterEntry> seats, string reason)
+            System.Collections.Generic.IReadOnlyList<SeatRosterEntry> seats, string reason,
+            string matchFormatLabel = null)
         {
             localSeats = seats ?? Array.Empty<SeatRosterEntry>();
             client = null;
             host = null;
             feedback = reason ?? string.Empty;
+            entryMatchFormatLabel = matchFormatLabel;
             Refresh();
         }
 
@@ -157,7 +185,7 @@ namespace GuardsDigital.Presentation.Interaction
                 ? PrivateLobbyModel.ForClient(client)
                 : host != null
                     ? PrivateLobbyModel.ForHost(host, feedback, testDriverSeats)
-                    : PrivateLobbyModel.Entry(localSeats, feedback);
+                    : PrivateLobbyModel.Entry(localSeats, feedback, entryMatchFormatLabel);
             view.Render(Model);
         }
 
@@ -223,6 +251,25 @@ namespace GuardsDigital.Presentation.Interaction
 
                 case PrivateLobbyControl.FillWithTestDrivers:
                     FillWithTestDriversRequested?.Invoke();
+                    return true;
+
+                // Milestone 8.35z37. The pick is SENT and nothing local changes: whether
+                // the seat then holds that hero is the roster's answer, exactly as readiness is.
+                // A surface that lit the hero on this press would be showing one process's hope.
+                case PrivateLobbyControl.ChooseHero:
+                    if (client == null || string.IsNullOrWhiteSpace(SelectedHeroIdValue))
+                    {
+                        feedback = "Pick a hero from the list first.";
+                        Refresh();
+                        return true;
+                    }
+
+                    client.TryChooseHero(SelectedHeroIdValue);
+                    Refresh();
+                    return true;
+
+                case PrivateLobbyControl.SetMatchFormat:
+                    MatchFormatChangeRequested?.Invoke();
                     return true;
 
                 default:

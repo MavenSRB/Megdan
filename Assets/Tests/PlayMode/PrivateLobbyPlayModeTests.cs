@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -263,7 +264,13 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(seats.Count));
             Assert.That(Texts(driver, "gd-lobby-seat-own").Count(text => text == "YOU"),
                 Is.EqualTo(1), "A player must be able to find their own row on the panel.");
-            Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "LEAVE", "READY" }));
+            // Milestone 8.35z37 added PICK HERO to the seated set, and whether this seat is offered it
+            // depends on the Tie Breaker coin p.22's order opens on - which this case does not fix.
+            // Everything that is not the pick control stays exact; the pick control's own rule belongs
+            // to `ASeatItIsNotTheTurnOf_IsOfferedNoPickControl`.
+            Assert.That(
+                ControlLabels(driver).Where(label => label != "PICK HERO").ToArray(),
+                Is.EqualTo(new[] { "LEAVE", "READY" }));
         }
 
         /// <summary>
@@ -343,7 +350,14 @@ namespace GuardsDigital.Tests.PlayMode
             var mine = wire.Client(1);
             driver.Presenter.AttachClient(mine);
             yield return null;
-            Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "LEAVE", "READY" }));
+            // Milestone 8.35z37 added PICK HERO to the seated set, and whether THIS seat is offered it
+            // depends on the Tie Breaker coin: p.22's order opens on the coin's team, so the control
+            // comes and goes with a composition this case does not control. Asserted coin-independently
+            // rather than pinned to one outcome - everything that is not the pick control is still
+            // exact, and `ASeatItIsNotTheTurnOf_IsOfferedNoPickControl` owns the pick control's rule.
+            Assert.That(
+                ControlLabels(driver).Where(label => label != "PICK HERO").ToArray(),
+                Is.EqualTo(new[] { "LEAVE", "READY" }));
 
             wire.LoseTheLink(1);
             driver.Presenter.Refresh();
@@ -604,6 +618,201 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(Named(driver, PrivateLobbyUnityView.SeatRowName).Count(), Is.EqualTo(6));
         }
+
+        // --- Milestone 8.35z37: rulebook p.22's selection, and the seam behind it ----------
+
+        /// <summary>
+        /// The selection screen as a player meets it: whose pick it is in words, every registered
+        /// hero on the panel, and a taken hero greyed with the one-copy rule's reason ON the option.
+        /// </summary>
+        /// <remarks>
+        /// INTEGRATION-OWED: written and compile-checked only. No Unity run has executed this - the
+        /// dealing worker held the launcher for this milestone's whole session - so what it asserts
+        /// is a claim about the shipped surface rather than an observation of it.
+        /// </remarks>
+        [UnityTest]
+        public IEnumerator TheSelectionScreen_SaysWhosePickItIsAndGreysTakenHeroesWithTheReason()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+
+            // The coin's team picks first, so the pick opens on that team's first seat rather than
+            // on the roster's first row - which is p.22's alternation, not lobby order.
+            var picking = wire.Session.Selection.PickingSeat.Value;
+            var pickingOrdinal = seats.ToList().IndexOf(picking) + 1;
+            driver.Presenter.AttachClient(wire.Client(pickingOrdinal));
+            yield return null;
+
+            Assert.That(Text(driver, PrivateLobbyUnityView.SelectionStatusName),
+                Is.EqualTo("YOUR PICK"),
+                "The seat the printed order is on is told so, in words.");
+            var options = HeroOptions(driver);
+            Assert.That(options.Count, Is.EqualTo(RegisteredHeroRoster.ForThisBuild.Count),
+                "Every hero this build can deal is offered, counted from the registration itself.");
+            Assert.That(options.All(button => button.enabledSelf), Is.True,
+                "Nothing is taken yet, so nothing is greyed.");
+            Assert.That(ControlLabels(driver), Contains.Item("PICK HERO"));
+
+            // Somebody takes a hero; every other seat must now see it greyed AND be told why.
+            var taken = RegisteredHeroRoster.ForThisBuild[0];
+            Assert.That(wire.Client(pickingOrdinal).TryChooseHero(taken.HeroIdValue), Is.True);
+            wire.Pump();
+            driver.Presenter.Refresh();
+            yield return null;
+
+            var greyed = HeroOptions(driver)
+                .Single(button => button.text.StartsWith(taken.DisplayName));
+            Assert.That(greyed.enabledSelf, Is.False);
+            Assert.That(greyed.text, Does.Contain("already taken"),
+                "A hero that vanished would teach a player nothing; the one-copy rule's own " +
+                "sentence rides the option itself.");
+        }
+
+        /// <summary>
+        /// A seat the printed order is NOT on is offered no pick control at all, so the sequence
+        /// reads as a sequence rather than six people racing.
+        /// </summary>
+        /// <remarks>INTEGRATION-OWED: written and compile-checked only.</remarks>
+        [UnityTest]
+        public IEnumerator ASeatItIsNotTheTurnOf_IsOfferedNoPickControl()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+
+            var picking = wire.Session.Selection.PickingSeat.Value;
+            var waitingOrdinal = seats.ToList().FindIndex(seat => seat != picking) + 1;
+            driver.Presenter.AttachClient(wire.Client(waitingOrdinal));
+            yield return null;
+
+            Assert.That(ControlLabels(driver), Does.Not.Contain("PICK HERO"));
+            Assert.That(Text(driver, PrivateLobbyUnityView.SelectionStatusName),
+                Is.EqualTo("WAITING ON " + PrivateLobbyLabels.Identifier(picking)));
+        }
+
+        /// <summary>
+        /// THE WHOLE SEAM, end to end: six players pick heroes in the printed order, the sixth
+        /// readies, and the board that appears is the one they chose rather than the shipped one.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is the journey the milestone actually owes, and the one thing that exercises
+        /// <see cref="MatchSceneCompositionRoot.Recompose"/> against real Unity teardown: a composed
+        /// runtime is discarded and rebuilt while a HUD, a map view and a pointer input all survive.
+        /// The offline proof shows the two compositions are byte-identical; only a run shows the
+        /// scene survives being recomposed.</para>
+        /// <para>INTEGRATION-OWED: written and compile-checked only. NEVER EXECUTED.</para>
+        /// </remarks>
+        [UnityTest]
+        public IEnumerator SixPickedHeroes_ComposeTheBoardThatWasChosen()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+
+            // Milestone 8.35z37, corrected at integration. THE SEAM HAS TO BE ATTACHED FOR THIS CASE
+            // TO BE TESTING IT. `PrivateSessionHost.Composition` is a settable property defaulting to
+            // null, and a host with none silently keeps its provisional match - so this fixture's own
+            // wire, which never set it, drove a host that could not recompose and fielded the printed
+            // line-up while every pick was accepted. Production wires it in `PrivateLobbyViews`; the
+            // scene's composition root IS the implementation, so the fixture attaches the same one.
+            wire.Session.Composition = Root();
+
+            driver.Presenter.AttachClient(wire.Client(1));
+            yield return null;
+
+            // Each side deliberately takes the OTHER side's printed heroes, so a board that ignored
+            // the selection is indistinguishable from nothing at every assertion below.
+            var chosen = new List<string>();
+            // Milestone 8.35z37, corrected at integration. Recorded BY SEAT, not as a bag. Six
+            // registered heroes filling six seats means every complete selection is the same SET, so
+            // a sorted comparison is satisfied by a board that ignored the picks entirely - the exact
+            // blindness the seam's own byte-identical proof needed a negative case to escape. What
+            // distinguishes a board that honoured the selection is WHICH SEAT holds which hero.
+            var chosenBySeat = new string[seats.Count];
+            for (var pick = 0; pick < seats.Count; pick++)
+            {
+                var picking = wire.Session.Selection.PickingSeat.Value;
+                var ordinal = seats.ToList().IndexOf(picking) + 1;
+                var hero = wire.Session.Selection.AvailableHeroes.Last().HeroIdValue;
+                Assert.That(wire.Client(ordinal).TryChooseHero(hero), Is.True,
+                    "Seat " + picking + " could not take " + hero + ".");
+                wire.Pump();
+                chosen.Add(hero);
+                chosenBySeat[ordinal - 1] = hero;
+            }
+
+            Assert.That(wire.Session.Selection.IsComplete, Is.True);
+
+            for (var ordinal = 1; ordinal <= seats.Count; ordinal++)
+            {
+                Assert.That(wire.Client(ordinal).TrySetReadiness(true), Is.True);
+                wire.Pump();
+            }
+
+            driver.Presenter.Refresh();
+            yield return null;
+            yield return null;
+
+            Assert.That(wire.Session.HasMatchStarted, Is.True);
+            // The roster's order IS the composed seat order - `seats` was read straight off it - so
+            // index i names the same chair on both sides of this comparison.
+            var composedBySeat = Runtime().Host.Seats.Seats
+                .Select(seat => seat.HeroId.Value)
+                .ToArray();
+            CollectionAssert.AreEqual(
+                chosenBySeat,
+                composedBySeat,
+                "Each seat fields the hero THAT SEAT picked, which is the entire point of the " +
+                "recomposition seam. A set comparison cannot say this: six heroes into six seats is " +
+                "always the same six heroes.");
+
+            // The negative half is carried by the selection itself rather than by a second fixture:
+            // each seat takes the LAST available hero, so the assignment above is the printed one
+            // reversed, and a board that had ignored the picks would field the printed assignment and
+            // fail the comparison. That is what makes the equality above evidence rather than a
+            // tautology.
+            Assert.That(Root().ComposedPlan, Is.Not.Null);
+        }
+
+        /// <summary>
+        /// The format picker, which is the seam's other half: pressing it on the entry form
+        /// recomposes the scene onto a different printed setup, seats and all.
+        /// </summary>
+        /// <remarks>INTEGRATION-OWED: written and compile-checked only.</remarks>
+        [UnityTest]
+        public IEnumerator TheFormatPicker_RecomposesTheSceneBeforeAnybodyIsSeated()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            yield return null;
+
+            var before = Root().ComposedPlan.Format.Id;
+            var seatsBefore = Runtime().Host.Seats.Seats.Count;
+            Assert.That(ControlLabels(driver), Contains.Item("SETUP"),
+                "The format control stands on the entry form, where changing it can move no seat.");
+
+            UiPlayer.Click(Control(driver, "SETUP"));
+            yield return null;
+            yield return null;
+
+            Assert.That(Root().ComposedPlan.Format.Id, Is.Not.EqualTo(before),
+                "Pressing it steps to the next of pp.5-6's four printed setups.");
+            Assert.That(Runtime(), Is.Not.Null,
+                "...and the scene is composed again rather than left without a match.");
+            Assert.That(
+                Runtime().Host.Seats.Seats.Count,
+                Is.EqualTo(Root().ComposedPlan.Format.PlayerCount),
+                "The seats the entry form then lists are the new format's, which is what a joining " +
+                "client's admission tuple will be checked against.");
+            Assert.That(seatsBefore, Is.Not.Zero);
+        }
+
+        /// <summary>Every registered hero's option button on the selection panel.</summary>
+        private static IReadOnlyList<Button> HeroOptions(PrivateLobbyDriver driver) =>
+            Named(driver, PrivateLobbyUnityView.HeroOptionName)
+                .OfType<Button>()
+                .ToArray();
 
         // --- Helpers ------------------------------------------------------------------------------
 

@@ -263,9 +263,17 @@ namespace GuardsDigital.Tests.EditMode
         /// one number.
         /// </remarks>
         [Test]
-        public void SeatWireMeaning_UsesProtocolNine_AndRejectsEveryOlderFrame()
+        public void SeatWireMeaning_UsesProtocolTen_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(9),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(10),
+                "Milestone 8.35z37 wired rulebook p.22's hero selection to the host with " +
+                "ONE new client-to-host kind, ChooseHero, carrying a bounded hero id and no seat - " +
+                "the connection says whose pick it is. A protocol nine peer has no case for kind 21 " +
+                "and refuses it as an unexpected message, which is a protocol surface change and is " +
+                "taken as one. Its downstream half moved no bytes: a chosen hero rides the roster " +
+                "row that has carried a hero id since milestone 8.31, and the roster's two added " +
+                "public facts - whether that hero was CHOSEN, and p.22's coin - are what a client " +
+                "needs to draw the pick order and cannot infer. " +
                 "The ELEVENTH amendment's host-selectable match formats gave the admission tuple a " +
                 "format element, so the Hello payload carries one more string between the map " +
                 "revision and the content digest: a protocol eight peer's reader takes that string " +

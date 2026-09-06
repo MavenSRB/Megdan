@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
 
 namespace GuardsDigital.Application
 {
@@ -51,7 +52,103 @@ namespace GuardsDigital.Application
         /// windows. QA tooling - explicitly not an AI opponent - offered only while a seat remains
         /// to fill.
         /// </summary>
-        FillWithTestDrivers = 7
+        FillWithTestDrivers = 7,
+
+        /// <summary>
+        /// Milestone 8.35z37. Seated client only, while rulebook p.22's pick order is on
+        /// this seat: take the named hero.
+        /// </summary>
+        ChooseHero = 8,
+
+        /// <summary>
+        /// Milestone 8.35z37. Entry form, host side only: which of rulebook pp.5-6's four
+        /// printed setups this session will play.
+        /// </summary>
+        /// <remarks>
+        /// <b>Offered before hosting and never after, and that is a rule rather than a layout
+        /// choice.</b> A session's seats are counted from the format, and every connection, epoch
+        /// and reconnect capability the host holds is keyed by seat - so a format changed once
+        /// anybody is seated would move the seats out from under them. It is also already refused at
+        /// the wire: <c>PrivateSessionIdentity</c> rejects a peer on <c>MatchFormatMismatch</c>, so a
+        /// host that changed format mid-lobby would refuse every client it already had.
+        /// </remarks>
+        SetMatchFormat = 9
+    }
+
+    /// <summary>
+    /// Milestone 8.35z37. One hero on the selection screen: what it is called, and whether
+    /// it can still be taken.
+    /// </summary>
+    public sealed class PrivateLobbyHeroOption
+    {
+        public PrivateLobbyHeroOption(
+            string heroIdValue, string displayName, bool isAvailable, string unavailableReason)
+        {
+            HeroIdValue = heroIdValue ?? string.Empty;
+            DisplayName = displayName ?? string.Empty;
+            IsAvailable = isAvailable;
+            UnavailableReason = unavailableReason ?? string.Empty;
+        }
+
+        public string HeroIdValue { get; }
+        public string DisplayName { get; }
+
+        /// <summary>Whether this hero may still be picked - false once anybody has taken it.</summary>
+        public bool IsAvailable { get; }
+
+        /// <summary>
+        /// Why it cannot be taken, in words; empty when it can. Never a colour and never a bare
+        /// greying - the one-copy rule has a reason and a player is told it.
+        /// </summary>
+        public string UnavailableReason { get; }
+    }
+
+    /// <summary>
+    /// Milestone 8.35z37. Rulebook p.22's All Pick as a surface draws it: whose turn it is,
+    /// and what is left to take.
+    /// </summary>
+    /// <remarks>
+    /// <para>Derived on both sides from the same two published facts - the roster's per-row
+    /// <see cref="SeatRosterEntry.HasChosenHero"/> and the coin - through
+    /// <c>HeroSelectionStage.PickOrderFor</c>, which is the one implementation of the printed order.
+    /// The host could read its own stage instead and deliberately does not: two derivations of one
+    /// rule is how a screen comes to show a turn the host would refuse.</para>
+    /// <para>It shows the order; it does not enforce it. Every refusal is the host's, arrives by
+    /// name, and is what a player is actually told.</para>
+    /// </remarks>
+    public sealed class PrivateLobbySelection
+    {
+        public static readonly PrivateLobbySelection NotRunning = new PrivateLobbySelection(
+            false, false, string.Empty, string.Empty, Array.Empty<PrivateLobbyHeroOption>());
+
+        public PrivateLobbySelection(
+            bool isRunning,
+            bool isOwnPick,
+            string pickingSeatLabel,
+            string statusLabel,
+            IReadOnlyList<PrivateLobbyHeroOption> heroes)
+        {
+            IsRunning = isRunning;
+            IsOwnPick = isOwnPick;
+            PickingSeatLabel = PrivateLobbyLabels.Bound(pickingSeatLabel);
+            StatusLabel = PrivateLobbyLabels.Bound(statusLabel);
+            Heroes = heroes ?? Array.Empty<PrivateLobbyHeroOption>();
+        }
+
+        /// <summary>Whether a selection is under way at all - false once every seat has picked.</summary>
+        public bool IsRunning { get; }
+
+        /// <summary>Whether the order is on the seat this surface's own client holds.</summary>
+        public bool IsOwnPick { get; }
+
+        /// <summary>The seat the order is on, as words.</summary>
+        public string PickingSeatLabel { get; }
+
+        /// <summary>One bounded line saying whose pick it is.</summary>
+        public string StatusLabel { get; }
+
+        /// <summary>Every registered hero, available or greyed with its reason.</summary>
+        public IReadOnlyList<PrivateLobbyHeroOption> Heroes { get; }
     }
 
     /// <summary>
@@ -247,6 +344,12 @@ namespace GuardsDigital.Application
                     return "A message failed its seal check.";
                 case SessionRejectionReason.ReconnectNotAuthorized:
                     return "This seat's return was not authorized.";
+                // Milestone 8.35z37. The generic line; the host's reject DETAIL carries the
+                // specific one from HeroSelectionLabels.Refusal, which a surface shows beside it.
+                // Both exist because this mapping must answer for a reason arriving with no detail
+                // at all, and "blank" is what this whole exhaustive switch is here to prevent.
+                case SessionRejectionReason.HeroSelectionRefused:
+                    return "That hero pick was not accepted.";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(reason), reason,
@@ -270,6 +373,8 @@ namespace GuardsDigital.Application
                 case PrivateLobbyControl.Leave: return "LEAVE";
                 case PrivateLobbyControl.Reconnect: return "RECONNECT";
                 case PrivateLobbyControl.FillWithTestDrivers: return "FILL WITH TEST DRIVERS";
+                case PrivateLobbyControl.ChooseHero: return "PICK HERO";
+                case PrivateLobbyControl.SetMatchFormat: return "SETUP";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(control), control, "Every offered control must have words on it.");
@@ -320,7 +425,9 @@ namespace GuardsDigital.Application
             string sessionLabel,
             IReadOnlyList<PrivateLobbySeatRow> seats,
             IReadOnlyList<PrivateLobbyControl> controls,
-            bool hasMatchStarted)
+            bool hasMatchStarted,
+            PrivateLobbySelection selection = null,
+            string matchFormatLabel = null)
         {
             Role = role;
             IsShown = isShown;
@@ -330,7 +437,21 @@ namespace GuardsDigital.Application
             Seats = seats ?? Array.Empty<PrivateLobbySeatRow>();
             Controls = controls ?? Array.Empty<PrivateLobbyControl>();
             HasMatchStarted = hasMatchStarted;
+            Selection = selection ?? PrivateLobbySelection.NotRunning;
+            MatchFormatLabel = PrivateLobbyLabels.Bound(matchFormatLabel ?? string.Empty);
         }
+
+        /// <summary>
+        /// Milestone 8.35z37. Rulebook p.22's All Pick as this surface should draw it.
+        /// <see cref="PrivateLobbySelection.NotRunning"/> whenever there is no selection to show.
+        /// </summary>
+        public PrivateLobbySelection Selection { get; }
+
+        /// <summary>
+        /// Milestone 8.35z37. Which of pp.5-6's printed setups this session plays, as words -
+        /// the entry form's format control shows it, and a joined client reads what the host chose.
+        /// </summary>
+        public string MatchFormatLabel { get; }
 
         public PrivateLobbyRole Role { get; }
 
@@ -379,7 +500,13 @@ namespace GuardsDigital.Application
         /// host yet - every invited player runs the same build, so the same six seats exist on
         /// every one of them. Their occupancy is honestly unknown until a session answers.
         /// </remarks>
-        public static PrivateLobbyModel Entry(IReadOnlyList<SeatRosterEntry> seats, string feedback)
+        /// <param name="matchFormatLabel">
+        /// Milestone 8.35z37. Which of pp.5-6's printed setups this process would host, as
+        /// words. Optional so every existing caller is unaffected; when it is given, the entry form
+        /// offers <see cref="PrivateLobbyControl.SetMatchFormat"/> beside HOST and JOIN.
+        /// </param>
+        public static PrivateLobbyModel Entry(
+            IReadOnlyList<SeatRosterEntry> seats, string feedback, string matchFormatLabel = null)
         {
             var rows = new List<PrivateLobbySeatRow>();
             foreach (var entry in seats ?? Array.Empty<SeatRosterEntry>())
@@ -394,6 +521,18 @@ namespace GuardsDigital.Application
                     false));
             }
 
+            // Milestone 8.35z37. The format control lives HERE and nowhere else: before a
+            // listener exists, before a seat is claimed, and therefore before changing it could
+            // move a seat out from under anybody. See PrivateLobbyControl.SetMatchFormat.
+            var controls = new List<PrivateLobbyControl>
+            {
+                PrivateLobbyControl.Host, PrivateLobbyControl.Join
+            };
+            if (!string.IsNullOrEmpty(matchFormatLabel))
+            {
+                controls.Insert(0, PrivateLobbyControl.SetMatchFormat);
+            }
+
             return new PrivateLobbyModel(
                 PrivateLobbyRole.None,
                 true,
@@ -401,8 +540,10 @@ namespace GuardsDigital.Application
                 feedback,
                 string.Empty,
                 rows,
-                new[] { PrivateLobbyControl.Host, PrivateLobbyControl.Join },
-                false);
+                controls,
+                false,
+                PrivateLobbySelection.NotRunning,
+                matchFormatLabel);
         }
 
         /// <summary>One invited player's lobby, read off that player's own session client.</summary>
@@ -436,6 +577,10 @@ namespace GuardsDigital.Application
                     ? refusal
                     : refusal + " (" + client.RejectionDetail + ")";
 
+            var selection = client.HasMatchStarted
+                ? PrivateLobbySelection.NotRunning
+                : SelectionFrom(client.Roster, client.FirstPickingTeam, client.TargetSeat);
+
             return new PrivateLobbyModel(
                 PrivateLobbyRole.Client,
                 IsLobbyShownFor(client),
@@ -443,8 +588,9 @@ namespace GuardsDigital.Application
                 feedback,
                 client.SessionCorrelation,
                 rows,
-                ControlsFor(client),
-                client.HasMatchStarted);
+                ControlsFor(client, selection),
+                client.HasMatchStarted,
+                selection);
         }
 
         /// <summary>
@@ -489,6 +635,14 @@ namespace GuardsDigital.Application
                     testDriverSeats.Contains(entry.Seat)));
             }
 
+            // Milestone 8.35z37. Derived from the roster the host BROADCASTS rather than
+            // from its own stage, so the host's screen and every client's screen are the same
+            // reading of p.22 - a host drawing from a private source is how two screens come to
+            // disagree about whose turn it is.
+            var selection = host.HasMatchStarted
+                ? PrivateLobbySelection.NotRunning
+                : SelectionFrom(host.Roster, host.Selection.FirstPickingTeam, default);
+
             var status = host.HasMatchStarted
                 ? "HOSTING - MATCH UNDER WAY"
                 : "HOSTING - " +
@@ -513,7 +667,91 @@ namespace GuardsDigital.Application
                 host.Identity.Correlation,
                 rows,
                 controls,
-                host.HasMatchStarted);
+                host.HasMatchStarted,
+                selection,
+                host.Identity.MatchFormatId);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z37. Rulebook p.22's All Pick, derived from the two published
+        /// facts a roster carries: which rows have chosen, and the coin.
+        /// </summary>
+        /// <remarks>
+        /// <para>The available list is the live registration minus what the roster says is taken, so
+        /// a hero dealt in a later milestone appears here with nothing edited - the same rule
+        /// <c>RegisteredHeroRoster</c> is built on. A taken hero is greyed and NAMED with the
+        /// one-copy rule's own words rather than silently dropped, because a player who cannot see
+        /// the hero they wanted has no way to learn why it is gone.</para>
+        /// <para>Answers <see cref="PrivateLobbySelection.NotRunning"/> when no coin was published,
+        /// which is every session that predates this milestone, and when every seat has picked.</para>
+        /// </remarks>
+        private static PrivateLobbySelection SelectionFrom(
+            IReadOnlyList<SeatRosterEntry> roster, TeamSide firstPickingTeam, SeatId viewingSeat)
+        {
+            if (firstPickingTeam != TeamSide.Red && firstPickingTeam != TeamSide.Blue)
+            {
+                return PrivateLobbySelection.NotRunning;
+            }
+
+            var seats = new List<HeroSelectionSeat>();
+            var taken = new HashSet<string>(StringComparer.Ordinal);
+            var chosen = new HashSet<SeatId>();
+            foreach (var entry in roster)
+            {
+                if (entry.TeamSide != TeamSide.Red && entry.TeamSide != TeamSide.Blue)
+                {
+                    return PrivateLobbySelection.NotRunning;
+                }
+
+                seats.Add(new HeroSelectionSeat(entry.Seat, entry.TeamSide));
+                if (entry.HasChosenHero)
+                {
+                    taken.Add(entry.Hero.Value);
+                    chosen.Add(entry.Seat);
+                }
+            }
+
+            if (seats.Count == 0)
+            {
+                return PrivateLobbySelection.NotRunning;
+            }
+
+            var picking = default(SeatId);
+            foreach (var seat in HeroSelectionStage.PickOrderFor(seats, firstPickingTeam))
+            {
+                if (!chosen.Contains(seat.Seat))
+                {
+                    picking = seat.Seat;
+                    break;
+                }
+            }
+
+            if (!picking.IsDefined)
+            {
+                return PrivateLobbySelection.NotRunning;
+            }
+
+            var heroes = new List<PrivateLobbyHeroOption>();
+            foreach (var hero in RegisteredHeroRoster.ForThisBuild)
+            {
+                var available = !taken.Contains(hero.HeroIdValue);
+                heroes.Add(new PrivateLobbyHeroOption(
+                    hero.HeroIdValue,
+                    hero.DisplayName,
+                    available,
+                    available
+                        ? string.Empty
+                        : HeroSelectionLabels.Refusal(HeroSelectionRefusal.HeroAlreadyTaken)));
+            }
+
+            var isOwnPick = viewingSeat.IsDefined && picking.Equals(viewingSeat);
+            var pickingLabel = PrivateLobbyLabels.Identifier(picking.Value);
+            return new PrivateLobbySelection(
+                true,
+                isOwnPick,
+                pickingLabel,
+                isOwnPick ? "YOUR PICK" : "WAITING ON " + pickingLabel,
+                heroes);
         }
 
         /// <summary>
@@ -534,7 +772,8 @@ namespace GuardsDigital.Application
         /// milestone 8.34's rule that a terminal surface keeps no control a player could still
         /// press against a host that is gone.
         /// </remarks>
-        private static IReadOnlyList<PrivateLobbyControl> ControlsFor(PrivateSessionClient client)
+        private static IReadOnlyList<PrivateLobbyControl> ControlsFor(
+            PrivateSessionClient client, PrivateLobbySelection selection)
         {
             var controls = new List<PrivateLobbyControl>();
             switch (client.State)
@@ -542,6 +781,15 @@ namespace GuardsDigital.Application
                 case PrivateSessionClientState.Seated:
                     if (!client.HasMatchStarted)
                     {
+                        // Milestone 8.35z37. The pick control stands only while p.22's order
+                        // is on THIS seat, which is what makes the sequence readable rather than six
+                        // people racing. The host refuses an out-of-turn pick regardless; this is the
+                        // surface agreeing with it rather than a second enforcement.
+                        if (selection.IsRunning && selection.IsOwnPick)
+                        {
+                            controls.Add(PrivateLobbyControl.ChooseHero);
+                        }
+
                         controls.Add(client.IsReady
                             ? PrivateLobbyControl.Unready
                             : PrivateLobbyControl.Ready);

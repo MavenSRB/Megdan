@@ -98,7 +98,18 @@ namespace GuardsDigital.Application
         /// a release, and the rehearsal driver's convergence test reads that same value. A new
         /// member takes the next free number; it never takes a neighbour's.
         /// </remarks>
-        SeatReleased = 16
+        SeatReleased = 16,
+
+        /// <summary>
+        /// Milestone 8.35z37. A seat picked its hero under rulebook p.22's All Pick. Public
+        /// lobby state - it is broadcast in the very next roster - so the record carries the seat and
+        /// nothing else about the connection that sent it.
+        /// </summary>
+        /// <remarks>
+        /// Numbered 17 because that is the next free number, on the rule <see cref="SeatReleased"/>
+        /// records the hard way: a new member never takes a neighbour's value.
+        /// </remarks>
+        SeatHeroChosen = 17
     }
 
     /// <summary>
@@ -268,7 +279,19 @@ namespace GuardsDigital.Application
 
         private const int RetainedEventCount = 1024;
 
-        private readonly IMatchHost matchHost;
+        /// <summary>
+        /// The match this session serves.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 8.35z37 made this rebindable, and it is the only mutable reference in
+        /// the class. It is replaced at exactly one moment - the transition out of the lobby, by
+        /// <see cref="EvaluateMatchStart"/>, from the composition the seam handed back - and the
+        /// replacement is required to seat the identical seats, which is checked rather than
+        /// assumed. Everything a connection holds (its seat, its epoch, its reconnect capability) is
+        /// keyed by <see cref="SeatId"/>, so a match whose seats are unchanged is a match every live
+        /// connection is still correctly attached to.
+        /// </remarks>
+        private IMatchHost matchHost;
         private readonly PrivateSessionIdentity identity;
         private readonly string sessionKey;
         private readonly IPrivateSessionOutbox outbox;
@@ -288,6 +311,13 @@ namespace GuardsDigital.Application
         /// and does not put six people back in a lobby they have already left.
         /// </summary>
         private bool matchStarted;
+
+        /// <summary>
+        /// Milestone 8.35z37. Rulebook p.22's All Pick over this session's seats. Built once
+        /// at construction and never replaced, so a rebuilt roster or a reconnect meets the same
+        /// stage - the type derives every answer from the choices rather than caching one.
+        /// </summary>
+        private readonly HeroSelectionStage selection;
 
         public PrivateSessionHost(
             IMatchHost matchHost,
@@ -313,9 +343,61 @@ namespace GuardsDigital.Application
             {
                 holds[seat.Id] = new SeatHold { State = SeatOccupancyState.Open };
             }
+
+            // Milestone 8.35z37. Rulebook p.22's All Pick, ordered by the coin the match
+            // ALREADY holds rather than by a second draw: the composed match's own Tie Breaker is
+            // what p.22's "the team showing on the Tie Breaker coin" names, and reading it here means
+            // the coin that orders the picking is the coin the match plays with.
+            var selectionSeats = new List<HeroSelectionSeat>(matchHost.Seats.Seats.Count);
+            foreach (var seat in matchHost.Seats.Seats)
+            {
+                selectionSeats.Add(new HeroSelectionSeat(seat.Id, seat.TeamSide));
+            }
+
+            selection = new HeroSelectionStage(selectionSeats, CoinSideOf(matchHost));
+        }
+
+        /// <summary>
+        /// p.22's coin, read off the composed match. A match whose coin is somehow unrevealed still
+        /// has to produce a pick order, and Red is stated once here rather than left to a default
+        /// that would silently mean "no team" - every configuration this build composes reveals a
+        /// side, so this is a floor rather than a path.
+        /// </summary>
+        private static TeamSide CoinSideOf(IMatchHost host)
+        {
+            var revealed = host.Projection.TieBreakerState.RevealedSide;
+            return revealed == TeamSide.Blue ? TeamSide.Blue : TeamSide.Red;
         }
 
         public PrivateSessionIdentity Identity => identity;
+
+        /// <summary>
+        /// Milestone 8.35z37. Rulebook p.22's hero selection for this session's seats, from
+        /// the moment the host exists.
+        /// </summary>
+        /// <remarks>
+        /// It stands from construction rather than being created when the first pick arrives,
+        /// because the pick ORDER is a fact about the seats and the coin, and both exist before
+        /// anybody has picked anything. A surface asks it whose turn it is and what is still
+        /// available; nothing but this host may move it.
+        /// </remarks>
+        public HeroSelectionStage Selection => selection;
+
+        /// <summary>
+        /// Milestone 8.35z37. What composes the match when this session leaves the lobby, or
+        /// <c>null</c> to keep serving the match this host was built around.
+        /// </summary>
+        /// <remarks>
+        /// <para>Null is the default and it is what every path predating this seam gets: a session
+        /// with no composer transitions exactly as milestone 8.35a wrote it, serving the match it was
+        /// constructed with. That is the whole backward-compatibility guarantee, expressed as an
+        /// absent optional rather than as a flag.</para>
+        /// <para>Settable rather than a constructor argument because the thing that composes a scene
+        /// and the thing that starts a listener are the same object, and it configures itself in a
+        /// Unity <c>Start</c> that runs after this host is built. It is read exactly once, at the
+        /// transition.</para>
+        /// </remarks>
+        public IDeferredMatchComposition Composition { get; set; }
 
         public int TotalSeats => matchHost.Seats.Seats.Count;
 
@@ -425,6 +507,14 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>The current public seat map, in the authoritative seat order.</summary>
+        /// <remarks>
+        /// Milestone 8.35z37: a seat that has PICKED a hero shows the hero it picked, and
+        /// that is the entire downstream half of hero selection. The row has carried a hero id since
+        /// milestone 8.31 and every client already reads it, so a pick reaches all six screens on
+        /// the broadcast the host already makes, with no message kind and no byte added. Before the
+        /// transition the row is a statement of intent; after it, the composed match's own seats and
+        /// the choices agree by construction, because the match was composed FROM them.
+        /// </remarks>
         public IReadOnlyList<SeatRosterEntry> Roster
         {
             get
@@ -433,8 +523,14 @@ namespace GuardsDigital.Application
                 foreach (var seat in matchHost.Seats.Seats)
                 {
                     var hold = holds[seat.Id];
+                    var hasChosen = selection.TryGetChoice(seat.Id, out var chosen);
                     entries.Add(new SeatRosterEntry(
-                        seat.Id, seat.HeroId, seat.TeamSide, hold.State, hold.IsReady));
+                        seat.Id,
+                        hasChosen ? chosen.HeroId : seat.HeroId,
+                        seat.TeamSide,
+                        hold.State,
+                        hold.IsReady,
+                        hasChosen));
                 }
 
                 return entries;
@@ -605,6 +701,12 @@ namespace GuardsDigital.Application
                         return;
                     }
 
+                    if (frame.Kind == SessionMessageKind.ChooseHero)
+                    {
+                        HandleHeroChoice(record, frame.Payload);
+                        return;
+                    }
+
                     RejectAndClose(record, SessionRejectionReason.UnexpectedMessage,
                         "No further session message is defined after seating.");
                     return;
@@ -714,7 +816,8 @@ namespace GuardsDigital.Application
             // back to a match rather than to a lobby - the broadcast that said so happened while it
             // was away.
             Deliver(record, PrivateSessionFrameCodec.WelcomeFrame(
-                new SessionWelcomeMessage(identity.Correlation, Roster, matchStarted)));
+                new SessionWelcomeMessage(
+                    identity.Correlation, Roster, matchStarted, selection.FirstPickingTeam)));
             Record(PrivateSessionEventKind.Admitted, record.Ordinal,
                 default, default, TeamSide.None, SessionRejectionReason.None);
         }
@@ -911,6 +1014,59 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>
+        /// Milestone 8.35z37. One seated connection picks its hero, under rulebook p.22's
+        /// All Pick order.
+        /// </summary>
+        /// <remarks>
+        /// <para>The seat is the connection's own and arrives from nowhere else, so the whole
+        /// authorization question is answered before the payload is read. Everything after that is
+        /// the selection stage's own refusals - unknown seat, unregistered hero, out of turn, hero
+        /// already taken, selection confirmed - reported by name and WITHOUT disconnecting, exactly
+        /// as a refused readiness is: a pick that arrived a moment late is a mistake, not an attack,
+        /// and closing the connection would cost a player their seat over it.</para>
+        /// <para>After the transition there is nothing left to pick, and saying so by name is
+        /// better than letting a stale surface silently change a match already on the board.</para>
+        /// </remarks>
+        private void HandleHeroChoice(ConnectionRecord record, byte[] payload)
+        {
+            if (!PrivateSessionFrameCodec.TryDecodeChooseHero(payload, out var choice))
+            {
+                RejectAndClose(record, SessionRejectionReason.MalformedFrame,
+                    "The hero choice payload did not decode.");
+                return;
+            }
+
+            if (matchStarted)
+            {
+                outbox.Send(record.Ordinal, PrivateSessionFrameCodec.RejectFrame(
+                    new SessionRejectMessage(
+                        SessionRejectionReason.UnexpectedMessage,
+                        "Hero selection is a lobby state; this match has begun.")));
+                Record(PrivateSessionEventKind.Rejected, record.Ordinal, record.Seat,
+                    default, TeamSide.None, SessionRejectionReason.UnexpectedMessage);
+                return;
+            }
+
+            if (!selection.TryChoose(record.Seat, choice.HeroIdValue, out var refusal))
+            {
+                outbox.Send(record.Ordinal, PrivateSessionFrameCodec.RejectFrame(
+                    new SessionRejectMessage(
+                        SessionRejectionReason.HeroSelectionRefused,
+                        HeroSelectionLabels.Refusal(refusal))));
+                Record(PrivateSessionEventKind.Rejected, record.Ordinal, record.Seat,
+                    default, TeamSide.None, SessionRejectionReason.HeroSelectionRefused);
+                return;
+            }
+
+            var picked = matchHost.Seats.Find(record.Seat);
+            BroadcastRoster();
+            Record(PrivateSessionEventKind.SeatHeroChosen, record.Ordinal, record.Seat,
+                picked == null ? default : picked.HeroId,
+                picked == null ? TeamSide.None : picked.TeamSide,
+                SessionRejectionReason.None);
+        }
+
+        /// <summary>
         /// Milestone 8.35a. The one place the lobby ends: every seat claimed by a live connection
         /// and every one of them ready.
         /// </summary>
@@ -919,6 +1075,13 @@ namespace GuardsDigital.Application
         /// is called the announcement is made on one call and never again. It goes to seated
         /// connections only: a connection that is admitted but has not claimed anything is not part
         /// of what just started, and would have nowhere to put the statement.
+        /// <para>Milestone 8.35z37: this is also the moment the match is BUILT, when a
+        /// composer is attached. The order matters and is the shape of the whole seam - compose
+        /// first, announce second - because the announcement is what sends every client to its board,
+        /// and a client that reached the board before the board existed would draw the provisional
+        /// one. Everything the composition depends on is settled by now and nothing after it can
+        /// move: the seats are all claimed, all ready, and the selection is complete or was never
+        /// used.</para>
         /// </remarks>
         private void EvaluateMatchStart()
         {
@@ -928,6 +1091,12 @@ namespace GuardsDigital.Application
             }
 
             matchStarted = true;
+            FillUnpickedSeats();
+            // The final line-up reaches every client BEFORE the transition does, because the
+            // transition is what sends them to their boards and a client composes its own from this
+            // roster. Broadcasting after would race the thing that reads it.
+            BroadcastRoster();
+            ComposeMatchForSelection();
             var frame = PrivateSessionFrameCodec.MatchStartedFrame();
             foreach (var connection in connections.Values)
             {
@@ -939,6 +1108,120 @@ namespace GuardsDigital.Application
 
             Record(PrivateSessionEventKind.MatchStarted, 0,
                 default, default, TeamSide.None, SessionRejectionReason.None);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z37. Gives a hero to every seat that reached the transition
+        /// without picking one - a spawned test driver, or a player who readied without choosing.
+        /// </summary>
+        /// <remarks>
+        /// <para>It is the selection stage's own <c>TryAssign</c> path, which bypasses p.22's ORDER
+        /// and nothing else: the registration check and the one-copy rule both still apply, so a
+        /// filled seat can never be handed a hero a player picked. First-available, in the printed
+        /// pick order, which is deterministic and therefore replayable. A seeded random filler
+        /// belongs with milestone 8.28b's recorded setup seed and stays owed rather than improvised
+        /// here.</para>
+        ///
+        /// <para><b>It does nothing at all when NOBODY picked, and that guard is load-bearing.</b>
+        /// A session where no hero was ever chosen must deal setup step 7's printed line-up - what
+        /// this build ships - and first-available assignment would not reproduce it: seats are
+        /// ordered by player identity, which puts <c>blue-player-01</c> first, so filling every seat
+        /// from an empty selection would hand the Blue team the Red team's printed heroes. Leaving
+        /// the selection incomplete is what makes the composer decline, and declining is what leaves
+        /// the provisional - printed - match standing.</para>
+        ///
+        /// <para>Filling a PARTIAL selection, by contrast, is required rather than optional: the
+        /// roster clients have been reading already shows the picks that were made, and composing
+        /// the printed line-up instead would put a board on screen that contradicts it.</para>
+        /// </remarks>
+        private void FillUnpickedSeats()
+        {
+            if (selection.IsComplete)
+            {
+                return;
+            }
+
+            var anyChosen = false;
+            foreach (var seat in matchHost.Seats.Seats)
+            {
+                if (selection.TryGetChoice(seat.Id, out _))
+                {
+                    anyChosen = true;
+                    break;
+                }
+            }
+
+            if (!anyChosen)
+            {
+                return;
+            }
+
+            foreach (var seat in selection.PickOrder)
+            {
+                if (!selection.TryGetChoice(seat.Seat, out _))
+                {
+                    selection.TryAssign(seat.Seat, null, out _);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z37. Hands the session's decisions to the composer and rebinds this
+        /// host to what it built.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Three ways this does nothing at all, and each is a real path.</b> No composer
+        /// attached: every fixture and every rehearsal that predates the seam, which serve the match
+        /// they were constructed with. A composer that returns null: a scene that has already
+        /// composed exactly what was asked for and has nothing to rebuild. An incomplete selection:
+        /// a session where nobody picked, whose line-up is the printed one the provisional match
+        /// already deals - recomposing it would produce the identical match, which is asserted
+        /// rather than assumed, so not composing is the same answer for less work.</para>
+        ///
+        /// <para><b>The seat check is not defensive coding.</b> Every live connection's seat, epoch
+        /// and reconnect capability is keyed by <see cref="SeatId"/>, so a recomposed match that
+        /// seated different seats would silently reattach six people to the wrong heroes. The
+        /// invariant holds by construction - seat ids are the format's positional player identities
+        /// and a line-up cannot change the format - which is exactly why a violation would mean the
+        /// composer built something other than what it was asked for, and is thrown on rather than
+        /// coped with.</para>
+        /// </remarks>
+        private void ComposeMatchForSelection()
+        {
+            var composer = Composition;
+            if (composer == null || !selection.IsComplete)
+            {
+                return;
+            }
+
+            var composed = composer.ComposeForLineup(selection.BuildLineup());
+            if (composed == null)
+            {
+                return;
+            }
+
+            var before = matchHost.Seats.Seats;
+            var after = composed.Seats.Seats;
+            if (after.Count != before.Count)
+            {
+                throw new InvalidOperationException(
+                    "A recomposed match must seat the same seats: this session holds " +
+                    before.Count + " and the composition returned " + after.Count + ".");
+            }
+
+            for (var index = 0; index < before.Count; index++)
+            {
+                if (!before[index].Id.Equals(after[index].Id) ||
+                    before[index].TeamSide != after[index].TeamSide)
+                {
+                    throw new InvalidOperationException(
+                        "A recomposed match must seat the same seats in the same order: seat " +
+                        before[index].Id.Value + " on " + before[index].TeamSide +
+                        " became " + after[index].Id.Value + " on " + after[index].TeamSide + ".");
+                }
+            }
+
+            matchHost = composed;
         }
 
         /// <summary>
@@ -1646,7 +1929,8 @@ namespace GuardsDigital.Application
 
         private void BroadcastRoster()
         {
-            var frame = PrivateSessionFrameCodec.RosterUpdateFrame(new SeatRosterMessage(Roster));
+            var frame = PrivateSessionFrameCodec.RosterUpdateFrame(
+                new SeatRosterMessage(Roster, selection.FirstPickingTeam));
             foreach (var record in connections.Values)
             {
                 if (record.Phase != ConnectionPhase.AwaitingHello)

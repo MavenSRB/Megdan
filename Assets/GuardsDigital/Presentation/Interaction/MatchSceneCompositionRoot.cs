@@ -388,7 +388,7 @@ namespace GuardsDigital.Presentation.Interaction
     [ExecuteAlways]
     [DefaultExecutionOrder(-1000)]
     [DisallowMultipleComponent]
-    public sealed class MatchSceneCompositionRoot : MonoBehaviour
+    public sealed class MatchSceneCompositionRoot : MonoBehaviour, IDeferredMatchComposition
     {
         [SerializeField] private PlaceholderTestGridView mapView;
         [SerializeField] private PrimitiveHeroPointerInput pointerInput;
@@ -412,6 +412,28 @@ namespace GuardsDigital.Presentation.Interaction
         private HexCornerHighlightTemplate cornerHighlightTemplate;
         private ConfiguredMatchHudRenderer hud;
         private ConfiguredMatchSceneRuntime runtime;
+
+        /// <summary>
+        /// Milestone 8.35z37. The seat views and selectors THIS root generated, so a
+        /// re-composition retires exactly its own and never anything the scene authored.
+        /// </summary>
+        private readonly List<PrimitiveHeroView> generatedHeroViews =
+            new List<PrimitiveHeroView>();
+
+        private readonly List<PrimitiveHeroPointerSelector> generatedSelectors =
+            new List<PrimitiveHeroPointerSelector>();
+
+        /// <summary>
+        /// Milestone 8.35z37. Views a re-composition has retired. A destroyed Unity object
+        /// stays reachable through a scene search until the end of the frame - milestone 6.1e's
+        /// finding F613-05 - so the next composition excludes them by identity rather than trusting
+        /// <c>FindObjectsByType</c> to have stopped returning them.
+        /// </summary>
+        private readonly HashSet<PrimitiveHeroView> retiredHeroViews =
+            new HashSet<PrimitiveHeroView>();
+
+        private readonly HashSet<PrimitiveHeroPointerSelector> retiredSelectors =
+            new HashSet<PrimitiveHeroPointerSelector>();
 
         /// <summary>
         /// What the next composition deals, and nothing after it. Milestone 8.4.
@@ -458,15 +480,32 @@ namespace GuardsDigital.Presentation.Interaction
         /// .MatchFormatFlag"/>, and this property is how a fixture asks for the same thing without a
         /// command line. It is a one-shot in the same way, consumed and reset by the composition, so
         /// a fixture that forgets to clear it cannot change what a later scene load deals.</para>
-        /// <para><b>It is read before <see cref="Compose"/> runs, and that is a real constraint on
-        /// where a format may be chosen.</b> The scene composes its match in <c>Awake</c>, before any
-        /// host, client or lobby driver is attached, and <see cref="Compose"/> returns immediately
-        /// once a runtime exists - so the format is settled at scene load and the lobby, which opens
-        /// afterwards, cannot change it. Giving the host a format control inside the lobby means
-        /// composing the match when the lobby says to rather than when the scene loads; that is the
-        /// second half of the amendment and it is deliberately not attempted here.</para>
+        /// <para><b>It is read before <see cref="Compose"/> runs.</b> Milestone 8.35z37 is
+        /// where that stopped being a wall: <see cref="Recompose"/> composes the scene again from a
+        /// <see cref="MatchCompositionPlan"/>, so a format chosen in the lobby is applied by
+        /// composing the match when the lobby says to rather than when the scene loads. This
+        /// property remains what a fixture uses to ask for a format without a command line.</para>
         /// </remarks>
         public static MatchFormat NextComposedMatchFormat { get; set; }
+
+        /// <summary>
+        /// Milestone 8.35z37. The heroes the next composed match fields, or <c>null</c> for
+        /// setup step 7's printed line-up - what this build has always dealt.
+        /// </summary>
+        /// <remarks>
+        /// <para>A one-shot on exactly the terms <see cref="NextComposedMatchFormat"/> is on,
+        /// consumed and cleared by the composition, so a fixture that forgets to clear it cannot
+        /// decide what a later scene load deals. There is no launch flag behind it and deliberately
+        /// none: a line-up is chosen by people in a lobby or stated by a fixture, and a command line
+        /// that could deal an arbitrary line-up to a shipped player would be a third way to decide
+        /// something the lobby now owns.</para>
+        /// <para>Defaulting to null rather than to the printed line-up is what keeps every existing
+        /// caller byte-identical: <see cref="MatchCompositionPlan"/> resolves null to the printed
+        /// line-up, and composing the printed line-up produces the same match the shipped path
+        /// produces - which is asserted by comparing two composed sessions' snapshots rather than
+        /// argued. See <c>DeferredMatchCompositionTests</c>.</para>
+        /// </remarks>
+        public static HeroLineup NextComposedLineup { get; set; }
 
         /// <summary>
         /// TWELFTH amendment. The staged situation the next composed match begins from, or
@@ -491,6 +530,17 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         public SandboxStagingDescription ComposedSandboxStaging { get; private set; }
 
+        /// <summary>
+        /// Milestone 8.35z37. The decisions the current runtime was composed from, or
+        /// <c>null</c> before anything has been composed.
+        /// </summary>
+        /// <remarks>
+        /// Read by the lobby to know what it is offering to change: the format control shows the
+        /// format that is actually composed rather than one a flag asked for, on exactly the rule
+        /// <see cref="ComposedSandboxStaging"/> follows for the sandbox banner.
+        /// </remarks>
+        public MatchCompositionPlan ComposedPlan { get; private set; }
+
         public ConfiguredMatchSceneRuntime Runtime => runtime;
         public IMatchSession Session => runtime?.Session;
         public ConfiguredMatchHudRenderer Hud => hud;
@@ -513,13 +563,31 @@ namespace GuardsDigital.Presentation.Interaction
             mapView ??= FindAnyObjectByType<PlaceholderTestGridView>();
             pointerInput ??= FindAnyObjectByType<PrimitiveHeroPointerInput>();
             eventCamera ??= Camera.main != null ? Camera.main : FindAnyObjectByType<Camera>();
-            heroViews = FindObjectsByType<PrimitiveHeroView>();
-            pointerSelectors = FindObjectsByType<PrimitiveHeroPointerSelector>();
+            // Milestone 8.35z37. A re-composition retires the seat views its predecessor
+            // generated, and a retired view stays reachable through a scene search until the end of
+            // the frame - the deferred-Destroy trap milestone 6.1e recorded as finding F613-05. So
+            // the discovery below excludes them BY IDENTITY rather than trusting the search, which is
+            // the same answer 6.1e gave: use what the composition knows, not what the scene returns.
+            heroViews = FindObjectsByType<PrimitiveHeroView>()
+                .Where(view => view != null && !retiredHeroViews.Contains(view))
+                .ToArray();
+            pointerSelectors = FindObjectsByType<PrimitiveHeroPointerSelector>()
+                .Where(selector => selector != null && !retiredSelectors.Contains(selector))
+                .ToArray();
 
-            if (mapView == null || eventCamera == null || pointerInput == null || heroViews.Length == 0)
+            // Milestone 8.35z37. The hero-view half of this requirement moved BELOW
+            // `EnsureViewsForConfiguredSeats`, and a complete Play Mode run is what forced it. A
+            // re-composition retires every view its predecessor generated, so on the second pass the
+            // discovery above legitimately returns none for any configuration whose seats were all
+            // generated rather than authored - and the check then refused, before the step whose whole
+            // job is to create them had run. It demanded the output of a later step as a precondition,
+            // which only ever held because a FIRST composition happens to inherit the scene's authored
+            // views. Infrastructure the scene must supply is checked here; the seats a composition
+            // supplies for itself are checked once they exist.
+            if (mapView == null || eventCamera == null || pointerInput == null)
             {
                 throw new InvalidOperationException(
-                    "The configured match composition root requires a map, camera, pointer input, and hero views.");
+                    "The configured match composition root requires a map, camera, and pointer input.");
             }
 
             var catalog = OfficialBoardMapCatalog.Load();
@@ -536,6 +604,11 @@ namespace GuardsDigital.Presentation.Interaction
             // printed set and its own numbers, not a rulebook setup - so only the configured match
             // consults it.
             var format = TakeRequestedMatchFormat();
+            // Milestone 8.35z37. The format and the line-up are one decision from here on,
+            // and the plan is what carries it. A caller that chose no line-up gets setup step 7's
+            // printed one, so the configured arm below composes exactly the match it always has.
+            var plan = new MatchCompositionPlan(format, TakeRequestedLineup());
+            ComposedPlan = plan;
             var configuration = content switch
             {
                 SceneCardContent.MechanicsShowcaseFixture =>
@@ -670,7 +743,15 @@ namespace GuardsDigital.Presentation.Interaction
                         GuardsDigital.Core.Cards.Verified.DodgerUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
-                _ => MatchConfiguration.Create(format)
+                //
+                // Milestone 8.35z37 routes it through the plan's line-up. With no line-up
+                // chosen that is the printed one, and composing the printed line-up produces the
+                // same match `MatchConfiguration.Create(format)` produces - proven by comparing two
+                // composed sessions' snapshot payloads on all four printed formats and under both
+                // coins, in DeferredMatchCompositionTests. There is therefore ONE path here rather
+                // than a chosen path beside a shipped one, which is the point: a seam a shipped
+                // match does not travel through is a seam nothing tests.
+                _ => MatchConfiguration.CreateForLineup(format, plan.Lineup)
             };
             // Milestone 8.20. The board's hero identities have to agree with the hands the
             // configuration above dealt: a seat's content identity is what addresses its prepared token
@@ -681,7 +762,7 @@ namespace GuardsDigital.Presentation.Interaction
             // Milestone 8.25: the default arm - what a player plays - is now rulebook p.5's official
             // six-player board, and it is the only arm that places six heroes.
             var setup = QuickGameSetupAuthority.Create(
-                SelectSetupConfiguration(content, format),
+                SelectSetupConfiguration(content, plan),
                 configuration.Participants,
                 map,
                 configuration.TieBreakerState);
@@ -729,6 +810,19 @@ namespace GuardsDigital.Presentation.Interaction
             // board already gives a placed token: authored content where there is some, generated
             // where a configuration asks for more, and no fixture reaching into the scene to add one.
             EnsureViewsForConfiguredSeats(setup);
+
+            // Milestone 8.35z37. The other half of the requirement above, asked where it is actually
+            // an invariant: every configured seat now has a piece, whether the scene authored it or
+            // this composition generated it. A composition that reaches here with no hero view has
+            // dealt no seat, which is a broken configuration rather than a scene the fixture forgot
+            // to author.
+            if (heroViews.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    "The configured match composition root requires at least one hero view; the " +
+                    "composed configuration dealt no seat for one to be generated from.");
+            }
+
             mapView.ConfiguredMinionViewsChanged -= RebindConfiguredMinionViews;
             mapView.ConfiguredMinionViewsChanged += RebindConfiguredMinionViews;
             mapView.ConfigureSceneBindings(eventCamera, heroViews);
@@ -879,6 +973,9 @@ namespace GuardsDigital.Presentation.Interaction
         {
             var generated = new List<PrimitiveHeroView>();
             var selectors = new List<PrimitiveHeroPointerSelector>();
+            // Milestone 8.35z37. Remembered so a re-composition can retire exactly what a
+            // previous one generated, and nothing the scene itself authored.
+            var owned = generatedHeroViews;
             foreach (var seat in setup.Heroes)
             {
                 if (heroViews.Any(view => view != null && view.Occupancy.HeroId.Equals(seat.HeroId)))
@@ -906,10 +1003,105 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            owned.AddRange(generated);
+            generatedSelectors.AddRange(selectors);
             heroViews = heroViews.Concat(generated).ToArray();
             pointerSelectors = (pointerSelectors ?? Array.Empty<PrimitiveHeroPointerSelector>())
                 .Concat(selectors)
                 .ToArray();
+        }
+
+        /// <summary>
+        /// Milestone 8.35z37. Composes this scene again, from decisions a lobby made.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why a scene composes twice at all, stated exactly, because it is the finding
+        /// this milestone turns on.</b> A private session cannot admit anybody before a match exists:
+        /// <c>PrivateSessionIdentity.ForComposition</c> derives the whole admission tuple - the
+        /// format element, the map reference and the content digest - from a COMPOSED configuration
+        /// and setup, and a peer whose tuple does not match is refused at the handshake. So "boot the
+        /// scene with no match and compose when the lobby says to" is not reachable in one step: the
+        /// lobby would have nothing to admit anyone with. What is reachable, and is what this does,
+        /// is to compose a provisional match so the lobby can run, and then compose the REAL one from
+        /// the lobby's decisions at the one-way transition out of it.</para>
+        ///
+        /// <para><b>That is only safe because the provisional match is not a guess.</b> With nothing
+        /// chosen, the plan's line-up is setup step 7's printed one, and a match composed from it is
+        /// byte-identical to the match this build has always dealt - measured, not asserted, in
+        /// <c>DeferredMatchCompositionTests</c>. The provisional match is therefore the shipped match,
+        /// and a session that recomposes to the same plan changes nothing at all.</para>
+        ///
+        /// <para><b>What a re-composition must release, and why so little.</b> The three per-frame
+        /// drivers all attach idempotently (<c>GetComponent ?? AddComponent</c>, then rebind), and
+        /// both event hookups in <see cref="Compose"/> already unsubscribe before they subscribe. So
+        /// the only things that genuinely leak across a second composition are the corner-highlight
+        /// template, which owns native resources, and the seat views a previous composition
+        /// generated - and the latter are retired by identity rather than by a scene search, for the
+        /// deferred-Destroy reason <see cref="Compose"/> records.</para>
+        /// </remarks>
+        public void Recompose(MatchCompositionPlan plan)
+        {
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+
+            ReleaseComposition();
+            NextComposedMatchFormat = plan.Format;
+            NextComposedLineup = plan.IsPrintedLineup ? null : plan.Lineup;
+            Compose();
+        }
+
+        /// <summary>
+        /// Milestone 8.35z37. The session's seam: composes the match this line-up plays and
+        /// hands back its host.
+        /// </summary>
+        /// <remarks>
+        /// The format is NOT a parameter, and that is the seam's own rule rather than an omission. A
+        /// session's seats are counted from the format, and every live connection, epoch and
+        /// reconnect capability the host holds is keyed by seat - so a format changed after anybody
+        /// is seated would move the seats out from under them. The format is settled before hosting
+        /// begins (see <c>PrivateLobbyDriver</c>'s format control, which is offered on the entry form
+        /// and nowhere else), and only the line-up crosses this seam.
+        /// </remarks>
+        public IMatchHost ComposeForLineup(HeroLineup lineup)
+        {
+            if (lineup == null) throw new ArgumentNullException(nameof(lineup));
+
+            var current = ComposedPlan;
+            if (current == null)
+            {
+                return null;
+            }
+
+            Recompose(current.WithLineup(lineup));
+            return runtime?.Host;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z37. Drops what a composition owns so the next one starts clean.
+        /// </summary>
+        private void ReleaseComposition()
+        {
+            foreach (var view in generatedHeroViews)
+            {
+                if (view != null)
+                {
+                    retiredHeroViews.Add(view);
+                    Destroy(view.gameObject);
+                }
+            }
+
+            foreach (var selector in generatedSelectors)
+            {
+                if (selector != null)
+                {
+                    retiredSelectors.Add(selector);
+                }
+            }
+
+            generatedHeroViews.Clear();
+            generatedSelectors.Clear();
+            cornerHighlightTemplate?.Dispose();
+            cornerHighlightTemplate = null;
+            runtime = null;
         }
 
         /// <summary>
@@ -922,8 +1114,14 @@ namespace GuardsDigital.Presentation.Interaction
         /// one-hero-per-team stagings for the five heroes whose journeys were written on them, and the
         /// two-Blue-seat board for the two cards that name a friendly hero.</para>
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.35z37: the configured arm composes from the PLAN's line-up rather than
+        /// from the format alone. Every other arm is untouched, and that is the whole reason this
+        /// method takes a plan rather than a line-up - a staged board's subject is one printed set
+        /// and its own numbers, so a line-up means nothing to it and it must not be offered one.
+        /// </remarks>
         private static QuickGameSetupConfiguration SelectSetupConfiguration(
-            SceneCardContent content, MatchFormat format)
+            SceneCardContent content, MatchCompositionPlan plan)
         {
             switch (content)
             {
@@ -934,7 +1132,7 @@ namespace GuardsDigital.Presentation.Interaction
                 case SceneCardContent.MechanicsShowcaseFixture:
                     return QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne();
                 case SceneCardContent.ConfiguredMatch:
-                    return QuickGameSetupConfiguration.CreateOfficial(format);
+                    return HeroLineupComposition.Compose(plan.Format, plan.Lineup);
                 default:
                     if (IsBroganWithAlly(content))
                     {
@@ -1065,6 +1263,22 @@ namespace GuardsDigital.Presentation.Interaction
         /// the message rather than starting a session nobody configured. Composing the default in
         /// the meantime keeps that one refusal in one place.
         /// </remarks>
+        /// <summary>
+        /// Milestone 8.35z37. Reads <see cref="NextComposedLineup"/> and clears it, so a
+        /// fixture that forgets to clear it cannot decide what a later scene load deals.
+        /// </summary>
+        /// <remarks>
+        /// There is no launch-line fallback, unlike the format's, and that is the design rather than
+        /// an omission - see <see cref="NextComposedLineup"/>. Null falls through to
+        /// <see cref="MatchCompositionPlan"/>'s printed default.
+        /// </remarks>
+        private static HeroLineup TakeRequestedLineup()
+        {
+            var requested = NextComposedLineup;
+            NextComposedLineup = null;
+            return requested;
+        }
+
         private static MatchFormat TakeRequestedMatchFormat()
         {
             var requested = NextComposedMatchFormat;

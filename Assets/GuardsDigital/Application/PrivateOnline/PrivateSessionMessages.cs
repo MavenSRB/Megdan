@@ -122,7 +122,24 @@ namespace GuardsDigital.Application
         SubmitUndo = 19,
 
         /// <summary>Milestone 8.35f. Host to that connection: what its rewind did, or why not.</summary>
-        UndoResult = 20
+        UndoResult = 20,
+
+        /// <summary>
+        /// Milestone 8.35z37. Seated connection to host, before the match starts: the hero
+        /// this seat picks, by identity.
+        /// </summary>
+        /// <remarks>
+        /// <para>It carries no seat, for the reason <see cref="SetReadiness"/> carries none: the
+        /// connection the frame arrived on is what says whose pick it is, so there is no field
+        /// through which one player could pick for another. It carries no team either - which side a
+        /// seat plays for is the seat's own fact and the host already holds it.</para>
+        /// <para>The ANSWER needs no kind of its own in either direction. An accepted pick appears
+        /// in the roster the host already broadcasts, whose rows have carried a hero id since
+        /// milestone 8.31; a refused one rides the reject path every other lobby refusal rides. That
+        /// is the whole downstream cost of hero selection, and it was measured before this kind was
+        /// added rather than discovered afterwards.</para>
+        /// </remarks>
+        ChooseHero = 21
 
         // Milestone 8.35r deliberately added NO kind here. The seat-public match log rides inside
         // SeatProjection's own message instead, and the reason is a measurement rather than a
@@ -200,7 +217,23 @@ namespace GuardsDigital.Application
         /// but <see cref="PrivateSessionIdentity.FirstMismatch"/> checks it between the map revision
         /// and the content digest. Nothing may infer a check order from an enum value.
         /// </remarks>
-        MatchFormatMismatch = 22
+        MatchFormatMismatch = 22,
+
+        /// <summary>
+        /// Milestone 8.35z37. The host would not take that hero pick - it was out of turn,
+        /// already taken, unregistered, or the line-up is already settled.
+        /// </summary>
+        /// <remarks>
+        /// <para>One reason for all of rulebook p.22's refusals rather than five wire codes, and the
+        /// detail carries which. The split is deliberate and follows this enum's own stated law: this
+        /// layer answers "may this connection be here and hold that seat", and every one of these is
+        /// a selection rule rather than an admission question. Spending five admission codes on them
+        /// would put the pick order into the layer that decides who may connect.</para>
+        /// <para>The words come from <c>HeroSelectionLabels.Refusal</c>, which is exhaustive over the
+        /// refusal enum, so a reason added to the stage later reaches a player as a sentence rather
+        /// than as a blank detail - the same guarantee <c>PrivateLobbyLabels</c> gives.</para>
+        /// </remarks>
+        HeroSelectionRefused = 23
     }
 
     /// <summary>Milestone 8.31. Whether a seat is open, held by a live connection, or reserved.</summary>
@@ -234,7 +267,8 @@ namespace GuardsDigital.Application
             HeroId hero,
             TeamSide teamSide,
             SeatOccupancyState occupancy,
-            bool isReady = false)
+            bool isReady = false,
+            bool hasChosenHero = false)
         {
             if (!seat.IsDefined)
             {
@@ -246,7 +280,25 @@ namespace GuardsDigital.Application
             TeamSide = teamSide;
             Occupancy = occupancy;
             IsReady = isReady;
+            HasChosenHero = hasChosenHero;
         }
+
+        /// <summary>
+        /// Milestone 8.35z37. Whether this row's hero was PICKED by that seat, rather than
+        /// being the hero the provisional composition happens to have put there.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Without this bit a client cannot draw a selection screen at all</b>, and the
+        /// reason is worth stating because it is not obvious: the hero column is never empty. A
+        /// session composes a provisional match before it can admit anybody - the admission tuple is
+        /// derived from a composed configuration - so every seat already names a hero from the
+        /// moment the roster exists, and "hero-wasp on red-player-01" is indistinguishable between a
+        /// seat that chose Wasp and a seat that has not picked at all.</para>
+        /// <para>It is public exactly as the rest of the row is: whether somebody has picked is
+        /// visible at a real table the moment they put the Profile card down. It says nothing about
+        /// what anybody is going to pick.</para>
+        /// </remarks>
+        public bool HasChosenHero { get; }
 
         public SeatId Seat { get; }
         public HeroId Hero { get; }
@@ -302,7 +354,8 @@ namespace GuardsDigital.Application
         public SessionWelcomeMessage(
             string sessionCorrelation,
             IReadOnlyList<SeatRosterEntry> roster,
-            bool matchStarted = false)
+            bool matchStarted = false,
+            TeamSide firstPickingTeam = TeamSide.None)
         {
             if (string.IsNullOrWhiteSpace(sessionCorrelation))
             {
@@ -312,7 +365,14 @@ namespace GuardsDigital.Application
             SessionCorrelation = sessionCorrelation;
             Roster = roster ?? throw new ArgumentNullException(nameof(roster));
             MatchStarted = matchStarted;
+            FirstPickingTeam = firstPickingTeam;
         }
+
+        /// <summary>
+        /// Milestone 8.35z37. p.22's coin, so a client that joins mid-selection can draw the
+        /// pick order from its very first roster. See <see cref="SeatRosterMessage.FirstPickingTeam"/>.
+        /// </summary>
+        public TeamSide FirstPickingTeam { get; }
 
         /// <summary>An opaque, content-derived id for logs; never an address or a secret.</summary>
         public string SessionCorrelation { get; }
@@ -368,6 +428,38 @@ namespace GuardsDigital.Application
         }
 
         public SeatId Seat { get; }
+    }
+
+    /// <summary>
+    /// Milestone 8.35z37. One seated connection's hero pick: an identity, and nothing that
+    /// names a seat.
+    /// </summary>
+    /// <remarks>
+    /// Whether the identity is one this build can deal is not checked here. It is checked by the
+    /// selection stage against the live registration, which is the one place that knows - and
+    /// checking it twice, in two places that could disagree, is how a decode and a rule drift apart.
+    /// This type's whole job is that the id is present and bounded.
+    /// </remarks>
+    public sealed class HeroChoiceMessage
+    {
+        public HeroChoiceMessage(string heroIdValue)
+        {
+            if (string.IsNullOrWhiteSpace(heroIdValue))
+            {
+                throw new ArgumentException("A pick requires a hero.", nameof(heroIdValue));
+            }
+
+            if (heroIdValue.Length > PrivateSessionProtocol.MaxHeroIdChars)
+            {
+                throw new ArgumentException(
+                    "A hero id may carry at most " +
+                    PrivateSessionProtocol.MaxHeroIdChars + " characters.", nameof(heroIdValue));
+            }
+
+            HeroIdValue = heroIdValue;
+        }
+
+        public string HeroIdValue { get; }
     }
 
     /// <summary>The host's grant: the claimed seat's identity row plus the running count.</summary>
@@ -477,11 +569,30 @@ namespace GuardsDigital.Application
     /// <summary>The whole current seat map, sent to every admitted connection when it changes.</summary>
     public sealed class SeatRosterMessage
     {
-        public SeatRosterMessage(IReadOnlyList<SeatRosterEntry> roster)
+        public SeatRosterMessage(
+            IReadOnlyList<SeatRosterEntry> roster,
+            TeamSide firstPickingTeam = TeamSide.None)
         {
             Roster = roster ?? throw new ArgumentNullException(nameof(roster));
+            FirstPickingTeam = firstPickingTeam;
         }
 
         public IReadOnlyList<SeatRosterEntry> Roster { get; }
+
+        /// <summary>
+        /// Milestone 8.35z37. Rulebook p.22's "the team showing on the Tie Breaker coin",
+        /// which is the team that picks first and therefore the whole pick ORDER.
+        /// </summary>
+        /// <remarks>
+        /// <para>Carried because a client cannot derive it, and only in one case - which is why it
+        /// is worth four bytes rather than a rule. Once anybody has picked, the first chosen row's
+        /// team IS the first picking team, because picks arrive in the printed order. Before the
+        /// first pick there is nothing to infer from, and that is exactly the moment a selection
+        /// screen has to say whose turn it is.</para>
+        /// <para>Public: the Tie Breaker coin is face up on the table from setup step 6, and this
+        /// build already shows it. <see cref="TeamSide.None"/> means a session that is not running a
+        /// selection, which is every path that predates this milestone.</para>
+        /// </remarks>
+        public TeamSide FirstPickingTeam { get; }
     }
 }

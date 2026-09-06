@@ -64,7 +64,41 @@ namespace GuardsDigital.Application
         /// contains.</para>
         /// </summary>
         /// <remarks>
-        /// Protocol version 6: milestone 8.35r opened the seat-public event channel and published
+        /// Protocol version 10: milestone 8.35z37 wired hero selection to the host. ONE new
+        /// client-to-host kind, <see cref="SessionMessageKind.ChooseHero"/>, carrying a bounded hero
+        /// id and nothing else - the connection identifies the seat, exactly as
+        /// <see cref="SessionMessageKind.SetReadiness"/> does, so a seat cannot pick for another.
+        ///
+        /// <para><b>The downstream half moved no bytes at all, and that is measured rather than
+        /// hoped for.</b> A seat's chosen hero reaches every client on the roster row that has
+        /// carried <c>HeroId</c> since milestone 8.31, and the refusal rides the reject path every
+        /// other lobby refusal rides. So the only reason this is a bump is that a version 9 peer has
+        /// no case for kind 21 and would refuse it as an unexpected message - which is a protocol
+        /// surface change and is taken as one, on the standing rule that a version which only moves
+        /// when a hole opens is a version nobody trusts.</para>
+        ///
+        /// <para><b>Schema is UNMOVED at v36, and the composition seam is why.</b> The milestone
+        /// also makes a match composable AFTER the scene loads, from a line-up a lobby chose. That
+        /// changes WHEN a match is built and never WHAT a built match contains: a match composed
+        /// late from a line-up is byte-identical to the same match composed at scene load, which is
+        /// asserted by comparing two composed sessions' snapshot payloads over all four printed
+        /// formats rather than argued here. Composition timing is not serialized state, so there is
+        /// nothing for a schema version to describe.</para>
+        ///
+        /// <para><b>The identity tuple does not move either, and that is load-bearing.</b> A
+        /// session's admission tuple - including <c>ContentDigest</c>, which hashes the DEALT
+        /// configuration's card definitions - is computed once when hosting begins and kept for the
+        /// session's life. It must be: a client that returns under milestone 8.34's reserved-seat
+        /// reconnect re-runs the whole handshake, and it computes its own tuple from its own local
+        /// composition, which knows nothing of anybody's picks. Recomposing the host's match with a
+        /// chosen line-up while republishing the identity would refuse every reconnect with
+        /// <c>ContentDigestMismatch</c> at a 2v2, where a chosen line-up genuinely deals a different
+        /// four sets. Freezing the tuple is also the honest reading of what it is for: it answers
+        /// "can these two builds interoperate", and both builds can deal every registered hero. Which
+        /// heroes THIS match deals is a decision inside a compatible pair, exactly as the Tie Breaker
+        /// coin is.</para>
+        ///
+        /// <para>Protocol version 6: milestone 8.35r opened the seat-public event channel and published
         /// who is being waited on. Three things move, and they move together deliberately - this is
         /// Protocol version 7: milestone 8.35u made rulebook p.15's leveling simultaneous, so the
         /// authority can be waiting on several heroes at once and <c>DecisionOwner</c> carries a
@@ -133,7 +167,19 @@ namespace GuardsDigital.Application
         /// version 1 when milestone 8.35b gave SelectedActor its Tie Breaker meaning. Every
         /// superseded version is refused from the bounded header rather than reinterpreted.</para>
         /// </remarks>
-        public const int Version = 9;
+        public const int Version = 10;
+
+        /// <summary>
+        /// Milestone 8.35z37. The most characters a hero id may carry in a pick.
+        /// </summary>
+        /// <remarks>
+        /// Bounded like every other wire string, and bounded generously rather than at the longest
+        /// registered id: the registration grows with every dealing milestone, and a bound that had
+        /// to be edited by each of them would be a bound nobody maintained. The id is validated
+        /// against the live registration by the selection stage regardless, so this only stops a
+        /// payload from buying an allocation.
+        /// </remarks>
+        public const int MaxHeroIdChars = 64;
 
         /// <summary>The four ASCII bytes that open every frame: G, D, P, O.</summary>
         public const byte FrameMagic0 = 0x47;

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Network;
 using GuardsDigital.Presentation.Match;
 using UnityEngine;
@@ -47,6 +48,11 @@ namespace GuardsDigital.Presentation.Interaction
         public const string ControlName = "gd-lobby-control";
         public const string BuildStampName = "gd-lobby-build-stamp";
 
+        /// <summary>Milestone 8.35z37. Rulebook p.22's selection screen.</summary>
+        public const string SelectionStatusName = "gd-lobby-selection-status";
+        public const string HeroesName = "gd-lobby-heroes";
+        public const string HeroOptionName = "gd-lobby-hero-option";
+
         /// <summary>The default invitation: this machine, on the protocol's own port.</summary>
         public const string DefaultAddress = "127.0.0.1";
 
@@ -64,7 +70,16 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly TextField address;
         private readonly TextField port;
         private readonly TextField key;
+        private readonly Label selectionStatus;
+        private readonly VisualElement heroes;
         private SeatId picked;
+
+        /// <summary>
+        /// Milestone 8.35z37. The hero the next PICK HERO press sends, chosen by clicking
+        /// one of the options this view drew. It is a view-local highlight and nothing more: whether
+        /// the seat then HOLDS that hero is the roster's answer.
+        /// </summary>
+        private string highlightedHero = string.Empty;
 
         public PrivateLobbyUnityView()
         {
@@ -127,6 +142,18 @@ namespace GuardsDigital.Presentation.Interaction
             seats.style.marginTop = 10f;
             frame.Add(seats);
 
+            // Milestone 8.35z37. Rulebook p.22's selection screen, between the seat table
+            // and the controls: one line saying whose pick it is, then every registered hero, the
+            // taken ones greyed and NAMED with the one-copy rule's reason.
+            selectionStatus = Caption(string.Empty, 18, SelectionStatusName);
+            selectionStatus.style.marginTop = 10f;
+            frame.Add(selectionStatus);
+
+            heroes = new VisualElement { name = HeroesName };
+            heroes.style.flexDirection = FlexDirection.Row;
+            heroes.style.flexWrap = Wrap.Wrap;
+            frame.Add(heroes);
+
             controls = new VisualElement { name = ControlsName };
             controls.style.flexDirection = FlexDirection.Row;
             controls.style.flexWrap = Wrap.Wrap;
@@ -151,6 +178,16 @@ namespace GuardsDigital.Presentation.Interaction
 
         /// <summary>Raised when a player presses one of the controls this view drew.</summary>
         public event Action<PrivateLobbyControl, PrivateLobbyEntry> ControlPressed;
+
+        /// <summary>
+        /// Milestone 8.35z37. Raised when a player clicked a hero option. It says which hero
+        /// the next PICK HERO press would send and nothing else - clicking a hero does not pick it,
+        /// exactly as clicking a seat row does not join it.
+        /// </summary>
+        public event Action<string> HeroHighlighted;
+
+        /// <summary>The hero the next PICK HERO press would send, for a journey that reads it.</summary>
+        public string HighlightedHero => highlightedHero;
 
         /// <summary>The invitation currently typed into the entry form, plus the picked seat.</summary>
         public PrivateLobbyEntry CurrentEntry() =>
@@ -189,11 +226,88 @@ namespace GuardsDigital.Presentation.Interaction
                 seats.Add(BuildSeatRow(row, isEntry));
             }
 
+            RenderSelection(model.Selection);
+
             controls.Clear();
             foreach (var control in model.Controls)
             {
                 controls.Add(BuildControl(control));
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z37. Draws rulebook p.22's All Pick: whose turn it is, and every
+        /// registered hero with the taken ones greyed and told why.
+        /// </summary>
+        /// <remarks>
+        /// The whole panel disappears when no selection is running, so a session that predates this
+        /// milestone draws exactly the lobby it always did. A taken hero stays on screen rather than
+        /// being removed, because a player who watched a hero vanish learns nothing; greyed with the
+        /// one-copy rule's own sentence, they learn what happened.
+        /// </remarks>
+        private void RenderSelection(PrivateLobbySelection selection)
+        {
+            var running = selection != null && selection.IsRunning;
+            selectionStatus.style.display = running ? DisplayStyle.Flex : DisplayStyle.None;
+            heroes.style.display = running ? DisplayStyle.Flex : DisplayStyle.None;
+            heroes.Clear();
+            if (!running)
+            {
+                highlightedHero = string.Empty;
+                selectionStatus.text = string.Empty;
+                return;
+            }
+
+            selectionStatus.text = selection.StatusLabel;
+            foreach (var option in selection.Heroes)
+            {
+                heroes.Add(BuildHeroOption(option, selection.IsOwnPick));
+            }
+        }
+
+        private VisualElement BuildHeroOption(PrivateLobbyHeroOption option, bool isOwnPick)
+        {
+            var pickable = option.IsAvailable && isOwnPick;
+            var button = new Button(() =>
+            {
+                if (!pickable)
+                {
+                    return;
+                }
+
+                highlightedHero = option.HeroIdValue;
+                HeroHighlighted?.Invoke(option.HeroIdValue);
+            })
+            {
+                name = HeroOptionName,
+                // The reason travels ON the option rather than in a status line, so a player reading
+                // a greyed hero is told why by the thing they are looking at.
+                text = option.IsAvailable
+                    ? option.DisplayName
+                    : option.DisplayName + " - " + option.UnavailableReason
+            };
+            button.style.marginRight = 6f;
+            button.style.marginTop = 6f;
+            button.style.paddingLeft = 10f;
+            button.style.paddingRight = 10f;
+            button.style.minHeight = 34f;
+            button.SetEnabled(pickable);
+            button.style.color = option.IsAvailable
+                ? PanelText
+                : new Color(PanelText.r, PanelText.g, PanelText.b, 0.45f);
+            button.style.borderTopWidth = 2f;
+            button.style.borderBottomWidth = 2f;
+            button.style.borderLeftWidth = 2f;
+            button.style.borderRightWidth = 2f;
+            var edge = string.Equals(
+                    highlightedHero, option.HeroIdValue, StringComparison.Ordinal)
+                ? PanelText
+                : PanelEdge;
+            button.style.borderTopColor = edge;
+            button.style.borderBottomColor = edge;
+            button.style.borderLeftColor = edge;
+            button.style.borderRightColor = edge;
+            return button;
         }
 
         private VisualElement BuildSeatRow(PrivateLobbySeatRow row, bool offerPick)
@@ -581,12 +695,16 @@ namespace GuardsDigital.Presentation.Interaction
             document.rootVisualElement?.Add(matchStatus);
             presenter = new PrivateLobbyPresenter(view);
             view.ControlPressed += (control, entry) => presenter.Press(control, entry);
+            // Milestone 8.35z37. Clicking a hero only says which one the next PICK HERO
+            // press sends; the press is what reaches the host.
+            view.HeroHighlighted += heroId => presenter.SelectedHeroIdValue = heroId;
             presenter.HostRequested += BeginHosting;
             presenter.JoinRequested += BeginJoining;
             presenter.LeaveRequested += Leave;
             presenter.ReconnectRequested += Redial;
             presenter.FillWithTestDriversRequested += FillEmptySeatsWithTestDrivers;
-            presenter.ShowEntry(LocalSeats(), string.Empty);
+            presenter.MatchFormatChangeRequested += CycleMatchFormat;
+            presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
             PrivateOnlineMarkers.Log("LOBBY_BEGIN");
         }
 
@@ -685,6 +803,26 @@ namespace GuardsDigital.Presentation.Interaction
                     machine.State == PrivateSessionClientState.Seated &&
                     machine.LatestProjection != null)
                 {
+                    // Milestone 8.35z37. A CLIENT recomposes too, and it has to. Its board
+                    // is its OWN composed match updated by the host's projections, so a host that
+                    // composed a chosen line-up while this process kept the printed one would leave
+                    // this player looking at the wrong heroes on every seat. The line-up is read off
+                    // the roster - which has carried a hero id per row since milestone 8.31 and now
+                    // says which of them were chosen - so this needs no message of its own.
+                    //
+                    // It happens BEFORE the HUD is attached, because attaching binds the surfaces to
+                    // the runtime and a recomposition replaces it. Null means the roster does not
+                    // name a line-up this build can compose, and the honest answer is to leave this
+                    // process on the match it has rather than compose something else and call it the
+                    // same match.
+                    var lineup = machine.ComposedLineup();
+                    if (lineup != null && compositionRoot.ComposedPlan != null &&
+                        lineup.HeroesPerTeam == compositionRoot.ComposedPlan.Format.HeroesPerTeam)
+                    {
+                        compositionRoot.Recompose(
+                            compositionRoot.ComposedPlan.WithLineup(lineup));
+                    }
+
                     compositionRoot.Runtime.AttachOnlineClient(machine);
                     onlineHudAttached = true;
                     PrivateOnlineMarkers.Log(
@@ -812,6 +950,60 @@ namespace GuardsDigital.Presentation.Interaction
             matchStatus.text = show ? NetworkMatchFeedback.For(machine).ToUpperInvariant() : string.Empty;
         }
 
+        /// <summary>
+        /// Milestone 8.35z37. Which of rulebook pp.5-6's four printed setups is composed
+        /// right now, as words - read off the composition rather than off an intention beside it.
+        /// </summary>
+        private string ComposedFormatLabel() =>
+            compositionRoot?.ComposedPlan == null
+                ? null
+                : compositionRoot.ComposedPlan.Format.Id.ToUpperInvariant();
+
+        /// <summary>
+        /// Milestone 8.35z37. The minimal format picker: steps to the next of the four
+        /// printed setups and RECOMPOSES the scene on it.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Only on the entry form, and the guard is structural rather than a check on a
+        /// button.</b> A listener means a session, a session means seats somebody may already hold,
+        /// and the seats are counted from the format - so this refuses the moment a listener exists.
+        /// The wire refuses it a second time: <c>PrivateSessionIdentity</c> rejects a peer on
+        /// <c>MatchFormatMismatch</c>, so a host that changed format under a connected client would
+        /// have refused that client anyway.</para>
+        /// <para><b>Why cycling rather than a menu.</b> There are four printed setups and the lobby
+        /// is deliberately primitive - milestone 8.35a's own non-goals - so one control that names
+        /// what it will compose next is the whole feature. A menu is presentation this milestone
+        /// does not owe.</para>
+        /// <para>The recomposition is what makes the pick real: it rebuilds the board, the runtime
+        /// and the identity tuple, so the seats the entry form then lists and the tuple a client
+        /// checks both describe the match that will actually be played.</para>
+        /// </remarks>
+        private void CycleMatchFormat()
+        {
+            if (listener != null || session != null || machine != null ||
+                compositionRoot?.ComposedPlan == null)
+            {
+                return;
+            }
+
+            var formats = MatchFormat.All;
+            var current = compositionRoot.ComposedPlan.Format;
+            var index = 0;
+            for (var candidate = 0; candidate < formats.Count; candidate++)
+            {
+                if (string.Equals(formats[candidate].Id, current.Id, StringComparison.Ordinal))
+                {
+                    index = candidate;
+                    break;
+                }
+            }
+
+            var next = formats[(index + 1) % formats.Count];
+            compositionRoot.Recompose(MatchCompositionPlan.Printed(next));
+            PrivateOnlineMarkers.Log("LOBBY_FORMAT format=" + next.Id);
+            presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
+        }
+
         private IReadOnlyList<SeatRosterEntry> LocalSeats()
         {
             var rows = new List<SeatRosterEntry>();
@@ -861,6 +1053,11 @@ namespace GuardsDigital.Presentation.Interaction
             session = new PrivateSessionHost(
                 compositionRoot.Runtime.Host, compositionRoot.Runtime.SessionIdentity,
                 sessionKey, listener, new CryptoNonceSource());
+            // Milestone 8.35z37. The seam, attached at the one moment it can be: the host
+            // exists, so the selection stage its seats are built from exists, and nothing has been
+            // admitted yet. From here the session owns WHEN the match is composed, and this scene
+            // owns HOW - which is the whole inversion IDeferredMatchComposition exists for.
+            session.Composition = compositionRoot;
             console = new HostConsoleReader();
             console.Start();
             signature = string.Empty;

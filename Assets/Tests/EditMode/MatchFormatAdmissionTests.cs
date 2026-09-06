@@ -149,9 +149,15 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheProtocolVersion_MovedBecauseTheHelloPayloadGrewAField()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(9),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(10),
                 "A version 8 peer reads the format string as the content digest and then finds the " +
-                "key proof missing, so the old version is refused from the bounded header instead.");
+                "key proof missing, so the old version is refused from the bounded header instead. " +
+                "Milestone 8.35z37 took it to 10 for the ChooseHero kind that carries a " +
+                "seat's hero pick to the host: a version 9 peer has no case for kind 21 and would " +
+                "refuse it as an unexpected message, which is a protocol surface change and is " +
+                "taken as one. This case pins the CURRENT version rather than the one the format " +
+                "element moved to, so a later move is accounted for here rather than passing " +
+                "unread.");
         }
 
         [Test]

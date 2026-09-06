@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Application
@@ -173,6 +175,18 @@ namespace GuardsDigital.Application
 
         /// <summary>The latest roster the host published.</summary>
         public IReadOnlyList<SeatRosterEntry> Roster => roster;
+
+        /// <summary>
+        /// Milestone 8.35z37. Rulebook p.22's coin as the host published it, or
+        /// <see cref="TeamSide.None"/> in a session running no selection.
+        /// </summary>
+        /// <remarks>
+        /// It is the ORDER, not a rules answer: with it and the roster's own
+        /// <see cref="SeatRosterEntry.HasChosenHero"/> flags a surface can say whose pick it is
+        /// without asking the host a second time. The host still owns the rule - a pick out of turn
+        /// is refused there - so a surface reading this is showing the order, never enforcing it.
+        /// </remarks>
+        public TeamSide FirstPickingTeam { get; private set; }
 
         /// <summary>
         /// Milestone 8.35a. Whether this session has left the lobby, learned from the host's
@@ -449,6 +463,7 @@ namespace GuardsDigital.Application
 
                 roster.Clear();
                 roster.AddRange(update.Roster);
+                FirstPickingTeam = update.FirstPickingTeam;
                 return;
             }
 
@@ -508,6 +523,9 @@ namespace GuardsDigital.Application
                     SessionCorrelation = welcome.SessionCorrelation;
                     roster.Clear();
                     roster.AddRange(welcome.Roster);
+                    // Milestone 8.35z37. p.22's coin, so a client joining mid-selection can
+                    // draw the pick order from its very first roster rather than after a pick.
+                    FirstPickingTeam = welcome.FirstPickingTeam;
                     // Milestone 8.35a. The admission answer says which phase the session is in, so
                     // a returning player knows before it claims anything that the lobby is over.
                     HasMatchStarted = welcome.MatchStarted;
@@ -1179,6 +1197,101 @@ namespace GuardsDigital.Application
 
             Send(PrivateSessionFrameCodec.SetReadinessFrame(new SeatReadinessMessage(isReady)));
             return true;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z37. Tells the host which hero this seat picks, under rulebook
+        /// p.22's All Pick.
+        /// </summary>
+        /// <remarks>
+        /// <para>It says nothing about whether the pick was TAKEN, for the reason
+        /// <see cref="TrySetReadiness"/> says nothing about readiness: the answer is the roster the
+        /// host publishes, and a surface that lit a hero on this return value would be showing one
+        /// process's hope rather than the table's shared state. A refusal arrives on the reject path
+        /// as <c>HeroSelectionRefused</c> with the stage's own words.</para>
+        /// <para>Refused before it is sent from any state but
+        /// <see cref="PrivateSessionClientState.Seated"/> and after the match has begun. The pick
+        /// ORDER is not checked here and deliberately: whose turn it is is the host's answer, and a
+        /// client that enforced it locally would be a second implementation of p.22 free to disagree
+        /// with the first. A surface may grey the control from the roster it already reads; the rule
+        /// stays on one side of the wire.</para>
+        /// </remarks>
+        public bool TryChooseHero(string heroIdValue)
+        {
+            if (State != PrivateSessionClientState.Seated || HasMatchStarted)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(heroIdValue) ||
+                heroIdValue.Length > PrivateSessionProtocol.MaxHeroIdChars)
+            {
+                return false;
+            }
+
+            Send(PrivateSessionFrameCodec.ChooseHeroFrame(new HeroChoiceMessage(heroIdValue)));
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z37. The line-up the host settled on, read off the roster this
+        /// client already holds - or <c>null</c> while the roster does not yet name a hero for every
+        /// seat.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>This is how a client recomposes its own board to match the host's.</b> A client
+        /// draws its match from its OWN local composition, updated by the host's projections, so a
+        /// host that composed a chosen line-up while the client kept the printed one would leave six
+        /// people looking at the wrong heroes. The roster is the fix and it needs no new message:
+        /// every row has carried a hero id since milestone 8.31, and the host broadcasts a fresh
+        /// roster on every accepted pick.</para>
+        /// <para>Derived on demand rather than latched, so a roster arriving after a resync or a
+        /// reconnect gives the same answer as the one before it. It resolves each row against the
+        /// live registration and answers null if any row names a hero this build cannot deal, which
+        /// is the honest reading: a client that cannot compose what the host composed must not
+        /// compose something else and call it the same match.</para>
+        /// </remarks>
+        public HeroLineup ComposedLineup()
+        {
+            var red = new List<RegisteredHero>();
+            var blue = new List<RegisteredHero>();
+            foreach (var entry in roster)
+            {
+                if (!RegisteredHeroRoster.TryFind(entry.Hero.Value, out var hero))
+                {
+                    return null;
+                }
+
+                if (entry.TeamSide == TeamSide.Red)
+                {
+                    red.Add(hero);
+                }
+                else if (entry.TeamSide == TeamSide.Blue)
+                {
+                    blue.Add(hero);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            if (red.Count == 0 || red.Count != blue.Count)
+            {
+                return null;
+            }
+
+            try
+            {
+                return new HeroLineup(red, blue);
+            }
+            catch (ArgumentException)
+            {
+                // The one-copy rule refused it. A roster naming one hero twice is a host that
+                // cannot have composed a board either, so answering null leaves this client on the
+                // match it has rather than throwing inside a redraw.
+                return null;
+            }
         }
 
         /// <summary>An orderly close; plaintext by design, like the host's own Goodbye.</summary>

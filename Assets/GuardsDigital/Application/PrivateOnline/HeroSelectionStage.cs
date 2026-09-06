@@ -336,23 +336,36 @@ namespace GuardsDigital.Application
         /// arise in either printed format (setup step 2's teams are equal) but is defined rather
         /// than left to an index.</para>
         /// </remarks>
-        public IReadOnlyList<HeroSelectionSeat> PickOrder
+        public IReadOnlyList<HeroSelectionSeat> PickOrder => PickOrderFor(seats, firstPickingTeam);
+
+        /// <summary>
+        /// p.22's All Pick order over any seats, as a function of the seats and the coin alone.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 8.35z37 lifted this out of the instance property so a CLIENT can draw
+        /// the same order the host enforces. A client holds no stage - the stage is the host's, and
+        /// the rule stays there - but it does hold the roster and the published coin, which is
+        /// exactly this function's two arguments. One implementation of the printed order, read by
+        /// both sides: a surface that derived its own would be a second reading of p.22, free to
+        /// show a turn the host would refuse.
+        /// </remarks>
+        public static IReadOnlyList<HeroSelectionSeat> PickOrderFor(
+            IReadOnlyList<HeroSelectionSeat> seats, TeamSide firstPickingTeam)
         {
-            get
+            if (seats == null) throw new ArgumentNullException(nameof(seats));
+
+            var first = seats.Where(seat => seat.TeamSide == firstPickingTeam).ToArray();
+            var second = seats.Where(seat => seat.TeamSide != firstPickingTeam).ToArray();
+
+            var order = new List<HeroSelectionSeat>(seats.Count);
+            var longest = Math.Max(first.Length, second.Length);
+            for (var index = 0; index < longest; index++)
             {
-                var first = seats.Where(seat => seat.TeamSide == firstPickingTeam).ToArray();
-                var second = seats.Where(seat => seat.TeamSide != firstPickingTeam).ToArray();
-
-                var order = new List<HeroSelectionSeat>(seats.Count);
-                var longest = Math.Max(first.Length, second.Length);
-                for (var index = 0; index < longest; index++)
-                {
-                    if (index < first.Length) order.Add(first[index]);
-                    if (index < second.Length) order.Add(second[index]);
-                }
-
-                return order;
+                if (index < first.Length) order.Add(first[index]);
+                if (index < second.Length) order.Add(second[index]);
             }
+
+            return order;
         }
 
         /// <summary>The screen, one row a seat, in lobby order.</summary>

@@ -62,10 +62,19 @@ namespace GuardsDigital.Core.Setup
 
         public HeroId HeroId => new HeroId(HeroIdValue);
 
+        /// <remarks>
+        /// <b>Identity is the hero id and the printed set, never the epithet.</b> Comparing
+        /// <see cref="DisplayName"/> here violated the Phase 4 boundary that rules and application code
+        /// never branch on a display name or printed text, and the Edit Mode conformance scan caught it -
+        /// the cross-platform harness structurally cannot, because that scan is Unity-only. It is also
+        /// the right semantics rather than merely the legal ones: two rows naming the same hero and the
+        /// same dealt set ARE the same registered hero, and an epithet is what a pick screen reads, not
+        /// what a rule decides on. Dropping it also makes this agree with <see cref="GetHashCode"/>,
+        /// which has only ever hashed the id.
+        /// </remarks>
         public bool Equals(RegisteredHero other) =>
             string.Equals(HeroIdValue, other.HeroIdValue, StringComparison.Ordinal) &&
-            ContentId.Equals(other.ContentId) &&
-            string.Equals(DisplayName, other.DisplayName, StringComparison.Ordinal);
+            ContentId.Equals(other.ContentId);
 
         public override bool Equals(object obj) => obj is RegisteredHero other && Equals(other);
 

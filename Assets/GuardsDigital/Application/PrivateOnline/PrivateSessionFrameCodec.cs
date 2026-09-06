@@ -174,7 +174,7 @@ namespace GuardsDigital.Application
             using (var writer = new BinaryWriter(stream, Encoding.UTF8))
             {
                 writer.Write(message.SessionCorrelation);
-                WriteRoster(writer, message.Roster);
+                WriteRoster(writer, message.Roster, message.FirstPickingTeam);
                 writer.Write(message.MatchStarted);
                 writer.Flush();
                 return EncodeFrame(SessionMessageKind.Welcome, stream.ToArray());
@@ -191,7 +191,7 @@ namespace GuardsDigital.Application
                 {
                     var correlation = reader.ReadString();
                     if (string.IsNullOrWhiteSpace(correlation) ||
-                        !TryReadRoster(reader, out var roster))
+                        !TryReadRoster(reader, out var roster, out var firstPickingTeam))
                     {
                         return false;
                     }
@@ -202,7 +202,8 @@ namespace GuardsDigital.Application
                         return false;
                     }
 
-                    message = new SessionWelcomeMessage(correlation, roster, matchStarted);
+                    message = new SessionWelcomeMessage(
+                        correlation, roster, matchStarted, firstPickingTeam);
                     return true;
                 }
             }
@@ -390,7 +391,7 @@ namespace GuardsDigital.Application
             using (var stream = new MemoryStream())
             using (var writer = new BinaryWriter(stream, Encoding.UTF8))
             {
-                WriteRoster(writer, message.Roster);
+                WriteRoster(writer, message.Roster, message.FirstPickingTeam);
                 writer.Flush();
                 return EncodeFrame(SessionMessageKind.RosterUpdate, stream.ToArray());
             }
@@ -404,12 +405,13 @@ namespace GuardsDigital.Application
                 using (var stream = new MemoryStream(payload ?? Array.Empty<byte>(), false))
                 using (var reader = new BinaryReader(stream, Encoding.UTF8))
                 {
-                    if (!TryReadRoster(reader, out var roster) || stream.Position != stream.Length)
+                    if (!TryReadRoster(reader, out var roster, out var firstPickingTeam) ||
+                        stream.Position != stream.Length)
                     {
                         return false;
                     }
 
-                    message = new SeatRosterMessage(roster);
+                    message = new SeatRosterMessage(roster, firstPickingTeam);
                     return true;
                 }
             }
@@ -460,6 +462,53 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>
+        /// Milestone 8.35z37. One seated connection's hero pick: a single bounded id, and
+        /// nothing that names a seat - the connection is what says whose pick it is.
+        /// </summary>
+        /// <remarks>
+        /// Measured: for <c>hero-wasp</c> this is a 12-byte frame header plus a length-prefixed
+        /// nine-character string, which is the ~12-byte payload cost the selection milestone's own
+        /// wire survey predicted before either half was written.
+        /// </remarks>
+        public static byte[] ChooseHeroFrame(HeroChoiceMessage message)
+        {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                writer.Write(message.HeroIdValue);
+                writer.Flush();
+                return EncodeFrame(SessionMessageKind.ChooseHero, stream.ToArray());
+            }
+        }
+
+        public static bool TryDecodeChooseHero(byte[] payload, out HeroChoiceMessage message)
+        {
+            message = null;
+            try
+            {
+                using (var stream = new MemoryStream(payload ?? Array.Empty<byte>(), false))
+                using (var reader = new BinaryReader(stream, Encoding.UTF8))
+                {
+                    var heroId = reader.ReadString();
+                    if (string.IsNullOrWhiteSpace(heroId) ||
+                        heroId.Length > PrivateSessionProtocol.MaxHeroIdChars ||
+                        stream.Position != stream.Length)
+                    {
+                        return false;
+                    }
+
+                    message = new HeroChoiceMessage(heroId);
+                    return true;
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Milestone 8.35a. The host's one-way announcement that the lobby is over. It carries no
         /// payload: the roster the clients already hold says which seats are in it, and a phase
         /// change that needed arguments would be a second way to say what the roster says.
@@ -477,8 +526,16 @@ namespace GuardsDigital.Application
 
         public static byte[] GoodbyeFrame() => EncodeFrame(SessionMessageKind.Goodbye, Array.Empty<byte>());
 
-        private static void WriteRoster(BinaryWriter writer, IReadOnlyList<SeatRosterEntry> roster)
+        /// <remarks>
+        /// Milestone 8.35z37 writes rulebook p.22's coin ahead of the rows, so the Welcome
+        /// and every RosterUpdate carry the pick order a selection screen draws from - see
+        /// <see cref="SeatRosterMessage.FirstPickingTeam"/> for why a client cannot derive it before
+        /// the first pick has been made.
+        /// </remarks>
+        private static void WriteRoster(
+            BinaryWriter writer, IReadOnlyList<SeatRosterEntry> roster, TeamSide firstPickingTeam)
         {
+            writer.Write((int)firstPickingTeam);
             writer.Write(roster.Count);
             foreach (var entry in roster)
             {
@@ -486,9 +543,17 @@ namespace GuardsDigital.Application
             }
         }
 
-        private static bool TryReadRoster(BinaryReader reader, out IReadOnlyList<SeatRosterEntry> roster)
+        private static bool TryReadRoster(
+            BinaryReader reader,
+            out IReadOnlyList<SeatRosterEntry> roster,
+            out TeamSide firstPickingTeam)
         {
             roster = null;
+            if (!TryReadTeamSide(reader.ReadInt32(), out firstPickingTeam))
+            {
+                return false;
+            }
+
             var count = reader.ReadInt32();
             if (count < 0 || count > PrivateSessionProtocol.MaxSeats)
             {
@@ -519,6 +584,10 @@ namespace GuardsDigital.Application
             // Milestone 8.35a. Readiness is public seat state, so it travels with the rest of the
             // row rather than in a message of its own.
             writer.Write(entry.IsReady);
+            // Milestone 8.35z37. Whether that hero was PICKED, which is public seat state
+            // in the same way readiness is, and which a client cannot infer - see
+            // SeatRosterEntry.HasChosenHero for why the hero column alone cannot say it.
+            writer.Write(entry.HasChosenHero);
         }
 
         private static bool TryReadRosterEntry(BinaryReader reader, out SeatRosterEntry entry)
@@ -529,6 +598,7 @@ namespace GuardsDigital.Application
             var teamValue = reader.ReadInt32();
             var occupancyValue = reader.ReadInt32();
             var isReady = reader.ReadBoolean();
+            var hasChosenHero = reader.ReadBoolean();
             if (string.IsNullOrWhiteSpace(seat) || string.IsNullOrWhiteSpace(hero) ||
                 !TryReadTeamSide(teamValue, out var team) ||
                 !TryReadOccupancy(occupancyValue, out var occupancy))
@@ -536,7 +606,8 @@ namespace GuardsDigital.Application
                 return false;
             }
 
-            entry = new SeatRosterEntry(new SeatId(seat), new HeroId(hero), team, occupancy, isReady);
+            entry = new SeatRosterEntry(
+                new SeatId(seat), new HeroId(hero), team, occupancy, isReady, hasChosenHero);
             return true;
         }
 
@@ -562,10 +633,17 @@ namespace GuardsDigital.Application
             }
         }
 
+        /// <remarks>
+        /// <b>The upper bound names the enum's LAST member and has to be moved with it.</b> Milestone
+        /// 8.35z37 added <see cref="SessionMessageKind.ChooseHero"/> and every frame carrying
+        /// it was refused as malformed until this line moved - the whole fixture went red on one
+        /// stale constant. Worth the remark because nothing else in the build points at it: a new
+        /// member compiles, encodes, and is then rejected on the way back in.
+        /// </remarks>
         internal static bool TryReadMessageKind(int value, out SessionMessageKind kind)
         {
             if (value >= (int)SessionMessageKind.Challenge &&
-                value <= (int)SessionMessageKind.UndoResult)
+                value <= (int)SessionMessageKind.ChooseHero)
             {
                 kind = (SessionMessageKind)value;
                 return true;
@@ -575,10 +653,23 @@ namespace GuardsDigital.Application
             return false;
         }
 
+        /// <remarks>
+        /// <para>Same stale-tail shape as <see cref="TryReadMessageKind"/> above, and it had ALREADY
+        /// BITTEN before this milestone touched it: the bound read
+        /// <c>ReconnectNotAuthorized</c> (21) while the ELEVENTH amendment's
+        /// <see cref="SessionRejectionReason.MatchFormatMismatch"/> (22) had been appended past it.
+        /// A peer refused for composing a different printed setup therefore received a reject frame
+        /// its own decoder threw away as malformed - so instead of "The host is playing a different
+        /// match format" it was told the host had sent something unreadable. Found while adding
+        /// <see cref="SessionRejectionReason.HeroSelectionRefused"/> (23) directly behind it, and
+        /// fixed for both.</para>
+        /// <para>It is a decode bound rather than a rule, so widening it refuses nothing that used
+        /// to be accepted; it only stops discarding reasons the build already sends.</para>
+        /// </remarks>
         private static bool TryReadRejectionReason(int value, out SessionRejectionReason reason)
         {
             if (value >= (int)SessionRejectionReason.ProtocolFamilyMismatch &&
-                value <= (int)SessionRejectionReason.ReconnectNotAuthorized)
+                value <= (int)SessionRejectionReason.HeroSelectionRefused)
             {
                 reason = (SessionRejectionReason)value;
                 return true;
