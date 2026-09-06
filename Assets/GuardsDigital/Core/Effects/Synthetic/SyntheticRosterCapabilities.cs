@@ -717,17 +717,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             yield return new AdjacentTerrainPresenceHandler();
             yield return new TransferResourceHandler();
 
-            // Milestone 8.35z29 adds Misa's four. Her five Blue Skills name
-            // `choose-line-destination` and `choose-traversed-unit` - the first straight-line movement
-            // in this build whose own text crosses obstacles, and the first selection derived from the
-            // interior of a line rather than from a disk. Living Tornado names
-            // `choose-unit-pair-at-maximum-radius` and Storm Spirit
-            // `choose-unit-pair-at-equal-distance-in-radius`, which is the catalog's first relational
-            // pair constraint.
-            // Milestone 8.35z29's six contracts are NOT here. Misa is not dealt yet, and milestone
-            // 7.9's deferral gate refuses a registration no printed card can start - so they are
-            // declared beside `target-played-attack-this-turn@1` in the deferred list below, and the
-            // milestone that deals her moves them across in one edit.
+            // THE SIX-HERO CONTENT WAVE ADDS NOTHING HERE. None of milestones 8.35z28 through
+            // 8.35z33 deals its hero, and milestone 7.9's deferral gate refuses a registration no
+            // printed card can start - so every contract those six mint is declared beside
+            // `target-played-attack-this-turn@1` in `DeferredHandlers` above, and each hero's own
+            // dealing milestone moves its lines across in one edit.
             yield return new ActorMovedThisActionHandler();
         }
 

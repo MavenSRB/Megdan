@@ -81,7 +81,39 @@ namespace GuardsDigital.Core.Rules.Modifications
                 admittedClassification);
         }
 
+        /// <summary>
+        /// The token that declared the prevention, removed in place of the object it protects -
+        /// Tali's two Totem faces. Milestone 8.35z32.
+        ///
+        /// <para>It names no location, no colours and no classification because it charges no card:
+        /// the price is the specific piece whose property is speaking, which the applied modification
+        /// already identifies through its source. See
+        /// <see cref="RemovalPreventionCostKind.RemoveTheSourceToken"/> for why it is a second shape
+        /// and not just a second price.</para>
+        /// </summary>
+        public static RemovalPreventionCost RemoveTheSourceToken { get; } = new RemovalPreventionCost(
+            RemovalPreventionCostKind.RemoveTheSourceToken,
+            CardLocation.None,
+            new ReadOnlyCollection<CardColor>(Array.Empty<CardColor>()),
+            CardClassification.None);
+
         public RemovalPreventionCostKind Kind { get; }
+
+        /// <summary>
+        /// Whether this price is paid by a card its holder chooses, which is the question that decides
+        /// whether the prevention is a decision at all.
+        ///
+        /// <para><b>A method and not a property, and the reason is measured rather than stylistic.</b>
+        /// The content-identity oracle canonicalises every <em>public instance property</em> of every
+        /// type reachable from a hero's definition graph, and <see cref="RemovalPreventionCost"/> is
+        /// reached by every <see cref="RuleModification"/> there is - including the ones that are not
+        /// preventions at all, which carry the default <see cref="Free"/> value. Adding a property here
+        /// therefore moved all six shipped heroes' digests at once, with no content having changed;
+        /// expressing the same reading as a method moves none. That is the roster's standing rule -
+        /// methods are free, properties are not - and this is its second recorded instance after
+        /// Silverarrow's <c>BeforeActionTrigger</c>.</para>
+        /// </summary>
+        public bool IsPaidWithACard() => Kind == RemovalPreventionCostKind.DiscardOwnedCard;
 
         /// <summary>Where the discarded card comes from; <c>None</c> when nothing is charged.</summary>
         public CardLocation FromLocation { get; }

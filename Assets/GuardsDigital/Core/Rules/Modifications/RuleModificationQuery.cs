@@ -547,7 +547,6 @@ namespace GuardsDigital.Core.Rules.Modifications
                 }
 
                 var controllerSide = participants.GetTeamForHero(token.ControllerHeroId).Side;
-                var affectedObject = RuleObject.ForHero(token.ControllerHeroId);
 
                 // PlacedToken builds one property source per declared property, in declaration order,
                 // so the two collections address the same property at the same index.
@@ -559,21 +558,101 @@ namespace GuardsDigital.Core.Rules.Modifications
                         continue;
                     }
 
-                    var resolved = ResolveDerivedAmount(
-                        property.Modification, affectedObject, token.ControllerHeroId, board,
-                        participants);
-                    if (resolved == null)
+                    // Milestone 8.35z32. Until Tali's Green line there was one answer here - the
+                    // token's controller - and it is still the answer for every declaration that does
+                    // not say otherwise. What her three sentences add is that a token's rule can reach
+                    // the objects standing beside the TOKEN, which is where p.19 puts the token's own
+                    // lifetime: "Once a token is placed, it retains all its properties until that token
+                    // is removed."
+                    foreach (var affectedObject in TokenPropertyAffectedObjects(
+                        token, property.AffectedObject, board, participants, controllerSide))
                     {
-                        continue;
+                        var resolved = ResolveDerivedAmount(
+                            property.Modification, affectedObject, token.ControllerHeroId, board,
+                            participants);
+                        if (resolved == null)
+                        {
+                            continue;
+                        }
+
+                        yield return AppliedRuleModification.FromContinuousSource(
+                            resolved,
+                            affectedObject,
+                            token.PropertySources[propertyIndex],
+                            controllerSide,
+                            tokenIndex);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Which objects one token property's rule is addressed to right now. Milestone 8.35z32.
+        ///
+        /// <para>Every adjacency is measured from the <b>token's</b> space and re-measured every time
+        /// the live set is derived, so a hero who steps beside an Ice token is at -1 Initiative from
+        /// that moment and back to nothing when they step away - which is what p.7's mid-turn
+        /// Initiative re-check needs in order to see the aura at all. Nothing is stored.</para>
+        ///
+        /// <para>The Ice sentence needs no counting vocabulary: each token yields its own contribution
+        /// to each enemy hero beside it, so a hero standing next to three Ice tokens is reached by
+        /// three sources and is at -3. "For every Ice token they are adjacent to" is what per-token
+        /// sources already say.</para>
+        /// </summary>
+        private static IEnumerable<RuleObject> TokenPropertyAffectedObjects(
+            PlacedToken token,
+            TokenPropertyAffectedObject scope,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            TeamSide controllerSide)
+        {
+            switch (scope)
+            {
+                case TokenPropertyAffectedObject.Controller:
+                    yield return RuleObject.ForHero(token.ControllerHeroId);
+                    break;
+
+                case TokenPropertyAffectedObject.TheTokenItself:
+                    yield return RuleObject.ForToken(token.Id);
+                    break;
+
+                case TokenPropertyAffectedObject.EnemyHeroesAdjacentToTheToken:
+                    foreach (var occupancy in board.Occupancies)
+                    {
+                        if (HexDistanceQuery.Calculate(token.Coordinate, occupancy.Coordinate) == 1 &&
+                            participants.GetTeamForHero(occupancy.HeroId).Side != controllerSide)
+                        {
+                            yield return RuleObject.ForHero(occupancy.HeroId);
+                        }
                     }
 
-                    yield return AppliedRuleModification.FromContinuousSource(
-                        resolved,
-                        affectedObject,
-                        token.PropertySources[propertyIndex],
-                        controllerSide,
-                        tokenIndex);
+                    break;
+
+                case TokenPropertyAffectedObject.FriendlyMinionsAdjacentToTheToken:
+                case TokenPropertyAffectedObject.FriendlyMeleeMinionsAdjacentToTheToken:
+                {
+                    // p.17's Friendly is "another unit on your team", read from the token's controller.
+                    // The melee narrowing is Ancestral Totem's one extra printed word, and p.8's
+                    // miniature types are where "melee minion" is defined.
+                    var meleeOnly =
+                        scope == TokenPropertyAffectedObject.FriendlyMeleeMinionsAdjacentToTheToken;
+                    foreach (var minion in board.Minions)
+                    {
+                        if (HexDistanceQuery.Calculate(token.Coordinate, minion.Coordinate) == 1 &&
+                            minion.TeamSide == controllerSide &&
+                            (!meleeOnly || minion.MinionType == StandardMinionType.Melee))
+                        {
+                            yield return RuleObject.ForMinion(minion.MinionId);
+                        }
+                    }
+
+                    break;
                 }
+
+                default:
+                    throw new InvalidOperationException(
+                        $"Placed token '{token.Id.Value}' declares a property under an unsupported " +
+                        "affected-object scope.");
             }
         }
 

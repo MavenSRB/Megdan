@@ -183,7 +183,27 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// Bolster and Fortify are the roster's shape of it; the card is the price and the discard is
         /// what makes the decision cost something rather than being taken every time.
         /// </summary>
-        DiscardOwnedCard = 1
+        DiscardOwnedCard = 1,
+
+        /// <summary>
+        /// The token whose property declared the prevention, removed instead of the object it was
+        /// protecting - Tali's <c>If a friendly minion adjacent to a totem would be defeated, remove
+        /// the totem instead.</c> Milestone 8.35z32.
+        ///
+        /// <para><b>It is a second cost kind AND a second shape, and the second half matters more.</b>
+        /// Brogan's family is a <em>decision</em>: a hero is asked, may decline, and pays with a card
+        /// from a hand that moves - which is why <see cref="RemovalPreventionQuery"/> derives the
+        /// payable cards live and drops an option nobody can afford. Tali's sentence carries none of
+        /// p.10's three softeners - no "you may", no "up to", no "if able" - so it is mandatory, there
+        /// is nobody to ask, and the price is a specific piece already on the board rather than a
+        /// choice among cards. A mandatory prevention offered as a decision would be a question with
+        /// one legal answer, and a decision-shaped one dropped for having no payable <em>cards</em>
+        /// would silently never fire at all.</para>
+        ///
+        /// <para>So the two are read apart: <see cref="RemovalPreventionQuery.Offered"/> answers for
+        /// the decision family and <see cref="RemovalPreventionQuery.Automatic"/> for this one.</para>
+        /// </summary>
+        RemoveTheSourceToken = 2
     }
 
     /// <summary>

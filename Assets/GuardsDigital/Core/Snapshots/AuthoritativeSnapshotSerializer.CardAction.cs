@@ -610,8 +610,28 @@ namespace GuardsDigital.Core.Snapshots
                 origin, resolution, subjectMinionId, defeat, operations, decidingHeroId, activity);
         }
 
+        /// <summary>
+        /// One rules object as the subject of a paused decision.
+        ///
+        /// <para><b>Units only, and milestone 8.35z32 made that a statement rather than an
+        /// assumption.</b> Adding <see cref="RuleObjectKind.Token"/> to the vocabulary put a third arm
+        /// into a type whose two writers here - the effect-interrupt subject and the removal-prevention
+        /// subject - can only ever be handed a hero or a minion, because both pauses hang off p.13's
+        /// Defeat and p.19 keeps tokens outside it. The previous shape would have written a token as an
+        /// empty minion identity and restored it as a minion with a blank ID; refusing loudly is the
+        /// only reading that cannot corrupt a payload, and no live path reaches it.</para>
+        /// </summary>
         private static void WriteRuleObject(BinaryWriter writer, RuleObject subject)
         {
+            if (subject.Kind == RuleObjectKind.Token)
+            {
+                throw new InvalidOperationException(
+                    "A placed token is never the subject of a paused decision: rulebook p.19 keeps " +
+                    "tokens outside the unit rules that p.13's Defeat and its removal-prevention " +
+                    "window are about. A token reaching this writer is an engine defect, not a " +
+                    "payload this serializer should invent an encoding for.");
+            }
+
             writer.Write((int)subject.Kind);
             writer.Write(subject.Kind == RuleObjectKind.Hero
                 ? subject.HeroId.Value
@@ -622,6 +642,14 @@ namespace GuardsDigital.Core.Snapshots
         {
             var kind = SnapshotEnumReader.Read<RuleObjectKind>(reader, description);
             var identity = reader.ReadString();
+            if (kind == RuleObjectKind.Token)
+            {
+                throw new SnapshotLoadException(
+                    SnapshotLoadRejectionReason.MalformedPayload,
+                    $"A {description} names a token, which no writer in this build produces; " +
+                    "rulebook p.19 keeps tokens outside the unit rules these pauses are about.");
+            }
+
             return kind == RuleObjectKind.Hero
                 ? RuleObject.ForHero(new HeroId(identity))
                 : RuleObject.ForMinion(new MinionId(identity));

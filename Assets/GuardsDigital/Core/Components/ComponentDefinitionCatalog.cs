@@ -84,6 +84,23 @@ namespace GuardsDigital.Core.Components
                     nameof(markers));
             }
 
+            // Milestone 8.35z32. A shared supply is one physical pile, so its members have to agree
+            // how big it is: two numbers for one pile is exactly the drift the derived-count design
+            // exists to make impossible, and it would show up as a supply that answers differently
+            // depending on which of its members was asked.
+            var disagreeingGroup = registeredTokens
+                .Where(definition => definition.SharesASupply)
+                .GroupBy(definition => definition.SupplyGroupId, StringComparer.Ordinal)
+                .FirstOrDefault(group =>
+                    group.Select(definition => definition.SupplyCount).Distinct().Count() > 1);
+            if (disagreeingGroup != null)
+            {
+                throw new ArgumentException(
+                    $"Token definitions sharing supply '{disagreeingGroup.Key}' declare different " +
+                    "supply counts, so the one pile they share would have two sizes.",
+                    nameof(tokens));
+            }
+
             tokensByReference = registeredTokens.ToDictionary(definition => definition.Reference);
             knownTokenIds = new HashSet<TokenDefinitionId>(registeredTokens.Select(definition => definition.Id));
             markersByReference = registeredMarkers.ToDictionary(definition => definition.Reference);
@@ -157,6 +174,12 @@ namespace GuardsDigital.Core.Components
         /// <summary>
         /// The rulebook's p.18 supply question - "more tokens than are available in the supply" - answered
         /// against the trusted total and the tokens currently on the board. Nothing stores this number.
+        ///
+        /// <para>Since milestone 8.35z32 the count is taken over the <em>pile</em> rather than the
+        /// definition: a definition that names a <c>SupplyGroupId</c> shares one physical supply with
+        /// every other definition naming it, so every placed member of the group is subtracted from the
+        /// group's one total. A definition that names no group is its own pile and the answer is
+        /// unchanged, which is every definition written before that milestone.</para>
         /// </summary>
         public int CountAvailableTokens(
             TokenDefinitionReference reference,
@@ -164,9 +187,40 @@ namespace GuardsDigital.Core.Components
         {
             if (placedTokens == null) throw new ArgumentNullException(nameof(placedTokens));
 
-            var placed = placedTokens.Count(token => token.Definition.Reference.Equals(reference));
-            return Math.Max(0, LoadToken(reference).SupplyCount - placed);
+            var definition = LoadToken(reference);
+            var placed = definition.SharesASupply
+                ? placedTokens.Count(token => SharesSupplyWith(token, definition))
+                : placedTokens.Count(token => token.Definition.Reference.Equals(reference));
+            return Math.Max(0, definition.SupplyCount - placed);
         }
+
+        /// <summary>
+        /// Every token currently on the board that p.18's short-supply step may take back to make room
+        /// for one of <paramref name="reference"/> - "remove up to that number of tokens of the same
+        /// type from the board".
+        ///
+        /// <para>For a definition with its own supply that is the tokens of that definition, which is
+        /// what the sentence has always meant here. For a definition sharing a pile it is the whole
+        /// group, and RULING 44 says so in as many words: Tali's three tokens "are the same token, it
+        /// just depends what you use them for", so placing beyond the supply reaches her own standing
+        /// tokens whatever role they currently hold.</para>
+        /// </summary>
+        public IEnumerable<PlacedToken> ReclaimableForPlacement(
+            TokenDefinitionReference reference,
+            IEnumerable<PlacedToken> placedTokens)
+        {
+            if (placedTokens == null) throw new ArgumentNullException(nameof(placedTokens));
+
+            var definition = LoadToken(reference);
+            return definition.SharesASupply
+                ? placedTokens.Where(token => SharesSupplyWith(token, definition))
+                : placedTokens.Where(token => token.Definition.Reference.Equals(reference));
+        }
+
+        private static bool SharesSupplyWith(PlacedToken token, TokenDefinition definition) =>
+            token != null && token.Definition != null &&
+            string.Equals(
+                token.Definition.SupplyGroupId, definition.SupplyGroupId, StringComparison.Ordinal);
 
         /// <summary>The marker counterpart: the total minus every marker currently held by a hero.</summary>
         public int CountAvailableMarkers(

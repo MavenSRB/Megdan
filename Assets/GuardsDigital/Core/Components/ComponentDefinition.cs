@@ -17,7 +17,8 @@ namespace GuardsDigital.Core.Components
             string propertyId,
             string ruleKind,
             string applicabilityKind,
-            RuleModification modification = null)
+            RuleModification modification = null,
+            TokenPropertyAffectedObject affectedObject = TokenPropertyAffectedObject.Controller)
         {
             if (string.IsNullOrWhiteSpace(propertyId) || string.IsNullOrWhiteSpace(ruleKind) ||
                 string.IsNullOrWhiteSpace(applicabilityKind))
@@ -26,10 +27,18 @@ namespace GuardsDigital.Core.Components
                     "A token property requires stable identity, rule, and applicability.");
             }
 
+            if (!Enum.IsDefined(typeof(TokenPropertyAffectedObject), affectedObject))
+            {
+                throw new ArgumentException(
+                    "A token property names one of the declared affected objects.",
+                    nameof(affectedObject));
+            }
+
             PropertyId = propertyId;
             RuleKind = ruleKind;
             ApplicabilityKind = applicabilityKind;
             Modification = modification;
+            AffectedObject = affectedObject;
         }
 
         public string PropertyId { get; }
@@ -43,12 +52,86 @@ namespace GuardsDigital.Core.Components
         /// source and lifetime.
         ///
         /// Milestone 6.3 established the declaration without a concrete rule because none was verified
-        /// yet; milestone 6.8 supplies the general typed families it can now carry. The affected object is
-        /// the token's controller, which is the hero the derived
-        /// <c>ContinuousRuleSource</c> already names - a token property that modifies something else needs
-        /// the verified text that says so, not a member added ahead of it.
+        /// yet; milestone 6.8 supplies the general typed families it can now carry.
         /// </summary>
         public RuleModification Modification { get; }
+
+        /// <summary>
+        /// Who or what this property's rule is addressed to. Milestone 8.35z32.
+        ///
+        /// <para><b>Why the field exists now and not before.</b> Milestone 6.8 recorded the previous
+        /// answer and the condition for changing it in one sentence: "The affected object is the token's
+        /// controller ... a token property that modifies something else needs the verified text that
+        /// says so, not a member added ahead of it." Tali's Green line is that text, three times over,
+        /// and none of the three is about her: <c>Enemy heroes have -1 Initiative for every Ice token
+        /// they are adjacent to</c>, <c>If a friendly minion adjacent to a totem would be defeated,
+        /// remove the totem instead</c>, and <c>Totem tokens are immune</c>. The default is the old
+        /// meaning written down, so every declaration made before this one says exactly what it said.
+        /// </para>
+        ///
+        /// <para><b>Every member is anchored on the token, and that is the point.</b> p.19 gives a
+        /// placed token its own lifetime - "Once a token is placed, it retains all its properties until
+        /// that token is removed" - so a property that reaches other objects reaches the ones standing
+        /// beside <em>it</em>, not the ones standing beside its controller. That is also what makes the
+        /// Ice sentence come out right without any counting vocabulary: each Ice token contributes -1 to
+        /// the enemy heroes adjacent to it, so a hero adjacent to three of them is reached by three
+        /// separate sources and is at -3. "For every Ice token they are adjacent to" is the emergent
+        /// reading of per-token sources rather than a query anything has to compute.</para>
+        /// </summary>
+        public TokenPropertyAffectedObject AffectedObject { get; }
+    }
+
+    /// <summary>
+    /// What one token property's rule is addressed to, as definition content. Milestone 8.35z32.
+    ///
+    /// <para>Each member is a printed sentence rather than a shape someone thought a token might want.
+    /// The list is exactly as long as Tali's Green line makes it, and a member for an unprinted reading
+    /// would be an invented rule - the same discipline <see cref="TokenRemovalCondition"/> keeps.</para>
+    /// </summary>
+    public enum TokenPropertyAffectedObject
+    {
+        /// <summary>
+        /// The hero controlling the token, which is what every declaration written before milestone
+        /// 8.35z32 meant and what the derived <c>ContinuousRuleSource</c> already names.
+        /// </summary>
+        Controller = 0,
+
+        /// <summary>
+        /// Heroes on the team opposing the token's controller, standing adjacent to the token - the
+        /// Ice sentence Glacial Barrier, Wall of Frost and Pack Ice all print word for word.
+        ///
+        /// <para>RULING 25 settles what the rule does at the bottom: there is <b>no floor</b>. A hero's
+        /// modified Initiative reaches 0 and below, and p.7's ordering and its Tie Breaker compare the
+        /// modified values - which is consistent with the no-floor Attack arithmetic ruled for Dodger's
+        /// Weakness. p.7 re-checks Initiative during the turn, so a token placed mid-round changes who
+        /// acts next; this is the first board-sourced modifier on the value that orders turns.</para>
+        /// </summary>
+        EnemyHeroesAdjacentToTheToken = 1,
+
+        /// <summary>
+        /// The placed token itself - Venerated Totem's <c>Totem tokens are immune.</c>, and the only
+        /// declaration in the project addressed to a non-unit. See <c>RuleObjectKind.Token</c>.
+        /// </summary>
+        TheTokenItself = 2,
+
+        /// <summary>
+        /// Minions on the token controller's own team, standing adjacent to the token - Venerated
+        /// Totem's <c>If a friendly minion adjacent to a totem would be defeated, remove the totem
+        /// instead.</c>
+        /// </summary>
+        FriendlyMinionsAdjacentToTheToken = 3,
+
+        /// <summary>
+        /// The same set narrowed to p.8's melee miniatures - Ancestral Totem's identical sentence with
+        /// one extra printed word, <c>a friendly <b>melee</b> minion</c>.
+        ///
+        /// <para>It is a fifth member rather than a flag on the fourth because the two are two printed
+        /// sentences on two cards, and RULING 24 means only one of them is ever live: p.15's upgrade
+        /// replaces Tier II with Tier III, so Ancestral and Venerated Totem never coexist in a deck.
+        /// Transcribing each face's own noun is what the standing cards-are-the-definition ruling asks
+        /// for; whether the widening was deliberate is not this milestone's question.</para>
+        /// </summary>
+        FriendlyMeleeMinionsAdjacentToTheToken = 4
     }
 
     /// <summary>
@@ -165,9 +248,17 @@ namespace GuardsDigital.Core.Components
             string displayName,
             int supplyCount,
             IEnumerable<TokenPropertyDefinition> properties,
-            TokenRemovalCondition removalCondition)
+            TokenRemovalCondition removalCondition,
+            string supplyGroupId = null)
         {
             Reference = new TokenDefinitionReference(definitionId, revision);
+
+            if (supplyGroupId != null && string.IsNullOrWhiteSpace(supplyGroupId))
+            {
+                throw new ArgumentException(
+                    "A shared supply is named or absent; a blank name is neither.",
+                    nameof(supplyGroupId));
+            }
 
             if (string.IsNullOrWhiteSpace(displayName))
             {
@@ -205,6 +296,7 @@ namespace GuardsDigital.Core.Components
             SupplyCount = supplyCount;
             Properties = new ReadOnlyCollection<TokenPropertyDefinition>(materializedProperties);
             RemovalCondition = removalCondition;
+            SupplyGroupId = supplyGroupId;
         }
 
         public TokenDefinitionReference Reference { get; }
@@ -224,7 +316,38 @@ namespace GuardsDigital.Core.Components
         /// <summary>When this token leaves the board on its own (p.19's "unless the card text says otherwise").</summary>
         public TokenRemovalCondition RemovalCondition { get; }
 
-        public override string ToString() => $"{Reference} x{SupplyCount}";
+        /// <summary>
+        /// The physical pile this definition draws from, shared with every other definition naming the
+        /// same group, or <c>null</c> for a token whose supply is its own. Milestone 8.35z32.
+        ///
+        /// <para><b>Why one hero's tokens needed this and no hero's did before.</b> RULING 44 settles
+        /// what Tali actually has: "She has 3 tokens... They are the same token, it just depends what
+        /// you use them for (depending on which card you take for level up)." One physical supply of
+        /// three, and the placing card decides whether a given copy is currently Ice or a Totem. Her
+        /// three roles are three definitions here, because their printed properties differ and
+        /// <see cref="Properties"/> is what a placed copy carries - but a per-definition supply of three
+        /// would put nine tokens in a box that holds three.</para>
+        ///
+        /// <para><b>What the group changes, and it is exactly one question.</b> p.18's supply sentence -
+        /// "If you need to place more tokens than are available in the supply, first remove up to that
+        /// number of tokens of the same type from the board, if able" - is answered against the group
+        /// rather than the definition. RULING 44 draws the corollary out loud: with one shared type the
+        /// overflow reaches <b>across roles</b>, so a Pack Ice needing three can pull back a standing
+        /// totem and a Totem placement can eat standing Ice. Every group member declares the same
+        /// <see cref="SupplyCount"/> - the catalog refuses a group that disagrees with itself, because
+        /// two numbers for one pile is the drift this type exists to make impossible.</para>
+        /// </summary>
+        public string SupplyGroupId { get; }
+
+        /// <summary>
+        /// Whether this definition shares its supply with others rather than owning one alone.
+        /// </summary>
+        public bool SharesASupply => !string.IsNullOrWhiteSpace(SupplyGroupId);
+
+        public override string ToString() =>
+            SharesASupply
+                ? $"{Reference} x{SupplyCount} (shared supply '{SupplyGroupId}')"
+                : $"{Reference} x{SupplyCount}";
     }
 
     /// <summary>

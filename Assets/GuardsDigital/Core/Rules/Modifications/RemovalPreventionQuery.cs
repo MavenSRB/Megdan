@@ -110,6 +110,16 @@ namespace GuardsDigital.Core.Rules.Modifications
                     continue;
                 }
 
+                // Milestone 8.35z32. A prevention whose price is not a card is not a decision, so
+                // it does not belong in the offer list at all: it would be a question with one legal
+                // answer, and the payable-cards test below - which is right for the family it was
+                // written for - would drop it for having no cards to pay with and let a mandatory
+                // printed sentence silently never fire. Automatic ones are read by Automatic().
+                if (!applied.Modification.RemovalPreventionCost.IsPaidWithACard())
+                {
+                    continue;
+                }
+
                 var payable = PayableCards(
                     applied.ControllerHeroId, applied.Modification.RemovalPreventionCost,
                     cardDefinitions, instances);
@@ -129,6 +139,45 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
 
             return offered;
+        }
+
+        /// <summary>
+        /// Every prevention that applies to <paramref name="subject"/> without anyone being asked -
+        /// the mandatory family, in the set's canonical order. Milestone 8.35z32.
+        ///
+        /// <para><b>Why it is a second reading and not a mode of <see cref="Offered"/>.</b> That one
+        /// answers "who is offering to stop this, and what would it cost them" and its whole shape - a
+        /// deciding hero, a list of payable cards, an option dropped when the price cannot be met - is
+        /// about a choice somebody makes. Tali's two Totem faces print no choice: "If a friendly minion
+        /// adjacent to a totem would be defeated, remove the totem instead" carries none of p.10's
+        /// three softeners, so p.10 makes it mandatory. There is no chooser, no price to weigh and no
+        /// decline, and the piece that pays is already named by the source.</para>
+        ///
+        /// <para><b>Order is the set's, and it decides which totem goes.</b> Two totems adjacent to one
+        /// minion both declare the same prevention, and only one removal happens; taking the first in
+        /// the modification set's canonical order makes that deterministic rather than an accident of
+        /// board iteration. The set orders token sources by the token instance's stable identity, which
+        /// is what makes the same board answer the same way after a restore.</para>
+        ///
+        /// <para><b>Immunity still wins first.</b> This asks only about a removal that was going to
+        /// succeed - <c>RemovalStageDecision</c> keeps p.18's unconditional interception ahead of both
+        /// prevention readings, and an immune subject has nothing to buy.</para>
+        /// </summary>
+        public static IReadOnlyList<AppliedRuleModification> Automatic(
+            RuleObject subject,
+            RuleModificationSet modifications)
+        {
+            if (modifications == null) throw new ArgumentNullException(nameof(modifications));
+            if (!subject.IsDefined)
+            {
+                return Array.Empty<AppliedRuleModification>();
+            }
+
+            return Array.AsReadOnly(modifications.For(subject)
+                .Where(applied =>
+                    applied.Modification.Kind == RuleModificationKind.RemovalPrevention &&
+                    !applied.Modification.RemovalPreventionCost.IsPaidWithACard())
+                .ToArray());
         }
 
         /// <summary>
