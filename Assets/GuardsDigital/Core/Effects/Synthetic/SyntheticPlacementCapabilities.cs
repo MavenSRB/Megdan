@@ -5,6 +5,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Timing;
@@ -106,6 +107,53 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference SpawnV1 =>
             new EffectCapabilityReference(Spawn, 1);
 
+        /// <summary>
+        /// Milestone 8.35z28. `respawn-friendly-minion-adjacent@1` - rulebook p.19's Respawn, into
+        /// an empty friendly minion Spawn point one space away.
+        ///
+        /// <para>Dodger the Warlock's Necromancy names it: "Respawn a friendly minion in an empty
+        /// friendly spawn point <b>adjacent to you</b> in the battle zone." The face prints no Range and
+        /// no Radius icon at all, so the reach is a number the sentence writes down and p.16's items
+        /// never raise it - which is why this is a separate declaration from the printed-Radius twin
+        /// below, by the rule the Range/Radius selection pairs have recorded since milestone 8.20.</para>
+        ///
+        /// <para><b>It is a Respawn and not the <see cref="Spawn"/> above.</b> That capability puts a
+        /// miniature back on the Spawn point it belongs to and asks p.19's eligibility nothing; this one
+        /// takes a chosen point, and p.19 attaches a count to every Respawn - "more minion spawn points
+        /// of that type and color (empty or not), than there are minion miniatures of that type and
+        /// color present in that Battle Zone". <c>MinionRespawnEligibilityQuery</c> is that rule, stated
+        /// once for both faces.</para>
+        ///
+        /// <para><b>The only choice is which point, and the point decides what comes back.</b> That is
+        /// the user's 2026-09-06 ruling on D-07, following p.8's own respawn - "Respawn one minion of
+        /// the matching type in each Spawn point in the new Battle Zone". So the chooser names a space
+        /// and never a minion type, and a Heavy is excluded by the arithmetic rather than by a rule
+        /// written here.</para>
+        /// </summary>
+        public static EffectCapabilityId RespawnFriendlyMinionAdjacent { get; } =
+            new EffectCapabilityId("synthetic-respawn-friendly-minion-adjacent");
+
+        public static EffectCapabilityReference RespawnFriendlyMinionAdjacentV1 =>
+            new EffectCapabilityReference(RespawnFriendlyMinionAdjacent, 1);
+
+        /// <summary>
+        /// Milestone 8.35z28. `respawn-friendly-minion-in-radius@1` - the printed-Radius twin, for
+        /// Dodger's Necromastery: "Respawn a friendly minion in an empty friendly spawn point <b>in
+        /// radius</b> in the battle zone", on a card printing a Radius 1 icon that p.16's Radius item
+        /// raises.
+        /// </summary>
+        public static EffectCapabilityId RespawnFriendlyMinionInRadius { get; } =
+            new EffectCapabilityId("synthetic-respawn-friendly-minion-in-radius");
+
+        public static EffectCapabilityReference RespawnFriendlyMinionInRadiusV1 =>
+            new EffectCapabilityReference(RespawnFriendlyMinionInRadius, 1);
+
+        /// <summary>The minion a Respawn put back on the board.</summary>
+        public const string RespawnedOutputName = "respawned";
+
+        /// <summary>The Spawn point it went onto, as a coordinate.</summary>
+        public const string RespawnedAtOutputName = "respawnedAt";
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
@@ -114,6 +162,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new PlaceHandler(PlaceInRangeV1, PrintedValueChannel.Range),
                 new PlaceHandler(PlaceInRadiusV1, PrintedValueChannel.Radius),
                 new SpawnHandler()
+            };
+
+        /// <summary>
+        /// The two Respawn declarations, held apart from <see cref="Handlers"/> exactly as the
+        /// empty-spawn-point pair is held apart in <c>SyntheticRosterCapabilities</c>: milestone 7.9's
+        /// deferral gate refuses a registered capability no dealt card can reach, and these two are
+        /// reachable only from Dodger's Necromancy and Necromastery.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> RespawnHandlers() =>
+            new IEffectCapabilityHandler[]
+            {
+                new RespawnFriendlyMinionHandler(
+                    RespawnFriendlyMinionAdjacentV1, readsPrintedRadius: false),
+                new RespawnFriendlyMinionHandler(
+                    RespawnFriendlyMinionInRadiusV1, readsPrintedRadius: true)
             };
 
         /// <summary>
@@ -588,6 +651,166 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// adjacency bound Object Push uses: which units a real effect may Spawn comes from its card
         /// text through the reusable targeting contracts, and this milestone has no verified text.
         /// </summary>
+        /// <summary>
+        /// p.19's Respawn from card text: the actor names an empty friendly minion Spawn point in reach
+        /// and the minion that point spawns comes back onto it. Milestone 8.35z28.
+        ///
+        /// <para>One handler under two declarations, split only by where the reach comes from - p.19's
+        /// innermost ring, which a sentence writes down, or p.9's printed Radius icon, which p.16's item
+        /// raises.</para>
+        /// </summary>
+        private sealed class RespawnFriendlyMinionHandler : IEffectCapabilityHandler
+        {
+            private readonly bool readsPrintedRadius;
+
+            public RespawnFriendlyMinionHandler(
+                EffectCapabilityReference reference, bool readsPrintedRadius)
+            {
+                Reference = reference;
+                this.readsPrintedRadius = readsPrintedRadius;
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(RespawnedOutputName, EffectValueKind.Minion),
+                        new EffectOutputBinding(RespawnedAtOutputName, EffectValueKind.Coordinate)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var destinations = Destinations(context);
+                if (destinations.Count == 0)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.Actor,
+                    destinations.Select(fact => EffectValue.Space(fact.At)).ToArray(),
+                    1,
+                    1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Coordinate)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Re-derived against current state rather than trusted from the paused choice, exactly
+                // as the Spawn above is and for the same reason: a Spawn point empty when the choice
+                // opened may have been taken before the answer arrived, and p.19's eligibility count is
+                // live board state on both sides of its comparison.
+                var chosen = selected[0].Coordinate;
+                var destination = Destinations(context)
+                    .FirstOrDefault(fact => fact.At.Equals(chosen));
+                if (!destination.IsPrinted)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var components = context.Components;
+                var miniature = components.Units.FindUnitSupply()
+                    .Where(candidate => candidate.TeamSide == destination.TeamSide &&
+                        candidate.MinionType == destination.MinionType)
+                    .Select(candidate => candidate.MinionId)
+                    .FirstOrDefault(id => id.IsDefined);
+                if (!miniature.IsDefined)
+                {
+                    // p.19's count said a miniature of this type and colour is missing from the Zone,
+                    // and the supply says none is available to bring back. The two disagreeing is a
+                    // board a Respawn cannot act on rather than a rule this handler should paper over.
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var committed = components.Lanes.CommitValidatedRespawnAtSpawnPoint(
+                    miniature, destination.SpawnPointId);
+                if (!committed.Accepted)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(RespawnedOutputName, EffectValue.Minion(miniature)),
+                    new EffectOutcomeFact(
+                        RespawnedAtOutputName, EffectValue.Space(committed.Destination))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Destinations(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// "an empty friendly spawn point [adjacent to you / in radius] in the battle zone" that
+            /// p.19 will actually let a minion come back into.
+            /// </summary>
+            private IReadOnlyList<EmptyMinionSpawnPointFact> Destinations(
+                EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                if (components == null || !components.IsLive || !components.CanRespawnMinions ||
+                    !components.CanSpawnUnits || context.Participants == null ||
+                    !components.Board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return Array.Empty<EmptyMinionSpawnPointFact>();
+                }
+
+                var team = context.Participants.GetTeamForHero(context.ActorId);
+                if (team == null)
+                {
+                    return Array.Empty<EmptyMinionSpawnPointFact>();
+                }
+
+                var distance = 1;
+                if (readsPrintedRadius)
+                {
+                    if (!context.CardState.IsAvailable)
+                    {
+                        return Array.Empty<EmptyMinionSpawnPointFact>();
+                    }
+
+                    var radius = RadiusValueQuery.Calculate(
+                        context.SourceCardInstanceId,
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions,
+                        context.ActorId,
+                        context.HeroItems);
+                    if (radius.Total <= 0)
+                    {
+                        // p.16 raises a printed icon and never invents one, so a card printing no
+                        // Radius has no disk - the same reading every printed-icon consumer takes.
+                        return Array.Empty<EmptyMinionSpawnPointFact>();
+                    }
+
+                    distance = radius.Total;
+                }
+
+                return MinionRespawnEligibilityQuery.FindRespawnDestinationsWithin(
+                    components.Board,
+                    components.Tokens,
+                    team.Side,
+                    actorAt,
+                    distance,
+                    SpawnPointOverlay.ForActor(
+                        context.Modifications, context.Participants, context.ActorId));
+            }
+        }
+
         private sealed class SpawnHandler : IEffectCapabilityHandler
         {
             public EffectCapabilityReference Reference => SpawnV1;

@@ -77,7 +77,35 @@ namespace GuardsDigital.Core.Rules.CardResolution
         TargetPlayedAttackCardThisTurn = 1,
         FriendlyUnitAdjacentToTargetExcludingActor = 2,
         EnemyUnitsAdjacentToActorExcludingTarget = 3,
-        EnemyUnitsAdjacentToActor = 4
+        EnemyUnitsAdjacentToActor = 4,
+
+        /// <summary>
+        /// Milestone 8.35z28. Whether two or more empty minion Spawn points of the current Battle Zone
+        /// stand inside the acting card's own printed Radius disk - Dodger's Shield of Decay, Vampiric
+        /// Shield and Aegis of Doom, "+N [Defense] Defense if there are 2 or more empty spawn points in
+        /// radius in the battle zone".
+        ///
+        /// <para><b>It is a predicate and not a count, which is why the number is in its name.</b> The
+        /// sentence is a threshold - the bonus is +2, +2 and +4 whether two points qualify or five -
+        /// and this enum has carried exactly that shape since milestone 8.19b:
+        /// <see cref="TargetPlayedAttackCardThisTurn"/> answers one or nothing for Sabina's "+3 Attack
+        /// if the target played an attack card this turn". So this member answers one or nothing too,
+        /// and the printed amount beside it is the whole bonus. Every verified face that names it prints
+        /// "2 or more"; a face printing a different number would be a different member here, by the same
+        /// rule that made the two adjacency counts two members.</para>
+        ///
+        /// <para>The quantity behind the predicate is
+        /// <see cref="GuardsDigital.Core.Rules.Modifications.EmptyMinionSpawnPointQuery"/>'s, asked
+        /// rather than answered a second way, because eight other faces of hers read the identical
+        /// printed phrase through the effect frame instead of through the value pipeline. The disk is
+        /// p.9's printed Radius with p.16's matching item composed onto it, measured from the defender's
+        /// own space - which is what printed p.14's worked example means by "within a radius of 2 spaces
+        /// from her space".</para>
+        ///
+        /// <para>It is the first query here that reads the board's <em>map</em> rather than its
+        /// occupants, and the first whose channel is Defense.</para>
+        /// </summary>
+        TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius = 5
     }
 
     /// <summary>
@@ -92,10 +120,28 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RosterValueQueryKind query,
             int amountPerMatch)
         {
-            if (channel != PrintedValueChannel.Attack && channel != PrintedValueChannel.Range)
+            if (channel != PrintedValueChannel.Attack &&
+                channel != PrintedValueChannel.Range &&
+                channel != PrintedValueChannel.Defense)
             {
                 throw new ArgumentException(
-                    "Roster card-text contributions in this milestone modify Attack or Range.",
+                    "Roster card-text contributions modify Attack, Range or Defense.",
+                    nameof(channel));
+            }
+
+            // Milestone 8.35z28. p.14 illustrates the printed `+` on a Defense value using Dodger's
+            // Vampiric Shield and states the notation outright - "Primary Defense Value 4 (The '+' sign
+            // signifies that the value can be increased by the card text.)" - so the Defense channel
+            // joins the two the Attack Total already had. The pairing runs both ways, because the one
+            // verified sentence that raises a Defense and the one query that answers it are the same
+            // sentence: nothing else may claim the channel, and this query answers about nothing else.
+            if ((channel == PrintedValueChannel.Defense) !=
+                (query == RosterValueQueryKind
+                    .TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius))
+            {
+                throw new ArgumentException(
+                    "The only verified Defense contribution is Dodger's empty-minion-spawn-point " +
+                    "threshold, and that threshold raises nothing else.",
                     nameof(channel));
             }
 
@@ -293,6 +339,123 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             return Array.AsReadOnly(result.ToArray());
+        }
+
+        /// <summary>
+        /// Milestone 8.35z28. The Defense channel's contributions, which are asked with different
+        /// collaborators than the Attack and Range ones above and therefore have their own entry point.
+        ///
+        /// <para><b>Why a second method rather than a widened first.</b> The Attack and Range arms are
+        /// asked inside an Attack the actor is performing, so they take the bound target, this turn's
+        /// history and the played-card state. A Defense is a reaction, has no target of its own, and
+        /// what its declaration reads instead is the map and the defender's own printed Radius - which
+        /// needs p.16's items and the board's emptiness port, neither of which the Attack arm holds.
+        /// Passing five arguments nothing uses to reach two nothing else has is not one method.</para>
+        ///
+        /// <para>The declaration type is the same one and the arithmetic is the same multiplication,
+        /// because the Defense query is a predicate answering one or nothing - the shape
+        /// <c>TargetPlayedAttackCardThisTurn</c> has had since milestone 8.19b. So a threshold sentence
+        /// needs no second arithmetic: "2 or more" is inside the query, and the printed amount beside it
+        /// is the whole bonus.</para>
+        ///
+        /// <para><b>Card text applies only where p.9 says it does.</b> The action's own policy is the
+        /// discriminator, which is printed p.14's worked example on this very hero: Dodger defends with
+        /// Vampiric Shield and "since Defense is the Primary action of 'Vampiric Shield', the card text
+        /// is applied", contrasted on the same page against Wasp's Lift Up, whose Defense is secondary
+        /// and "its card text is ignored".</para>
+        /// </summary>
+        public static IReadOnlyList<ValueContribution> DefenseContributions(
+            ActionDefinition action,
+            ActionOffer defenseOffer,
+            IReadOnlyList<CardDefinition> definitions,
+            GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            MatchParticipants participants,
+            // Required rather than defaulted, by milestone 6.8f's rule: this seam's outcome can be
+            // changed by a modification - Dodger's Tide of Darkness widens the count it measures - so a
+            // caller that forgot the live set would silently resolve against none. Passing nothing is
+            // spelled `RuleModificationSet.Empty`, which is a decision rather than an omission.
+            RuleModificationSet modifications)
+        {
+            if (action == null) throw new ArgumentNullException(nameof(action));
+            if (definitions == null) throw new ArgumentNullException(nameof(definitions));
+            if (board == null) throw new ArgumentNullException(nameof(board));
+
+            var declarations = action.RosterValueContributions
+                .Where(value => value.Channel == PrintedValueChannel.Defense)
+                .ToArray();
+            if (declarations.Length == 0 ||
+                action.DefaultPolicy.CardTextApplication != CardTextApplicationPolicy.Applies)
+            {
+                return Array.Empty<ValueContribution>();
+            }
+
+            var result = new List<ValueContribution>();
+            foreach (var declaration in declarations)
+            {
+                var matches = DefenseMatchCount(
+                    declaration.Query, defenseOffer, definitions, board, heroItems,
+                    // The defender is the one performing the Defense action, so the overlay is read
+                    // from her. That is the user's 2026-09-06 D-02 ruling in composed form: p.14 says
+                    // "perform a Defense action", Tide of Darkness says "an action" and narrows
+                    // nothing, so the Ultimate is up while she defends. Milestone 8.35z28.
+                    SpawnPointOverlay.ForActor(
+                        modifications, participants, defenseOffer.ActorId));
+                if (matches == 0) continue;
+                result.Add(new ValueContribution(
+                    ValueContributionKind.CardTextModifier,
+                    defenseOffer.SourceCardInstanceId,
+                    defenseOffer.ActionDefinitionId,
+                    PrintedValueChannel.Defense,
+                    checked(matches * declaration.AmountPerMatch)));
+            }
+
+            return Array.AsReadOnly(result.ToArray());
+        }
+
+        /// <summary>
+        /// One or nothing, which is what a threshold sentence answers. The two the printed clause asks
+        /// for is written here rather than on the declaration, because the query kind is what names it -
+        /// see <c>TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius</c>.
+        /// </summary>
+        private const int PrintedSpawnPointThreshold = 2;
+
+        private static int DefenseMatchCount(
+            RosterValueQueryKind query,
+            ActionOffer defenseOffer,
+            IReadOnlyList<CardDefinition> definitions,
+            GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            SpawnPointOverlay overlay)
+        {
+            if (query != RosterValueQueryKind
+                    .TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(query), query, "Unknown Defense-channel roster value query.");
+            }
+
+            if (!board.TryGetObjectCoordinate(
+                    BoardObjectReference.ForHero(defenseOffer.ActorId), out var defenderAt))
+            {
+                // A defender who is not standing anywhere measures no disk. It cannot happen for a hero
+                // answering an Attack and is stated rather than assumed, because the same derivation is
+                // re-run by the resolution's own checks.
+                return 0;
+            }
+
+            var radius = RadiusValueQuery.Calculate(defenseOffer, definitions, heroItems);
+            if (radius.Total <= 0)
+            {
+                // p.16 raises a printed icon and never invents one, so a card that prints no Radius has
+                // no disk at all - which is the same reading the printed-icon selections take.
+                return 0;
+            }
+
+            return EmptyMinionSpawnPointQuery.CountWithin(
+                board, board, defenderAt, radius.Total, overlay) >= PrintedSpawnPointThreshold
+                ? 1
+                : 0;
         }
 
         private static int MatchCount(

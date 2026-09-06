@@ -84,7 +84,29 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// `DeclaredRadius.WrittenInText` exists: the capability is given what the sentence
         /// says and never goes looking for the icon.</para>
         /// </summary>
-        WithinActorRadius = 5
+        WithinActorRadius = 5,
+
+        /// <summary>
+        /// Milestone 8.35z28. `to a space not adjacent to you`: only spaces that are not one step from
+        /// the acting hero - Dodger's Burning Skull and Blazing Skull, "After the attack: Move up to N
+        /// minions adjacent to you 1 space to a space not adjacent to you."
+        ///
+        /// <para>It is a sixth member because none of the five says it. <see cref="TowardActor"/> and
+        /// <see cref="EquidistantFromActor"/> are the wrong direction and the wrong shape;
+        /// <see cref="WithinActorRadius"/> keeps a piece inside a disk where this pushes it out of the
+        /// innermost ring; and <see cref="Unrestricted"/> would let the minion shuffle sideways to
+        /// another space still beside her, which is exactly the outcome the clause exists to
+        /// forbid.</para>
+        ///
+        /// <para><b>It is stated as "not adjacent" and not as "further away".</b> p.19 measures
+        /// adjacency as a distance of one, and the sentence names that ring rather than a comparison
+        /// against where the minion started - so a minion that could somehow end two spaces away in a
+        /// direction the card allows satisfies it however it got there. The hero's own space is a
+        /// distance of zero and would satisfy the letter of this test; it never arises, because the
+        /// hero is standing on it and the reachability walk beneath has already refused an occupied
+        /// destination.</para>
+        /// </summary>
+        NotAdjacentToActor = 6
     }
 
     /// <summary>
@@ -106,7 +128,8 @@ namespace GuardsDigital.Core.Rules.Displacement
         public static bool NeedsActorPosition(DirectMoveDestinationPolicy policy) =>
             policy == DirectMoveDestinationPolicy.TowardActor ||
             policy == DirectMoveDestinationPolicy.EquidistantFromActor ||
-            policy == DirectMoveDestinationPolicy.WithinActorRadius;
+            policy == DirectMoveDestinationPolicy.WithinActorRadius ||
+            policy == DirectMoveDestinationPolicy.NotAdjacentToActor;
 
         /// <param name="actorAt">Where the acting hero stands, for a policy that measures from them.</param>
         /// <param name="moverAt">The subject's own starting space, which every comparison is against.</param>
@@ -157,6 +180,9 @@ namespace GuardsDigital.Core.Rules.Displacement
                         ? WithinRadius(reachable, actorAt, actorRadius.Value)
                         : Array.Empty<HexCoordinate>();
 
+                case DirectMoveDestinationPolicy.NotAdjacentToActor:
+                    return OutsideAdjacency(reachable, actorAt);
+
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(policy),
@@ -178,6 +204,25 @@ namespace GuardsDigital.Core.Rules.Displacement
             foreach (var coordinate in reachable)
             {
                 if (HexDistanceQuery.Calculate(actorAt, coordinate) <= radius)
+                {
+                    list.Add(coordinate);
+                }
+            }
+
+            return list;
+        }
+
+        /// <summary>
+        /// The reachable spaces outside the acting hero's innermost ring. p.19 measures adjacency as a
+        /// distance of one, so this is that one comparison and nothing else. Milestone 8.35z28.
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> OutsideAdjacency(
+            IEnumerable<HexCoordinate> reachable, HexCoordinate actorAt)
+        {
+            var list = new List<HexCoordinate>();
+            foreach (var coordinate in reachable)
+            {
+                if (HexDistanceQuery.Calculate(actorAt, coordinate) != 1)
                 {
                     list.Add(coordinate);
                 }

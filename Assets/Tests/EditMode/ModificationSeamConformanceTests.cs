@@ -753,6 +753,12 @@ namespace GuardsDigital.Tests.EditMode
                 ["Immunity/Clear"] =
                     "p.13's Clear removes the acting hero's adjacent tokens, and p.19 states tokens " +
                     "are not units; the replacement also suppresses its source card's text.",
+                ["Immunity/Repeat"] =
+                    "Milestone 8.35z28 added the activity for Dodger's Enfeeblement, which " +
+                    "restricts it. p.18's immunity is a targeting rule - \"you cannot target that " +
+                    "unit\" - and p.10's Repeat targets nobody: it re-performs an action whose own " +
+                    "targeting asks the immunity question again on its own account. An immunity " +
+                    "naming it would protect a unit from something that never points at one.",
                 ["CountsAs/Hero"] =
                     "p.17's replacement is declared toward minion by every verified and synthetic " +
                     "source. No rule asks whether an object counts as a hero: ownership, occupancy, " +
@@ -892,6 +898,23 @@ namespace GuardsDigital.Tests.EditMode
                         fixture),
                     set => fixture.ReadActionRestriction(actionKind, set)));
             }
+
+            // Milestone 8.35z28. p.10's Repeat is the one activity no ActionKind maps to, so the
+            // loop above cannot reach it: it is a control-flow modifier on an action rather than an
+            // action anybody performs. Dodger's Enfeeblement declares it - "cannot repeat actions" -
+            // and RepeatRestrictionQuery is the production query both of CardActionResolutionAuthority's
+            // repeat gates ask, which is the second link TheConsumingSeams_AreTheOnesTheEngineActuallyUses
+            // supplies.
+            cases.Add(new ConsumptionCase(
+                "Restriction/Repeat",
+                "RepeatRestrictionQuery.IsRestrictedFromRepeating",
+                Declaring(
+                    RuleModification.ForRestriction(RuleActivity.Repeat),
+                    RuleObject.ForHero(fixture.Red),
+                    fixture),
+                set => RepeatRestrictionQuery
+                    .IsRestrictedFromRepeating(fixture.Red, set)
+                    .ToString()));
 
             // p.18's unqualified "if a unit is immune" reaches every activity, so it is proven where
             // any specific one is: declaring All must move the same answer Attack moves.

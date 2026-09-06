@@ -144,6 +144,104 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference GainResourceV1 => Reference("gain-resource", 1);
         public static EffectCapabilityReference TransferResourceV1 => Reference("transfer-resource", 1);
 
+        /// <summary>
+        /// Milestone 8.35z28. `empty-minion-spawn-points-in-radius@1` - how many empty minion Spawn
+        /// points of the current Battle Zone stand inside the acting card's own printed Radius disk,
+        /// and whether that count reaches the number the card asks for.
+        ///
+        /// <para>Dodger's Dark Ritual and Darker Ritual are the faces that name it: "If there are 2 or
+        /// more empty spawn points in radius in the battle zone, gain N coins." The quantity itself is
+        /// <see cref="GuardsDigital.Core.Rules.Modifications.EmptyMinionSpawnPointQuery"/>'s, which her
+        /// three Blue Defense primaries also read through the value pipeline - one printed phrase, one
+        /// derivation, reached two ways because a Defense value is a number and a ritual is a
+        /// step.</para>
+        ///
+        /// <para><b>Why it is not <c>presence-count@1</c> with a different unit kind.</b> That
+        /// capability counts <em>units</em> - pieces standing on the board, filtered by effective kind
+        /// and by side. A Spawn point is not a unit, has no side in the sense p.19's Friendly entry
+        /// means, and is a property of the map rather than of the pieces on it; the emptiness that
+        /// makes it qualify is the <em>absence</em> of a unit, which is the opposite question. Widening
+        /// the presence count to answer it would have made one capability read two unrelated
+        /// registers.</para>
+        ///
+        /// <para><b>The disk is p.9's printed Radius with p.16's item composed onto it</b>, read off
+        /// the card this node is inside - the same total the printed-icon selections read, and the
+        /// reason this is a separate declaration from the adjacency twin below rather than a distance
+        /// parameter: p.16 raises a printed icon and never a number a sentence writes down, so one
+        /// declaration spanning both would let a card with no Radius icon read a Radius item.</para>
+        /// </summary>
+        public static EffectCapabilityReference EmptyMinionSpawnPointsInRadiusV1 =>
+            Reference("empty-minion-spawn-points-in-radius", 1);
+
+        /// <summary>
+        /// Milestone 8.35z28. `empty-minion-spawn-points-adjacent@1` - the same question asked of p.19's
+        /// innermost ring, which is a distance the sentence writes down rather than an icon the card
+        /// prints.
+        ///
+        /// <para>Dodger's Dread Razor and Rusty Razor name it: "If you are adjacent to an empty spawn
+        /// point in the battlezone, target a unit in range." Both faces print a <em>Range</em> icon and
+        /// no Radius at all, so there is no printed disk for the radius twin above to read - the
+        /// adjacency is the card's own word, and p.16 never raises one of those.</para>
+        ///
+        /// <para>A second capability id over the same handler, by the rule the Range/Radius selection
+        /// pairs already record. Both publish the same two facts, because the sentence a card builds on
+        /// the answer is the same sentence either way.</para>
+        /// </summary>
+        public static EffectCapabilityReference EmptyMinionSpawnPointsAdjacentV1 =>
+            Reference("empty-minion-spawn-points-adjacent", 1);
+
+        /// <summary>
+        /// Milestone 8.35z28. `ultimate-unlocked@1` - whether the acting hero has unlocked their
+        /// Ultimate, published as the same <c>present</c> flag every other condition in this vocabulary
+        /// publishes so an existing conditional node reads it unchanged.
+        ///
+        /// <para>Dodger's Darkest Ritual is the face that names it: "If you have Ultimate, gain +1
+        /// [Attack] Attack item." The user's 2026-09-06 ruling on D-04 makes that clause independent of
+        /// the spawn-point clause beside it, so it is its own condition over its own gate rather than a
+        /// second step inside the first one's branch.</para>
+        ///
+        /// <para><b>It asks p.16's own question and stores nothing.</b> An Ultimate is unlocked exactly
+        /// when its card sits in the Ultimate area beside the dashboard, which is where p.16 puts it and
+        /// where <c>UltimateUnlockQuery</c> has read it since milestone 7.3. A capability that recorded
+        /// an unlock would be a second answer that could disagree with the card.</para>
+        /// </summary>
+        public static EffectCapabilityReference UltimateUnlockedV1 =>
+            Reference("ultimate-unlocked", 1);
+
+        /// <summary>
+        /// Milestone 8.35z28. `gain-item-from-the-box@1` - rulebook p.16's Gain an Item performed
+        /// by card text, with no card leaving the deck.
+        ///
+        /// <para>Dodger's Darkest Ritual is the only verified face that grants one, and its own
+        /// reminder names the source: "<em>( Use any spare card from the box wtih the corresponding
+        /// icon )</em>". Every item until now came from a card p.15's Level Up had set aside, so the
+        /// existing transitions all start from a card in the hero's own deck; this one starts from the
+        /// box, which is why it is a capability rather than a leveling transition.</para>
+        ///
+        /// <para><b>The slot is not a parameter.</b> p.16 decides it: "the icon matches the icon on one
+        /// of four slots on the top of your hero dashboard". The card names the icon, the dashboard
+        /// names the slot, and a definition that could name a slot would be able to put an Attack item
+        /// somewhere the page does not.</para>
+        ///
+        /// <para><b>It counts nothing and expires nothing</b>, which is the user's D-05 ruling and also
+        /// the card's silence: every performance grants another permanent item, stacking under the one
+        /// slot p.16 already allows several items under.</para>
+        /// </summary>
+        public static EffectCapabilityReference GainItemFromTheBoxV1 =>
+            Reference("gain-item-from-the-box", 1);
+
+        /// <summary>The p.16 icon `gain-item-from-the-box@1` grants, which is the one its card prints.</summary>
+        public const string ItemIconParameter = "itemIcon";
+
+        /// <summary>Which dashboard slot the granted item landed under, as the item's own 1-based position.</summary>
+        public const string GrantedItemOrderOutput = "grantedItemOrder";
+
+        /// <summary>
+        /// How many qualifying Spawn points an empty-spawn-point question found. Milestone 8.35z28, and
+        /// spelled the same as <c>presence-count@1</c>'s because it is the same kind of answer.
+        /// </summary>
+        public const string CountOutput = "count";
+
         public const string OriginParameter = "origin";
 
         /// <summary>
@@ -327,10 +425,35 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// still waiting for the hero whose face names it.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
-            RegisteredHandlers().Concat(new IEffectCapabilityHandler[]
-            {
-                new PlayedAttackThisTurnHandler()
-            });
+            RegisteredHandlers().Concat(DeferredHandlers());
+
+        /// <summary>
+        /// The part of this vocabulary the build does <em>not</em> register, stated as its own list so
+        /// that what is deferred can be read, counted and composed onto a bounded catalog without a
+        /// caller having to subtract one list from another.
+        ///
+        /// <para><c>target-played-attack-this-turn@1</c> has been here since milestone 8.19b, for the
+        /// reason <see cref="RegisteredHandlers"/> records: Sabina reaches the same question through the
+        /// value pipeline, so no card starts this contract.</para>
+        ///
+        /// <para>Milestone 8.35z28 adds Dodger the Warlock's empty-minion-Spawn-point question in its two
+        /// reaches. They are here rather than registered because this phase composes her printed set and
+        /// does not deal her: no card a configured match deals starts either declaration, and milestone
+        /// 7.9's deferral gate refuses a registration no card can reach. Her completion milestone is
+        /// what moves these two lines into the registration list - together with the showcase consumer
+        /// that gate's second half requires, which is what keeps a new handler from arriving for the
+        /// first time inside a verified hero's slice.</para>
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers()
+        {
+            yield return new PlayedAttackThisTurnHandler();
+            yield return new EmptyMinionSpawnPointCountHandler(
+                EmptyMinionSpawnPointsInRadiusV1, readsPrintedRadius: true);
+            yield return new EmptyMinionSpawnPointCountHandler(
+                EmptyMinionSpawnPointsAdjacentV1, readsPrintedRadius: false);
+            yield return new UltimateUnlockedHandler();
+            yield return new GainItemFromTheBoxHandler();
+        }
 
         /// <summary>
         /// The part of this vocabulary a verified hero's printed set actually reaches, which is what
@@ -1534,6 +1657,143 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     : EffectExecutionResultKind.Applied;
         }
 
+        /// <summary>
+        /// Milestone 8.35z28. The empty-minion-Spawn-point count behind both declarations above.
+        ///
+        /// <para>One handler and two declarations, exactly as the printed-icon selections are one
+        /// handler and six: the question, the emptiness, the Battle-Zone membership and the minion-only
+        /// ruling are identical, and the only thing that differs is where the reach comes from - p.9's
+        /// printed Radius icon, which p.16's matching item raises, or p.19's innermost ring, which the
+        /// sentence writes down and no item touches. Two ids keep those two apart, so a card printing
+        /// no Radius cannot read a Radius item.</para>
+        ///
+        /// <para><b>An absent board is a count of nothing, not a failure.</b> The derivation returns an
+        /// empty set for a board with no current Battle Zone, and this reports zero rather than
+        /// <see cref="EffectExecutionResultKind.ImpossibleMandatory"/> - a condition that is simply not
+        /// satisfied is what "If there are 2 or more" means when there are not, and the user's RULING 3
+        /// says such a clause skips and the card continues. Only a genuinely unanswerable question - no
+        /// board port at all, or an actor standing nowhere - is impossible.</para>
+        /// </summary>
+        private sealed class EmptyMinionSpawnPointCountHandler : IEffectCapabilityHandler
+        {
+            private readonly bool readsPrintedRadius;
+
+            public EmptyMinionSpawnPointCountHandler(
+                EffectCapabilityReference reference, bool readsPrintedRadius)
+            {
+                Reference = reference;
+                this.readsPrintedRadius = readsPrintedRadius;
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        // "2 or more", stated as the bound the card prints rather than a comparison a
+                        // definition writes - the same shape and the same parameter name
+                        // `presence-count@1` has carried since milestone 8.22, so a reader who knows
+                        // one knows both. Optional and defaulting to one, which is what a bare
+                        // "adjacent to an empty spawn point" asks.
+                        new EffectCapabilityParameter(
+                            MinimumPresentParameter, EffectValueKind.Integer, isRequired: false)
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding(CountOutput, EffectValueKind.Integer),
+                        new EffectOutputBinding(PresentOutput, EffectValueKind.Boolean)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            /// <summary>The count, or a negative number where the question cannot be asked at all.</summary>
+            private int Count(EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                if (components?.Board == null || components.Tokens == null ||
+                    !components.Board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return -1;
+                }
+
+                // Milestone 8.35z28: Dodger's Ultimate, if she has it up. The user's D-02 ruling
+                // puts it over any action she performs and D-03 makes its granted points satisfy
+                // "empty" wherever the space is, so the switch belongs on the count itself rather than
+                // on each card that reads it.
+                var overlay = SpawnPointOverlay.ForActor(
+                    context.Modifications, context.Participants, context.ActorId);
+
+                if (!readsPrintedRadius)
+                {
+                    // p.19 measures adjacency as one space, and p.16 never raises a number a sentence
+                    // writes down.
+                    return EmptyMinionSpawnPointQuery.CountWithin(
+                        components.Board, components.Tokens, actorAt, 1, overlay);
+                }
+
+                if (!context.CardState.IsAvailable)
+                {
+                    return -1;
+                }
+
+                var radius = RadiusValueQuery.Calculate(
+                    context.SourceCardInstanceId,
+                    context.SourceDefinitionReference,
+                    context.ActionDefinitionId,
+                    context.CardState.Definitions,
+                    context.ActorId,
+                    context.HeroItems);
+                if (radius.Total <= 0)
+                {
+                    // A card printing no Radius icon has no disk, and p.16 does not invent one. The
+                    // count is zero rather than adjacent-by-default, which is the same reading the
+                    // printed-icon selections take of the same absence.
+                    return 0;
+                }
+
+                return EmptyMinionSpawnPointQuery.CountWithin(
+                    components.Board, components.Tokens, actorAt, radius.Total, overlay);
+            }
+
+            /// <summary>
+            /// How many the card asked for, floored at one: an undeclared threshold is "at least one",
+            /// which is what the Gold basics' bare adjacency clause means, and a declared zero would
+            /// make the answer a constant rather than a question.
+            /// </summary>
+            private static int Minimum(EffectCapabilityContext context)
+            {
+                var declared = context.Input(MinimumPresentParameter);
+                return declared.Kind == EffectValueKind.Integer && declared.IntegerValue > 1
+                    ? declared.IntegerValue
+                    : 1;
+            }
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var count = Count(context);
+                return count < 0
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(CountOutput, EffectValue.Integer(count)),
+                        new EffectOutcomeFact(
+                            PresentOutput, EffectValue.Boolean(count >= Minimum(context)))
+                    });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Count(context) < 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.Applied;
+        }
+
         private sealed class PreConsequenceAdjacencyHandler : IEffectCapabilityHandler
         {
             public EffectCapabilityReference Reference => PreConsequenceAdjacencyV1;
@@ -2002,6 +2262,133 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 CanRead(context)
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+        }
+
+        /// <summary>
+        /// `ultimate-unlocked@1`. Whether the acting hero's Ultimate card sits in the Ultimate area,
+        /// which is p.16's whole definition of having one. Milestone 8.35z28.
+        /// </summary>
+        private sealed class UltimateUnlockedHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => UltimateUnlockedV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(PresentOutput, EffectValueKind.Boolean)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            private static bool IsUnlocked(EffectCapabilityContext context) =>
+                context.CardState.IsAvailable &&
+                context.ActorId.IsDefined &&
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery
+                    .Derive(context.CardState.Definitions, context.CardState.Instances)
+                    .IsUnlockedFor(context.ActorId);
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
+                EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(PresentOutput, EffectValue.Boolean(IsUnlocked(context)))
+                });
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            // A hero who has not unlocked their Ultimate still asks the question and still gets an
+            // answer - the clause is a condition and the user's RULING 3 makes a false one skip, so
+            // "no" is an outcome rather than an impossibility.
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
+        }
+
+        /// <summary>
+        /// `gain-item-from-the-box@1`. p.16's Gain an Item, granted by card text.
+        /// Milestone 8.35z28.
+        /// </summary>
+        private sealed class GainItemFromTheBoxHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => GainItemFromTheBoxV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter("recipient", EffectValueKind.Hero),
+                        // p.16's icon, closed to the six the page prints. It is required because the
+                        // page conditions the whole item on it, and a grant that named none would be an
+                        // item with nothing to raise.
+                        new EffectCapabilityParameter(
+                            ItemIconParameter,
+                            EffectValueKind.Integer,
+                            isRequired: true,
+                            integerDomain: EffectIntegerDomain.All<PrintedValueChannel>())
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding("recipient", EffectValueKind.Hero),
+                        new EffectOutputBinding(GrantedItemOrderOutput, EffectValueKind.Integer)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            /// <summary>
+            /// The p.16 icon the card printed, read back out of the closed vocabulary the definition
+            /// bound it through - an Integer at runtime, exactly as every other closed vocabulary in
+            /// this file is.
+            /// </summary>
+            private static PrintedValueChannel Icon(EffectCapabilityContext context)
+            {
+                var declared = context.Input(ItemIconParameter);
+                if (declared.Kind != EffectValueKind.Integer ||
+                    !Enum.IsDefined(typeof(PrintedValueChannel), declared.IntegerValue))
+                {
+                    return PrintedValueChannel.None;
+                }
+
+                return (PrintedValueChannel)declared.IntegerValue;
+            }
+
+            private static bool CanApply(EffectCapabilityContext context) =>
+                context.HeroItems != null &&
+                context.Input("recipient").HeroId.IsDefined &&
+                Icon(context) != PrintedValueChannel.None;
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                if (!CanApply(context))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var placement = context.HeroItems.TryGrantItemFromTheBox(
+                    context.Input("recipient").HeroId, Icon(context));
+                if (!placement.IsPlaced)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact("recipient", EffectValue.Hero(placement.Item.OwnerId)),
+                    new EffectOutcomeFact(
+                        GrantedItemOrderOutput, EffectValue.Integer(placement.Item.Order))
+                });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                CanApply(context)
                     ? EffectExecutionResultKind.Applied
                     : EffectExecutionResultKind.ImpossibleMandatory;
         }

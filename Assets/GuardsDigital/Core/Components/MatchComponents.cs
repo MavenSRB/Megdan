@@ -24,7 +24,8 @@ namespace GuardsDigital.Core.Components
             MarkerAttachmentRegister markers,
             IBoardDisplacementAuthority board,
             IUnitSpawnAuthority units,
-            IBoardObjectExchangeAuthority exchange)
+            IBoardObjectExchangeAuthority exchange,
+            ILaneAdvanceAuthority lanes = null)
         {
             Catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             Tokens = tokens;
@@ -32,6 +33,7 @@ namespace GuardsDigital.Core.Components
             Board = board;
             Units = units;
             Exchange = exchange;
+            Lanes = lanes;
         }
 
         public ComponentDefinitionCatalog Catalog { get; }
@@ -67,6 +69,26 @@ namespace GuardsDigital.Core.Components
         public IBoardObjectExchangeAuthority Exchange { get; }
 
         /// <summary>
+        /// The board's Lane-advance port (milestone 6.6a), or <c>null</c> outside a live match. It is a
+        /// sixth named port for the reason the third, fourth and fifth exist: putting a supply
+        /// miniature onto a <em>named</em> Spawn point is p.19's Respawn, which is neither the Spawn
+        /// that puts a miniature back where it belongs nor a relocation of something standing.
+        ///
+        /// <para>Milestone 8.35z28 is what made it reachable from a capability. Until Dodger the
+        /// Warlock's Necromancy and Necromastery, p.8's Lane Push was the only caller and it holds the
+        /// authority directly; those two faces are the first card text that respawns, and they need
+        /// exactly the commit p.8 already uses. Declaring it here rather than casting <see cref="Board"/>
+        /// keeps that a stated dependency - a handler that silently down-cast a port would be reaching
+        /// past the parameter object this type exists to be.</para>
+        ///
+        /// <para>It is optional on the constructor and last in the list so the fixtures that compose a
+        /// board without a Lane are untouched; a capability that needs it asks
+        /// <see cref="CanAdvanceLanes"/> and reports itself unable to act, which is the honest rules
+        /// answer the other ports already give.</para>
+        /// </summary>
+        public ILaneAdvanceAuthority Lanes { get; }
+
+        /// <summary>
         /// Whether the token and marker authorities are present, so a component operation can run.
         /// Deliberately unchanged by the board port: the token and marker capabilities that predate
         /// milestone 6.4 must not start reporting themselves unable to act because a port they never
@@ -87,5 +109,12 @@ namespace GuardsDigital.Core.Components
         /// have no pre-effect state to validate against.
         /// </summary>
         public bool CanExchangeObjects => Exchange != null && Board != null;
+
+        /// <summary>
+        /// Whether p.19's Respawn can be committed onto a named Spawn point. It requires the
+        /// displacement port too, because a Respawn reads where the Battle Zone and its miniatures are
+        /// through it before it places anything.
+        /// </summary>
+        public bool CanRespawnMinions => Lanes != null && Board != null;
     }
 }

@@ -81,6 +81,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 contributions.AddRange(CalculateMinionContributions(defenderId, participants, board));
             }
+
+            // Milestone 8.35z28. p.14's printed `+` on a Defense value, which that page illustrates on
+            // Dodger's Vampiric Shield and states outright: "Primary Defense Value 4 (The '+' sign
+            // signifies that the value can be increased by the card text.)" It is composed after the
+            // minion modifiers and before the modification set for the reason the item bonus is
+            // composed before both - each contribution keeps its own provenance inside one total, and
+            // this one names the card instance and action whose text supplied it.
+            //
+            // It is asked of the whole action rather than of the printed result, because unlike p.16's
+            // item this is the card's own sentence rather than a rule about what the card prints -
+            // which is the same separation the Attack channel has had since milestone 8.19c.
+            contributions.AddRange(RosterDynamicValueQuery.DefenseContributions(
+                action, defenseOffer, definitions.ToArray(), board, heroItems,
+                participants, modifications));
+
             if (modifications != null)
             {
                 contributions.AddRange(modifications.ValueContributions(

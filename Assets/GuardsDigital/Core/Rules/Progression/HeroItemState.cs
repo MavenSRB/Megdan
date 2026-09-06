@@ -377,6 +377,66 @@ namespace GuardsDigital.Core.Rules.Progression
             return HeroItemPlacementResult.Placed(item);
         }
 
+        /// <summary>
+        /// p.16's Gain an Item, granted by card text rather than taken from a set-aside card - Dodger
+        /// the Warlock's Darkest Ritual, "If you have Ultimate, gain +1 [Attack] Attack item. <em>( Use
+        /// any spare card from the box wtih the corresponding icon )</em>". Milestone 8.35z28.
+        ///
+        /// <para><b>Why the source card is minted rather than dropped.</b> Every item until now became
+        /// one from a card p.15's Level Up set aside, so <see cref="HeroItem"/> requires the instance it
+        /// came from. This card grants an item with no card leaving the deck - and says in its own
+        /// reminder text where the physical one comes from: any spare card from the box, chosen for its
+        /// icon and carrying no rules of its own. So the item still has a card, and the identity minted
+        /// here is that card. Widening <see cref="HeroItem"/> to allow no source would have made the
+        /// snapshot's item record nullable for every hero to express one card's sentence; a proxy
+        /// identity is a string exactly where a string already was, and the round trip is unchanged.</para>
+        ///
+        /// <para><b>It is unbounded and permanent, which is the user's 2026-09-06 ruling on D-05 and
+        /// also the card's silence.</b> Nothing here counts performances, expires an item or refuses a
+        /// second: p.16 allows several items under one slot, the face prints no limit and no duration,
+        /// and the standing ruling reads a face's silence as absence. The order number makes each grant
+        /// its own item rather than a repeat of the last.</para>
+        ///
+        /// <para>The slot is still asked of the owner's dashboard rather than named by the caller, so
+        /// p.16's matching-icon rule decides where an Attack item lands exactly as it does for a
+        /// set-aside card.</para>
+        /// </summary>
+        public HeroItemPlacementResult TryGrantItemFromTheBox(
+            HeroId ownerId, PrintedValueChannel icon)
+        {
+            if (!itemsByHero.TryGetValue(ownerId, out var owned))
+            {
+                return HeroItemPlacementResult.Rejected(HeroItemPlacementRejectionReason.NotOwnedByHero);
+            }
+
+            if (icon == PrintedValueChannel.None ||
+                !Enum.IsDefined(typeof(PrintedValueChannel), icon))
+            {
+                return HeroItemPlacementResult.Rejected(HeroItemPlacementRejectionReason.NoItemIcon);
+            }
+
+            if (!dashboardsByHero[ownerId].TryFindSlotAccepting(icon, out var slot))
+            {
+                return HeroItemPlacementResult.Rejected(
+                    HeroItemPlacementRejectionReason.NoSlotAcceptsIcon);
+            }
+
+            var order = owned.Count + 1;
+            var item = new HeroItem(
+                ownerId, BoxItemInstanceId(ownerId, order), slot.Position, icon, order);
+            owned.Add(item);
+            return HeroItemPlacementResult.Placed(item);
+        }
+
+        /// <summary>
+        /// The identity of one spare card from the box. Deterministic, so a restored match rebuilds the
+        /// same item, and suffixed so it cannot collide with a dealt instance - every dealt card's id is
+        /// its seat prefix joined to a card definition id, and no verified definition is named
+        /// <c>box-item-N</c>.
+        /// </summary>
+        internal static CardInstanceId BoxItemInstanceId(HeroId ownerId, int order) =>
+            new CardInstanceId($"{ownerId.Value}-box-item-{order}");
+
         public HeroItemRestoreState CaptureRestoreState() => new HeroItemRestoreState(Items);
 
         public static HeroItemState Restore(MatchParticipants participants, HeroItemRestoreState state)

@@ -311,6 +311,22 @@ namespace GuardsDigital.Core.Rules.Modifications
         }
 
         /// <summary>
+        /// Whether every space counts as being in the Battle Zone and as carrying a friendly minion
+        /// Spawn point while this object acts - Dodger the Warlock's Tide of Darkness.
+        /// Milestone 8.35z28.
+        ///
+        /// <para>It is asked of the <em>acting</em> object and answered about the board, which is the
+        /// asymmetry that keeps the printed "while you are performing an action" honest without a
+        /// second condition: the only questions this widens are asked inside an action, about the hero
+        /// performing it.</para>
+        /// </summary>
+        public bool AllSpacesCountAsFriendlyMinionSpawnPointsInBattleZone(RuleObject actingObject) =>
+            Modifications.Any(modification =>
+                modification.AffectedObject.Equals(actingObject) &&
+                modification.Modification.Kind ==
+                    RuleModificationKind.AllSpacesCountAsFriendlyMinionSpawnPointsInBattleZone);
+
+        /// <summary>
         /// Whether the object effectively counts as <paramref name="effectiveUnitKind"/>. Rulebook p.17
         /// replaces the object's rules and qualities with the declared type's, so this answers only the
         /// effective question; <see cref="IntrinsicKindQuery"/> answers what the object still is.

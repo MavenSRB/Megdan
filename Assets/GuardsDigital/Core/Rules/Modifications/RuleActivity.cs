@@ -57,7 +57,27 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// separate from Movement for the same reason Swap and Place are: the operation targets the
         /// moved unit and can be named by an exact immunity or Heavy-immunity exception.
         /// </summary>
-        DirectMove = 12
+        DirectMove = 12,
+
+        /// <summary>
+        /// Milestone 8.35z28. Rulebook p.10's <em>Repeat</em>, named as the thing a restriction
+        /// can take away - Dodger the Warlock's Enfeeblement, "<b>This turn:</b> Enemy heroes in radius
+        /// have -6 [Attack] Attack and <b>cannot repeat actions</b>".
+        ///
+        /// <para><b>It is exactly p.10's keyword and nothing wider.</b> The user's 2026-09-06 ruling on
+        /// D-09 settles the scope: the clause forbids the "may repeat" offer a card's own text prints,
+        /// and leaves replacement actions - Fast Travel, the Clear that substitutes for an Attack -
+        /// available, because the page keeps those deliberately distinct from a repeat.</para>
+        ///
+        /// <para><b>It is a thirteenth activity even though a repeat is not an action.</b> p.10 makes a
+        /// repeat a control-flow modifier on an action already performed, so it maps from no
+        /// <see cref="ActionKind"/> and <see cref="RuleActivityQuery.ForAction"/> deliberately returns
+        /// it for none - the same standing this member shares with <see cref="ObjectPush"/>,
+        /// <see cref="Swap"/>, <see cref="Place"/> and <see cref="DirectMove"/>, which are also
+        /// operations rather than actions. Naming it here is what lets one restriction family answer
+        /// the question, so the repeat is never <em>offered</em> rather than refused after the fact.</para>
+        /// </summary>
+        Repeat = 13
     }
 
     public static class RuleActivityQuery

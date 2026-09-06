@@ -193,6 +193,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 markers ?? new MarkerAttachmentRegister(),
                 adjacentMoveAuthority,
                 adjacentMoveAuthority,
+                adjacentMoveAuthority,
                 adjacentMoveAuthority);
 
         /// <summary>
@@ -490,6 +491,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             var owed = repeatSubject;
             if (owed == null)
+            {
+                return false;
+            }
+
+            // Milestone 8.35z28. Dodger's Enfeeblement, "cannot repeat actions" - the user's
+            // 2026-09-06 ruling on D-09 scopes that to p.10's Repeat keyword alone. It is asked here
+            // rather than at the moment the answer arrives so the offer is never made, which is the
+            // offer-not-reject discipline milestone 6.8 set for the Fast-Travel restriction and 8.35l
+            // re-learned the hard way.
+            if (RepeatRestrictionQuery.IsRestrictedFromRepeating(
+                    owed.ActorId, modifications ?? RuleModificationSet.Empty))
             {
                 return false;
             }
@@ -2341,6 +2353,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (enclosing == null || !enclosing.Target.IsDefined)
             {
                 return true;
+            }
+
+            // The same Enfeeblement restriction the owed-repeat gate above asks, on the other of the
+            // two paths p.10's Repeat reaches - a repeat printed inside the card's own text rather than
+            // owed after the action. Both are "repeat actions" in the sentence's words, so one clause
+            // cannot answer only one of them. Milestone 8.35z28.
+            if (RepeatRestrictionQuery.IsRestrictedFromRepeating(
+                    enclosing.ActorId, modifications ?? RuleModificationSet.Empty))
+            {
+                return false;
             }
 
             return attackDefenseBackend.CanStartRepeatedAttack(

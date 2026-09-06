@@ -188,7 +188,8 @@ namespace GuardsDigital.Core.Cards
 
             if (RosterValueContributions.Any(value =>
                     (value.Channel != PrintedValueChannel.Attack &&
-                     value.Channel != PrintedValueChannel.Range) ||
+                     value.Channel != PrintedValueChannel.Range &&
+                     value.Channel != PrintedValueChannel.Defense) ||
                     value.Query == RosterValueQueryKind.None ||
                     value.AmountPerMatch <= 0))
             {
@@ -197,10 +198,28 @@ namespace GuardsDigital.Core.Cards
                     nameof(rosterValueContributions));
             }
 
-            if (RosterValueContributions.Count > 0 && Kind != ActionKind.Attack)
+            // Milestone 8.35z28. The channel decides which action may carry the declaration, because the
+            // two channels are read at two different moments by two different heroes: an Attack's own
+            // Attack and Range totals are the attacker's, and a Defense total is the defender's answer
+            // to them. Dodger's Shield of Decay, Vampiric Shield and Aegis of Doom are the first
+            // verified faces to print a `+` on a Defense value, which printed p.14 illustrates on
+            // Vampiric Shield itself and names in as many words - "Primary Defense Value 4 (The '+'
+            // sign signifies that the value can be increased by the card text)."
+            if (RosterValueContributions.Any(value =>
+                    value.Channel == PrintedValueChannel.Defense) &&
+                Kind != ActionKind.Defense)
             {
                 throw new ArgumentException(
-                    "This milestone's dynamic Attack/Range declarations belong to an Attack action.",
+                    "A dynamic Defense contribution belongs to a Defense action.",
+                    nameof(rosterValueContributions));
+            }
+
+            if (RosterValueContributions.Any(value =>
+                    value.Channel != PrintedValueChannel.Defense) &&
+                Kind != ActionKind.Attack)
+            {
+                throw new ArgumentException(
+                    "Dynamic Attack/Range declarations belong to an Attack action.",
                     nameof(rosterValueContributions));
             }
 
@@ -555,7 +574,46 @@ namespace GuardsDigital.Core.Cards
             }
             else if (Kind == ActionKind.Defense)
             {
-                ValidateSinglePrintedValue(PrintedValueChannel.Defense, baseValues);
+                // Milestone 8.35z28 widens this by p.9's own sentence, exactly as milestone 8.3 widened
+                // the non-Ranged Attack's shape and milestone 8.20 the Movement primary's: "Some
+                // primary actions have a Range or Radius icon and a value on the right side of the
+                // card." Dodger's Shield of Decay, Vampiric Shield and Aegis of Doom each print a
+                // Defense primary of 3, 4 and 4 and a Radius 2 icon beside it, and the icon is the
+                // scope their own text asks about - "2 or more empty spawn points in radius" - rather
+                // than a second combat number. A secondary Defense icon prints no such thing, which is
+                // why the widening is bounded to the primary.
+                var admitsAnIcon = Origin == ActionDefinitionOrigin.PrintedPrimary;
+                var optionalChannels = admitsAnIcon
+                    ? new[] { PrintedValueChannel.Radius, PrintedValueChannel.Range }
+                    : Array.Empty<PrintedValueChannel>();
+
+                // One Defense value, plus at most p.9's one icon - which is one and not both, exactly
+                // as the Movement and Skill shapes above bound it.
+                var maximumValues = admitsAnIcon ? 2 : 1;
+                if (BaseValues.Count < 1 ||
+                    BaseValues.Count > maximumValues ||
+                    BaseValues.All(value => value.Channel != PrintedValueChannel.Defense) ||
+                    BaseValues.Any(value =>
+                        value.Channel != PrintedValueChannel.Defense &&
+                        !optionalChannels.Contains(value.Channel)))
+                {
+                    throw new ArgumentException(
+                        admitsAnIcon
+                            ? "A Defense action definition prints one Defense value and at most " +
+                              "rulebook p.9's one Range or Radius icon."
+                            : "Defense action definitions currently support exactly one Defense " +
+                              "printed value.",
+                        nameof(baseValues));
+                }
+
+                if (BaseValues.Any(value =>
+                        value.Channel != PrintedValueChannel.Defense && value.Amount < 1))
+                {
+                    throw new ArgumentException(
+                        "A printed Range or Radius icon states a positive value; p.9's smallest is 1, " +
+                        "which reaches adjacent spaces only.",
+                        nameof(baseValues));
+                }
 
                 // Milestone 8.20 admits the second place a Defense value is printed. Every Defense in
                 // this build until now was the small icon in a card's secondary strip, and Arien's
@@ -788,18 +846,6 @@ namespace GuardsDigital.Core.Cards
             if (Kind != ActionKind.Attack && AttackRange != AttackRangeKind.None)
             {
                 throw new ArgumentException("Only Attack action definitions may declare an Attack range classification.", nameof(AttackRange));
-            }
-        }
-
-        private void ValidateSinglePrintedValue(
-            PrintedValueChannel expectedChannel,
-            IEnumerable<PrintedValueDefinition> baseValues)
-        {
-            if (BaseValues.Count != 1 || BaseValues[0].Channel != expectedChannel)
-            {
-                throw new ArgumentException(
-                    $"{Kind} action definitions currently support exactly one {expectedChannel} printed value.",
-                    nameof(baseValues));
             }
         }
 

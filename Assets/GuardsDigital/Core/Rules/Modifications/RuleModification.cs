@@ -82,7 +82,38 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// and a reading that let the looser win would let one card cancel another's sentence without
         /// naming it.</para>
         /// </summary>
-        ActivityLimit = 8
+        ActivityLimit = 8,
+
+        /// <summary>
+        /// Milestone 8.35z28. While the affected object is performing an action, every space on
+        /// the board counts as being in the Battle Zone and as carrying a friendly minion Spawn point -
+        /// Dodger the Warlock's Ultimate, Tide of Darkness, printed whole: "While you are performing an
+        /// action, all spaces count as if they were in the battle zone and had a friendly minion spawn
+        /// point."
+        ///
+        /// <para><b>The whole rule is in the member's name, and that is deliberate.</b> Every other
+        /// family here is parameterised by a property this type already carries - an activity, a
+        /// channel, an amount, an effective kind. This one names two grants at once and neither is
+        /// expressible in any of them, so the alternative was a new public property. That is precisely
+        /// the change the identity oracle treats as a content-revision event for every shipped hero
+        /// whose definitions reach this type, which is most of the roster; the phase-one worker
+        /// measured that cost on a different type and took the same way out. The rule is one printed
+        /// sentence with no numbers in it, so a member that says the sentence loses nothing.</para>
+        ///
+        /// <para><b>It is not <see cref="CountsAs"/> and not <see cref="EffectiveTypeOverlay"/>.</b>
+        /// Both of those replace or add the rules and qualities of a unit <em>type</em> to an object.
+        /// This says nothing about the object it is declared on: it changes what the <em>board</em>
+        /// counts as while that object acts, which is a statement about spaces. p.19's Spawn Point and
+        /// Battle Zone are properties of spaces, and no family here had ever spoken about one.</para>
+        ///
+        /// <para><b>"While you are performing an action" needs no separate scope</b>, because the
+        /// questions it widens - <see cref="EmptyMinionSpawnPointQuery"/>'s three parts - are only ever
+        /// asked about an acting hero, inside the resolution of the action they are asked for. The
+        /// user's 2026-09-06 ruling puts a Defense action squarely inside "an action" (p.14 says
+        /// "perform a Defense action"), so the reading is the plain one and the scope falls out of
+        /// where the query is consulted rather than being restated as a condition.</para>
+        /// </summary>
+        AllSpacesCountAsFriendlyMinionSpawnPointsInBattleZone = 9
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -597,6 +628,24 @@ namespace GuardsDigital.Core.Rules.Modifications
                 SourceValueQueryKind.None,
                 cost);
         }
+
+        /// <summary>
+        /// Dodger the Warlock's Tide of Darkness, whole. Milestone 8.35z28.
+        ///
+        /// <para>It takes no argument because the printed sentence has no number, no channel and no
+        /// named type in it - see
+        /// <see cref="RuleModificationKind.AllSpacesCountAsFriendlyMinionSpawnPointsInBattleZone"/> for
+        /// why the rule is stated in the member's name rather than in a property.</para>
+        /// </summary>
+        public static RuleModification ForAllSpacesCountAsFriendlyMinionSpawnPointsInBattleZone() =>
+            new RuleModification(
+                RuleModificationKind.AllSpacesCountAsFriendlyMinionSpawnPointsInBattleZone,
+                RuleActivity.None,
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                0,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor);
 
         public static RuleModification ForCountsAs(EffectiveUnitKind effectiveUnitKind)
         {

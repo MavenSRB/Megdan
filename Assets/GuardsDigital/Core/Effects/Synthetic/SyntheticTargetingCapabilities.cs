@@ -255,6 +255,51 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string AdmittedMinionClassParameterName = "admittedMinionClass";
 
+        /// <summary>
+        /// Milestone 8.35z28. Whether a printed-icon hero selection admits only heroes who own at least
+        /// one card in their own discard pile - Dodger's Littlefinger of Death and Finger of Death,
+        /// "Target a hero in range <b>who has one or more cards in the discard</b>".
+        ///
+        /// <para>It narrows the candidates rather than gating what happens to the chosen one, which is
+        /// the reading milestone 8.21's <c>playedAttackThisTurn</c> and milestone 8.22's
+        /// <c>adjacentToFriendlyMinion</c> already record for the same grammar: "who has" is part of who
+        /// may be picked, so a hero with an empty pile is not one to offer and then refuse.</para>
+        ///
+        /// <para><b>The pile is the named hero's own.</b> "who has" binds it to the target, and p.10
+        /// returns every card to its owner's hand at the end of a round - so the condition tracks heroes
+        /// who have discarded during the current round, by defending or by being made to discard, and
+        /// it empties again at the boundary without anything here having to know that.</para>
+        ///
+        /// <para>Optional and defaulting to false, so every hero selection composed before Dodger keeps
+        /// its exact candidate set.</para>
+        /// </summary>
+        public const string HasCardInDiscardParameterName = "hasCardInDiscard";
+
+        /// <summary>
+        /// Milestone 8.35z28. Whether a printed-icon hero selection admits only heroes standing beside an
+        /// empty minion Spawn point of the current Battle Zone - Dodger's Death Trap, "An enemy hero in
+        /// radius <b>who is adjacent to an empty spawn point in the battle zone</b> discards a card, if
+        /// able".
+        ///
+        /// <para>The sentence has two bounds measured from two different places, which is why this
+        /// cannot be expressed by moving the selection's origin: the disk is measured from Dodger and
+        /// the adjacency is measured from each candidate. That is the identical shape milestone 8.22
+        /// recorded for <c>adjacentToFriendlyMinion</c>.</para>
+        ///
+        /// <para>Which Spawn points qualify is
+        /// <see cref="GuardsDigital.Core.Rules.Modifications.EmptyMinionSpawnPointQuery"/>'s answer -
+        /// minion points only, per the user's D-01 ruling, in the Battle Zone, empty - asked here rather
+        /// than answered a second way, because eight other faces of hers read the identical printed
+        /// phrase. Note which piece the Battle Zone is asked about: the Spawn point, never the hero.
+        /// That is the designer's own 2026-07-25 ruling on Aegis of Doom, and it holds for this face for
+        /// the same reason - the clause qualifies the Spawn point and nothing else.</para>
+        ///
+        /// <para>Optional and defaulting to false, so every hero selection composed before Dodger keeps
+        /// its exact candidate set.</para>
+        /// </summary>
+        public const string AdjacentToEmptyMinionSpawnPointParameterName =
+            "adjacentToEmptyMinionSpawnPoint";
+
         private static IReadOnlyList<RuleActivity> AllActivities { get; } =
             Array.AsReadOnly(Enum.GetValues(typeof(RuleActivity)).Cast<RuleActivity>()
                 .Where(value => value != RuleActivity.None).ToArray());
@@ -479,6 +524,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             ExcludeAdjacentParameterName, EffectValueKind.Boolean)
                         : new EffectCapabilityParameter(
                             ExcludeTheAttackerParameterName, EffectValueKind.Boolean));
+
+                    // Milestone 8.35z28. The two narrowings Dodger's hero selections print, each declared
+                    // on the arm whose face prints it and neither on the other - the same rule that
+                    // kept `excludeAdjacent` off the Range arm and `excludeTheAttacker` off the Radius
+                    // one. Both are optional, so every hero selection composed before her is unchanged
+                    // without naming either.
+                    parameters.Add(channel == PrintedValueChannel.Range
+                        ? new EffectCapabilityParameter(
+                            HasCardInDiscardParameterName,
+                            EffectValueKind.Boolean,
+                            isRequired: false)
+                        : new EffectCapabilityParameter(
+                            AdjacentToEmptyMinionSpawnPointParameterName,
+                            EffectValueKind.Boolean,
+                            isRequired: false));
                 }
                 else
                 {
@@ -881,6 +941,33 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         ? context.EnclosingAttack.ActorId
                         : default;
 
+                // Milestone 8.35z28. Dodger's two hero narrowings, each read only on the arm that
+                // declares it. An unbound optional parameter is the absence of the clause, which is why
+                // both default to false and every earlier hero selection is untouched.
+                var requiresACardInDiscard = channel == PrintedValueChannel.Range &&
+                    context.Input(HasCardInDiscardParameterName).BooleanValue;
+                var requiresAnEmptySpawnPointBeside = channel == PrintedValueChannel.Radius &&
+                    context.Input(AdjacentToEmptyMinionSpawnPointParameterName).BooleanValue;
+
+                // Derived once for the whole offer rather than per candidate: the qualifying points are
+                // a property of the board and the map, and asking six times would answer identically
+                // six times.
+                //
+                // The overlay is read from the ACTOR and never from the candidate. Tide of Darkness is
+                // Dodger's own Ultimate and its clause is "while YOU are performing an action"; Death
+                // Trap's sentence then asks whether the enemy hero it is about stands beside a
+                // qualifying point. Two different heroes, one of whom supplies the board reading and
+                // the other of whom is measured against it - which is exactly what the printed sentence
+                // says. Milestone 8.35z28.
+                var qualifyingSpawnPoints =
+                    requiresAnEmptySpawnPointBeside && context.Components?.Tokens != null
+                        ? EmptyMinionSpawnPointQuery.FindInCurrentBattleZone(
+                            board,
+                            context.Components.Tokens,
+                            SpawnPointOverlay.ForActor(
+                                context.Modifications, context.Participants, context.ActorId))
+                        : Array.Empty<HexCoordinate>();
+
                 var heroes = new List<HeroId>(targets.Count);
                 foreach (var target in targets)
                 {
@@ -903,6 +990,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     if (excludeAdjacent &&
                         board.TryGetObjectCoordinate(target, out var at) &&
                         HexDistanceQuery.Calculate(origin, at) == 1)
+                    {
+                        continue;
+                    }
+
+                    // "who has one or more cards in the discard" - the named hero's own pile, read the
+                    // same way `owned-card-present@1` reads one so a card that selects by the fact and
+                    // a card that conditions on it cannot come to disagree about what it means.
+                    if (requiresACardInDiscard &&
+                        (!context.CardState.IsAvailable ||
+                            !context.CardState.Instances.Any(card =>
+                                card.OwnerId.Equals(target.HeroId) &&
+                                card.State.Location == CardLocation.DiscardPile)))
+                    {
+                        continue;
+                    }
+
+                    // "who is adjacent to an empty spawn point in the battle zone" - measured from each
+                    // candidate's own space, which is what makes it a second bound rather than a wider
+                    // disk.
+                    if (requiresAnEmptySpawnPointBeside &&
+                        (!board.TryGetObjectCoordinate(target, out var beside) ||
+                            !qualifyingSpawnPoints.Any(point =>
+                                HexDistanceQuery.Calculate(beside, point) == 1)))
                     {
                         continue;
                     }
