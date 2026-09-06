@@ -4810,8 +4810,13 @@ namespace GuardsDigital.Tests.PlayMode
             // 8.30i owns two fixed meshes and sixteen shared shine materials: 8.30h's six board-cue
             // pairs plus the two signed Defense-contribution pairs. The retired destination fill and
             // rim resources are not allocated by configured composition.
+            // Milestone 8.35z39 adds the two SATURATED-CORE materials, one per Defense sign, so the
+            // bounded set is eighteen plus two. They exist because the composite mark's core used to
+            // borrow the halo material for its saturation and halos are LIGHT now; both are created
+            // with the rest and disposed with the rest, which is what this case actually guards -
+            // that the set is bounded and released, not that it is forever exactly eighteen.
             // The 210 tiles retain renderers only; none owns a material or mesh of its own.
-            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(18));
+            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(20));
             Assert.That(CountHighlightMaterials(), Is.Zero);
             Assert.That(CountResultingSpaceMaterials(), Is.Zero);
             AssertCurrentMinionBindings(first);
@@ -4838,8 +4843,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Has.All.Matches<Material>(value => value == null),
                 "The runtime Destroy branch releases keyline, consequence, and wash materials.");
             var second = Root();
-            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(18),
-                "and a reload rebuilds the same bounded eighteen rather than accumulating them.");
+            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(20),
+                "and a reload rebuilds the same bounded twenty rather than accumulating them.");
             Assert.That(CountHighlightMaterials(), Is.Zero);
             Assert.That(CountResultingSpaceMaterials(), Is.Zero);
             AssertCurrentMinionBindings(second);

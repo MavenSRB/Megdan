@@ -93,7 +93,10 @@ namespace GuardsDigital.Tests.PlayMode
                         new[] { minion.MinionId }));
                 }
 
-                Assert.That(template.OwnedNativeResourceCount, Is.EqualTo(18));
+                // Milestone 8.35z39: eighteen plus the two saturated-core materials the composite
+                // mark needs now that halos are light. What this case guards is that four rebuilds
+                // grow the set by NOTHING, which is unchanged - the bound simply moved once.
+                Assert.That(template.OwnedNativeResourceCount, Is.EqualTo(20));
                 Assert.That(new[] { movement, heroTile, minionTile }
                     .Select(tile => tile.GetComponentsInChildren<MeshRenderer>(true).Length),
                     Is.EqualTo(layerCounts));
