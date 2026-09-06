@@ -493,6 +493,22 @@ namespace GuardsDigital.Core.Cards
         /// has already been taken, and a hero who saved mid-turn and reloaded would otherwise get the
         /// ability twice.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z30. Whether this turn has already visited its own end-of-turn
+        /// trigger window, so an answer that resumes through Initiative's advance completes the close
+        /// rather than re-opening it.
+        ///
+        /// <para><b>It is deliberately not part of the turn's restore state, and that is safe rather
+        /// than convenient.</b> The guard it provides is also provided by the effects themselves: an
+        /// <see cref="ActiveEffectDurationKind.EndOfTurn"/> effect expires at the very checkpoint it
+        /// triggers at, so it is already ended by the time any second visit could reach it and fires
+        /// nothing. A restore that brings this field back as <c>false</c> therefore costs one
+        /// redundant checkpoint visit that raises no trigger - never a second execution of work the
+        /// match has already done - which is why storing it would buy nothing and cost a schema
+        /// revision.</para>
+        /// </summary>
+        private bool endOfTurnTriggersVisited;
+
         private readonly HashSet<string> consumedBeforeActionTriggers =
             new HashSet<string>(StringComparer.Ordinal);
 
@@ -2544,7 +2560,15 @@ namespace GuardsDigital.Core.Cards
             }
 
             var source = triggers[0];
-            consumedBeforeActionTriggers.Add(source.SourceId);
+
+            // Milestone 8.35z30. A once-per-turn ability is spent by firing and an
+            // each-time one is not, which is the declaration's own answer rather than this method's:
+            // Wild Hunt fires before every action its hero performs, including the second instance of
+            // a repeated one, and Living Tsunami still fires once.
+            if (source.Trigger.IsConsumedWhenItFires())
+            {
+                consumedBeforeActionTriggers.Add(source.SourceId);
+            }
             var started = cardActions.StartBeforeActionTrigger(
                 source, resolutionId, offer, definitions, instances, participants, timing,
                 CurrentModifications(), roundIndex, turnIndex);
@@ -3078,7 +3102,27 @@ namespace GuardsDigital.Core.Cards
                     initiative.TieBreakerState).Select(TurnResolutionEvent.FromTiming));
                 events.Add(TurnResolutionEvent.TurnCheckpoint(
                     TurnResolutionEventKind.TurnOnlyEffectsCancellationCheckpoint));
-                AddTiming(events, TimingCheckpoint.TurnEnded);
+                if (!endOfTurnTriggersVisited)
+                {
+                    endOfTurnTriggersVisited = true;
+                    AddTiming(events, TimingCheckpoint.TurnEnded);
+
+                    // Milestone 8.35z30. An "End of turn:" effect may ask a question -
+                    // Warning Shot asks which enemy hero in radius, and then that hero which card - and
+                    // the turn is not over while it stands. The close is withheld rather than the
+                    // question deferred, because the work is printed as happening at the end of this
+                    // turn; the answer arrives on the ordinary effect-choice command, whose
+                    // triggered-effect branch asks for no selected actor, and finishes here.
+                    //
+                    // The visit is taken once. The answer resumes through Initiative's advance, which
+                    // reaches this method a second time, and a second visit would re-run the checkpoint
+                    // rather than complete the turn it interrupted.
+                    if (cardActions?.IsPendingTriggeredEffect == true)
+                    {
+                        return TurnResolutionResult.Accept(events);
+                    }
+                }
+
                 events.Add(TurnResolutionEvent.TurnCheckpoint(TurnResolutionEventKind.TurnEnded));
                 IsEnded = true;
             }
@@ -3230,7 +3274,15 @@ namespace GuardsDigital.Core.Cards
                 turnIndex,
                 affectedHeroId,
                 sourceCardInstanceId);
-            var timingEvents = checkpoint == TimingCheckpoint.ActionEnded && cardActions != null
+            // Milestone 8.35z30 gives the turn's own close a producer, which is what
+            // Silverarrow's two "End of turn:" faces needed: the checkpoint already existed and was
+            // visited, but through the raw lifecycle, so an effect declaring a trigger there raised an
+            // event nothing executed. This is milestone 8.19c1's move exactly - the round's pre-battle
+            // moment reaches the same authority for the same reason - and it changes nothing for a
+            // build with no such effect in play, because the authority runs the triggers it is given
+            // and there are none.
+            var timingEvents = (checkpoint == TimingCheckpoint.ActionEnded ||
+                    checkpoint == TimingCheckpoint.TurnEnded) && cardActions != null
                 ? cardActions.ApplyTriggeredActionEnded(
                     timing, context, initiative.TieBreakerState, definitions, instances,
                     participants, CurrentModifications(),

@@ -214,13 +214,27 @@ namespace GuardsDigital.Core.Rules.Modifications
             return found;
         }
 
-        public bool HasPermission(RuleObject affectedObject, RulePermissionKind permission) =>
-            TryGetPermission(affectedObject, permission, out _);
+        public bool HasPermission(
+            RuleObject affectedObject,
+            RulePermissionKind permission,
+            RuleActivity whilePerforming = RuleActivity.None) =>
+            TryGetPermission(affectedObject, permission, out _, whilePerforming);
 
+        /// <param name="whilePerforming">
+        /// Milestone 8.35z30, RULING 47. What the asker is doing, or
+        /// <see cref="RuleActivity.None"/> when it is asking in the abstract.
+        ///
+        /// <para>A grant its card stated unconditionally answers every ask, which is every permission
+        /// written before Silverarrow and is why an unchanged caller gets an unchanged answer. A grant
+        /// its card scoped to an activity answers only an asker doing that activity - so Trailblazer's
+        /// obstacle-ignore reaches a Movement action and does not reach the direct Move a card text
+        /// performs, which is what the user's ruling says and what the two sentences differ by.</para>
+        /// </param>
         public bool TryGetPermission(
             RuleObject affectedObject,
             RulePermissionKind permission,
-            out AppliedRuleModification granted)
+            out AppliedRuleModification granted,
+            RuleActivity whilePerforming = RuleActivity.None)
         {
             if (permission == RulePermissionKind.None)
             {
@@ -230,9 +244,22 @@ namespace GuardsDigital.Core.Rules.Modifications
             granted = Modifications.FirstOrDefault(modification =>
                 modification.AffectedObject.Equals(affectedObject) &&
                 modification.Modification.Kind == RuleModificationKind.Permission &&
-                modification.Modification.Permission == permission);
+                modification.Modification.Permission == permission &&
+                PermissionCoversTheAsk(modification.Modification, whilePerforming));
             return granted != null;
         }
+
+        /// <summary>
+        /// Whether a granted permission's own scope admits what the asker is doing. Stated once here
+        /// rather than at each consumer, so "the card said nothing" and "the card said movement
+        /// actions" cannot be read differently by two queries.
+        /// </summary>
+        private static bool PermissionCoversTheAsk(
+            RuleModification modification, RuleActivity whilePerforming) =>
+            modification.Activities.Count == 0 ||
+            modification.Activities.All(activity => activity == RuleActivity.None) ||
+            (whilePerforming != RuleActivity.None &&
+                modification.Activities.Contains(whilePerforming));
 
         /// <summary>
         /// Whether <paramref name="target"/> is immune to <paramref name="actor"/>'s

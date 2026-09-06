@@ -212,6 +212,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>Whether an obstacle stopped the second hero this push moved.</summary>
         public const string SecondHeroWasStoppedOutputName = "secondHeroWasStopped";
 
+        /// <summary>
+        /// Milestone 8.35z30. How far the subject of a direct Move actually went, which is
+        /// what Silverarrow's Divert Attention and Lead Astray mean by "that number" (RULING 37).
+        /// </summary>
+        public const string RealisedDistanceOutputName = "distance";
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
@@ -281,7 +287,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter(
                         LeastDistanceParameterName, EffectValueKind.Integer, isRequired: false)
                 },
-                new[] { new EffectOutputBinding("moved", EffectValueKind.Coordinate) });
+                new[]
+                {
+                    new EffectOutputBinding("moved", EffectValueKind.Coordinate),
+                    // Milestone 8.35z30. Declared beside the destination and published only
+                    // when a definition binds it, which is the shape Object Push already has: a node
+                    // that says nothing about the distance produces exactly the facts it did before.
+                    new EffectOutputBinding(RealisedDistanceOutputName, EffectValueKind.Integer)
+                });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -331,7 +344,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                if (!TryResolveMover(context, out var mover, out _))
+                if (!TryResolveMover(context, out var mover, out var moverAt))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -342,10 +355,27 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                return EffectExecutionResult.Applied(new[]
+                // Milestone 8.35z30, RULING 37. "move up to that number of spaces" points
+                // back at how far the first Move actually went, so the Move publishes that number the
+                // way Object Push has published its own since milestone 8.21 - as a fact a later node
+                // binds, not as a number a second reader re-derives from two coordinates it would have
+                // to be handed. It is the straight-line separation between where the subject started
+                // and where it stands, which p.19 makes the one distance on this board; a route that
+                // walked around an obstacle is still that many spaces from where it began, and the
+                // card counts spaces moved rather than steps taken.
+                var facts = new List<EffectOutcomeFact>
                 {
                     new EffectOutcomeFact("moved", EffectValue.Space(committed.Destination))
-                });
+                };
+                if (context.Publishes(RealisedDistanceOutputName))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        RealisedDistanceOutputName,
+                        EffectValue.Integer(
+                            HexDistanceQuery.Calculate(moverAt, committed.Destination))));
+                }
+
+                return EffectExecutionResult.Applied(facts);
             }
 
             /// <summary>

@@ -25,33 +25,72 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference ChooseTargetPairV1 => Reference("choose-target-pair", 1);
         public static EffectCapabilityReference BehindTargetLineV1 => Reference("behind-target-line", 1);
         public static EffectCapabilityReference ChooseChargeLineV1 => Reference("choose-charge-line", 1);
-        public static EffectCapabilityReference ChooseThroughTargetLineV1 =>
-            Reference("choose-through-target-line", 1);
+
         /// <summary>
-        /// Milestone 8.35z29. `choose-line-destination@1` - where a straight-line movement that
-        /// crosses obstacles ends. Misa's five Blue Skills, "Move up to 3 / 4 / 5 spaces in a straight
-        /// line, ignoring obstacles".
+        /// Milestone 8.35z30. <c>choose-line-destination@1</c> - where a straight-line
+        /// movement written in card text ends. Silverarrow's Divert Attention and Lead Astray, "move
+        /// up to that number of spaces in a straight line", and Wild Hunt's "you may move 2 spaces in
+        /// a straight line".
         ///
         /// <para><b>It is not <see cref="ChooseChargeLineV1"/> with a flag.</b> Brogan's charge offers
-        /// only destinations with a legal victim beside them, because his card cannot be played to walk
-        /// somewhere; Misa's cards are movements whose second clause is optional, so every reachable
-        /// end of a straight line is a destination whether anyone was crossed or not. And it is not
-        /// <see cref="ChooseThroughTargetLineV1"/>, which fixes the length at two and requires a
-        /// qualifying unit to be the middle space.</para>
+        /// only the spaces with an enemy unit beside them, because his sentence prints that clause;
+        /// these sentences print no clause at all, so every space the line reaches is offered. A
+        /// parameter that switched the clause off would put a card's words into a capability's
+        /// options.</para>
         ///
-        /// <para><b>Everything about obstacles is the movement rule's, asked once.</b> The walk is
-        /// <c>MovementReachabilityQuery</c>'s with p.18's crossing permission set, so terrain, units,
-        /// tokens and declared overlays are all "obstacles a permitted mover may cross", and the
-        /// endpoint predicate - which is offered no permission at all, by p.18's own second sentence -
-        /// keeps the destination on an empty playable space. The user's 2026-09-06 ruling is that
-        /// reading exactly: the line passes through any obstacle including the map's water ring, "but
-        /// as long as hero ends up on a playable space". Nothing here re-implements either half.</para>
+        /// <para><b>The path is walked, not filtered.</b> "In a straight line" is a statement about
+        /// how the hero travels, not only about where they end - so the walk keeps a route whose every
+        /// step is the same p.19 direction, and a space reachable only by turning a corner is not
+        /// offered even though it lies on a file. That is the same test Brogan's charge applies, and
+        /// it is the shared <see cref="IsStraightRoute"/> both reach.</para>
         ///
-        /// <para>Off the map is not an obstacle to cross but the absence of a space, which is why a
+        /// <para><b>Obstacles are the declaring card's business.</b> The parameter is optional and
+        /// defaults to walking p.18's obstacles the way every Move did before milestone 8.23:
+        /// Silverarrow's three faces print no crossing. A card whose own text crosses obstacles - Misa's
+        /// five Blue Skills, "ignoring obstacles" - declares it, which is why the parameter is here at
+        /// all rather than being hard-coded either way.
+        ///
+        /// <para><b>Both halves of p.18's obstacle rule are the movement query's, and neither is
+        /// restated here.</b> The crossing permission is handed to the transit predicate; the endpoint
+        /// predicate is offered no permission at all, by p.18's own second sentence, which is what keeps
+        /// the user's 2026-09-06 ruling on Misa's line - through any obstacle including the map's water
+        /// ring, "but as long as hero ends up on a playable space" - true without this handler knowing
+        /// what terrain is. Off the map is not an obstacle to cross but the absence of a space, so a
         /// line aimed across the ring at open water simply has no destination there.</para>
+        ///
+        /// <para><b>ONE declaration, settled at the six-hero content wave.</b> Milestones 8.35z29 and
+        /// 8.35z30 minted this id independently against the same output; this is 8.35z30's, the strict
+        /// superset, and 8.35z29's five Blue nodes bind the parameter rather than carrying a second
+        /// capability with one id.</para>
         /// </summary>
         public static EffectCapabilityReference ChooseLineDestinationV1 =>
             Reference("choose-line-destination", 1);
+
+        /// <summary>
+        /// Milestone 8.35z30. <c>fast-travel@1</c> - rulebook p.11's Fast Travel invoked by
+        /// card text rather than taken as p.12's replacement action. Silverarrow's Trailblazer, "You
+        /// may fast travel, if able", and her two Gold basics' "If able, you may fast travel to an
+        /// adjacent zone".
+        ///
+        /// <para><b>Why a capability and not the existing action.</b> p.12's Fast Travel is an action a
+        /// player takes <em>instead of</em> a Movement, and everything about how it is offered says so:
+        /// it replaces a named Movement action on a named card, and the whole offer is validated as
+        /// that replacement. These three faces perform one from inside card text while another action
+        /// is already running - Trailblazer's own Skill, and the Gold cards' Attack at p.14's step 7 -
+        /// so there is no Movement being replaced and nothing for the replacement query to
+        /// validate.</para>
+        ///
+        /// <para><b>What is shared is the rule, not the framing.</b> Where a Fast Travel may finish is
+        /// <see cref="FastTravelActionQuery.EvaluateDestinationForActor"/> for both, so a destination
+        /// this capability offers is exactly one the replacement action would have accepted. And
+        /// whether the hero may Fast Travel at all is asked the same way the offer asks it - p.18's
+        /// restriction on <see cref="ActionKind.FastTravel"/>, read against the colour of the card the
+        /// text is printed on - so Silverarrow's own Grasping Roots stops her Trailblazer exactly as it
+        /// stops an opponent's replacement action.</para>
+        /// </summary>
+        public static EffectCapabilityReference FastTravelV1 => Reference("fast-travel", 1);
+        public static EffectCapabilityReference ChooseThroughTargetLineV1 =>
+            Reference("choose-through-target-line", 1);
 
         /// <summary>
         /// Milestone 8.35z29. `choose-traversed-unit@1` - one of the units a straight-line movement
@@ -583,6 +622,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// two tenses her Red ranged pair reads. They register the moment she is dealt, which is the
         /// same moment her Active-effect creations join the catalog - and until then this list is what a
         /// fixture composes onto a bounded one.</para>
+        ///
+        /// <para>Milestone 8.35z30 adds Silverarrow's card-text Fast Travel on the same terms, and
+        /// supplies the ONE <c>choose-line-destination@1</c> the line above names: both milestones minted
+        /// that id against the same output, and the wave kept this - the superset, whose optional
+        /// <see cref="IgnoresObstaclesParameter"/> is what Misa's five Blue Skills bind.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers()
         {
@@ -603,6 +647,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 ChooseUnitPairAtMaximumRadiusV1, onTheMaximumRingOnly: true);
             yield return new UnitPairHandler(
                 ChooseUnitPairAtEqualDistanceInRadiusV1, onTheMaximumRingOnly: false);
+            yield return new CardTextFastTravelHandler();
         }
 
         /// <summary>
@@ -688,6 +733,236 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
         private static EffectCapabilityReference Reference(string id, int revision) =>
             new EffectCapabilityReference(new EffectCapabilityId(id), revision);
+
+        /// <summary>
+        /// The parameter Misa's five Blue Skills set and Silverarrow's three straight-line faces do
+        /// not: whether the line's own text crosses p.18's obstacles.
+        /// </summary>
+        public const string IgnoresObstaclesParameter = "ignoresObstacles";
+
+        /// <summary>
+        /// The hero a <c>retrieve-card@1</c> node actually retrieved for, published only on success -
+        /// the "if they do" of Silverarrow's two Green healing faces.
+        /// </summary>
+        public const string RetrievedByOutputName = "retrievedBy";
+
+        /// <summary>
+        /// The Zone reach a card-text Fast Travel declares - p.11's own, or the "adjacent zone" both
+        /// of Silverarrow's Gold basics print.
+        /// </summary>
+        public const string ZoneScopeParameter = "zoneScope";
+
+        /// <summary>
+        /// Where a straight-line movement written in card text ends. See
+        /// <see cref="ChooseLineDestinationV1"/>.
+        /// </summary>
+        private sealed class LineDestinationHandler : TargetingHandler, IEffectCapabilityHandler
+        {
+            public override IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
+                Array.Empty<RuleActivity>();
+
+            public EffectCapabilityReference Reference => ChooseLineDestinationV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter("maximumDistance", EffectValueKind.Integer),
+                        new EffectCapabilityParameter(
+                            IgnoresObstaclesParameter, EffectValueKind.Boolean, isRequired: false)
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding("destination", EffectValueKind.Coordinate)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var destinations = Destinations(context);
+                return destinations.Count == 0
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor, destinations.Select(EffectValue.Space), 1, 1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Coordinate ||
+                    !Destinations(context).Any(value => value.Equals(selected[0].Coordinate)))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact("destination", EffectValue.Space(selected[0].Coordinate))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Destinations(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// Derived on every ask - the offer, the answer and a restored pause - because the board is
+            /// state, and a route remembered from the moment the question opened could name a space
+            /// something has since stepped into.
+            ///
+            /// <para>A maximum of nought is a legal question with no answer, which is what RULING 37
+            /// produces when the enemy did not move: "up to that number" is up to nothing, and the
+            /// declaring node's own <c>up to</c> policy turns an empty offer into a step simply not
+            /// taken.</para>
+            /// </summary>
+            public static IReadOnlyList<HexCoordinate> Destinations(EffectCapabilityContext context)
+            {
+                var board = context.Components?.Board;
+                var maximum = context.Input("maximumDistance").IntegerValue;
+                var crosses = context.Inputs.ContainsKey(IgnoresObstaclesParameter) &&
+                    context.Input(IgnoresObstaclesParameter).BooleanValue;
+                if (board == null || maximum < 1 || !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var actor = BoardObjectReference.ForHero(context.ActorId);
+                var found = new List<HexCoordinate>();
+                foreach (var route in board.FindDirectMoveDestinations(
+                    actor, maximum, context.Modifications, moveIgnoresObstacles: crosses))
+                {
+                    if (route.Cost < 1 || route.Cost > maximum ||
+                        !StraightLineQuery.TryGetDirection(
+                            actorAt, route.Destination, out var direction, out var distance) ||
+                        distance != route.Cost || !IsStraightRoute(actorAt, direction, route.Route))
+                    {
+                        continue;
+                    }
+
+                    found.Add(route.Destination);
+                }
+
+                return found
+                    .Distinct()
+                    .OrderBy(value => value.Q)
+                    .ThenBy(value => value.R)
+                    .ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Rulebook p.11's Fast Travel performed by card text. See <see cref="FastTravelV1"/>.
+        /// </summary>
+        private sealed class CardTextFastTravelHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => FastTravelV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter(
+                            ZoneScopeParameter,
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.All<FastTravelZoneScope>())
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding("destination", EffectValueKind.Coordinate)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var destinations = Destinations(context);
+                return destinations.Count == 0
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor, destinations.Select(EffectValue.Space), 1, 1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Coordinate ||
+                    !Destinations(context).Any(value => value.Equals(selected[0].Coordinate)))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var components = context.Components;
+                var committed = components.Board.CommitValidatedDisplacement(
+                    BoardObjectReference.ForHero(context.ActorId), selected[0].Coordinate);
+                if (!committed.Accepted)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact("destination", EffectValue.Space(committed.Destination))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Destinations(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// The Fast Travel this text may perform, or nothing at all - which is the case all three
+            /// faces answer with "if able", and which happens for two separate printed reasons: p.18
+            /// bars the hero from Fast Travel outright, or p.11 leaves them no eligible Zone.
+            /// </summary>
+            public static IReadOnlyList<HexCoordinate> Destinations(EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                if (components == null || !components.CanDisplace || context.Participants == null ||
+                    !context.CardState.IsAvailable)
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var scope = (FastTravelZoneScope)context.Input(ZoneScopeParameter).IntegerValue;
+                if (!Enum.IsDefined(typeof(FastTravelZoneScope), scope))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                // The same question p.12's offer asks, read against the colour of the card this text
+                // is printed on: a colour-qualified restriction reaches a card-text Fast Travel exactly
+                // as it reaches the replacement action performed from the same card.
+                if (ActionRestrictionQuery.IsRestrictedFrom(
+                    context.ActorId,
+                    ActionKind.FastTravel,
+                    context.Modifications,
+                    ActionOfferQuery.SourceCardColor(
+                        context.SourceCardInstanceId,
+                        context.CardState.Definitions,
+                        context.CardState.Instances)))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                return components.Tokens == null
+                    ? Array.Empty<HexCoordinate>()
+                    : FastTravelActionQuery.FindDestinationsForActor(
+                        context.ActorId,
+                        components.Board,
+                        components.Tokens,
+                        context.Participants,
+                        components.Board.Minions,
+                        scope);
+            }
+        }
 
         private static EffectCapabilityParameterSchema TargetSchema(
             IEnumerable<EffectCapabilityParameter> extra = null,
@@ -2186,7 +2461,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             integerDomain: EffectIntegerDomain.AllExcept(
                                 RosterCardRetrievalKind.None))
                     },
-                    new[] { new EffectOutputBinding("retrieved", EffectValueKind.CardInstance) });
+                    new[]
+                    {
+                        new EffectOutputBinding("retrieved", EffectValueKind.CardInstance),
+                        // Milestone 8.35z30. Who retrieved, published only when a card
+                        // actually was. Silverarrow's Fae Healing and Nature's Blessing print "A hero
+                        // in radius may retrieve a discarded card; <b>if they do</b>, that hero gains
+                        // N coin(s)", and this is the whole of that condition: the coin node binds its
+                        // recipient here, so a hero who declined leaves the binding undefined and the
+                        // grant reports itself impossible - which its own `if able` policy turns into
+                        // a step not taken. Nothing separate asks "did it happen".
+                        new EffectOutputBinding(RetrievedByOutputName, EffectValueKind.Hero)
+                    });
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
 
@@ -2225,10 +2511,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     : null;
                 if (card == null || !CardLifecycleAuthority.TryRetrieveEligibleCard(card))
                     return EffectExecutionResult.ImpossibleMandatory();
-                return EffectExecutionResult.Applied(new[]
+                var facts = new List<EffectOutcomeFact>
                 {
                     new EffectOutcomeFact("retrieved", EffectValue.Card(card.Id))
-                });
+                };
+                if (context.Publishes(RetrievedByOutputName))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        RetrievedByOutputName, EffectValue.Hero(card.OwnerId)));
+                }
+
+                return EffectExecutionResult.Applied(facts);
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
@@ -2798,111 +3091,6 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     !board.TryGetObjectCoordinate(
                         BoardObjectReference.ForHero(context.ActorId), out var actorAt) ||
                     HexDistanceQuery.Calculate(actorAt, targetAt) != 1;
-            }
-        }
-
-        /// <summary>
-        /// Milestone 8.35z29. Where a straight-line movement that crosses obstacles may end -
-        /// Misa's five Blue Skills.
-        ///
-        /// <para>Both halves of p.18's obstacle rule are the movement query's and neither is restated
-        /// here: the crossing permission is handed to the transit predicate, and the endpoint predicate
-        /// is offered no permission at all, which is what keeps the ruling's "as long as hero ends up
-        /// on a playable space" true without this handler knowing what terrain is.</para>
-        ///
-        /// <para>Straightness is asserted twice - the destination lies on a hex direction from the
-        /// origin at the route's own cost, and the route itself steps along that direction - for the
-        /// reason <see cref="ChargeLineHandler"/> asserts it twice: a reachability walk finds the
-        /// cheapest way to a space, and the cheapest way to a space that also lies on a line need not
-        /// itself be that line.</para>
-        /// </summary>
-        private sealed class LineDestinationHandler : TargetingHandler, IEffectCapabilityHandler
-        {
-            public override IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
-                Array.Empty<RuleActivity>();
-
-            public EffectCapabilityReference Reference => ChooseLineDestinationV1;
-
-            public EffectCapabilityParameterSchema Schema { get; } =
-                new EffectCapabilityParameterSchema(
-                    new[]
-                    {
-                        new EffectCapabilityParameter("maximumDistance", EffectValueKind.Integer)
-                    },
-                    new[]
-                    {
-                        new EffectOutputBinding("destination", EffectValueKind.Coordinate)
-                    });
-
-            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
-                Array.Empty<ActiveEffectDefinition>();
-
-            public EffectExecutionResult Execute(EffectCapabilityContext context)
-            {
-                var destinations = Destinations(context);
-                return destinations.Count == 0
-                    ? EffectExecutionResult.ImpossibleMandatory()
-                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.Actor, destinations.Select(EffectValue.Space), 1, 1));
-            }
-
-            public EffectExecutionResult Resume(
-                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
-            {
-                if (selected == null || selected.Count != 1 ||
-                    selected[0].Kind != EffectValueKind.Coordinate ||
-                    !Destinations(context).Any(value => value.Equals(selected[0].Coordinate)))
-                {
-                    return EffectExecutionResult.ImpossibleMandatory();
-                }
-
-                return EffectExecutionResult.Applied(new[]
-                {
-                    new EffectOutcomeFact("destination", EffectValue.Space(selected[0].Coordinate))
-                });
-            }
-
-            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                Destinations(context).Count == 0
-                    ? EffectExecutionResultKind.ImpossibleMandatory
-                    : EffectExecutionResultKind.NeedsChoice;
-
-            /// <summary>
-            /// Derived on every ask - the offer, the answer and a restored pause - because the board is
-            /// state and a route remembered from the moment the question opened could name a space
-            /// something has since stepped into.
-            /// </summary>
-            private static IReadOnlyList<HexCoordinate> Destinations(EffectCapabilityContext context)
-            {
-                var board = context.Components?.Board;
-                var maximum = context.Input("maximumDistance").IntegerValue;
-                if (board == null || maximum < 1 || !board.TryGetObjectCoordinate(
-                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
-                {
-                    return Array.Empty<HexCoordinate>();
-                }
-
-                var actor = BoardObjectReference.ForHero(context.ActorId);
-                var found = new List<HexCoordinate>();
-                foreach (var route in board.FindDirectMoveDestinations(
-                    actor, maximum, context.Modifications, moveIgnoresObstacles: true))
-                {
-                    if (route.Cost < 1 || route.Cost > maximum ||
-                        !StraightLineQuery.TryGetDirection(
-                            actorAt, route.Destination, out var direction, out var distance) ||
-                        distance != route.Cost || !IsStraightRoute(actorAt, direction, route.Route))
-                    {
-                        continue;
-                    }
-
-                    found.Add(route.Destination);
-                }
-
-                return found
-                    .Distinct()
-                    .OrderBy(value => value.Q)
-                    .ThenBy(value => value.R)
-                    .ToArray();
             }
         }
 

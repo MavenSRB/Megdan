@@ -69,11 +69,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
 
-            var attackRange = policy.Reach == AttackTargetReach.PrintedRange
-                ? AttackRangeKind.Ranged
-                : AttackRangeKind.NonRanged;
+            var attackRange = policy.Reach == AttackTargetReach.AdjacentOnly
+                ? AttackRangeKind.NonRanged
+                : AttackRangeKind.Ranged;
             var attackerOccupancy = board.Occupancies.SingleOrDefault(value => value.HeroId.Equals(attackerId));
             var occupancies = board.Occupancies.ToArray();
+            var minionOccupancies = board.Minions.ToArray();
 
             // Milestone 8.10. The Boomerangs' "not in a straight line", measured from the attacker's
             // own space. Nothing is written here for the reminder that adjacent units are in one:
@@ -83,9 +84,36 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 policy.Line == AttackTargetLine.NotInStraightLine &&
                 StraightLineQuery.AreInStraightLine(attackerOccupancy.Coordinate, candidate);
 
+            // Milestone 8.35z30, RULING 1. "at maximum range" is a band and "in range" is
+            // p.13's ceiling, and the composed Range Total is the one number both read. The distance
+            // is measured here for both unit kinds, so the two halves of the answer below cannot
+            // disagree about what the card reaches.
+            bool StandsAtAnAdmittedDistance(HexCoordinate candidate) =>
+                policy.Reach != AttackTargetReach.ExactlyPrintedRange ||
+                HexDistanceQuery.Calculate(attackerOccupancy.Coordinate, candidate) == rangeTotal;
+
+            // Milestone 8.35z30. The union Silverarrow's three Red modals admit: a unit
+            // beside the attacker, or a unit no unit at all stands beside. p.19's "unit" is the
+            // type-insensitive union of both registers, so both are enumerated and neither asks what
+            // anything counts as - the same reading this file already takes of p.13's own sentence.
+            bool IsIsolatedOrAdjacentToTheAttacker(HexCoordinate candidate) =>
+                policy.TargetableUnits != AttackTargetableUnits.IsolatedUnitsOrUnitsAdjacentToYou ||
+                HexDistanceQuery.Calculate(attackerOccupancy.Coordinate, candidate) == 1 ||
+                (!occupancies.Any(value =>
+                     !value.Coordinate.Equals(candidate) &&
+                     HexDistanceQuery.Calculate(value.Coordinate, candidate) == 1) &&
+                 !minionOccupancies.Any(value =>
+                     !value.Coordinate.Equals(candidate) &&
+                     HexDistanceQuery.Calculate(value.Coordinate, candidate) == 1));
+
+            bool IsAdmitted(HexCoordinate candidate) =>
+                !StandsOnAnExcludedLine(candidate) &&
+                StandsAtAnAdmittedDistance(candidate) &&
+                IsIsolatedOrAdjacentToTheAttacker(candidate);
+
             var heroes = FindLegalEnemyHeroes(
                 attackerId, attackRange, rangeTotal, participants, board, modifications)
-                .Where(heroId => !StandsOnAnExcludedLine(
+                .Where(heroId => IsAdmitted(
                     occupancies.Single(value => value.HeroId.Equals(heroId)).Coordinate))
                 .Select(AttackTarget.Hero);
 
@@ -106,11 +134,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var attackerTeam = participants.GetTeamForHero(attackerId).Id;
             var maximumDistance = attackRange == AttackRangeKind.NonRanged ? 1 : rangeTotal;
             var attacker = RuleObject.ForHero(attackerId);
-            var minions = board.Minions
+            var minions = minionOccupancies
                 .Where(minion =>
                     !minion.TeamId.Equals(attackerTeam) &&
                     HexDistanceQuery.Calculate(attackerOccupancy.Coordinate, minion.Coordinate) <= maximumDistance &&
-                    !StandsOnAnExcludedLine(minion.Coordinate) &&
+                    IsAdmitted(minion.Coordinate) &&
                     !ImmunityQuery.IsImmuneTo(
                         RuleObject.ForMinion(minion.MinionId), RuleActivity.Attack, attacker,
                         board, participants, modifications))

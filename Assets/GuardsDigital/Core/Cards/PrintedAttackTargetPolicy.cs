@@ -15,7 +15,39 @@ namespace GuardsDigital.Core.Cards
         /// The narrowing a card states in its own words - Wasp's Crackling Dagger prints "Target a
         /// hero adjacent to you", and a minion beside her is not a legal target of it.
         /// </summary>
-        HeroesOnly = 1
+        HeroesOnly = 1,
+
+        /// <summary>
+        /// Milestone 8.35z30. The candidate set Silverarrow's three Red modals print:
+        /// "<b>Choose one —</b> • Target a unit in range, which is not adjacent to any other unit.
+        /// • Target a unit adjacent to you." Snap Shot, Opportunity Shot and Clear Shot print it word
+        /// for word and differ only in their Attack and Range values.
+        ///
+        /// <para><b>Why one member and not a modal.</b> The two bullets differ in nothing but which
+        /// unit becomes the target - no other consequence hangs off either arm - so the set of units
+        /// this Attack may take is the union of the two arms, and naming a unit in that union names
+        /// the arm that admits it. A modal that asked which bullet first and then offered that
+        /// bullet's units would put a question in front of the player whose every answer is already
+        /// visible in the candidate list, and would have to keep the two answers in agreement with
+        /// this query for the offer, the choice and the resolution to read alike.</para>
+        ///
+        /// <para><b>The union is invariant to the one thing the face leaves open</b>, which is why no
+        /// ruling was needed for it. "any other unit" either counts the attacker or does not. If it
+        /// counts her, the first arm can never admit a unit beside her - she is adjacent to it - so
+        /// the arm holds units at distance 2 or more with no neighbour at all. If it does not count
+        /// her, the arm additionally holds units beside her whose only neighbour is her, and the
+        /// second arm already holds every unit beside her. Both readings therefore give the same
+        /// union: every enemy unit within the printed Range that no unit stands beside, plus every
+        /// enemy unit adjacent to the attacker. <c>SilverarrowPrintedSetTests</c> asserts that
+        /// equality on a board built to separate the two readings.</para>
+        ///
+        /// <para><b>Ruling 39 needs nothing here.</b> The user settled that the adjacent arm is still
+        /// a ranged attack - the printed band is the action's type whichever arm is taken - and under
+        /// this shape there is no arm to carry a type: the action is
+        /// <see cref="AttackRangeKind.Ranged"/> and the policy only says which units it reaches.
+        /// A "Block a ranged attack" therefore answers a point-blank Snap Shot by construction.</para>
+        /// </summary>
+        IsolatedUnitsOrUnitsAdjacentToYou = 2
     }
 
     /// <summary>How far a printed Attack reaches, and what says so.</summary>
@@ -33,7 +65,27 @@ namespace GuardsDigital.Core.Cards
         /// <see cref="PrintedValueChannel.Range"/>, composed with p.16's items exactly as the Attack
         /// value is.
         /// </summary>
-        PrintedRange = 1
+        PrintedRange = 1,
+
+        /// <summary>
+        /// Milestone 8.35z30, and RULING 1 (user, 2026-09-06: "A is the number, it says AT
+        /// MAXIMUM RANGE"). The reach Silverarrow's four "at maximum range" faces print - Shoot and
+        /// Scoot, Keep the Distance, Long Shot and Rain of Arrows: the target stands at a distance
+        /// <em>exactly equal</em> to the Range Total, and a unit any nearer is not a legal target of
+        /// it at all.
+        ///
+        /// <para>It is a distinct reach rather than a filter over <see cref="PrintedRange"/> because
+        /// the page composes one number and these cards read it differently. Every other targeting
+        /// sentence in the verified roster says "in range", which is p.13's own ceiling; these four
+        /// deliberately say something else, and reading them as the ceiling would leave the changed
+        /// words meaning nothing. The number itself is the same one - p.16's Range item raises it, so
+        /// an item moves the band outward rather than widening it, which is the observable difference
+        /// between a band and a ceiling.</para>
+        ///
+        /// <para>The Range is still read off the card, so this reach carries
+        /// <see cref="PrintedRange"/>'s own requirement that the Attack print a Range icon.</para>
+        /// </summary>
+        ExactlyPrintedRange = 2
     }
 
     /// <summary>Whether a printed Attack's own words exclude rulebook p.19's straight line.</summary>
@@ -158,6 +210,19 @@ namespace GuardsDigital.Core.Cards
                     nameof(line));
             }
 
+            // Milestone 8.35z30. The modal's first bullet says "a unit in range", so the
+            // union is only writable over p.13's ceiling. Paired with AdjacentOnly it would be an
+            // Attack whose first arm has no range to be in; paired with the exact band it would be a
+            // sentence no face prints, and this file would be deciding what it meant.
+            if (targetableUnits == AttackTargetableUnits.IsolatedUnitsOrUnitsAdjacentToYou &&
+                reach != AttackTargetReach.PrintedRange)
+            {
+                throw new ArgumentException(
+                    "Silverarrow's Red modal prints \"a unit in range\" beside \"a unit adjacent to " +
+                    "you\", so its union is declared over rulebook p.13's printed-Range ceiling.",
+                    nameof(targetableUnits));
+            }
+
             TargetableUnits = targetableUnits;
             Reach = reach;
             Line = line;
@@ -206,6 +271,23 @@ namespace GuardsDigital.Core.Cards
                         "Only an Attack subtype has a printed target policy.");
             }
         }
+
+        /// <summary>
+        /// Milestone 8.35z30. The same policy read as a band rather than a ceiling, which
+        /// is what Silverarrow's four "at maximum range" faces print. RULING 1.
+        /// </summary>
+        public PrintedAttackTargetPolicy AtExactlyThePrintedRange() =>
+            new PrintedAttackTargetPolicy(
+                TargetableUnits, AttackTargetReach.ExactlyPrintedRange, Line, Binding);
+
+        /// <summary>
+        /// Milestone 8.35z30. The union Silverarrow's three Red modals admit - see
+        /// <see cref="AttackTargetableUnits.IsolatedUnitsOrUnitsAdjacentToYou"/> for why one set
+        /// states both printed bullets.
+        /// </summary>
+        public PrintedAttackTargetPolicy NarrowedToIsolatedUnitsAndThoseAdjacentToYou() =>
+            new PrintedAttackTargetPolicy(
+                AttackTargetableUnits.IsolatedUnitsOrUnitsAdjacentToYou, Reach, Line, Binding);
 
         /// <summary>The same policy narrowed to p.13's heroes alone, which is Crackling Dagger's shape.</summary>
         public PrintedAttackTargetPolicy NarrowedToHeroes() =>

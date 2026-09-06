@@ -526,7 +526,22 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RestrictedActorScope.AnyActor);
         }
 
-        public static RuleModification ForPermission(RulePermissionKind permission)
+        /// <param name="whilePerforming">
+        /// Milestone 8.35z30, and RULING 47. The activity the grant is scoped to, or
+        /// <see cref="RuleActivity.None"/> for a grant its card states unconditionally.
+        ///
+        /// <para>Two verified faces print the same permission and only one of them qualifies it.
+        /// Xargatha's Metamorphosis says "You may move through obstacles" and names nothing, so it
+        /// holds whenever anything asks. Silverarrow's Trailblazer says "may ignore obstacles
+        /// <b>while performing movement actions</b>", and the user's ruling is that a Move written in
+        /// card text is not a movement action - "something might block movement actions. But this is
+        /// moving as part of attack actions, so it does not care" - which cuts both ways: a
+        /// movement-action buff does not reach a card-text Move either. Declaring the scope is what
+        /// keeps the two sentences different, and an unqualified grant answers every ask exactly as it
+        /// did before this parameter existed.</para>
+        /// </param>
+        public static RuleModification ForPermission(
+            RulePermissionKind permission, RuleActivity whilePerforming = RuleActivity.None)
         {
             if (permission == RulePermissionKind.None)
             {
@@ -535,7 +550,7 @@ namespace GuardsDigital.Core.Rules.Modifications
 
             return new RuleModification(
                 RuleModificationKind.Permission,
-                RuleActivity.None,
+                whilePerforming,
                 permission,
                 PrintedValueChannel.None,
                 0,

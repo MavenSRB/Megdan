@@ -16,7 +16,34 @@ namespace GuardsDigital.Core.Timing
         ThisTurn = 1,
         ThisRound = 2,
         NextTurn = 3,
-        NextTurnAfterPlayingCards = 4
+        NextTurnAfterPlayingCards = 4,
+
+        /// <summary>
+        /// Milestone 8.35z30. The keyword Silverarrow's Warning Shot and Treetop Sentinel
+        /// print and no verified hero had printed before: "<b>End of turn:</b> An enemy hero in radius
+        /// discards a card[, if able. / , or is defeated.]"
+        ///
+        /// <para><b>It is a duration and not one of p.17's four, because it bounds a different thing.</b>
+        /// <see cref="ThisTurn"/> and its siblings say how long a <em>state</em> lasts, and everything
+        /// declared under them is a rule that is true while they run. This one carries no rule at all -
+        /// it declares a piece of work and the moment that work happens, and the moment is after every
+        /// hero has acted. So its whole observable content is when it fires.</para>
+        ///
+        /// <para><b>Which turn, and where the radius is measured.</b> Both are the coordinator-adopted
+        /// reading of SL-06 and both follow from the same sentence: the effect is created by her Skill,
+        /// so it is her turn's; and it selects at <see cref="TimingCheckpoint.TurnEnded"/>, against the
+        /// disk drawn around wherever she is standing then. p.17 already moves an Active effect's
+        /// radius with its hero and stores no membership, so a hero who walked into the disk after the
+        /// Skill resolved is inside it when this fires - which is exactly the difference between the
+        /// two readings the card leaves open, and the one its own words ask for.</para>
+        ///
+        /// <para><b>It fires once and is then over</b>, which is why creation activates it immediately
+        /// and expiry is the same checkpoint it triggers at.
+        /// <see cref="ActiveEffectLifecycle"/> emits the trigger before the expiry when a definition
+        /// names one checkpoint for both, so the work happens and the effect does not survive into the
+        /// next turn looking for a second one.</para>
+        /// </summary>
+        EndOfTurn = 5
     }
 
     public enum ActiveEffectAffectedScopeKind
@@ -103,7 +130,27 @@ namespace GuardsDigital.Core.Timing
         /// declaration that named the opposing side quietly drop the "You" the sentence opens
         /// with.</para>
         /// </summary>
-        ControllerAndUnitsInRadius = 8
+        ControllerAndUnitsInRadius = 8,
+
+        /// <summary>
+        /// Milestone 8.35z30. The disk plus the hero it is drawn around, admitting p.19's
+        /// heroes alone - Silverarrow's Trailblazer, "<b>This round:</b> You and friendly heroes in
+        /// radius may ignore obstacles while performing movement actions."
+        ///
+        /// <para>It is a ninth member for the reason the sixth and the eighth are members: two cards
+        /// print two different nouns and the difference is live. Brogan's Bulwark protects "You and
+        /// friendly <em>units</em> in radius", and p.19 makes a minion one; Trailblazer grants its
+        /// permission to "You and friendly <em>heroes</em>", which is the word the face prints. That
+        /// the widened reading would be nearly inert today - the permission is scoped to movement
+        /// actions, and a minion performs none - is exactly the argument milestone 8.20 refused to
+        /// accept for <see cref="HeroesInRadius"/>, and it is refused again here.</para>
+        ///
+        /// <para>Membership is re-derived at every ask, so an ally who walks into the disk later in the
+        /// round is inside it then. That is p.17's own reading of a radius and, per SL-07, the same
+        /// behaviour Wasp's Static Barrier overlay has had since milestone 8.7 - reuse rather than
+        /// invention, on a window one round long rather than one turn.</para>
+        /// </summary>
+        ControllerAndHeroesInRadius = 9
     }
 
     /// <summary>
@@ -171,7 +218,13 @@ namespace GuardsDigital.Core.Timing
         {
             TimingCheckpoint.ActionEnded,
             TimingCheckpoint.EndOfRoundBeforeMinionBattle,
-            TimingCheckpoint.BeforePrimaryAction
+            TimingCheckpoint.BeforePrimaryAction,
+
+            // Milestone 8.35z30 adds another, for Silverarrow's two "End of turn:" faces.
+            // It is listed here only because that milestone also gave it a producer: the turn's own
+            // close now visits it through the triggered-effect authority, exactly as milestone 8.19c1
+            // gave the round's pre-battle moment one.
+            TimingCheckpoint.TurnEnded
         };
 
         public ActiveEffectDefinition(
@@ -389,7 +442,8 @@ namespace GuardsDigital.Core.Timing
             affectedScope == ActiveEffectAffectedScopeKind.UnitsInRadius ||
             affectedScope == ActiveEffectAffectedScopeKind.HeroesInRadius ||
             affectedScope == ActiveEffectAffectedScopeKind.MinionsInRadius ||
-            affectedScope == ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius;
+            affectedScope == ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius ||
+            affectedScope == ActiveEffectAffectedScopeKind.ControllerAndHeroesInRadius;
 
         private static void ValidateDisk(
             ActiveEffectAffectedScopeKind affectedScope,
@@ -473,6 +527,29 @@ namespace GuardsDigital.Core.Timing
             {
                 if (activation != TimingCheckpoint.TurnStarted || expiration != TimingCheckpoint.TurnOnlyCancellationBeforeTurnEnded)
                     throw new ArgumentException("A Next Turn effect activates at Turn Started and expires at that turn's cancellation checkpoint.");
+            }
+            else if (duration == ActiveEffectDurationKind.EndOfTurn)
+            {
+                // Milestone 8.35z30. The keyword names one moment, so the definition may
+                // not put its work anywhere else: it is created and activated inside the turn that
+                // will end, and it ends at that end. A definition that expired earlier would be gone
+                // before its own moment arrived, and one that expired later would still be standing at
+                // the next turn's end looking for a second.
+                if (activation != TimingCheckpoint.ActionStarted &&
+                    activation != TimingCheckpoint.AfterAttack &&
+                    activation != TimingCheckpoint.ActionEnded)
+                {
+                    throw new ArgumentException(
+                        "An End of turn effect is created by the action that prints it, so it " +
+                        "activates at one of that action's own moments.");
+                }
+
+                if (expiration != TimingCheckpoint.TurnEnded || carriesAcrossRound)
+                {
+                    throw new ArgumentException(
+                        "An End of turn effect expires at the end of the turn it was created in and " +
+                        "never carries across rounds.");
+                }
             }
             else if (duration == ActiveEffectDurationKind.NextTurnAfterPlayingCards)
             {

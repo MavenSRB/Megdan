@@ -812,8 +812,12 @@ namespace GuardsDigital.Core.Cards
                     "if the card has a radius icon).\"", nameof(AttackTargetPolicy));
             }
 
+            // Milestone 8.35z30 adds the band beside the ceiling: "at maximum range" reads
+            // the same printed number this refusal is about, so an Attack declaring either reach
+            // prints one.
             if (AttackTargetPolicy.HasValue &&
-                AttackTargetPolicy.Value.Reach == AttackTargetReach.PrintedRange &&
+                (AttackTargetPolicy.Value.Reach == AttackTargetReach.PrintedRange ||
+                    AttackTargetPolicy.Value.Reach == AttackTargetReach.ExactlyPrintedRange) &&
                 BaseValues.All(value => value.Channel != PrintedValueChannel.Range))
             {
                 throw new ArgumentException(

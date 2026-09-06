@@ -32,7 +32,13 @@ namespace GuardsDigital.Core.Rules.Movement
                 RuleObject.ForHero(selectedHero.HeroId),
                 board,
                 movementAllowance,
-                modifications);
+                modifications,
+                moverIgnoresObstacles: false,
+                // Milestone 8.35z30, RULING 47. This overload is the Movement action's own
+                // entry point - it is asked with the hero Initiative selected and the allowance that
+                // action composed - so it is the one ask that a permission scoped to movement actions
+                // answers. Silverarrow's Trailblazer reaches its allies here and nowhere else.
+                RuleActivity.Movement);
 
         /// <summary>
         /// The same reachability for any mover, named by where it stands and what it is.
@@ -69,7 +75,8 @@ namespace GuardsDigital.Core.Rules.Movement
             GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
             int movementAllowance,
             RuleModificationSet modifications,
-            bool moverIgnoresObstacles)
+            bool moverIgnoresObstacles,
+            RuleActivity permittedActivity = RuleActivity.None)
         {
             if (board == null)
             {
@@ -104,7 +111,8 @@ namespace GuardsDigital.Core.Rules.Movement
                 origin,
                 onMap,
                 coordinate => ObstacleQuery.BlocksTransit(
-                    board, coordinate, mover, modifications, moverIgnoresObstacles),
+                    board, coordinate, mover, modifications, moverIgnoresObstacles,
+                    permittedActivity),
                 coordinate => ObstacleQuery.BlocksEndOfMovement(board, coordinate, modifications),
                 movementAllowance);
         }

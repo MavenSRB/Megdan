@@ -155,19 +155,33 @@ namespace GuardsDigital.Core.Timing
                         effect.Id, context.Checkpoint, context.RoundIndex, context.TurnIndex));
                 }
 
+                // Milestone 8.35z30 split what was one if/else into two statements, and the
+                // order between them is the whole change: an effect whose own moment is also its last
+                // one fires and is then over. Silverarrow's "End of turn:" is that shape - the work is
+                // scheduled for the turn's end and nothing survives it - and the earlier form, which
+                // expired instead of triggering, would have made the card silent at the only moment it
+                // names.
+                //
+                // Nothing already in this build declares a checkpoint in both places, so no shipped
+                // effect changes: High Voltage triggers at Action Ended and expires at the turn's own
+                // cancellation moment, and Constrict triggers before the Minion Battle and expires at
+                // Round End. `ActiveEffectLifecycleTriggerOrderTests` asserts that separation rather
+                // than leaving it to be true by accident.
+                var triggersNow = !activatedNow && effect.Phase == ActiveEffectPhase.Active &&
+                    effect.Definition.TriggerCheckpoints.Contains(context.Checkpoint) &&
+                    IsRelevantHero(effect, context.AffectedHeroId);
+                if (triggersNow)
+                {
+                    results.Add(new ActiveEffectLifecycleEvent(ActiveEffectLifecycleEventKind.Triggered,
+                        effect.Id, context.Checkpoint, context.RoundIndex, context.TurnIndex));
+                }
+
                 if (effect.Phase == ActiveEffectPhase.Active &&
                     effect.Definition.ExpirationCheckpoint == context.Checkpoint &&
                     IsExpirationForActivatedWindow(effect, context))
                 {
                     effect.End(context.Checkpoint);
                     results.Add(new ActiveEffectLifecycleEvent(ActiveEffectLifecycleEventKind.Expired,
-                        effect.Id, context.Checkpoint, context.RoundIndex, context.TurnIndex));
-                }
-                else if (!activatedNow && effect.Phase == ActiveEffectPhase.Active &&
-                    effect.Definition.TriggerCheckpoints.Contains(context.Checkpoint) &&
-                    IsRelevantHero(effect, context.AffectedHeroId))
-                {
-                    results.Add(new ActiveEffectLifecycleEvent(ActiveEffectLifecycleEventKind.Triggered,
                         effect.Id, context.Checkpoint, context.RoundIndex, context.TurnIndex));
                 }
             }

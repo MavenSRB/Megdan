@@ -101,8 +101,11 @@ namespace GuardsDigital.Core.Rules.Progression
             IReadOnlyCollection<string> consumedSourceIds) =>
             ultimates.Ultimates
                 .Where(ultimate =>
-                    ultimate.Rule.BeforeAction.IsDeclared &&
-                    ultimate.Rule.BeforeAction.Action == actionKind &&
+                    // Milestone 8.35z30. The declaration answers whether it fires before an
+                    // action of this kind, because Wild Hunt's sentence names no kind and Living
+                    // Tsunami's names one; asking the declaration keeps that difference in the one
+                    // place that states it.
+                    ultimate.Rule.BeforeAction.FiresBefore(actionKind) &&
                     ultimate.Rule.TriggeredEffect.HasValue &&
                     ultimate.OwnerId.Equals(offer.ActorId) &&
                     board.TryGetHeroCoordinate(ultimate.OwnerId, out _) &&

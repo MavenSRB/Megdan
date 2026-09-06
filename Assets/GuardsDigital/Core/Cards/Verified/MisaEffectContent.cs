@@ -564,7 +564,16 @@ namespace GuardsDigital.Core.Cards.Verified
                     inputs: new[]
                     {
                         EffectInputBinding.FromLiteral(
-                            "maximumDistance", EffectValue.Integer(distance))
+                            "maximumDistance", EffectValue.Integer(distance)),
+
+                        // "ignoring obstacles", declared rather than assumed. The shared
+                        // `choose-line-destination@1` defaults to walking p.18's obstacles - milestone
+                        // 8.35z30's three faces print no crossing - so all five of these Blue Skills
+                        // say so here. This is the six-hero content wave's unification: one capability
+                        // id, the superset schema, and the card's own words in the binding.
+                        EffectInputBinding.FromLiteral(
+                            SyntheticRosterCapabilities.IgnoresObstaclesParameter,
+                            EffectValue.Boolean(true))
                     },
                     outputs: new[]
                     {

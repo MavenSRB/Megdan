@@ -222,6 +222,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string ExcludeAdjacentParameterName = "excludeAdjacent";
 
         /// <summary>
+        /// Whether a selection's own actor is one of its candidates. The board-object arm has always
+        /// required it; milestone 8.35z30 gave the hero arm the same parameter, optional,
+        /// for Silverarrow's unsided "A hero in radius" (RULING 8).
+        /// </summary>
+        public const string IncludeSelfParameterName = "includeSelf";
+
+        /// <summary>
         /// The attacker-exclusion parameter's name, spelled once so a definition cannot mistype it.
         /// Milestone 8.11, for Deflect Projectiles' "other than the attacker".
         /// </summary>
@@ -539,6 +546,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             AdjacentToEmptyMinionSpawnPointParameterName,
                             EffectValueKind.Boolean,
                             isRequired: false));
+
+                    // Milestone 8.35z30. Optional, and false where nothing sets it, which is
+                    // every hero selection written before Silverarrow: see RULING 8 and
+                    // <see cref="HeroCandidates"/> for why hers is the first face that can be its own
+                    // candidate.
+                    parameters.Add(new EffectCapabilityParameter(
+                        IncludeSelfParameterName, EffectValueKind.Boolean, isRequired: false));
                 }
                 else
                 {
@@ -916,7 +930,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<HeroId>();
                 }
 
-                var targets = PrintedIconTargets(context, channel, includeSelf: false, out var origin);
+                // Milestone 8.35z30, RULING 8. Every hero selection written before
+                // Silverarrow names a side its own hero cannot be on - "an enemy hero", "a friendly
+                // hero" - so leaving the actor out decided nothing. Fae Healing and Nature's Blessing
+                // print "A hero in radius" with no side at all, and the user settled that this reaches
+                // enemies and reaches her: "sure, she can target enemies if she wants" and "We include
+                // self". So the arm carries the same optional widening the board-object arm has always
+                // had, and a card that says nothing sets nothing and keeps its exact candidates.
+                var includeSelf = context.Inputs.ContainsKey(IncludeSelfParameterName) &&
+                    context.Input(IncludeSelfParameterName).BooleanValue;
+                var targets = PrintedIconTargets(context, channel, includeSelf, out var origin);
                 var board = context.Components?.Board;
                 if (board == null)
                 {

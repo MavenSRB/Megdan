@@ -82,12 +82,18 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// and where a movement may END is <see cref="BlocksEndOfMovement"/>'s question, which
         /// neither this flag nor the permission is offered.
         /// </summary>
+        /// <param name="permittedActivity">
+        /// Milestone 8.35z30, RULING 47. What the mover is doing, so a permission its card
+        /// scoped to one activity is read only by that activity. A caller naming nothing gets the
+        /// answer it always got: only an unqualified grant lets the mover through.
+        /// </param>
         public static bool BlocksTransit(
             AdjacentMoveAuthority board,
             HexCoordinate coordinate,
             RuleObject mover,
             RuleModificationSet modifications,
-            bool moverIgnoresObstacles)
+            bool moverIgnoresObstacles,
+            RuleActivity permittedActivity = RuleActivity.None)
         {
             if (board == null)
             {
@@ -107,7 +113,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     return true;
                 }
 
-                return !MayCrossObstacles(mover, modifications, moverIgnoresObstacles);
+                return !MayCrossObstacles(
+                    mover, modifications, moverIgnoresObstacles, permittedActivity);
             }
 
             if (!board.IsOccupied(coordinate) &&
@@ -116,13 +123,18 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return false;
             }
 
-            return !MayCrossObstacles(mover, modifications, moverIgnoresObstacles);
+            return !MayCrossObstacles(
+                mover, modifications, moverIgnoresObstacles, permittedActivity);
         }
 
         private static bool MayCrossObstacles(
-            RuleObject mover, RuleModificationSet modifications, bool moverIgnoresObstacles) =>
+            RuleObject mover,
+            RuleModificationSet modifications,
+            bool moverIgnoresObstacles,
+            RuleActivity permittedActivity) =>
             moverIgnoresObstacles ||
-            (mover.IsDefined && modifications.HasPermission(mover, RulePermissionKind.MoveThroughObstacles));
+            (mover.IsDefined && modifications.HasPermission(
+                mover, RulePermissionKind.MoveThroughObstacles, permittedActivity));
 
         /// <summary>
         /// Whether <paramref name="coordinate"/> may be a movement endpoint. Deliberately identical to
